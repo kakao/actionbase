@@ -3,6 +3,8 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import markdocGrammar from './grammars/markdoc.tmLanguage.json';
+import starlightLlmsTxt from 'starlight-llms-txt'
+import mermaid from 'astro-mermaid';
 
 export const locales = {
 	root: { label: 'English', lang: 'en' },
@@ -33,6 +35,25 @@ export default defineConfig({
 	base,
 	trailingSlash: 'always',
 	integrations: [
+		mermaid({
+			theme: 'forest',
+			autoTheme: true,
+			mermaidConfig: {
+				flowchart: {
+					curve: 'basis'
+				}
+			},
+			iconPacks: [
+				{
+					name: 'logos',
+					loader: () => fetch('https://unpkg.com/@iconify-json/logos@1/icons.json').then(res => res.json())
+				},
+				{
+					name: 'iconoir',
+					loader: () => fetch('https://unpkg.com/@iconify-json/iconoir@1/icons.json').then(res => res.json())
+				}
+			]
+		}),
 		starlight({
 			title: 'Actionbase',
 			// logo: {
@@ -110,8 +131,11 @@ export default defineConfig({
 							errorOnFallbackPages: false,
 							errorOnInconsistentLocale: true,
 						}),
+					starlightLlmsTxt(),
 					]
-				: [],
+				: [
+					starlightLlmsTxt(),
+				],
 		}),
 	],
 });

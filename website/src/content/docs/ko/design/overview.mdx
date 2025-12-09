@@ -1,0 +1,131 @@
+---
+title: 설계 개요
+description: 액션베이스 설계 개요.
+sidebar:
+    order: 1
+---
+
+액션베이스는 Property Graph 모델을 사용하여 데이터를 표현합니다. 이 문서는 액션베이스가 HBase에 그래프 데이터를 인코딩하고 저장하는 방법을 설명합니다.
+
+## Property Graph 모델
+
+액션베이스는 데이터를 다음과 같이 표현하는 Property Graph 모델을 사용합니다:
+
+- **Vertices (노드)**: 고유 ID와 속성을 가진 엔티티
+- **Edges (관계)**: 속성을 가진 정점 간의 연결
+- **유연한 스키마**: 스키마 마이그레이션 없이 속성을 추가하거나 수정할 수 있음
+
+```
+User (정점)
+  ├─ id: "user123"
+  └─ properties: { name: "John", email: "john@example.com" }
+
+User --[follows]--> User (엣지)
+  ├─ source: "user123"
+  ├─ target: "user456"
+  └─ properties: { createdAt: 1234567890, weight: 0.8 }
+```
+
+## 쓰기 시점 최적화
+
+액션베이스는 쓰기 중에 인덱스와 카운터를 사전 계산하여 초고속 읽기를 가능하게 합니다. 엣지가 기록될 때, 액션베이스는:
+
+1. 엣지 상태(EdgeState) 저장
+2. 스캔 쿼리를 위한 인덱스 항목 생성(EdgeIndex)
+3. 카운트 쿼리를 위한 카운터 업데이트(EdgeCounter)
+
+이를 통해 읽기 작업이 단순히 스토리지에서 사전 계산된 데이터를 조회할 수 있습니다.
+
+## 스토리지 인코딩
+
+액션베이스는 여러 Row Type을 사용하여 HBase에 엣지 데이터를 저장합니다. 각 Row Type은 특정 쿼리 목적을 제공합니다.
+
+### Row Types
+
+#### EdgeState
+
+Get 쿼리를 위해 엣지의 현재 상태를 저장합니다.
+
+**키 구조:**
+```
+[4-byte hash] + [1-byte + source] + [1-byte + table code] + [1-byte + -3] + [1-byte + target]
+```
+
+**값 구조:**
+- active: 엣지 활성 상태 (Boolean)
+- version: 엣지 버전 (Long)
+- properties: 속성별 버전을 가진 속성 맵
+- createdAt: 생성 시간 (Long)
+- deletedAt: 삭제 시간 (Long)
+
+#### EdgeIndex
+
+Scan 쿼리를 위한 인덱스 항목을 저장합니다.
+
+**키 구조:**
+```
+[4-byte hash] + [1-byte + directed source] + [1-byte + table code] + [1-byte + -4] + 
+[1-byte + direction] + [1-byte + index code] + [(1-byte + N) * # index values] + [1-byte + directed target]
+```
+
+**값 구조:**
+- version: 엣지 버전 (`Long`)
+- properties: 속성 맵 (`Map<String, Any>`)
+
+#### EdgeCounter
+
+Count 쿼리를 위한 카운터를 저장합니다.
+
+**키 구조:**
+```
+[4-byte hash] + [1-byte + directed source] + [1-byte + table code] + [1-byte + -2] + [1-byte + direction]
+```
+
+**값 구조:**
+- count: 엣지 개수 (Long)
+
+### Row Key 인코딩
+
+모든 Row Key는 다음 공통 패턴을 따릅니다:
+
+```
+[4-byte hash] + [1-byte + source] + [1-byte + table code] + [1-byte + Row Type Code] + [additional fields...]
+```
+
+- **Hash**: HBase Region 분산을 위한 4-byte xxhash32
+- **Row Type Code**: 데이터 타입을 식별하는 고유한 음수 코드 (-1, -2, -3, -4)
+
+### 값 인코딩
+
+액션베이스는 Byte Headers를 사용하여 타입 정보를 유지합니다:
+
+- 각 값: `1-byte 타입 정보 + 실제 값`
+- 타입 정보는 NULL, STRING, INT, FLOAT, JSON 등을 구분합니다
+- 정렬 순서를 위한 ASC/DESC 헤더
+- EdgeState는 속성별 버전을 저장하고, EdgeIndex는 엣지별 버전을 저장합니다
+
+## 데이터 흐름
+
+### 쓰기 경로
+
+```
+Client → Server → Engine → WAL → HBase → CDC
+```
+
+1. 잠금 획득 (EdgeLock)
+2. 상태 읽기 (EdgeState)
+3. 상태 전환 및 뮤테이션 생성
+4. WAL 쓰기 (Kafka)
+5. HBase 스토리지: EdgeState 업데이트, EdgeIndex 생성/삭제, EdgeCounter 증가/감소
+6. CDC 쓰기 (Kafka)
+
+### 읽기 경로
+
+```
+Client → Server → Engine → HBase → Response
+```
+
+- **Get**: 키로 EdgeState 조회
+- **Scan**: 인덱스로 EdgeIndex 범위 스캔
+- **Count**: EdgeCounter 값 조회
+

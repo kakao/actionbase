@@ -1,0 +1,73 @@
+---
+title: Migrating from RDB
+description: Guide for migrating from relational databases to Actionbase
+sidebar:
+    order: 4
+---
+
+This guide helps you migrate from relational databases (RDB) to Actionbase. As data scales, RDB sharding introduces operational complexity. Actionbase, an OLTP graph database, addresses these challenges by providing horizontal scaling without the complexity of manual sharding.
+
+**Note:** At this initial release stage, migration guides and best practices are being refined. This guide provides general guidance based on current capabilities.
+
+## When to Consider Migration
+
+Consider migrating to Actionbase when:
+
+- You have data with clear relationship structures (e.g., user-to-product relationships)
+- RDB sharding complexity is becoming a burden
+- You need to improve performance for relationship-centric queries
+- You're dealing with large-scale relationship data (user relationships, recommendation systems, social networks)
+
+## Key Differences: RDB vs. Actionbase
+
+### RDB Limitations
+
+RDB sharding introduces several challenges:
+
+- Difficulty in choosing shard keys (hotspot problems)
+- Performance degradation in cross-shard queries
+- Complexity in data rebalancing and distributed transaction management
+
+### Actionbase Benefits
+
+Actionbase provides:
+
+- **Horizontal scaling**: Handle large-scale data without complex sharding
+- **High performance**: Optimized for relationship-centric queries
+- **Simplified operations**: Automatic distributed processing within a single cluster
+
+## Migration Approach
+
+### Identifying Migration Targets
+
+Not all tables need to be migrated to Actionbase. Prioritize tables that represent relationships between two entities.
+
+### Migration Example
+
+**Before (RDB):**
+
+```sql
+CREATE TABLE user_product_wish (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(255),
+    product_id VARCHAR(255),
+    created_at TIMESTAMP,
+    visibility VARCHAR(50)
+);
+```
+
+**After (Actionbase):**
+
+In Actionbase, this relationship is modeled using an EdgeTable:
+
+- `source`: user_id (relationship starting point)
+- `target`: product_id (relationship destination)
+- `properties`: Additional relationship information (createdAt, visibility, etc.)
+- Primary key: `(source, target)` composite key
+
+### Migration Considerations
+
+- Analyze existing query patterns and design appropriate indexes
+- Plan for gradual migration to ensure stable transition
+- Adjust application logic for the change from AUTO_INCREMENT keys to composite keys `(source, target)`
+

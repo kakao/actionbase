@@ -1,0 +1,73 @@
+---
+title: RDB에서 전환하기
+description: 관계형 데이터베이스에서 Actionbase로 전환하는 가이드
+sidebar:
+    order: 4
+---
+
+이 가이드는 관계형 데이터베이스(RDB)에서 Actionbase로 전환하는 방법을 안내합니다. 데이터 규모가 커지면서 RDB 샤딩은 운영 복잡성을 야기합니다. OLTP 그래프 데이터베이스인 Actionbase는 수동 샤딩의 복잡성 없이 수평 확장을 제공하여 이러한 문제를 해결합니다.
+
+**참고:** 첫 오픈 단계에서는 전환 가이드 및 모범 사례가 계속 개선되고 있습니다. 이 가이드는 현재 기능을 기반으로 한 일반적인 안내를 제공합니다.
+
+## 전환을 고려해야 하는 경우
+
+다음과 같은 경우 Actionbase로 전환을 고려하세요:
+
+- 명확한 관계 구조를 가진 데이터가 있는 경우 (예: 사용자-상품 관계)
+- RDB 샤딩 복잡성이 부담이 되는 경우
+- 관계 중심 쿼리 성능 향상이 필요한 경우
+- 대규모 관계 데이터를 다루는 경우 (사용자 관계, 추천 시스템, 소셜 네트워크)
+
+## 주요 차이점: RDB vs. Actionbase
+
+### RDB의 한계
+
+RDB 샤딩은 다음과 같은 문제를 야기합니다:
+
+- 샤드 키 선택의 어려움 (핫스팟 문제)
+- 크로스 샤드 쿼리 성능 저하
+- 데이터 리밸런싱 및 분산 트랜잭션 관리의 복잡성
+
+### Actionbase의 장점
+
+Actionbase는 다음을 제공합니다:
+
+- **수평 확장**: 복잡한 샤딩 없이 대용량 데이터 처리
+- **높은 성능**: 관계 중심 쿼리에 최적화
+- **단순화된 운영**: 단일 클러스터 내 자동 분산 처리
+
+## 전환 방법
+
+### 전환 대상 식별
+
+모든 테이블을 Actionbase로 전환할 필요는 없습니다. 두 엔티티 간의 관계를 나타내는 테이블을 우선적으로 고려하세요.
+
+### 전환 예시
+
+**이전 (RDB):**
+
+```sql
+CREATE TABLE user_product_wish (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(255),
+    product_id VARCHAR(255),
+    created_at TIMESTAMP,
+    visibility VARCHAR(50)
+);
+```
+
+**이후 (Actionbase):**
+
+Actionbase에서는 이 관계를 EdgeTable을 사용하여 모델링합니다:
+
+- `source`: user_id (관계의 시작점)
+- `target`: product_id (관계의 도착점)
+- `properties`: 추가 관계 정보 (createdAt, visibility 등)
+- 기본키: `(source, target)` 복합키
+
+### 전환 시 고려 사항
+
+- 기존 쿼리 패턴을 분석하고 적절한 인덱스 설계
+- 안정적인 전환을 위한 점진적 마이그레이션 계획
+- AUTO_INCREMENT 키에서 `(source, target)` 복합키로 변경에 따른 애플리케이션 로직 조정
+

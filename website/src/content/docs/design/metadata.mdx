@@ -1,63 +1,139 @@
 ---
-title: (Draft) Metadata
-description: Metadata
+title: Metadata
+description: Understanding metadata in Actionbase
 sidebar:
     order: 2
 ---
 
-Metadata in Actionbase defines the structure and configuration of your graph database, including databases, tables, and storage settings.
+Metadata in Actionbase defines the structure and configuration of your graph database. It describes how data is organized, what schemas are used, and how queries access the data.
 
-## Concepts
+## Version Information
 
-### Database
+Actionbase has two versions of metadata: v2 and v3. Currently, **metadata uses v2**, while mutation and query operations have transitioned to v3. Metadata v3 support is planned for the future, but at this time, all metadata operations use v2.
 
-A database is a top-level container that groups related tables together. It provides isolation and organization for your data.
+## Metadata Concepts
 
-### Table
+### Service (v3: Database)
 
-Tables define the structure of your graph data. Actionbase supports different table types:
+A **Service** is a logical group that contains labels and aliases. It provides organization and isolation for related graph structures.
 
-- **EdgeTable**: Stores relationships between entities
-- **VertexTable**: Stores entity data
-- **MultiEdgeTable**: Stores multiple relationships between the same entities
+**Properties:**
+- **name**: Service identifier
+- **desc**: Description of the service
+- **active**: Whether the service is active
+
+Services group related labels together, making it easier to organize and manage your graph data structures.
+
+### Label (v3: Table)
+
+A **Label** defines the schema for graph edges. It specifies the structure of relationships, including source and target node types, edge properties, and indexes.
+
+**Properties:**
+- **name**: Label identifier in the format `service.label`
+- **type**: Label type
+- **schema**: Defines the structure of edges
+  - **src**: Source node type and description
+  - **tgt**: Target node type and description
+  - **fields**: List of edge properties (name, type, nullable, description)
+- **dirType**: Direction type (directed/undirected)
+- **storage**: Storage name where data is stored
+- **indices**: List of indexes for efficient querying
+  - Each index has a name, list of fields (with sort order), and description
+- **event**: Whether events are enabled
+- **readOnly**: Whether the label is read-only
+- **mode**: Mutation mode
+- **active**: Whether the label is active
+- **desc**: Description of the label
+
+Labels define the complete schema for edges, including what properties they can have and how they can be queried through indexes.
+
+### Alias (v3: Alias)
+
+An **Alias** is a reference that points to a label. It allows you to use a different name to access the same label, providing flexibility in naming and organization.
+
+**Properties:**
+- **name**: Alias identifier in the format `service.alias`
+- **target**: The label this alias points to, in the format `service.label`
+- **desc**: Description of the alias
+- **active**: Whether the alias is active
+
+Aliases enable you to reference labels with different names, making it easier to organize and access your data structures.
 
 ### Storage
 
-Storage configuration defines how data is physically stored in the underlying storage backend (e.g., HBase). This includes settings for replication, compression, and region management.
+**Storage** defines the physical storage configuration for data. It specifies how data is stored in the underlying storage backend (e.g., HBase).
 
-## Metadata Operations
+**Properties:**
+- **type**: Storage type
+- **name**: Storage identifier
+- **desc**: Description of the storage
+- **active**: Whether the storage is active
+- **conf**: Configuration map with storage-specific settings
 
-### Creating a Database
+Labels reference a storage by name, determining where their data is physically stored.
 
-```bash
-actionbase database create --name mydb
+## Metadata Hierarchy
+
+The metadata structure follows this hierarchy:
+
+```
+Service
+├── Label (defines schema)
+│   ├── Schema (src, tgt, fields)
+│   ├── Indices (for querying)
+│   └── Storage (physical storage)
+└── Alias (points to Label)
 ```
 
-### Creating a Table
+- A **Service** contains multiple **Labels** and **Aliases**
+- A **Label** defines the schema and indexes for edges
+- An **Alias** points to a **Label**, allowing alternative names
+- A **Label** references a **Storage** for physical data storage
 
-```bash
-actionbase table create \
-  --database mydb \
-  --name mytable \
-  --type EdgeTable
-```
+## Naming Conventions
 
-### Listing Metadata
+### Service
+- Simple identifier: `myservice`
 
-```bash
-# List all databases
-actionbase database list
+### Label
+- Format: `service.label`
+- Example: `myservice.follows`, `myservice.likes`
 
-# List tables in a database
-actionbase table list --database mydb
-```
+### Alias
+- Format: `service.alias`
+- Example: `myservice.friends` (pointing to `myservice.follows`)
 
-## Schema Evolution
+### Storage
+- Simple identifier: `hbase-storage-1`
 
-Actionbase supports flexible schema evolution. You can add new properties to vertices and edges without requiring schema migrations, making it easy to adapt to changing requirements.
+## Schema Definition
 
-## Next Steps
+Labels define the schema for edges through the `schema` property:
 
-- [Mutation](/design/mutation/) - Learn how to modify data
-- [Query](/design/query/) - Understand query operations
-- [Datastore](/design/datastore/) - Configure storage settings
+- **src**: Source node type (e.g., STRING, LONG)
+- **tgt**: Target node type (e.g., STRING, LONG)
+- **fields**: List of edge properties
+  - Each field has: name, type, nullable flag, and description
+
+This schema definition determines what data can be stored in edges and how it's structured.
+
+## Indexes
+
+Labels define indexes that enable efficient querying. Each index:
+
+- Has a unique name within the label
+- Specifies a list of fields to index
+- Each field has a sort order (ASC/DESC)
+- Includes a description
+
+Indexes are used by Scan queries to efficiently retrieve edges based on property values. The index structure determines how queries can filter and sort data.
+
+## Metadata and Queries
+
+Metadata directly influences how queries work:
+
+- **Label schema** defines what properties edges can have
+- **Indexes** determine which Scan queries are possible and efficient
+- **Storage** configuration affects where data is physically stored and retrieved
+
+When you perform a mutation, the data structure follows the label's schema. When you perform a query, you must use indexes that were defined in the label's metadata. This explicit relationship between metadata and queries ensures that queries follow optimized paths that were prepared during schema definition.

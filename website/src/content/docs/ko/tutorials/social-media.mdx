@@ -1,0 +1,208 @@
+---
+title: (초안) 액션베이스로 소셜 미디어 애플리케이션 구축하기
+description: 소셜 미디어
+---
+
+이 튜토리얼은 액션베이스를 사용하여 사용자 관계, 활동 피드 및 참여 메트릭을 포함한 소셜 미디어 애플리케이션을 구축하는 방법을 보여줍니다.
+
+## 개요
+
+다음 기능을 가진 소셜 미디어 애플리케이션을 구축합니다:
+
+- 사용자 프로필
+- 팔로우/언팔로우 관계
+- 활동 피드
+- 좋아요 및 댓글 추적
+- 참여 메트릭
+
+## 데이터 모델
+
+### 사용자 (정점)
+
+```json
+{
+  "id": "user123",
+  "properties": {
+    "username": "johndoe",
+    "email": "john@example.com",
+    "createdAt": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+### 팔로우 (엣지)
+
+```json
+{
+  "source": "user123",
+  "target": "user456",
+  "properties": {
+    "createdAt": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+### 좋아요 (엣지)
+
+```json
+{
+  "source": "user123",
+  "target": "post789",
+  "properties": {
+    "createdAt": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+## 구현
+
+### 1단계: 데이터베이스 및 테이블 생성
+
+```bash
+# 데이터베이스 생성
+actionbase database create --name socialmedia
+
+# 사용자 테이블 생성 (VertexTable)
+actionbase table create \
+  --database socialmedia \
+  --name users \
+  --type VertexTable
+
+# 팔로우 테이블 생성 (EdgeTable)
+actionbase table create \
+  --database socialmedia \
+  --name follows \
+  --type EdgeTable
+
+# 좋아요 테이블 생성 (EdgeTable)
+actionbase table create \
+  --database socialmedia \
+  --name likes \
+  --type EdgeTable
+```
+
+### 2단계: 사용자 생성
+
+```json
+POST /graph/v3/vertex/mutate
+{
+  "database": "socialmedia",
+  "table": "users",
+  "id": "user123",
+  "properties": {
+    "username": "johndoe",
+    "email": "john@example.com",
+    "createdAt": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+### 3단계: 팔로우 관계 생성
+
+```json
+POST /graph/v3/edge/mutate
+{
+  "database": "socialmedia",
+  "table": "follows",
+  "source": "user123",
+  "target": "user456",
+  "properties": {
+    "createdAt": "2025-01-01T00:00:00Z"
+  }
+}
+```
+
+### 4단계: 팔로워 조회
+
+특정 사용자를 팔로우하는 모든 사용자 조회:
+
+```json
+POST /graph/v3/edge/scan
+{
+  "database": "socialmedia",
+  "table": "follows",
+  "target": "user123",
+  "direction": "incoming"
+}
+```
+
+### 5단계: 팔로워 수 카운트
+
+팔로워 수 조회 (쓰기 시점 최적화 사용):
+
+```json
+GET /graph/v3/edge/count?database=socialmedia&table=follows&target=user123
+```
+
+### 6단계: 활동 피드
+
+사용자의 활동 피드 조회 (팔로우하는 사용자의 게시물):
+
+```json
+POST /graph/v3/edge/scan
+{
+  "database": "socialmedia",
+  "table": "follows",
+  "source": "user123",
+  "direction": "outgoing",
+  "includeTargets": true
+}
+```
+
+## 성능 이점
+
+### 쓰기 시점 최적화
+
+사용자가 서로 팔로우하거나 게시물에 좋아요를 누를 때, 액션베이스는 자동으로:
+
+- 팔로워/팔로잉 수를 사전 계산
+- 빠른 조회를 위한 인덱스 유지
+- 피드 인덱스 업데이트
+
+### 빠른 쿼리
+
+- **팔로워 수**: &lt;5ms (사전 계산된 카운터 사용)
+- **피드 생성**: 인덱스로 최적화됨
+- **관계 확인**: &lt;1ms 조회
+
+## 고급 기능
+
+### 참여 메트릭
+
+엣지 속성을 사용하여 참여 추적:
+
+```json
+POST /graph/v3/edge/mutate
+{
+  "database": "socialmedia",
+  "table": "likes",
+  "source": "user123",
+  "target": "post789",
+  "properties": {
+    "createdAt": "2025-01-01T00:00:00Z",
+    "type": "like"
+  }
+}
+```
+
+### 추천
+
+그래프 순회를 사용한 추천:
+
+```json
+POST /graph/v3/edge/scan
+{
+  "database": "socialmedia",
+  "table": "follows",
+  "source": "user123",
+  "depth": 2,
+  "direction": "outgoing"
+}
+```
+
+## 다음 단계
+
+- [쿼리 가이드](/ko/design/query/) - 쿼리에 대해 더 알아보기
+- [뮤테이션 가이드](/ko/design/mutation/) - 데이터 수정 이해하기
+- [설계 개요](/ko/design/overview/) - 아키텍처 검토하기
+

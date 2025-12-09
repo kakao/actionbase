@@ -1,382 +1,171 @@
 ---
-title: (Draft) Query
-description: Query
+title: Query
+description: Understanding how queries work in Actionbase
 sidebar:
     order: 4
 ---
 
-Edge tables (EdgeTable) support three types of edge queries: count, get, and scan.
+Queries in Actionbase retrieve data that was pre-computed and optimized during mutations. The query system is designed to access these pre-computed structures directly, providing ultra-fast read operations with consistent low latency.
 
-## 1. Count
+## Query Philosophy
 
-Retrieve the number of edges starting from a specific node.
+Actionbase queries are designed to read the optimized data structures created during mutations. When you perform a mutation, Actionbase pre-computes:
 
-### Endpoint
+- **EdgeState**: The current state of edges for direct retrieval
+- **EdgeIndex**: Sorted index entries for efficient range scans
+- **EdgeCounter**: Aggregated counts for fast counting operations
 
-```
-GET /graph/v3/databases/{database}/tables/{table}/edges/count
-```
+Queries access these pre-computed structures directly. You explicitly choose the query type (Count, Get, or Scan) and specify the index to use, ensuring that each query follows an optimized path that was prepared during write time.
 
-### Parameters
+## Query Types
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Required | Authentication key (API key) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Query | start | Required | Starting node ID |
-| Query | direction | Required | Query direction (OUT or IN) |
-| Query | ranges | Optional (default: null) | Scan range |
+Actionbase supports three types of edge queries, each designed to access specific pre-computed data structures:
 
-### Response Type
+- **Count**: Accesses pre-computed counters to retrieve the number of edges
+- **Get**: Directly retrieves edge state by source and target node IDs
+- **Scan**: Uses a pre-computed index to scan edges with range filtering and pagination
 
-`Count` - Payload containing edge count information
+Each query type requires you to explicitly specify the access pattern, ensuring that queries follow the optimized paths created during mutations.
 
-### Request Example
+## Query Flow
 
-```bash
-curl -X GET \
-    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/count?start=source1&direction=OUT" \
-    -H "Authorization: YOUR_API_KEY"
-```
+The following diagram illustrates how queries access pre-computed data:
 
-### Response Example
-
-```json
-{
-  "start": "source1",
-  "direction": "OUT",
-  "count": 10,
-  "context": {}
-}
+```mermaid
+flowchart TD
+    Request([Query Request]) --> Route{Query Type}
+    Route -->|Count| CountQuery[Count Query]
+    Route -->|Get| GetQuery[Get Query]
+    Route -->|Scan| ScanQuery[Scan Query]
+    CountQuery --> EdgeCounter[Read EdgeCounter<br/>Pre-computed during mutation]
+    GetQuery --> EdgeState[Read EdgeState<br/>Pre-computed during mutation]
+    ScanQuery --> EdgeIndex[Read EdgeIndex<br/>Pre-computed during mutation]
+    EdgeCounter --> Response([Response])
+    EdgeState --> Response
+    EdgeIndex --> Response
 ```
 
-## 2. Get
+## Query Processing
 
-Retrieve an edge between a source node and a target node.
+### Count Query
 
-### Endpoint
+Count queries read pre-computed counter values that were maintained during mutations. When an edge is created or deleted, the corresponding counter is automatically updated.
 
-```
-GET /graph/v3/databases/{database}/tables/{table}/edges/get
-```
+**Processing Steps:**
+1. Construct the EdgeCounter row key based on the source node, table, and direction
+2. Retrieve the pre-computed counter value from storage
+3. If ranges are specified, scan the index entries and count matching edges
+4. Return the count value
 
-### Parameters
+**Storage Access:**
+- Reads from **EdgeCounter** row type (Row Type Code: -2), created during mutations
+- Key structure: `[hash] + [source] + [table] + [-2] + [direction]`
+- Value: Pre-computed edge count maintained incrementally
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Required | Authentication key (API key) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Query | source | Required | Source node ID list (comma-separated) |
-| Query | target | Required | Target node ID list (comma-separated) |
-| Query | filters | Optional (default: null) | Filtering conditions |
+### Get Query
 
-**Note:** When multiple source or target IDs are specified, the operation behaves as `mget` to retrieve multiple edges. In this case, a maximum of 25 edges can be retrieved per API request. To retrieve more edges, make multiple API requests.
+Get queries directly access edge state that was written during mutations. Each mutation updates the EdgeState, and Get queries retrieve this state by constructing the exact row key.
 
-### Response Type
+**Processing Steps:**
+1. For each (source, target) pair, construct the EdgeState row key
+2. Retrieve the edge state directly from storage
+3. Apply optional filters to the retrieved edges
+4. Return the matching edges
 
-`EdgeFrame` - Payload containing edge data
+**Storage Access:**
+- Reads from **EdgeState** row type (Row Type Code: -3), written during mutations
+- Key structure: `[hash] + [source] + [table] + [-3] + [target]`
+- Value: Edge state including properties, version, timestamps - exactly as written during mutation
 
-### Request Examples
+**MGet Support:**
+- When multiple source or target IDs are specified, the operation behaves as a multi-get (mget)
+- Maximum of 25 edges can be retrieved per API request
+- Supports 1 source with N targets, or M sources with 1 target patterns
 
-#### Get - 1 source, 1 target
+### Scan Query
 
-Retrieves edge data for (source, target). (Maximum 1 result)
+Scan queries use pre-computed index entries that were created during mutations. You must explicitly specify which index to use, and the query will scan the entries that were sorted and stored when edges were written.
 
-```bash
-curl -X GET \
-    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1&target=target1" \
-    -H "Authorization: YOUR_API_KEY"
-```
+**Processing Steps:**
+1. Construct the EdgeIndex row key prefix based on source, table, direction, and the specified index
+2. Apply range filters to determine the scan start and end points within the index
+3. Perform a range scan on the pre-computed index entries
+4. Apply optional filters to the scanned results
+5. Apply pagination (limit, offset) if specified
+6. Return the matching edges
 
-**Response:**
+**Storage Access:**
+- Reads from **EdgeIndex** row type (Row Type Code: -4), created during mutations
+- Key structure: `[hash] + [source] + [table] + [-4] + [direction] + [index] + [index values] + [target]`
+- Value: Edge version and properties, stored in sorted order based on index definition
 
-```json
-{
-  "edges": [
-    {
-      "version": 1,
-      "source": "source1",
-      "target": "target1",
-      "properties": {
-        "weight": 0.8,
-        "type": "FOLLOWS"
-      },
-      "context": {}
-    }
-  ],
-  "count": 1,
-  "total": 1,
-  "offset": null,
-  "hasNext": false,
-  "context": {}
-}
-```
+**Index Requirement:**
+- You must explicitly specify which index to use in the query
+- The index must have been defined in the table metadata
+- Index entries are created and maintained automatically during mutations
 
-#### MGet - 1 source, N targets
+## Querying Pre-computed Data
 
-Retrieves edge data for (source, target1) ~ (source, targetN). (Maximum N results)
+Actionbase's query performance comes from reading data structures that were optimized during mutations. This design means:
 
-```bash
-curl -X GET \
-    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1&target=target1,target2,target3" \
-    -H "Authorization: YOUR_API_KEY"
-```
+- **No Query-time Computation**: Queries simply retrieve pre-computed data from storage
+- **Explicit Access Patterns**: You choose the query type and index, ensuring queries follow prepared paths
+- **Consistent Structure**: The data structure you query is exactly what was created during mutation
 
-#### MGet - M sources, 1 target
+### Benefits
 
-Retrieves edge data for (source1, target) ~ (sourceM, target). (Maximum M results)
-
-```bash
-curl -X GET \
-    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1,source2,source3&target=target1" \
-    -H "Authorization: YOUR_API_KEY"
-```
-
-**Note:** M sources and N targets (M × N) format should not be used in production as it can retrieve up to M × N edges.
-
-## 3. Scan
-
-Scan edges using an index.
-
-### Endpoint
-
-```
-GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
-```
-
-### Parameters
-
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Required | Authentication key (API key) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Path | index | Required | Index name to use |
-| Query | start | Required | Starting node ID |
-| Query | direction | Required | Query direction (OUT or IN) |
-| Query | limit | Optional (default: 25) | Maximum number of results to return |
-| Query | offset | Optional (default: null) | Pagination offset |
-| Query | ranges | Optional (default: null) | Scan range |
-| Query | filters | Optional (default: null) | Filtering conditions |
-| Query | features | Optional (default: empty list) | List of features to include (e.g., `total` to calculate the total value) |
-
-### Response Type
-
-`EdgeFrame` - Payload containing edge data
-
-### Request Example
-
-```bash
-curl -X GET \
-    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/your_index?start=source1&direction=OUT" \
-    -H "Authorization: YOUR_API_KEY"
-```
-
-### Response Example
-
-```json
-{
-  "edges": [
-    {
-      "version": 1,
-      "source": "source1",
-      "target": "target1",
-      "properties": {
-        "weight": 0.8,
-        "type": "FOLLOWS"
-      },
-      "context": {}
-    }
-  ],
-  "count": 1,
-  "total": -1,
-  "offset": null,
-  "hasNext": false,
-  "context": {}
-}
-```
-
-**Note:** When `total` is -1, the total count is not calculated. If `features=total` is provided, the total is actually calculated.
-
-## Pagination
-
-The `offset` parameter indicates the starting position of the next page, and `hasNext` indicates whether there is a next page. If there is no offset, the first page is returned.
-
-### First Page Request
-
-Request the first page without an offset:
-
-```bash
-curl -X GET \
-    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/your_index?start=source1&direction=OUT" \
-    -H "Authorization: YOUR_API_KEY"
-```
-
-**Response:**
-
-```json
-{
-  "edges": [...],
-  "count": 10,
-  "total": -1,
-  "offset": "string_encoded",
-  "hasNext": true,
-  "context": {}
-}
-```
-
-### Next Page Request
-
-Use the `offset` value from the previous response to retrieve the next page:
-
-```bash
-curl -X GET \
-    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/your_index?start=source1&direction=OUT&offset=string_encoded" \
-    -H "Authorization: YOUR_API_KEY"
-```
+- **Fast Reads**: Read operations retrieve pre-computed data without expensive computations
+- **Consistent Performance**: Read latency remains consistently low (`<5ms p99`) regardless of data size
+- **Predictable Performance**: Since queries follow explicit, pre-computed paths, performance is predictable
 
 ## Index Ranges
 
-The `ranges` parameter allows you to specify the data scan range in count/scan queries.
+When using Scan queries, you can specify ranges to filter data. Ranges work with the pre-computed index structure, allowing efficient filtering at the storage level.
 
-### Important Notes
+### Key Concepts
 
-- **Index Dependency:** Fields used in `ranges` must be included in the index. Attempting to specify a range on a field without an index will return unexpected results.
-- **Operator Meaning:** The `eq`, `gt(e)`, `lt(e)`, and `between` operators determine the start and end points of the actual storage scan. They must be used appropriately according to index properties.
-- **DESC Index:** When an index is set to DESC (descending), `lt` becomes the start point and `gt` becomes the end point.
-- **ASC Index:** When an index is set to ASC (ascending), `gt` becomes the start point and `lt` becomes the end point.
-- **Composite Ranges:** Ranges can be used in the order of the field combination that the index is defined on. Ranges must be applied in the order of fields defined in the index.
+- **Explicit Index Use**: You must specify which index to use, and ranges can only use fields included in that index
+- **Index Structure**: Ranges leverage the sorted structure of index entries created during mutations
+- **Operator Semantics**: Operators (`eq`, `gt`, `lt`, `between`) determine the scan start and end points within the sorted index
+- **Index Order**: For composite indexes, ranges must be applied in the order of fields defined in the index
+- **Sort Direction**: The meaning of operators depends on whether the index is ASC (ascending) or DESC (descending)
 
-### Range Syntax
+### Range vs Filter
 
-Ranges are written in the following format:
+- **Ranges**: Work with the pre-computed index structure, filtering at the storage level using indexed fields
+- **Filters**: Applied after retrieval, can use any field but don't benefit from index optimization
 
-```
-ranges=range1[;range2;range3;...]
-```
+## Pagination
 
-Each range follows this format:
+Scan queries support pagination through the `offset` and `limit` parameters:
 
-```
-field:operator:value
-```
+- **offset**: Encoded string indicating the starting position within the index
+- **limit**: Maximum number of results to return (default: 25)
+- **hasNext**: Boolean indicating whether more results are available
 
-To apply multiple ranges, separate them with semicolons (;):
+Pagination works with the sorted index structure, enabling efficient retrieval of large result sets.
 
-```
-field1:operator1:value1;field2:operator2:value2
-```
+## Query Direction
 
-When using the `in` or `bt` (between) operator, multiple values are separated by commas (,):
+Queries support two directions:
 
-```
-field:in:value1,value2,value3
-field:bt:minValue,maxValue
-```
+- **OUT**: Outgoing direction (e.g., retrieving products that a user liked)
+- **IN**: Incoming direction (e.g., retrieving users who liked a product)
 
-### Operators
+The direction determines which pre-computed data structures are accessed, as separate index entries and counters are maintained for each direction during mutations.
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `eq` | Equal | `type:eq:0` |
-| `gt` | Greater than | `createdAt:gt:1000000` |
-| `gte` | Greater than or equal | `createdAt:gte:1000000` |
-| `lt` | Less than | `createdAt:lt:2000000` |
-| `lte` | Less than or equal | `createdAt:lte:2000000` |
-| `bt` | Between two values | `createdAt:bt:1000000,2000000` |
+## Read Path
 
-### Examples
-
-**Simple range:**
+The complete read path in Actionbase:
 
 ```
-GET .../scan/your_index?start=10&direction=OUT&ranges=type:eq:0
+Client → Server → Engine → HBase → Response
 ```
 
-This example specifies a range to retrieve only edges where the `type` property is 0. Note that `type` refers to `properties.type`, and `properties.type` must be included in `your_index`.
+1. **Client**: Sends query request via REST API, explicitly specifying query type and parameters
+2. **Server**: Receives and validates the request
+3. **Engine**: Constructs the storage key based on the query type and parameters, then retrieves pre-computed data
+4. **HBase**: Returns the pre-computed data structure (EdgeState, EdgeIndex, or EdgeCounter) created during mutations
+5. **Response**: Returns formatted results to the client
 
-**Composite range:**
-
-```
-GET .../scan/your_index?start=10&direction=OUT&ranges=type:eq:0;createdAt:gt:1000000
-```
-
-This example specifies a range to retrieve only edges where `type` is 0 and `createdAt` is greater than 1000000.
-
-**Between operator:**
-
-```
-GET .../scan/your_index?start=10&direction=OUT&ranges=createdAt:bt:1000000,2000000
-```
-
-This example specifies a range to retrieve only edges where `createdAt` is between 1000000 and 2000000.
-
-## Filters
-
-The `filters` parameter allows you to filter data (edges) in get/scan queries. It uses the same format as `ranges`.
-
-**Difference from ranges:** While `ranges` pre-specifies the query range and can only use fields set as indexes, `filters` filters the query results and can use fields that are not set as indexes.
-
-### Filter Examples
-
-```
-GET .../get?source=1,2,3&target=10&filters=type:eq:0
-GET .../scan/your_index?start=1&direction=OUT&ranges=createdAt:gte:1000000&filters=type:eq:0
-```
-
-## Data Model
-
-### Query Direction
-
-- **OUT:** Outgoing direction (e.g., retrieving products that a user liked in a user [likes]→ product relationship)
-- **IN:** Incoming direction (e.g., retrieving users who liked a product in the above relationship)
-
-### Count Response
-
-Count query response. Payload containing edge count information.
-
-```kotlin
-data class Count(
-  val start: Any,                 // Starting node ID
-  val direction: Direction,       // Direction (IN, OUT)
-  val count: Long,                // Edge count
-  val context: Map<String, Any?>, // Context information
-)
-```
-
-### EdgeFrame Response
-
-Get and scan query response. Payload containing edge data.
-
-```kotlin
-data class EdgeFrame(
-  val edges: List<Edge>,          // Edge list
-  val count: Int,                 // Number of edges currently returned
-  val total: Long,                // Total edge count (-1 means not calculated)
-  val offset: String?,            // Pagination offset
-  val hasNext: Boolean,           // Whether next page exists
-  val context: Map<String, Any?>, // Context information
-)
-```
-
-### Edge
-
-Individual edge information payload.
-
-```kotlin
-data class Edge(
-  val version: Long,                 // Edge version
-  val source: Any,                   // Source node ID
-  val target: Any,                   // Target node ID
-  val properties: Map<String, Any?>, // Edge properties
-  val context: Map<String, Any?>,    // Context information
-)
-```
-
-## Next Steps
-
-- [Mutation](/design/mutation/) - Learn how to modify data
-- [Overview](/design/overview/) - Review design principles
-- [Benchmarks](/operations/benchmarks/) - See performance metrics
+This simple read path accesses data structures that were optimized during write time, ensuring consistent low-latency query performance.

@@ -7,6 +7,7 @@ import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
 
 import java.lang.AutoCloseable
 
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.AsyncConnection
@@ -183,12 +184,18 @@ class DefaultHBaseCluster private constructor(
                         Mono.fromFuture(ConnectionFactory.createAsyncConnection(config))
                     }.cache()
 
-            instance0 = DefaultHBaseCluster(mock = false, connectionMono, namespace, config)
+            initialize(connectionMono, namespace, config)
+        }
+
+        fun initialize(
+            connectionMono: Mono<AsyncConnection>,
+            namespace: String,
+            configuration: Configuration,
+        ) {
+            instance0 = DefaultHBaseCluster(mock = false, connectionMono, namespace, configuration)
         }
 
         val INSTANCE: DefaultHBaseCluster
             get() = instance0
-
-        fun isForDefaultHBaseCluster(zkHosts: String): Boolean = zkHosts == DEFAULT_HBASE_CLUSTER_NAME
     }
 }

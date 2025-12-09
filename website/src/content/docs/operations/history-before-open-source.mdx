@@ -1,0 +1,91 @@
+---
+title: History Before Open Source
+description: Actionbase project development history before open source
+sidebar:
+    order: 5
+---
+
+This document shares the development history of Actionbase before it was open-sourced. After open-sourcing, development history will be transparently available through public repositories and releases. This document provides insight into the journey that led to Actionbase's open-source release.
+
+**Note:** This history covers the internal development period before open-sourcing. Future development will be transparently tracked in public repositories.
+
+## MVP Phase
+
+The MVP phase represents the entire period from project inception to open-source release. During this extended period, Actionbase was applied to various services and evolved through real-world challenges, demonstrating its viability and establishing a sustainable foundation.
+
+### Phase 1: Foundation Building (April 2023)
+
+**Focus:** Validating technical feasibility and establishing a robust technical foundation.
+
+This extended period was invested to ensure a solid technical base that would support stable development in subsequent phases.
+
+Key milestones:
+- Project kickoff and initial planning
+- Core design and implementation
+
+### Phase 2: Service Integration (March 2024)
+
+**Focus:** Validating through real-world service deployment.
+
+The system was safely integrated into production by maintaining the existing system, applying dual writes, and gradually migrating read functionality after sufficient validation.
+
+Key activities:
+- First production service write/read migration
+
+### Phase 3: Stabilization (July 2024)
+
+**Focus:** System stabilization and tenant expansion.
+
+Starting from a multi-tenant architecture, this phase introduced support for independent tenant configurations to ensure service isolation and enable isolated deployments.
+
+This phase established a sustainable operational foundation.
+
+Key improvements:
+- System stabilization and tenant expansion
+- Support for independent tenant configurations to isolate services
+- Operations automation and monitoring enhancement
+- Applied across KakaoShopping
+
+### Phase 4: Building Sustainable Operations (January 2025)
+
+**Focus:** Improving operational efficiency and developer experience, addressing technical debt.
+
+During this phase, Actionbase continued to be applied to various services while improving its operational foundation and addressing technical debt.
+
+### Phase 5: Improving Sustainability and Company-wide Adoption (May 2025 - December 2025)
+
+**Focus:** Improving sustainability and expanding adoption across Kakao's major services.
+
+This phase focused on addressing technical debt and improving long-term sustainability. The reimplementation process led to the decision to open-source Actionbase. While legacy code remains, the reimplementation continues to progress toward a more maintainable codebase. During this period, Actionbase expanded its adoption across Kakao's major services including KakaoShopping and KakaoTalk, demonstrating its scalability and reliability at a company-wide scale.
+
+Key changes:
+- Maintained API compatibility with existing systems
+- Redesigned API structure
+- Repository separation and organization
+- Separated internal and open-source areas
+- Expanded adoption to major services in KakaoShopping and KakaoTalk
+
+## Open Source Release (January 2026)
+
+After this extended MVP period, during which Actionbase was applied to various services and proven its viability, Actionbase was open-sourced in January 2026.
+
+The codebase released is the same one that was developed, operated, and refined inside Kakao. Only minimal modifications were applied to remove security-sensitive or organization-specific details, and some internal features will be opened gradually as they are reviewed.
+
+### Why We Open-Sourced Actionbase
+
+**1. Transparent real-world history**
+
+The codebase grew organically in production environments. By releasing it as-is (with only essential sanitization), we aim to share its genuine journey rather than a rewritten or polished version.
+
+**2. Long-term sustainability**
+
+The system has gone through multiple generations of requirements, contributors, and architectural changes. Open-sourcing it helps create a healthier long-term lifecycle and encourages community-driven improvement.
+
+### Acknowledgements
+
+This work was supported by Kakao's leaders and engineering staff, who helped the team build a stable system and eventually make it available to the public.
+
+Special appreciation goes to the HBase engineers at Kakao. Much of Actionbase's reliability is rooted in the stability provided by HBase.
+
+This release reflects the efforts of those who contributed to the system and the teams who supported its development. We look forward to continuing this project together with the global open-source community.
+
