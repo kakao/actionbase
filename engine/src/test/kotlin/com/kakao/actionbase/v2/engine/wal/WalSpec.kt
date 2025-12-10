@@ -30,7 +30,7 @@ class WalSpec :
                     Edge(1, "src", "tgt", emptyMap<String, Any>()).toTraceEdge(),
                     EdgeOperation.INSERT,
                 )
-            val wal = Wal(ProducerList(listOf(mockWal1, mockWal2)))
+            val wal = DefaultWal(ProducerList(listOf(mockWal1, mockWal2)))
             wal.write(walLog).test().verifyComplete()
         }
 
@@ -49,7 +49,7 @@ class WalSpec :
                     Edge(1, "src", "tgt", emptyMap<String, Any>()).toTraceEdge(),
                     EdgeOperation.INSERT,
                 )
-            val wal = Wal(ProducerList(listOf(mockWal2, mockWal1)))
+            val wal = DefaultWal(ProducerList(listOf(mockWal2, mockWal1)))
             wal.write(walLog).test().verifyComplete()
         }
 
@@ -67,7 +67,7 @@ class WalSpec :
                     Edge(1, "src", "tgt", emptyMap<String, Any>()).toTraceEdge(),
                     EdgeOperation.INSERT,
                 )
-            val wal = Wal(ProducerList(listOf(mockWal1, mockWal2)))
+            val wal = DefaultWal(ProducerList(listOf(mockWal1, mockWal2)))
             wal.write(walLog).test().verifyError()
         }
     })
