@@ -1,9 +1,7 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -11,146 +9,80 @@ import (
 	"github.com/kakao/actionbase/internal/util"
 )
 
+type Scan struct {
+	runner           ScanRunner
+	actionbaseClient *client.ActionbaseClient
+}
+
 type ScanRunner interface {
-	GetHost() string
-	GetAuthKey() string
 	GetCurrentDatabase() string
 	GetCurrentTable() string
 	SetCurrentTable(table string)
 }
 
-type ScanCommand struct {
-	runner ScanRunner
+func NewScan(runner ScanRunner, actionbaseClient *client.ActionbaseClient) *Scan {
+	return &Scan{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func NewScanCommand(runner ScanRunner) *ScanCommand { return &ScanCommand{runner: runner} }
-
-func (t *ScanCommand) Execute(args []string) {
+func (s *Scan) Execute(args []string) {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", t.GetType().GetCommand())
+		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
 		return
 	}
 
-	if t.runner.GetCurrentDatabase() == "" {
-		fmt.Printf("No database selected. Use 'use <database|table> <name> or use <database>:<table>'\n")
+	if s.runner.GetCurrentDatabase() == "" {
+		fmt.Println("No database selected. Use 'use database <name>'")
 		return
 	}
 
-	indexArgIndex := slices.IndexFunc(args, func(arg string) bool {
-		return strings.HasPrefix(arg, "--index=")
-	})
-	if indexArgIndex == -1 {
-		fmt.Println("No index provided. Usage: ", t.GetType().GetCommand())
-		return
-	}
-	indexKeyValue := strings.Split(args[indexArgIndex], "=")
-	if indexKeyValue[1] == "" {
-		fmt.Println("No index provided. Usage: ", t.GetType().GetCommand())
+	if s.runner.GetCurrentTable() == "" {
+		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
 		return
 	}
 
-	startArgIndex := slices.IndexFunc(args, func(arg string) bool {
-		return strings.HasPrefix(arg, "--start=")
-	})
-	if startArgIndex == -1 {
-		fmt.Println("No start provided. Usage: ", t.GetType().GetCommand())
-		return
-	}
-	startKeyValue := strings.Split(args[startArgIndex], "=")
-	if startKeyValue[1] == "" {
-		fmt.Println("No start provided. Usage: ", t.GetType().GetCommand())
+	parser := util.ParseArgs(args)
+
+	index, found := parser.Get("index")
+	if !found {
+		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
 		return
 	}
 
-	directionArgIndex := slices.IndexFunc(args, func(arg string) bool {
-		return strings.HasPrefix(arg, "--direction=") || strings.HasPrefix(arg, "--dir=")
-	})
-	if directionArgIndex == -1 {
-		fmt.Println("No direction provided. Usage: ", t.GetType().GetCommand())
-		return
-	}
-	directionKeyValue := strings.Split(args[directionArgIndex], "=")
-	if directionKeyValue[1] == "" {
-		fmt.Println("No direction provided. Usage: ", t.GetType().GetCommand())
+	start, found := parser.Get("start")
+	if !found {
+		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
 		return
 	}
 
-	limitArgIndex := slices.IndexFunc(args, func(arg string) bool {
-		return strings.HasPrefix(arg, "--limit=")
-	})
-	if limitArgIndex == -1 {
-		fmt.Println("No limit provided. Usage: ", t.GetType().GetCommand())
-		return
-	}
-	limitKeyValue := strings.Split(args[limitArgIndex], "=")
-	if limitKeyValue[1] == "" {
-		fmt.Println("No limit provided. Usage: ", t.GetType().GetCommand())
+	direction, found := parser.Get("direction")
+	if !found {
+		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
 		return
 	}
 
-	rangesArgIndex := slices.IndexFunc(args, func(arg string) bool {
-		return strings.HasPrefix(arg, "--ranges=")
-	})
-	ranges := ""
-	if rangesArgIndex > -1 {
-		rangesKeyValue := strings.Split(args[rangesArgIndex], "=")
-		if rangesKeyValue[1] == "" {
-			fmt.Println("No ranges provided. Usage: ", t.GetType().GetCommand())
-			return
-		}
-		ranges = rangesKeyValue[1]
+	limit, found := parser.Get("limit")
+	if !found {
+		limit = "25"
 	}
+	ranges, found := parser.Get("ranges")
 
-	index := indexKeyValue[1]
-	start := startKeyValue[1]
-	direction := directionKeyValue[1]
-	limit := limitKeyValue[1]
-
-	rangesQueryParam := ""
-	if rangesArgIndex > -1 {
-		rangesQueryParam = "&ranges=" + ranges
-	}
-
-	httpClient := client.NewHTTPClient(t.runner.GetHost(), t.runner.GetAuthKey())
-	uri := fmt.Sprintf("/graph/v3/databases/%s/tables/%s/edges/scan/%s?start=%s&direction=%s&limit=%s%s",
-		t.runner.GetCurrentDatabase(),
-		t.runner.GetCurrentTable(),
+	response := s.actionbaseClient.Scan(
+		s.runner.GetCurrentDatabase(),
+		s.runner.GetCurrentTable(),
 		index,
 		start,
 		direction,
 		limit,
-		rangesQueryParam,
+		&ranges,
 	)
 
-	responseString, err := httpClient.Get(uri)
-	if err != nil {
-		fmt.Printf("Failed to call tables: %s\n", err.Error())
+	if response == nil {
 		return
 	}
 
-	var response map[string]interface{}
-	if err := json.Unmarshal([]byte(responseString), &response); err != nil {
-		fmt.Printf("Failed to parse response: %s\n", err.Error())
-		return
-	}
-
-	edgesResponse, ok := response["edges"].([]interface{})
-	if !ok {
-		fmt.Println("Invalid response format")
-		return
-	}
-
-	edges := []map[string]interface{}{}
-	for idx, item := range edgesResponse {
-		edge, ok := item.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		property, ok := edge["properties"].(map[string]interface{})
-		if !ok {
-			continue
-		}
+	var results []map[string]interface{}
+	for idx, edge := range response.Edges {
+		property := edge.Properties
 
 		var properties []string
 		for key, value := range property {
@@ -162,19 +94,20 @@ func (t *ScanCommand) Execute(args []string) {
 
 		data := map[string]interface{}{
 			"#":          "[" + strconv.Itoa(idx+1) + "]",
-			"version":    util.ToString(edge["version"]),
-			"source":     util.ToString(edge["source"]),
-			"target":     util.ToString(edge["target"]),
+			"version":    util.ToString(edge.Version),
+			"source":     util.ToString(edge.Source),
+			"target":     util.ToString(edge.Target),
 			"properties": strings.Join(properties, "\n"),
 		}
 
-		edges = append(edges, data)
+		results = append(results, data)
 	}
 
 	columnOrder := []string{"#", "version", "source", "target", "properties"}
 
-	if len(edges) > 0 {
-		fmt.Println(util.PrettyPrintRowsWithOrder(edges, columnOrder))
+	if len(results) > 0 {
+		fmt.Printf("The %d edges found (offset: %s, hasNext: %t)\n", response.Count, response.Offset, response.HasNext)
+		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 		fmt.Println()
 		return
 	}
@@ -187,17 +120,15 @@ func (t *ScanCommand) Execute(args []string) {
 		"properties": "",
 	}
 
-	fmt.Println("No edges found")
+	fmt.Println("No results found")
 	fmt.Println(util.PrettyPrintWithOrder(emptyEdge, columnOrder))
 	fmt.Println()
 }
 
-// GetDescription returns the command description
-func (u *ScanCommand) GetDescription() string {
-	return "Query 'scan' to table"
+func (s *Scan) GetDescription() string {
+	return "Query 'scan' table"
 }
 
-// GetType returns the command type
-func (u *ScanCommand) GetType() CommandType {
-	return CommandTypeScan
+func (s *Scan) GetType() Type {
+	return TypeScan
 }

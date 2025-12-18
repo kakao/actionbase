@@ -3,30 +3,37 @@ package command
 import (
 	"fmt"
 
-	"github.com/kakao/actionbase/internal/metastore"
+	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/metastore"
+	"github.com/kakao/actionbase/internal/util"
 )
 
-// Show represents the show command
 type Show struct {
-	databaseCommand *metastore.DatabaseCommand
-	tableCommand    *metastore.TableCommand
+	runner           ShowRunner
+	actionbaseClient *client.ActionbaseClient
+	databaseCommand  *metastore.Database
+	storageCommand   *metastore.Storage
+	tableCommand     *metastore.Table
+	aliasCommand     *metastore.Alias
 }
 
-// ShowRunner defines the interface for show command runner
 type ShowRunner interface {
-	GetHost() string
-	GetAuthKey() string
 	GetCurrentDatabase() string
 	GetCurrentTable() string
+	GetCurrentAlias() string
 	SetCurrentDatabase(database string)
 	SetCurrentTable(table string)
+	SetCurrentAlias(alias string)
 }
 
-// NewShow creates a new Show command
-func NewShow(runner ShowRunner) *Show {
+func NewShow(runner ShowRunner, actionbaseClient *client.ActionbaseClient) *Show {
 	return &Show{
-		databaseCommand: metastore.NewDatabaseCommand(runner),
-		tableCommand:    metastore.NewTableCommand(runner),
+		runner:           runner,
+		actionbaseClient: actionbaseClient,
+		databaseCommand:  metastore.NewDatabase(runner, actionbaseClient),
+		storageCommand:   metastore.NewStorage(runner, actionbaseClient),
+		tableCommand:     metastore.NewTable(runner, actionbaseClient),
+		aliasCommand:     metastore.NewAlias(runner, actionbaseClient),
 	}
 }
 
@@ -37,28 +44,104 @@ func (s *Show) Execute(args []string) {
 		return
 	}
 
-	commandType := args[0]
-
-	switch commandType {
+	resourceType := args[0]
+	switch resourceType {
 	case "databases":
 		s.databaseCommand.ShowAll()
+	case "storages":
+		s.storageCommand.ShowAll()
+	case "aliases":
+		s.aliasCommand.ShowAll()
 	case "tables":
 		s.tableCommand.ShowAll()
 	case "indices":
-		s.tableCommand.ShowIndices()
+		s.showIndices(args)
 	case "groups":
-		s.tableCommand.ShowGroups()
+		s.showGroups(args)
 	default:
 		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
 	}
 }
 
-// GetDescription returns the command description
+func (s *Show) showIndices(args []string) {
+	parser := util.ParseArgs(args)
+	using, found := parser.Get("using")
+	if !found {
+		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
+		return
+	}
+
+	table, found := parser.Get("table")
+	if found {
+		s.tableCommand.ShowIndices(table)
+		return
+	}
+
+	if using == "table" {
+		table := s.runner.GetCurrentTable()
+		if table == "" {
+			fmt.Println("No table selected. Use 'use <table|alias> <name>'")
+			return
+		}
+		s.tableCommand.ShowIndices(table)
+		return
+	}
+
+	if using == "alias" {
+		alias := s.runner.GetCurrentAlias()
+		if alias == "" {
+			fmt.Println("No alias selected. Use 'use alias <name>'")
+			return
+		}
+		s.tableCommand.ShowIndices(s.runner.GetCurrentTable())
+		return
+	}
+
+	fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
+}
+
+func (s *Show) showGroups(args []string) {
+	parser := util.ParseArgs(args)
+	using, found := parser.Get("using")
+	if !found {
+		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
+		return
+	}
+
+	table, found := parser.Get("table")
+	if found {
+		s.tableCommand.ShowGroups(table)
+		return
+	}
+
+	if using == "table" {
+		table := s.runner.GetCurrentTable()
+		if table == "" {
+			fmt.Printf("No table selected. Use 'use <table|alias> <name>'\n")
+			return
+		}
+		s.tableCommand.ShowGroups(table)
+		return
+	}
+
+	if using == "alias" {
+		alias := s.runner.GetCurrentAlias()
+		if alias == "" {
+			fmt.Println("No alias selected. Use 'use alias <name>'")
+			return
+		}
+		fmt.Println(alias)
+		s.tableCommand.ShowGroups(s.runner.GetCurrentTable())
+		return
+	}
+
+	fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
+}
+
 func (s *Show) GetDescription() string {
 	return "Show databases, tables, table indices, or table groups"
 }
 
-// GetType returns the command type
-func (s *Show) GetType() CommandType {
-	return CommandTypeShow
+func (s *Show) GetType() Type {
+	return TypeShow
 }

@@ -6,30 +6,29 @@ import (
 	"time"
 
 	"github.com/kakao/actionbase/internal/runner"
+	"github.com/kakao/actionbase/internal/util"
 )
 
 func main() {
-	if len(os.Args) != 5 {
-		fmt.Println("Use --host <host> --authKey <authKey>")
+	args := os.Args
+
+	if len(args) > 5 {
+		fmt.Println("Use --host <host> [--authKey <authKey>]")
 		return
 	}
 
-	if os.Args[1] != "--host" {
-		fmt.Printf("Invalid argument: %s\n", os.Args[1])
+	parser := util.ParseArgs(args)
+
+	host, found := parser.Get("host")
+	if !found {
+		fmt.Println("Use --host <host> [--authKey <authKey>]")
 		return
 	}
 
-	if os.Args[3] != "--authKey" {
-		fmt.Printf("Invalid argument: %s\n", os.Args[3])
-		return
-	}
+	authKey, _ := parser.Get("authKey")
+	console := runner.NewActionbaseCommandLineRunner(host, &authKey)
 
 	start := time.Now()
-
-	host := os.Args[2]
-	authKey := os.Args[4]
-
-	console := runner.NewActionbaseCommandLineRunner(host, authKey)
 
 	console.CheckConnection()
 	console.ShowBanner()

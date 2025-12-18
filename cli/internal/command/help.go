@@ -6,24 +6,20 @@ import (
 	"github.com/kakao/actionbase/internal/util"
 )
 
-// Help represents the help command
 type Help struct {
-	runner CommandRunner
+	runner HelpRunner
 }
 
-// CommandRunner interface defines methods needed by help command
-type CommandRunner interface {
+type HelpRunner interface {
 	GetCommands() map[string]Command
 }
 
-// NewHelp creates a new Help command
-func NewHelp(runner CommandRunner) *Help {
+func NewHelp(runner HelpRunner) *Help {
 	return &Help{runner: runner}
 }
 
-// Execute executes the help command
 func (h *Help) Execute(args []string) {
-	commands := []map[string]interface{}{}
+	var commands []map[string]interface{}
 
 	for name, cmd := range h.runner.GetCommands() {
 		help := map[string]interface{}{
@@ -42,12 +38,10 @@ func (h *Help) Execute(args []string) {
 	fmt.Println()
 }
 
-// GetDescription returns the command description
 func (h *Help) GetDescription() string {
 	return "Show available commands"
 }
 
-// GetType returns the command type
-func (h *Help) GetType() CommandType {
-	return CommandTypeHelp
+func (h *Help) GetType() Type {
+	return TypeHelp
 }
