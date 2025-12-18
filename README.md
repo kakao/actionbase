@@ -1,24 +1,32 @@
 # Actionbase
 
-Actionbase is a high-performance graph database for processing large-scale user activity data. It is production-proven, serving tens of millions of users in [Kakao](/about-kakao).
+## Overview
 
-## What is Actionbase?
+Actionbase is an OLTP-based activity data serving engine used widely within Kakao services.
+It stores and retrieves user actions—such as likes, views, and recently viewed items—with low latency,
+and powers activity-driven features including recommendations, feeds, and timelines.
 
-Actionbase is an OLTP (Online Transaction Processing) system that uses a graph data model, specifically designed for processing large-scale user activity data. It efficiently stores and queries user activity data at scale, providing a generalized interface built on top of storage backends like HBase. Actionbase provides REST API for easy integration with your applications.
+To model activity data intuitively, Actionbase uses a property graph data model—focused
+not on general-purpose graph processing, but on expressing how users interact with content, services, and each other.
+
+Built on top of HBase, Actionbase inherits its strengths in scalability, fault
+tolerance, and large-volume data handling. Combined with write-time indexing and
+predictable read patterns, it delivers reliable performance at multi-terabyte
+scale for tens of millions of users.
 
 ### Project Goals
 
-- **Real-time Serving**: Low-latency responses under 10ms for read traffic
-- **Large-scale Traffic Processing**: Handling hundreds of thousands of requests per second (RPS)
-- **Massive Data Management**: Storage and management of millions of TB of data
-- **Flexible Scalability**: Responding to service growth through horizontal scaling
+- **Real-time Serving**: Sub-10ms latency for most read operations
+- **High Throughput**: Supports hundreds of thousands of requests per second (RPS)
+- **Massive Data Handling**: Efficient management of multi-TB datasets
+- **Horizontal Scalability**: Scales out seamlessly with service growth
 
 ### Key Features
 
-- **Write-time Optimization**: Pre-computes indexes and counters during writes for ultra-fast reads
-- **Property Graph Model**: Supports standard property graph data model with flexible schema
-- **Easy Integration**: REST API and client libraries for seamless integration with your applications
-- **Lambda Architecture Support**: Provides bulk loading, asynchronous processing, and data pipeline capabilities
+- **Write-time Optimization**: Pre-computed indexes and counters for ultra-fast reads
+- **Property Graph Model**: Naturally represents user activities and relationships
+- **Easy Integration**: REST API for simple and seamless integration
+- **Lambda Architecture Support**: Bulk loading, asynchronous processing, and data pipeline capabilities
 
 ## Architecture
 
@@ -38,21 +46,22 @@ Actionbase is built with a modular architecture:
   - Kotlin, Spring WebFlux
   - Asynchronous API processing
 
-- **pipeline**: Data processing *(Coming soon)*
+- **pipeline**: Data processing *()*
   - Scala (Java 8), Apache Spark
   - Async Processing, Bulk loading, backup, and real-time ETL
 
 ### Datastore
 
-Actionbase currently uses HBase as its storage layer, chosen for its reliability and scalability. Future releases will support additional storage backends including SlateDB.
+Actionbase currently uses HBase as its primary storage backend due to its
+reliability and horizontal scalability. Additional storage backends, such as
+SlateDB, are planned for future releases.
 
 ## Production Usage
 
-Actionbase powers several major [Kakao](/about-kakao) services including KakaoTalk and KakaoShopping, serving tens of millions of users with real-time activity data processing.
-
-**Production Performance:**
-- Read latency: <5ms (p99)
-- Data scale: Multiple TB-scale deployments
+Actionbase is deployed in KakaoTalk and KakaoShopping, powering real-time
+activity data processing for tens of millions of users. It has been in stable
+production for years, delivering predictable read performance, consistent write
+throughput, and robust multi-terabyte data management.
 
 ## Learn More
 
@@ -71,7 +80,8 @@ For more information, please visit our [Community](https://actionbase.dev/commun
 
 ## Current Status
 
-This project is in the initial open source preparation phase. Internal components will be released progressively.
+This project is in the initial open-source preparation phase. Internal components
+will be released progressively.
 
 ## License
 
