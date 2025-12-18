@@ -56,7 +56,6 @@ db
 
 node_modules
 .yarn
-package-lock.json
 
 .eslintcache
 
