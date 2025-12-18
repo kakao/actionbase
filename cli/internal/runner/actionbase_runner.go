@@ -22,9 +22,11 @@ type ActionbaseCommandLineRunner struct {
 // NewActionbaseCommandLineRunner creates a new ActionbaseCommandLineRunner instance
 func NewActionbaseCommandLineRunner(host string, authKey *string) *ActionbaseCommandLineRunner {
 	clientContext := client.Context{IsDebuggingEnabled: false}
+	httpClient := client.NewHTTPClient(host, authKey, &clientContext)
+
 	runner := &ActionbaseCommandLineRunner{
 		CommandLineRunner: NewCommandLineRunner("Actionbase", "0.0.1"),
-		client:            client.NewActionbaseClient(client.NewHTTPClient(host, authKey, &clientContext)),
+		client:            client.NewActionbaseClient(httpClient, &clientContext),
 		clientContext:     &clientContext,
 		currentDatabase:   "",
 		currentAlias:      "",

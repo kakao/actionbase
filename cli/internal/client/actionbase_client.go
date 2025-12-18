@@ -9,31 +9,26 @@ import (
 )
 
 type ActionbaseClient struct {
-	client *HTTPClient
+	client  *HTTPClient
+	context *Context
 }
 
-func NewActionbaseClient(client *HTTPClient) *ActionbaseClient {
-	return &ActionbaseClient{
-		client: client,
-	}
+func NewActionbaseClient(client *HTTPClient, context *Context) *ActionbaseClient {
+	return &ActionbaseClient{client: client, context: context}
 }
 
 func (a *ActionbaseClient) CreateStorage(name string, requestBody *model.StorageCreateRequest) *model.DdlStatus[model.StorageEntity] {
 	clientResponse := Post(fmt.Sprintf("/graph/v2/storage/%s", name), requestBody, a.client)
 
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to create storage '%s': %s\n", name, clientResponse.Error.Error())
 		return nil
 	}
 
 	var ddlStatus model.DdlStatus[model.StorageEntity]
-	if err := json.Unmarshal([]byte(clientResponse.Body), &clientResponse); err != nil {
-		fmt.Printf("Failed to parse clientResponse: %s\n", err.Error())
-		return nil
-	}
-
-	if ddlStatus.Status == "ERROR" {
-		fmt.Printf("Failed to create storage '%s': %s\n", name, *ddlStatus.Message)
+	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlStatus); err != nil {
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -48,13 +43,10 @@ func (a *ActionbaseClient) CreateDatabase(name string, requestBody *model.Databa
 	}
 
 	var ddlStatus model.DdlStatus[model.DatabaseEntity]
-	if err := json.Unmarshal([]byte(clientResponse.Body), &clientResponse); err != nil {
-		fmt.Printf("Failed to parse clientResponse: %s\n", err.Error())
-		return nil
-	}
-
-	if ddlStatus.Status == "ERROR" {
-		fmt.Printf("Failed to create database '%s': %s\n", name, *ddlStatus.Message)
+	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlStatus); err != nil {
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -74,13 +66,10 @@ func (a *ActionbaseClient) CreateTable(
 	}
 
 	var ddlStatus model.DdlStatus[model.TableEntity]
-	if err := json.Unmarshal([]byte(clientResponse.Body), &clientResponse); err != nil {
-		fmt.Printf("Failed to parse clientResponse: %s\n", err.Error())
-		return nil
-	}
-
-	if ddlStatus.Status == "ERROR" {
-		fmt.Printf("Failed to create table '%s': %s\n", name, *ddlStatus.Message)
+	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlStatus); err != nil {
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -102,12 +91,9 @@ func (a *ActionbaseClient) CreateAlias(database string, table string, name strin
 
 	var ddlStatus model.DdlStatus[model.AliasEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlStatus); err != nil {
-		fmt.Printf("Failed to parse clientResponse: %s\n", err.Error())
-		return nil
-	}
-
-	if ddlStatus.Status == "ERROR" {
-		fmt.Printf("Failed to create alias '%s': %s\n", name, *ddlStatus.Message)
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -121,13 +107,14 @@ func (a *ActionbaseClient) GetTenant() *Response {
 func (a *ActionbaseClient) GetDatabases() *model.DdlPage[model.DatabaseEntity] {
 	clientResponse := a.client.Get(fmt.Sprintf("/graph/v2/service"))
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to get databases: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var ddlPage model.DdlPage[model.DatabaseEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlPage); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -137,13 +124,15 @@ func (a *ActionbaseClient) GetDatabases() *model.DdlPage[model.DatabaseEntity] {
 func (a *ActionbaseClient) GetDatabase(name string) *model.DatabaseEntity {
 	clientResponse := a.client.Get(fmt.Sprintf("/graph/v2/service/%s", name))
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to get database: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var database model.DatabaseEntity
 	if err := json.Unmarshal([]byte(clientResponse.Body), &database); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
+		return nil
 	}
 
 	return &database
@@ -152,13 +141,14 @@ func (a *ActionbaseClient) GetDatabase(name string) *model.DatabaseEntity {
 func (a *ActionbaseClient) GetStorages() *model.DdlPage[model.StorageEntity] {
 	clientResponse := a.client.Get(fmt.Sprintf("/graph/v2/storage"))
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to get storages: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var ddlPage model.DdlPage[model.StorageEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlPage); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -168,13 +158,14 @@ func (a *ActionbaseClient) GetStorages() *model.DdlPage[model.StorageEntity] {
 func (a *ActionbaseClient) GetTables(database string) *model.DdlPage[model.TableEntity] {
 	clientResponse := a.client.Get(fmt.Sprintf("/graph/v2/service/%s/label", database))
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to get tables: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var ddlPage model.DdlPage[model.TableEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlPage); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -184,13 +175,15 @@ func (a *ActionbaseClient) GetTables(database string) *model.DdlPage[model.Table
 func (a *ActionbaseClient) GetTable(database, table string) *model.TableEntity {
 	clientResponse := a.client.Get(fmt.Sprintf("/graph/v2/service/%s/label/%s", database, table))
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to get table: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var tableEntity model.TableEntity
 	if err := json.Unmarshal([]byte(clientResponse.Body), &tableEntity); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
+		return nil
 	}
 
 	return &tableEntity
@@ -199,13 +192,14 @@ func (a *ActionbaseClient) GetTable(database, table string) *model.TableEntity {
 func (a *ActionbaseClient) GetAliases(database string) *model.DdlPage[model.AliasEntity] {
 	clientResponse := a.client.Get(fmt.Sprintf("/graph/v2/service/%s/alias", database))
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to get aliases: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var ddlPage model.DdlPage[model.AliasEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlPage); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -217,13 +211,15 @@ func (a *ActionbaseClient) GetAlias(database, name string) *model.AliasEntity {
 		database,
 		name))
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to get alias: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var alias model.AliasEntity
 	if err := json.Unmarshal([]byte(clientResponse.Body), &alias); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
+		return nil
 	}
 
 	return &alias
@@ -240,13 +236,14 @@ func (a *ActionbaseClient) Get(
 	)
 
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to call get: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var get model.Get
 	if err := json.Unmarshal([]byte(clientResponse.Body), &get); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -264,13 +261,14 @@ func (a *ActionbaseClient) Counts(
 	)
 
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to call counts: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var counts model.Counts
 	if err := json.Unmarshal([]byte(clientResponse.Body), &counts); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -298,13 +296,14 @@ func (a *ActionbaseClient) Scan(
 	clientResponse := a.client.Get(uriBuilder.String())
 
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to call scan: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var scan model.Scan
 	if err := json.Unmarshal([]byte(clientResponse.Body), &scan); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
@@ -322,13 +321,14 @@ func (a *ActionbaseClient) Mutate(
 		a.client,
 	)
 	if clientResponse.Error != nil {
-		fmt.Printf("Failed to mutate edge: %s\n", clientResponse.Error.Error())
 		return nil
 	}
 
 	var mutation model.Mutation
 	if err := json.Unmarshal([]byte(clientResponse.Body), &mutation); err != nil {
-		fmt.Printf("Failed to parse responseBody: %s\n", err.Error())
+		if a.context.IsDebuggingEnabled {
+			fmt.Printf("Failed to parse response: %s\n", err.Error())
+		}
 		return nil
 	}
 
