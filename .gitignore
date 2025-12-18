@@ -1,100 +1,49 @@
-HELP.md
-.gradle
-build/
-!**/dev-bundle/webapp/VAADIN/build
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**
-!**/src/test/**
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-out/
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-### VS Code ###
-.vscode/
-
-# The following files are generated/updated by vaadin-gradle-plugin
-node_modules/
-webpack.generated.js
-target
-out
-pnpmfile.js
-.npmrc
-**/src/main/frontend/generated/
-
-**/bin
-
-db
-
+# OS / Editors
 .DS_Store
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.iml
-*.code-workspace
-.changelog
-.history
+.idea/
+.vscode/
+.env
+*.env
 
-node_modules
-.yarn
-package-lock.json
+# Java / Kotlin
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
+.kotlin/
 
-.eslintcache
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+go.work
+go.work.sum
 
-yarn-error.log
-website/build
-coverage
-.docusaurus
-.cache-loader
-types
-test-website
-test-website-in-workspace
+# Gradle (multi-module)
+.gradle/
+*/build/
+!*/src/*/build/
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+gradle-app.setting
+.gradletasknamecache
 
-packages/create-docusaurus/lib/
-packages/lqip-loader/lib/
-packages/docusaurus/lib/
-packages/docusaurus-*/lib/*
-packages/eslint-plugin/lib/
-packages/stylelint-copyright/lib/
-
-website/netlifyDeployPreview/*
-website/changelog
-!website/netlifyDeployPreview/index.html
-!website/netlifyDeployPreview/_redirects
-
-website/_dogfooding/_swizzle_theme_tests
-
-CrowdinTranslations_*.zip
-
-website/.cpu-prof
-
-website/i18n/**/*
-#!website/i18n/fr
-#!website/i18n/fr/**/*
-
-.netlify
-
-website/rspack-tracing.json
-website/rspack-tracing.pftrace
-website/bundler-cpu-profile.json
-website/profile.json.gz
-
+# Eclipse
+.project
+.classpath
