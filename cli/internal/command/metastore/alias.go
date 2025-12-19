@@ -130,13 +130,15 @@ func (a *Alias) Desc(name string) {
 		"type": schema.Src.Type,
 		"desc": schema.Src.Desc,
 	}
+	fmt.Println()
 	fmt.Println("[Source]")
 	fmt.Println(util.PrettyPrintWithOrder(source, schemaColumnOrder))
 
 	target := map[string]interface{}{
 		"type": schema.Tgt.Type,
-		"desc": schema.Tgt.Desc,
+		"desc": *schema.Tgt.Desc,
 	}
+	fmt.Println()
 	fmt.Println("[Target]")
 	fmt.Println(util.PrettyPrintWithOrder(target, schemaColumnOrder))
 
@@ -146,10 +148,10 @@ func (a *Alias) Desc(name string) {
 			fields,
 			map[string]interface{}{
 				"#":        strconv.Itoa(idx + 1),
-				"name":     field.Name,
+				"name":     *field.Name,
 				"type":     field.Type,
 				"nullable": field.Nullable,
-				"desc":     field.Desc,
+				"desc":     *field.Desc,
 			})
 	}
 
