@@ -130,7 +130,6 @@ func (s *Show) showGroups(args []string) {
 			fmt.Println("No alias selected. Use 'use alias <name>'")
 			return
 		}
-		fmt.Println(alias)
 		s.tableCommand.ShowGroups(s.runner.GetCurrentTable())
 		return
 	}
