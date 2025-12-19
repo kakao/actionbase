@@ -24,7 +24,6 @@ func NewResponse[T any](statusCode int, body T, error error) *Response[T] {
 	return &Response[T]{StatusCode: statusCode, Body: body, Error: error}
 }
 
-// HTTPClient represents an HTTP client for Actionbase API
 type HTTPClient struct {
 	baseUrl string
 	authKey *string
@@ -32,7 +31,6 @@ type HTTPClient struct {
 	context *Context
 }
 
-// NewHTTPClient creates a new HTTP client instance
 func NewHTTPClient(baseUrl string, authKey *string, context *Context) *HTTPClient {
 	return &HTTPClient{
 		baseUrl: baseUrl,
