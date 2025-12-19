@@ -1,18 +1,21 @@
 # Actionbase
 
+Actionbase is a system for storing and serving user activity data in real time.
+
 ## Overview
 
-Actionbase is an OLTP-based activity data serving engine used widely within Kakao services.
-It stores and retrieves user actions—such as likes, views, and recently viewed items—with low latency,
-and powers activity-driven features including recommendations, feeds, and timelines.
+Actionbase is built for high-throughput, low-latency workloads where user
+activity is continuously written and queried. It supports patterns such as
+recent views, likes and reactions, follows, and real-time behavioral signals
+used across product listings, recommendations, feeds, and other activity-driven
+surfaces in large-scale Kakao services.
 
-To model activity data intuitively, Actionbase uses a property graph data model—focused
-not on general-purpose graph processing, but on expressing how users interact with content, services, and each other.
+User activity forms actor→target relationships with interaction properties.
+Actionbase models them as a graph and creates read-optimized structures at write
+time for fast, predictable queries.
 
-Built on top of HBase, Actionbase inherits its strengths in scalability, fault
-tolerance, and large-volume data handling. Combined with write-time indexing and
-predictable read patterns, it delivers reliable performance at multi-terabyte
-scale for tens of millions of users.
+Built on HBase, it provides strong durability and horizontal scalability while
+offering a high-level abstraction tailored for real-time activity serving.
 
 ### Project Goals
 
