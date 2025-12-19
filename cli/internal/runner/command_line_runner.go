@@ -2,29 +2,18 @@ package runner
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
-	"io"
+	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/chzyer/readline"
 	"github.com/kakao/actionbase/internal/command"
-	"github.com/peterh/liner"
 )
 
 const (
-	historyFileName = ".curl_repl_history"
-
-	defaultPrompt = "> "
-
-	singleQuote        = '\''
-	doubleQuote        = '"'
-	leftCurlyBrace     = '{'
-	rightCurlyBrace    = '}'
-	leftSquareBracket  = '['
-	rightSquareBracket = ']'
+	defaultPrompt = ">"
 )
 
 type CommandLineRunner struct {
@@ -64,31 +53,53 @@ func (r *CommandLineRunner) SetRunning(running bool) {
 }
 
 func (r *CommandLineRunner) BuildPrompt() string {
-	return fmt.Sprintf("%s%s", strings.ToLower(r.name), defaultPrompt)
+	return strings.ToLower(r.name)
 }
 
 func (r *ActionbaseCommandLineRunner) Run() {
-	state := liner.NewLiner()
-	defer func(l *liner.State) {
-		err := l.Close()
-		if err != nil {
-		}
-	}(state)
-	state.SetCtrlCAborts(true)
-
-	if f, err := os.Open(historyPath()); err == nil {
-		_, _ = state.ReadHistory(f)
-		err := f.Close()
-		if err != nil {
-			return
-		}
+	rl, err := readline.New(defaultPrompt + " ")
+	if err != nil {
+		log.Fatal(err)
 	}
+	defer func(rl *readline.Instance) {
+		err := rl.Close()
+		if err != nil {
+		}
+	}(rl)
 
-	r.readLines(state)
+	for {
+		var buffer []string
+		rl.SetPrompt(fmt.Sprintf("\033[34m%s%s \033[0m", r.BuildPrompt(), defaultPrompt))
+		for {
+			line, err := rl.Readline()
+			if err != nil {
+				fmt.Println("\nBye!")
+				return
+			}
+
+			trimmed := strings.TrimSpace(line)
+			if strings.HasSuffix(trimmed, "\\") {
+				buffer = append(buffer, trimmed[:len(trimmed)-1])
+				rl.SetPrompt("")
+				continue
+			}
+
+			buffer = append(buffer, line)
+
+			if isOpenString(buffer) {
+				rl.SetPrompt("")
+				continue
+			}
+
+			break
+		}
+
+		r.runCommand(strings.Join(buffer, "\n"))
+	}
 }
 
-func (r *ActionbaseCommandLineRunner) runCommand(finalInput string) {
-	parts := r.parseCommand(finalInput)
+func (r *ActionbaseCommandLineRunner) runCommand(input string) {
+	parts := r.parseCommand(input)
 	cmdName := parts[0]
 	var args []string
 	if len(parts) > 1 {
@@ -100,81 +111,7 @@ func (r *ActionbaseCommandLineRunner) runCommand(finalInput string) {
 	r.executeCommand(cmdName, args)
 
 	elapsed := time.Since(start)
-	fmt.Printf("Took %.4f seconds\n", elapsed.Seconds())
-}
-
-func (r *ActionbaseCommandLineRunner) readLines(state *liner.State) {
-	for {
-		var b strings.Builder
-		currPrompt := r.BuildPrompt()
-
-		for {
-			line, err := state.Prompt(currPrompt)
-			if errors.Is(err, liner.ErrPromptAborted) {
-				fmt.Println("\n^C")
-				writeHistory(state)
-				os.Exit(0)
-			}
-			if err == io.EOF {
-				fmt.Println()
-				writeHistory(state)
-				return
-			}
-
-			trimmed := strings.TrimSpace(line)
-			if trimmed == "exit" {
-				writeHistory(state)
-				fmt.Println("Bye!")
-				return
-			}
-
-			// multiline: backslash ending
-			if strings.HasSuffix(line, "\\") && !strings.HasSuffix(line, "\\\\") {
-				line = line[:len(line)-1]
-				b.WriteString(line)
-				b.WriteString("\n")
-				currPrompt = ""
-				continue
-			}
-
-			b.WriteString(line)
-			b.WriteString("\n")
-
-			// analyze unbalanced quotes or json
-			inS, inD, jsonUnbalanced := analyzeBuffer(b.String())
-			if jsonUnbalanced {
-				if !inS && !inD {
-					currPrompt = ""
-				} else {
-					currPrompt = ""
-					continue
-				}
-			} else if inS {
-				currPrompt = ""
-				continue
-			} else if inD {
-				currPrompt = ""
-				continue
-			}
-
-			break
-		}
-
-		entry := strings.TrimSuffix(b.String(), "\n")
-		if strings.TrimSpace(entry) == "" {
-			continue
-		}
-
-		scanner := bufio.NewScanner(strings.NewReader(entry))
-		input := ""
-		for scanner.Scan() {
-			input += scanner.Text()
-		}
-
-		state.AppendHistory(entry)
-
-		r.runCommand(input)
-	}
+	fmt.Printf("\033[90m(Took %.4f seconds)\n\n\033[0m", elapsed.Seconds())
 }
 
 func (r *CommandLineRunner) parseCommand(line string) []string {
@@ -197,59 +134,9 @@ func (r *CommandLineRunner) executeCommand(cmdName string, args []string) {
 	}
 }
 
-func historyPath() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return historyFileName
-	}
-	return filepath.Join(home, historyFileName)
-}
-
-func analyzeBuffer(s string) (inSingle, inDouble bool, jsonUnbalanced bool) {
-	inSingle = false
-	inDouble = false
-	escaped := false
-
-	braces := 0
-	brackets := 0
-
-	for _, r := range s {
-		if r == '\\' && !escaped {
-			escaped = true
-			continue
-		}
-
-		if r == singleQuote && !escaped && !inDouble {
-			inSingle = !inSingle
-		}
-
-		if r == doubleQuote && !escaped && !inSingle {
-			inDouble = !inDouble
-		}
-
-		switch r {
-		case leftCurlyBrace:
-			braces++
-		case rightCurlyBrace:
-			braces--
-		case leftSquareBracket:
-			brackets++
-		case rightSquareBracket:
-			brackets--
-		}
-		escaped = false
-	}
-
-	jsonUnbalanced = braces != 0
-	return
-}
-
-func writeHistory(l *liner.State) {
-	if f, err := os.Create(historyPath()); err == nil {
-		_, _ = l.WriteHistory(f)
-		err := f.Close()
-		if err != nil {
-			return
-		}
-	}
+func isOpenString(buffer []string) bool {
+	fullInput := strings.Join(buffer, "\n")
+	singleQuotes := strings.Count(fullInput, "'")
+	doubleQuotes := strings.Count(fullInput, `"`)
+	return singleQuotes%2 != 0 || doubleQuotes%2 != 0
 }

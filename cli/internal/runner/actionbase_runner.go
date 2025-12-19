@@ -91,23 +91,26 @@ func (r *ActionbaseCommandLineRunner) SetIsDebugEnabled(debugging bool) {
 
 func (r *ActionbaseCommandLineRunner) ShowBanner() {
 	separator := util.RepeatChar('=', 60)
+	fmt.Println()
 	fmt.Println(separator)
 	fmt.Println(r.name + " Console")
 	fmt.Println(separator)
+	fmt.Println()
 	fmt.Println("Type 'help' for available commands, 'exit' to quit.")
+	fmt.Println()
 }
 
 func (r *ActionbaseCommandLineRunner) BuildPrompt() string {
 	if r.currentAlias != "" {
-		return fmt.Sprintf("%s(%s:%s)> ", "actionbase", r.currentDatabase, r.currentAlias)
+		return fmt.Sprintf("%s(%s:%s)", "actionbase", r.currentDatabase, r.currentAlias)
 	}
 
 	if r.currentTable != "" {
-		return fmt.Sprintf("%s(%s:%s)> ", "actionbase", r.currentDatabase, r.currentTable)
+		return fmt.Sprintf("%s(%s:%s)", "actionbase", r.currentDatabase, r.currentTable)
 	}
 
 	if r.currentDatabase != "" {
-		return fmt.Sprintf("%s(%s)> ", "actionbase", r.currentDatabase)
+		return fmt.Sprintf("%s(%s)", "actionbase", r.currentDatabase)
 	}
 
 	return r.CommandLineRunner.BuildPrompt()
