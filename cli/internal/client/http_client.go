@@ -16,14 +16,15 @@ type Context struct {
 
 type Response[T any] struct {
 	StatusCode int
-	Body       T
+	Body       *T
 	Error      error
 }
 
-func NewResponse[T any](statusCode int, body T, error error) *Response[T] {
+func NewResponse[T any](statusCode int, body *T, error error) *Response[T] {
 	return &Response[T]{StatusCode: statusCode, Body: body, Error: error}
 }
 
+// HTTPClient represents an HTTP client for Actionbase API
 type HTTPClient struct {
 	baseUrl string
 	authKey *string
@@ -31,6 +32,7 @@ type HTTPClient struct {
 	context *Context
 }
 
+// NewHTTPClient creates a new HTTP client instance
 func NewHTTPClient(baseUrl string, authKey *string, context *Context) *HTTPClient {
 	return &HTTPClient{
 		baseUrl: baseUrl,
@@ -47,7 +49,7 @@ func Get[T any](c *HTTPClient, uri string) *Response[T] {
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		var nil T
-		return NewResponse[T](-1, nil, fmt.Errorf("failed to create request: %w", err))
+		return NewResponse[T](-1, &nil, fmt.Errorf("failed to create request: %w", err))
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -63,13 +65,13 @@ func Post[T any, R any](c *HTTPClient, uri string, requestBody T) *Response[R] {
 	jsonData, err := json.Marshal(requestBody)
 	if err != nil {
 		var nil R
-		return NewResponse[R](-1, nil, fmt.Errorf("failed to marshal request Body: %w", err))
+		return NewResponse[R](-1, &nil, fmt.Errorf("failed to marshal request Body: %w", err))
 	}
 
 	request, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		var nil R
-		return NewResponse[R](-1, nil, fmt.Errorf("failed to create request: %w", err))
+		return NewResponse[R](-1, &nil, fmt.Errorf("failed to create request: %w", err))
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -92,7 +94,7 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 	response, err := c.client.Do(request)
 	if err != nil {
 		var nil T
-		return NewResponse[T](-1, nil, fmt.Errorf("failed to execute request: %w", err))
+		return NewResponse[T](-1, &nil, fmt.Errorf("failed to execute request: %w", err))
 	}
 
 	statusCode := response.StatusCode
@@ -111,7 +113,7 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 
 	if err != nil {
 		var nil T
-		return NewResponse[T](-1, nil, fmt.Errorf("failed to read response Body: %w", err))
+		return NewResponse[T](-1, &nil, fmt.Errorf("failed to read response Body: %w", err))
 	}
 
 	var responseBody T
@@ -120,8 +122,8 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
 		var nil T
-		return NewResponse[T](-1, nil, fmt.Errorf("failed to read response Body: %w", err))
+		return NewResponse[T](-1, &nil, fmt.Errorf("failed to read response Body: %w", err))
 	}
 
-	return NewResponse(statusCode, responseBody, nil)
+	return NewResponse(statusCode, &responseBody, nil)
 }

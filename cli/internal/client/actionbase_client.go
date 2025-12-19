@@ -17,7 +17,7 @@ func NewActionbaseClient(client *HTTPClient, context *Context) *ActionbaseClient
 }
 
 func (a *ActionbaseClient) CreateStorage(name string, requestBody *model.StorageCreateRequest) *model.DdlStatus[model.StorageEntity] {
-	var clientResponse = Post[*model.StorageCreateRequest, *model.DdlStatus[model.StorageEntity]](a.client, fmt.Sprintf("/graph/v2/storage/%s", name), requestBody)
+	var clientResponse = Post[*model.StorageCreateRequest, model.DdlStatus[model.StorageEntity]](a.client, fmt.Sprintf("/graph/v2/storage/%s", name), requestBody)
 
 	if clientResponse.Error != nil {
 		return nil
@@ -27,7 +27,7 @@ func (a *ActionbaseClient) CreateStorage(name string, requestBody *model.Storage
 }
 
 func (a *ActionbaseClient) CreateDatabase(name string, requestBody *model.DatabaseCreateRequest) *model.DdlStatus[model.DatabaseEntity] {
-	clientResponse := Post[*model.DatabaseCreateRequest, *model.DdlStatus[model.DatabaseEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s", name), requestBody)
+	clientResponse := Post[*model.DatabaseCreateRequest, model.DdlStatus[model.DatabaseEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s", name), requestBody)
 	if clientResponse.Error != nil {
 		fmt.Printf("Failed to create database '%s': %s\n", name, clientResponse.Error.Error())
 		return nil
@@ -41,7 +41,7 @@ func (a *ActionbaseClient) CreateTable(
 	name string,
 	request *model.TableCreateRequest,
 ) *model.DdlStatus[model.TableEntity] {
-	clientResponse := Post[*model.TableCreateRequest, *model.DdlStatus[model.TableEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/label/%s", database, name), request)
+	clientResponse := Post[*model.TableCreateRequest, model.DdlStatus[model.TableEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/label/%s", database, name), request)
 
 	if clientResponse.Error != nil {
 		fmt.Printf("Failed to create table '%s': %s\n", name, clientResponse.Error.Error())
@@ -57,7 +57,7 @@ func (a *ActionbaseClient) CreateAlias(database string, table string, name strin
 		"desc":   comment,
 	}
 
-	clientResponse := Post[map[string]interface{}, *model.DdlStatus[model.AliasEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/alias/%s", database, name), requestBody)
+	clientResponse := Post[map[string]interface{}, model.DdlStatus[model.AliasEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/alias/%s", database, name), requestBody)
 
 	if clientResponse.Error != nil {
 		fmt.Printf("Failed to create alias '%s': %s\n", name, clientResponse.Error.Error())
@@ -68,12 +68,12 @@ func (a *ActionbaseClient) CreateAlias(database string, table string, name strin
 }
 
 func (a *ActionbaseClient) GetTenant() *model.Tenant {
-	clientResponse := Get[*model.Tenant](a.client, fmt.Sprintf("/graph/v3"))
+	clientResponse := Get[model.Tenant](a.client, fmt.Sprintf("/graph/v3"))
 	return clientResponse.Body
 }
 
 func (a *ActionbaseClient) GetDatabases() *model.DdlPage[model.DatabaseEntity] {
-	clientResponse := Get[*model.DdlPage[model.DatabaseEntity]](a.client, fmt.Sprintf("/graph/v2/service"))
+	clientResponse := Get[model.DdlPage[model.DatabaseEntity]](a.client, fmt.Sprintf("/graph/v2/service"))
 	if clientResponse.Error != nil {
 		return nil
 	}
@@ -82,7 +82,7 @@ func (a *ActionbaseClient) GetDatabases() *model.DdlPage[model.DatabaseEntity] {
 }
 
 func (a *ActionbaseClient) GetDatabase(name string) *model.DatabaseEntity {
-	clientResponse := Get[*model.DatabaseEntity](a.client, fmt.Sprintf("/graph/v2/service/%s", name))
+	clientResponse := Get[model.DatabaseEntity](a.client, fmt.Sprintf("/graph/v2/service/%s", name))
 	if clientResponse.Error != nil {
 		return nil
 	}
@@ -91,7 +91,7 @@ func (a *ActionbaseClient) GetDatabase(name string) *model.DatabaseEntity {
 }
 
 func (a *ActionbaseClient) GetStorages() *model.DdlPage[model.StorageEntity] {
-	clientResponse := Get[*model.DdlPage[model.StorageEntity]](a.client, fmt.Sprintf("/graph/v2/storage"))
+	clientResponse := Get[model.DdlPage[model.StorageEntity]](a.client, fmt.Sprintf("/graph/v2/storage"))
 	if clientResponse.Error != nil {
 		return nil
 	}
@@ -100,7 +100,7 @@ func (a *ActionbaseClient) GetStorages() *model.DdlPage[model.StorageEntity] {
 }
 
 func (a *ActionbaseClient) GetTables(database string) *model.DdlPage[model.TableEntity] {
-	clientResponse := Get[*model.DdlPage[model.TableEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/label", database))
+	clientResponse := Get[model.DdlPage[model.TableEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/label", database))
 	if clientResponse.Error != nil {
 		return nil
 	}
@@ -109,7 +109,7 @@ func (a *ActionbaseClient) GetTables(database string) *model.DdlPage[model.Table
 }
 
 func (a *ActionbaseClient) GetTable(database, table string) *model.TableEntity {
-	clientResponse := Get[*model.TableEntity](a.client, fmt.Sprintf("/graph/v2/service/%s/label/%s", database, table))
+	clientResponse := Get[model.TableEntity](a.client, fmt.Sprintf("/graph/v2/service/%s/label/%s", database, table))
 	if clientResponse.Error != nil {
 		return nil
 	}
@@ -118,7 +118,7 @@ func (a *ActionbaseClient) GetTable(database, table string) *model.TableEntity {
 }
 
 func (a *ActionbaseClient) GetAliases(database string) *model.DdlPage[model.AliasEntity] {
-	clientResponse := Get[*model.DdlPage[model.AliasEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/alias", database))
+	clientResponse := Get[model.DdlPage[model.AliasEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/alias", database))
 	if clientResponse.Error != nil {
 		return nil
 	}
@@ -127,7 +127,7 @@ func (a *ActionbaseClient) GetAliases(database string) *model.DdlPage[model.Alia
 }
 
 func (a *ActionbaseClient) GetAlias(database, name string) *model.AliasEntity {
-	clientResponse := Get[*model.AliasEntity](a.client, fmt.Sprintf("/graph/v2/service/%s/alias/%s", database, name))
+	clientResponse := Get[model.AliasEntity](a.client, fmt.Sprintf("/graph/v2/service/%s/alias/%s", database, name))
 	if clientResponse.Error != nil {
 		return nil
 	}
@@ -137,7 +137,7 @@ func (a *ActionbaseClient) GetAlias(database, name string) *model.AliasEntity {
 
 func (a *ActionbaseClient) Get(
 	database, table, source, target string) *model.Get {
-	clientResponse := Get[*model.Get](
+	clientResponse := Get[model.Get](
 		a.client,
 		fmt.Sprintf(
 			"/graph/v3/databases/%s/tables/%s/edges/get?source=%s&target=%s",
@@ -156,7 +156,7 @@ func (a *ActionbaseClient) Get(
 
 func (a *ActionbaseClient) Counts(
 	database, table, start, direction string) *model.Counts {
-	clientResponse := Get[*model.Counts](a.client,
+	clientResponse := Get[model.Counts](a.client,
 		fmt.Sprintf("/graph/v3/databases/%s/tables/%s/edges/counts?start=%s&direction=%s",
 			database,
 			table,
@@ -189,7 +189,7 @@ func (a *ActionbaseClient) Scan(
 		uriBuilder.WriteString(fmt.Sprintf("&ranges=%s", *ranges))
 	}
 
-	clientResponse := Get[*model.Scan](a.client, uriBuilder.String())
+	clientResponse := Get[model.Scan](a.client, uriBuilder.String())
 
 	if clientResponse.Error != nil {
 		return nil
@@ -203,7 +203,7 @@ func (a *ActionbaseClient) Mutate(
 	table string,
 	request *model.EdgeBulkMutation,
 ) *model.Mutation {
-	clientResponse := Post[*model.EdgeBulkMutation, *model.Mutation](a.client,
+	clientResponse := Post[*model.EdgeBulkMutation, model.Mutation](a.client,
 		fmt.Sprintf("/graph/v3/databases/%s/tables/%s/edges", database, table),
 		request,
 	)
