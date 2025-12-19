@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/kakao/actionbase/internal/client"
-	"github.com/kakao/actionbase/internal/util"
 )
 
 type Context struct {
@@ -23,33 +22,42 @@ func NewContext(runner ContextRunner, actionbaseClient *client.ActionbaseClient)
 	return &Context{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (c *Context) Execute(args []string) {
-	database := c.runner.GetCurrentDatabase()
+func (c *Context) Execute(_ []string) {
+	PrintContext(
+		c.actionbaseClient.GetHost(),
+		c.runner.GetCurrentDatabase(),
+		c.runner.GetCurrentTable(),
+		c.runner.GetCurrentAlias(),
+		c.runner.IsDebugEnabled())
+}
+
+func PrintContext(host string, database string, table string, alias string, isDebugEnabled bool) {
 	if database == "" {
 		database = "-"
 	}
 
-	table := c.runner.GetCurrentTable()
 	if table == "" {
 		table = "-"
 	}
 
-	alias := c.runner.GetCurrentAlias()
 	if alias == "" {
 		alias = "-"
 	}
 
-	status := map[string]interface{}{
-		"host":             c.actionbaseClient.GetHost(),
-		"database":         database,
-		"table":            table,
-		"alias":            alias,
-		"is_debug_enabled": c.runner.IsDebugEnabled(),
+	debug := "on"
+	if !isDebugEnabled {
+		debug = "off"
 	}
 
-	fmt.Println()
-	columnOrder := []string{"host", "database", "table", "alias", "is_debug_enabled"}
-	fmt.Println(util.PrettyPrintRowsWithOrder([]map[string]interface{}{status}, columnOrder))
+	fmt.Println("\033[33m╭────────────────────────────────────────────────────────────────────────────────────────╮\033[0m")
+	fmt.Println("\033[33m│                                                                                        │\033[0m")
+	fmt.Printf("\033[33m│  host\033[0m %-80s \033[33m│\033[0m\n", host)
+	fmt.Printf("\033[33m│  database\033[0m %-76s \033[33m│\033[0m\n", database)
+	fmt.Printf("\033[33m│  table\033[0m %-79s \033[33m│\033[0m\n", table)
+	fmt.Printf("\033[33m│  alias\033[0m %-79s \033[33m│\033[0m\n", alias)
+	fmt.Printf("\033[33m│  debug\033[0m %-79s \033[33m│\033[0m\n", debug)
+	fmt.Println("\033[33m│                                                                                        │\033[0m")
+	fmt.Println("\033[33m╰────────────────────────────────────────────────────────────────────────────────────────╯\033[0m")
 }
 
 func (c *Context) GetDescription() string {

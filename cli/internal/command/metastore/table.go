@@ -42,7 +42,7 @@ func (t *Table) ShowAll() {
 	var results []map[string]interface{}
 	for idx, table := range content {
 		data := map[string]interface{}{
-			"#":      "[" + strconv.Itoa(idx+1) + "]",
+			"#":      strconv.Itoa(idx + 1),
 			"active": table.Active,
 			"name":   table.Name,
 			"desc":   table.Desc,
@@ -136,7 +136,7 @@ func (t *Table) Desc(name string) {
 	results := []map[string]interface{}{}
 	for idx, field := range fields {
 		data := map[string]interface{}{
-			"#":        "[" + strconv.Itoa(idx+1) + "]",
+			"#":        strconv.Itoa(idx + 1),
 			"name":     *field.Name,
 			"type":     field.Type,
 			"nullable": field.Nullable,
@@ -213,7 +213,7 @@ func (t *Table) showIndices(database string, table string) {
 		}
 
 		data := map[string]interface{}{
-			"#":              "[" + strconv.Itoa(idx+1) + "]",
+			"#":              strconv.Itoa(idx + 1),
 			"name":           index.Name,
 			"desc":           index.Desc,
 			"fields[].name":  name,
@@ -308,7 +308,7 @@ func (t *Table) showGroups(database string, table string) {
 		}
 
 		data := map[string]interface{}{
-			"#":                        "[" + strconv.Itoa(idx+1) + "]",
+			"#":                        strconv.Itoa(idx + 1),
 			"group":                    group.Group,
 			"type":                     group.Type,
 			"valueField":               group.ValueField,

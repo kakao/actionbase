@@ -107,7 +107,7 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 		}
 
 		data := map[string]interface{}{
-			"#":          "[" + strconv.Itoa(idx+1) + "]",
+			"#":          strconv.Itoa(idx + 1),
 			"version":    util.ToString(edge.Version),
 			"source":     util.ToString(edge.Source),
 			"target":     util.ToString(edge.Target),

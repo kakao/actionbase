@@ -39,7 +39,7 @@ func (d *Database) ShowAll() {
 	var results []map[string]interface{}
 	for idx, databaseEntity := range filtered {
 		data := map[string]interface{}{
-			"#":      "[" + strconv.Itoa(idx) + "]",
+			"#":      strconv.Itoa(idx + 1),
 			"name":   databaseEntity.Name,
 			"desc":   databaseEntity.Desc,
 			"active": databaseEntity.Active,

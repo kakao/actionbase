@@ -28,6 +28,5 @@ func main() {
 	console := runner.NewActionbaseCommandLineRunner(host, &authKey)
 
 	console.CheckConnection()
-	console.ShowBanner()
 	console.Run()
 }

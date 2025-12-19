@@ -75,7 +75,7 @@ func (c *Count) doCount(database string, table string, start string, direction s
 	var results []map[string]interface{}
 	for idx, count := range response.Body.Counts {
 		data := map[string]interface{}{
-			"#":         "[" + strconv.Itoa(idx+1) + "]",
+			"#":         strconv.Itoa(idx + 1),
 			"start":     util.ToString(count.Start),
 			"direction": util.ToString(count.Direction),
 			"count":     util.ToString(count.Count),

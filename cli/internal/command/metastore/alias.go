@@ -45,7 +45,7 @@ func (a *Alias) ShowAll() {
 	var aliases []map[string]interface{}
 	for idx, content := range aliasEntity.Content {
 		data := map[string]interface{}{
-			"#":      "[" + strconv.Itoa(idx+1) + "]",
+			"#":      strconv.Itoa(idx + 1),
 			"name":   content.Name,
 			"desc":   content.Desc,
 			"target": content.Target,
@@ -145,7 +145,7 @@ func (a *Alias) Desc(name string) {
 		fields = append(
 			fields,
 			map[string]interface{}{
-				"#":        "[" + strconv.Itoa(idx+1) + "]",
+				"#":        strconv.Itoa(idx + 1),
 				"name":     field.Name,
 				"type":     field.Type,
 				"nullable": field.Nullable,
