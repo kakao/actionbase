@@ -46,9 +46,11 @@ func (l *Load) Execute(args []string) {
 		return
 	}
 
-	file, err := os.Open(args[0])
+	path := args[0]
+	file, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Failed to open file: %s\n", path)
+		return
 	}
 	defer func(file *os.File) {
 		err := file.Close()

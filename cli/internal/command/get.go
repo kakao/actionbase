@@ -48,12 +48,22 @@ func (g *Get) Execute(args []string) {
 
 	table, found := parser.Get("table")
 	if found {
+		response := g.actionbaseClient.GetTable(database, table)
+		if response == nil {
+			fmt.Printf("No Table '%s' found in %s\n", table, database)
+			return
+		}
 		g.doExecute(database, table, source, target)
 		return
 	}
 
 	alias, found := parser.Get("alias")
 	if found {
+		response := g.actionbaseClient.GetAlias(database, alias)
+		if response == nil {
+			fmt.Printf("No Alias '%s' found in %s\n", alias, database)
+			return
+		}
 		g.doExecute(database, alias, source, target)
 		return
 	}

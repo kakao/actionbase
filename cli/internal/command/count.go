@@ -52,12 +52,22 @@ func (c *Count) Execute(args []string) {
 
 	table, found := parser.Get("table")
 	if found {
+		response := c.actionbaseClient.GetTable(database, table)
+		if response == nil {
+			fmt.Printf("No Table '%s' found in %s\n", table, database)
+			return
+		}
 		c.doCount(database, table, start, direction)
 		return
 	}
 
 	alias, found := parser.Get("alias")
 	if found {
+		response := c.actionbaseClient.GetAlias(database, alias)
+		if response == nil {
+			fmt.Printf("No Alias '%s' found in %s\n", alias, database)
+			return
+		}
 		c.doCount(database, alias, start, direction)
 		return
 	}
