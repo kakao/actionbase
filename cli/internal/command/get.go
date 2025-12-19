@@ -85,6 +85,7 @@ func (g *Get) doExecute(database, table, source, target string) {
 		target)
 
 	if response.IsError() {
+		fmt.Printf("Failed to get edge: [%s -> %s]\n", source, target)
 		return
 	}
 
@@ -111,22 +112,20 @@ func (g *Get) doExecute(database, table, source, target string) {
 
 	columnOrder := []string{"version", "source", "target", "properties"}
 
-	if len(results) > 0 {
-		fmt.Printf("The edge is found: [%s -> %s]\n", source, target)
-		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-		fmt.Println()
-		return
+	if len(results) == 0 {
+		emptyEdge := map[string]interface{}{
+			"version":    "",
+			"source":     "",
+			"target":     "",
+			"properties": "",
+		}
+
+		results = append(results, emptyEdge)
 	}
 
-	emptyEdge := map[string]interface{}{
-		"version":    "",
-		"source":     "",
-		"target":     "",
-		"properties": "",
-	}
-	fmt.Printf("No results found: [%s -> %s]\n", source, target)
-	fmt.Println(util.PrettyPrintWithOrder(emptyEdge, columnOrder))
 	fmt.Println()
+	fmt.Printf("The edge is found: [%s -> %s]\n", source, target)
+	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 }
 
 func (g *Get) GetDescription() string {
