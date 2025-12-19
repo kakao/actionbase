@@ -32,7 +32,7 @@ func (t *Table) ShowAll() {
 
 	response := t.actionbaseClient.GetTables(database)
 	if response.IsError() {
-		fmt.Println("Failed to get tables")
+		fmt.Printf("Failed to get tables in %s\n", database)
 		return
 	}
 
@@ -51,26 +51,23 @@ func (t *Table) ShowAll() {
 		results = append(results, data)
 	}
 
-	// Define column order explicitly
-	columnOrder := []string{"#", "active", "name", "desc", "type"}
-
-	if len(results) > 0 {
-		fmt.Printf("%v Tables in %s:\n", tableEntity.Count, database)
-		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-		fmt.Println()
-		return
+	if len(results) == 0 {
+		emptyTable := map[string]interface{}{
+			"#":      "",
+			"name":   "",
+			"desc":   "",
+			"target": "",
+			"active": "",
+		}
+		results = append(results, emptyTable)
 	}
 
-	emptyTable := map[string]interface{}{
-		"#":      "",
-		"name":   "",
-		"desc":   "",
-		"target": "",
-		"active": "",
-	}
-	fmt.Printf("0 Tables in %s:\n", database)
-	fmt.Println(util.PrettyPrintWithOrder(emptyTable, columnOrder))
 	fmt.Println()
+	fmt.Printf("%v Tables in database\n", tableEntity.Count)
+
+	columnOrder := []string{"#", "active", "name", "desc", "type"}
+	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+	return
 }
 
 func (t *Table) ShowIndices(name string) {
@@ -82,7 +79,7 @@ func (t *Table) ShowIndices(name string) {
 	t.showIndices(t.runner.GetCurrentDatabase(), name)
 }
 
-func (t *Table) ShowGroups(table string) {
+func (t *Table) ShowGroups() {
 	if t.runner.GetCurrentDatabase() == "" {
 		fmt.Println("No database selected. Use 'use database <name>'")
 		return
@@ -91,7 +88,6 @@ func (t *Table) ShowGroups(table string) {
 	t.showGroups(t.runner.GetCurrentDatabase(), t.runner.GetCurrentTable())
 }
 
-// Desc describes a table
 func (t *Table) Desc(name string) {
 	database := t.runner.GetCurrentDatabase()
 	if database == "" {
@@ -101,7 +97,7 @@ func (t *Table) Desc(name string) {
 
 	response := t.actionbaseClient.GetTable(database, name)
 	if response.IsError() {
-		fmt.Printf("Failed to get table '%s'\n", name)
+		fmt.Printf("Failed to get table '%s' in %s\n", name, database)
 		return
 	}
 
@@ -115,27 +111,26 @@ func (t *Table) Desc(name string) {
 		"readOnly": tableEntity.ReadOnly,
 		"mode":     tableEntity.Mode,
 	}
+	fmt.Println()
 	tableColumnOrder := []string{"name", "desc", "type", "dirType", "event", "readOnly", "mode"}
 	fmt.Println(util.PrettyPrintWithOrder(table, tableColumnOrder))
-	fmt.Println()
 
 	schema := tableEntity.Schema
-	srcTgtColumnOrder := []string{"type", "desc"}
+	schemaColumnOrder := []string{"type", "desc"}
 
 	source := map[string]interface{}{
 		"type": schema.Src.Type,
 		"desc": *schema.Src.Desc,
 	}
-	fmt.Println("\n>> Source")
-	fmt.Println(util.PrettyPrintWithOrder(source, srcTgtColumnOrder))
+	fmt.Println("\n[Source]")
+	fmt.Println(util.PrettyPrintWithOrder(source, schemaColumnOrder))
 
 	target := map[string]interface{}{
 		"type": schema.Tgt.Type,
 		"desc": *schema.Tgt.Desc,
 	}
-	fmt.Println("\n>> Target")
-	fmt.Println(util.PrettyPrintWithOrder(target, srcTgtColumnOrder))
-	fmt.Println()
+	fmt.Println("\n[Target]")
+	fmt.Println(util.PrettyPrintWithOrder(target, schemaColumnOrder))
 
 	fields := schema.Fields
 	results := []map[string]interface{}{}
@@ -150,28 +145,25 @@ func (t *Table) Desc(name string) {
 		results = append(results, data)
 	}
 
-	fieldColumnOrder := []string{"#", "name", "type", "nullable", "desc"}
-
-	if len(results) > 0 {
-		fmt.Printf(">> Fields (%d) :\n", len(results))
-		fmt.Println(util.PrettyPrintRowsWithOrder(results, fieldColumnOrder))
-		fmt.Println()
-		return
+	if len(results) == 0 {
+		emptyField := map[string]interface{}{
+			"#":        "",
+			"name":     "",
+			"type":     "",
+			"nullable": "",
+			"desc":     "",
+		}
+		results = append(results, emptyField)
 	}
 
-	emptyField := map[string]interface{}{
-		"#":        "",
-		"name":     "",
-		"type":     "",
-		"nullable": "",
-		"desc":     "",
-	}
-	fmt.Println(">> Fields (0) :")
-	fmt.Println(util.PrettyPrintWithOrder(emptyField, fieldColumnOrder))
 	fmt.Println()
+	fmt.Printf("[Fields (%d)]\n", len(results))
+
+	fieldColumnOrder := []string{"#", "name", "type", "nullable", "desc"}
+	fmt.Println(util.PrettyPrintRowsWithOrder(results, fieldColumnOrder))
+	return
 }
 
-// Use selects a table to use
 func (t *Table) Use(table string) {
 	database := t.runner.GetCurrentDatabase()
 	if database == "" {
@@ -230,24 +222,22 @@ func (t *Table) showIndices(database string, table string) {
 		results = append(results, data)
 	}
 
-	columnOrder := []string{"#", "name", "desc", "fields[].name", "fields[].order"}
+	if len(indices) == 0 {
+		emptyIndex := map[string]interface{}{
+			"#":              "",
+			"name":           "",
+			"desc":           "",
+			"fields[].name":  "",
+			"fields[].order": "",
+		}
+		results = append(results, emptyIndex)
+	}
 
-	if len(results) > 0 {
-		fmt.Printf("%d Indices in %s:\n", len(indices), table)
-		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-		fmt.Println()
-		return
-	}
-	emptyIndex := map[string]interface{}{
-		"#":              "",
-		"name":           "",
-		"desc":           "",
-		"fields[].name":  "",
-		"fields[].order": "",
-	}
-	fmt.Printf("0 Indices in %s:\n", table)
-	fmt.Println(util.PrettyPrintWithOrder(emptyIndex, columnOrder))
 	fmt.Println()
+	fmt.Printf("%d Indices in %s\n", len(indices), table)
+
+	columnOrder := []string{"#", "name", "desc", "fields[].name", "fields[].order"}
+	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 }
 
 func (t *Table) showGroups(database string, table string) {
@@ -317,9 +307,6 @@ func (t *Table) showGroups(database string, table string) {
 			}
 		}
 
-		// Convert ttl to string (avoid scientific notation)
-		ttl := fmt.Sprintf("%d", group.Ttl)
-
 		data := map[string]interface{}{
 			"#":                        "[" + strconv.Itoa(idx+1) + "]",
 			"group":                    group.Group,
@@ -327,7 +314,7 @@ func (t *Table) showGroups(database string, table string) {
 			"valueField":               group.ValueField,
 			"comment":                  group.Comment,
 			"directionType":            group.DirectionType,
-			"ttl":                      ttl,
+			"ttl":                      fmt.Sprintf("%d", group.Ttl),
 			"fields[].name":            fieldNames,
 			"fields[].bucket.type":     fieldBucketTypes,
 			"fields[].bucket.name":     fieldBucketNames,
@@ -338,18 +325,7 @@ func (t *Table) showGroups(database string, table string) {
 		results = append(results, data)
 	}
 
-	// Define column order explicitly
-	columnOrder := []string{
-		"#", "group", "type", "valueField", "comment", "directionType", "ttl",
-		"fields[].name", "fields[].bucket.type", "fields[].bucket.name",
-		"fields[].bucket.unit", "fields[].bucket.timezone", "fields[].bucket.format",
-	}
-
-	if len(results) > 0 {
-		fmt.Printf("%d Groups in %s:\n", len(groups), table)
-		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-		fmt.Println()
-	} else {
+	if len(groups) == 0 {
 		emptyGroup := map[string]interface{}{
 			"#":                        "",
 			"group":                    "",
@@ -365,8 +341,26 @@ func (t *Table) showGroups(database string, table string) {
 			"fields[].bucket.timezone": "",
 			"fields[].bucket.format":   "",
 		}
-		fmt.Printf("0 Groups in %s:\n", table)
-		fmt.Println(util.PrettyPrintWithOrder(emptyGroup, columnOrder))
-		fmt.Println()
+		results = append(results, emptyGroup)
 	}
+
+	fmt.Println()
+	fmt.Printf("%d Groups in %s\n", len(groups), table)
+
+	columnOrder := []string{
+		"#",
+		"group",
+		"type",
+		"valueField",
+		"comment",
+		"directionType",
+		"ttl",
+		"fields[].name",
+		"fields[].bucket.type",
+		"fields[].bucket.name",
+		"fields[].bucket.unit",
+		"fields[].bucket.timezone",
+		"fields[].bucket.format",
+	}
+	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 }
