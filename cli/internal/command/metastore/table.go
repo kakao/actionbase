@@ -119,14 +119,14 @@ func (t *Table) Desc(name string) {
 
 	source := map[string]interface{}{
 		"type": schema.Src.Type,
-		"desc": schema.Src.Desc,
+		"desc": *schema.Src.Desc,
 	}
 	fmt.Println("\n>> Source")
 	fmt.Println(util.PrettyPrintWithOrder(source, srcTgtColumnOrder))
 
 	target := map[string]interface{}{
 		"type": schema.Tgt.Type,
-		"desc": schema.Tgt.Desc,
+		"desc": *schema.Tgt.Desc,
 	}
 	fmt.Println("\n>> Target")
 	fmt.Println(util.PrettyPrintWithOrder(target, srcTgtColumnOrder))
@@ -137,10 +137,10 @@ func (t *Table) Desc(name string) {
 	for idx, field := range fields {
 		data := map[string]interface{}{
 			"#":        "[" + strconv.Itoa(idx+1) + "]",
-			"name":     field.Name,
+			"name":     *field.Name,
 			"type":     field.Type,
 			"nullable": field.Nullable,
-			"desc":     field.Desc,
+			"desc":     *field.Desc,
 		}
 		results = append(results, data)
 	}
