@@ -79,13 +79,13 @@ func (t *Table) ShowIndices(name string) {
 	t.showIndices(t.runner.GetCurrentDatabase(), name)
 }
 
-func (t *Table) ShowGroups() {
+func (t *Table) ShowGroups(table string) {
 	if t.runner.GetCurrentDatabase() == "" {
 		fmt.Println("No database selected. Use 'use database <name>'")
 		return
 	}
 
-	t.showGroups(t.runner.GetCurrentDatabase(), t.runner.GetCurrentTable())
+	t.showGroups(t.runner.GetCurrentDatabase(), table)
 }
 
 func (t *Table) Desc(name string) {
