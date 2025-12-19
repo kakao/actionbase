@@ -115,7 +115,7 @@ func (r *ActionbaseCommandLineRunner) BuildPrompt() string {
 
 func (r *ActionbaseCommandLineRunner) CheckConnection() {
 	response := r.client.GetTenant()
-	if response.Error != nil {
+	if response == nil {
 		fmt.Println("Connection Failed. Check if a server is available")
 		os.Exit(0)
 	}

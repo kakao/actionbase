@@ -1,5 +1,9 @@
 package model
 
+type Tenant struct {
+	Engine string `json:"engine"`
+}
+
 type DdlStatus[T any] struct {
 	Status  string  `json:"status"`
 	Result  *T      `json:"result"`

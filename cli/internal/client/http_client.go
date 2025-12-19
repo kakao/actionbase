@@ -14,10 +14,14 @@ type Context struct {
 	IsDebuggingEnabled bool
 }
 
-type Response struct {
+type Response[T any] struct {
 	StatusCode int
-	Body       string
+	Body       T
 	Error      error
+}
+
+func NewResponse[T any](statusCode int, body T, error error) *Response[T] {
+	return &Response[T]{StatusCode: statusCode, Body: body, Error: error}
 }
 
 // HTTPClient represents an HTTP client for Actionbase API
@@ -40,11 +44,12 @@ func NewHTTPClient(baseUrl string, authKey *string, context *Context) *HTTPClien
 	}
 }
 
-func (c *HTTPClient) Get(uri string) *Response {
+func Get[T any](c *HTTPClient, uri string) *Response[T] {
 	url := fmt.Sprintf("%s%s", c.baseUrl, uri)
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return &Response{StatusCode: -1, Body: "", Error: fmt.Errorf("failed to create request: %w", err)}
+		var nil T
+		return NewResponse[T](-1, nil, fmt.Errorf("failed to create request: %w", err))
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -52,19 +57,21 @@ func (c *HTTPClient) Get(uri string) *Response {
 		request.Header.Set("Authorization", *c.authKey)
 	}
 
-	return c.call(request)
+	return call[T](c, request)
 }
 
-func Post[T any](uri string, requestBody T, c *HTTPClient) *Response {
+func Post[T any, R any](c *HTTPClient, uri string, requestBody T) *Response[R] {
 	url := fmt.Sprintf("%s%s", c.baseUrl, uri)
 	jsonData, err := json.Marshal(requestBody)
 	if err != nil {
-		return &Response{StatusCode: -1, Body: "", Error: fmt.Errorf("failed to marshal request Body: %w", err)}
+		var nil R
+		return NewResponse[R](-1, nil, fmt.Errorf("failed to marshal request Body: %w", err))
 	}
 
 	request, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return &Response{StatusCode: -1, Body: "", Error: fmt.Errorf("failed to create request: %w", err)}
+		var nil R
+		return NewResponse[R](-1, nil, fmt.Errorf("failed to create request: %w", err))
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -72,10 +79,10 @@ func Post[T any](uri string, requestBody T, c *HTTPClient) *Response {
 		request.Header.Set("Authorization", *c.authKey)
 	}
 
-	return c.call(request)
+	return call[R](c, request)
 }
 
-func (c *HTTPClient) call(request *http.Request) *Response {
+func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 	if c.context.IsDebuggingEnabled {
 		if request.Body != nil {
 			slog.Debug(fmt.Sprintf("Trying to call '%s %s'\n> request: %s", request.Method, request.URL, request.Body))
@@ -86,7 +93,8 @@ func (c *HTTPClient) call(request *http.Request) *Response {
 
 	response, err := c.client.Do(request)
 	if err != nil {
-		return &Response{StatusCode: -1, Body: "", Error: fmt.Errorf("failed to execute request: %w", err)}
+		var nil T
+		return NewResponse[T](-1, nil, fmt.Errorf("failed to execute request: %w", err))
 	}
 
 	statusCode := response.StatusCode
@@ -99,17 +107,21 @@ func (c *HTTPClient) call(request *http.Request) *Response {
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return &Response{StatusCode: statusCode, Body: "", Error: fmt.Errorf("failed to read model Body: %w", err)}
+		var nil T
+		return NewResponse[T](-1, nil, fmt.Errorf("failed to read response Body: %w", err))
 	}
 
-	bodyStr := string(body)
+	var responseBody T
+	if err := json.Unmarshal(body, &responseBody); err != nil {
+		if c.context.IsDebuggingEnabled {
+			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
+		}
+		return nil
+	}
+
 	if c.context.IsDebuggingEnabled {
-		slog.Debug(fmt.Sprintf("%s\n> %s", response.Status, bodyStr))
+		slog.Debug(fmt.Sprintf("%s\n> %s", response.Status, responseBody))
 	}
 
-	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
-		return &Response{StatusCode: statusCode, Body: bodyStr, Error: fmt.Errorf("HTTP error code: %d", statusCode)}
-	}
-
-	return &Response{StatusCode: statusCode, Body: bodyStr, Error: nil}
+	return NewResponse(statusCode, responseBody, nil)
 }
