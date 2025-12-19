@@ -62,25 +62,8 @@ func (s *Scan) Execute(args []string) {
 	}
 	ranges, found := parser.Get("ranges")
 
-	table, found := parser.Get("table")
-	if found {
-		response := s.actionbaseClient.GetTable(database, table)
-		if response == nil {
-			fmt.Printf("No Table '%s' found in %s\n", table, database)
-			return
-		}
-		s.doScan(database, table, index, start, direction, limit, ranges)
-		return
-	}
-
-	alias, found := parser.Get("alias")
-	if found {
-		response := s.actionbaseClient.GetAlias(database, alias)
-		if response.IsError() {
-			fmt.Printf("No Alias '%s' found in %s\n", alias, database)
-			return
-		}
-		s.doScan(database, alias, index, start, direction, limit, ranges)
+	if !strings.HasPrefix(args[0], "--") {
+		s.doScan(database, args[0], index, start, direction, limit, ranges)
 		return
 	}
 

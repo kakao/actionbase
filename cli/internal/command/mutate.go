@@ -93,24 +93,18 @@ func (m *Mutate) Execute(args []string) {
 		Mutations: []model.MutationItem{mutationItem},
 	}
 
-	table, found := parser.Get("table")
-	if !found {
-		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
+	if !strings.HasPrefix(args[0], "--") {
+		m.doMutate(database, args[0], edgeBulkMutation, eventType)
 		return
 	}
 
-	alias, found := parser.Get("alias")
-	if found {
-		m.doMutate(database, alias, edgeBulkMutation, eventType)
-		return
-	}
-
-	if m.runner.GetCurrentTable() == "" {
+	currentTable := m.runner.GetCurrentTable()
+	if currentTable == "" {
 		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
 		return
 	}
 
-	m.doMutate(database, table, edgeBulkMutation, eventType)
+	m.doMutate(database, currentTable, edgeBulkMutation, eventType)
 }
 
 func (m *Mutate) doMutate(database, table string, edgeBulkMutation model.EdgeBulkMutation, eventType string) {

@@ -48,22 +48,22 @@ var (
 
 	TypeGet = Type{
 		name:    "get",
-		command: "get [--table <table>] [--alias <alias>] --source <source> --target <target>",
+		command: "get [<table>|<alias>] --source <source> --target <target>",
 	}
 
 	TypeScan = Type{
 		name:    "scan",
-		command: "scan [--table <table>] [--alias <alias>] --index <index> --start <start> --direction <direction> [--ranges <ranges>] [--limit <limit>]",
+		command: "scan [<table>|<alias>] --index <index> --start <start> --direction <direction> [--ranges <ranges>] [--limit <limit>]",
 	}
 
 	TypeMutate = Type{
 		name:    "mutate",
-		command: "mutate [--table <table>] [--alias <alias>] --type <type> --source <source> --target <target> --version <version> --properties <properties>",
+		command: "mutate [<table>|<alias>] --type <type> --source <source> --target <target> --version <version> --properties <properties>",
 	}
 
 	TypeCount = Type{
 		name:    "count",
-		command: "count [--table <table>] [--alias <alias>] --start <start> --direction <direction>",
+		command: "count [<table>|<alias>] --start <start> --direction <direction>",
 	}
 
 	TypeLoad = Type{

@@ -46,25 +46,8 @@ func (g *Get) Execute(args []string) {
 		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 	}
 
-	table, found := parser.Get("table")
-	if found {
-		response := g.actionbaseClient.GetTable(database, table)
-		if response.IsError() {
-			fmt.Printf("No Table '%s' found in %s\n", table, database)
-			return
-		}
-		g.doExecute(database, table, source, target)
-		return
-	}
-
-	alias, found := parser.Get("alias")
-	if found {
-		response := g.actionbaseClient.GetAlias(database, alias)
-		if response.IsError() {
-			fmt.Printf("No Alias '%s' found in %s\n", alias, database)
-			return
-		}
-		g.doExecute(database, alias, source, target)
+	if !strings.HasPrefix(args[0], "--") {
+		g.doExecute(database, args[0], source, target)
 		return
 	}
 
