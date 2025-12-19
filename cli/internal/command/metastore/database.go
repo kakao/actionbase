@@ -47,15 +47,21 @@ func (d *Database) ShowAll() {
 		results = append(results, data)
 	}
 
-	columnOrder := []string{"#", "name", "desc", "active"}
-
-	if len(results) > 0 {
-		fmt.Printf("Available databases (%d)\n", len(results))
-		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-		fmt.Println()
-	} else {
-		fmt.Println("No available databases found")
+	if len(results) == 0 {
+		emptyDatabase := map[string]interface{}{
+			"#":      "",
+			"name":   "",
+			"desc":   "",
+			"active": "",
+		}
+		results = append(results, emptyDatabase)
 	}
+
+	fmt.Println()
+	fmt.Printf("Available databases (%d)\n", len(results))
+
+	columnOrder := []string{"#", "name", "desc", "active"}
+	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 }
 
 func (d *Database) Use(name string) {
