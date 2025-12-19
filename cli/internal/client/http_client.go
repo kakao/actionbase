@@ -116,6 +116,7 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 		if c.context.IsDebuggingEnabled {
 			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
+		var nil T
 		return NewResponse[T](-1, nil, fmt.Errorf("failed to read response Body: %w", err))
 	}
 
