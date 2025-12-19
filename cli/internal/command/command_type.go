@@ -13,7 +13,7 @@ var (
 
 	TypeDesc = Type{
 		name:    "desc",
-		command: "desc [<table|alias>] <name> [--using <table|alias>]",
+		command: "desc <table|alias> [<name>]",
 	}
 
 	TypeExit = Type{
