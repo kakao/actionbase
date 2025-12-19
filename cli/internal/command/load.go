@@ -179,13 +179,13 @@ func (l *Load) loadTable(parser *util.Parser, data string) bool {
 	name, found := parser.Get("name")
 	if !found {
 		fmt.Println("Failed to read a command when try to create table. no name found")
-		return true
+		return false
 	}
 
 	database, found := parser.Get("database")
 	if !found {
 		fmt.Println("Failed to read a command when try to create table. no database found")
-		return true
+		return false
 	}
 
 	var tableCreateRequest model.TableCreateRequest
