@@ -56,11 +56,7 @@ func (a *Alias) ShowAll() {
 
 	columnOrder := []string{"#", "name", "desc", "target", "active"}
 
-	if len(aliases) > 0 {
-		fmt.Printf("%v Aliases in '%s':\n", aliasEntity.Count, a.runner.GetCurrentDatabase())
-		fmt.Println(util.PrettyPrintRowsWithOrder(aliases, columnOrder))
-		fmt.Println()
-	} else {
+	if len(aliases) == 0 {
 		emptyAlias := map[string]interface{}{
 			"#":      "",
 			"name":   "",
@@ -68,22 +64,24 @@ func (a *Alias) ShowAll() {
 			"target": "",
 			"active": "",
 		}
-		fmt.Printf("0 Aliases in '%s':\n", a.runner.GetCurrentDatabase())
-		fmt.Println(util.PrettyPrintWithOrder(emptyAlias, columnOrder))
-		fmt.Println()
+		aliases = append(aliases, emptyAlias)
 	}
+
+	fmt.Println()
+	fmt.Printf("%v Aliases in '%s'\n", aliasEntity.Count, a.runner.GetCurrentDatabase())
+	fmt.Println(util.PrettyPrintRowsWithOrder(aliases, columnOrder))
 }
 
-func (a *Alias) Use(alias string) {
+func (a *Alias) Use(name string) {
 	database := a.runner.GetCurrentDatabase()
 	if database == "" {
 		fmt.Println("No database selected. Use 'use database <name>'")
 		return
 	}
 
-	response := a.actionbaseClient.GetAlias(database, alias)
+	response := a.actionbaseClient.GetAlias(database, name)
 	if response.IsError() {
-		fmt.Printf("No Alias '%s' found in %s\n", alias, database)
+		fmt.Printf("No Alias '%s' found in %s\n", name, database)
 		return
 	}
 
@@ -91,9 +89,9 @@ func (a *Alias) Use(alias string) {
 	split := strings.Split(target, ".")
 	table := split[1]
 
-	fmt.Printf("The Alias is changed to '%s:%s' (table '%s')\n", database, alias, table)
+	fmt.Printf("The Alias is changed to '%s:%s' (table '%s')\n", database, name, table)
 
-	a.runner.SetCurrentAlias(alias)
+	a.runner.SetCurrentAlias(name)
 	a.runner.SetCurrentTable(table)
 }
 
@@ -121,49 +119,43 @@ func (a *Alias) Desc(name string) {
 		"readOnly": table.ReadOnly,
 		"mode":     table.Mode,
 	}
+	fmt.Println()
 	tableColumnOrder := []string{"name", "desc", "type", "dirType", "event", "readOnly", "mode"}
 	fmt.Println(util.PrettyPrintWithOrder(result, tableColumnOrder))
-	fmt.Println()
 
 	schema := table.Schema
-	srcTgtColumnOrder := []string{"type", "desc"}
+	schemaColumnOrder := []string{"type", "desc"}
 
 	source := map[string]interface{}{
 		"type": schema.Src.Type,
 		"desc": schema.Src.Desc,
 	}
-	fmt.Println("\n>> Source")
-	fmt.Println(util.PrettyPrintWithOrder(source, srcTgtColumnOrder))
+	fmt.Println("[Source]")
+	fmt.Println(util.PrettyPrintWithOrder(source, schemaColumnOrder))
 
 	target := map[string]interface{}{
 		"type": schema.Tgt.Type,
 		"desc": schema.Tgt.Desc,
 	}
-	fmt.Println("\n>> Target")
-	fmt.Println(util.PrettyPrintWithOrder(target, srcTgtColumnOrder))
-	fmt.Println()
+	fmt.Println("[Target]")
+	fmt.Println(util.PrettyPrintWithOrder(target, schemaColumnOrder))
 
-	fields := schema.Fields
-
-	var fieldResults []map[string]interface{}
-	for idx, field := range fields {
-		data := map[string]interface{}{
-			"#":        "[" + strconv.Itoa(idx+1) + "]",
-			"name":     field.Name,
-			"type":     field.Type,
-			"nullable": field.Nullable,
-			"desc":     field.Desc,
-		}
-		fieldResults = append(fieldResults, data)
+	var fields []map[string]interface{}
+	for idx, field := range schema.Fields {
+		fields = append(
+			fields,
+			map[string]interface{}{
+				"#":        "[" + strconv.Itoa(idx+1) + "]",
+				"name":     field.Name,
+				"type":     field.Type,
+				"nullable": field.Nullable,
+				"desc":     field.Desc,
+			})
 	}
 
 	fieldColumnOrder := []string{"#", "name", "type", "nullable", "desc"}
 
-	if len(fields) > 0 {
-		fmt.Printf(">> Fields (%d) :\n", len(fields))
-		fmt.Println(util.PrettyPrintRowsWithOrder(fieldResults, fieldColumnOrder))
-		fmt.Println()
-	} else {
+	if len(fields) == 0 {
 		emptyField := map[string]interface{}{
 			"#":        "",
 			"name":     "",
@@ -171,8 +163,10 @@ func (a *Alias) Desc(name string) {
 			"nullable": "",
 			"desc":     "",
 		}
-		fmt.Println(">> Fields (0) :")
-		fmt.Println(util.PrettyPrintWithOrder(emptyField, fieldColumnOrder))
-		fmt.Println()
+		fields = append(fields, emptyField)
 	}
+
+	fmt.Println()
+	fmt.Printf("[Fields (%d)]\n", len(fields))
+	fmt.Println(util.PrettyPrintRowsWithOrder(fields, fieldColumnOrder))
 }
