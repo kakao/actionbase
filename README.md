@@ -6,9 +6,8 @@ Actionbase is a system for storing and serving user activity data in real time.
 
 Actionbase is built for high-throughput, low-latency workloads where user
 activity is continuously written and queried. It supports patterns such as
-recent views, likes and reactions, follows, and real-time behavioral signals
-used across product listings, recommendations, feeds, and other activity-driven
-surfaces in large-scale Kakao services.
+**recent views**, **likes** and **reactions**, and **follows** used across product listings,
+recommendations, feeds, and other activity-driven surfaces in large-scale Kakao services.
 
 User activity forms actor→target relationships with interaction properties.
 Actionbase models them as a graph and creates read-optimized structures at write
