@@ -100,10 +100,10 @@ func (c *Count) doCount(database string, table string, start string, direction s
 		results = append(results, data)
 	}
 
-	columnOrder := []string{"#", "start", "direction", "count"}
-
+	fmt.Println()
 	fmt.Printf("The count of %s edges found\n", util.Int64WithCommas(response.Body.Count))
 
+	columnOrder := []string{"#", "start", "direction", "count"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 }
 
