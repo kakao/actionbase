@@ -19,14 +19,17 @@ func (d *Debug) Execute(args []string) {
 		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
 		return
 	}
-	if args[0] == "on" {
-		d.runner.SetIsDebugEnabled(true)
-		return
-	} else if args[1] == "off" {
-		d.runner.SetIsDebugEnabled(false)
-		return
-	}
 
+	toggle := args[0]
+
+	switch toggle {
+	case "on":
+		d.runner.SetIsDebugEnabled(true)
+	case "off":
+		d.runner.SetIsDebugEnabled(false)
+	default:
+		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
+	}
 }
 
 func (d *Debug) GetDescription() string {
