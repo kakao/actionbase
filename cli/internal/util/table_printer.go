@@ -8,27 +8,22 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-// PrettyPrintWithOrder formats and prints a single row with explicit column order
 func PrettyPrintWithOrder(data map[string]interface{}, orderedKeys []string) string {
 	rows := []map[string]interface{}{data}
-	return ShowWithOrder(rows, orderedKeys)
+	return showWithOrder(rows, orderedKeys)
 }
 
-// PrettyPrintRowsWithOrder formats and prints multiple rows with explicit column order
 func PrettyPrintRowsWithOrder(rows []map[string]interface{}, orderedKeys []string) string {
-	return ShowWithOrder(rows, orderedKeys)
+	return showWithOrder(rows, orderedKeys)
 }
 
-// ShowWithOrder renders a list of rows with explicit column order
-func ShowWithOrder(rows []map[string]interface{}, orderedKeys []string) string {
+func showWithOrder(rows []map[string]interface{}, orderedKeys []string) string {
 	if len(rows) == 0 {
 		return ""
 	}
 
-	// Use provided order
 	headers := orderedKeys
 
-	// Create table buffer
 	var buf bytes.Buffer
 	table := tablewriter.NewWriter(&buf)
 	table.SetHeader(headers)
@@ -44,7 +39,6 @@ func ShowWithOrder(rows []map[string]interface{}, orderedKeys []string) string {
 	table.SetTablePadding(" ")
 	table.SetNoWhiteSpace(false)
 
-	// Add rows
 	for _, row := range rows {
 		var values []string
 		for _, header := range headers {
@@ -60,10 +54,9 @@ func ShowWithOrder(rows []map[string]interface{}, orderedKeys []string) string {
 
 	var colors []tablewriter.Colors
 	for range headers {
-		colors = append(colors, tablewriter.Colors{tablewriter.FgBlueColor})
-
+		colors = append(colors, tablewriter.Colors{tablewriter.FgGreenColor})
 	}
-	table.SetColumnColor(colors...)
+	table.SetHeaderColor(colors...)
 	table.Render()
 	return strings.TrimSpace(buf.String())
 }
