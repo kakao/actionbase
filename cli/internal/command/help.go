@@ -18,7 +18,7 @@ func NewHelp(runner HelpRunner) *Help {
 	return &Help{runner: runner}
 }
 
-func (h *Help) Execute(args []string) {
+func (h *Help) Execute(_ []string) {
 	var commands []map[string]interface{}
 
 	for name, cmd := range h.runner.GetCommands() {
@@ -30,12 +30,9 @@ func (h *Help) Execute(args []string) {
 		commands = append(commands, help)
 	}
 
-	// Define column order explicitly
-	columnOrder := []string{"name", "description", "usage"}
-
 	fmt.Println("\nAvailable commands:")
+	columnOrder := []string{"name", "description", "usage"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(commands, columnOrder))
-	fmt.Println()
 }
 
 func (h *Help) GetDescription() string {
