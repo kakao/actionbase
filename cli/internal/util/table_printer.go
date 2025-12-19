@@ -3,7 +3,6 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
@@ -18,30 +17,6 @@ func PrettyPrintWithOrder(data map[string]interface{}, orderedKeys []string) str
 // PrettyPrintRowsWithOrder formats and prints multiple rows with explicit column order
 func PrettyPrintRowsWithOrder(rows []map[string]interface{}, orderedKeys []string) string {
 	return ShowWithOrder(rows, orderedKeys)
-}
-
-// Show renders a list of rows as a formatted table string
-// Column order is not guaranteed due to map iteration
-func Show(rows []map[string]interface{}) string {
-	if len(rows) == 0 {
-		return ""
-	}
-
-	// Collect all headers (order not guaranteed)
-	headerSet := make(map[string]bool)
-	for _, row := range rows {
-		for key := range row {
-			headerSet[key] = true
-		}
-	}
-
-	// Convert to slice
-	headers := make([]string, 0, len(headerSet))
-	for key := range headerSet {
-		headers = append(headers, key)
-	}
-
-	return ShowWithOrder(rows, headers)
 }
 
 // ShowWithOrder renders a list of rows with explicit column order
@@ -83,16 +58,12 @@ func ShowWithOrder(rows []map[string]interface{}, orderedKeys []string) string {
 		table.Append(values)
 	}
 
+	var colors []tablewriter.Colors
+	for range headers {
+		colors = append(colors, tablewriter.Colors{tablewriter.FgBlueColor})
+
+	}
+	table.SetColumnColor(colors...)
 	table.Render()
 	return strings.TrimSpace(buf.String())
-}
-
-// PrintTable prints the table directly to stdout
-func PrintTable(rows []map[string]interface{}) {
-	fmt.Fprintln(os.Stdout, Show(rows))
-}
-
-// PrintTableWithOrder prints the table with explicit column order to stdout
-func PrintTableWithOrder(rows []map[string]interface{}, orderedKeys []string) {
-	fmt.Fprintln(os.Stdout, ShowWithOrder(rows, orderedKeys))
 }
