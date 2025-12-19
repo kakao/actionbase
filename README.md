@@ -108,13 +108,13 @@ For more information, please visit our [Community](https://actionbase.dev/commun
 ## Current Status
 
 Actionbase is in its initial open-source preparation phase. The first release
-aims to introduce the project’s core concepts and provide a hands-on guide, with
-additional internal components to be open-sourced progressively.
+focuses on introducing the core concepts and providing a hands-on guide, with
+additional components to be open-sourced over time.
 
-We are releasing the codebase as it has evolved inside Kakao—after removing
-security-sensitive details—so the project can grow transparently with community
-feedback. Some internal modules and operational guides, including Kubernetes-
-based deployment, will be introduced in later stages.
+We are releasing the codebase largely as it evolved inside Kakao—after removing
+sensitive details—to share its real development journey and grow it further
+with community. Some internal modules and operational guides—including Kubernetes
+and HBase—will be added later.
 
 ## License
 
