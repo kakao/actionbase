@@ -50,7 +50,7 @@ func ParseArgs(args []string) *Parser {
 				continue
 			}
 
-			valueParts := []string{}
+			var valueParts []string
 			for j := i + 1; j < len(args); j++ {
 				if strings.HasPrefix(args[j], "--") {
 					break
