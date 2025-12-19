@@ -39,8 +39,6 @@ func (c *Context) Execute(args []string) {
 		alias = "-"
 	}
 
-	fieldColumnOrder := []string{"host", "database", "table", "alias", "is_debug_enabled"}
-
 	status := map[string]interface{}{
 		"host":             c.actionbaseClient.GetHost(),
 		"database":         database,
@@ -48,7 +46,10 @@ func (c *Context) Execute(args []string) {
 		"alias":            alias,
 		"is_debug_enabled": c.runner.IsDebugEnabled(),
 	}
-	fmt.Println(util.PrettyPrintRowsWithOrder([]map[string]interface{}{status}, fieldColumnOrder))
+
+	fmt.Println()
+	columnOrder := []string{"host", "database", "table", "alias", "is_debug_enabled"}
+	fmt.Println(util.PrettyPrintRowsWithOrder([]map[string]interface{}{status}, columnOrder))
 }
 
 func (c *Context) GetDescription() string {
