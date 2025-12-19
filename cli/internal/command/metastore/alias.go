@@ -36,12 +36,14 @@ func (a *Alias) ShowAll() {
 
 	response := a.actionbaseClient.GetAliases(database)
 
-	if response == nil {
+	if response.IsError() {
+		fmt.Println("Failed to get aliases")
 		return
 	}
 
+	aliasEntity := response.Body
 	var aliases []map[string]interface{}
-	for idx, content := range response.Content {
+	for idx, content := range aliasEntity.Content {
 		data := map[string]interface{}{
 			"#":      "[" + strconv.Itoa(idx+1) + "]",
 			"name":   content.Name,
@@ -55,7 +57,7 @@ func (a *Alias) ShowAll() {
 	columnOrder := []string{"#", "name", "desc", "target", "active"}
 
 	if len(aliases) > 0 {
-		fmt.Printf("%v Aliases in '%s':\n", response.Count, a.runner.GetCurrentDatabase())
+		fmt.Printf("%v Aliases in '%s':\n", aliasEntity.Count, a.runner.GetCurrentDatabase())
 		fmt.Println(util.PrettyPrintRowsWithOrder(aliases, columnOrder))
 		fmt.Println()
 	} else {
@@ -72,19 +74,20 @@ func (a *Alias) ShowAll() {
 	}
 }
 
-func (a *Alias) Use(alias string) bool {
+func (a *Alias) Use(alias string) {
 	database := a.runner.GetCurrentDatabase()
 	if database == "" {
 		fmt.Println("No database selected. Use 'use database <name>'")
-		return false
+		return
 	}
 
 	response := a.actionbaseClient.GetAlias(database, alias)
-	if response == nil {
-		return false
+	if response.IsError() {
+		fmt.Printf("No Alias '%s' found in %s\n", alias, database)
+		return
 	}
 
-	target := response.Target
+	target := response.Body.Target
 	split := strings.Split(target, ".")
 	table := split[1]
 
@@ -92,8 +95,6 @@ func (a *Alias) Use(alias string) bool {
 
 	a.runner.SetCurrentAlias(alias)
 	a.runner.SetCurrentTable(table)
-
-	return true
 }
 
 func (a *Alias) Desc(name string) {
@@ -104,10 +105,12 @@ func (a *Alias) Desc(name string) {
 	}
 
 	response := a.actionbaseClient.GetAlias(database, name)
-	if response == nil {
+	if response.IsError() {
+		fmt.Printf("No Alias '%s' found in %s\n", name, database)
 		return
 	}
-	table := response.Table
+
+	table := response.Body.Table
 
 	result := map[string]interface{}{
 		"name":     table.Name,

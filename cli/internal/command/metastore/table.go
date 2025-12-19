@@ -31,10 +31,13 @@ func (t *Table) ShowAll() {
 	}
 
 	response := t.actionbaseClient.GetTables(database)
-	if response == nil {
+	if response.IsError() {
+		fmt.Println("Failed to get tables")
 		return
 	}
-	content := response.Content
+
+	tableEntity := response.Body
+	content := tableEntity.Content
 
 	var results []map[string]interface{}
 	for idx, table := range content {
@@ -52,7 +55,7 @@ func (t *Table) ShowAll() {
 	columnOrder := []string{"#", "active", "name", "desc", "type"}
 
 	if len(results) > 0 {
-		fmt.Printf("%v Tables in %s:\n", response.Count, database)
+		fmt.Printf("%v Tables in %s:\n", tableEntity.Count, database)
 		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 		fmt.Println()
 		return
@@ -97,24 +100,26 @@ func (t *Table) Desc(name string) {
 	}
 
 	response := t.actionbaseClient.GetTable(database, name)
-	if response == nil {
+	if response.IsError() {
+		fmt.Printf("Failed to get table '%s'\n", name)
 		return
 	}
 
+	tableEntity := response.Body
 	table := map[string]interface{}{
-		"name":     response.Name,
-		"desc":     response.Desc,
-		"type":     response.Type,
-		"dirType":  response.DirType,
-		"event":    response.Event,
-		"readOnly": response.ReadOnly,
-		"mode":     response.Mode,
+		"name":     tableEntity.Name,
+		"desc":     tableEntity.Desc,
+		"type":     tableEntity.Type,
+		"dirType":  tableEntity.DirType,
+		"event":    tableEntity.Event,
+		"readOnly": tableEntity.ReadOnly,
+		"mode":     tableEntity.Mode,
 	}
 	tableColumnOrder := []string{"name", "desc", "type", "dirType", "event", "readOnly", "mode"}
 	fmt.Println(util.PrettyPrintWithOrder(table, tableColumnOrder))
 	fmt.Println()
 
-	schema := response.Schema
+	schema := tableEntity.Schema
 	srcTgtColumnOrder := []string{"type", "desc"}
 
 	source := map[string]interface{}{
@@ -167,32 +172,34 @@ func (t *Table) Desc(name string) {
 }
 
 // Use selects a table to use
-func (t *Table) Use(table string) bool {
+func (t *Table) Use(table string) {
 	database := t.runner.GetCurrentDatabase()
 	if database == "" {
 		fmt.Println("No database selected. Use 'use database <name>'")
-		return false
+		return
 	}
 
 	response := t.actionbaseClient.GetTable(database, table)
-	if response == nil {
-		return false
+	if response.IsError() {
+		fmt.Printf("Failed to get table '%s'\n", table)
+		return
 	}
 
 	t.runner.SetCurrentTable(table)
 
 	fmt.Printf("The Table is changed to '%s:%s'\n", database, table)
-
-	return true
 }
 
 func (t *Table) showIndices(database string, table string) {
 	response := t.actionbaseClient.GetTable(database, table)
-	if response == nil {
+	if response.IsError() {
+		fmt.Printf("Failed to get table '%s'\n", table)
 		return
 	}
 
-	indices := response.Indices
+	tableEntity := response.Body
+
+	indices := tableEntity.Indices
 	var results []map[string]interface{}
 	for idx, index := range indices {
 		fields := index.Fields
@@ -245,11 +252,14 @@ func (t *Table) showIndices(database string, table string) {
 
 func (t *Table) showGroups(database string, table string) {
 	response := t.actionbaseClient.GetTable(database, table)
-	if response == nil {
+	if response.IsError() {
+		fmt.Printf("Failed to get table '%s'\n", table)
 		return
 	}
 
-	groups := response.Groups
+	tableEntity := response.Body
+
+	groups := tableEntity.Groups
 	results := []map[string]interface{}{}
 	for idx, group := range groups {
 		fields := group.Fields

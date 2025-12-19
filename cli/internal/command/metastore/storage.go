@@ -26,11 +26,12 @@ func NewStorage(runner StorageRunner, actionbaseClient *client.ActionbaseClient)
 
 func (s *Storage) ShowAll() {
 	response := s.actionbaseClient.GetStorages()
-	if response == nil {
+	if response.IsError() {
+		fmt.Println("Failed to get storages")
 		return
 	}
 
-	content := response.Content
+	content := response.Body.Content
 	var results []map[string]interface{}
 	for idx, storage := range content {
 		conf, err := json.Marshal(storage.Conf)

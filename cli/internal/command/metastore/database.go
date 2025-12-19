@@ -26,10 +26,12 @@ func NewDatabase(runner DatabaseRunner, actionbaseClient *client.ActionbaseClien
 
 func (d *Database) ShowAll() {
 	response := d.actionbaseClient.GetDatabases()
-	if response == nil {
+	if response.IsError() {
+		fmt.Println("Failed to get databases")
 		return
 	}
-	content := response.Content
+
+	content := response.Body.Content
 	filtered := util.FilterInPlace(content, func(d model.DatabaseEntity) bool {
 		return d.Name != "sys"
 	})
@@ -56,16 +58,15 @@ func (d *Database) ShowAll() {
 	}
 }
 
-func (d *Database) Use(name string) bool {
+func (d *Database) Use(name string) {
 	response := d.actionbaseClient.GetDatabase(name)
-	if response == nil {
-		return false
+	if response.IsError() {
+		fmt.Printf("No database '%s' found\n", name)
+		return
 	}
 
 	d.runner.SetCurrentDatabase(name)
 	d.runner.SetCurrentTable("")
 
 	fmt.Printf("The database is changed to '%s'\n", name)
-
-	return true
 }

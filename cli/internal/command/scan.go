@@ -76,7 +76,7 @@ func (s *Scan) Execute(args []string) {
 	alias, found := parser.Get("alias")
 	if found {
 		response := s.actionbaseClient.GetAlias(database, alias)
-		if response == nil {
+		if response.IsError() {
 			fmt.Printf("No Alias '%s' found in %s\n", alias, database)
 			return
 		}
@@ -104,12 +104,15 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 		&ranges,
 	)
 
-	if response == nil {
+	if response.IsError() {
+		fmt.Printf("Failed to scan table '%s in %s\n", table, database)
 		return
 	}
 
+	responseBody := response.Body
+
 	var results []map[string]interface{}
-	for idx, edge := range response.Edges {
+	for idx, edge := range responseBody.Edges {
 		property := edge.Properties
 
 		var properties []string
@@ -134,7 +137,7 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 	columnOrder := []string{"#", "version", "source", "target", "properties"}
 
 	if len(results) > 0 {
-		fmt.Printf("The %d edges found (offset: %s, hasNext: %t)\n", response.Count, response.Offset, response.HasNext)
+		fmt.Printf("The %d edges found (offset: %s, hasNext: %t)\n", responseBody.Count, responseBody.Offset, responseBody.HasNext)
 		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 		fmt.Println()
 		return

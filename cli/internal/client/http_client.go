@@ -24,7 +24,14 @@ func NewResponse[T any](statusCode int, body *T, error error) *Response[T] {
 	return &Response[T]{StatusCode: statusCode, Body: body, Error: error}
 }
 
-// HTTPClient represents an HTTP client for Actionbase API
+func (r *Response[T]) IsSuccess() bool {
+	return r.StatusCode >= http.StatusOK && r.StatusCode < http.StatusMultipleChoices
+}
+
+func (r *Response[T]) IsError() bool {
+	return r.Error != nil || !r.IsSuccess()
+}
+
 type HTTPClient struct {
 	baseUrl string
 	authKey *string

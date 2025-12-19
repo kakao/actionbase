@@ -97,8 +97,8 @@ func (c *Create) createDatabase(parser *util.Parser) {
 	requestBody := model.DatabaseCreateRequest{
 		Desc: comment.(string),
 	}
-	ddlStatus := c.actionbaseClient.CreateDatabase(name, &requestBody)
-	if ddlStatus == nil {
+	response := c.actionbaseClient.CreateDatabase(name, &requestBody)
+	if response.IsError() && response.Body.Status == "ERROR" {
 		fmt.Printf("Failed to create database '%s'\n", name)
 		return
 	}
@@ -145,8 +145,8 @@ func (c *Create) createStorage(parser *util.Parser) {
 			"hbaseTable":     hbaseTable,
 		},
 	}
-	ddlStatus := c.actionbaseClient.CreateStorage(name, &requestBody)
-	if ddlStatus == nil {
+	response := c.actionbaseClient.CreateStorage(name, &requestBody)
+	if response.IsError() && response.Body.Status == "ERROR" {
 		fmt.Printf("Failed to create storage '%s'\n", name)
 		return
 	}
@@ -244,11 +244,11 @@ func (c *Create) createTable(parser *util.Parser) {
 		Mode:          "SYNC",
 	}
 
-	ddlStatus := c.actionbaseClient.CreateTable(
+	response := c.actionbaseClient.CreateTable(
 		database,
 		name,
 		&tableCreateRequest)
-	if ddlStatus == nil {
+	if response.IsError() && response.Body.Status == "ERROR" {
 		fmt.Printf("Failed to create table '%s'\n", name)
 		return
 	}
@@ -281,8 +281,8 @@ func (c *Create) createAlias(parser *util.Parser) {
 		return
 	}
 
-	ddlStatus := c.actionbaseClient.CreateAlias(database, table, name, comment)
-	if ddlStatus == nil {
+	response := c.actionbaseClient.CreateAlias(database, table, name, comment)
+	if response.IsError() && response.Body.Status == "ERROR" {
 		fmt.Printf("Failed to create alias '%s'\n", name)
 		return
 	}

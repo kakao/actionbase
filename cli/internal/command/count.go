@@ -53,7 +53,7 @@ func (c *Count) Execute(args []string) {
 	table, found := parser.Get("table")
 	if found {
 		response := c.actionbaseClient.GetTable(database, table)
-		if response == nil {
+		if response.IsError() {
 			fmt.Printf("No Table '%s' found in %s\n", table, database)
 			return
 		}
@@ -64,7 +64,7 @@ func (c *Count) Execute(args []string) {
 	alias, found := parser.Get("alias")
 	if found {
 		response := c.actionbaseClient.GetAlias(database, alias)
-		if response == nil {
+		if response.IsError() {
 			fmt.Printf("No Alias '%s' found in %s\n", alias, database)
 			return
 		}
@@ -83,12 +83,13 @@ func (c *Count) Execute(args []string) {
 func (c *Count) doCount(database string, table string, start string, direction string) {
 	response := c.actionbaseClient.Counts(database, table, start, direction)
 
-	if response == nil {
+	if response.IsError() {
+		fmt.Printf("Failed to get counts of table '%s' in %s\n", table, database)
 		return
 	}
 
 	var results []map[string]interface{}
-	for idx, count := range response.Counts {
+	for idx, count := range response.Body.Counts {
 		data := map[string]interface{}{
 			"#":         "[" + strconv.Itoa(idx+1) + "]",
 			"start":     util.ToString(count.Start),
@@ -101,7 +102,7 @@ func (c *Count) doCount(database string, table string, start string, direction s
 
 	columnOrder := []string{"#", "start", "direction", "count"}
 
-	fmt.Printf("The count of %s edges found\n", util.Int64WithCommas(response.Count))
+	fmt.Printf("The count of %s edges found\n", util.Int64WithCommas(response.Body.Count))
 
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 }

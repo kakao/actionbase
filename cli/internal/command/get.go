@@ -49,7 +49,7 @@ func (g *Get) Execute(args []string) {
 	table, found := parser.Get("table")
 	if found {
 		response := g.actionbaseClient.GetTable(database, table)
-		if response == nil {
+		if response.IsError() {
 			fmt.Printf("No Table '%s' found in %s\n", table, database)
 			return
 		}
@@ -60,7 +60,7 @@ func (g *Get) Execute(args []string) {
 	alias, found := parser.Get("alias")
 	if found {
 		response := g.actionbaseClient.GetAlias(database, alias)
-		if response == nil {
+		if response.IsError() {
 			fmt.Printf("No Alias '%s' found in %s\n", alias, database)
 			return
 		}
@@ -84,12 +84,12 @@ func (g *Get) doExecute(database, table, source, target string) {
 		source,
 		target)
 
-	if response == nil {
+	if response.IsError() {
 		return
 	}
 
 	var results []map[string]interface{}
-	for _, edge := range response.Edges {
+	for _, edge := range response.Body.Edges {
 		property := edge.Properties
 		var properties []string
 		for key, value := range property {

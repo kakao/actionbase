@@ -139,7 +139,7 @@ func (l *Load) loadDatabase(parser *util.Parser, data string) bool {
 		return false
 	}
 	response := l.actionbaseClient.CreateDatabase(name, &databaseCreateRequest)
-	if response == nil {
+	if response.IsError() && response.Body.Status == "ERROR" {
 		return false
 	}
 
@@ -162,12 +162,12 @@ func (l *Load) loadStorage(parser *util.Parser, data string) bool {
 	}
 
 	response := l.actionbaseClient.CreateStorage(name, &storageCreateRequest)
-	if response == nil {
-		return true
+	if response.IsError() && response.Body.Status == "ERROR" {
+		return false
 	}
 
 	fmt.Printf("Storage '%s' is created\n", name)
-	return false
+	return true
 }
 
 func (l *Load) loadTable(parser *util.Parser, data string) bool {
@@ -191,12 +191,12 @@ func (l *Load) loadTable(parser *util.Parser, data string) bool {
 	}
 
 	response := l.actionbaseClient.CreateTable(database, name, &tableCreateRequest)
-	if response == nil {
-		return true
+	if response.IsError() && response.Body.Status == "ERROR" {
+		return false
 	}
 
 	fmt.Printf("Table '%s' is created\n", name)
-	return false
+	return true
 }
 
 func (l *Load) loadEdge(parser *util.Parser, data string) bool {
@@ -220,13 +220,14 @@ func (l *Load) loadEdge(parser *util.Parser, data string) bool {
 	}
 
 	response := l.actionbaseClient.Mutate(database, table, &edgeBulkMutations)
-	if response == nil {
+	if response.IsError() {
+		fmt.Printf("Failed to mutate edges: %s\n", err.Error())
 		return false
 	}
 
 	var updatedCount int32 = 0
 	var failedCount int32 = 0
-	for _, result := range response.Results {
+	for _, result := range response.Body.Results {
 		if result.Status != "ERROR" {
 			updatedCount += result.Count
 		} else {

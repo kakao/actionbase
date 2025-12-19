@@ -115,13 +115,14 @@ func (m *Mutate) Execute(args []string) {
 
 func (m *Mutate) doMutate(database, table string, edgeBulkMutation model.EdgeBulkMutation, eventType string) {
 	response := m.actionbaseClient.Mutate(database, table, &edgeBulkMutation)
-	if response == nil {
+	if response.IsError() {
+		fmt.Printf("Failed to mutate edges: %s\n", response.Error.Error())
 		return
 	}
 
 	var updatedCount int32 = 0
 	var failedCount int32 = 0
-	for _, result := range response.Results {
+	for _, result := range response.Body.Results {
 		if result.Status != "ERROR" {
 			updatedCount += result.Count
 		} else {
