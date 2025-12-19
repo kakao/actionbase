@@ -36,7 +36,7 @@ func (s *Storage) ShowAll() {
 	for idx, storage := range content {
 		conf, err := json.Marshal(storage.Conf)
 		if err != nil {
-			fmt.Println("Error encoding JSON:", err)
+			fmt.Println("Failed to parse conf", err)
 			return
 		}
 
@@ -51,15 +51,21 @@ func (s *Storage) ShowAll() {
 		results = append(results, data)
 	}
 
-	columnOrder := []string{"#", "active", "name", "desc", "type", "conf"}
-
-	if len(results) > 0 {
-		fmt.Printf("Available storages (%d)\n", len(results))
-		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-		fmt.Println()
-		return
+	if len(results) == 0 {
+		emptyStorage := map[string]interface{}{
+			"#":      "",
+			"active": "",
+			"name":   "",
+			"desc":   "",
+			"type":   "",
+			"conf":   "",
+		}
+		results = append(results, emptyStorage)
 	}
 
-	fmt.Println("No available storages found")
+	fmt.Println()
+	fmt.Printf("Available storages (%d)\n", len(results))
 
+	columnOrder := []string{"#", "active", "name", "desc", "type", "conf"}
+	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 }
