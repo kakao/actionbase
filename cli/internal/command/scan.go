@@ -134,26 +134,22 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 		results = append(results, data)
 	}
 
-	columnOrder := []string{"#", "version", "source", "target", "properties"}
-
-	if len(results) > 0 {
-		fmt.Printf("The %d edges found (offset: %s, hasNext: %t)\n", responseBody.Count, responseBody.Offset, responseBody.HasNext)
-		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-		fmt.Println()
-		return
+	if len(results) == 0 {
+		emptyEdge := map[string]interface{}{
+			"#":          "",
+			"version":    "",
+			"source":     "",
+			"target":     "",
+			"properties": "",
+		}
+		results = append(results, emptyEdge)
 	}
 
-	emptyEdge := map[string]interface{}{
-		"#":          "",
-		"version":    "",
-		"source":     "",
-		"target":     "",
-		"properties": "",
-	}
-
-	fmt.Println("No results found")
-	fmt.Println(util.PrettyPrintWithOrder(emptyEdge, columnOrder))
 	fmt.Println()
+	fmt.Printf("The %d edges found (offset: %s, hasNext: %t)\n", responseBody.Count, responseBody.Offset, responseBody.HasNext)
+
+	columnOrder := []string{"#", "version", "source", "target", "properties"}
+	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 }
 
 func (s *Scan) GetDescription() string {
