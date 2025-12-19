@@ -39,12 +39,7 @@ func (d *Desc) Execute(args []string) {
 
 	resourceType := args[0]
 	if resourceType == "table" || resourceType == "alias" {
-		name, found := parser.Get("name")
-
-		if !found {
-			fmt.Println("Usage: desc <table|alias> <name>")
-			return
-		}
+		name := args[1]
 
 		if resourceType == "table" {
 			d.tableCommand.Desc(name)
