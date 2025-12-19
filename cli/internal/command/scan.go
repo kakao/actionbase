@@ -30,13 +30,9 @@ func (s *Scan) Execute(args []string) {
 		return
 	}
 
+	database := s.runner.GetCurrentDatabase()
 	if s.runner.GetCurrentDatabase() == "" {
 		fmt.Println("No database selected. Use 'use database <name>'")
-		return
-	}
-
-	if s.runner.GetCurrentTable() == "" {
-		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
 		return
 	}
 
@@ -66,9 +62,31 @@ func (s *Scan) Execute(args []string) {
 	}
 	ranges, found := parser.Get("ranges")
 
+	table, found := parser.Get("table")
+	if found {
+		s.doScan(database, table, index, start, direction, limit, ranges)
+		return
+	}
+
+	alias, found := parser.Get("alias")
+	if found {
+		s.doScan(database, alias, index, start, direction, limit, ranges)
+		return
+	}
+
+	currentTable := s.runner.GetCurrentTable()
+	if currentTable == "" {
+		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
+		return
+	}
+
+	s.doScan(database, currentTable, index, start, direction, limit, ranges)
+}
+
+func (s *Scan) doScan(database, table, index, start, direction, limit, ranges string) {
 	response := s.actionbaseClient.Scan(
-		s.runner.GetCurrentDatabase(),
-		s.runner.GetCurrentTable(),
+		database,
+		table,
 		index,
 		start,
 		direction,

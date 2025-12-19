@@ -32,25 +32,15 @@ func (m *Mutate) Execute(args []string) {
 		return
 	}
 
-	if m.runner.GetCurrentDatabase() == "" {
+	database := m.runner.GetCurrentDatabase()
+	if database == "" {
 		fmt.Println("No database selected. Use 'use database <name>'")
-		return
-	}
-
-	if m.runner.GetCurrentTable() == "" {
-		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
 		return
 	}
 
 	parser := util.ParseArgs(args)
 
 	eventType, found := parser.Get("type")
-	if !found {
-		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
-		return
-	}
-
-	table, found := parser.Get("table")
 	if !found {
 		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
 		return
@@ -103,7 +93,28 @@ func (m *Mutate) Execute(args []string) {
 		Mutations: []model.MutationItem{mutationItem},
 	}
 
-	response := m.actionbaseClient.Mutate(m.runner.GetCurrentDatabase(), table, &edgeBulkMutation)
+	table, found := parser.Get("table")
+	if !found {
+		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
+		return
+	}
+
+	alias, found := parser.Get("alias")
+	if found {
+		m.doMutate(database, alias, edgeBulkMutation, eventType)
+		return
+	}
+
+	if m.runner.GetCurrentTable() == "" {
+		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
+		return
+	}
+
+	m.doMutate(database, table, edgeBulkMutation, eventType)
+}
+
+func (m *Mutate) doMutate(database, table string, edgeBulkMutation model.EdgeBulkMutation, eventType string) {
+	response := m.actionbaseClient.Mutate(database, table, &edgeBulkMutation)
 	if response == nil {
 		return
 	}
@@ -119,7 +130,6 @@ func (m *Mutate) Execute(args []string) {
 	}
 
 	fmt.Printf("%s is done (updated: %d, failed %d)\n", eventType, updatedCount, failedCount)
-	return
 }
 
 func (m *Mutate) GetDescription() string {

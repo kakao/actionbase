@@ -29,13 +29,9 @@ func (g *Get) Execute(args []string) {
 		return
 	}
 
-	if g.runner.GetCurrentDatabase() == "" {
+	database := g.runner.GetCurrentDatabase()
+	if database == "" {
 		fmt.Println("No database selected. Use 'use database <name>'")
-		return
-	}
-
-	if g.runner.GetCurrentTable() == "" {
-		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
 		return
 	}
 
@@ -45,15 +41,36 @@ func (g *Get) Execute(args []string) {
 		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 		return
 	}
-
 	target, found := parser.Get("target")
 	if !found {
 		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 	}
 
+	table, found := parser.Get("table")
+	if found {
+		g.doExecute(database, table, source, target)
+		return
+	}
+
+	alias, found := parser.Get("alias")
+	if found {
+		g.doExecute(database, alias, source, target)
+		return
+	}
+
+	currentTable := g.runner.GetCurrentTable()
+	if currentTable == "" {
+		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
+		return
+	}
+
+	g.doExecute(database, currentTable, source, target)
+}
+
+func (g *Get) doExecute(database, table, source, target string) {
 	response := g.actionbaseClient.Get(
-		g.runner.GetCurrentDatabase(),
-		g.runner.GetCurrentTable(),
+		database,
+		table,
 		source,
 		target)
 

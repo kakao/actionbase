@@ -13,7 +13,7 @@ var (
 
 	TypeDesc = Type{
 		name:    "desc",
-		command: "desc <name> --using <table|alias>",
+		command: "desc [<table|alias>] <name> [--using <table|alias>]",
 	}
 
 	TypeExit = Type{
@@ -48,22 +48,22 @@ var (
 
 	TypeGet = Type{
 		name:    "get",
-		command: "get --source <source> --target <target>",
+		command: "get [--table <table>] [--alias <alias>] --source <source> --target <target>",
 	}
 
 	TypeScan = Type{
 		name:    "scan",
-		command: "scan --index <index> --start <start> --direction <direction> [--ranges <ranges>] [--limit <limit>]",
+		command: "scan [--table <table>] [--alias <alias>] --index <index> --start <start> --direction <direction> [--ranges <ranges>] [--limit <limit>]",
 	}
 
 	TypeMutate = Type{
 		name:    "mutate",
-		command: "mutate --type <type> --table <table> --source <source> --target <target> --version <version> --properties <properties>",
+		command: "mutate [--table <table>] [--alias <alias>] --type <type> --source <source> --target <target> --version <version> --properties <properties>",
 	}
 
 	TypeCount = Type{
 		name:    "count",
-		command: "count --start <start> --direction <direction>",
+		command: "count [--table <table>] [--alias <alias>] --start <start> --direction <direction>",
 	}
 
 	TypeLoad = Type{

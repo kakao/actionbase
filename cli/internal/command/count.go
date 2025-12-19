@@ -36,12 +36,6 @@ func (c *Count) Execute(args []string) {
 		return
 	}
 
-	table := c.runner.GetCurrentTable()
-	if table == "" {
-		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
-		return
-	}
-
 	parser := util.ParseArgs(args)
 
 	start, found := parser.Get("start")
@@ -56,6 +50,27 @@ func (c *Count) Execute(args []string) {
 		return
 	}
 
+	table, found := parser.Get("table")
+	if found {
+		c.doCount(database, table, start, direction)
+		return
+	}
+
+	alias, found := parser.Get("alias")
+	if found {
+		c.doCount(database, alias, start, direction)
+		return
+	}
+
+	currentTable := c.runner.GetCurrentTable()
+	if currentTable == "" {
+		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
+		return
+	}
+	c.doCount(database, currentTable, start, direction)
+}
+
+func (c *Count) doCount(database string, table string, start string, direction string) {
 	response := c.actionbaseClient.Counts(database, table, start, direction)
 
 	if response == nil {
@@ -79,8 +94,6 @@ func (c *Count) Execute(args []string) {
 	fmt.Printf("The count of %s edges found\n", util.Int64WithCommas(response.Count))
 
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-	fmt.Println()
-	return
 }
 
 func (c *Count) GetDescription() string {

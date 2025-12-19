@@ -37,18 +37,36 @@ func (d *Desc) Execute(args []string) {
 
 	parser := util.ParseArgs(args)
 
+	resourceType := args[0]
+	if resourceType == "table" || resourceType == "alias" {
+		name, found := parser.Get("name")
+
+		if !found {
+			fmt.Println("Usage: desc <table|alias> <name>")
+			return
+		}
+
+		if resourceType == "table" {
+			d.tableCommand.Desc(name)
+		} else {
+			d.aliasCommand.Desc(name)
+		}
+
+		return
+	}
+
 	using, found := parser.Get("using")
 	if !found {
 		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
 		return
 	}
 
-	name := args[0]
+	usingType := args[0]
 	if using == "table" {
-		d.tableCommand.Desc(name)
+		d.tableCommand.Desc(usingType)
 		return
 	} else if using == "alias" {
-		d.aliasCommand.Desc(name)
+		d.aliasCommand.Desc(usingType)
 		return
 	}
 
