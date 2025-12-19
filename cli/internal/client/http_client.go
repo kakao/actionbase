@@ -106,6 +106,11 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 	}(response.Body)
 
 	body, err := io.ReadAll(response.Body)
+
+	if c.context.IsDebuggingEnabled {
+		slog.Debug(fmt.Sprintf("%s\n> %s", response.Status, body))
+	}
+
 	if err != nil {
 		var nil T
 		return NewResponse[T](-1, nil, fmt.Errorf("failed to read response Body: %w", err))
@@ -118,10 +123,6 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 		}
 		var nil T
 		return NewResponse[T](-1, nil, fmt.Errorf("failed to read response Body: %w", err))
-	}
-
-	if c.context.IsDebuggingEnabled {
-		slog.Debug(fmt.Sprintf("%s\n> %s", response.Status, responseBody))
 	}
 
 	return NewResponse(statusCode, responseBody, nil)
