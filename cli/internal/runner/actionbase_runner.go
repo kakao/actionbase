@@ -26,7 +26,7 @@ func NewActionbaseCommandLineRunner(host string, authKey *string) *ActionbaseCom
 	logger := util.NewLogger(slog.LevelDebug)
 	slog.SetDefault(logger)
 
-	clientContext := client.Context{IsDebuggingEnabled: false}
+	clientContext := client.Context{IsDebugEnabled: false}
 	httpClient := client.NewHTTPClient(host, authKey, &clientContext)
 
 	runner := &ActionbaseCommandLineRunner{
@@ -74,7 +74,7 @@ func (r *ActionbaseCommandLineRunner) GetCurrentAlias() string {
 }
 
 func (r *ActionbaseCommandLineRunner) IsDebugEnabled() bool {
-	return r.clientContext.IsDebuggingEnabled
+	return r.clientContext.IsDebugEnabled
 }
 
 func (r *ActionbaseCommandLineRunner) SetCurrentTable(table string) {
@@ -86,7 +86,7 @@ func (r *ActionbaseCommandLineRunner) SetCurrentAlias(alias string) {
 }
 
 func (r *ActionbaseCommandLineRunner) SetIsDebugEnabled(debugging bool) {
-	r.clientContext.IsDebuggingEnabled = debugging
+	r.clientContext.IsDebugEnabled = debugging
 }
 
 func (r *ActionbaseCommandLineRunner) ShowBanner() {

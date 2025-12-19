@@ -11,7 +11,7 @@ import (
 )
 
 type Context struct {
-	IsDebuggingEnabled bool
+	IsDebugEnabled bool
 }
 
 type Response[T any] struct {
@@ -90,7 +90,7 @@ func Post[T any, R any](c *HTTPClient, uri string, requestBody T) *Response[R] {
 }
 
 func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
-	if c.context.IsDebuggingEnabled {
+	if c.context.IsDebugEnabled {
 		if request.Body != nil {
 			slog.Debug(fmt.Sprintf("Trying to call '%s %s'\n> request: %s", request.Method, request.URL, request.Body))
 		} else {
@@ -114,7 +114,7 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 
 	body, err := io.ReadAll(response.Body)
 
-	if c.context.IsDebuggingEnabled {
+	if c.context.IsDebugEnabled {
 		slog.Debug(fmt.Sprintf("%s\n> %s", response.Status, body))
 	}
 
@@ -125,7 +125,7 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 
 	var responseBody T
 	if err := json.Unmarshal(body, &responseBody); err != nil {
-		if c.context.IsDebuggingEnabled {
+		if c.context.IsDebugEnabled {
 			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
 		var nil T
