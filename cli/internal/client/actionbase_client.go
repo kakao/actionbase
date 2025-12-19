@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/kakao/actionbase/internal/client/model"
@@ -27,7 +28,7 @@ func (a *ActionbaseClient) CreateStorage(name string, requestBody *model.Storage
 	var ddlStatus model.DdlStatus[model.StorageEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlStatus); err != nil {
 		if a.context.IsDebuggingEnabled {
-			fmt.Printf("Failed to parse response: %s\n", err.Error())
+			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
 		return nil
 	}
@@ -45,7 +46,7 @@ func (a *ActionbaseClient) CreateDatabase(name string, requestBody *model.Databa
 	var ddlStatus model.DdlStatus[model.DatabaseEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlStatus); err != nil {
 		if a.context.IsDebuggingEnabled {
-			fmt.Printf("Failed to parse response: %s\n", err.Error())
+			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
 		return nil
 	}
@@ -68,7 +69,7 @@ func (a *ActionbaseClient) CreateTable(
 	var ddlStatus model.DdlStatus[model.TableEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlStatus); err != nil {
 		if a.context.IsDebuggingEnabled {
-			fmt.Printf("Failed to parse response: %s\n", err.Error())
+			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
 		return nil
 	}
@@ -92,7 +93,7 @@ func (a *ActionbaseClient) CreateAlias(database string, table string, name strin
 	var ddlStatus model.DdlStatus[model.AliasEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlStatus); err != nil {
 		if a.context.IsDebuggingEnabled {
-			fmt.Printf("Failed to parse response: %s\n", err.Error())
+			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
 		return nil
 	}
@@ -113,7 +114,7 @@ func (a *ActionbaseClient) GetDatabases() *model.DdlPage[model.DatabaseEntity] {
 	var ddlPage model.DdlPage[model.DatabaseEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlPage); err != nil {
 		if a.context.IsDebuggingEnabled {
-			fmt.Printf("Failed to parse response: %s\n", err.Error())
+			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
 		return nil
 	}
@@ -130,7 +131,7 @@ func (a *ActionbaseClient) GetDatabase(name string) *model.DatabaseEntity {
 	var database model.DatabaseEntity
 	if err := json.Unmarshal([]byte(clientResponse.Body), &database); err != nil {
 		if a.context.IsDebuggingEnabled {
-			fmt.Printf("Failed to parse response: %s\n", err.Error())
+			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
 		return nil
 	}
@@ -147,7 +148,7 @@ func (a *ActionbaseClient) GetStorages() *model.DdlPage[model.StorageEntity] {
 	var ddlPage model.DdlPage[model.StorageEntity]
 	if err := json.Unmarshal([]byte(clientResponse.Body), &ddlPage); err != nil {
 		if a.context.IsDebuggingEnabled {
-			fmt.Printf("Failed to parse response: %s\n", err.Error())
+			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
 		}
 		return nil
 	}

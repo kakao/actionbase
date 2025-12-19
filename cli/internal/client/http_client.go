@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -77,9 +78,9 @@ func Post[T any](uri string, requestBody T, c *HTTPClient) *Response {
 func (c *HTTPClient) call(request *http.Request) *Response {
 	if c.context.IsDebuggingEnabled {
 		if request.Body != nil {
-			fmt.Printf("[DEBUG][%s] Trying to call '%s %s'\n> %s\n", time.DateTime, request.Method, request.URL, request.Body)
+			slog.Debug(fmt.Sprintf("Trying to call '%s %s'\n> request: %s", request.Method, request.URL, request.Body))
 		} else {
-			fmt.Printf("[DEBUG][%s] Trying to call '%s %s%s'\n", time.DateTime, request.Method, request.URL, request.URL.RequestURI())
+			slog.Debug(fmt.Sprintf("Trying to call '%s %s'", request.Method, request.URL))
 		}
 	}
 
@@ -102,15 +103,12 @@ func (c *HTTPClient) call(request *http.Request) *Response {
 	}
 
 	bodyStr := string(body)
-	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
-		if c.context.IsDebuggingEnabled {
-			fmt.Printf("[DEBUG] HTTP error code: %d, body: %s\n", statusCode, bodyStr)
-		}
-		return &Response{StatusCode: statusCode, Body: bodyStr, Error: fmt.Errorf("HTTP error code: %d", statusCode)}
+	if c.context.IsDebuggingEnabled {
+		slog.Debug(fmt.Sprintf("%s\n> %s", response.Status, bodyStr))
 	}
 
-	if c.context.IsDebuggingEnabled {
-		fmt.Printf("[DEBUG] %s\n> %s\n\n", response.Status, bodyStr)
+	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
+		return &Response{StatusCode: statusCode, Body: bodyStr, Error: fmt.Errorf("HTTP error code: %d", statusCode)}
 	}
 
 	return &Response{StatusCode: statusCode, Body: bodyStr, Error: nil}

@@ -2,6 +2,7 @@ package runner
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/kakao/actionbase/internal/client"
@@ -11,6 +12,7 @@ import (
 
 // ActionbaseCommandLineRunner represents an Actionbase-specific CLI runner
 type ActionbaseCommandLineRunner struct {
+	logger *slog.Logger
 	*CommandLineRunner
 	client          *client.ActionbaseClient
 	clientContext   *client.Context
@@ -21,10 +23,14 @@ type ActionbaseCommandLineRunner struct {
 
 // NewActionbaseCommandLineRunner creates a new ActionbaseCommandLineRunner instance
 func NewActionbaseCommandLineRunner(host string, authKey *string) *ActionbaseCommandLineRunner {
+	logger := util.NewLogger(slog.LevelDebug)
+	slog.SetDefault(logger)
+
 	clientContext := client.Context{IsDebuggingEnabled: false}
 	httpClient := client.NewHTTPClient(host, authKey, &clientContext)
 
 	runner := &ActionbaseCommandLineRunner{
+		logger:            logger,
 		CommandLineRunner: NewCommandLineRunner("Actionbase", "0.0.1"),
 		client:            client.NewActionbaseClient(httpClient, &clientContext),
 		clientContext:     &clientContext,
