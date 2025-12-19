@@ -14,22 +14,46 @@ User activity forms actor→target relationships with interaction properties.
 Actionbase models them as a graph and creates read-optimized structures at write
 time for fast, predictable queries.
 
-Built on HBase, it provides strong durability and horizontal scalability while
-offering a high-level abstraction tailored for real-time activity serving.
+When backed by HBase, Actionbase inherits strong durability and horizontal
+scalability while providing a high-level abstraction tailored for real-time
+activity serving.
 
-### Project Goals
+### Design Goals
 
-- **Real-time Serving**: Sub-10ms latency for most read operations
-- **High Throughput**: Supports hundreds of thousands of requests per second (RPS)
-- **Massive Data Handling**: Efficient management of multi-TB datasets
-- **Horizontal Scalability**: Scales out seamlessly with service growth
+- **Shared Activity Layer**  
+  Provide a unified platform for storing and serving user activity so individual
+  services don’t need to build their own activity storage or serving logic.
+
+- **Natural Activity Modeling**  
+  Express activity as actor→target relationships with schema-defined
+  properties, fitting the structure of user interactions.
+
+- **Write-Time Optimization**  
+  Capture common read patterns—recency, existence checks, counts,
+  aggregations—at write time instead of reimplementing them per service.
+
+- **Leverage Proven Storage**  
+  Build on the strengths of existing storage engines (e.g., HBase) while
+  focusing Actionbase on activity modeling rather than reinventing durability,
+  scale, or distribution.
 
 ### Key Features
 
-- **Write-time Optimization**: Pre-computed indexes and counters for ultra-fast reads
-- **Property Graph Model**: Naturally represents user activities and relationships
-- **Easy Integration**: REST API for simple and seamless integration
-- **Lambda Architecture Support**: Bulk loading, asynchronous processing, and data pipeline capabilities
+- **Write-Time Materialization**  
+  Builds the data needed for fast, predictable reads at write time, eliminating
+  service-specific indexing or counting logic.
+
+- **Activity-Oriented Graph Model**  
+  Represents activity as actor→target relationships with schema-defined
+  properties.
+
+- **Unified REST API**  
+  Provides a simple, storage-agnostic interface for querying and mutating
+  activity data.
+
+- **WAL/CDC Integration**  
+  Emits write-ahead and change logs for recovery, bulk loading,
+  asynchronous processors, and downstream data pipelines.
 
 ## Architecture
 
@@ -49,26 +73,26 @@ Actionbase is built with a modular architecture:
   - Kotlin, Spring WebFlux
   - Asynchronous API processing
 
-- **pipeline**: Data processing *()*
+- **pipeline** (Planned): Data processing
   - Scala (Java 8), Apache Spark
   - Async Processing, Bulk loading, backup, and real-time ETL
 
 ### Datastore
 
-Actionbase currently uses HBase as its primary storage backend due to its
-reliability and horizontal scalability. Additional storage backends, such as
+Actionbase currently uses HBase as its primary storage backend, leveraging its
+durability and horizontal scalability. Additional storage backends, such as
 SlateDB, are planned for future releases.
 
 ## Production Usage
 
-Actionbase is deployed in KakaoTalk and KakaoShopping, powering real-time
-activity data processing for tens of millions of users. It has been in stable
-production for years, delivering predictable read performance, consistent write
-throughput, and robust multi-terabyte data management.
+Actionbase is used across Kakao services—for example, KakaoTalk and
+KakaoShopping—to power real-time activity data processing with HBase. It has
+been in stable production for years, delivering predictable reads, consistent
+writes, and reliable handling of multi-terabyte datasets.
 
 ## Learn More
 
-- [Documentation](https://actionbase.dev/)
+- [Documentation](https://actionbase.io/)
 - [Introduction to Actionbase (Korean) / if(kakaoAI)2024](https://www.youtube.com/watch?v=8-hVAFVHISE)
 
 ## Contributing
@@ -83,8 +107,10 @@ For more information, please visit our [Community](https://actionbase.dev/commun
 
 ## Current Status
 
-This project is in the initial open-source preparation phase. Internal components
-will be released progressively.
+Actionbase is in its initial open-source preparation phase. The first release
+aims to introduce the project’s core concepts and provide a hands-on guide, with
+additional internal components to be open-sourced progressively. Operational
+guides, including Kubernetes-based deployment, will follow in later stages.
 
 ## License
 
