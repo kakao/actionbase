@@ -49,9 +49,10 @@ func (l *Load) Execute(args []string) {
 	path := args[0]
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Printf("Failed to open file: %s\n", path)
+		fmt.Println(err.Error())
 		return
 	}
+
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
@@ -61,15 +62,16 @@ func (l *Load) Execute(args []string) {
 
 	reader := bufio.NewReader(file)
 
+	l.load(reader, path)
+}
+
+func (l *Load) load(reader *bufio.Reader, path string) {
 	for {
 		chunk, err := reader.ReadString(';')
-		chunk = strings.TrimSpace(chunk)
-		chunk = strings.TrimSuffix(chunk, ";")
+		chunk = l.normalize(chunk)
 		if err == io.EOF {
 			if len(chunk) > 0 {
-				clean := strings.ReplaceAll(chunk, "\n", " ")
-				clean = strings.ReplaceAll(clean, "\r", " ")
-				l.load(clean)
+				l.doLoad(chunk)
 			}
 			break
 		}
@@ -77,52 +79,52 @@ func (l *Load) Execute(args []string) {
 			log.Fatal(err)
 		}
 
-		clean := strings.ReplaceAll(chunk, "\n", " ")
-		clean = strings.ReplaceAll(clean, "\r", " ")
-		l.load(clean)
+		ok := l.doLoad(chunk)
+
+		if !ok {
+			fmt.Printf("Failed to doLoad '%s'. Please check your command syntax or system log\n", path)
+			break
+		}
 	}
 }
 
-func (l *Load) GetDescription() string {
-	return "Load resources"
-}
-
-func (l *Load) GetType() Type {
-	return TypeLoad
-}
-
-func (l *Load) load(data string) {
-	results := parseArgsWithQuotes(data)
+func (l *Load) doLoad(data string) bool {
+	results := l.parseArgsWithQuotes(data)
 	resourceType := results[1]
 
 	parser := util.ParseArgs(results)
 
 	data, found := parser.Get("data")
 	if !found {
-		return
+		fmt.Printf("Usage: %s\n", l.GetType().GetCommand())
+		return false
 	}
 
-	data = runReservedWords(data)
+	data = l.runReservedWords(data)
 
-	if resourceType == "database" {
-		if !(l.loadDatabase(parser, data)) {
-			return
+	switch resourceType {
+	case "database":
+		if !l.loadDatabase(parser, data) {
+			return false
 		}
-		return
-	} else if resourceType == "storage" {
-		if l.loadStorage(parser, data) {
-			return
+	case "storage":
+		if !l.loadStorage(parser, data) {
+			return false
 		}
-		return
-	} else if resourceType == "table" {
-		if l.loadTable(parser, data) {
-			return
+	case "table":
+		if !l.loadTable(parser, data) {
+			return false
 		}
-		return
-	} else if resourceType == "edges" {
-		l.loadEdge(parser, data)
-		return
+	case "edges":
+		if !l.loadEdge(parser, data) {
+			return false
+		}
+	default:
+		fmt.Printf("Unknown resource type: %s\n", resourceType)
+		return false
 	}
+
+	return true
 }
 
 func (l *Load) loadDatabase(parser *util.Parser, data string) bool {
@@ -139,7 +141,9 @@ func (l *Load) loadDatabase(parser *util.Parser, data string) bool {
 		return false
 	}
 	response := l.actionbaseClient.CreateDatabase(name, &databaseCreateRequest)
-	if response.IsError() && response.Body.Status == "ERROR" {
+
+	if response.IsError() || response.Body.Status == "ERROR" {
+		fmt.Printf("Failed to create database '%s'\n", name)
 		return false
 	}
 
@@ -162,7 +166,8 @@ func (l *Load) loadStorage(parser *util.Parser, data string) bool {
 	}
 
 	response := l.actionbaseClient.CreateStorage(name, &storageCreateRequest)
-	if response.IsError() && response.Body.Status == "ERROR" {
+	if response.IsError() || response.Body.Status == "ERROR" {
+		fmt.Printf("Failed to create storage '%s'\n", name)
 		return false
 	}
 
@@ -191,7 +196,8 @@ func (l *Load) loadTable(parser *util.Parser, data string) bool {
 	}
 
 	response := l.actionbaseClient.CreateTable(database, name, &tableCreateRequest)
-	if response.IsError() && response.Body.Status == "ERROR" {
+	if response.IsError() || response.Body.Status == "ERROR" {
+		fmt.Printf("Failed to create table '%s'\n", name)
 		return false
 	}
 
@@ -239,7 +245,14 @@ func (l *Load) loadEdge(parser *util.Parser, data string) bool {
 	return true
 }
 
-func runReservedWords(dataStr string) string {
+func (l *Load) normalize(chunk string) string {
+	chunk = strings.TrimSpace(chunk)
+	chunk = strings.TrimSuffix(chunk, ";")
+	chunk = strings.ReplaceAll(chunk, "\n", " ")
+	return strings.ReplaceAll(chunk, "\r", " ")
+}
+
+func (l *Load) runReservedWords(dataStr string) string {
 	dataStr = strings.TrimSpace(dataStr)
 	if len(dataStr) >= 2 && dataStr[0] == '\'' && dataStr[len(dataStr)-1] == '\'' {
 		dataStr = dataStr[1 : len(dataStr)-1]
@@ -249,7 +262,7 @@ func runReservedWords(dataStr string) string {
 	return dataStr
 }
 
-func parseArgsWithQuotes(line string) []string {
+func (l *Load) parseArgsWithQuotes(line string) []string {
 	var args []string
 	var current strings.Builder
 	inSingleQuote := false
@@ -290,10 +303,17 @@ func parseArgsWithQuotes(line string) []string {
 		escaped = false
 	}
 
-	// Add the last argument if any
 	if current.Len() > 0 {
 		args = append(args, current.String())
 	}
 
 	return args
+}
+
+func (l *Load) GetDescription() string {
+	return "Load resources"
+}
+
+func (l *Load) GetType() Type {
+	return TypeLoad
 }
