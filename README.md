@@ -1,119 +1,113 @@
 # Actionbase
 
-Actionbase is a system for storing and serving user activity data in real time.
+Actionbase is a database for serving user interactions in real time.
 
 ## Overview
 
-Actionbase is built for high-throughput, low-latency workloads where user
-activity is continuously written and queried. It supports patterns such as
-**recent views**, **likes** and **reactions**, and **follows** used across product listings,
-recommendations, feeds, and other activity-driven surfaces in large-scale Kakao services.
+Actionbase is designed for high-throughput, low-latency workloads where user interactions are continuously
+written and queried. It supports common interaction patterns such as **recent views**, **likes and reactions**,
+and **follows**, widely used in product listings, recommendations, feeds, and other interaction-driven surfaces
+in large-scale services.
 
-User activity forms actor→target relationships with interaction properties.
-Actionbase models them as a graph and creates read-optimized structures at write
-time for fast, predictable queries.
+User interactions naturally form actor→target relationships with associated properties. Actionbase models
+these relationships using a graph data model and materializes read-optimized structures at write time, enabling
+fast and predictable queries without expensive read-time computation.
 
-When backed by HBase, Actionbase inherits strong durability and horizontal
-scalability while providing a high-level abstraction tailored for real-time
-activity serving.
+When backed by HBase, Actionbase inherits strong durability and horizontal scalability, while providing 
+a higher-level abstraction tailored for real-time interaction serving.
 
-### Design Goals
+## Design Goals
 
-- **Shared Activity Layer**  
-  Provide a unified platform for storing and serving user activity so individual
-  services don’t need to build their own activity storage or serving logic.
+- **Shared Interaction Layer**  
+  Provide a unified platform for storing and serving user interactions, removing the need for individual services to
+  build and operate their own interaction storage and serving logic.
 
-- **Natural Activity Modeling**  
-  Express activity as actor→target relationships with schema-defined
-  properties, fitting the structure of user interactions.
+- **Natural Interaction Modeling**  
+  Model interactions as actor→target relationships with schema-defined properties, closely reflecting how user
+  interactions appear in real applications.
 
 - **Write-Time Optimization**  
-  Capture common read patterns—recency, existence checks, counts,
-  aggregations—at write time instead of reimplementing them per service.
+  Pre-compute common read patterns—such as retrieving recent items, checking existence, counting relationships,
+  and traversing ordered results—at write time to enable fast and predictable reads.
 
 - **Leverage Proven Storage**  
-  Build on the strengths of existing storage engines (e.g., HBase) while
-  focusing Actionbase on activity modeling rather than reinventing durability,
-  scale, or distribution.
+  Build on the strengths of existing storage engines (for example, HBase), handling interaction mutations at
+  a higher level to produce durable state and read-optimized structureswithout reimplementing durability,
+  scalability, or distribution.
 
-### Key Features
+## Key Features
 
 - **Write-Time Materialization**  
-  Builds the data needed for fast, predictable reads at write time, eliminating
-  service-specific indexing or counting logic.
+  Pre-compute the data required for fast, predictable reads at write time, eliminating service-specific indexing and counting logic.
 
-- **Activity-Oriented Graph Model**  
-  Represents activity as actor→target relationships with schema-defined
-  properties.
+- **Interaction-Oriented Graph Model**  
+  Model user interactions as actor→target relationships with schema-defined properties.
 
 - **Unified REST API**  
-  Provides a simple, storage-agnostic interface for querying and mutating
-  activity data.
+  Expose a simple, storage-agnostic API for querying and mutating interaction data.
 
-- **WAL/CDC Integration**  
-  Emits write-ahead and change logs for recovery, bulk loading,
-  asynchronous processors, and downstream data pipelines.
+- **WAL / CDC Integration**  
+  Emit write-ahead logs and change data capture streams for recovery, replay, asynchronous processing, and downstream data pipelines.
 
 ## Architecture
 
 Actionbase is built with a modular architecture:
 
-- **core** (codec-java, core-java): Core data model definition and data processing logic
-  - Java, Kotlin (Java 8 compatible) for compatibility (e.g., pipeline)
-  - Data encoding/decoding for physical storage
-  - Event and state change processing
-  
-- **engine**: Business logic engine
+- **core** (codec-java, core-java)  
+  Core data model definitions and processing logic
+  - Java, Kotlin (Java 8 compatible)
+  - Data encoding and decoding for physical storage
+  - Event and state transition processing
+
+- **engine**  
+  Business logic engine
   - Kotlin
-  - Pure business logic independent of transport protocols
-  - HBase communication, metadata management, data mutation, and query execution
+  - Core interaction processing independent of transport protocols
+  - Metadata management, data mutation, and query execution
 
-- **server**: High-performance REST API server
+- **server**  
+  High-performance REST API server
   - Kotlin, Spring WebFlux
-  - Asynchronous API processing
+  - Asynchronous request handling
 
-- **pipeline** (Planned): Data processing
+- **pipeline** *(planned)*  
+  Data processing and background workloads
   - Scala (Java 8), Apache Spark
-  - Async Processing, Bulk loading, backup, and real-time ETL
+  - Asynchronous processing, bulk loading, backup, and real-time ETL
 
-### Datastore
+## Datastore
 
-Actionbase currently uses HBase as its primary storage backend, leveraging its
-durability and horizontal scalability. Additional storage backends, such as
-SlateDB, are planned for future releases.
+Actionbase currently uses HBase as its primary storage backend, leveraging its durability and horizontal scalability.
+Additional storage backends, such as SlateDB, are planned for future releases.
 
 ## Production Usage
 
-Actionbase is used across Kakao services—for example, KakaoTalk and
-KakaoShopping—to power real-time activity data processing with HBase. It has
-been in stable production for years, delivering predictable reads, consistent
-writes, and reliable handling of multi-terabyte datasets.
+Actionbase is used across Kakao services—including KakaoTalk and KakaoShopping—to power real-time user interaction serving
+at scale. It has been running in stable production for years, delivering predictable reads, consistent writes, and reliable
+handling of multi-terabyte datasets.
 
 ## Learn More
 
 - [Documentation](https://actionbase.io/)
-- [Introduction to Actionbase (Korean) / if(kakaoAI)2024](https://www.youtube.com/watch?v=8-hVAFVHISE)
+- [Introduction to Actionbase (Korean) / if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE)
 
 ## Contributing
 
-We welcome contributions! Please see our contributing guidelines for details on:
+We welcome contributions. Please see our contributing guidelines for details on:
 
 - Code style and conventions
 - Submitting issues and pull requests
 - Development workflow
 
-For more information, please visit our [Community](https://actionbase.dev/community/github/) page.
+For more information, visit our [Community](https://actionbase.io/community/github/) page.
 
 ## Current Status
 
-Actionbase is in its initial open-source preparation phase. The first release
-focuses on introducing the core concepts and providing a hands-on guide, with
-additional components to be open-sourced over time.
+Actionbase is in its initial open-source preparation phase. The first release focuses on introducing the core concepts and
+providing a hands-on guide, with additional components to be open-sourced over time.
 
-We are releasing the codebase largely as it evolved inside Kakao—after removing
-sensitive details—to share its real development journey and grow it further
-with community. Some internal modules and operational guides—including Kubernetes
-and HBase—will be added later.
+The codebase is being released largely as it evolved inside Kakao, with sensitive details removed. Some internal modules and
+operational guides—including Kubernetes and HBase—will be added in future releases.
 
 ## License
 
