@@ -2,12 +2,11 @@
 
 ## Introduction
 
-Actionbase is a database for serving user interactions in real time.
+Actionbase is a database for serving user interactions in real time, used in production at scale at Kakao.
 
 It is designed for high-throughput, low-latency workloads where user
 interactions are continuously written and queried. It supports common interaction patterns such as **recent views**, **likes**, **reactions**,
 and **follows**, widely used in product listings, recommendations, feeds, and other interaction-driven surfaces in large-scale services.
-It is used in production at scale at Kakao.
 
 User interactions naturally form actor→target relationships with associated properties. Actionbase models
 these relationships using a graph data model and materializes read-optimized structures at write time, enabling
