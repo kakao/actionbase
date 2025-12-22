@@ -2,19 +2,20 @@ package guides
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
-	"io/fs"
+	"io"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 )
-
-var guideFs embed.FS
 
 var (
 	mutex    sync.Mutex
@@ -22,7 +23,7 @@ var (
 	server   *http.Server
 )
 
-func Start(assetPath string) error {
+func Start(organization, packageName, apiHost string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -31,16 +32,20 @@ func Start(assetPath string) error {
 		return nil
 	}
 
-	sub, err := fs.Sub(guideFs, assetPath)
-	if err != nil {
-		return fmt.Errorf("failed to load guide server assets: %w", err)
+	distPath := filepath.Join("node_modules", "@"+organization, packageName, "dist")
+
+	if _, err := os.Stat(distPath); os.IsNotExist(err) {
+		fmt.Println("The guide assets are not installed. Please check .node_modules/@" + organization + "/" + packageName + "/dist/index.html exists")
+		return fmt.Errorf("guide assets not found at %s: %w", distPath, err)
 	}
 
-	fileServer := http.FileServer(http.FS(sub))
+	distFS := os.DirFS(distPath)
+	fileServer := http.FileServer(http.FS(distFS))
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fileServer.ServeHTTP(w, r)
-	})
+	apiURL, err := url.Parse(apiHost)
+	if err != nil {
+		return fmt.Errorf("invalid API host URL: %w", err)
+	}
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -48,8 +53,23 @@ func Start(assetPath string) error {
 	}
 	listener = ln
 
+	indexPath := filepath.Join(distPath, "index.html")
 	server = &http.Server{
-		Handler: handler,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/graph") {
+				proxy(w, r, apiURL)
+				return
+			}
+
+			rw := &responseWriter{ResponseWriter: w, status: http.StatusOK, headerSent: false}
+			fileServer.ServeHTTP(rw, r)
+
+			if rw.status == http.StatusNotFound {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				http.ServeFile(w, r, indexPath)
+				return
+			}
+		}),
 	}
 
 	address := "http://" + ln.Addr().String()
@@ -100,6 +120,52 @@ func Stop() error {
 	fmt.Println("guide server is stopped")
 
 	return nil
+}
+
+func proxy(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
+	proxyURL := *targetURL
+	proxyURL.Path = r.URL.Path
+	proxyURL.RawQuery = r.URL.RawQuery
+
+	proxyReq, err := http.NewRequest(r.Method, proxyURL.String(), r.Body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error creating proxy request: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	for key, values := range r.Header {
+		for _, value := range values {
+			proxyReq.Header.Add(key, value)
+		}
+	}
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+	resp, err := client.Do(proxyReq)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error proxying request: %v", err), http.StatusBadGateway)
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
+
+	for key, values := range resp.Header {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+
+	w.WriteHeader(resp.StatusCode)
+
+	_, err = io.Copy(w, resp.Body)
+	if err != nil {
+		return
+	}
 }
 
 func openBrowser(url string) error {
