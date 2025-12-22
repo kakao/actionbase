@@ -70,6 +70,11 @@ var (
 		name:    "load",
 		command: "load <path>",
 	}
+
+	TypeGuide = Type{
+		name:    "guide",
+		command: "guide name <start|stop>",
+	}
 )
 
 func (t Type) GetName() string {

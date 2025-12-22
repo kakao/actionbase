@@ -54,6 +54,7 @@ func NewActionbaseCommandLineRunner(host string, authKey *string) *ActionbaseCom
 	runner.RegisterCommand(command.TypeCount.GetName(), command.NewCount(runner, actionbaseClient))
 	runner.RegisterCommand(command.TypeLoad.GetName(), command.NewLoad(runner, actionbaseClient))
 	runner.RegisterCommand(command.TypeDebug.GetName(), command.NewDebug(runner))
+	runner.RegisterCommand(command.TypeGuide.GetName(), command.NewGuide())
 
 	return runner
 }
