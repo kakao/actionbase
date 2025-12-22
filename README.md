@@ -5,7 +5,7 @@ Actionbase is a database for serving user interactions in real time.
 ## Overview
 
 Actionbase is designed for high-throughput, low-latency workloads where user interactions are continuously
-written and queried. It supports common interaction patterns such as **recent views**, **likes and reactions**,
+written and queried. It supports common interaction patterns such as **recent views**, **likes**, **reactions**,
 and **follows**, widely used in product listings, recommendations, feeds, and other interaction-driven surfaces
 in large-scale services.
 
