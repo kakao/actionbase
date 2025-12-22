@@ -12,6 +12,8 @@ import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.util.getLogger
 import com.kakao.actionbase.v2.engine.v3.V3MutationService
 import com.kakao.actionbase.v2.engine.v3.V3QueryService
+import com.kakao.actionbase.v2.engine.wal.DefaultWalFactory
+import com.kakao.actionbase.v2.engine.wal.WalFactory
 
 import java.util.Properties
 
@@ -88,11 +90,15 @@ class GraphConfiguration {
     fun provideKafkaClientFactory(): KafkaClientFactory = SpringKafkaClientFactory
 
     @Bean
+    fun provideWalFactory(): WalFactory = DefaultWalFactory
+
+    @Bean
     fun provideCdcFactory(): CdcFactory = DefaultCdcFactory
 
     @Bean
     fun provideGraph(
         config: GraphConfig,
+        walFactory: WalFactory,
         cdcFactory: CdcFactory,
         kafkaClientFactory: KafkaClientFactory,
         webClientFactory: WebClientFactory,
@@ -100,6 +106,7 @@ class GraphConfiguration {
         val graph =
             Graph.create(
                 config,
+                walFactory,
                 cdcFactory,
                 kafkaClientFactory,
                 webClientFactory,

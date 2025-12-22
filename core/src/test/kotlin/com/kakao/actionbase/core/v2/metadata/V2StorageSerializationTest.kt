@@ -25,8 +25,6 @@ class V2StorageSerializationTest {
                     mapOf(
                         "namespace" to "kc_graph",
                         "tableName" to "st3_talkstore_view_product_v1_20240730_231948",
-                        "zkHosts" to "actionbase-hm1.exmaple.com:2181,actionbase-hm2.exmaple.com:2181,actionbase-hm3.exmaple.com:2181",
-                        "useLockTable" to false,
                     ),
             )
 
@@ -43,9 +41,7 @@ class V2StorageSerializationTest {
               "active": true,
               "conf": {
                 "namespace": "kc_graph",
-                "tableName": "st3_talkstore_view_product_v1_20240730_231948",
-                "zkHosts": "actionbase-hm1.exmaple.com:2181,actionbase-hm2.exmaple.com:2181,actionbase-hm3.exmaple.com:2181",
-                "useLockTable": false
+                "tableName": "st3_talkstore_view_product_v1_20240730_231948"
               }
             }
             """.trimIndent()
@@ -65,9 +61,7 @@ class V2StorageSerializationTest {
               "type": "HBASE",
               "conf": {
                 "namespace": "kc_graph",
-                "tableName": "st3_talkstore_view_product_v1_20240730_231948",
-                "zkHosts": "actionbase-hm1.exmaple.com:2181,actionbase-hm2.exmaple.com:2181,actionbase-hm3.exmaple.com:2181",
-                "useLockTable": false
+                "tableName": "st3_talkstore_view_product_v1_20240730_231948"
               }
             }
             """.trimIndent()
@@ -86,8 +80,6 @@ class V2StorageSerializationTest {
                     mapOf(
                         "namespace" to "kc_graph",
                         "tableName" to "st3_talkstore_view_product_v1_20240730_231948",
-                        "zkHosts" to "actionbase-hm1.exmaple.com:2181,actionbase-hm2.exmaple.com:2181,actionbase-hm3.exmaple.com:2181",
-                        "useLockTable" to false,
                     ),
             )
         assertEquals(expected, actual)

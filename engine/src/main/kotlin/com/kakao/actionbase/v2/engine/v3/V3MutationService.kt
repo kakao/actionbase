@@ -16,6 +16,7 @@ import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.EdgeMutationStatus
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
+import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationStatus
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.state.State
@@ -71,9 +72,7 @@ class V3MutationService(
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation"))
         }
 
-        // currently, the `sync` parameter is not used. always SYNC mode.
-        // val mutationMode = MutationModeContext.of(label.entity.mode, sync)
-        val mutationMode = SYNC_MODE
+        val mutationMode = MutationModeContext.of(label.entity.mode, sync)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)
@@ -91,52 +90,70 @@ class V3MutationService(
             }.groupBy { it.source to it.target }
             .flatMap { groupedFlux ->
                 val key = groupedFlux.key()
-                groupedFlux
-                    .collectList()
-                    .flatMap { group ->
-                        val sortedGroup = group.sortedBy { it.event.version }
-                        tableBinding
-                            .mutateEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
-                            .doOnNext { status ->
-                                val last = sortedGroup.last()
-                                val edge = last.toTraceEdge()
-                                val cdcMessage =
-                                    CdcContext(
-                                        label = label.entity.name,
-                                        edge = edge,
-                                        op = last.event.type.toV2(),
-                                        status = EdgeOperationStatus.valueOf(status.status),
-                                        before = status.before.toHashEdge(key.first, key.second),
-                                        after = status.after.toHashEdge(key.first, key.second),
-                                        acc = status.acc,
-                                        alias = if (aliasEntityName == label.entity.name) null else aliasEntityName,
-                                        audit = Audit(requestContext.actor),
-                                        requestId = requestContext.requestId,
-                                    )
-                                graph.cdc
-                                    .write(cdcMessage)
-                                    .subscribeOn(Schedulers.boundedElastic())
-                                    .subscribe()
-                            }.onErrorResume {
-                                if (it is LockAcquisitionFailedException) {
-                                    label
-                                        .findStaleLockAndClear(it.lockEdge, graph.lockTimeout)
+                if (mutationMode.queue) {
+                    groupedFlux
+                        .collectList()
+                        .flatMap { group ->
+                            Mono.just(
+                                EdgeMutationStatus(
+                                    source = key.first,
+                                    target = key.second,
+                                    count = group.size,
+                                    status = EdgeOperationStatus.QUEUED.name,
+                                    before = State.initial,
+                                    after = State.initial,
+                                    acc = 0,
+                                ),
+                            )
+                        }
+                } else {
+                    groupedFlux
+                        .collectList()
+                        .flatMap { group ->
+                            val sortedGroup = group.sortedBy { it.event.version }
+                            tableBinding
+                                .mutateEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
+                                .doOnNext { status ->
+                                    val last = sortedGroup.last()
+                                    val edge = last.toTraceEdge()
+                                    val cdcMessage =
+                                        CdcContext(
+                                            label = label.entity.name,
+                                            edge = edge,
+                                            op = last.event.type.toV2(),
+                                            status = EdgeOperationStatus.valueOf(status.status),
+                                            before = status.before.toHashEdge(key.first, key.second),
+                                            after = status.after.toHashEdge(key.first, key.second),
+                                            acc = status.acc,
+                                            alias = if (aliasEntityName == label.entity.name) null else aliasEntityName,
+                                            audit = Audit(requestContext.actor),
+                                            requestId = requestContext.requestId,
+                                        )
+                                    graph.cdc
+                                        .write(cdcMessage)
                                         .subscribeOn(Schedulers.boundedElastic())
                                         .subscribe()
+                                }.onErrorResume {
+                                    if (it is LockAcquisitionFailedException) {
+                                        label
+                                            .findStaleLockAndClear(it.lockEdge, graph.lockTimeout)
+                                            .subscribeOn(Schedulers.boundedElastic())
+                                            .subscribe()
+                                    }
+                                    Mono.just(
+                                        EdgeMutationStatus(
+                                            source = key.first,
+                                            target = key.second,
+                                            count = 0,
+                                            status = EdgeOperationStatus.ERROR.name,
+                                            before = State.initial,
+                                            after = State.initial,
+                                            acc = 0,
+                                        ),
+                                    )
                                 }
-                                Mono.just(
-                                    EdgeMutationStatus(
-                                        source = key.first,
-                                        target = key.second,
-                                        count = 0,
-                                        status = EdgeOperationStatus.ERROR.name,
-                                        before = State.initial,
-                                        after = State.initial,
-                                        acc = 0,
-                                    ),
-                                )
-                            }
-                    }.subscribeOn(Schedulers.boundedElastic())
+                        }.subscribeOn(Schedulers.boundedElastic())
+                }
             }.collectList()
             .map {
                 EdgeMutationResponse(
@@ -167,9 +184,7 @@ class V3MutationService(
         if (label !is HBaseIndexedLabel) {
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}) is not indexed or not supported for edge mutation"))
         }
-        // currently, the `sync` parameter is not used. always SYNC mode.
-        // val mutationMode = MutationModeContext.of(label.entity.mode, sync)
-        val mutationMode = SYNC_MODE
+        val mutationMode = MutationModeContext.of(label.entity.mode, sync)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)
@@ -187,34 +202,51 @@ class V3MutationService(
             }.groupBy { it.id }
             .flatMap { groupedFlux ->
                 val key = groupedFlux.key()
-                groupedFlux
-                    .collectList()
-                    .flatMap { group ->
-                        val sortedGroup = group.sortedBy { it.event.version }
-                        tableBinding
-                            .mutateMultiEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
-                            .doOnNext { status ->
-                                val last = sortedGroup.last()
-                                val edge = last.toTraceEdge()
-                                val cdcMessage =
-                                    CdcContext(
-                                        label = label.entity.name,
-                                        edge = edge,
-                                        op = last.event.type.toV2(),
-                                        status = EdgeOperationStatus.valueOf(status.status),
-                                        before = status.before.toHashEdge(source = status.before.getMultiEdgeSource(), target = status.before.getMultiEdgeTarget()),
-                                        after = status.after.toHashEdge(source = status.after.getMultiEdgeSource(), target = status.after.getMultiEdgeTarget()),
-                                        acc = status.acc,
-                                        alias = if (aliasEntityName == label.entity.name) null else aliasEntityName,
-                                        audit = Audit(requestContext.actor),
-                                        requestId = requestContext.requestId,
-                                    )
-                                graph.cdc
-                                    .write(cdcMessage)
-                                    .subscribeOn(Schedulers.boundedElastic())
-                                    .subscribe()
-                            }
-                    }.subscribeOn(Schedulers.boundedElastic())
+                if (mutationMode.queue) {
+                    groupedFlux
+                        .collectList()
+                        .flatMap { group ->
+                            Mono.just(
+                                MultiEdgeMutationStatus(
+                                    id = key,
+                                    count = group.size,
+                                    status = EdgeOperationStatus.QUEUED.name,
+                                    before = State.initial,
+                                    after = State.initial,
+                                    acc = 0,
+                                ),
+                            )
+                        }
+                } else {
+                    groupedFlux
+                        .collectList()
+                        .flatMap { group ->
+                            val sortedGroup = group.sortedBy { it.event.version }
+                            tableBinding
+                                .mutateMultiEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
+                                .doOnNext { status ->
+                                    val last = sortedGroup.last()
+                                    val edge = last.toTraceEdge()
+                                    val cdcMessage =
+                                        CdcContext(
+                                            label = label.entity.name,
+                                            edge = edge,
+                                            op = last.event.type.toV2(),
+                                            status = EdgeOperationStatus.valueOf(status.status),
+                                            before = status.before.toHashEdge(source = status.before.getMultiEdgeSource(), target = status.before.getMultiEdgeTarget()),
+                                            after = status.after.toHashEdge(source = status.after.getMultiEdgeSource(), target = status.after.getMultiEdgeTarget()),
+                                            acc = status.acc,
+                                            alias = if (aliasEntityName == label.entity.name) null else aliasEntityName,
+                                            audit = Audit(requestContext.actor),
+                                            requestId = requestContext.requestId,
+                                        )
+                                    graph.cdc
+                                        .write(cdcMessage)
+                                        .subscribeOn(Schedulers.boundedElastic())
+                                        .subscribe()
+                                }
+                        }.subscribeOn(Schedulers.boundedElastic())
+                }
             }.collectList()
             .map {
                 MultiEdgeMutationResponse(
@@ -250,8 +282,6 @@ class V3MutationService(
 
     companion object {
         private const val DEFAULT_PRIMITIVE_VALUE = "0"
-
-        private val SYNC_MODE = MutationModeContext.of(MutationMode.SYNC, MutationMode.SYNC)
 
         private fun EventType.toV2(): EdgeOperation =
             when (this) {

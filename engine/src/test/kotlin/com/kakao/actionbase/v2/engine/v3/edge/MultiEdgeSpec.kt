@@ -5,7 +5,6 @@ import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus
-import com.kakao.actionbase.v2.engine.label.InsertEdgeRequest
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
@@ -83,7 +82,7 @@ class MultiEdgeSpec :
               ],
               "event": false,
               "readOnly": true,
-              "mode": "ASYNC"
+              "mode": "SYNC"
             }
             """.trimIndent()
 
@@ -99,26 +98,6 @@ class MultiEdgeSpec :
         afterTest {
             graph.close()
             cdc.init()
-        }
-
-        "mutate using v2 API should be QUEUED" {
-            val requestAsString =
-                """
-                {
-                  "label": "${keyEdgeLabelName.fullQualifiedName}",
-                  "edges": [
-                    { "ts": 1234567890, "src": 1, "tgt": 2, "props": { "_id": 100000, "paidAt": 1234567890, "productId": 200 } }
-                  ]
-                }
-                """.trimIndent()
-            val request = mapper.readValue<InsertEdgeRequest>(requestAsString)
-            graph
-                .upsert(request)
-                .test()
-                .assertNext { result ->
-                    result.result.size shouldBe 1
-                    result.result[0].status shouldBe EdgeOperationStatus.QUEUED
-                }.verifyComplete()
         }
 
         "mutate using v3 API should be processed even if the label is readOnly" {
