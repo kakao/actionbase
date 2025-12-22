@@ -21,18 +21,29 @@ Run Actionbase locally and define your first interactions.
 
 > Note: Runtime APIs use v3. Metadata APIs still use v2 (`service` / `label` → `database` / `table`).
 
+This quick start does three things:
+
+* **Define metadata**: create a `service`(v2) and `label`(v2)
+* **Write edges**: insert interaction edges (v3)
+* **Read edges**: get / scan / count (v3)
+
 ```
 # start
 git clone https://github.com/kakao/actionbase.git
 cd actionbase
 ./bin/run-local.sh
 
-# service (v2)
+# metadata: create a service (v2)  # ~= v3 database
+# - A service is a namespace that groups interaction labels.
 curl -X POST "http://localhost:8080/graph/v2/service/awesome" \
   -H "Content-Type: application/json" \
   -d '{"desc":"Sample"}'
+# => {"status":"CREATED", ...
 
-# label (v2)
+# metadata: create a label (v2)    # ~= v3 table
+# - A label defines the interaction schema: src (actor), tgt (target), and properties.
+# - dirType=BOTH enables OUT (src->tgt) and IN (tgt<-src) queries.
+# - indices define ordered scans (here: created_at DESC).
 curl -X POST "http://localhost:8080/graph/v2/service/awesome/label/likes" \
   -H "Content-Type: application/json" \
   -d '{
@@ -47,8 +58,12 @@ curl -X POST "http://localhost:8080/graph/v2/service/awesome/label/likes" \
     "storage":"datastore://awesome/likes",
     "indices":[{"name":"created_at_desc","fields":[{"name":"created_at","order":"DESC"}]}]
   }'
+# => {"status":"CREATED", ...
 
-# write
+# write (v3): insert edges
+# - source/target are STRING IDs because the label schema uses STRING.
+# - version is the edge version (often use event time or write time).
+# - properties must match the label fields.
 curl -X POST "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges" \
   -H "Content-Type: application/json" \
   -d '{
@@ -58,13 +73,27 @@ curl -X POST "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edge
       {"type":"INSERT","edge":{"version":1767571200000,"source":"Bob","target":"KakaoTalk","properties":{"created_at":1767571200000}}}
     ]
   }'
+# => {"results":[{"source":"Alice", ...
 
-# read
+# read (v3): point lookup
 curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/get?source=Alice&target=KakaoTalk"
+# => {"edges":[{"version":...,"source":"Alice","target":"KakaoTalk","properties":{"created_at":...}}],...}
+
+# read (v3): ordered scan (OUT)
+# - returns Alice's outgoing likes, ordered by created_at_desc.
 curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/scan/created_at_desc?start=Alice&direction=OUT"
+# => {"edges":[...],"count":2,...}
+
+# read (v3): ordered scan (IN)
+# - returns incoming likes to KakaoTalk, ordered by created_at_desc.
 curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/scan/created_at_desc?start=KakaoTalk&direction=IN"
+# => {"edges":[...],"count":2,...}
+
+# read (v3): count
 curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/count?start=Alice&direction=OUT"
+# => {"start":"Alice","direction":"OUT","count":2,...}
 curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/count?start=KakaoTalk&direction=IN"
+# => {"start":"KakaoTalk","direction":"IN","count":2,...}
 
 # stop
 ./bin/stop-local.sh
