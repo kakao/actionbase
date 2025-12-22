@@ -15,6 +15,67 @@ fast and predictable queries without expensive read-time computation.
 When backed by HBase, Actionbase inherits strong durability and horizontal scalability, and provides
 a higher-level abstraction tailored for real-time interaction serving.
 
+## Quick Start
+
+Run Actionbase locally and define your first interaction model.
+
+### 1. Start Actionbase
+
+```bash
+git clone https://github.com/kakao/actionbase.git
+cd actionbase
+./bin/run-local.sh
+````
+
+### 2. Create a Service
+
+```bash
+curl -X POST "http://localhost:8080/graph/v2/service/awesome" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "desc": "A sample service for demonstrating Actionbase interactions"
+  }'
+```
+
+```json
+{"status":"CREATED","result":{"active":true,"name":"awesome","desc":"A sample service for demonstrating Actionbase interactions"}}
+```
+
+### 3. Create an Interaction Label
+
+```bash
+curl -X POST "http://localhost:8080/graph/v2/service/awesome/label/likes" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "desc": "Represents a user liking a product",
+    "type": "INDEXED",
+    "schema": {
+      "src": { "type": "LONG", "desc": "User identifier" },
+      "tgt": { "type": "LONG", "desc": "Product identifier" },
+      "fields": [
+        {
+          "name": "created_at",
+          "type": "LONG",
+          "nullable": false,
+          "desc": "Timestamp when the like was created"
+        }
+      ]
+    },
+    "dirType": "BOTH",
+    "storage": "datastore://awesome/likes"
+  }'
+```
+
+```json
+{"status":"CREATED","result":{"active":true,"name":"awesome.likes","desc":"Represents a user liking a product", "...": "..."}}
+```
+
+### 4. Stop Actionbase
+
+```bash
+./bin/stop-local.sh
+```
+
 ## Design Goals
 
 - **Shared Interaction Layer**  
