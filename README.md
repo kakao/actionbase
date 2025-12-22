@@ -1,26 +1,26 @@
 # Actionbase
 
+## Introduction
+
 Actionbase is a database for serving user interactions in real time.
 
-## Overview
-
-Actionbase is designed for high-throughput, low-latency workloads where user interactions are continuously
-written and queried. It supports common interaction patterns such as **recent views**, **likes**, **reactions**,
-and **follows**, widely used in product listings, recommendations, feeds, and other interaction-driven surfaces
-in large-scale services. It is used in production at scale at Kakao.
+It is designed for high-throughput, low-latency workloads where user
+interactions are continuously written and queried. It supports common interaction patterns such as **recent views**, **likes**, **reactions**,
+and **follows**, widely used in product listings, recommendations, feeds, and other interaction-driven surfaces in large-scale services.
+It is used in production at scale at Kakao.
 
 User interactions naturally form actor→target relationships with associated properties. Actionbase models
 these relationships using a graph data model and materializes read-optimized structures at write time, enabling
 fast and predictable queries without expensive read-time computation.
 
-When backed by HBase, Actionbase inherits strong durability and horizontal scalability, while providing 
+When backed by HBase, Actionbase inherits strong durability and horizontal scalability, and provides
 a higher-level abstraction tailored for real-time interaction serving.
 
 ## Design Goals
 
 - **Shared Interaction Layer**  
   Provide a unified platform for storing and serving user interactions, removing the need for individual services to
-  build and operate their own interaction storage and serving logic.
+  build and operate their own interaction logic.
 
 - **Natural Interaction Modeling**  
   Model interactions as actor→target relationships with schema-defined properties, closely reflecting how user
@@ -32,7 +32,7 @@ a higher-level abstraction tailored for real-time interaction serving.
 
 - **Leverage Proven Storage**  
   Build on the strengths of existing storage engines (for example, HBase), handling interaction mutations at
-  a higher level to produce durable state and read-optimized structureswithout reimplementing durability,
+  a higher level to produce durable state and read-optimized structures without reimplementing durability,
   scalability, or distribution.
 
 ## Key Features
