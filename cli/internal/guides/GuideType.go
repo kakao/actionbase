@@ -1,19 +1,17 @@
 package guides
 
 type Type struct {
-	name         string
-	Organization string
-	PackageName  string
+	Name string
 }
 
 var TypeByName = map[string]Type{
-	TypeSocialMediaApp.name: TypeSocialMediaApp,
+	TypeSocialMediaApp.Name: TypeSocialMediaApp,
 }
 
-var SupportedGuideTypes = []string{TypeSocialMediaApp.name}
+var SupportedGuideTypes = []string{TypeSocialMediaApp.Name}
 
 var (
-	TypeSocialMediaApp = Type{name: "hands-on-social", Organization: "kakao", PackageName: "actionbase-hands-on-social"}
+	TypeSocialMediaApp = Type{Name: "hands-on-social"}
 )
 
 func TypeFromString(name string) (Type, bool) {

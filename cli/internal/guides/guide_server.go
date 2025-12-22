@@ -23,7 +23,7 @@ var (
 	server   *http.Server
 )
 
-func Start(organization, packageName, apiHost string) error {
+func Start(cwd, name, apiHost string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -32,10 +32,10 @@ func Start(organization, packageName, apiHost string) error {
 		return nil
 	}
 
-	distPath := filepath.Join("node_modules", "@"+organization, packageName, "dist")
+	distPath := filepath.Join(cwd, "dist", name)
 
 	if _, err := os.Stat(distPath); os.IsNotExist(err) {
-		fmt.Println("The guide assets are not installed. Please check .node_modules/@" + organization + "/" + packageName + "/dist/index.html exists")
+		fmt.Printf("The guide assets are not found in %s\n", distPath)
 		return fmt.Errorf("guide assets not found at %s: %w", distPath, err)
 	}
 
