@@ -17,7 +17,7 @@ a higher-level abstraction tailored for real-time interaction serving.
 
 ## Quick Start
 
-Run Actionbase locally and define your first interaction model.
+Run Actionbase locally and define your first interactions.
 
 ### 1. Start Actionbase
 
@@ -25,7 +25,7 @@ Run Actionbase locally and define your first interaction model.
 git clone https://github.com/kakao/actionbase.git
 cd actionbase
 ./bin/run-local.sh
-````
+```
 
 ### 2. Create a Service
 
@@ -33,12 +33,12 @@ cd actionbase
 curl -X POST "http://localhost:8080/graph/v2/service/awesome" \
   -H "Content-Type: application/json" \
   -d '{
-    "desc": "A sample service for demonstrating Actionbase interactions"
+    "desc": "Sample service"
   }'
 ```
 
 ```json
-{"status":"CREATED","result":{"active":true,"name":"awesome","desc":"A sample service for demonstrating Actionbase interactions"}}
+{"status":"CREATED","result":{"active":true,"name":"awesome","desc":"Sample service"}}
 ```
 
 ### 3. Create an Interaction Label
@@ -47,17 +47,17 @@ curl -X POST "http://localhost:8080/graph/v2/service/awesome" \
 curl -X POST "http://localhost:8080/graph/v2/service/awesome/label/likes" \
   -H "Content-Type: application/json" \
   -d '{
-    "desc": "Represents a user liking a product",
+    "desc": "User likes item",
     "type": "INDEXED",
     "schema": {
-      "src": { "type": "LONG", "desc": "User identifier" },
-      "tgt": { "type": "LONG", "desc": "Product identifier" },
+      "src": { "type": "LONG", "desc": "User ID" },
+      "tgt": { "type": "LONG", "desc": "Item ID" },
       "fields": [
         {
           "name": "created_at",
           "type": "LONG",
           "nullable": false,
-          "desc": "Timestamp when the like was created"
+          "desc": "Created time"
         }
       ]
     },
@@ -67,7 +67,7 @@ curl -X POST "http://localhost:8080/graph/v2/service/awesome/label/likes" \
 ```
 
 ```json
-{"status":"CREATED","result":{"active":true,"name":"awesome.likes","desc":"Represents a user liking a product", "...": "..."}}
+{"status":"CREATED","result":{"active":true,"name":"awesome.likes","desc":"User likes item","...":"..."}}
 ```
 
 ### 4. Stop Actionbase
