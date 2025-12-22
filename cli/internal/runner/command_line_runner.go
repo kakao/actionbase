@@ -24,7 +24,7 @@ type CommandLineRunner struct {
 func NewCommandLineRunner(name, version string) *CommandLineRunner {
 	runner := &CommandLineRunner{
 		name:     name,
-		running:  false,
+		running:  true,
 		commands: make(map[string]command.Command),
 		reader:   bufio.NewReader(os.Stdin),
 		prompt:   name + defaultPrompt,

@@ -74,6 +74,10 @@ func (r *ActionbaseCommandLineRunner) Run() {
 	}(rl)
 
 	for {
+		if !r.running {
+			return
+		}
+
 		var buffer []string
 		rl.SetPrompt(fmt.Sprintf("\033[34m%s%s \033[0m", r.BuildPrompt(), defaultPrompt))
 		for {
