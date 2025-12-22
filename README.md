@@ -82,8 +82,8 @@ Additional storage backends, such as SlateDB, are planned for future releases.
 ## Production Usage
 
 Actionbase is used across Kakao services—including KakaoTalk and KakaoShopping—to power real-time user interaction serving
-at scale. It has been running in stable production for years, delivering predictable reads, consistent writes, and reliable
-handling of multi-terabyte datasets.
+for tens of millions of users. It has been running in stable production for over two years, delivering predictable reads,
+consistent writes, and reliable handling of multi-terabyte datasets on HBase.
 
 ## Learn More
 
