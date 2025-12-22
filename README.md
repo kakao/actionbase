@@ -19,60 +19,54 @@ a higher-level abstraction tailored for real-time interaction serving.
 
 Run Actionbase locally and define your first interactions.
 
-### 1. Start Actionbase
+> Note: Runtime APIs use v3. Metadata APIs still use v2 (`service` / `label` → `database` / `table`).
 
-```bash
+```
+# start
 git clone https://github.com/kakao/actionbase.git
 cd actionbase
 ./bin/run-local.sh
-```
 
-### 2. Create a Service
-
-```bash
+# service (v2)
 curl -X POST "http://localhost:8080/graph/v2/service/awesome" \
   -H "Content-Type: application/json" \
-  -d '{
-    "desc": "Sample service"
-  }'
-```
+  -d '{"desc":"Sample"}'
 
-```json
-{"status":"CREATED","result":{"active":true,"name":"awesome","desc":"Sample service"}}
-```
-
-### 3. Create an Interaction Label
-
-```bash
+# label (v2)
 curl -X POST "http://localhost:8080/graph/v2/service/awesome/label/likes" \
   -H "Content-Type: application/json" \
   -d '{
-    "desc": "User likes item",
-    "type": "INDEXED",
-    "schema": {
-      "src": { "type": "LONG", "desc": "User ID" },
-      "tgt": { "type": "LONG", "desc": "Item ID" },
-      "fields": [
-        {
-          "name": "created_at",
-          "type": "LONG",
-          "nullable": false,
-          "desc": "Created time"
-        }
-      ]
+    "desc":"Like",
+    "type":"INDEXED",
+    "schema":{
+      "src":{"type":"STRING"},
+      "tgt":{"type":"STRING"},
+      "fields":[{"name":"created_at","type":"LONG","nullable":false}]
     },
-    "dirType": "BOTH",
-    "storage": "datastore://awesome/likes"
+    "dirType":"BOTH",
+    "storage":"datastore://awesome/likes",
+    "indices":[{"name":"created_at_desc","fields":[{"name":"created_at","order":"DESC"}]}]
   }'
-```
 
-```json
-{"status":"CREATED","result":{"active":true,"name":"awesome.likes","desc":"User likes item","...":"..."}}
-```
+# write
+curl -X POST "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mutations":[
+      {"type":"INSERT","edge":{"version":1767571200000,"source":"Alice","target":"KakaoTalk","properties":{"created_at":1767571200000}}},
+      {"type":"INSERT","edge":{"version":1767571200000,"source":"Alice","target":"KakaoShopping","properties":{"created_at":1767571200000}}},
+      {"type":"INSERT","edge":{"version":1767571200000,"source":"Bob","target":"KakaoTalk","properties":{"created_at":1767571200000}}}
+    ]
+  }'
 
-### 4. Stop Actionbase
+# read
+curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/get?source=Alice&target=KakaoTalk"
+curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/scan/created_at_desc?start=Alice&direction=OUT"
+curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/scan/created_at_desc?start=KakaoTalk&direction=IN"
+curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/count?start=Alice&direction=OUT"
+curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/count?start=KakaoTalk&direction=IN"
 
-```bash
+# stop
 ./bin/stop-local.sh
 ```
 
