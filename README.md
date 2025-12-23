@@ -15,9 +15,15 @@ fast and predictable queries without expensive read-time computation.
 When backed by HBase, Actionbase inherits strong durability and horizontal scalability, and provides
 a higher-level abstraction tailored for real-time interaction serving.
 
-## Quick Start
+## Getting Started
 
-See the **[Quick Start guide](https://actionbase.io/quick-start/)** to get up and running.
+- **Quick Start**  
+  Get Actionbase running quickly with minimal setup.  
+  → https://actionbase.io/quick-start/
+
+- **Hands-on Guide: Build Your Social Media App**  
+  A step-by-step guide that walks through modeling and serving real-world user interactions using Actionbase.  
+  → https://actionbase.io/guides/build-your-social-media-app/
 
 ## Design Goals
 
