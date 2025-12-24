@@ -1,6 +1,11 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+)
+
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 type Response struct {
 	IsSuccess    bool
@@ -14,10 +19,15 @@ func Success() *Response {
 
 func SuccessWithResult(result string) *Response {
 	fmt.Println(result)
-	return &Response{IsSuccess: true, Result: &result}
+	cleanResult := stripANSICodes(result)
+	return &Response{IsSuccess: true, Result: &cleanResult}
 }
 
 func Fail(message string) *Response {
 	fmt.Println(message)
 	return &Response{IsSuccess: false, ErrorMessage: &message}
+}
+
+func stripANSICodes(s string) string {
+	return ansiRegex.ReplaceAllString(s, "")
 }
