@@ -50,7 +50,7 @@ func (c *Count) Execute(args []string) *model.Response {
 	}
 
 	if !strings.HasPrefix(args[0], "--") {
-		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
+		return c.doCount(database, args[0], start, direction)
 	}
 
 	currentTable := c.runner.GetCurrentTable()
