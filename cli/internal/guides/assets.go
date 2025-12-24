@@ -11,7 +11,10 @@ import (
 )
 
 func Download(name string) bool {
-	url := fmt.Sprintf("https://github.com/kakao/actionbase/releases/download/guides/%s/dist.zip", name)
+	filename := fmt.Sprintf("%s-latest.zip", name)
+	url := fmt.Sprintf("https://github.com/kakao/actionbase/releases/download/guides/%s/%s", name, filename)
+	fmt.Println("Downloading guide assets from", url)
+
 	req, err := http.NewRequest("GET", url, nil)
 	req.Header.Set("Accept", "application/octet-stream")
 
@@ -39,7 +42,12 @@ func Download(name string) bool {
 		return false
 	}
 
-	if err := os.WriteFile("test.txt", body, 0644); err != nil {
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("Failed to download guide assets")
+		return false
+	}
+
+	if err := os.WriteFile(filename, body, 0644); err != nil {
 		fmt.Println("Failed to write file")
 		return false
 	}

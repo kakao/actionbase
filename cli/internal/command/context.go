@@ -13,6 +13,7 @@ type Context struct {
 }
 
 type ContextRunner interface {
+	GetCurrentPort() string
 	IsServerModeEnabled() bool
 	IsDebugEnabled() bool
 	GetCurrentDatabase() string
@@ -30,13 +31,14 @@ func (c *Context) Execute(_ []string) *model.Result {
 		c.runner.GetCurrentDatabase(),
 		c.runner.GetCurrentTable(),
 		c.runner.GetCurrentAlias(),
+		c.runner.GetCurrentPort(),
 		c.runner.IsServerModeEnabled(),
 		c.runner.IsDebugEnabled())
 
 	return nil
 }
 
-func PrintContext(host string, database string, table string, alias string, isServerModeEnabled, isDebugEnabled bool) {
+func PrintContext(host, database, table, alias, currentPort string, isServerModeEnabled, isDebugEnabled bool) {
 	if database == "" {
 		database = "-"
 	}
@@ -59,6 +61,11 @@ func PrintContext(host string, database string, table string, alias string, isSe
 		debug = "off"
 	}
 
+	port := "-"
+	if currentPort != "" {
+		port = currentPort
+	}
+
 	fmt.Printf("\033[33m╭────────────────────────────────────────────────────────────────────────────────────────╮\033[0m\n")
 	fmt.Printf("\033[33m│                                                                                        │\033[0m\n")
 	fmt.Printf("\033[33m│  host\033[0m %-80s \033[33m│\033[0m\n", host)
@@ -67,6 +74,7 @@ func PrintContext(host string, database string, table string, alias string, isSe
 	fmt.Printf("\033[33m│  alias\033[0m %-79s \033[33m│\033[0m\n", alias)
 	fmt.Printf("\033[33m│                                                                                        │\033[0m\n")
 	fmt.Printf("\033[33m│  serverMode\033[0m %-74s \033[33m│\033[0m\n", serverMode)
+	fmt.Printf("\033[33m│  serverPort\033[0m %-74s \033[33m│\033[0m\n", port)
 	fmt.Printf("\033[33m│  debug\033[0m %-79s \033[33m│\033[0m\n", debug)
 	fmt.Printf("\033[33m│                                                                                        │\033[0m\n")
 	fmt.Printf("\033[33m╰────────────────────────────────────────────────────────────────────────────────────────╯\033[0m\n")

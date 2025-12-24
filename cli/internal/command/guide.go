@@ -11,16 +11,22 @@ import (
 )
 
 type Guide struct {
+	runner GuideRunner
 	client *client.ActionbaseClient
 }
 
-func NewGuide(client *client.ActionbaseClient) *Guide {
-	return &Guide{client: client}
+type GuideRunner interface {
+	GetCurrentPort() string
+	SetRunning(running bool)
 }
 
-func (s *Guide) Execute(args []string) *model.Result {
+func NewGuide(runner GuideRunner, client *client.ActionbaseClient) *Guide {
+	return &Guide{runner: runner, client: client}
+}
+
+func (g *Guide) Execute(args []string) *model.Result {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
+		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 		return nil
 	}
 
@@ -41,7 +47,6 @@ func (s *Guide) Execute(args []string) *model.Result {
 		}
 
 		if ok := guides.Download(guideType.Name); !ok {
-			fmt.Println("Failed to download guide assets")
 			return nil
 		}
 
@@ -51,7 +56,7 @@ func (s *Guide) Execute(args []string) *model.Result {
 			return nil
 		}
 
-		src := fmt.Sprintf("%s/dist.zip", cwd)
+		src := fmt.Sprintf("%s/%s-latest.zip", cwd, guideType.Name)
 		dest := fmt.Sprintf("%s", cwd)
 
 		if err := guides.Unzip(src, dest); err != nil {
@@ -59,22 +64,22 @@ func (s *Guide) Execute(args []string) *model.Result {
 			return nil
 		}
 
-		host := s.client.GetHost()
-		if err := guides.Start(cwd, guideType.Name, host); err != nil {
+		host := g.client.GetHost()
+		if err := guides.Start(cwd, guideType.Name, host, g.runner.GetCurrentPort()); err != nil {
 			fmt.Println("Failed to start guide server:", err)
 		}
 
 	default:
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
+		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 	}
 
 	return nil
 }
 
-func (s *Guide) GetDescription() string {
+func (g *Guide) GetDescription() string {
 	return "Start Actionbase guide"
 }
 
-func (s *Guide) GetType() Type {
+func (g *Guide) GetType() Type {
 	return TypeGuide
 }

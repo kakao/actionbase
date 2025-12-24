@@ -23,7 +23,7 @@ var (
 	server   *http.Server
 )
 
-func Start(cwd, name, apiHost string) error {
+func Start(cwd, name, apiHost, serverPort string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -32,19 +32,24 @@ func Start(cwd, name, apiHost string) error {
 		return nil
 	}
 
-	distPath := filepath.Join(cwd, "dist", name)
+	assetsPath := filepath.Join(cwd, name)
 
-	if _, err := os.Stat(distPath); os.IsNotExist(err) {
-		fmt.Printf("The guide assets are not found in %s\n", distPath)
-		return fmt.Errorf("guide assets not found at %s: %w", distPath, err)
+	if _, err := os.Stat(assetsPath); os.IsNotExist(err) {
+		fmt.Printf("The guide assets are not found in %s\n", assetsPath)
+		return fmt.Errorf("guide assets not found at %s: %w", assetsPath, err)
 	}
 
-	distFS := os.DirFS(distPath)
-	fileServer := http.FileServer(http.FS(distFS))
+	assetsFs := os.DirFS(assetsPath)
+	fileServer := http.FileServer(http.FS(assetsFs))
 
 	apiURL, err := url.Parse(apiHost)
 	if err != nil {
 		return fmt.Errorf("invalid API host URL: %w", err)
+	}
+
+	cliURL, err := url.Parse("http://localhost:" + serverPort)
+	if err != nil {
+		return fmt.Errorf("invalid CLI host URL: %w", err)
 	}
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -53,11 +58,16 @@ func Start(cwd, name, apiHost string) error {
 	}
 	listener = ln
 
-	indexPath := filepath.Join(distPath, "index.html")
+	indexPath := filepath.Join(assetsPath, "index.html")
 	server = &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasPrefix(r.URL.Path, "/graph") {
 				proxy(w, r, apiURL)
+				return
+			}
+
+			if strings.HasPrefix(r.URL.Path, "/api/command") {
+				proxy(w, r, cliURL)
 				return
 			}
 

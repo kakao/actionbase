@@ -8,10 +8,6 @@ import (
 	"github.com/kakao/actionbase/internal/util"
 )
 
-const (
-	defaultPort = "8081"
-)
-
 func main() {
 	args := os.Args
 
@@ -24,15 +20,11 @@ func main() {
 	}
 
 	authKey, _ := parser.Get("authKey")
-	console := runner.NewActionbaseCommandLineRunner(host, &authKey, false)
+	console := runner.NewActionbaseCommandLineRunner(host, &authKey, "", false)
 
 	console.CheckConnection()
 
-	port, serverMode := parser.Get("server")
-	if serverMode {
-		if port == "" {
-			port = defaultPort
-		}
+	if port, found := parser.Get("server"); found {
 		serverReady := make(chan error, 1)
 		go func() {
 			if err := console.Start(port, serverReady); err != nil {
@@ -45,6 +37,7 @@ func main() {
 			os.Exit(1)
 		}
 
+		console.SetCurrentPort(port)
 		console.SetIsServerModeEnabled(true)
 	}
 

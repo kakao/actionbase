@@ -24,9 +24,10 @@ type ActionbaseCommandLineRunner struct {
 	currentDatabase string
 	currentAlias    string
 	currentTable    string
+	currentPort     string
 }
 
-func NewActionbaseCommandLineRunner(host string, authKey *string, IsServerEnabled bool) *ActionbaseCommandLineRunner {
+func NewActionbaseCommandLineRunner(host string, authKey *string, currentPort string, IsServerEnabled bool) *ActionbaseCommandLineRunner {
 	logger := util.NewLogger(slog.LevelDebug)
 	slog.SetDefault(logger)
 
@@ -41,6 +42,7 @@ func NewActionbaseCommandLineRunner(host string, authKey *string, IsServerEnable
 		currentDatabase:   "",
 		currentAlias:      "",
 		currentTable:      "",
+		currentPort:       currentPort,
 	}
 
 	actionbaseClient := runner.client
@@ -56,14 +58,14 @@ func NewActionbaseCommandLineRunner(host string, authKey *string, IsServerEnable
 	runner.RegisterCommand(command.TypeCount.GetName(), command.NewCount(runner, actionbaseClient))
 	runner.RegisterCommand(command.TypeLoad.GetName(), command.NewLoad(runner, actionbaseClient))
 	runner.RegisterCommand(command.TypeDebug.GetName(), command.NewDebug(runner))
-	runner.RegisterCommand(command.TypeGuide.GetName(), command.NewGuide(actionbaseClient))
+	runner.RegisterCommand(command.TypeGuide.GetName(), command.NewGuide(runner, actionbaseClient))
 
 	return runner
 }
 
 func (r *ActionbaseCommandLineRunner) Run() {
 	r.showBanner()
-	command.PrintContext(r.client.GetHost(), r.currentDatabase, r.currentTable, r.currentAlias, r.IsServerModeEnabled(), r.IsDebugEnabled())
+	command.PrintContext(r.client.GetHost(), r.currentDatabase, r.currentTable, r.currentAlias, r.GetCurrentPort(), r.IsServerModeEnabled(), r.IsDebugEnabled())
 
 	rl, err := readline.New(defaultPrompt + " ")
 	if err != nil {
@@ -155,6 +157,10 @@ func (r *ActionbaseCommandLineRunner) IsDebugEnabled() bool {
 	return r.clientContext.IsDebugEnabled
 }
 
+func (r *ActionbaseCommandLineRunner) GetCurrentPort() string {
+	return r.currentPort
+}
+
 func (r *ActionbaseCommandLineRunner) SetCurrentTable(table string) {
 	r.currentTable = table
 }
@@ -169,6 +175,10 @@ func (r *ActionbaseCommandLineRunner) SetIsDebugEnabled(debugging bool) {
 
 func (r *ActionbaseCommandLineRunner) SetIsServerModeEnabled(isServerModeEnabled bool) {
 	r.clientContext.IsServerModeEnabled = isServerModeEnabled
+}
+
+func (r *ActionbaseCommandLineRunner) SetCurrentPort(port string) {
+	r.currentPort = port
 }
 
 func (r *ActionbaseCommandLineRunner) BuildPrompt() string {
