@@ -15,6 +15,7 @@ type CommandRequest struct {
 type CommandResponse struct {
 	Success bool    `json:"success"`
 	Error   *string `json:"error,omitempty"`
+	Result  *string `json:"result,omitempty"`
 	Elapsed string  `json:"elapsed,omitempty"`
 }
 
@@ -98,6 +99,7 @@ func (r *ActionbaseCommandLineRunner) handleCommand(w http.ResponseWriter, req *
 		response = CommandResponse{
 			Success: result.IsSuccess,
 			Elapsed: fmt.Sprintf("%.4f seconds", elapsed),
+			Result:  result.Result,
 			Error:   result.ErrorMessage,
 		}
 	}

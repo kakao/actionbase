@@ -26,7 +26,7 @@ func NewScan(runner ScanRunner, actionbaseClient *client.ActionbaseClient) *Scan
 	return &Scan{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (s *Scan) Execute(args []string) *model.Result {
+func (s *Scan) Execute(args []string) *model.Response {
 	if len(args) < 1 {
 		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
@@ -71,7 +71,7 @@ func (s *Scan) Execute(args []string) *model.Result {
 	return s.doScan(database, currentTable, index, start, direction, limit, ranges)
 }
 
-func (s *Scan) doScan(database, table, index, start, direction, limit, ranges string) *model.Result {
+func (s *Scan) doScan(database, table, index, start, direction, limit, ranges string) *model.Response {
 	response := s.actionbaseClient.Scan(
 		database,
 		table,
@@ -123,12 +123,13 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 	}
 
 	fmt.Println()
-	fmt.Printf("The %d edges found (offset: %s, hasNext: %t)\n", responseBody.Count, responseBody.Offset, responseBody.HasNext)
 
 	columnOrder := []string{"#", "version", "source", "target", "properties"}
-	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+	resultMessage := fmt.Sprintf("The %d edges found (offset: %s, hasNext: %t)", responseBody.Count, responseBody.Offset, responseBody.HasNext) +
+		"\n" +
+		util.PrettyPrintRowsWithOrder(results, columnOrder)
 
-	return model.Success()
+	return model.SuccessWithResult(resultMessage)
 }
 
 func (s *Scan) GetDescription() string {

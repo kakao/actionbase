@@ -18,7 +18,7 @@ func NewExit(runner ExitRunner) *Exit {
 	return &Exit{runner: runner}
 }
 
-func (e *Exit) Execute(_ []string) *model.Result {
+func (e *Exit) Execute(_ []string) *model.Response {
 	fmt.Println("Goodbye!")
 	e.runner.SetRunning(false)
 

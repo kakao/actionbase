@@ -34,7 +34,7 @@ func NewUse(runner UseRunner, actionbaseClient *client.ActionbaseClient) *Use {
 	}
 }
 
-func (u *Use) Execute(args []string) *model.Result {
+func (u *Use) Execute(args []string) *model.Response {
 	if len(args) < 1 {
 		return model.Fail(fmt.Sprintf("Usage: %s", u.GetType().GetCommand()))
 	}

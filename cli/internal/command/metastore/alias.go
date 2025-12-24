@@ -28,7 +28,7 @@ func NewAlias(runner AliasRunner, actionbaseClient *client.ActionbaseClient) *Al
 	return &Alias{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (a *Alias) ShowAll() *model.Result {
+func (a *Alias) ShowAll() *model.Response {
 	database := a.runner.GetCurrentDatabase()
 	if database == "" {
 		return model.Fail("No database selected. Use 'use database <name>'")
@@ -73,7 +73,7 @@ func (a *Alias) ShowAll() *model.Result {
 	return model.Success()
 }
 
-func (a *Alias) Use(name string) *model.Result {
+func (a *Alias) Use(name string) *model.Response {
 	database := a.runner.GetCurrentDatabase()
 	if database == "" {
 		return model.Fail("No database selected. Use 'use database <name>'")
@@ -96,7 +96,7 @@ func (a *Alias) Use(name string) *model.Result {
 	return model.Success()
 }
 
-func (a *Alias) Desc(name string) *model.Result {
+func (a *Alias) Desc(name string) *model.Response {
 	database := a.runner.GetCurrentDatabase()
 	if database == "" {
 		return model.Fail("No database selected. Use 'use database <name>'")

@@ -32,7 +32,7 @@ func NewDesc(runner DescRunner, actionbaseClient *client.ActionbaseClient) *Desc
 	}
 }
 
-func (d *Desc) Execute(args []string) *model.Result {
+func (d *Desc) Execute(args []string) *model.Response {
 	if len(args) < 1 {
 		return model.Fail(fmt.Sprintf("Usage: %s", d.GetType().GetCommand()))
 	}

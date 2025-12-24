@@ -117,7 +117,7 @@ func (r *ActionbaseCommandLineRunner) Run() {
 	}
 }
 
-func (r *ActionbaseCommandLineRunner) RunCommand(input string) (*model.Result, float64) {
+func (r *ActionbaseCommandLineRunner) RunCommand(input string) (*model.Response, float64) {
 	parts := r.parseCommand(input)
 	cmdName := parts[0]
 	var args []string

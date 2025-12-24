@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/kakao/actionbase/internal/client"
-	"github.com/kakao/actionbase/internal/client/model"
-	model2 "github.com/kakao/actionbase/internal/command/model"
+	clientModel "github.com/kakao/actionbase/internal/client/model"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
@@ -25,14 +25,14 @@ func NewDatabase(runner DatabaseRunner, actionbaseClient *client.ActionbaseClien
 	return &Database{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (d *Database) ShowAll() *model2.Result {
+func (d *Database) ShowAll() *model.Response {
 	response := d.actionbaseClient.GetDatabases()
 	if response.IsError() {
-		return model2.Fail("Failed to get databases")
+		return model.Fail("Failed to get databases")
 	}
 
 	content := response.Body.Content
-	filtered := util.FilterInPlace(content, func(d model.DatabaseEntity) bool {
+	filtered := util.FilterInPlace(content, func(d clientModel.DatabaseEntity) bool {
 		return d.Name != "sys"
 	})
 
@@ -63,13 +63,13 @@ func (d *Database) ShowAll() *model2.Result {
 	columnOrder := []string{"#", "name", "desc", "active"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 
-	return model2.Success()
+	return model.Success()
 }
 
-func (d *Database) Use(name string) *model2.Result {
+func (d *Database) Use(name string) *model.Response {
 	response := d.actionbaseClient.GetDatabase(name)
 	if response.IsError() {
-		return model2.Fail(fmt.Sprintf("No database '%s' found\n", name))
+		return model.Fail(fmt.Sprintf("No database '%s' found\n", name))
 	}
 
 	d.runner.SetCurrentDatabase(name)
@@ -77,5 +77,5 @@ func (d *Database) Use(name string) *model2.Result {
 
 	fmt.Printf("The database is changed to '%s'\n", name)
 
-	return model2.Success()
+	return model.Success()
 }

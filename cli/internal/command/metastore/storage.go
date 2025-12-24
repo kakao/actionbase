@@ -25,7 +25,7 @@ func NewStorage(runner StorageRunner, actionbaseClient *client.ActionbaseClient)
 	return &Storage{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (s *Storage) ShowAll() *model.Result {
+func (s *Storage) ShowAll() *model.Response {
 	response := s.actionbaseClient.GetStorages()
 	if response.IsError() {
 		return model.Fail("Failed to get storages")

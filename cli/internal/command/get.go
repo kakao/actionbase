@@ -25,7 +25,7 @@ func NewGet(runner GetRunner, actionbaseClient *client.ActionbaseClient) *Get {
 	return &Get{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (g *Get) Execute(args []string) *model.Result {
+func (g *Get) Execute(args []string) *model.Response {
 	if len(args) < 1 {
 		return model.Fail(fmt.Sprintf("Usage: %s", g.GetType().GetCommand()))
 	}
@@ -57,7 +57,7 @@ func (g *Get) Execute(args []string) *model.Result {
 	return g.doExecute(database, currentTable, source, target)
 }
 
-func (g *Get) doExecute(database, table, source, target string) *model.Result {
+func (g *Get) doExecute(database, table, source, target string) *model.Response {
 	response := g.actionbaseClient.Get(
 		database,
 		table,
@@ -103,10 +103,8 @@ func (g *Get) doExecute(database, table, source, target string) *model.Result {
 	}
 
 	fmt.Println()
-	fmt.Printf("The edge is found: [%s -> %s]\n", source, target)
-	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-
-	return model.Success()
+	resultMessage := fmt.Sprintf("The edge is found: [%s -> %s]", source, target) + "\n" + util.PrettyPrintRowsWithOrder(results, columnOrder)
+	return model.SuccessWithResult(resultMessage)
 }
 
 func (g *Get) GetDescription() string {

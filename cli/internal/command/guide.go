@@ -24,7 +24,7 @@ func NewGuide(runner GuideRunner, client *client.ActionbaseClient) *Guide {
 	return &Guide{runner: runner, client: client}
 }
 
-func (g *Guide) Execute(args []string) *model.Result {
+func (g *Guide) Execute(args []string) *model.Response {
 	if len(args) < 1 {
 		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 		return nil

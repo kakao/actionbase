@@ -25,7 +25,7 @@ func NewContext(runner ContextRunner, actionbaseClient *client.ActionbaseClient)
 	return &Context{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (c *Context) Execute(_ []string) *model.Result {
+func (c *Context) Execute(_ []string) *model.Response {
 	PrintContext(
 		c.actionbaseClient.GetHost(),
 		c.runner.GetCurrentDatabase(),

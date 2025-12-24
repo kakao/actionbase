@@ -27,7 +27,7 @@ func NewCount(runner CountRunner, actionbaseClient *client.ActionbaseClient) *Co
 	return &Count{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (c *Count) Execute(args []string) *model.Result {
+func (c *Count) Execute(args []string) *model.Response {
 	if len(args) < 1 {
 		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
@@ -61,7 +61,7 @@ func (c *Count) Execute(args []string) *model.Result {
 	return c.doCount(database, currentTable, start, direction)
 }
 
-func (c *Count) doCount(database string, table string, start string, direction string) *model.Result {
+func (c *Count) doCount(database string, table string, start string, direction string) *model.Response {
 	response := c.actionbaseClient.Counts(database, table, start, direction)
 
 	if response.IsError() {
@@ -81,12 +81,13 @@ func (c *Count) doCount(database string, table string, start string, direction s
 	}
 
 	fmt.Println()
-	fmt.Printf("The count of %s edges found\n", util.Int64WithCommas(response.Body.Count))
 
 	columnOrder := []string{"#", "start", "direction", "count"}
-	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+	resultMessage := fmt.Sprintf("The count of %s edges found", util.Int64WithCommas(response.Body.Count)) +
+		"\n" +
+		util.PrettyPrintRowsWithOrder(results, columnOrder)
 
-	return model.Success()
+	return model.SuccessWithResult(resultMessage)
 }
 
 func (c *Count) GetDescription() string {

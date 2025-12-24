@@ -36,7 +36,7 @@ const storageUsagePrompt = "Usage: create storage --hbaseNamespace <hbaseNamespa
 const tableUsagePrompt = "Usage: create table --database <database> --storage <storage> --name <name> --comment <comment> --type <type> --direction <direction> --schema <schema> --indices <indices> --groups <groups>"
 const aliasUsagePrompt = "Usage: create alias --database <database> --table <table> --name <name> --comment <comment>"
 
-func (c *Create) Execute(args []string) *model.Result {
+func (c *Create) Execute(args []string) *model.Response {
 	if len(args) < 1 {
 		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
@@ -78,7 +78,7 @@ func (c *Create) GetType() Type {
 	return TypeCreate
 }
 
-func (c *Create) createDatabase(parser *util.Parser) *model.Result {
+func (c *Create) createDatabase(parser *util.Parser) *model.Response {
 	name, found := parser.Get("name")
 	if !found {
 		return model.Fail(databaseUsagePrompt)
@@ -102,7 +102,7 @@ func (c *Create) createDatabase(parser *util.Parser) *model.Result {
 	return model.Success()
 }
 
-func (c *Create) createStorage(parser *util.Parser) *model.Result {
+func (c *Create) createStorage(parser *util.Parser) *model.Response {
 	hbaseNamespace, found := parser.Get("hbaseNamespace")
 	if !found {
 		return model.Fail(storageUsagePrompt)
@@ -145,7 +145,7 @@ func (c *Create) createStorage(parser *util.Parser) *model.Result {
 	return model.Success()
 }
 
-func (c *Create) createTable(parser *util.Parser) *model.Result {
+func (c *Create) createTable(parser *util.Parser) *model.Response {
 	database, found := parser.Get("database")
 	if !found {
 		return model.Fail(tableUsagePrompt)
@@ -237,7 +237,7 @@ func (c *Create) createTable(parser *util.Parser) *model.Result {
 	return model.Success()
 }
 
-func (c *Create) createAlias(parser *util.Parser) *model.Result {
+func (c *Create) createAlias(parser *util.Parser) *model.Response {
 	database, found := parser.Get("database")
 	if !found {
 		return model.Fail(aliasUsagePrompt)

@@ -24,7 +24,7 @@ func NewTable(runner TableRunner, actionbaseClient *client.ActionbaseClient) *Ta
 	return &Table{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (t *Table) ShowAll() *model.Result {
+func (t *Table) ShowAll() *model.Response {
 	database := t.runner.GetCurrentDatabase()
 	if database == "" {
 		return model.Fail("No database selected. Use 'use database <name>'")
@@ -70,7 +70,7 @@ func (t *Table) ShowAll() *model.Result {
 	return model.Success()
 }
 
-func (t *Table) ShowIndices(name string) *model.Result {
+func (t *Table) ShowIndices(name string) *model.Response {
 	if t.runner.GetCurrentDatabase() == "" {
 		return model.Fail("No database selected. Use 'use database <name>'")
 	}
@@ -78,7 +78,7 @@ func (t *Table) ShowIndices(name string) *model.Result {
 	return t.showIndices(t.runner.GetCurrentDatabase(), name)
 }
 
-func (t *Table) ShowGroups(table string) *model.Result {
+func (t *Table) ShowGroups(table string) *model.Response {
 	if t.runner.GetCurrentDatabase() == "" {
 		return model.Fail("No database selected. Use 'use database <name>'")
 	}
@@ -86,7 +86,7 @@ func (t *Table) ShowGroups(table string) *model.Result {
 	return t.showGroups(t.runner.GetCurrentDatabase(), table)
 }
 
-func (t *Table) Desc(name string) *model.Result {
+func (t *Table) Desc(name string) *model.Response {
 	database := t.runner.GetCurrentDatabase()
 	if database == "" {
 		return model.Fail("No database selected. Use 'use database <name>'")
@@ -160,7 +160,7 @@ func (t *Table) Desc(name string) *model.Result {
 	return model.Success()
 }
 
-func (t *Table) Use(table string) *model.Result {
+func (t *Table) Use(table string) *model.Response {
 	database := t.runner.GetCurrentDatabase()
 	if database == "" {
 		return model.Fail("No database selected. Use 'use database <name>'")
@@ -177,7 +177,7 @@ func (t *Table) Use(table string) *model.Result {
 	return model.Success()
 }
 
-func (t *Table) showIndices(database string, table string) *model.Result {
+func (t *Table) showIndices(database string, table string) *model.Response {
 	response := t.actionbaseClient.GetTable(database, table)
 	if response.IsError() {
 		return model.Fail(fmt.Sprintf("Failed to get table '%s'", table))
@@ -235,7 +235,7 @@ func (t *Table) showIndices(database string, table string) *model.Result {
 	return model.Success()
 }
 
-func (t *Table) showGroups(database string, table string) *model.Result {
+func (t *Table) showGroups(database string, table string) *model.Response {
 	response := t.actionbaseClient.GetTable(database, table)
 	if response.IsError() {
 		return model.Fail(fmt.Sprintf("Failed to get table '%s'", table))

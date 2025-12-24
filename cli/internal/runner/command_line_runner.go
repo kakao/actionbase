@@ -58,7 +58,7 @@ func (r *CommandLineRunner) parseCommand(line string) []string {
 	return strings.Fields(strings.TrimSpace(line))
 }
 
-func (r *CommandLineRunner) executeCommand(cmdName string, args []string) *model.Result {
+func (r *CommandLineRunner) executeCommand(cmdName string, args []string) *model.Response {
 	cmd, ok := r.commands[strings.ToLower(cmdName)]
 
 	if ok {

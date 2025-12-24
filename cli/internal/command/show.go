@@ -39,7 +39,7 @@ func NewShow(runner ShowRunner, actionbaseClient *client.ActionbaseClient) *Show
 	}
 }
 
-func (s *Show) Execute(args []string) *model.Result {
+func (s *Show) Execute(args []string) *model.Response {
 	if len(args) < 1 {
 		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
@@ -63,7 +63,7 @@ func (s *Show) Execute(args []string) *model.Result {
 	}
 }
 
-func (s *Show) showIndices(args []string) *model.Result {
+func (s *Show) showIndices(args []string) *model.Response {
 	parser := util.ParseArgs(args)
 	using, found := parser.Get("using")
 	if !found {
@@ -96,7 +96,7 @@ func (s *Show) showIndices(args []string) *model.Result {
 	return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 }
 
-func (s *Show) showGroups(args []string) *model.Result {
+func (s *Show) showGroups(args []string) *model.Response {
 	parser := util.ParseArgs(args)
 	using, found := parser.Get("using")
 	if !found {

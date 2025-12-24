@@ -19,7 +19,7 @@ func NewHelp(runner HelpRunner) *Help {
 	return &Help{runner: runner}
 }
 
-func (h *Help) Execute(_ []string) *model.Result {
+func (h *Help) Execute(_ []string) *model.Response {
 	var commands []map[string]interface{}
 
 	for name, cmd := range h.runner.GetCommands() {
