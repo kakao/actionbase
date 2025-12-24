@@ -124,8 +124,13 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 
 	fmt.Println()
 
+	offset := responseBody.Offset
+	if offset == "" {
+		offset = "-"
+	}
+
 	columnOrder := []string{"#", "version", "source", "target", "properties"}
-	resultMessage := fmt.Sprintf("The %d edges found (offset: %s, hasNext: %t)", responseBody.Count, responseBody.Offset, responseBody.HasNext) +
+	resultMessage := fmt.Sprintf("The %d edges found (offset: %s, hasNext: %t)", responseBody.Count, offset, responseBody.HasNext) +
 		"\n" +
 		util.PrettyPrintRowsWithOrder(results, columnOrder)
 
