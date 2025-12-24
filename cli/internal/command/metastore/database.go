@@ -6,6 +6,7 @@ import (
 
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/client/model"
+	model2 "github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
@@ -24,11 +25,10 @@ func NewDatabase(runner DatabaseRunner, actionbaseClient *client.ActionbaseClien
 	return &Database{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (d *Database) ShowAll() {
+func (d *Database) ShowAll() *model2.Result {
 	response := d.actionbaseClient.GetDatabases()
 	if response.IsError() {
-		fmt.Println("Failed to get databases")
-		return
+		return model2.Fail("Failed to get databases")
 	}
 
 	content := response.Body.Content
@@ -62,17 +62,20 @@ func (d *Database) ShowAll() {
 
 	columnOrder := []string{"#", "name", "desc", "active"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+
+	return model2.Success()
 }
 
-func (d *Database) Use(name string) {
+func (d *Database) Use(name string) *model2.Result {
 	response := d.actionbaseClient.GetDatabase(name)
 	if response.IsError() {
-		fmt.Printf("No database '%s' found\n", name)
-		return
+		return model2.Fail(fmt.Sprintf("No database '%s' found\n", name))
 	}
 
 	d.runner.SetCurrentDatabase(name)
 	d.runner.SetCurrentTable("")
 
 	fmt.Printf("The database is changed to '%s'\n", name)
+
+	return model2.Success()
 }

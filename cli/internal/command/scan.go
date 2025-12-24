@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
 type Scan struct {
+	context          *Context
 	runner           ScanRunner
 	actionbaseClient *client.ActionbaseClient
 }
@@ -24,36 +26,31 @@ func NewScan(runner ScanRunner, actionbaseClient *client.ActionbaseClient) *Scan
 	return &Scan{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (s *Scan) Execute(args []string) {
+func (s *Scan) Execute(args []string) *model.Result {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 
 	database := s.runner.GetCurrentDatabase()
 	if s.runner.GetCurrentDatabase() == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	parser := util.ParseArgs(args)
 
 	index, found := parser.Get("index")
 	if !found {
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 
 	start, found := parser.Get("start")
 	if !found {
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 
 	direction, found := parser.Get("direction")
 	if !found {
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 
 	limit, found := parser.Get("limit")
@@ -63,20 +60,18 @@ func (s *Scan) Execute(args []string) {
 	ranges, found := parser.Get("ranges")
 
 	if !strings.HasPrefix(args[0], "--") {
-		s.doScan(database, args[0], index, start, direction, limit, ranges)
-		return
+		return s.doScan(database, args[0], index, start, direction, limit, ranges)
 	}
 
 	currentTable := s.runner.GetCurrentTable()
 	if currentTable == "" {
-		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
-		return
+		return model.Fail("No table selected. Use 'use <table|alias> <name>'")
 	}
 
-	s.doScan(database, currentTable, index, start, direction, limit, ranges)
+	return s.doScan(database, currentTable, index, start, direction, limit, ranges)
 }
 
-func (s *Scan) doScan(database, table, index, start, direction, limit, ranges string) {
+func (s *Scan) doScan(database, table, index, start, direction, limit, ranges string) *model.Result {
 	response := s.actionbaseClient.Scan(
 		database,
 		table,
@@ -88,8 +83,7 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 	)
 
 	if response.IsError() {
-		fmt.Printf("Failed to scan table '%s in %s\n", table, database)
-		return
+		return model.Fail(fmt.Sprintf("Failed to scan table '%s in %s'", table, database))
 	}
 
 	responseBody := response.Body
@@ -133,6 +127,8 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 
 	columnOrder := []string{"#", "version", "source", "target", "properties"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+
+	return model.Success()
 }
 
 func (s *Scan) GetDescription() string {

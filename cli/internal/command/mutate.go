@@ -8,10 +8,12 @@ import (
 
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/client/model"
+	model2 "github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
 type Mutate struct {
+	context          *Context
 	runner           MutateRunner
 	actionbaseClient *client.ActionbaseClient
 }
@@ -26,63 +28,54 @@ func NewMutate(runner MutateRunner, actionbaseClient *client.ActionbaseClient) *
 	return &Mutate{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (m *Mutate) Execute(args []string) {
+func (m *Mutate) Execute(args []string) *model2.Result {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
-		return
+		return model2.Fail(fmt.Sprintf("Usage: %s", m.GetType().GetCommand()))
 	}
 
 	database := m.runner.GetCurrentDatabase()
 	if database == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model2.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	parser := util.ParseArgs(args)
 
 	eventType, found := parser.Get("type")
 	if !found {
-		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
-		return
+		return model2.Fail(fmt.Sprintf("Usage: %s", m.GetType().GetCommand()))
 	}
 
 	source, found := parser.Get("source")
 	if !found {
-		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
-		return
+		return model2.Fail(fmt.Sprintf("Usage: %s", m.GetType().GetCommand()))
 	}
 
 	target, found := parser.Get("target")
 	if !found {
-		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
-		return
+		return model2.Fail(fmt.Sprintf("Usage: %s", m.GetType().GetCommand()))
 	}
 
 	version, found := parser.Get("version")
 	if !found {
-		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
-		return
+		return model2.Fail(fmt.Sprintf("Usage: %s", m.GetType().GetCommand()))
 	}
 	version = util.ReplaceTimestampInString(version)
 
 	properties, found := parser.Get("properties")
 	if !found {
-		fmt.Printf("Usage: %s\n", m.GetType().GetCommand())
-		return
+		return model2.Fail(fmt.Sprintf("Usage: %s", m.GetType().GetCommand()))
 	}
 
 	versionInt, err := strconv.ParseInt(version, 10, 64)
 	if err != nil {
-		fmt.Println("Error parsing version: ", err)
-		return
+		return model2.Fail(fmt.Sprintf("Usage: %s", m.GetType().GetCommand()))
 	}
 
 	properties = strings.Trim(properties, "'")
 	properties = util.ReplaceTimestampInString(properties)
 	var propertiesMap map[string]interface{}
 	if json.Unmarshal([]byte(properties), &propertiesMap) != nil {
-		fmt.Println("Error parsing properties: ", err)
-		return
+		return model2.Fail(fmt.Sprintf("Error parsing properties: %s", err))
 	}
 
 	mutationItem := model.MutationItem{
@@ -94,24 +87,21 @@ func (m *Mutate) Execute(args []string) {
 	}
 
 	if !strings.HasPrefix(args[0], "--") {
-		m.doMutate(database, args[0], edgeBulkMutation, eventType)
-		return
+		return m.doMutate(database, args[0], edgeBulkMutation, eventType)
 	}
 
 	currentTable := m.runner.GetCurrentTable()
 	if currentTable == "" {
-		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
-		return
+		return model2.Fail("No table selected. Use 'use <table|alias> <name>'")
 	}
 
-	m.doMutate(database, currentTable, edgeBulkMutation, eventType)
+	return m.doMutate(database, currentTable, edgeBulkMutation, eventType)
 }
 
-func (m *Mutate) doMutate(database, table string, edgeBulkMutation model.EdgeBulkMutation, eventType string) {
+func (m *Mutate) doMutate(database, table string, edgeBulkMutation model.EdgeBulkMutation, eventType string) *model2.Result {
 	response := m.actionbaseClient.Mutate(database, table, &edgeBulkMutation)
 	if response.IsError() {
-		fmt.Printf("Failed to mutate edges: %s\n", response.Error.Error())
-		return
+		return model2.Fail(fmt.Sprintf("Failed to mutate edges: %s", response.Error.Error()))
 	}
 
 	var updatedCount int32 = 0
@@ -125,6 +115,7 @@ func (m *Mutate) doMutate(database, table string, edgeBulkMutation model.EdgeBul
 	}
 
 	fmt.Printf("%s is done (updated: %d, failed %d)\n", eventType, updatedCount, failedCount)
+	return model2.Success()
 }
 
 func (m *Mutate) GetDescription() string {

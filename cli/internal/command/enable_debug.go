@@ -1,6 +1,10 @@
 package command
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/kakao/actionbase/internal/command/model"
+)
 
 type Debug struct {
 	runner DebugRunner
@@ -14,10 +18,9 @@ func NewDebug(runner DebugRunner) *Debug {
 	return &Debug{runner: runner}
 }
 
-func (d *Debug) Execute(args []string) {
+func (d *Debug) Execute(args []string) *model.Result {
 	if len(args) != 1 {
-		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", d.GetType().GetCommand()))
 	}
 
 	toggle := args[0]
@@ -25,10 +28,12 @@ func (d *Debug) Execute(args []string) {
 	switch toggle {
 	case "on":
 		d.runner.SetIsDebugEnabled(true)
+		return model.Success()
 	case "off":
 		d.runner.SetIsDebugEnabled(false)
+		return model.Success()
 	default:
-		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
+		return model.Fail(fmt.Sprintf("Usage: %s", d.GetType().GetCommand()))
 	}
 }
 

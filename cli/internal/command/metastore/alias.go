@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
@@ -27,18 +28,16 @@ func NewAlias(runner AliasRunner, actionbaseClient *client.ActionbaseClient) *Al
 	return &Alias{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (a *Alias) ShowAll() {
+func (a *Alias) ShowAll() *model.Result {
 	database := a.runner.GetCurrentDatabase()
 	if database == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	response := a.actionbaseClient.GetAliases(database)
 
 	if response.IsError() {
-		fmt.Println("Failed to get aliases")
-		return
+		return model.Fail("Failed to get aliases")
 	}
 
 	aliasEntity := response.Body
@@ -70,19 +69,19 @@ func (a *Alias) ShowAll() {
 	fmt.Println()
 	fmt.Printf("%v Aliases in '%s'\n", aliasEntity.Count, a.runner.GetCurrentDatabase())
 	fmt.Println(util.PrettyPrintRowsWithOrder(aliases, columnOrder))
+
+	return model.Success()
 }
 
-func (a *Alias) Use(name string) {
+func (a *Alias) Use(name string) *model.Result {
 	database := a.runner.GetCurrentDatabase()
 	if database == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	response := a.actionbaseClient.GetAlias(database, name)
 	if response.IsError() {
-		fmt.Printf("No Alias '%s' found in %s\n", name, database)
-		return
+		return model.Fail(fmt.Sprintf("No Alias '%s' found in %s", name, database))
 	}
 
 	target := response.Body.Target
@@ -93,19 +92,19 @@ func (a *Alias) Use(name string) {
 
 	a.runner.SetCurrentAlias(name)
 	a.runner.SetCurrentTable(table)
+
+	return model.Success()
 }
 
-func (a *Alias) Desc(name string) {
+func (a *Alias) Desc(name string) *model.Result {
 	database := a.runner.GetCurrentDatabase()
 	if database == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	response := a.actionbaseClient.GetAlias(database, name)
 	if response.IsError() {
-		fmt.Printf("No Alias '%s' found in %s\n", name, database)
-		return
+		return model.Fail(fmt.Sprintf("No Alias '%s' found in %s", name, database))
 	}
 
 	table := response.Body.Table
@@ -171,4 +170,6 @@ func (a *Alias) Desc(name string) {
 	fmt.Println()
 	fmt.Printf("[Fields (%d)]\n", len(fields))
 	fmt.Println(util.PrettyPrintRowsWithOrder(fields, fieldColumnOrder))
+
+	return model.Success()
 }

@@ -11,11 +11,13 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/command"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
 type ActionbaseCommandLineRunner struct {
-	logger *slog.Logger
+	ReadLine *readline.Instance
+	logger   *slog.Logger
 	*CommandLineRunner
 	client          *client.ActionbaseClient
 	clientContext   *client.Context
@@ -24,11 +26,11 @@ type ActionbaseCommandLineRunner struct {
 	currentTable    string
 }
 
-func NewActionbaseCommandLineRunner(host string, authKey *string) *ActionbaseCommandLineRunner {
+func NewActionbaseCommandLineRunner(host string, authKey *string, IsServerEnabled bool) *ActionbaseCommandLineRunner {
 	logger := util.NewLogger(slog.LevelDebug)
 	slog.SetDefault(logger)
 
-	clientContext := client.Context{IsDebugEnabled: false}
+	clientContext := client.Context{IsServerModeEnabled: IsServerEnabled, IsDebugEnabled: false}
 	httpClient := client.NewHTTPClient(host, authKey, &clientContext)
 
 	runner := &ActionbaseCommandLineRunner{
@@ -61,7 +63,7 @@ func NewActionbaseCommandLineRunner(host string, authKey *string) *ActionbaseCom
 
 func (r *ActionbaseCommandLineRunner) Run() {
 	r.showBanner()
-	command.PrintContext(r.client.GetHost(), r.currentDatabase, r.currentTable, r.currentAlias, r.IsDebugEnabled())
+	command.PrintContext(r.client.GetHost(), r.currentDatabase, r.currentTable, r.currentAlias, r.IsServerModeEnabled(), r.IsDebugEnabled())
 
 	rl, err := readline.New(defaultPrompt + " ")
 	if err != nil {
@@ -73,6 +75,7 @@ func (r *ActionbaseCommandLineRunner) Run() {
 		}
 	}(rl)
 
+	r.ReadLine = rl
 	for {
 		if !r.running {
 			return
@@ -108,11 +111,11 @@ func (r *ActionbaseCommandLineRunner) Run() {
 		if input == "" {
 			continue
 		}
-		r.runCommand(input)
+		r.RunCommand(input)
 	}
 }
 
-func (r *ActionbaseCommandLineRunner) runCommand(input string) {
+func (r *ActionbaseCommandLineRunner) RunCommand(input string) (*model.Result, float64) {
 	parts := r.parseCommand(input)
 	cmdName := parts[0]
 	var args []string
@@ -121,11 +124,11 @@ func (r *ActionbaseCommandLineRunner) runCommand(input string) {
 	}
 
 	start := time.Now()
+	result := r.executeCommand(cmdName, args)
+	elapsed := time.Since(start).Seconds()
 
-	r.executeCommand(cmdName, args)
-
-	elapsed := time.Since(start)
-	fmt.Printf("\033[90m(Took %.4f seconds)\n\n\033[0m", elapsed.Seconds())
+	fmt.Printf("\033[90m(Took %.4f seconds)\n\n\033[0m", elapsed)
+	return result, elapsed
 }
 
 func (r *ActionbaseCommandLineRunner) GetCurrentDatabase() string {
@@ -144,6 +147,10 @@ func (r *ActionbaseCommandLineRunner) GetCurrentAlias() string {
 	return r.currentAlias
 }
 
+func (r *ActionbaseCommandLineRunner) IsServerModeEnabled() bool {
+	return r.clientContext.IsServerModeEnabled
+}
+
 func (r *ActionbaseCommandLineRunner) IsDebugEnabled() bool {
 	return r.clientContext.IsDebugEnabled
 }
@@ -158,6 +165,10 @@ func (r *ActionbaseCommandLineRunner) SetCurrentAlias(alias string) {
 
 func (r *ActionbaseCommandLineRunner) SetIsDebugEnabled(debugging bool) {
 	r.clientContext.IsDebugEnabled = debugging
+}
+
+func (r *ActionbaseCommandLineRunner) SetIsServerModeEnabled(isServerModeEnabled bool) {
+	r.clientContext.IsServerModeEnabled = isServerModeEnabled
 }
 
 func (r *ActionbaseCommandLineRunner) BuildPrompt() string {

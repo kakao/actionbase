@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
@@ -23,17 +24,15 @@ func NewTable(runner TableRunner, actionbaseClient *client.ActionbaseClient) *Ta
 	return &Table{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (t *Table) ShowAll() {
+func (t *Table) ShowAll() *model.Result {
 	database := t.runner.GetCurrentDatabase()
 	if database == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	response := t.actionbaseClient.GetTables(database)
 	if response.IsError() {
-		fmt.Printf("Failed to get tables in %s\n", database)
-		return
+		return model.Fail(fmt.Sprintf("Failed to get tables in %s", database))
 	}
 
 	tableEntity := response.Body
@@ -67,38 +66,35 @@ func (t *Table) ShowAll() {
 
 	columnOrder := []string{"#", "active", "name", "desc", "type"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-	return
+
+	return model.Success()
 }
 
-func (t *Table) ShowIndices(name string) {
+func (t *Table) ShowIndices(name string) *model.Result {
 	if t.runner.GetCurrentDatabase() == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
-	t.showIndices(t.runner.GetCurrentDatabase(), name)
+	return t.showIndices(t.runner.GetCurrentDatabase(), name)
 }
 
-func (t *Table) ShowGroups(table string) {
+func (t *Table) ShowGroups(table string) *model.Result {
 	if t.runner.GetCurrentDatabase() == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
-	t.showGroups(t.runner.GetCurrentDatabase(), table)
+	return t.showGroups(t.runner.GetCurrentDatabase(), table)
 }
 
-func (t *Table) Desc(name string) {
+func (t *Table) Desc(name string) *model.Result {
 	database := t.runner.GetCurrentDatabase()
 	if database == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	response := t.actionbaseClient.GetTable(database, name)
 	if response.IsError() {
-		fmt.Printf("Failed to get table '%s' in %s\n", name, database)
-		return
+		return model.Fail(fmt.Sprintf("Failed to get table '%s' in %s", name, database))
 	}
 
 	tableEntity := response.Body
@@ -161,32 +157,30 @@ func (t *Table) Desc(name string) {
 
 	fieldColumnOrder := []string{"#", "name", "type", "nullable", "desc"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, fieldColumnOrder))
-	return
+	return model.Success()
 }
 
-func (t *Table) Use(table string) {
+func (t *Table) Use(table string) *model.Result {
 	database := t.runner.GetCurrentDatabase()
 	if database == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	response := t.actionbaseClient.GetTable(database, table)
 	if response.IsError() {
-		fmt.Printf("Failed to get table '%s'\n", table)
-		return
+		return model.Fail(fmt.Sprintf("Failed to get table '%s'\n", table))
 	}
 
 	t.runner.SetCurrentTable(table)
 
 	fmt.Printf("The Table is changed to '%s:%s'\n", database, table)
+	return model.Success()
 }
 
-func (t *Table) showIndices(database string, table string) {
+func (t *Table) showIndices(database string, table string) *model.Result {
 	response := t.actionbaseClient.GetTable(database, table)
 	if response.IsError() {
-		fmt.Printf("Failed to get table '%s'\n", table)
-		return
+		return model.Fail(fmt.Sprintf("Failed to get table '%s'", table))
 	}
 
 	tableEntity := response.Body
@@ -238,13 +232,13 @@ func (t *Table) showIndices(database string, table string) {
 
 	columnOrder := []string{"#", "name", "desc", "fields[].name", "fields[].order"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+	return model.Success()
 }
 
-func (t *Table) showGroups(database string, table string) {
+func (t *Table) showGroups(database string, table string) *model.Result {
 	response := t.actionbaseClient.GetTable(database, table)
 	if response.IsError() {
-		fmt.Printf("Failed to get table '%s'\n", table)
-		return
+		return model.Fail(fmt.Sprintf("Failed to get table '%s'", table))
 	}
 
 	tableEntity := response.Body
@@ -363,4 +357,5 @@ func (t *Table) showGroups(database string, table string) {
 		"fields[].bucket.format",
 	}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+	return model.Success()
 }

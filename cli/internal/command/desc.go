@@ -5,9 +5,11 @@ import (
 
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/command/metastore"
+	"github.com/kakao/actionbase/internal/command/model"
 )
 
 type Desc struct {
+	context      *Context
 	runner       DescRunner
 	tableCommand *metastore.Table
 	aliasCommand *metastore.Alias
@@ -30,46 +32,41 @@ func NewDesc(runner DescRunner, actionbaseClient *client.ActionbaseClient) *Desc
 	}
 }
 
-func (d *Desc) Execute(args []string) {
+func (d *Desc) Execute(args []string) *model.Result {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", d.GetType().GetCommand()))
 	}
 
 	resourceType := args[0]
 	if resourceType != "table" && resourceType != "alias" {
-		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", d.GetType().GetCommand()))
 	}
 
 	if len(args) >= 2 {
 		name := args[1]
 
 		if resourceType == "table" {
-			d.tableCommand.Desc(name)
-		} else {
-			d.aliasCommand.Desc(name)
+			return d.tableCommand.Desc(name)
 		}
-		return
+
+		return d.aliasCommand.Desc(name)
 	}
 
 	if resourceType == "table" {
 		currentTable := d.runner.GetCurrentTable()
 
 		if currentTable == "" {
-			fmt.Println("No table selected. Use 'use <table|alias> <name>'")
-			return
+			return model.Fail("No table selected. Use 'use <table|alias> <name>'")
 		}
-		d.tableCommand.Desc(currentTable)
-		return
+		return d.tableCommand.Desc(currentTable)
 	}
 
 	currentAlias := d.runner.GetCurrentAlias()
 	if currentAlias == "" {
-		fmt.Println("No alias selected. Use 'use alias <name>'")
-		return
+		return model.Fail("No alias selected. Use 'use alias <name>'")
 	}
-	d.aliasCommand.Desc(currentAlias)
+
+	return d.aliasCommand.Desc(currentAlias)
 }
 
 func (d *Desc) GetDescription() string {

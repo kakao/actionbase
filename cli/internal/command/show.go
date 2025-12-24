@@ -5,10 +5,12 @@ import (
 
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/command/metastore"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
 type Show struct {
+	context          *Context
 	runner           ShowRunner
 	actionbaseClient *client.ActionbaseClient
 	databaseCommand  *metastore.Database
@@ -37,104 +39,94 @@ func NewShow(runner ShowRunner, actionbaseClient *client.ActionbaseClient) *Show
 	}
 }
 
-// Execute executes the show command
-func (s *Show) Execute(args []string) {
+func (s *Show) Execute(args []string) *model.Result {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 
 	resourceType := args[0]
 	switch resourceType {
 	case "databases":
-		s.databaseCommand.ShowAll()
+		return s.databaseCommand.ShowAll()
 	case "storages":
-		s.storageCommand.ShowAll()
+		return s.storageCommand.ShowAll()
 	case "aliases":
-		s.aliasCommand.ShowAll()
+		return s.aliasCommand.ShowAll()
 	case "tables":
-		s.tableCommand.ShowAll()
+		return s.tableCommand.ShowAll()
 	case "indices":
-		s.showIndices(args)
+		return s.showIndices(args)
 	case "groups":
-		s.showGroups(args)
+		return s.showGroups(args)
 	default:
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
+		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 }
 
-func (s *Show) showIndices(args []string) {
+func (s *Show) showIndices(args []string) *model.Result {
 	parser := util.ParseArgs(args)
 	using, found := parser.Get("using")
 	if !found {
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 
 	table, found := parser.Get("table")
 	if found {
-		s.tableCommand.ShowIndices(table)
-		return
+		return s.tableCommand.ShowIndices(table)
 	}
 
 	if using == "table" {
 		table := s.runner.GetCurrentTable()
 		if table == "" {
-			fmt.Println("No table selected. Use 'use <table|alias> <name>'")
-			return
+			return model.Fail("No table selected. Use 'use <table|alias> <name>'")
 		}
-		s.tableCommand.ShowIndices(table)
-		return
+
+		return s.tableCommand.ShowIndices(table)
 	}
 
 	if using == "alias" {
 		alias := s.runner.GetCurrentAlias()
 		if alias == "" {
-			fmt.Println("No alias selected. Use 'use alias <name>'")
-			return
+			return model.Fail("No alias selected. Use 'use alias <name>'")
 		}
-		s.tableCommand.ShowIndices(s.runner.GetCurrentTable())
-		return
+
+		return s.tableCommand.ShowIndices(s.runner.GetCurrentTable())
 	}
 
-	fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
+	return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 }
 
-func (s *Show) showGroups(args []string) {
+func (s *Show) showGroups(args []string) *model.Result {
 	parser := util.ParseArgs(args)
 	using, found := parser.Get("using")
 	if !found {
-		fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 
 	table, found := parser.Get("table")
 	if found {
-		s.tableCommand.ShowGroups(table)
-		return
+		return s.tableCommand.ShowGroups(table)
 	}
 
 	if using == "table" {
 		table := s.runner.GetCurrentTable()
 		if table == "" {
-			fmt.Printf("No table selected. Use 'use <table|alias> <name>'\n")
-			return
+			return model.Fail("No table selected. Use 'use <table|alias> <name>'")
 		}
-		s.tableCommand.ShowGroups(table)
-		return
+
+		return s.tableCommand.ShowGroups(table)
 	}
 
 	if using == "alias" {
 		alias := s.runner.GetCurrentAlias()
 		if alias == "" {
-			fmt.Println("No alias selected. Use 'use alias <name>'")
-			return
+			return model.Fail("No alias selected. Use 'use alias <name>'")
 		}
-		s.tableCommand.ShowGroups(s.runner.GetCurrentTable())
-		return
+
+		return s.tableCommand.ShowGroups(s.runner.GetCurrentTable())
 	}
 
-	fmt.Printf("Usage: %s\n", s.GetType().GetCommand())
+	return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 }
 
 func (s *Show) GetDescription() string {

@@ -5,10 +5,12 @@ import (
 	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
 type Get struct {
+	context          *Context
 	runner           GetRunner
 	actionbaseClient *client.ActionbaseClient
 }
@@ -23,44 +25,39 @@ func NewGet(runner GetRunner, actionbaseClient *client.ActionbaseClient) *Get {
 	return &Get{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (g *Get) Execute(args []string) {
+func (g *Get) Execute(args []string) *model.Result {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", g.GetType().GetCommand()))
 	}
 
 	database := g.runner.GetCurrentDatabase()
 	if database == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	parser := util.ParseArgs(args)
 	source, found := parser.Get("source")
 	if !found {
-		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", g.GetType().GetCommand()))
 	}
 	target, found := parser.Get("target")
 	if !found {
-		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
+		return model.Fail(fmt.Sprintf("Usage: %s", g.GetType().GetCommand()))
 	}
 
 	if !strings.HasPrefix(args[0], "--") {
-		g.doExecute(database, args[0], source, target)
-		return
+		return g.doExecute(database, args[0], source, target)
 	}
 
 	currentTable := g.runner.GetCurrentTable()
 	if currentTable == "" {
-		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
-		return
+		return model.Fail("No table selected. Use 'use <table|alias> <name>'")
 	}
 
-	g.doExecute(database, currentTable, source, target)
+	return g.doExecute(database, currentTable, source, target)
 }
 
-func (g *Get) doExecute(database, table, source, target string) {
+func (g *Get) doExecute(database, table, source, target string) *model.Result {
 	response := g.actionbaseClient.Get(
 		database,
 		table,
@@ -68,8 +65,7 @@ func (g *Get) doExecute(database, table, source, target string) {
 		target)
 
 	if response.IsError() {
-		fmt.Printf("Failed to get edge: [%s -> %s]\n", source, target)
-		return
+		return model.Fail(fmt.Sprintf("Failed to get edge: [%s -> %s]", source, target))
 	}
 
 	var results []map[string]interface{}
@@ -109,6 +105,8 @@ func (g *Get) doExecute(database, table, source, target string) {
 	fmt.Println()
 	fmt.Printf("The edge is found: [%s -> %s]\n", source, target)
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+
+	return model.Success()
 }
 
 func (g *Get) GetDescription() string {

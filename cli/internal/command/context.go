@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/model"
 )
 
 type Context struct {
@@ -12,6 +13,7 @@ type Context struct {
 }
 
 type ContextRunner interface {
+	IsServerModeEnabled() bool
 	IsDebugEnabled() bool
 	GetCurrentDatabase() string
 	GetCurrentTable() string
@@ -22,16 +24,19 @@ func NewContext(runner ContextRunner, actionbaseClient *client.ActionbaseClient)
 	return &Context{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (c *Context) Execute(_ []string) {
+func (c *Context) Execute(_ []string) *model.Result {
 	PrintContext(
 		c.actionbaseClient.GetHost(),
 		c.runner.GetCurrentDatabase(),
 		c.runner.GetCurrentTable(),
 		c.runner.GetCurrentAlias(),
+		c.runner.IsServerModeEnabled(),
 		c.runner.IsDebugEnabled())
+
+	return nil
 }
 
-func PrintContext(host string, database string, table string, alias string, isDebugEnabled bool) {
+func PrintContext(host string, database string, table string, alias string, isServerModeEnabled, isDebugEnabled bool) {
 	if database == "" {
 		database = "-"
 	}
@@ -44,20 +49,27 @@ func PrintContext(host string, database string, table string, alias string, isDe
 		alias = "-"
 	}
 
+	serverMode := "on"
+	if !isServerModeEnabled {
+		serverMode = "off"
+	}
+
 	debug := "on"
 	if !isDebugEnabled {
 		debug = "off"
 	}
 
-	fmt.Println("\033[33m╭────────────────────────────────────────────────────────────────────────────────────────╮\033[0m")
-	fmt.Println("\033[33m│                                                                                        │\033[0m")
+	fmt.Printf("\033[33m╭────────────────────────────────────────────────────────────────────────────────────────╮\033[0m\n")
+	fmt.Printf("\033[33m│                                                                                        │\033[0m\n")
 	fmt.Printf("\033[33m│  host\033[0m %-80s \033[33m│\033[0m\n", host)
 	fmt.Printf("\033[33m│  database\033[0m %-76s \033[33m│\033[0m\n", database)
 	fmt.Printf("\033[33m│  table\033[0m %-79s \033[33m│\033[0m\n", table)
 	fmt.Printf("\033[33m│  alias\033[0m %-79s \033[33m│\033[0m\n", alias)
+	fmt.Printf("\033[33m│                                                                                        │\033[0m\n")
+	fmt.Printf("\033[33m│  serverMode\033[0m %-74s \033[33m│\033[0m\n", serverMode)
 	fmt.Printf("\033[33m│  debug\033[0m %-79s \033[33m│\033[0m\n", debug)
-	fmt.Println("\033[33m│                                                                                        │\033[0m")
-	fmt.Println("\033[33m╰────────────────────────────────────────────────────────────────────────────────────────╯\033[0m")
+	fmt.Printf("\033[33m│                                                                                        │\033[0m\n")
+	fmt.Printf("\033[33m╰────────────────────────────────────────────────────────────────────────────────────────╯\033[0m\n")
 }
 
 func (c *Context) GetDescription() string {

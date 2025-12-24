@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
 type Count struct {
+	context          *Context
 	runner           CountRunner
 	actionbaseClient *client.ActionbaseClient
 }
@@ -25,51 +27,45 @@ func NewCount(runner CountRunner, actionbaseClient *client.ActionbaseClient) *Co
 	return &Count{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (c *Count) Execute(args []string) {
+func (c *Count) Execute(args []string) *model.Result {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", c.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
 
 	database := c.runner.GetCurrentDatabase()
 	if database == "" {
-		fmt.Println("No database selected. Use 'use database <name>'")
-		return
+		return model.Fail("No database selected. Use 'use database <name>'")
 	}
 
 	parser := util.ParseArgs(args)
 
 	start, found := parser.Get("start")
 	if !found {
-		fmt.Printf("Usage: %s\n", c.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
 
 	direction, found := parser.Get("direction")
 	if !found {
-		fmt.Printf("Usage: %s\n", c.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
 
 	if !strings.HasPrefix(args[0], "--") {
-		c.doCount(database, args[0], start, direction)
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
 
 	currentTable := c.runner.GetCurrentTable()
 	if currentTable == "" {
-		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
-		return
+		return model.Fail("No table selected. Use 'use <table|alias> <name>'")
 	}
-	c.doCount(database, currentTable, start, direction)
+
+	return c.doCount(database, currentTable, start, direction)
 }
 
-func (c *Count) doCount(database string, table string, start string, direction string) {
+func (c *Count) doCount(database string, table string, start string, direction string) *model.Result {
 	response := c.actionbaseClient.Counts(database, table, start, direction)
 
 	if response.IsError() {
-		fmt.Printf("Failed to get counts of table '%s' in %s\n", table, database)
-		return
+		return model.Fail(fmt.Sprintf("Failed to get counts of table '%s' in %s", table, database))
 	}
 
 	var results []map[string]interface{}
@@ -89,6 +85,8 @@ func (c *Count) doCount(database string, table string, start string, direction s
 
 	columnOrder := []string{"#", "start", "direction", "count"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+
+	return model.Success()
 }
 
 func (c *Count) GetDescription() string {

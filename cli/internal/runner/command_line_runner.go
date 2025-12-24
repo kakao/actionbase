@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/kakao/actionbase/internal/command"
+	"github.com/kakao/actionbase/internal/command/model"
 )
 
 const (
@@ -57,7 +58,7 @@ func (r *CommandLineRunner) parseCommand(line string) []string {
 	return strings.Fields(strings.TrimSpace(line))
 }
 
-func (r *CommandLineRunner) executeCommand(cmdName string, args []string) {
+func (r *CommandLineRunner) executeCommand(cmdName string, args []string) *model.Result {
 	cmd, ok := r.commands[strings.ToLower(cmdName)]
 
 	if ok {
@@ -66,9 +67,10 @@ func (r *CommandLineRunner) executeCommand(cmdName string, args []string) {
 				fmt.Printf("Error executing command: %v\n", rec)
 			}
 		}()
-		cmd.Execute(args)
-	} else {
-		fmt.Println("Unknown command: " + cmdName)
-		fmt.Println("Type 'help' for available commands.")
+		return cmd.Execute(args)
 	}
+	fmt.Println("Unknown command: " + cmdName)
+	fmt.Println("Type 'help' for available commands.")
+
+	return nil
 }

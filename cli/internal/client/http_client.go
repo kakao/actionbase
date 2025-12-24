@@ -11,7 +11,8 @@ import (
 )
 
 type Context struct {
-	IsDebugEnabled bool
+	IsServerModeEnabled bool
+	IsDebugEnabled      bool
 }
 
 type Response[T any] struct {

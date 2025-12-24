@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
@@ -24,11 +25,10 @@ func NewStorage(runner StorageRunner, actionbaseClient *client.ActionbaseClient)
 	return &Storage{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func (s *Storage) ShowAll() {
+func (s *Storage) ShowAll() *model.Result {
 	response := s.actionbaseClient.GetStorages()
 	if response.IsError() {
-		fmt.Println("Failed to get storages")
-		return
+		return model.Fail("Failed to get storages")
 	}
 
 	content := response.Body.Content
@@ -36,8 +36,7 @@ func (s *Storage) ShowAll() {
 	for idx, storage := range content {
 		conf, err := json.Marshal(storage.Conf)
 		if err != nil {
-			fmt.Println("Failed to parse conf", err)
-			return
+			return model.Fail(fmt.Sprintf("Failed to parse conf", err))
 		}
 
 		data := map[string]interface{}{
@@ -68,4 +67,6 @@ func (s *Storage) ShowAll() {
 
 	columnOrder := []string{"#", "active", "name", "desc", "type", "conf"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+
+	return model.Success()
 }

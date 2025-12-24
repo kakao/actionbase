@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
@@ -18,7 +19,7 @@ func NewHelp(runner HelpRunner) *Help {
 	return &Help{runner: runner}
 }
 
-func (h *Help) Execute(_ []string) {
+func (h *Help) Execute(_ []string) *model.Result {
 	var commands []map[string]interface{}
 
 	for name, cmd := range h.runner.GetCommands() {
@@ -33,6 +34,8 @@ func (h *Help) Execute(_ []string) {
 	fmt.Println("\nAvailable commands:")
 	columnOrder := []string{"name", "description", "usage"}
 	fmt.Println(util.PrettyPrintRowsWithOrder(commands, columnOrder))
+
+	return nil
 }
 
 func (h *Help) GetDescription() string {

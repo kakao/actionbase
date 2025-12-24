@@ -11,6 +11,7 @@ import (
 
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/client/model"
+	model2 "github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
@@ -20,6 +21,7 @@ const (
 )
 
 type Load struct {
+	context          *Context
 	runner           LoadRunner
 	actionbaseClient *client.ActionbaseClient
 }
@@ -40,17 +42,15 @@ func NewLoad(runner LoadRunner, actionbaseClient *client.ActionbaseClient) *Load
 	}
 }
 
-func (l *Load) Execute(args []string) {
+func (l *Load) Execute(args []string) *model2.Result {
 	if len(args) != 1 {
-		fmt.Printf("Usage: %s\n", l.GetType().GetCommand())
-		return
+		return model2.Fail(fmt.Sprintf("Invalid arguments: %s", args))
 	}
 
 	path := args[0]
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return model2.Fail(err.Error())
 	}
 
 	defer func(file *os.File) {
@@ -62,16 +62,18 @@ func (l *Load) Execute(args []string) {
 
 	reader := bufio.NewReader(file)
 
-	l.load(reader, path)
+	return l.load(reader, path)
 }
 
-func (l *Load) load(reader *bufio.Reader, path string) {
+func (l *Load) load(reader *bufio.Reader, path string) *model2.Result {
 	for {
 		chunk, err := reader.ReadString(';')
 		chunk = l.normalize(chunk)
 		if err == io.EOF {
 			if len(chunk) > 0 {
-				l.doLoad(chunk)
+				if result := l.doLoad(chunk); !result.IsSuccess {
+					return model2.Fail(fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path))
+				}
 			}
 			break
 		}
@@ -79,16 +81,15 @@ func (l *Load) load(reader *bufio.Reader, path string) {
 			log.Fatal(err)
 		}
 
-		ok := l.doLoad(chunk)
-
-		if !ok {
-			fmt.Printf("Failed to doLoad '%s'. Please check your command syntax or system log\n", path)
-			break
+		if result := l.doLoad(chunk); !result.IsSuccess {
+			return model2.Fail(fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path))
 		}
 	}
+
+	return model2.Success()
 }
 
-func (l *Load) doLoad(data string) bool {
+func (l *Load) doLoad(data string) *model2.Result {
 	results := l.parseArgsWithQuotes(data)
 	resourceType := results[1]
 
@@ -96,139 +97,113 @@ func (l *Load) doLoad(data string) bool {
 
 	data, found := parser.Get("data")
 	if !found {
-		fmt.Printf("Usage: %s\n", l.GetType().GetCommand())
-		return false
+		return model2.Fail(fmt.Sprintf("Usage: %s", l.GetType().GetCommand()))
 	}
 
 	data = l.runReservedWords(data)
 
 	switch resourceType {
 	case "database":
-		if !l.loadDatabase(parser, data) {
-			return false
-		}
+		return l.loadDatabase(parser, data)
 	case "storage":
-		if !l.loadStorage(parser, data) {
-			return false
-		}
+		return l.loadStorage(parser, data)
 	case "table":
-		if !l.loadTable(parser, data) {
-			return false
-		}
+		return l.loadTable(parser, data)
 	case "edges":
-		if !l.loadEdge(parser, data) {
-			return false
-		}
+		return l.loadEdge(parser, data)
 	default:
-		fmt.Printf("Unknown resource type: %s\n", resourceType)
-		return false
+		return model2.Fail(fmt.Sprintf("Unknown resource type: %s", resourceType))
 	}
-
-	return true
 }
 
-func (l *Load) loadDatabase(parser *util.Parser, data string) bool {
+func (l *Load) loadDatabase(parser *util.Parser, data string) *model2.Result {
 	name, found := parser.Get("name")
 	if !found {
-		fmt.Println("Failed to read a command when try to create database. no name found")
-		return false
+		return model2.Fail("Failed to read a command when try to create database. no name found")
 	}
 
 	var databaseCreateRequest model.DatabaseCreateRequest
 	err := json.Unmarshal([]byte(data), &databaseCreateRequest)
 	if err != nil {
-		fmt.Printf("Failed to parse data: %s\n", err.Error())
-		return false
+		return model2.Fail(fmt.Sprintf("Failed to parse data: %s", err.Error()))
 	}
 	response := l.actionbaseClient.CreateDatabase(name, &databaseCreateRequest)
 
 	if response.IsError() || response.Body.Status == "ERROR" {
-		fmt.Printf("Failed to create database '%s'\n", name)
-		return false
+		return model2.Fail(fmt.Sprintf("Failed to create database '%s'", name))
 	}
 
 	fmt.Printf("Database '%s' is created\n", name)
-	return true
+	return model2.Success()
 }
 
-func (l *Load) loadStorage(parser *util.Parser, data string) bool {
+func (l *Load) loadStorage(parser *util.Parser, data string) *model2.Result {
 	name, found := parser.Get("name")
 	if !found {
-		fmt.Println("Failed to read a command when try to create storage. no name found")
-		return true
+		return model2.Fail("Failed to read a command when try to create storage. no name found")
 	}
 
 	var storageCreateRequest model.StorageCreateRequest
 	err := json.Unmarshal([]byte(data), &storageCreateRequest)
 	if err != nil {
-		fmt.Printf("Failed to parse data: %s\n", err.Error())
-		return false
+		return model2.Fail(fmt.Sprintf("Failed to parse data: %s", err.Error()))
 	}
 
 	response := l.actionbaseClient.CreateStorage(name, &storageCreateRequest)
 	if response.IsError() || response.Body.Status == "ERROR" {
-		fmt.Printf("Failed to create storage '%s'\n", name)
-		return false
+		return model2.Fail(fmt.Sprintf("Failed to create storage '%s'", name))
 	}
 
 	fmt.Printf("Storage '%s' is created\n", name)
-	return true
+	return model2.Success()
 }
 
-func (l *Load) loadTable(parser *util.Parser, data string) bool {
+func (l *Load) loadTable(parser *util.Parser, data string) *model2.Result {
 	name, found := parser.Get("name")
 	if !found {
-		fmt.Println("Failed to read a command when try to create table. no name found")
-		return false
+		return model2.Fail("Failed to read a command when try to create table. no name found")
 	}
 
 	database, found := parser.Get("database")
 	if !found {
-		fmt.Println("Failed to read a command when try to create table. no database found")
-		return false
+		return model2.Fail(fmt.Sprintf("Failed to read a command when try to create table. no database found"))
 	}
 
 	var tableCreateRequest model.TableCreateRequest
 	err := json.Unmarshal([]byte(data), &tableCreateRequest)
 	if err != nil {
-		fmt.Printf("Failed to parse data: %s\n", err.Error())
-		return false
+		return model2.Fail(fmt.Sprintf("Failed to parse data: %s", err.Error()))
 	}
 
 	response := l.actionbaseClient.CreateTable(database, name, &tableCreateRequest)
 	if response.IsError() || response.Body.Status == "ERROR" {
-		fmt.Printf("Failed to create table '%s'\n", name)
-		return false
+		return model2.Fail(fmt.Sprintf("Failed to create table '%s'", name))
 	}
 
 	fmt.Printf("Table '%s' is created\n", name)
-	return true
+	return model2.Success()
 }
 
-func (l *Load) loadEdge(parser *util.Parser, data string) bool {
+func (l *Load) loadEdge(parser *util.Parser, data string) *model2.Result {
 	database, found := parser.Get("database")
 	if !found {
-		fmt.Println("Failed to read a command when try to mutate edges. no --database found")
-		return false
+		return model2.Fail("Failed to read a command when try to mutate edges. no --database found")
 	}
 
 	table, found := parser.Get("table")
 	if !found {
-		fmt.Println("Failed to read a command when try to mutate edges. no --table found")
-		return false
+		return model2.Fail("Failed to read a command when try to mutate edges. no --table found")
 	}
 
 	var edgeBulkMutations model.EdgeBulkMutation
 	err := json.Unmarshal([]byte(data), &edgeBulkMutations)
 	if err != nil {
-		fmt.Printf("Failed to parse data: %s\n", err.Error())
-		return false
+		return model2.Fail(fmt.Sprintf("Failed to parse data: %s", err.Error()))
 	}
 
 	response := l.actionbaseClient.Mutate(database, table, &edgeBulkMutations)
 	if response.IsError() {
-		fmt.Printf("Failed to mutate edges: %s\n", err.Error())
-		return false
+		return model2.Fail(fmt.Sprintf("Failed to mutate edges: %s", err.Error()))
 	}
 
 	var updatedCount int32 = 0
@@ -242,7 +217,7 @@ func (l *Load) loadEdge(parser *util.Parser, data string) bool {
 	}
 
 	fmt.Printf("%d edges are mutated (total: %d, failed: %d)\n", len(edgeBulkMutations.Mutations), updatedCount, failedCount)
-	return true
+	return model2.Success()
 }
 
 func (l *Load) normalize(chunk string) string {

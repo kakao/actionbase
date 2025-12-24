@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
-	"github.com/kakao/actionbase/internal/client/model"
+	clientModel "github.com/kakao/actionbase/internal/client/model"
+	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
 type Create struct {
+	context          *Context
 	actionbaseClient *client.ActionbaseClient
 }
 
@@ -34,10 +36,9 @@ const storageUsagePrompt = "Usage: create storage --hbaseNamespace <hbaseNamespa
 const tableUsagePrompt = "Usage: create table --database <database> --storage <storage> --name <name> --comment <comment> --type <type> --direction <direction> --schema <schema> --indices <indices> --groups <groups>"
 const aliasUsagePrompt = "Usage: create alias --database <database> --table <table> --name <name> --comment <comment>"
 
-func (c *Create) Execute(args []string) {
+func (c *Create) Execute(args []string) *model.Result {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", c.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
 
 	parser := util.ParseArgs(args)
@@ -46,30 +47,26 @@ func (c *Create) Execute(args []string) {
 	switch resourceType {
 	case "database":
 		if len(args) < 3 {
-			fmt.Println(databaseUsagePrompt)
-			return
+			return model.Fail(databaseUsagePrompt)
 		}
-		c.createDatabase(parser)
+		return c.createDatabase(parser)
 	case "storage":
 		if len(args) < 4 {
-			fmt.Println(storageUsagePrompt)
-			return
+			return model.Fail(storageUsagePrompt)
 		}
-		c.createStorage(parser)
+		return c.createStorage(parser)
 	case "table":
 		if len(args) < 10 {
-			fmt.Println(tableUsagePrompt)
-			return
+			return model.Fail(tableUsagePrompt)
 		}
-		c.createTable(parser)
+		return c.createTable(parser)
 	case "alias":
 		if len(args) < 5 {
-			fmt.Println(aliasUsagePrompt)
-			return
+			return model.Fail(aliasUsagePrompt)
 		}
-		c.createAlias(parser)
+		return c.createAlias(parser)
 	default:
-		fmt.Printf("Usage: %s\n", c.GetType().GetCommand())
+		return model.Fail(fmt.Sprintf("Usage: %s\n", c.GetType().GetCommand()))
 	}
 }
 
@@ -81,63 +78,57 @@ func (c *Create) GetType() Type {
 	return TypeCreate
 }
 
-func (c *Create) createDatabase(parser *util.Parser) {
+func (c *Create) createDatabase(parser *util.Parser) *model.Result {
 	name, found := parser.Get("name")
 	if !found {
-		fmt.Println(databaseUsagePrompt)
-		return
+		return model.Fail(databaseUsagePrompt)
 	}
 
 	comment, found := parser.GetParsed("comment")
 	if !found {
-		fmt.Println(databaseUsagePrompt)
-		return
+		return model.Fail(databaseUsagePrompt)
 	}
 
-	requestBody := model.DatabaseCreateRequest{
+	requestBody := clientModel.DatabaseCreateRequest{
 		Desc: comment.(string),
 	}
 	response := c.actionbaseClient.CreateDatabase(name, &requestBody)
 	if response.IsError() || response.Body.Status == "ERROR" {
-		fmt.Printf("Failed to create database '%s'\n", name)
-		return
+		return model.Fail(fmt.Sprintf("Failed to create database '%s'", name))
 	}
 
 	fmt.Printf("The database '%s' is created\n", name)
+
+	return model.Success()
 }
 
-func (c *Create) createStorage(parser *util.Parser) {
+func (c *Create) createStorage(parser *util.Parser) *model.Result {
 	hbaseNamespace, found := parser.Get("hbaseNamespace")
 	if !found {
-		fmt.Println(storageUsagePrompt)
-		return
+		return model.Fail(storageUsagePrompt)
 	}
 
 	hbaseTable, found := parser.Get("hbaseTable")
 	if !found {
-		fmt.Println(storageUsagePrompt)
-		return
+		return model.Fail(storageUsagePrompt)
 	}
 
 	storageType, found := parser.Get("storageType")
 	if !found {
-		fmt.Println(storageUsagePrompt)
-		return
+		return model.Fail(storageUsagePrompt)
 	}
 
 	name, found := parser.Get("name")
 	if !found {
-		fmt.Println(storageUsagePrompt)
-		return
+		return model.Fail(storageUsagePrompt)
 	}
 
 	comment, found := parser.GetParsed("comment")
 	if !found {
-		fmt.Println(storageUsagePrompt)
-		return
+		return model.Fail(storageUsagePrompt)
 	}
 
-	requestBody := model.StorageCreateRequest{
+	requestBody := clientModel.StorageCreateRequest{
 		Desc: comment.(string),
 		Type: storageType,
 		Conf: map[string]interface{}{
@@ -147,91 +138,81 @@ func (c *Create) createStorage(parser *util.Parser) {
 	}
 	response := c.actionbaseClient.CreateStorage(name, &requestBody)
 	if response.IsError() || response.Body.Status == "ERROR" {
-		fmt.Printf("Failed to create storage '%s'\n", name)
-		return
+		return model.Fail(fmt.Sprintf("Failed to create storage '%s'", name))
 	}
 
 	fmt.Printf("The storage '%s' is created\n", name)
+	return model.Success()
 }
 
-func (c *Create) createTable(parser *util.Parser) {
+func (c *Create) createTable(parser *util.Parser) *model.Result {
 	database, found := parser.Get("database")
 	if !found {
-		fmt.Println(tableUsagePrompt)
-		return
+		return model.Fail(tableUsagePrompt)
 	}
 
 	storage, found := parser.Get("storage")
 	if !found {
-		fmt.Println(tableUsagePrompt)
-		return
+		return model.Fail(tableUsagePrompt)
 	}
 
 	name, found := parser.Get("name")
 	if !found {
-		fmt.Println(tableUsagePrompt)
-		return
+		return model.Fail(tableUsagePrompt)
 	}
 
 	comment, found := parser.GetParsed("comment")
 	if !found {
-		fmt.Println(tableUsagePrompt)
-		return
+		return model.Fail(tableUsagePrompt)
 	}
 
 	tableType, found := parser.Get("type")
 	if !found {
-		fmt.Println(tableUsagePrompt)
-		return
+		return model.Fail(tableUsagePrompt)
 	}
 
 	direction, found := parser.Get("direction")
 	if !found {
-		fmt.Println(tableUsagePrompt)
-		return
+		return model.Fail(tableUsagePrompt)
 	}
 
 	schema, found := parser.Get("schema")
 	if !found {
-		fmt.Println(tableUsagePrompt)
-		return
+		return model.Fail(tableUsagePrompt)
 	}
 
 	schema = strings.Trim(schema, "'")
-	var schemaRequest model.Schema
+	var schemaRequest clientModel.Schema
 	err := json.Unmarshal([]byte(schema), &schemaRequest)
 	if err != nil {
-		fmt.Printf("Failed to parse data.schema: %s\n", err.Error())
-		return
+		return model.Fail(tableUsagePrompt)
 	}
 
 	indices, _ := parser.Get("indices")
-	var indicesRequest []model.Index
+	var indicesRequest []clientModel.Index
 	if indices != "" {
 		indices = strings.Trim(indices, "'")
 		err = json.Unmarshal([]byte(indices), &indicesRequest)
 		if err != nil {
-			fmt.Printf("Failed to parse data.indices: %s\n", err.Error())
-			return
+			return model.Fail(tableUsagePrompt)
 		}
 	} else {
-		indicesRequest = []model.Index{}
+		indicesRequest = []clientModel.Index{}
 	}
 
 	groups, _ := parser.Get("groups")
-	var groupsRequest []model.Group
+	var groupsRequest []clientModel.Group
 	if groups != "" {
 		groups = strings.Trim(groups, "'")
 		err = json.Unmarshal([]byte(groups), &groupsRequest)
 		if err != nil {
-			fmt.Printf("Failed to parse data.groups: %s\n", err.Error())
-			return
+			return model.Fail(tableUsagePrompt)
 		}
 	} else {
-		groupsRequest = []model.Group{}
+		groupsRequest = []clientModel.Group{}
 	}
 
-	tableCreateRequest := model.TableCreateRequest{
+	tableCreateRequest := clientModel.TableCreateRequest{
 		Desc:          comment.(string),
 		Type:          tableType,
 		Schema:        &schemaRequest,
@@ -249,44 +230,39 @@ func (c *Create) createTable(parser *util.Parser) {
 		name,
 		&tableCreateRequest)
 	if response.IsError() || response.Body.Status == "ERROR" {
-		fmt.Printf("Failed to create table '%s'\n", name)
-		return
+		return model.Fail(fmt.Sprintf("Failed to create table '%s'", name))
 	}
 
 	fmt.Printf("The table '%s' is created\n", name)
+	return model.Success()
 }
 
-func (c *Create) createAlias(parser *util.Parser) {
+func (c *Create) createAlias(parser *util.Parser) *model.Result {
 	database, found := parser.Get("database")
 	if !found {
-		fmt.Println(aliasUsagePrompt)
-		return
+		return model.Fail(aliasUsagePrompt)
 	}
 
 	table, found := parser.Get("table")
 	if !found {
-		fmt.Println(aliasUsagePrompt)
-		return
+		return model.Fail(aliasUsagePrompt)
 	}
 
 	name, found := parser.Get("name")
 	if !found {
-		fmt.Println(aliasUsagePrompt)
-		return
+		return model.Fail(aliasUsagePrompt)
 	}
 
 	comment, found := parser.GetParsed("comment")
 	if !found {
-		fmt.Println(aliasUsagePrompt)
-		return
+		return model.Fail(aliasUsagePrompt)
 	}
 
 	response := c.actionbaseClient.CreateAlias(database, table, name, comment)
 	if response.IsError() || response.Body.Status == "ERROR" {
-		fmt.Printf("Failed to create alias '%s'\n", name)
-		return
+		return model.Fail(fmt.Sprintf("Failed to create alias '%s'", name))
 	}
 
 	fmt.Printf("The alias '%s' is created\n", name)
-	return
+	return model.Success()
 }
