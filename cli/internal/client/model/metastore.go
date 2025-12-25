@@ -109,3 +109,8 @@ type StorageCreateRequest struct {
 type DatabaseCreateRequest struct {
 	Desc string `json:"desc"`
 }
+
+type AliasCreateRequest struct {
+	Target string `json:"target"`
+	Desc   string `json:"desc"`
+}

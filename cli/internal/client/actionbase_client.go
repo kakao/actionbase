@@ -32,13 +32,8 @@ func (a *ActionbaseClient) CreateTable(
 	return Post[*model.TableCreateRequest, model.DdlStatus[model.TableEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/label/%s", database, name), request)
 }
 
-func (a *ActionbaseClient) CreateAlias(database string, table string, name string, comment interface{}) *Response[model.DdlStatus[model.AliasEntity]] {
-	requestBody := map[string]interface{}{
-		"target": fmt.Sprintf("%s.%s", database, table),
-		"desc":   comment,
-	}
-
-	return Post[map[string]interface{}, model.DdlStatus[model.AliasEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/alias/%s", database, name), requestBody)
+func (a *ActionbaseClient) CreateAlias(database string, name string, request *model.AliasCreateRequest) *Response[model.DdlStatus[model.AliasEntity]] {
+	return Post[*model.AliasCreateRequest, model.DdlStatus[model.AliasEntity]](a.client, fmt.Sprintf("/graph/v2/service/%s/alias/%s", database, name), request)
 }
 
 func (a *ActionbaseClient) GetTenant() *Response[model.Tenant] {

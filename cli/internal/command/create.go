@@ -258,7 +258,14 @@ func (c *Create) createAlias(parser *util.Parser) *model.Response {
 		return model.Fail(aliasUsagePrompt)
 	}
 
-	response := c.actionbaseClient.CreateAlias(database, table, name, comment)
+	response := c.actionbaseClient.CreateAlias(
+		database,
+		name,
+		&clientModel.AliasCreateRequest{
+			Target: fmt.Sprintf("%s.%s", database, table),
+			Desc:   comment.(string),
+		})
+
 	if response.IsError() || response.Body.Status == "ERROR" {
 		return model.Fail(fmt.Sprintf("Failed to create alias '%s'", name))
 	}
