@@ -47,6 +47,7 @@ func ParseArgs(args []string) *Parser {
 			key := arg[2:]
 
 			if i+1 >= len(args) || strings.HasPrefix(args[i+1], "--") {
+				p.values[key] = ""
 				continue
 			}
 
@@ -66,6 +67,16 @@ func ParseArgs(args []string) *Parser {
 }
 
 func (p *Parser) Get(key string) (string, bool) {
+	v, ok := p.values[key]
+
+	if v == "" {
+		return "", false
+	}
+
+	return v, ok
+}
+
+func (p *Parser) GetLenient(key string) (string, bool) {
 	v, ok := p.values[key]
 	return v, ok
 }

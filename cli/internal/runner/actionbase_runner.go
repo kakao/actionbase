@@ -15,6 +15,10 @@ import (
 	"github.com/kakao/actionbase/internal/util"
 )
 
+const (
+	DefaultServerPort = "8081"
+)
+
 type ActionbaseCommandLineRunner struct {
 	ReadLine *readline.Instance
 	logger   *slog.Logger
@@ -221,4 +225,36 @@ func (r *ActionbaseCommandLineRunner) isOpenString(buffer []string) bool {
 	singleQuotes := strings.Count(fullInput, "'")
 	doubleQuotes := strings.Count(fullInput, `"`)
 	return singleQuotes%2 != 0 || doubleQuotes%2 != 0
+}
+
+func (r *ActionbaseCommandLineRunner) StartServer(parser *util.Parser) {
+	port := r.getServerPort(parser)
+	if port == "" {
+		return
+	}
+
+	serverReady := make(chan error, 1)
+	go func() {
+		if err := r.Start(port, serverReady); err != nil {
+			fmt.Printf("Failed to start actionbase as server mode. %v\n", err)
+			os.Exit(1)
+		}
+	}()
+
+	if err := <-serverReady; err != nil {
+		os.Exit(1)
+	}
+
+	r.SetCurrentPort(port)
+	r.SetIsServerModeEnabled(true)
+}
+
+func (r *ActionbaseCommandLineRunner) getServerPort(parser *util.Parser) string {
+	if port, found := parser.Get("server"); found {
+		return port
+	}
+	if _, found := parser.GetLenient("server"); found {
+		return DefaultServerPort
+	}
+	return ""
 }
