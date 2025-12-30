@@ -9,16 +9,16 @@ class Actionbase < Formula
   on_macos do
     if Hardware::CPU.arm?
       url "https://github.com/kakao/actionbase/releases/download/cli/v#{version}/actionbase_darwin_arm64.tar.gz"
-      sha256 "8c48350353594828b13726f75c4ece410db2955642fc89922db75c65c8c67d03"
+      sha256 "4697025bf425ffea9ee5b783babbc64116d90d4d5bf9a533b68739a344170c87"
     else
       url "https://github.com/kakao/actionbase/releases/download/cli/v#{version}/actionbase_darwin_amd64.tar.gz"
-      sha256 "0de525edf7cc0199d8325d7a531c3293a27de8ab204b1090d1be886e3a1182f7"
+      sha256 "3cd095b62faac82afbd4f806fd1d54e8a005b960864ef34f598d936ec2afaac0"
     end
   end
 
   on_linux do
     url "https://github.com/kakao/actionbase/releases/download/cli/v#{version}/actionbase_linux_amd64.tar.gz"
-    sha256 "c40d839765ec32b0cc97dfccc555196a377d028c3091f82ee50f747b01b2b3bc"
+    sha256 "d959c5a48a78f0b7babdfea0a3bb5876111bbb0fa3271676a19e2ff26ec86a9d"
   end
 
   def install
