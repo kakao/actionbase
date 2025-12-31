@@ -36,7 +36,7 @@ func (s *Storage) ShowAll() *model.Response {
 	for idx, storage := range content {
 		conf, err := json.Marshal(storage.Conf)
 		if err != nil {
-			return model.Fail(fmt.Sprintf("Failed to parse conf", err))
+			return model.Fail(fmt.Sprintf("Failed to parse conf: %s", err))
 		}
 
 		data := map[string]interface{}{
@@ -62,11 +62,10 @@ func (s *Storage) ShowAll() *model.Response {
 		results = append(results, emptyStorage)
 	}
 
-	fmt.Println()
-	fmt.Printf("Available storages (%d)\n", len(results))
-
 	columnOrder := []string{"#", "active", "name", "desc", "type", "conf"}
-	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+	resultMessage := "\n" +
+		fmt.Sprintf("Available storages (%d)\n", len(results)) +
+		util.PrettyPrintRowsWithOrder(results, columnOrder)
 
-	return model.Success()
+	return model.SuccessWithResult(resultMessage)
 }

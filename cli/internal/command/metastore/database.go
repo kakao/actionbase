@@ -57,13 +57,12 @@ func (d *Database) ShowAll() *model.Response {
 		results = append(results, emptyDatabase)
 	}
 
-	fmt.Println()
-	fmt.Printf("Available databases (%d)\n", len(results))
-
 	columnOrder := []string{"#", "name", "desc", "active"}
-	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+	resultMessage := "\n" +
+		fmt.Sprintf("Available databases (%d)\n", len(results)) +
+		util.PrettyPrintRowsWithOrder(results, columnOrder)
 
-	return model.Success()
+	return model.SuccessWithResult(resultMessage)
 }
 
 func (d *Database) Use(name string) *model.Response {
@@ -75,7 +74,5 @@ func (d *Database) Use(name string) *model.Response {
 	d.runner.SetCurrentDatabase(name)
 	d.runner.SetCurrentTable("")
 
-	fmt.Printf("The database is changed to '%s'\n", name)
-
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("The database is changed to '%s'\n", name))
 }

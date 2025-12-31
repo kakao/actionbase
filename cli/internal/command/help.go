@@ -1,8 +1,6 @@
 package command
 
 import (
-	"fmt"
-
 	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
@@ -31,11 +29,9 @@ func (h *Help) Execute(_ []string) *model.Response {
 		commands = append(commands, help)
 	}
 
-	fmt.Println("\nAvailable commands:")
 	columnOrder := []string{"name", "description", "usage"}
-	fmt.Println(util.PrettyPrintRowsWithOrder(commands, columnOrder))
-
-	return nil
+	resultMessage := "\nAvailable commands:" + util.PrettyPrintRowsWithOrder(commands, columnOrder)
+	return model.SuccessWithResult(resultMessage)
 }
 
 func (h *Help) GetDescription() string {

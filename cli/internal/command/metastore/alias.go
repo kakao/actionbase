@@ -66,11 +66,11 @@ func (a *Alias) ShowAll() *model.Response {
 		aliases = append(aliases, emptyAlias)
 	}
 
-	fmt.Println()
-	fmt.Printf("%v Aliases in '%s'\n", aliasEntity.Count, a.runner.GetCurrentDatabase())
-	fmt.Println(util.PrettyPrintRowsWithOrder(aliases, columnOrder))
+	resultMessage := "\n" +
+		fmt.Sprintf("%v Aliases in '%s'\n", aliasEntity.Count, a.runner.GetCurrentDatabase()) +
+		util.PrettyPrintRowsWithOrder(aliases, columnOrder)
 
-	return model.Success()
+	return model.SuccessWithResult(resultMessage)
 }
 
 func (a *Alias) Use(name string) *model.Response {
@@ -88,12 +88,10 @@ func (a *Alias) Use(name string) *model.Response {
 	split := strings.Split(target, ".")
 	table := split[1]
 
-	fmt.Printf("The Alias is changed to '%s:%s' (table '%s')\n", database, name, table)
-
 	a.runner.SetCurrentAlias(name)
 	a.runner.SetCurrentTable(table)
 
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("The Alias is changed to '%s:%s' (table '%s')\n", database, name, table))
 }
 
 func (a *Alias) Desc(name string) *model.Response {
@@ -118,9 +116,8 @@ func (a *Alias) Desc(name string) *model.Response {
 		"readOnly": table.ReadOnly,
 		"mode":     table.Mode,
 	}
-	fmt.Println()
 	tableColumnOrder := []string{"name", "desc", "type", "dirType", "event", "readOnly", "mode"}
-	fmt.Println(util.PrettyPrintWithOrder(result, tableColumnOrder))
+	resultMessage := "\n" + util.PrettyPrintWithOrder(result, tableColumnOrder)
 
 	schema := table.Schema
 	schemaColumnOrder := []string{"type", "desc"}
@@ -129,17 +126,13 @@ func (a *Alias) Desc(name string) *model.Response {
 		"type": schema.Src.Type,
 		"desc": schema.Src.Desc,
 	}
-	fmt.Println()
-	fmt.Println("[Source]")
-	fmt.Println(util.PrettyPrintWithOrder(source, schemaColumnOrder))
+	resultMessage += "\n[Source]" + util.PrettyPrintWithOrder(source, schemaColumnOrder)
 
 	target := map[string]interface{}{
 		"type": schema.Tgt.Type,
 		"desc": *schema.Tgt.Desc,
 	}
-	fmt.Println()
-	fmt.Println("[Target]")
-	fmt.Println(util.PrettyPrintWithOrder(target, schemaColumnOrder))
+	resultMessage += "\n[Target]" + util.PrettyPrintWithOrder(target, schemaColumnOrder)
 
 	var fields []map[string]interface{}
 	for idx, field := range schema.Fields {
@@ -167,9 +160,9 @@ func (a *Alias) Desc(name string) *model.Response {
 		fields = append(fields, emptyField)
 	}
 
-	fmt.Println()
-	fmt.Printf("[Fields (%d)]\n", len(fields))
-	fmt.Println(util.PrettyPrintRowsWithOrder(fields, fieldColumnOrder))
+	resultMessage += "\n" +
+		fmt.Sprintf("[Fields (%d)]\n", len(fields)) +
+		util.PrettyPrintRowsWithOrder(fields, fieldColumnOrder)
 
-	return model.Success()
+	return model.SuccessWithResult(resultMessage)
 }

@@ -97,9 +97,7 @@ func (c *Create) createDatabase(parser *util.Parser) *model.Response {
 		return model.Fail(fmt.Sprintf("Failed to create database '%s'", name))
 	}
 
-	fmt.Printf("The database '%s' is created\n", name)
-
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("The database '%s' is created", name))
 }
 
 func (c *Create) createStorage(parser *util.Parser) *model.Response {
@@ -141,8 +139,7 @@ func (c *Create) createStorage(parser *util.Parser) *model.Response {
 		return model.Fail(fmt.Sprintf("Failed to create storage '%s'", name))
 	}
 
-	fmt.Printf("The storage '%s' is created\n", name)
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("The storage '%s' is created", name))
 }
 
 func (c *Create) createTable(parser *util.Parser) *model.Response {
@@ -233,8 +230,7 @@ func (c *Create) createTable(parser *util.Parser) *model.Response {
 		return model.Fail(fmt.Sprintf("Failed to create table '%s'", name))
 	}
 
-	fmt.Printf("The table '%s' is created\n", name)
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("The table '%s' is created", name))
 }
 
 func (c *Create) createAlias(parser *util.Parser) *model.Response {
@@ -270,6 +266,6 @@ func (c *Create) createAlias(parser *util.Parser) *model.Response {
 		return model.Fail(fmt.Sprintf("Failed to create alias '%s'", name))
 	}
 
-	fmt.Printf("The alias '%s' is created\n", name)
-	return model.Success()
+	resultMessage := fmt.Sprintf("The alias '%s' is created", name)
+	return model.SuccessWithResult(resultMessage)
 }

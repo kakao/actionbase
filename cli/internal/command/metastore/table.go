@@ -61,13 +61,12 @@ func (t *Table) ShowAll() *model.Response {
 		results = append(results, emptyTable)
 	}
 
-	fmt.Println()
-	fmt.Printf("%v Tables in database\n", tableEntity.Count)
-
 	columnOrder := []string{"#", "active", "name", "desc", "type"}
-	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
+	resultMessage := "\n" +
+		fmt.Sprintf("%v Tables in database\n", tableEntity.Count) +
+		util.PrettyPrintRowsWithOrder(results, columnOrder)
 
-	return model.Success()
+	return model.SuccessWithResult(resultMessage)
 }
 
 func (t *Table) ShowIndices(name string) *model.Response {
@@ -107,9 +106,9 @@ func (t *Table) Desc(name string) *model.Response {
 		"readOnly": tableEntity.ReadOnly,
 		"mode":     tableEntity.Mode,
 	}
-	fmt.Println()
+
 	tableColumnOrder := []string{"name", "desc", "type", "dirType", "event", "readOnly", "mode"}
-	fmt.Println(util.PrettyPrintWithOrder(table, tableColumnOrder))
+	resultMessage := "\n" + util.PrettyPrintWithOrder(table, tableColumnOrder)
 
 	schema := tableEntity.Schema
 	schemaColumnOrder := []string{"type", "desc"}
@@ -118,15 +117,14 @@ func (t *Table) Desc(name string) *model.Response {
 		"type": schema.Src.Type,
 		"desc": *schema.Src.Desc,
 	}
-	fmt.Println("\n[Source]")
-	fmt.Println(util.PrettyPrintWithOrder(source, schemaColumnOrder))
+	resultMessage += "\n[Source]" + util.PrettyPrintWithOrder(source, schemaColumnOrder)
 
 	target := map[string]interface{}{
 		"type": schema.Tgt.Type,
 		"desc": *schema.Tgt.Desc,
 	}
-	fmt.Println("\n[Target]")
-	fmt.Println(util.PrettyPrintWithOrder(target, schemaColumnOrder))
+
+	resultMessage += "\n[Target]" + util.PrettyPrintWithOrder(target, schemaColumnOrder)
 
 	fields := schema.Fields
 	results := []map[string]interface{}{}
@@ -152,12 +150,12 @@ func (t *Table) Desc(name string) *model.Response {
 		results = append(results, emptyField)
 	}
 
-	fmt.Println()
-	fmt.Printf("[Fields (%d)]\n", len(results))
-
 	fieldColumnOrder := []string{"#", "name", "type", "nullable", "desc"}
-	fmt.Println(util.PrettyPrintRowsWithOrder(results, fieldColumnOrder))
-	return model.Success()
+	resultMessage += "\n" +
+		fmt.Sprintf("[Fields (%d)]\n", len(results)) +
+		util.PrettyPrintRowsWithOrder(results, fieldColumnOrder)
+
+	return model.SuccessWithResult(resultMessage)
 }
 
 func (t *Table) Use(table string) *model.Response {
@@ -173,8 +171,7 @@ func (t *Table) Use(table string) *model.Response {
 
 	t.runner.SetCurrentTable(table)
 
-	fmt.Printf("The Table is changed to '%s:%s'\n", database, table)
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("The Table is changed to '%s:%s'\n", database, table))
 }
 
 func (t *Table) showIndices(database string, table string) *model.Response {
@@ -227,12 +224,12 @@ func (t *Table) showIndices(database string, table string) *model.Response {
 		results = append(results, emptyIndex)
 	}
 
-	fmt.Println()
-	fmt.Printf("%d Indices in %s\n", len(indices), table)
-
 	columnOrder := []string{"#", "name", "desc", "fields[].name", "fields[].order"}
-	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-	return model.Success()
+	resultMessage := "\n" +
+		fmt.Sprintf("%d Indices in %s\n", len(indices), table) +
+		util.PrettyPrintRowsWithOrder(results, columnOrder)
+
+	return model.SuccessWithResult(resultMessage)
 }
 
 func (t *Table) showGroups(database string, table string) *model.Response {
@@ -338,9 +335,6 @@ func (t *Table) showGroups(database string, table string) *model.Response {
 		results = append(results, emptyGroup)
 	}
 
-	fmt.Println()
-	fmt.Printf("%d Groups in %s\n", len(groups), table)
-
 	columnOrder := []string{
 		"#",
 		"group",
@@ -356,6 +350,10 @@ func (t *Table) showGroups(database string, table string) *model.Response {
 		"fields[].bucket.timezone",
 		"fields[].bucket.format",
 	}
-	fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
-	return model.Success()
+
+	resultMessage := "\n" +
+		fmt.Sprintf("%d Groups in %s\n", len(groups), table) +
+		util.PrettyPrintRowsWithOrder(results, columnOrder)
+
+	return model.SuccessWithResult(resultMessage)
 }

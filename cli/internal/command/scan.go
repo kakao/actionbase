@@ -122,8 +122,6 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 		results = append(results, emptyEdge)
 	}
 
-	fmt.Println()
-
 	offset := responseBody.Offset
 	if offset == "" {
 		offset = "-"
