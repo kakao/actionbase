@@ -91,19 +91,7 @@ func (g *Get) doExecute(database, table, source, target string) *model.Response 
 
 	columnOrder := []string{"version", "source", "target", "properties"}
 
-	if len(results) == 0 {
-		emptyEdge := map[string]interface{}{
-			"version":    "",
-			"source":     "",
-			"target":     "",
-			"properties": "",
-		}
-
-		results = append(results, emptyEdge)
-	}
-
-	fmt.Println()
-	resultMessage := fmt.Sprintf("The edge is found: [%s -> %s]", source, target) + "\n" + util.PrettyPrintRowsWithOrder(results, columnOrder)
+	resultMessage := "\n" + fmt.Sprintf("The edge is found: [%s -> %s]", source, target) + "\n" + util.PrettyPrintRowsWithOrder(results, columnOrder)
 	return model.SuccessWithResult(resultMessage)
 }
 

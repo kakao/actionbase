@@ -75,7 +75,7 @@ func PrintContext(host, database, table, alias, currentPort string, isServerMode
 		fmt.Sprintf("\033[33m│  serverPort\033[0m %-74s \033[33m│\033[0m\n", port) +
 		fmt.Sprintf("\033[33m│  debug\033[0m %-79s \033[33m│\033[0m\n", debug) +
 		fmt.Sprintf("\033[33m│                                                                                        │\033[0m\n") +
-		fmt.Sprintf("\033[33m╰────────────────────────────────────────────────────────────────────────────────────────╯\033[0m\n")
+		fmt.Sprintf("\033[33m╰────────────────────────────────────────────────────────────────────────────────────────╯\033[0m")
 
 	return model.SuccessWithResult(resultMessage)
 }

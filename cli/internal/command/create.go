@@ -66,7 +66,7 @@ func (c *Create) Execute(args []string) *model.Response {
 		}
 		return c.createAlias(parser)
 	default:
-		return model.Fail(fmt.Sprintf("Usage: %s\n", c.GetType().GetCommand()))
+		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
 }
 

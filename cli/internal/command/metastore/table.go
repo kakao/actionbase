@@ -50,17 +50,6 @@ func (t *Table) ShowAll() *model.Response {
 		results = append(results, data)
 	}
 
-	if len(results) == 0 {
-		emptyTable := map[string]interface{}{
-			"#":      "",
-			"name":   "",
-			"desc":   "",
-			"target": "",
-			"active": "",
-		}
-		results = append(results, emptyTable)
-	}
-
 	columnOrder := []string{"#", "active", "name", "desc", "type"}
 	resultMessage := "\n" +
 		fmt.Sprintf("%v Tables in database\n", tableEntity.Count) +
@@ -117,17 +106,17 @@ func (t *Table) Desc(name string) *model.Response {
 		"type": schema.Src.Type,
 		"desc": *schema.Src.Desc,
 	}
-	resultMessage += "\n[Source]" + util.PrettyPrintWithOrder(source, schemaColumnOrder)
+	resultMessage += "\n[Source]\n" + util.PrettyPrintWithOrder(source, schemaColumnOrder)
 
 	target := map[string]interface{}{
 		"type": schema.Tgt.Type,
 		"desc": *schema.Tgt.Desc,
 	}
 
-	resultMessage += "\n[Target]" + util.PrettyPrintWithOrder(target, schemaColumnOrder)
+	resultMessage += "\n[Target]\n" + util.PrettyPrintWithOrder(target, schemaColumnOrder)
 
 	fields := schema.Fields
-	results := []map[string]interface{}{}
+	var results []map[string]interface{}
 	for idx, field := range fields {
 		data := map[string]interface{}{
 			"#":        strconv.Itoa(idx + 1),
@@ -137,17 +126,6 @@ func (t *Table) Desc(name string) *model.Response {
 			"desc":     *field.Desc,
 		}
 		results = append(results, data)
-	}
-
-	if len(results) == 0 {
-		emptyField := map[string]interface{}{
-			"#":        "",
-			"name":     "",
-			"type":     "",
-			"nullable": "",
-			"desc":     "",
-		}
-		results = append(results, emptyField)
 	}
 
 	fieldColumnOrder := []string{"#", "name", "type", "nullable", "desc"}
@@ -166,12 +144,12 @@ func (t *Table) Use(table string) *model.Response {
 
 	response := t.actionbaseClient.GetTable(database, table)
 	if response.IsError() {
-		return model.Fail(fmt.Sprintf("Failed to get table '%s'\n", table))
+		return model.Fail(fmt.Sprintf("Failed to get table '%s'", table))
 	}
 
 	t.runner.SetCurrentTable(table)
 
-	return model.SuccessWithResult(fmt.Sprintf("The Table is changed to '%s:%s'\n", database, table))
+	return model.SuccessWithResult(fmt.Sprintf("The table is changed to '%s:%s'", database, table))
 }
 
 func (t *Table) showIndices(database string, table string) *model.Response {
@@ -211,17 +189,6 @@ func (t *Table) showIndices(database string, table string) *model.Response {
 			"fields[].order": order,
 		}
 		results = append(results, data)
-	}
-
-	if len(indices) == 0 {
-		emptyIndex := map[string]interface{}{
-			"#":              "",
-			"name":           "",
-			"desc":           "",
-			"fields[].name":  "",
-			"fields[].order": "",
-		}
-		results = append(results, emptyIndex)
 	}
 
 	columnOrder := []string{"#", "name", "desc", "fields[].name", "fields[].order"}
@@ -314,25 +281,6 @@ func (t *Table) showGroups(database string, table string) *model.Response {
 			"fields[].bucket.format":   fieldBucketFormats,
 		}
 		results = append(results, data)
-	}
-
-	if len(groups) == 0 {
-		emptyGroup := map[string]interface{}{
-			"#":                        "",
-			"group":                    "",
-			"type":                     "",
-			"valueField":               "",
-			"comment":                  "",
-			"directionType":            "",
-			"ttl":                      "",
-			"fields[].name":            "",
-			"fields[].bucket.type":     "",
-			"fields[].bucket.name":     "",
-			"fields[].bucket.unit":     "",
-			"fields[].bucket.timezone": "",
-			"fields[].bucket.format":   "",
-		}
-		results = append(results, emptyGroup)
 	}
 
 	columnOrder := []string{

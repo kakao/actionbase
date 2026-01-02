@@ -30,7 +30,7 @@ func (h *Help) Execute(_ []string) *model.Response {
 	}
 
 	columnOrder := []string{"name", "description", "usage"}
-	resultMessage := "\nAvailable commands:" + util.PrettyPrintRowsWithOrder(commands, columnOrder)
+	resultMessage := "\nAvailable commands\n" + util.PrettyPrintRowsWithOrder(commands, columnOrder)
 	return model.SuccessWithResult(resultMessage)
 }
 

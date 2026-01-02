@@ -18,10 +18,6 @@ func PrettyPrintRowsWithOrder(rows []map[string]interface{}, orderedKeys []strin
 }
 
 func showWithOrder(rows []map[string]interface{}, orderedKeys []string) string {
-	if len(rows) == 0 {
-		return ""
-	}
-
 	headers := orderedKeys
 
 	var buf bytes.Buffer
@@ -39,24 +35,25 @@ func showWithOrder(rows []map[string]interface{}, orderedKeys []string) string {
 	table.SetTablePadding(" ")
 	table.SetNoWhiteSpace(false)
 
-	for _, row := range rows {
-		var values []string
-		for _, header := range headers {
-			value := row[header]
-			if value == nil {
-				values = append(values, "null")
-			} else {
-				values = append(values, fmt.Sprintf("%v", value))
-			}
-		}
-		table.Append(values)
-	}
-
 	var colors []tablewriter.Colors
 	for range headers {
 		colors = append(colors, tablewriter.Colors{tablewriter.FgGreenColor})
 	}
 	table.SetHeaderColor(colors...)
+
+	for _, row := range rows {
+		values := make([]string, len(headers))
+		for i, header := range headers {
+			value := row[header]
+			if value == nil {
+				values[i] = "null"
+			} else {
+				values[i] = fmt.Sprintf("%v", value)
+			}
+		}
+		table.Append(values)
+	}
+
 	table.Render()
 	return strings.TrimSpace(buf.String())
 }

@@ -111,17 +111,6 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 		results = append(results, data)
 	}
 
-	if len(results) == 0 {
-		emptyEdge := map[string]interface{}{
-			"#":          "",
-			"version":    "",
-			"source":     "",
-			"target":     "",
-			"properties": "",
-		}
-		results = append(results, emptyEdge)
-	}
-
 	offset := responseBody.Offset
 	if offset == "" {
 		offset = "-"

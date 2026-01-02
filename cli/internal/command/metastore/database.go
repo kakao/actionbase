@@ -47,16 +47,6 @@ func (d *Database) ShowAll() *model.Response {
 		results = append(results, data)
 	}
 
-	if len(results) == 0 {
-		emptyDatabase := map[string]interface{}{
-			"#":      "",
-			"name":   "",
-			"desc":   "",
-			"active": "",
-		}
-		results = append(results, emptyDatabase)
-	}
-
 	columnOrder := []string{"#", "name", "desc", "active"}
 	resultMessage := "\n" +
 		fmt.Sprintf("Available databases (%d)\n", len(results)) +
@@ -68,11 +58,11 @@ func (d *Database) ShowAll() *model.Response {
 func (d *Database) Use(name string) *model.Response {
 	response := d.actionbaseClient.GetDatabase(name)
 	if response.IsError() {
-		return model.Fail(fmt.Sprintf("No database '%s' found\n", name))
+		return model.Fail(fmt.Sprintf("No database '%s' found", name))
 	}
 
 	d.runner.SetCurrentDatabase(name)
 	d.runner.SetCurrentTable("")
 
-	return model.SuccessWithResult(fmt.Sprintf("The database is changed to '%s'\n", name))
+	return model.SuccessWithResult(fmt.Sprintf("The database is changed to '%s'", name))
 }

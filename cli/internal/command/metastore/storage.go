@@ -50,18 +50,6 @@ func (s *Storage) ShowAll() *model.Response {
 		results = append(results, data)
 	}
 
-	if len(results) == 0 {
-		emptyStorage := map[string]interface{}{
-			"#":      "",
-			"active": "",
-			"name":   "",
-			"desc":   "",
-			"type":   "",
-			"conf":   "",
-		}
-		results = append(results, emptyStorage)
-	}
-
 	columnOrder := []string{"#", "active", "name", "desc", "type", "conf"}
 	resultMessage := "\n" +
 		fmt.Sprintf("Available storages (%d)\n", len(results)) +

@@ -133,8 +133,7 @@ func (l *Load) loadDatabase(parser *util.Parser, data string) *model.Response {
 		return model.Fail(fmt.Sprintf("Failed to create database '%s'", name))
 	}
 
-	fmt.Printf("Database '%s' is created\n", name)
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("Database '%s' is created", name))
 }
 
 func (l *Load) loadStorage(parser *util.Parser, data string) *model.Response {
@@ -154,8 +153,7 @@ func (l *Load) loadStorage(parser *util.Parser, data string) *model.Response {
 		return model.Fail(fmt.Sprintf("Failed to create storage '%s'", name))
 	}
 
-	fmt.Printf("Storage '%s' is created\n", name)
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("Storage '%s' is created", name))
 }
 
 func (l *Load) loadTable(parser *util.Parser, data string) *model.Response {
@@ -180,8 +178,7 @@ func (l *Load) loadTable(parser *util.Parser, data string) *model.Response {
 		return model.Fail(fmt.Sprintf("Failed to create table '%s'", name))
 	}
 
-	fmt.Printf("Table '%s' is created\n", name)
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("Table '%s' is created", name))
 }
 
 func (l *Load) loadEdge(parser *util.Parser, data string) *model.Response {
@@ -216,8 +213,7 @@ func (l *Load) loadEdge(parser *util.Parser, data string) *model.Response {
 		}
 	}
 
-	fmt.Printf("%d edges are mutated (total: %d, failed: %d)\n", len(edgeBulkMutations.Mutations), updatedCount, failedCount)
-	return model.Success()
+	return model.SuccessWithResult(fmt.Sprintf("%d edges are mutated (total: %d, failed: %d)\n", len(edgeBulkMutations.Mutations), updatedCount, failedCount))
 }
 
 func (l *Load) normalize(chunk string) string {
@@ -233,8 +229,7 @@ func (l *Load) runReservedWords(dataStr string) string {
 		dataStr = dataStr[1 : len(dataStr)-1]
 	}
 
-	dataStr = util.ReplaceTimestampInString(dataStr)
-	return dataStr
+	return util.ReplaceTimestampInString(dataStr)
 }
 
 func (l *Load) parseArgsWithQuotes(line string) []string {

@@ -114,7 +114,7 @@ func (m *Mutate) doMutate(database, table string, edgeBulkMutation clientModel.E
 		}
 	}
 
-	return model.SuccessWithResult(fmt.Sprintf("%s is done (updated: %d, failed %d)\n", eventType, updatedCount, failedCount))
+	return model.SuccessWithResult(fmt.Sprintf("%s is done (updated: %d, failed %d)", eventType, updatedCount, failedCount))
 }
 
 func (m *Mutate) GetDescription() string {

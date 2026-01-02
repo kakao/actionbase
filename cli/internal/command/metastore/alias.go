@@ -55,17 +55,6 @@ func (a *Alias) ShowAll() *model.Response {
 
 	columnOrder := []string{"#", "name", "desc", "target", "active"}
 
-	if len(aliases) == 0 {
-		emptyAlias := map[string]interface{}{
-			"#":      "",
-			"name":   "",
-			"desc":   "",
-			"target": "",
-			"active": "",
-		}
-		aliases = append(aliases, emptyAlias)
-	}
-
 	resultMessage := "\n" +
 		fmt.Sprintf("%v Aliases in '%s'\n", aliasEntity.Count, a.runner.GetCurrentDatabase()) +
 		util.PrettyPrintRowsWithOrder(aliases, columnOrder)
@@ -91,7 +80,7 @@ func (a *Alias) Use(name string) *model.Response {
 	a.runner.SetCurrentAlias(name)
 	a.runner.SetCurrentTable(table)
 
-	return model.SuccessWithResult(fmt.Sprintf("The Alias is changed to '%s:%s' (table '%s')\n", database, name, table))
+	return model.SuccessWithResult(fmt.Sprintf("The Alias is changed to '%s:%s' (table '%s')", database, name, table))
 }
 
 func (a *Alias) Desc(name string) *model.Response {
@@ -148,18 +137,6 @@ func (a *Alias) Desc(name string) *model.Response {
 	}
 
 	fieldColumnOrder := []string{"#", "name", "type", "nullable", "desc"}
-
-	if len(fields) == 0 {
-		emptyField := map[string]interface{}{
-			"#":        "",
-			"name":     "",
-			"type":     "",
-			"nullable": "",
-			"desc":     "",
-		}
-		fields = append(fields, emptyField)
-	}
-
 	resultMessage += "\n" +
 		fmt.Sprintf("[Fields (%d)]\n", len(fields)) +
 		util.PrettyPrintRowsWithOrder(fields, fieldColumnOrder)

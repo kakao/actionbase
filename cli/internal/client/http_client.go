@@ -40,7 +40,6 @@ type HTTPClient struct {
 	context *Context
 }
 
-// NewHTTPClient creates a new HTTP client instance
 func NewHTTPClient(baseUrl string, authKey *string, context *Context) *HTTPClient {
 	return &HTTPClient{
 		baseUrl: baseUrl,
