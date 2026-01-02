@@ -111,6 +111,7 @@ func (r *ActionbaseCommandLineRunner) handleCommand(w http.ResponseWriter, req *
 
 	buildResponse(w, statusCode, &response)
 
+	r.ReadLine.SetPrompt(fmt.Sprintf("\033[34m%s%s \033[0m", r.BuildPrompt(), defaultPrompt))
 	r.ReadLine.Terminal.Print(fmt.Sprintf("\033[34m%s>\033[0m ", r.BuildPrompt()))
 }
 
