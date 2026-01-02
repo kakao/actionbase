@@ -87,38 +87,49 @@ func (r *ActionbaseCommandLineRunner) Run() {
 			return
 		}
 
-		var buffer []string
 		rl.SetPrompt(fmt.Sprintf("\033[34m%s%s \033[0m", r.BuildPrompt(), defaultPrompt))
-		for {
-			line, err := rl.Readline()
-			if err != nil {
-				fmt.Println("\nBye!")
-				return
-			}
 
-			trimmed := strings.TrimSpace(line)
-			if strings.HasSuffix(trimmed, "\\") {
-				buffer = append(buffer, trimmed[:len(trimmed)-1])
-				rl.SetPrompt("")
-				continue
-			}
-
-			buffer = append(buffer, line)
-
-			if r.isOpenString(buffer) {
-				rl.SetPrompt("")
-				continue
-			}
-
-			break
+		buffer, exit := r.readLines(rl)
+		if exit {
+			return
 		}
 
 		input := strings.Join(buffer, "\n")
 		if input == "" {
 			continue
 		}
+
 		r.RunCommand(input)
 	}
+}
+
+func (r *ActionbaseCommandLineRunner) readLines(rl *readline.Instance) ([]string, bool) {
+	var buffer []string
+
+	for {
+		line, err := rl.Readline()
+		if err != nil {
+			fmt.Println("\nBye!")
+			return nil, true
+		}
+
+		trimmed := strings.TrimSpace(line)
+		if strings.HasSuffix(trimmed, "\\") {
+			buffer = append(buffer, trimmed[:len(trimmed)-1])
+			rl.SetPrompt("")
+			continue
+		}
+
+		buffer = append(buffer, line)
+
+		if r.isOpenString(buffer) {
+			rl.SetPrompt("")
+			continue
+		}
+
+		break
+	}
+	return buffer, false
 }
 
 func (r *ActionbaseCommandLineRunner) RunCommand(input string) (*model.Response, float64) {
