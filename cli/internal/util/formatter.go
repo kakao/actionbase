@@ -8,14 +8,16 @@ func Int64WithCommas(n int64) string {
 		return s
 	}
 
-	var result []byte
-	count := 0
+	commaCount := (len(s) - 1) / 3
+	result := make([]byte, len(s)+commaCount)
 
+	resultIdx := len(result) - 1
 	for i := len(s) - 1; i >= 0; i-- {
-		result = append([]byte{s[i]}, result...)
-		count++
-		if count%3 == 0 && i != 0 {
-			result = append([]byte{','}, result...)
+		result[resultIdx] = s[i]
+		resultIdx--
+		if i > 0 && (len(s)-i)%3 == 0 {
+			result[resultIdx] = ','
+			resultIdx--
 		}
 	}
 	return string(result)

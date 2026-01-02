@@ -3,7 +3,6 @@ package command
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/command/model"
@@ -11,19 +10,16 @@ import (
 )
 
 type Scan struct {
-	context          *Context
-	runner           ScanRunner
-	actionbaseClient *client.ActionbaseClient
+	*BaseCommand
 }
 
-type ScanRunner interface {
-	GetCurrentDatabase() string
-	GetCurrentTable() string
-	SetCurrentTable(table string)
-}
-
-func NewScan(runner ScanRunner, actionbaseClient *client.ActionbaseClient) *Scan {
-	return &Scan{runner: runner, actionbaseClient: actionbaseClient}
+func NewScan(runner TableCommandRunner, actionbaseClient *client.ActionbaseClient) *Scan {
+	return &Scan{
+		BaseCommand: &BaseCommand{
+			client: actionbaseClient,
+			runner: runner,
+		},
+	}
 }
 
 func (s *Scan) Execute(args []string) *model.Response {
@@ -31,9 +27,9 @@ func (s *Scan) Execute(args []string) *model.Response {
 		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 
-	database := s.runner.GetCurrentDatabase()
-	if s.runner.GetCurrentDatabase() == "" {
-		return model.Fail("No database selected. Use 'use database <name>'")
+	database, errResp := ValidateDatabase(s.runner)
+	if errResp != nil {
+		return errResp
 	}
 
 	parser := util.ParseArgs(args)
@@ -48,31 +44,32 @@ func (s *Scan) Execute(args []string) *model.Response {
 		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
 	}
 
-	direction, found := parser.Get("direction")
+	directionStr, found := parser.Get("direction")
 	if !found {
 		return model.Fail(fmt.Sprintf("Usage: %s", s.GetType().GetCommand()))
+	}
+
+	direction, err := ParseDirection(directionStr)
+	if err != nil {
+		return model.Fail(err.Error())
 	}
 
 	limit, found := parser.Get("limit")
 	if !found {
 		limit = "25"
 	}
-	ranges, found := parser.Get("ranges")
+	ranges, _ := parser.Get("ranges")
 
-	if !strings.HasPrefix(args[0], "--") {
-		return s.doScan(database, args[0], index, start, direction, limit, ranges)
+	table, errResp := ValidateTable(s.runner, args)
+	if errResp != nil {
+		return errResp
 	}
 
-	currentTable := s.runner.GetCurrentTable()
-	if currentTable == "" {
-		return model.Fail("No table selected. Use 'use <table|alias> <name>'")
-	}
-
-	return s.doScan(database, currentTable, index, start, direction, limit, ranges)
+	return s.doScan(database, table, index, start, direction.String(), limit, ranges)
 }
 
 func (s *Scan) doScan(database, table, index, start, direction, limit, ranges string) *model.Response {
-	response := s.actionbaseClient.Scan(
+	response := s.client.Scan(
 		database,
 		table,
 		index,
@@ -90,22 +87,12 @@ func (s *Scan) doScan(database, table, index, start, direction, limit, ranges st
 
 	var results []map[string]interface{}
 	for idx, edge := range responseBody.Edges {
-		property := edge.Properties
-
-		var properties []string
-		for key, value := range property {
-			keyString := util.ToString(key)
-			valueString := util.ToString(value)
-			propertyString := keyString + ": " + valueString
-			properties = append(properties, propertyString)
-		}
-
 		data := map[string]interface{}{
 			"#":          strconv.Itoa(idx + 1),
 			"version":    util.ToString(edge.Version),
 			"source":     util.ToString(edge.Source),
 			"target":     util.ToString(edge.Target),
-			"properties": strings.Join(properties, "\n"),
+			"properties": FormatEdgeProperties(edge.Properties),
 		}
 
 		results = append(results, data)

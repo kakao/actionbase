@@ -51,15 +51,19 @@ func ParseArgs(args []string) *Parser {
 				continue
 			}
 
-			var valueParts []string
+			var sb strings.Builder
+			first := true
 			for j := i + 1; j < len(args); j++ {
 				if strings.HasPrefix(args[j], "--") {
 					break
 				}
-				valueParts = append(valueParts, args[j])
+				if !first {
+					sb.WriteByte(' ')
+				}
+				sb.WriteString(args[j])
+				first = false
 			}
-
-			p.values[key] = strings.Join(valueParts, " ")
+			p.values[key] = sb.String()
 		}
 	}
 

@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/command/model"
@@ -10,19 +9,16 @@ import (
 )
 
 type Get struct {
-	context          *Context
-	runner           GetRunner
-	actionbaseClient *client.ActionbaseClient
+	*BaseCommand
 }
 
-type GetRunner interface {
-	GetCurrentDatabase() string
-	GetCurrentTable() string
-	SetCurrentTable(table string)
-}
-
-func NewGet(runner GetRunner, actionbaseClient *client.ActionbaseClient) *Get {
-	return &Get{runner: runner, actionbaseClient: actionbaseClient}
+func NewGet(runner TableCommandRunner, actionbaseClient *client.ActionbaseClient) *Get {
+	return &Get{
+		BaseCommand: &BaseCommand{
+			client: actionbaseClient,
+			runner: runner,
+		},
+	}
 }
 
 func (g *Get) Execute(args []string) *model.Response {
@@ -30,9 +26,9 @@ func (g *Get) Execute(args []string) *model.Response {
 		return model.Fail(fmt.Sprintf("Usage: %s", g.GetType().GetCommand()))
 	}
 
-	database := g.runner.GetCurrentDatabase()
-	if database == "" {
-		return model.Fail("No database selected. Use 'use database <name>'")
+	database, errResp := ValidateDatabase(g.runner)
+	if errResp != nil {
+		return errResp
 	}
 
 	parser := util.ParseArgs(args)
@@ -45,20 +41,16 @@ func (g *Get) Execute(args []string) *model.Response {
 		return model.Fail(fmt.Sprintf("Usage: %s", g.GetType().GetCommand()))
 	}
 
-	if !strings.HasPrefix(args[0], "--") {
-		return g.doExecute(database, args[0], source, target)
+	table, errResp := ValidateTable(g.runner, args)
+	if errResp != nil {
+		return errResp
 	}
 
-	currentTable := g.runner.GetCurrentTable()
-	if currentTable == "" {
-		return model.Fail("No table selected. Use 'use <table|alias> <name>'")
-	}
-
-	return g.doExecute(database, currentTable, source, target)
+	return g.doExecute(database, table, source, target)
 }
 
 func (g *Get) doExecute(database, table, source, target string) *model.Response {
-	response := g.actionbaseClient.Get(
+	response := g.client.Get(
 		database,
 		table,
 		source,
@@ -70,20 +62,11 @@ func (g *Get) doExecute(database, table, source, target string) *model.Response 
 
 	var results []map[string]interface{}
 	for _, edge := range response.Body.Edges {
-		property := edge.Properties
-		var properties []string
-		for key, value := range property {
-			keyString := util.ToString(key)
-			valueString := util.ToString(value)
-			propertyString := keyString + ": " + valueString
-			properties = append(properties, propertyString)
-		}
-
 		data := map[string]interface{}{
 			"version":    util.ToString(edge.Version),
 			"source":     util.ToString(edge.Source),
 			"target":     util.ToString(edge.Target),
-			"properties": strings.Join(properties, "\n"),
+			"properties": FormatEdgeProperties(edge.Properties),
 		}
 
 		results = append(results, data)

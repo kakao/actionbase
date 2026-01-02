@@ -3,7 +3,6 @@ package command
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/command/model"
@@ -11,20 +10,16 @@ import (
 )
 
 type Count struct {
-	context          *Context
-	runner           CountRunner
-	actionbaseClient *client.ActionbaseClient
+	*BaseCommand
 }
 
-type CountRunner interface {
-	GetCurrentDatabase() string
-	GetCurrentTable() string
-	GetCurrentAlias() string
-	SetCurrentTable(table string)
-}
-
-func NewCount(runner CountRunner, actionbaseClient *client.ActionbaseClient) *Count {
-	return &Count{runner: runner, actionbaseClient: actionbaseClient}
+func NewCount(runner TableCommandRunner, actionbaseClient *client.ActionbaseClient) *Count {
+	return &Count{
+		BaseCommand: &BaseCommand{
+			client: actionbaseClient,
+			runner: runner,
+		},
+	}
 }
 
 func (c *Count) Execute(args []string) *model.Response {
@@ -32,9 +27,9 @@ func (c *Count) Execute(args []string) *model.Response {
 		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
 
-	database := c.runner.GetCurrentDatabase()
-	if database == "" {
-		return model.Fail("No database selected. Use 'use database <name>'")
+	database, errResp := ValidateDatabase(c.runner)
+	if errResp != nil {
+		return errResp
 	}
 
 	parser := util.ParseArgs(args)
@@ -44,25 +39,26 @@ func (c *Count) Execute(args []string) *model.Response {
 		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
 
-	direction, found := parser.Get("direction")
+	directionStr, found := parser.Get("direction")
 	if !found {
 		return model.Fail(fmt.Sprintf("Usage: %s", c.GetType().GetCommand()))
 	}
 
-	if !strings.HasPrefix(args[0], "--") {
-		return c.doCount(database, args[0], start, direction)
+	direction, err := ParseDirection(directionStr)
+	if err != nil {
+		return model.Fail(err.Error())
 	}
 
-	currentTable := c.runner.GetCurrentTable()
-	if currentTable == "" {
-		return model.Fail("No table selected. Use 'use <table|alias> <name>'")
+	table, errResp := ValidateTable(c.runner, args)
+	if errResp != nil {
+		return errResp
 	}
 
-	return c.doCount(database, currentTable, start, direction)
+	return c.doCount(database, table, start, direction.String())
 }
 
 func (c *Count) doCount(database string, table string, start string, direction string) *model.Response {
-	response := c.actionbaseClient.Counts(database, table, start, direction)
+	response := c.client.Counts(database, table, start, direction)
 
 	if response.IsError() {
 		return model.Fail(fmt.Sprintf("Failed to get counts of table '%s' in %s", table, database))
@@ -91,7 +87,7 @@ func (c *Count) doCount(database string, table string, start string, direction s
 }
 
 func (c *Count) GetDescription() string {
-	return "Query 'scan' table"
+	return "Query 'count' table"
 }
 
 func (c *Count) GetType() Type {

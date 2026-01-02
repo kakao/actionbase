@@ -168,9 +168,14 @@ func (c *Create) createTable(parser *util.Parser) *model.Response {
 		return model.Fail(tableUsagePrompt)
 	}
 
-	direction, found := parser.Get("direction")
+	directionStr, found := parser.Get("direction")
 	if !found {
 		return model.Fail(tableUsagePrompt)
+	}
+
+	direction, err := ParseDirection(directionStr)
+	if err != nil {
+		return model.Fail(err.Error())
 	}
 
 	schema, found := parser.Get("schema")
@@ -180,8 +185,7 @@ func (c *Create) createTable(parser *util.Parser) *model.Response {
 
 	schema = strings.Trim(schema, "'")
 	var schemaRequest clientModel.Schema
-	err := json.Unmarshal([]byte(schema), &schemaRequest)
-	if err != nil {
+	if err = json.Unmarshal([]byte(schema), &schemaRequest); err != nil {
 		return model.Fail(tableUsagePrompt)
 	}
 
@@ -213,7 +217,7 @@ func (c *Create) createTable(parser *util.Parser) *model.Response {
 		Desc:          comment.(string),
 		Type:          tableType,
 		Schema:        &schemaRequest,
-		DirectionType: direction,
+		DirectionType: direction.String(),
 		Storage:       storage,
 		Groups:        &groupsRequest,
 		Indices:       &indicesRequest,

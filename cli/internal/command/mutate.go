@@ -13,19 +13,16 @@ import (
 )
 
 type Mutate struct {
-	context          *Context
-	runner           MutateRunner
-	actionbaseClient *client.ActionbaseClient
+	*BaseCommand
 }
 
-type MutateRunner interface {
-	GetCurrentDatabase() string
-	GetCurrentTable() string
-	SetCurrentTable(table string)
-}
-
-func NewMutate(runner MutateRunner, actionbaseClient *client.ActionbaseClient) *Mutate {
-	return &Mutate{runner: runner, actionbaseClient: actionbaseClient}
+func NewMutate(runner TableCommandRunner, actionbaseClient *client.ActionbaseClient) *Mutate {
+	return &Mutate{
+		BaseCommand: &BaseCommand{
+			client: actionbaseClient,
+			runner: runner,
+		},
+	}
 }
 
 func (m *Mutate) Execute(args []string) *model.Response {
@@ -33,9 +30,9 @@ func (m *Mutate) Execute(args []string) *model.Response {
 		return model.Fail(fmt.Sprintf("Usage: %s", m.GetType().GetCommand()))
 	}
 
-	database := m.runner.GetCurrentDatabase()
-	if database == "" {
-		return model.Fail("No database selected. Use 'use database <name>'")
+	database, errResp := ValidateDatabase(m.runner)
+	if errResp != nil {
+		return errResp
 	}
 
 	parser := util.ParseArgs(args)
@@ -74,7 +71,7 @@ func (m *Mutate) Execute(args []string) *model.Response {
 	properties = strings.Trim(properties, "'")
 	properties = util.ReplaceTimestampInString(properties)
 	var propertiesMap map[string]interface{}
-	if json.Unmarshal([]byte(properties), &propertiesMap) != nil {
+	if err := json.Unmarshal([]byte(properties), &propertiesMap); err != nil {
 		return model.Fail(fmt.Sprintf("Error parsing properties: %s", err))
 	}
 
@@ -86,20 +83,16 @@ func (m *Mutate) Execute(args []string) *model.Response {
 		Mutations: []clientModel.MutationItem{mutationItem},
 	}
 
-	if !strings.HasPrefix(args[0], "--") {
-		return m.doMutate(database, args[0], edgeBulkMutation, eventType)
+	table, errResp := ValidateTable(m.runner, args)
+	if errResp != nil {
+		return errResp
 	}
 
-	currentTable := m.runner.GetCurrentTable()
-	if currentTable == "" {
-		return model.Fail("No table selected. Use 'use <table|alias> <name>'")
-	}
-
-	return m.doMutate(database, currentTable, edgeBulkMutation, eventType)
+	return m.doMutate(database, table, edgeBulkMutation, eventType)
 }
 
 func (m *Mutate) doMutate(database, table string, edgeBulkMutation clientModel.EdgeBulkMutation, eventType string) *model.Response {
-	response := m.actionbaseClient.Mutate(database, table, &edgeBulkMutation)
+	response := m.client.Mutate(database, table, &edgeBulkMutation)
 	if response.IsError() {
 		return model.Fail(fmt.Sprintf("Failed to mutate edges: %s", response.Error.Error()))
 	}
