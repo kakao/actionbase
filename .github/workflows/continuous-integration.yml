@@ -23,7 +23,7 @@ jobs:
         continue-on-error: true
         run: ./gradlew build
 
-      - name: Summarize OSS Test Report
+      - name: Summarize Test Report
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
@@ -31,6 +31,6 @@ jobs:
           path: '**/build/test-results/test/TEST-*.xml'
           reporter: java-junit
 
-      - name: Fail job if tests failed
+      - name: Fail job if build failed
         if: ${{ steps.build.outcome == 'failure' }}
         run: exit 1
