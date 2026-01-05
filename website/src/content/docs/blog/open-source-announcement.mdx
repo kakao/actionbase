@@ -22,14 +22,13 @@ The basic implementation is straightforward.
 You just need to record **who** (user ID) liked **what** (target ID).
 The total number of likes can be calculated by counting (`COUNT`) all records
 with the same target ID.
-So most systems start with a single table containing user IDs and target IDs.
+Most systems therefore start with a single table containing user IDs and target IDs.
 Indexes are added based on query patterns, and once `COUNT` becomes expensive,
-a cache is introduced.
-And this approach works well at most scales.
+a cache is introduced. And this approach works well at most scales.
 
-**But once a service grows beyond a certain point, things start to change.**
+**But once a service grows beyond a certain point, things begin to change.**
 
-You have to think about sharding.
+You start thinking about sharding.
 You repeatedly add compensating logic to keep caches consistent.
 What was once a simple model gradually becomes complex.
 
@@ -48,17 +47,17 @@ Faced with that question, our conclusion was clear:
 
 Actionbase is a database designed to reliably handle user interactions
 even under massive traffic.
-By **interactions**, we mean any kind of action that happens between a user
+By **interactions**, we mean any kind of action that occurs between a user
 and a target—such as **likes, reactions, and follows**.
 Actionbase models these interactions as:
 
-**who (actor) performed what action on which target.**
+**who (the actor) performed what action on which target.**
 
 > Example: "User1" (actor) liked (action) "Product A" (target).
 
 ### Designing Writes for Reads
 
-The core idea behind Actionbase is straightforward:
+The core idea behind Actionbase is simple:
 
 > **At write time, precompute everything you'll need at read time.**
 
@@ -104,7 +103,7 @@ that can be validated and refined together
 across many environments.
 Actionbase is an attempt to treat user interactions
 not as isolated features,
-but as **composable relationships**—
+but as **connected relationships**—
 and open source is our way of building that structure together.
 
 > ✨ **When your data converges in Actionbase, you may discover possibilities you couldn't see before.** ✨
