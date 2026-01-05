@@ -1,77 +1,122 @@
 # Actionbase
 
-Actionbase is a high-performance graph database for processing large-scale user activity data. It is production-proven, serving tens of millions of users in [Kakao](/about-kakao).
+## Introduction
 
-## What is Actionbase?
+Actionbase is a database for serving user interactions, used in production at Kakao.
 
-Actionbase is an OLTP (Online Transaction Processing) system that uses a graph data model, specifically designed for processing large-scale user activity data. It efficiently stores and queries user activity data at scale, providing a generalized interface built on top of storage backends like HBase. Actionbase provides REST API for easy integration with your applications.
+It is designed for high-throughput, low-latency workloads where user
+interactions are continuously written and queried. Actionbase focuses on serving interaction-derived data—such as **recent views**, **likes**, **reactions**,
+and **follows**—that power product listings, recommendations, feeds, and other interaction-driven surfaces in large-scale services.
 
-### Project Goals
+User interactions naturally form actor→target relationships with associated properties. Actionbase models
+these relationships using a graph data model and materializes read-optimized structures at write time, enabling
+fast and predictable queries without expensive read-time computation.
 
-- **Real-time Serving**: Low-latency responses under 10ms for read traffic
-- **Large-scale Traffic Processing**: Handling hundreds of thousands of requests per second (RPS)
-- **Massive Data Management**: Storage and management of millions of TB of data
-- **Flexible Scalability**: Responding to service growth through horizontal scaling
+When backed by HBase, Actionbase inherits strong durability and horizontal scalability, and provides
+a higher-level abstraction tailored for real-time interaction serving.
 
-### Key Features
+## Getting Started
 
-- **Write-time Optimization**: Pre-computes indexes and counters during writes for ultra-fast reads
-- **Property Graph Model**: Supports standard property graph data model with flexible schema
-- **Easy Integration**: REST API and client libraries for seamless integration with your applications
-- **Lambda Architecture Support**: Provides bulk loading, asynchronous processing, and data pipeline capabilities
+- **Quick Start**  
+  Get Actionbase running quickly with minimal setup.  
+  → https://actionbase.io/quick-start/
+
+- **Hands-on Guide: Build Your Social Media App**  
+  A step-by-step guide that walks through modeling and serving real-world user interactions using Actionbase.  
+  → https://actionbase.io/guides/build-your-social-media-app/
+
+## Design Goals
+
+- **Shared Interaction Layer**  
+  Provide a unified platform for storing and serving user interactions, removing the need for individual services to
+  build and operate their own interaction logic.
+
+- **Natural Interaction Modeling**  
+  Model interactions as actor→target relationships with schema-defined properties, closely reflecting how user
+  interactions appear in real applications.
+
+- **Write-Time Optimization**  
+  Pre-compute common read patterns—such as retrieving recent items, checking existence, counting relationships,
+  and traversing ordered results—at write time to enable fast and predictable reads.
+
+- **Leverage Proven Storage**  
+  Build on the strengths of existing storage engines (for example, HBase), handling interaction mutations at
+  a higher level to produce durable state and read-optimized structures without reimplementing durability,
+  scalability, or distribution.
+
+## Key Features
+
+- **Write-Time Materialization**  
+  Pre-compute the data required for fast, predictable reads at write time, eliminating service-specific indexing and counting logic.
+
+- **Interaction-Oriented Graph Model**  
+  Model user interactions as actor→target relationships with schema-defined properties.
+
+- **Unified REST API**  
+  Expose a simple, storage-agnostic API for querying and mutating interaction data.
+
+- **WAL / CDC Integration**  
+  Emit write-ahead logs and change data capture streams for recovery, replay, asynchronous processing, and downstream data pipelines.
 
 ## Architecture
 
 Actionbase is built with a modular architecture:
 
-- **core** (codec-java, core-java): Core data model definition and data processing logic
-  - Java, Kotlin (Java 8 compatible) for compatibility (e.g., pipeline)
-  - Data encoding/decoding for physical storage
-  - Event and state change processing
-  
-- **engine**: Business logic engine
+- **core** (codec-java, core-java)  
+  Core data model definitions and processing logic
+  - Java, Kotlin (Java 8 compatible)
+  - Data encoding and decoding for physical storage
+  - Event and state transition processing
+
+- **engine**  
+  Business logic engine
   - Kotlin
-  - Pure business logic independent of transport protocols
-  - HBase communication, metadata management, data mutation, and query execution
+  - Core interaction processing independent of transport protocols
+  - Metadata management, data mutation, and query execution
 
-- **server**: High-performance REST API server
+- **server**  
+  High-performance REST API server
   - Kotlin, Spring WebFlux
-  - Asynchronous API processing
+  - Asynchronous request handling
 
-- **pipeline**: Data processing *(Coming soon)*
+- **pipeline** *(planned)*  
+  Data processing and background workloads
   - Scala (Java 8), Apache Spark
-  - Async Processing, Bulk loading, backup, and real-time ETL
+  - Asynchronous processing, bulk loading, backup, and real-time ETL
 
-### Datastore
+## Datastore
 
-Actionbase currently uses HBase as its storage layer, chosen for its reliability and scalability. Future releases will support additional storage backends including SlateDB.
+Actionbase currently uses HBase as its primary storage backend, leveraging its durability and horizontal scalability.
+Additional storage backends, such as SlateDB, are planned for future releases.
 
 ## Production Usage
 
-Actionbase powers several major [Kakao](/about-kakao) services including KakaoTalk and KakaoShopping, serving tens of millions of users with real-time activity data processing.
-
-**Production Performance:**
-- Read latency: <5ms (p99)
-- Data scale: Multiple TB-scale deployments
+Actionbase is used across Kakao services—including KakaoTalk and KakaoShopping—to power real-time user interaction serving
+for tens of millions of users. It has been running in stable production for over two years, delivering predictable reads,
+consistent writes, and reliable handling of multi-terabyte datasets on HBase.
 
 ## Learn More
 
-- [Documentation](https://actionbase.dev/)
-- [Introduction to Actionbase (Korean) / if(kakaoAI)2024](https://www.youtube.com/watch?v=8-hVAFVHISE)
+- [Documentation](https://actionbase.io/)
+- [Introduction to Actionbase (Korean) / if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE)
 
 ## Contributing
 
-We welcome contributions! Please see our contributing guidelines for details on:
+We welcome contributions. Please see our contributing guidelines for details on:
 
 - Code style and conventions
 - Submitting issues and pull requests
 - Development workflow
 
-For more information, please visit our [Community](https://actionbase.dev/community/github/) page.
+For more information, visit our [Community](https://actionbase.io/community/github/) page.
 
 ## Current Status
 
-This project is in the initial open source preparation phase. Internal components will be released progressively.
+Actionbase is in its initial open-source preparation phase. The first release focuses on introducing the core concepts and
+providing a hands-on guide, with additional components to be open-sourced over time.
+
+The codebase is being released largely as it evolved inside Kakao, with sensitive details removed. Some internal modules and
+operational guides—including Kubernetes and HBase—will be added in future releases.
 
 ## License
 

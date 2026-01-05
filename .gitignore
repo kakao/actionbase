@@ -37,6 +37,7 @@ go.work.sum
 
 # Gradle (multi-module)
 .gradle/
+build/
 */build/
 !*/src/*/build/
 !gradle-wrapper.jar
