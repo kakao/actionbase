@@ -1,107 +1,69 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/util"
 )
 
+type Get struct {
+	runner           GetRunner
+	actionbaseClient *client.ActionbaseClient
+}
+
 type GetRunner interface {
-	GetHost() string
-	GetAuthKey() string
 	GetCurrentDatabase() string
 	GetCurrentTable() string
 	SetCurrentTable(table string)
 }
 
-type GetCommand struct {
-	runner GetRunner
+func NewGet(runner GetRunner, actionbaseClient *client.ActionbaseClient) *Get {
+	return &Get{runner: runner, actionbaseClient: actionbaseClient}
 }
 
-func NewGetCommand(runner GetRunner) *GetCommand { return &GetCommand{runner: runner} }
-
-func (t *GetCommand) Execute(args []string) {
+func (g *Get) Execute(args []string) {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", t.GetType().GetCommand())
+		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 		return
 	}
 
-	if t.runner.GetCurrentDatabase() == "" {
-		fmt.Printf("No database selected. Use 'use <database|table> <name> or use <database>:<table>'\n")
+	if g.runner.GetCurrentDatabase() == "" {
+		fmt.Println("No database selected. Use 'use database <name>'")
 		return
 	}
 
-	sourceArgIndex := slices.IndexFunc(args, func(arg string) bool {
-		return strings.HasPrefix(arg, "--source=")
-	})
-	if sourceArgIndex == -1 {
-		fmt.Println("No source provided. Usage: ", t.GetType().GetCommand())
-		return
-	}
-	sourceKeyValue := strings.Split(args[sourceArgIndex], "=")
-	if sourceKeyValue[1] == "" {
-		fmt.Println("No source provided. Usage: ", t.GetType().GetCommand())
+	if g.runner.GetCurrentTable() == "" {
+		fmt.Println("No table selected. Use 'use <table|alias> <name>'")
 		return
 	}
 
-	targetArgIndex := slices.IndexFunc(args, func(arg string) bool {
-		return strings.HasPrefix(arg, "--target=")
-	})
-	if targetArgIndex == -1 {
-		fmt.Println("No target provided. Usage: ", t.GetType().GetCommand())
-		return
-	}
-	targetKeyValue := strings.Split(args[targetArgIndex], "=")
-	if targetKeyValue[1] == "" {
-		fmt.Println("No target provided. Usage: ", t.GetType().GetCommand())
+	parser := util.ParseArgs(args)
+	source, found := parser.Get("source")
+	if !found {
+		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 		return
 	}
 
-	source := sourceKeyValue[1]
-	target := targetKeyValue[1]
+	target, found := parser.Get("target")
+	if !found {
+		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
+	}
 
-	httpClient := client.NewHTTPClient(t.runner.GetHost(), t.runner.GetAuthKey())
-	uri := fmt.Sprintf("/graph/v3/databases/%s/tables/%s/edges/get?source=%s&target=%s",
-		t.runner.GetCurrentDatabase(),
-		t.runner.GetCurrentTable(),
+	response := g.actionbaseClient.Get(
+		g.runner.GetCurrentDatabase(),
+		g.runner.GetCurrentTable(),
 		source,
-		target,
-	)
+		target)
 
-	responseString, err := httpClient.Get(uri)
-	if err != nil {
-		fmt.Printf("Failed to call tables: %s\n", err.Error())
+	if response == nil {
 		return
 	}
 
-	var response map[string]interface{}
-	if err := json.Unmarshal([]byte(responseString), &response); err != nil {
-		fmt.Printf("Failed to parse response: %s\n", err.Error())
-		return
-	}
-
-	edgesResponse, ok := response["edges"].([]interface{})
-	if !ok {
-		fmt.Println("Invalid response format")
-		return
-	}
-
-	edges := []map[string]interface{}{}
-	for _, item := range edgesResponse {
-		edge, ok := item.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		property, ok := edge["properties"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-
+	var results []map[string]interface{}
+	for _, edge := range response.Edges {
+		property := edge.Properties
 		var properties []string
 		for key, value := range property {
 			keyString := util.ToString(key)
@@ -111,19 +73,20 @@ func (t *GetCommand) Execute(args []string) {
 		}
 
 		data := map[string]interface{}{
-			"version":    util.ToString(edge["version"]),
-			"source":     util.ToString(edge["source"]),
-			"target":     util.ToString(edge["target"]),
+			"version":    util.ToString(edge.Version),
+			"source":     util.ToString(edge.Source),
+			"target":     util.ToString(edge.Target),
 			"properties": strings.Join(properties, "\n"),
 		}
 
-		edges = append(edges, data)
+		results = append(results, data)
 	}
 
 	columnOrder := []string{"version", "source", "target", "properties"}
 
-	if len(edges) > 0 {
-		fmt.Println(util.PrettyPrintRowsWithOrder(edges, columnOrder))
+	if len(results) > 0 {
+		fmt.Printf("The edge is found: [%s -> %s]\n", source, target)
+		fmt.Println(util.PrettyPrintRowsWithOrder(results, columnOrder))
 		fmt.Println()
 		return
 	}
@@ -134,17 +97,15 @@ func (t *GetCommand) Execute(args []string) {
 		"target":     "",
 		"properties": "",
 	}
-	fmt.Printf("No edges found, [%s -> %s]\n", source, target)
+	fmt.Printf("No results found: [%s -> %s]\n", source, target)
 	fmt.Println(util.PrettyPrintWithOrder(emptyEdge, columnOrder))
 	fmt.Println()
 }
 
-// GetDescription returns the command description
-func (u *GetCommand) GetDescription() string {
+func (g *Get) GetDescription() string {
 	return "Query 'get' to table"
 }
 
-// GetType returns the command type
-func (u *GetCommand) GetType() CommandType {
-	return CommandTypeGet
+func (g *Get) GetType() Type {
+	return TypeGet
 }

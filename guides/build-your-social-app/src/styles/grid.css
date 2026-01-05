@@ -1,0 +1,260 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #000;
+  color: #fff;
+  max-width: 100%;
+  margin: 0 auto;
+  padding-bottom: 60px;
+}
+
+/* Header */
+.grid-header {
+  position: sticky;
+  top: 0;
+  background-color: #000;
+  border-bottom: 1px solid #262626;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+}
+
+.back-btn,
+.menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  color: #fff;
+}
+
+.back-btn svg,
+.menu-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.username {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  border-bottom: 1px solid #262626;
+  background-color: #000;
+  position: sticky;
+  top: 49px;
+  z-index: 99;
+}
+
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 12px;
+  cursor: pointer;
+  color: #8e8e8e;
+  border-bottom: 1px solid transparent;
+}
+
+.tab-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.tab-btn.active {
+  color: #fff;
+  border-bottom: 1px solid #fff;
+}
+
+.tab-btn:hover {
+  background-color: #1a1a1a;
+}
+
+/* Full Screen Grid */
+.full-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background-color: #000;
+}
+
+.grid-cell {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.cell-icon {
+  font-size: 48px;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s ease;
+}
+
+.grid-cell:hover .cell-icon {
+  transform: scale(1.1);
+}
+
+/* Overlay */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.grid-cell:hover .overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 1;
+}
+
+.grid-stats {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.stat-item svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  color: #fff;
+  transition: transform 0.2s ease;
+}
+
+.nav-btn:hover {
+  opacity: 0.6;
+}
+
+.nav-btn:active {
+  transform: scale(0.9);
+}
+
+.nav-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-btn.active .nav-avatar {
+  border: 2px solid #fff;
+}
+
+.nav-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 600;
+  color: #fff;
+  border: 1px solid #8e8e8e;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  body {
+    max-width: 935px;
+    margin: 0 auto;
+    background-color: #000;
+  }
+
+  .full-grid {
+    gap: 28px;
+    padding: 20px;
+  }
+
+  body {
+    padding-bottom: 20px;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* Better text rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus styles */
+button:focus-visible {
+  outline: 2px solid #0095f6;
+  outline-offset: 2px;
+}
+
+/* Touch feedback */
+button:active {
+  opacity: 0.7;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.grid-cell {
+  animation: fadeIn 0.3s ease;
+}
+

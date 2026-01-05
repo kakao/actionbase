@@ -3,6 +3,9 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import markdocGrammar from './grammars/markdoc.tmLanguage.json';
+import starlightLlmsTxt from 'starlight-llms-txt'
+import mermaid from 'astro-mermaid';
+import starlightBlog from 'starlight-blog';
 
 export const locales = {
 	root: { label: 'English', lang: 'en' },
@@ -11,7 +14,7 @@ export const locales = {
 
 /* https://docs.netlify.com/configure-builds/environment-variables/#read-only-variables */
 const NETLIFY_PREVIEW_SITE = process.env.CONTEXT !== 'production' && process.env.DEPLOY_PRIME_URL;
-const site = process.env.SITE_URL || NETLIFY_PREVIEW_SITE || 'https://starlight.astro.build/';
+const site = process.env.SITE_URL || NETLIFY_PREVIEW_SITE || 'https://actionbase.io/';
 const getBasePath = () => {
 	if (process.env.SITE_URL) {
 		try {
@@ -26,36 +29,61 @@ const getBasePath = () => {
 
 const base = getBasePath();
 const ogUrl = new URL('og.jpg?v=1', site).href;
-const ogImageAlt = 'Make your docs shine with Starlight';
+const ogImageAlt = 'Actionbase is a production-proven OLTP database serving tens of millions of users across Kakao.';
+
+const GA_ID = 'G-2PY5JXRJ5J';
 
 export default defineConfig({
 	site,
 	base,
 	trailingSlash: 'always',
 	integrations: [
+		mermaid({
+			theme: 'forest',
+			autoTheme: true,
+			mermaidConfig: {
+				flowchart: {
+					curve: 'basis'
+				}
+			},
+			iconPacks: [
+				{
+					name: 'logos',
+					loader: () => fetch('https://unpkg.com/@iconify-json/logos@1/icons.json').then(res => res.json())
+				},
+				{
+					name: 'iconoir',
+					loader: () => fetch('https://unpkg.com/@iconify-json/iconoir@1/icons.json').then(res => res.json())
+				}
+			]
+		}),
 		starlight({
 			title: 'Actionbase',
-			// logo: {
-			// 	light: '/src/assets/logo-light.svg',
-			// 	dark: '/src/assets/logo-dark.svg',
-			// 	replacesTitle: true,
-			// },
+			logo: {
+				light: '/src/assets/logo-light.svg',
+				dark: '/src/assets/logo-dark.svg',
+				replacesTitle: true,
+			},
 			lastUpdated: true,
 			editLink: {
-				baseUrl: 'https://github.com/withastro/starlight/edit/main/docs/',
+				baseUrl: 'https://github.com/kakao/actionbase/edit/main/website/',
 			},
 			social: [
-				{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' },
-				{ icon: 'discord', label: 'Discord', href: 'https://astro.build/chat' },
+				{ icon: 'github', label: 'GitHub', href: 'https://github.com/kakao/actionbase' },
 			],
 			head: [
 				{
 					tag: 'script',
-					attrs: {
-						src: 'https://cdn.usefathom.com/script.js',
-						'data-site': 'EZBHTSIG',
-						defer: true,
-					},
+					attrs: { async: true, src: `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`},
+				},
+				{
+					tag: 'script',
+					content: `
+            			window.dataLayer = window.dataLayer || [];
+            			function gtag(){dataLayer.push(arguments);}
+            			gtag('js', new Date());
+            			gtag('config', '${GA_ID}');
+          			`
 				},
 				{
 					tag: 'meta',
@@ -75,12 +103,21 @@ export default defineConfig({
 						'introduction',
 						'quick-start',
 						'faq',
-						'about-kakao'
+						'for-rdb-users',
+						'llms-txt',
 					],
+				},
+				{
+					label: 'Project',
+					autogenerate: { directory: 'project' },
 				},
 				{
 					label: 'Design',
 					autogenerate: { directory: 'design' },
+				},
+				{
+					label: 'Internals',
+					autogenerate: { directory: 'internals' },
 				},
 				{
 					label: 'Provisioning',
@@ -91,8 +128,8 @@ export default defineConfig({
 					autogenerate: { directory: 'operations' },
 				},
 				{
-					label: 'Tutorials',
-					autogenerate: { directory: 'tutorials' },
+					label: 'Guides',
+					autogenerate: { directory: 'guides' },
 				},
 				{
 					label: 'API References',
@@ -104,14 +141,29 @@ export default defineConfig({
 				},
 			],
 			expressiveCode: { shiki: { langs: [markdocGrammar] } },
-			plugins: process.env.CHECK_LINKS
-				? [
-						starlightLinksValidator({
-							errorOnFallbackPages: false,
-							errorOnInconsistentLocale: true,
-						}),
-					]
-				: [],
+			plugins: [
+				starlightLinksValidator({
+					errorOnFallbackPages: false,
+					errorOnInconsistentLocale: true,
+				}),
+				starlightLlmsTxt({
+					exclude: ['404']
+					 }),
+				starlightBlog({
+					authors: {
+						em3s: {
+							name: 'Minseok Kim',
+							title: 'Maintainer',
+							picture: 'https://avatars.githubusercontent.com/u/1531387?s=200',
+							url: 'https://github.com/em3s',
+						},
+					},
+					metrics: {
+						readingTime: true,
+						words: 'total',
+					},
+				}),
+			]
 		}),
 	],
 });

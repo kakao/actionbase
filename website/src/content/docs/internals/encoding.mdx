@@ -1,0 +1,146 @@
+---
+title: Encoding
+description: Internal data encoding and storage details
+sidebar:
+    order: 1
+---
+
+This document describes how Actionbase encodes and stores data internally. This information is primarily for contributors and those who need to understand the low-level storage format.
+
+For high-level concepts, see [Core Concepts](/design/concepts/).
+
+## Row Types
+
+Actionbase stores edge data using multiple row types in the datastore backend. Each row type serves a specific query purpose.
+
+| Row Type | Type Code | Purpose | Query Type |
+|----------|-----------|---------|------------|
+| Edge State | -3 | Current edge state | Get |
+| Edge Index | -4 | Index entries | Scan |
+| Edge Count | -2 | Edge counts | Count |
+
+## Edge State (Type Code: -3)
+
+Stores the current state of edges for Get queries.
+
+### Key Structure
+
+```
+[4-byte hash] + [1-byte + source] + [1-byte + table code] + [1-byte + type code(-3)] + [1-byte + target]
+```
+
+### Value Structure
+
+| Field | Type | Description |
+|-------|------|-------------|
+| active | Boolean | Edge active status |
+| version | Long | Edge version |
+| properties | Map | Property values with version per property |
+| createdAt | Long | Creation timestamp |
+| deletedAt | Long | Deletion timestamp |
+
+## Edge Index (Type Code: -4)
+
+Stores index entries for Scan queries. Uses **Narrow Row** format for high-cardinality indexes.
+
+### Key Structure
+
+```
+[4-byte hash] + [1-byte + directed source] + [1-byte + table code] + [1-byte + type code(-4)] + 
+[1-byte + direction] + [1-byte + index code] + [(1-byte + N) * # index values] + [1-byte + directed target]
+```
+
+### Value Structure
+
+| Field | Type | Description |
+|-------|------|-------------|
+| version | Long | Edge version |
+| properties | Map | Property values |
+
+## Edge Count (Type Code: -2)
+
+Stores counters for Count queries. Uses the datastore backend's `increment` operation.
+
+### Key Structure
+
+```
+[4-byte hash] + [1-byte + directed source] + [1-byte + table code] + [1-byte + type code(-2)] + [1-byte + direction]
+```
+
+### Value Structure
+
+| Field | Type | Description |
+|-------|------|-------------|
+| count | Long | Edge count |
+
+## Row Key Encoding
+
+All row keys follow a common pattern:
+
+```
+[4-byte hash] + [1-byte + source] + [1-byte + table code] + [1-byte + type code] + [additional fields...]
+```
+
+| Component | Size | Purpose |
+|-----------|------|---------|
+| Hash | 4 bytes | xxhash32 for region distribution |
+| Type Code | 1 byte | Identifies data type (-2, -3, -4) |
+| Source/Target | Variable | Prefixed with 1-byte length |
+
+The hash prefix ensures even distribution across HBase regions, preventing hotspots.
+
+## Value Encoding
+
+Actionbase uses byte headers to maintain type information:
+
+### Format
+
+```
+[1-byte type information] + [actual value]
+```
+
+### Type Information
+
+| Aspect | Description |
+|--------|-------------|
+| Type Code | Distinguishes NULL, STRING, INT, FLOAT, JSON, etc. |
+| Sort Order | Includes ASC/DESC for index ordering |
+| Encoding | Values encoded according to sort order |
+
+### Version Tracking
+
+| Row Type | Version Scope |
+|----------|---------------|
+| EdgeState | Version per property |
+| EdgeIndex | Version per edge |
+
+## Key Design Principles
+
+### Hash Prefix
+
+The 4-byte xxhash32 prefix ensures:
+- Even distribution across storage regions
+- Prevention of write hotspots
+- Balanced read/write load
+
+### Negative Type Codes
+
+Type codes use negative values (-2, -3, -4) to:
+- Separate from user data
+- Enable efficient key range scanning
+- Provide clear type identification
+
+### Length-Prefixed Strings
+
+All variable-length fields use 1-byte length prefix:
+- Enables efficient parsing
+- Supports binary-safe encoding
+- Allows prefix-based scanning
+
+## Related Documents
+
+- [How Both-Directed Edges Work](/internals/explained/edge-both-directed/)
+- [How Out-Directed Edges Work](/internals/explained/edge-out-directed/)
+- [How Multi-Edges Work](/internals/explained/multi-edge/)
+- [How Aggregation Works](/internals/explained/aggregation/)
+

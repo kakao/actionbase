@@ -1,0 +1,216 @@
+create storage
+--name user_posts_storage
+--data '{"desc" : "user post storage", "type" : "HBASE", "conf" : {"namespace" : "test","tableName" : "user_post_table"}}';
+
+create table
+--database social
+--name user_posts
+--data '{
+ "desc": "user posts table",
+ "type": "INDEXED",
+ "schema": {
+   "src": {
+     "type": "STRING",
+     "desc": "userId"
+   },
+   "tgt": {
+     "type": "LONG",
+     "desc": "postId"
+   },
+   "fields": [
+     {
+       "name": "createdAt",
+       "type": "LONG",
+       "desc": "createdAt",
+       "nullable": false
+     }
+   ]
+ },
+ "dirType": "BOTH",
+ "indices": [
+   {
+     "name": "created_at_desc",
+     "fields": [
+       {
+         "name": "createdAt",
+         "order": "DESC"
+       }
+     ],
+     "desc": "order by createdAt"
+   }
+ ],
+ "storage": "user_posts_storage",
+ "event": false,
+ "readOnly": false,
+ "mode": "SYNC"
+}
+';
+
+create edges
+--database social
+--table user_posts
+--data '{
+ "mutations": [
+   {
+     "type": "INSERT",
+     "edge": {
+       "version": __CURRENT_TIMESTAMP__,
+       "source": "merlin",
+       "target": 1,
+       "properties": {
+         "createdAt": __CURRENT_TIMESTAMP__
+       }
+     }
+   },
+   {
+     "type": "INSERT",
+     "edge": {
+       "version": __CURRENT_TIMESTAMP__,
+       "source": "emeth",
+       "target": 2,
+       "properties": {
+         "createdAt": __CURRENT_TIMESTAMP__
+       }
+     }
+   },
+   {
+     "type": "INSERT",
+     "edge": {
+       "version": __CURRENT_TIMESTAMP__,
+       "source": "emeth",
+       "target": 3,
+       "properties": {
+         "createdAt": __CURRENT_TIMESTAMP__
+       }
+     }
+   },
+   {
+     "type": "INSERT",
+     "edge": {
+       "version": __CURRENT_TIMESTAMP__,
+       "source": "emeth",
+       "target": 4,
+       "properties": {
+         "createdAt": __CURRENT_TIMESTAMP__
+       }
+     }
+   },
+   {
+     "type": "INSERT",
+     "edge": {
+       "version": __CURRENT_TIMESTAMP__,
+       "source": "doki",
+       "target": 5,
+       "properties": {
+         "createdAt": __CURRENT_TIMESTAMP__
+       }
+     }
+   }
+ ]
+}';
+
+load storage
+--name user_likes_storage
+--data '{
+  "desc": "user likes storage",
+  "type": "HBASE",
+  "conf": {
+    "namespace": "test",
+    "tableName": "user_like_table"
+  }
+}';
+
+load table
+--database social
+--name user_likes
+--data '{
+  "desc": "user likes table",
+  "type": "INDEXED",
+  "schema": {
+    "src": {
+      "type": "STRING",
+      "desc": "userId"
+    },
+    "tgt": {
+      "type": "LONG",
+      "desc": "postId"
+    },
+    "fields": [
+      {
+        "name": "createdAt",
+        "type": "LONG",
+        "desc": "createdAt",
+        "nullable": false
+      }
+    ]
+  },
+  "dirType": "BOTH",
+  "indices": [
+    {
+      "name": "created_at_desc",
+      "fields": [
+        {
+          "name": "createdAt",
+          "order": "DESC"
+        }
+      ],
+      "desc": "order by createdAt"
+    }
+  ],
+  "storage": "user_posts_storage",
+  "event": false,
+  "readOnly": false,
+  "mode": "SYNC"
+}';
+
+load edges
+--database social
+--table user_likes
+--data '{
+  "mutations": [
+    {
+      "type": "INSERT",
+      "edge": {
+        "version": __CURRENT_TIMESTAMP__,
+        "source": "dave",
+        "target": 1,
+        "properties": {
+          "createdAt": __CURRENT_TIMESTAMP__
+        }
+      }
+    },
+    {
+      "type": "INSERT",
+      "edge": {
+        "version": __CURRENT_TIMESTAMP__,
+        "source": "dave",
+        "target": 2,
+        "properties": {
+          "createdAt": __CURRENT_TIMESTAMP__
+        }
+      }
+    },
+    {
+      "type": "INSERT",
+      "edge": {
+        "version": __CURRENT_TIMESTAMP__,
+        "source": "sonu",
+        "target": 2,
+        "properties": {
+          "createdAt": __CURRENT_TIMESTAMP__
+        }
+      }
+    },
+    {
+      "type": "INSERT",
+      "edge": {
+        "version": __CURRENT_TIMESTAMP__,
+        "source": "ben",
+        "target": 2,
+        "properties": {
+          "createdAt": __CURRENT_TIMESTAMP__
+        }
+      }
+    }
+  ]
+}'

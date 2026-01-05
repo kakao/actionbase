@@ -1,91 +1,318 @@
 ---
 title: Quick Start
-description: Get started with Actionbase in minutes.
+description: Run Actionbase locally and define your first interactions.
 ---
 
-import { Tabs, TabItem, Badge } from '@astrojs/starlight/components';
+import { Steps, Badge } from '@astrojs/starlight/components';
 
-This guide will help you get started with Actionbase quickly.
 
-## Requirements
+## Start Actionbase
 
-- Java 17
-- Gradle 7.0+
-
-## Building from Source
-
-Clone the repository and build the project:
+Clone the repository and start the server:
 
 ```bash
 git clone https://github.com/kakao/actionbase.git
-./gradlew build
+cd actionbase
+./bin/run-local.sh
 ```
 
-## Setting up and Running the Server
+```
+Actionbase is ready 🎉  (pid=88376)
+URL: http://localhost:8080
+Logs: /path/to/actionbase/logs/server-local.log
+```
 
-Actionbase requires HBase as a storage backend. Choose one of the following options:
+> ✅ The server is now running at `http://localhost:8080` and ready to accept requests.
 
-<Tabs syncKey="hbase-setup">
-  <TabItem label="In-Memory HBase (Recommended for Quick Start)">
-    > <Badge text="Note" variant="caution" /> Data is not persisted with in-memory HBase. All data will be lost when the server stops. For data persistence, use Local HBase instead.
-    ### Setup
+## Define metadata
 
-    Actionbase includes a built-in in-memory HBase implementation that requires no additional setup. This is the simplest way to get started.
+> <Badge text="Note" variant="caution" />
+> Metadata management currently uses **v2 APIs** (service / label),
+> while data read & write operations use **v3 APIs** (database / table).
 
+Before writing any interaction data, you must define its schema and indexes using metadata APIs. In Actionbase, interactions are stored as edges in a graph model. Create a service and label to define the structure of your edges.
 
-    ### Running the Server
+<Steps>
 
-    Use the built-in in-memory HBase implementation without any additional setup:
+1. **Create a service**
 
-    ```bash
-    ./gradlew :server:bootRun
-    ```
+   Create a namespace for grouping labels. In this guide, we use `awesome` as an example service name. See [Metadata API Reference](/api-references/metadata/#13-create-service) for details.
 
-    This uses the in-memory HBase implementation by default.
-  </TabItem>
-  <TabItem label="Local HBase with Docker Compose">
-    ### Setup
+   ```bash
+   curl -X POST "http://localhost:8080/graph/v2/service/awesome" \
+     -H "Content-Type: application/json" \
+     -d '{"desc":"Sample"}'
+   ```
 
-    Run HBase locally using Docker Compose:
+   Expected response:
 
-    ```bash
-    cd dev/
-    docker compose up
-    ```
+   ```json
+   {
+     "status": "CREATED",
+     "result": {
+       "active": true,
+       "name": "awesome",
+       "desc": "Sample"
+     }
+   }
+   ```
 
-    This will start a local HBase instance that you can use with the `local` profile.
+2. **Create a label**
 
-    ### Running the Server
+   Define the edge schema (source, target, properties) and indexes. See [Metadata API Reference](/api-references/metadata/#23-create-label) for details.
 
-    If you have started HBase using Docker Compose, run the server with the `local` profile:
+   Key fields:
+   - `src`, `tgt`: source and target node IDs
+   - `fields`: edge properties
+   - `indices`: used for ordered scans
 
-    ```bash
-    ./gradlew :server:bootRun --args='--spring.profiles.active=local'
-    ```
-  </TabItem>
-</Tabs>
+   ```bash
+   curl -X POST "http://localhost:8080/graph/v2/service/awesome/label/likes" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "desc":"Like",
+       "type":"INDEXED",
+       "schema":{
+         "src":{"type":"STRING"},
+         "tgt":{"type":"STRING"},
+         "fields":[{"name":"created_at","type":"LONG","nullable":false}]
+       },
+       "dirType":"BOTH",
+       "storage":"datastore://awesome/likes",
+       "indices":[{"name":"created_at_desc","fields":[{"name":"created_at","order":"DESC"}]}]
+     }'
+   ```
 
-The server will be available at `http://localhost:8080` in both cases.
+   Expected response:
 
-## Using Actionbase
+   ```json
+   {
+     "status": "CREATED",
+     "result": {
+       "active": true,
+       "name": "awesome.likes",
+       "desc": "Like",
+       "type": "INDEXED",
+       "schema": {
+         "src": {"type": "STRING", "desc": ""},
+         "tgt": {"type": "STRING", "desc": ""},
+         "fields": [{"name": "created_at", "type": "LONG", "nullable": false, "desc": ""}]
+       },
+       "dirType": "BOTH",
+       "storage": "datastore://awesome/likes",
+       "groups": [],
+       "indices": [{
+         "name": "created_at_desc",
+         "fields": [{"name": "created_at", "order": "DESC"}],
+         "desc": ""
+       }],
+       "event": false,
+       "readOnly": false,
+       "mode": "SYNC"
+     }
+   }
+   ```
 
-Once the server is running, you can interact with Actionbase in two ways:
+</Steps>
 
-### Using the CLI
+## Write edges
 
-Install the Actionbase CLI and connect to your server. See the [CLI documentation](/operations/cli/) for installation instructions.
+Insert interaction edges to record user actions.
+
+<Steps>
+
+1. **Insert edges**
+
+   Record user actions as edges. See [Mutation API Reference](/api-references/mutation/#1-edge-mutation) for details.
+
+   Key fields:
+   - `version`: edge version used for concurrency control and out-of-order event handling
+   - `created_at`: application-level timestamp stored as a property
+
+   In this example, we use the same timestamp for both `version` and `created_at` for simplicity. Use the timestamp when the user performed the action. See [FAQ - How does Actionbase handle out-of-order events?](/faq/#how-does-actionbase-handle-out-of-order-events) for details.
+
+   ```mermaid
+   graph LR
+       Alice((Alice)) -->|likes| Phone((📱 Phone))
+       Alice -->|likes| Laptop((💻 Laptop))
+       Bob((Bob)) -->|likes| Phone
+   ```
+
+   ```bash
+   curl -X POST "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "mutations":[
+         {"type":"INSERT","edge":{"version":1767571200000,"source":"Alice","target":"Phone","properties":{"created_at":1767571200000}}},
+         {"type":"INSERT","edge":{"version":1767571200000,"source":"Alice","target":"Laptop","properties":{"created_at":1767571200000}}},
+         {"type":"INSERT","edge":{"version":1767571200000,"source":"Bob","target":"Phone","properties":{"created_at":1767571200000}}}
+       ]
+     }'
+   ```
+
+   Expected response:
+
+   ```json
+   {
+     "results": [
+       {"source": "Alice", "target": "Laptop", "status": "CREATED", "count": 1},
+       {"source": "Alice", "target": "Phone", "status": "CREATED", "count": 1},
+       {"source": "Bob", "target": "Phone", "status": "CREATED", "count": 1}
+     ]
+   }
+   ```
+
+</Steps>
+
+## Read edges
+
+Query edges using get, scan, and count operations.
+
+<Steps>
+
+1. **Get**
+
+   Retrieve a specific edge by source and target. See [Query API Reference](/api-references/query/#2-get) for details.
+
+   ```bash
+   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/get?source=Alice&target=Phone"
+   ```
+
+   Expected response:
+
+   ```json
+   {
+     "edges": [{
+       "version": 1767571200000,
+       "source": "Alice",
+       "target": "Phone",
+       "properties": {"created_at": 1767571200000},
+       "context": {}
+     }],
+     "count": 1,
+     "total": 1,
+     "offset": null,
+     "hasNext": false,
+     "context": {}
+   }
+   ```
+
+2. **Scan (Out)**
+
+   List outgoing edges from a source, ordered by index. See [Query API Reference](/api-references/query/#3-scan) for details.
+
+   ```bash
+   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/scan/created_at_desc?start=Alice&direction=OUT"
+   ```
+
+   Expected response:
+
+   ```json
+   {
+     "edges": [
+       {
+         "version": 1767571200000,
+         "source": "Alice",
+         "target": "Laptop",
+         "properties": {"created_at": 1767571200000},
+         "context": {}
+       },
+       {
+         "version": 1767571200000,
+         "source": "Alice",
+         "target": "Phone",
+         "properties": {"created_at": 1767571200000},
+         "context": {}
+       }
+     ],
+     "count": 2,
+     "total": -1,
+     "offset": null,
+     "hasNext": false,
+     "context": {}
+   }
+   ```
+
+3. **Scan (In)**
+
+   List incoming edges to a target, ordered by index. See [Query API Reference](/api-references/query/#3-scan) for details.
+
+   ```bash
+   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/scan/created_at_desc?start=Phone&direction=IN"
+   ```
+
+   Expected response:
+
+   ```json
+   {
+     "edges": [
+       {
+         "version": 1767571200000,
+         "source": "Alice",
+         "target": "Phone",
+         "properties": {"created_at": 1767571200000},
+         "context": {}
+       },
+       {
+         "version": 1767571200000,
+         "source": "Bob",
+         "target": "Phone",
+         "properties": {"created_at": 1767571200000},
+         "context": {}
+       }
+     ],
+     "count": 2,
+     "total": -1,
+     "offset": null,
+     "hasNext": false,
+     "context": {}
+   }
+   ```
+
+4. **Count**
+
+   Count edges for a specific direction. See [Query API Reference](/api-references/query/#1-count) for details.
+
+   ```bash
+   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/count?start=Alice&direction=OUT"
+   ```
+
+   Expected response:
+
+   ```json
+   {
+     "start": "Alice",
+     "direction": "OUT",
+     "count": 2,
+     "context": {}
+   }
+   ```
+
+   Count incoming edges:
+
+   ```bash
+   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/count?start=Phone&direction=IN"
+   ```
+
+   Expected response:
+
+   ```json
+   {
+     "start": "Phone",
+     "direction": "IN",
+     "count": 2,
+     "context": {}
+   }
+   ```
+
+</Steps>
+
+## Stop Actionbase
+
+When you're done, stop the server:
 
 ```bash
-actionbase --host http://localhost:8080 --authKey your-auth-key
+./bin/stop-local.sh
 ```
 
-### Using REST API
-
-You can also use `curl` or any HTTP client to make requests. See the [API Reference](/api/) for detailed endpoint documentation.
-
-Example:
-
-```bash
-curl http://localhost:8080/api/v1/...
-```
-
+This will gracefully shut down the local Actionbase server.

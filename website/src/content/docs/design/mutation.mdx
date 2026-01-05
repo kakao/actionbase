@@ -1,115 +1,135 @@
 ---
-title: (Draft) Mutation
-description: Mutation
+title: Mutation
+description: Understanding how mutations work in Actionbase
 sidebar:
     order: 3
 ---
 
-Mutations in Actionbase allow you to create, update, and delete vertices and edges in your graph database.
+Mutations in Actionbase allow you to insert, update, and delete edges in your graph. The mutation process ensures data consistency, durability, and write-time optimization.
 
-## Basic Operations
+For the conceptual foundation, see [Core Concepts](/design/concepts/).
 
-### Creating Vertices
+## Mutation Flow
 
-Create a new vertex with properties:
+The complete mutation process:
 
-```json
-POST /graph/v3/vertex/mutate
-{
-  "database": "mydb",
-  "table": "users",
-  "id": "user123",
-  "properties": {
-    "name": "John Doe",
-    "email": "john@example.com"
-  }
-}
+```mermaid
+flowchart TD
+    Request([Mutation Request<br/>with Event, Operation]) --> WAL[Write WAL]
+    WAL --> Lock[Acquire Lock]
+    Lock --> Read[Read State<br/>from datastore]
+    Read --> Modify{State exists?}
+    Modify -->|Yes| ApplyEvent[Apply Event]
+    Modify -->|No| InitialState[Initial State]
+    InitialState --> ApplyEvent
+    ApplyEvent --> ComputeAdditionalInfo[Compute Index, Count<br/>based on changed States]
+    ComputeAdditionalInfo --> Write[Write State with AdditionalInfo<br/>to datastore]
+    Write --> Release[Release Lock]
+    Release --> CDC[Write CDC]
+    CDC --> Response([Response])
 ```
 
-### Creating Edges
+## Mutation Request
 
-Create a relationship between two vertices:
+A mutation request contains:
 
-```json
-POST /graph/v3/edge/mutate
-{
-  "database": "mydb",
-  "table": "follows",
-  "source": "user123",
-  "target": "user456",
-  "properties": {
-    "createdAt": "2025-01-01T00:00:00Z"
-  }
-}
-```
+- **Event**: The data change to be applied (e.g., new property values, edge creation)
+- **Operation**: The type of operation:
+  - **Insert**: Create a new edge
+  - **Update**: Modify an existing edge
+  - **Delete**: Remove an edge
 
-### Updating Properties
+## Mutation Process
 
-Update properties of existing vertices or edges:
+### 1. Write WAL (Write-Ahead Log)
 
-```json
-POST /graph/v3/vertex/mutate
-{
-  "database": "mydb",
-  "table": "users",
-  "id": "user123",
-  "properties": {
-    "name": "John Smith",
-    "lastUpdated": "2025-01-02T00:00:00Z"
-  }
-}
-```
+Before any changes are made to the datastore, the mutation is written to the Write-Ahead Log (WAL). This ensures durability and enables recovery in case of failures.
 
-### Deleting
+In production, Actionbase uses Kafka as the WAL backend. The WAL can be replayed to restore the final state, even if events arrive out of order.
 
-Delete vertices or edges:
+### 2. Acquire Lock
 
-```json
-DELETE /graph/v3/edge/delete
-{
-  "database": "mydb",
-  "table": "follows",
-  "source": "user123",
-  "target": "user456"
-}
-```
+To prevent concurrent modifications, Actionbase acquires a lock on the specific edge being mutated:
 
-## Write-time Optimization
+- **Unique edges**: Locks based on (source, target) pair
+- **Multi edges**: Locks based on edge ID
 
-When you perform mutations, Actionbase automatically:
+### 3. Read State
 
-- Pre-computes indexes for fast lookups
-- Updates counters for aggregation queries
-- Maintains consistency across the graph
+The current state of the edge is read from the datastore, including all existing properties, timestamps, and metadata.
 
-This optimization happens during writes, ensuring that read operations remain fast.
+### 4. Apply Event
 
-## Batch Operations
+The event is applied to the state, transitioning it based on the operation type:
 
-For better performance with large datasets, use batch mutations:
+- **INSERT**: Updates `createdAt` timestamp and sets properties. The state becomes active when `createdAt > deletedAt`.
+- **UPDATE**: Updates only the specified properties without changing timestamps.
+- **DELETE**: Updates `deletedAt` timestamp and marks properties as deleted. The state becomes inactive when `deletedAt >= createdAt`.
 
-```json
-POST /graph/v3/edge/batch-mutate
-{
-  "database": "mydb",
-  "table": "follows",
-  "mutations": [
-    {
-      "source": "user1",
-      "target": "user2",
-      "properties": {"createdAt": "2025-01-01T00:00:00Z"}
-    },
-    {
-      "source": "user2",
-      "target": "user3",
-      "properties": {"createdAt": "2025-01-01T00:00:00Z"}
-    }
-  ]
-}
-```
+The transition respects version ordering—newer versions override older ones.
+
+### 5. Compute Indexes and Counters
+
+Based on the changed state, Actionbase computes additional structures for fast reads:
+
+- **Indexes**: Old indexes are deleted, new indexes are created based on the changed state
+- **Counters**: Counts are incremented or decremented
+
+This write-time optimization ensures read queries can be answered quickly without expensive computations.
+
+### 6. Write to Storage
+
+The modified state along with indexes and counters is written atomically to the datastore.
+
+### 7. Release Lock
+
+Once the write is complete, the lock is released.
+
+### 8. Write CDC (Change Data Capture)
+
+The mutation is recorded in the CDC system for downstream systems. In production, Actionbase uses Kafka as the CDC backend.
+
+CDC stores the resulting state after processing, enabling synchronization to external systems (e.g., Iceberg, MPP, Trino) for analytics.
+
+## Event Ordering
+
+Clients attach timestamps to events (typically millisecond or nanosecond precision). Even if network delays cause events to arrive out of order, Actionbase uses the original timestamps to compute the correct final state.
+
+**Example**: If ON/OFF events arrive as `ON, OFF, ON, OFF` but were originally `ON, ON, OFF, OFF`, Actionbase ensures the final state is correct based on timestamps.
+
+This mechanism ensures **eventual consistency**—the final state is always correct regardless of event arrival order.
+
+## Write-Time Optimization
+
+During mutations, Actionbase pre-computes:
+
+| Structure | Purpose | Query Type |
+|-----------|---------|------------|
+| EdgeState | Current edge state | Get |
+| EdgeIndex | Sorted index entries | Scan |
+| EdgeCounter | Aggregated counts | Count |
+
+**Benefits**:
+- **Fast Reads**: No query-time computation needed
+- **Consistent Performance**: Read latency remains low regardless of data size
+- **Efficient Storage**: Indexes and counters are maintained incrementally
+
+By computing at write time, Actionbase shifts computational cost from reads to writes—ideal for read-heavy workloads.
+
+## Consistency Guarantees
+
+The mutation process ensures consistency through:
+
+| Mechanism | Guarantee |
+|-----------|-----------|
+| Locking | Prevents concurrent modifications |
+| Atomic Writes | State and indexes written together |
+| WAL | Durability and recovery |
+| Read-Modify-Write | Mutations based on latest state |
+| Timestamp Ordering | Correct final state despite out-of-order events |
 
 ## Next Steps
 
-- [Query](/design/query/) - Learn how to query your data
-- [Metadata](/design/metadata/) - Understand metadata management
-- [Overview](/design/overview/) - Review design principles
+- [Query](/design/query/): How to read the pre-computed data
+- [Datastore](/design/datastore/): Datastore backend details
+- [API Reference](/api-references/mutation/): Complete mutation API

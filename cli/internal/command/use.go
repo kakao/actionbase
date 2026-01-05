@@ -2,34 +2,33 @@ package command
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/kakao/actionbase/internal/metastore"
+	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/metastore"
 )
 
-// Use represents the use command
 type Use struct {
 	runner          UseRunner
-	databaseCommand *metastore.DatabaseCommand
-	tableCommand    *metastore.TableCommand
+	databaseCommand *metastore.Database
+	tableCommand    *metastore.Table
+	aliasCommand    *metastore.Alias
 }
 
-// UseRunner defines the interface for use command runner
 type UseRunner interface {
-	GetHost() string
-	GetAuthKey() string
 	GetCurrentDatabase() string
 	GetCurrentTable() string
+	GetCurrentAlias() string
 	SetCurrentDatabase(database string)
 	SetCurrentTable(table string)
+	SetCurrentAlias(alias string)
 }
 
-// NewUse creates a new Use command
-func NewUse(runner UseRunner) *Use {
+func NewUse(runner UseRunner, actionbaseClient *client.ActionbaseClient) *Use {
 	return &Use{
 		runner:          runner,
-		databaseCommand: metastore.NewDatabaseCommand(runner),
-		tableCommand:    metastore.NewTableCommand(runner),
+		databaseCommand: metastore.NewDatabase(runner, actionbaseClient),
+		tableCommand:    metastore.NewTable(runner, actionbaseClient),
+		aliasCommand:    metastore.NewAlias(runner, actionbaseClient),
 	}
 }
 
@@ -47,7 +46,7 @@ func (u *Use) Execute(args []string) {
 			fmt.Printf("Usage: %s\n", u.GetType().GetCommand())
 			return
 		}
-		u.databaseCommand.UseDatabase(args[1], true)
+		u.databaseCommand.Use(args[1])
 		return
 	}
 
@@ -56,36 +55,26 @@ func (u *Use) Execute(args []string) {
 			fmt.Printf("Usage: %s\n", u.GetType().GetCommand())
 			return
 		}
-		u.tableCommand.UseTable(args[1], true)
+		u.tableCommand.Use(args[1])
 		return
 	}
 
-	// Check for database:table format
-	split := strings.Split(args[0], ":")
-	if len(split) > 1 {
-		isDatabaseSelected := u.databaseCommand.UseDatabase(split[0], false)
-		if !isDatabaseSelected {
+	if commandType == "alias" {
+		if len(args) < 2 {
+			fmt.Printf("Usage: %s\n", u.GetType().GetCommand())
 			return
 		}
-
-		isTableSelected := u.tableCommand.UseTable(split[1], false)
-		if !isTableSelected {
-			return
-		}
-
-		fmt.Printf("Changed to %s:%s\n", u.runner.GetCurrentDatabase(), u.runner.GetCurrentTable())
+		u.aliasCommand.Use(args[1])
 		return
 	}
 
 	fmt.Printf("Usage: %s\n", u.GetType().GetCommand())
 }
 
-// GetDescription returns the command description
 func (u *Use) GetDescription() string {
-	return "Select a database or table to use"
+	return "Select a database, table or alias to use"
 }
 
-// GetType returns the command type
-func (u *Use) GetType() CommandType {
-	return CommandTypeUse
+func (u *Use) GetType() Type {
+	return TypeUse
 }

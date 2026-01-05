@@ -1,0 +1,206 @@
+---
+title: Build Your Social Media App
+description: Build social features using Actionbase core functionality
+sidebar:
+    order: 1
+---
+
+This guide walks you through implementing core social media application features using Actionbase's fundamental capabilities. You'll learn how to build user follow relationships, post likes, activity feeds, and other social features using Actionbase's graph data model and query capabilities.
+
+## Overview
+
+In this guide, you'll implement the following features:
+
+- User follow/unfollow relationship management
+- Post like functionality
+- User profile and statistics queries
+- Activity feed from followed users
+
+This guide is based on the [hands-on application](https://github.com/kakao/actionbase/tree/main/guide/social-media-app). You can experience Actionbase's capabilities firsthand through a working application.
+
+## Prerequisites
+
+### Install Actionbase CLI
+
+Before starting the guide, you need to install the Actionbase CLI. Installation is straightforward:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/kakao/actionbase/main/cli/install.sh)"
+```
+
+For detailed installation instructions and options, refer to the [CLI documentation](/operations/cli/).
+
+### Run Actionbase Server
+
+To run Actionbase locally, follow the [Local Provisioning guide](/provisioning/local/) to start the server. By default, it runs on `http://localhost:8080`.
+
+## Step 1: Create Storage and Database
+
+First, create a Storage and Database to store your data.
+
+```bash
+# Create storage
+create storage \
+  --hbaseNamespace test \
+  --hbaseTable table1 \
+  --storageType HBASE \
+  --name default \
+  --comment 'default storage'
+
+# Create database
+create database --name social --comment 'social database'
+
+# Select database
+use database social
+```
+
+## Step 2: Create Follow Relationship Table
+
+Create a table to store follow relationships between users. This table is created as `INDEXED` type with an index to enable time-ordered sorting.
+
+```bash
+create table \
+  --database social \
+  --storage default \
+  --name user_follows \
+  --comment 'user follows table' \
+  --type INDEXED \
+  --direction BOTH \
+  --schema '{
+    "src": {
+      "type": "STRING",
+      "desc": "userId"
+    },
+    "tgt": {
+      "type": "STRING",
+      "desc": "friendId"
+    },
+    "fields": [
+      {
+        "name": "createdAt",
+        "type": "LONG",
+        "desc": "created at",
+        "nullable": false
+      }
+    ]
+  }' \
+  --indices '[
+    {
+      "name": "created_at_desc",
+      "fields": [
+        {
+          "name": "createdAt",
+          "order": "DESC"
+        }
+      ],
+      "desc": "order by createdAt"
+    }
+  ]'
+
+# Select table
+use table user_follows
+```
+
+## Step 3: Create Follow Relationships
+
+Create follow relationships between users as edges. Use the `mutate` command to insert edges.
+
+```bash
+# User 'doki' follows 'merlin'
+mutate \
+  --type INSERT \
+  --table user_follows \
+  --source doki \
+  --target merlin \
+  --version 1 \
+  --properties '{
+    "createdAt": 1
+}'
+
+# Verify the created edge
+get --source doki --target merlin
+```
+
+## Step 4: Implement Like Functionality
+
+To implement like functionality for posts, create and use the `user_likes` table.
+
+```bash
+# Select user_likes table (assumed to be already created)
+use table user_likes
+
+# User 'doki' likes post '1'
+mutate \
+  --type INSERT \
+  --table user_likes \
+  --source doki \
+  --target 1 \
+  --version 1 \
+  --properties '{
+    "createdAt": 1
+}'
+
+# Verify like relationship
+get --source doki --target 1
+```
+
+## Step 5: Query Statistics
+
+Use Actionbase's `count` command to quickly query a user's post count, following count, and follower count.
+
+```bash
+# Query user's post count
+use table user_posts
+count --start doki --direction OUT
+
+# Query following count
+use table user_follows
+count --start doki --direction OUT
+
+# Query follower count
+count --start doki --direction IN
+```
+
+The `count` command leverages Actionbase's write-time optimization to return pre-computed values, making it extremely fast.
+
+## Step 6: Implement Activity Feed
+
+Implement an activity feed that queries posts from followed users in chronological order. Use the `scan` command to query sorted results through indexes.
+
+```bash
+# Query list of followed users (sorted by time)
+use table user_follows
+scan --start doki --index created_at_desc --direction OUT
+
+# Query each user's posts
+use table user_posts
+scan --start merlin --index created_at_desc --direction OUT
+scan --start emeth --index created_at_desc --direction OUT
+```
+
+## Key Concepts
+
+### Edges and Directionality
+
+Actionbase uses a directed graph. In the `user_follows` table, `source` represents the user who follows, and `target` represents the user being followed. Setting `direction BOTH` enables bidirectional queries.
+
+### Sorting with Indexes
+
+By creating the `created_at_desc` index, we enable time-ordered sorting. This allows efficient data retrieval when querying activity feeds or recent posts.
+
+### Write-Time Optimization
+
+The `count` command uses pre-computed values at write time, making it much faster than performing real-time aggregation. This is an important performance optimization in high-traffic environments.
+
+## Next Steps
+
+You've learned how to implement social features using Actionbase's core functionality. Explore more advanced features in the following guides:
+
+- **[Build Your Commerce App with Live FOMO Counters](/guides/build-your-commerce-app-with-live-fomo-counters/)**: Implement FOMO-based commerce features using real-time aggregation
+- **[Build Your Social Gifting App](/guides/build-your-social-gifting-app/)**: Implement social-commerce gifting features using multi-edge
+
+For more details, refer to the following documentation:
+
+- [Query Guide](/design/query/) - Detailed query capabilities
+- [Mutation Guide](/design/mutation/) - Data modification methods
+- [Core Concepts](/design/concepts/) - Actionbase architecture overview

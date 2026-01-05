@@ -1,0 +1,564 @@
+/* CLI Terminal */
+.cli-terminal {
+  background: hsl(220deg 20% 97.06%);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  border: 1px solid #c7c7c7;
+}
+
+/* Terminal Header */
+.terminal-header {
+  background: hsl(230deg 20% 94.12%);
+  color: #333;
+  padding: 7px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #c0c0c0;
+}
+
+.terminal-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.terminal-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.terminal-btn.close {
+  background: #ff5f57;
+}
+
+.terminal-btn.minimize {
+  background: #ffbd2e;
+}
+
+.terminal-btn.maximize {
+  background: #28ca42;
+}
+
+.terminal-title {
+  color: #3c3c3c;
+  font-size: 12px;
+  flex: 1 1;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Terminal Body Container */
+.terminal-body-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 700px;
+}
+
+/* Terminal Body */
+.terminal-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  color: #d0d0d0;
+  background-color: #2b2b2b;
+  font-size: 12px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none;
+}
+
+.terminal-body-top {
+  flex: 1;
+  min-height: 0;
+}
+
+.terminal-body-bottom {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Terminal Divider */
+.terminal-divider {
+  height: 1px;
+  background-color: #555;
+  flex-shrink: 0;
+}
+
+.terminal-reserved-word {
+  color: #e7be6b;
+  font-weight: 800;
+}
+
+/* Welcome Section */
+.ascii-art {
+  color: #222222;
+  font-size: 10px;
+  line-height: 1.2;
+  margin: 0 0 12px 0;
+  font-family: monospace;
+}
+
+.terminal-subtitle {
+  color: #666666;
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Command History */
+.command-history {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.command-block {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.command-block.active {
+  opacity: 1;
+}
+
+.command-step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.step-number {
+  background: #fff;
+  color: #000;
+  padding: 1px 3px;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.step-title {
+  color: #6bae5b;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.command-line {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 0;
+  background: transparent;
+  border-radius: 4px;
+}
+
+.command-line-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.command-content-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.command-multiline {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.command-line-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.command-line-item.command-line-single {
+  display: block;
+}
+
+.command-text-indent {
+  color: #fff;
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding-left: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.prompt {
+  font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline;
+}
+
+.command-line-single .prompt {
+  display: inline;
+}
+
+.command-text {
+  color: #fff;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  display: inline;
+  flex: 1;
+  min-width: 0;
+}
+
+.command-line-single .command-text {
+  display: inline;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.skip-typing-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #888;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: 4px;
+}
+
+.command-block:hover .skip-typing-btn {
+  opacity: 1 !important;
+}
+
+.skip-typing-btn:hover {
+  color: #fff;
+  opacity: 1 !important;
+}
+
+.skip-typing-btn:active {
+  transform: scale(0.9);
+}
+
+.skip-typing-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.copy-command-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #888;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.command-block:hover .copy-command-btn {
+  opacity: 1;
+}
+
+.copy-command-btn:hover {
+  color: #fff;
+  opacity: 1;
+}
+
+.copy-command-btn:active {
+  transform: scale(0.9);
+}
+
+.copy-command-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.command-output div {
+  padding: 2px 0;
+}
+
+/* Terminal Input */
+.terminal-input {
+  display: flex;
+  align-items: center;
+  padding-top: 8px;
+  padding-right: 20px;
+  padding-bottom: 20px;
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.cursor {
+  display: inline-block;
+  font-weight: bold;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.command-history .command-line-inner {
+  column-gap: 7px;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  50.01%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Scrollbar Styling */
+.terminal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-body::-webkit-scrollbar-track {
+  background: #d0d0d0;
+}
+
+.terminal-body::-webkit-scrollbar-thumb {
+  background: #a0a0a0;
+  border-radius: 4px;
+}
+
+.terminal-body::-webkit-scrollbar-thumb:hover {
+  background: #808080;
+}
+
+/* API Log Styles */
+.api-log-header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid #555;
+  margin-bottom: 12px;
+}
+
+.api-log-title {
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.api-log-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.api-log-empty {
+  color: #888;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.api-log-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  font-size: 11px;
+  border-bottom: 1px solid #333;
+}
+
+.api-log-item:last-child {
+  border-bottom: none;
+}
+
+.api-log-header-line {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.api-log-header-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.api-log-header-clickable:hover {
+  opacity: 0.8;
+}
+
+.api-log-expand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #888;
+  margin-right: 4px;
+}
+
+.api-log-expand-icon-empty {
+  visibility: hidden;
+}
+
+.api-log-expand-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.api-log-method {
+  font-weight: 800;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.api-log-method-get {
+  color: #61afef;
+}
+
+.api-log-method-post {
+  color: #98c379;
+}
+
+.api-log-method-put {
+  color: #e5c07b;
+}
+
+.api-log-method-delete {
+  color: #e06c75;
+}
+
+.api-log-method-patch {
+  color: #c678dd;
+}
+
+.api-log-url {
+  word-break: break-all;
+  flex: 1;
+  font-weight: 600;
+}
+
+.api-log-item-error {
+  opacity: 1;
+}
+
+.api-log-url-error {
+  color: #f48771;
+  font-weight: 600;
+}
+
+.api-log-status {
+  color: #f48771;
+  font-weight: 600;
+}
+
+.api-log-body {
+  margin-left: 52px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.api-log-request-body,
+.api-log-payload {
+  padding: 8px;
+  background-color: #1e1e1e;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-weight: 600;
+}
+
+.api-log-request-body {
+  border-left: 2px solid #8b8b8b;
+}
+
+.api-log-payload {
+  border-left: 2px solid #8b8b8b;
+}
+
+.api-log-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #888;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.api-log-request-body pre,
+.api-log-payload pre {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #d7d7d7;
+  color: #5d5d5d;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  animation: toastFadeIn 0.3s ease-out, toastFadeOut 0.8s ease-in 0.7s;
+  animation-fill-mode: both;
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes toastFadeOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+

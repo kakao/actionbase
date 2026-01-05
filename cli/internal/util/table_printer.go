@@ -9,21 +9,10 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-// PrettyPrint formats and prints a single row of data as a table
-func PrettyPrint(data map[string]interface{}) string {
-	rows := []map[string]interface{}{data}
-	return Show(rows)
-}
-
 // PrettyPrintWithOrder formats and prints a single row with explicit column order
 func PrettyPrintWithOrder(data map[string]interface{}, orderedKeys []string) string {
 	rows := []map[string]interface{}{data}
 	return ShowWithOrder(rows, orderedKeys)
-}
-
-// PrettyPrintRows formats and prints multiple rows of data as a table
-func PrettyPrintRows(rows []map[string]interface{}) string {
-	return Show(rows)
 }
 
 // PrettyPrintRowsWithOrder formats and prints multiple rows with explicit column order

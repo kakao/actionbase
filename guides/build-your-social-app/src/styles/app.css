@@ -1,0 +1,83 @@
+/* Global App Styles */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f7f7f7;
+  min-width: 800px;
+  height: 100%;
+  overflow: hidden; /* prevent whole-page scroll; only inner layouts scroll */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Override default max-width for mobile frame */
+.mobile-content .app {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100%;
+  background-color: #fff !important;
+}
+
+/* Ensure proper scrolling in mobile frame */
+.mobile-content {
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  overflow-y: hidden; /* each screen (.app) will handle its own scroll */
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar for cleaner mobile look */
+.mobile-content::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-content .app::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-content .app {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.cli-panel,
+.cli-panel * {
+  pointer-events: auto !important;
+}
+
+.driver-popover-container {
+  z-index: 50000 !important;
+}
+
+.driver-popover-description {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.driver-popover-footer button {
+  font-size: 14px;
+  background: #f6f6f6;
+  transition: all 0.2s ease;
+}
+
+.driver-popover-footer button:hover {
+  border: 1px solid #535353;
+  background-color: #f8f8f8;
+  transform: translateY(-1px);
+}
+
+.driver-popover-title {
+  color: #3d52f6;
+}

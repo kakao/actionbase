@@ -1,0 +1,325 @@
+/* Split Layout */
+.split-layout {
+  display: flex;
+  height: 100vh;
+  min-width: 1200px;
+  margin: 0 auto;
+  padding: 160px 0 40px; /* reserve space for header so content never overlaps */
+  overflow-x: hidden;
+  overflow-y: hidden; /* prevent whole card from scrolling; only inner areas scroll */
+  position: relative;
+  border-left: 1px solid #cccccc;
+  border-right: 1px solid #cccccc;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  justify-content: center;
+  align-items: flex-start; /* keep panels below header instead of vertically centered */
+}
+
+/* Side gutters that visually sit above driver.js overlay but outside split-layout borders */
+.split-layout-gutter {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: calc((100vw - 1200px) / 2);
+  background-color: #f7f7f7;
+  z-index: 15000; /* above driver overlay, below popovers/header */
+  pointer-events: none;
+}
+
+.split-layout-gutter-left {
+  left: 0;
+}
+
+.split-layout-gutter-right {
+  right: 0;
+}
+
+.split-layout-title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 110px;
+  padding: 30px 40px 0;
+  background-color: #f7f7f7;
+  background-image:
+    radial-gradient(circle at 1px 1px, #d0d0d0 1px, transparent 0);
+  background-size: 16px 16px;
+  z-index: 20000;
+  pointer-events: auto !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.split-layout-title-text {
+  font-size: 25px;
+  font-weight: 600;
+  color: #3d51f6;
+}
+
+.split-layout-header-line {
+  position: absolute;
+  top: 110px;
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid #cccccc;
+  z-index: 20000;
+  pointer-events: auto !important;
+}
+
+.split-layout-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto !important;
+}
+
+.split-layout-actions a, .split-layout-actions button {
+  pointer-events: auto !important;
+  padding-bottom: 4px;
+}
+
+.split-layout-action-btn {
+  padding: 12px 20px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #b2b2b2;
+  background-color: #fff;
+  color: #000000;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.split-layout-action-btn:hover {
+  border: 1px solid #535353;
+  background-color: #f8f8f8;
+  transform: translateY(-1px);
+}
+
+.split-layout-doc-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #3c52f7;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 14px;
+  transition: opacity 0.2s ease;
+}
+
+.split-layout-doc-link:hover {
+  text-decoration: underline;
+}
+
+.split-layout-doc-link svg {
+  width: 16px;
+  height: 16px;
+  stroke: #666;
+  flex-shrink: 0;
+}
+
+.split-layout-github-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid #b2b2b2;
+  background-color: #fff;
+  color: #000000;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.split-layout-github-btn:hover {
+  border: 1px solid #535353;
+  background-color: #f5f5f5;
+  transform: translateY(-1px);
+}
+
+.split-layout-github-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.split-layout-stars-image {
+  display: block;
+  pointer-events: auto !important;
+  cursor: pointer;
+  align-self: flex-end;
+}
+
+.split-layout-stars-image a {
+  display: block;
+  pointer-events: auto !important;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  text-decoration: none;
+}
+
+.split-layout-stargazer-btn {
+  width: auto;
+  padding: 0 12px;
+  gap: 6px;
+}
+
+.split-layout-stargazer-btn span {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Tutorial Refresh Button */
+.tutorial-refresh-btn {
+  /* fixed to bottom of mobile frame, just above bottom-nav */
+  position: absolute;
+  right: 5px;
+  bottom: 64px;
+  z-index: 13000; /* above driver overlay and bottom-nav */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #ffffff;
+  color: #535353;
+  border: 1px solid #cccccc;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  pointer-events: auto !important;
+}
+
+.tutorial-refresh-btn:hover {
+  transform: scale(1.1) !important;
+  color: hsl(234, 90%, 60%);
+  background-color: #fcfcfc;
+}
+
+.tutorial-refresh-btn:active {
+  transform: scale(0.95) !important;
+}
+
+.tutorial-refresh-btn svg {
+  transition: transform 0.6s ease;
+  flex-shrink: 0;
+}
+
+.tutorial-refresh-btn:hover svg {
+  transform: rotate(360deg);
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mobile Preview Section */
+.mobile-preview {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 13px;
+}
+
+.mobile-frame {
+  width: 400px;
+  height: 800px;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d9d9d9;
+}
+
+.mobile-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 130px;
+  height: 18px;
+  background: #000;
+  border-radius: 0 0 20px 20px;
+  z-index: 1000;
+}
+
+.mobile-content {
+  width: 100%;
+  height: 100%;
+  background: white;
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+}
+
+.mobile-content .app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* CLI Panel Section */
+.cli-panel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 13px;
+  overflow: auto; /* CLI content can scroll independently if needed */
+  position: relative;
+  z-index: 99999;
+}
+
+.cli-panel .cli-terminal {
+  max-width: 800px;
+  min-width: 700px;
+  height: 800px;
+}
+
+@media (max-height: 1250px) {
+  .split-layout {
+    padding-top: 70px; /* match compact header height when height is small */
+  }
+
+  .split-layout-header-line {
+    top: 70px;
+  }
+
+  .split-layout-title {
+    display: flex;
+    top: 0;
+    left: 0;
+    height: 70px;
+    padding: 22px 40px 0;
+    background-color: #f7f7f7;
+  }
+
+  .split-layout-title-text {
+    font-size: 20px;
+  }
+}

@@ -1,17 +1,17 @@
 ---
-title: Actionbase 🪇 An OLTP Graph Database for building realtime applications
+title: Actionbase
 head:
   - tag: title
-    content: Actionbase 🪇 An OLTP Graph Database for building realtime applications
-description: Production-proven OLTP graph database serving tens of millions of users in Kakao.
+    content: Actionbase
+description: A database for serving user interactions.
 template: splash
 editUrl: false
 lastUpdated: false
 hero:
-  title: High-performance graph database for large-scale user activity data
-  tagline: Production-proven OLTP system serving tens of millions of users. Efficiently stores and queries user activity data at scale with REST API.
+  title: Actionbase
+  tagline: A database for serving user interactions.
   image:
-    file: ~/assets/hero-star.webp
+    file: ~/assets/hero.webp
   actions:
     - text: Get started
       icon: right-arrow
@@ -22,19 +22,20 @@ hero:
       link: https://github.com/kakao/actionbase
 ---
 
+
 import { CardGrid, Card } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
-	<Card title="Write-time Optimization" icon="rocket">
-		Pre-computes indexes and counters during writes for ultra-fast reads. Achieve &lt;5ms p99 latency for read operations.
+	<Card title="Write-Time Materialization" icon="rocket">
+        Pre-compute the data required for fast, predictable reads at write time, eliminating service-specific indexing and counting logic.
 	</Card>
-	<Card title="Property Graph Model" icon="document">
-		Supports standard property graph data model with flexible schema. Perfect for user activity data and relationship modeling.
-	</Card>
-	<Card title="Easy Integration" icon="puzzle">
-		REST API and client libraries for seamless integration with your applications. Get started quickly with minimal setup.
-	</Card>
-	<Card title="Lambda Architecture Support" icon="external">
-		Provides bulk loading, asynchronous processing, and data pipeline capabilities for comprehensive data management.
+	<Card title="Interaction-Oriented Graph Model" icon="document">
+        Represent user interactions as actor→target edges with schema-defined properties for efficient querying.
+    </Card>
+	<Card title="Unified REST API" icon="puzzle">
+        Expose a simple, storage-agnostic API for querying and mutating interaction data.
+    </Card>
+	<Card title="WAL / CDC Integration" icon="external">
+        Emit write-ahead logs and change data capture streams for recovery, replay, asynchronous processing, and downstream data pipelines.
 	</Card>
 </CardGrid>

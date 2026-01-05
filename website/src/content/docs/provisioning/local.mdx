@@ -1,137 +1,117 @@
 ---
-title: (Draft) Local Development Setup
-description: Local
+title: Local Provisioning
+description: Setting up Actionbase for local development and testing
 sidebar:
     order: 1
 ---
 
-This guide will help you set up Actionbase for local development and testing.
+This guide provides additional local provisioning options beyond the [Quick Start](/quick-start/) guide. Use Quick Start for the fastest way to get started, or use the methods below for more control over your local environment.
+
+## Overview
+
+Actionbase can be run locally in two ways:
+
+1. **Using Gradle**: Run Actionbase directly with `./gradlew`, using either in-memory storage or connecting to a local HBase instance
+2. **Using Docker Compose**: Run HBase locally, then connect Actionbase using Gradle
+
+Both approaches are suitable for local development, testing, and exploring Actionbase's capabilities.
 
 ## Prerequisites
 
-- Java 17
-- Gradle 7.0+
-- Docker (for HBase)
+Before getting started, ensure you have:
 
-## Setting Up HBase
+- **Java 17** or higher
+- **Gradle 7.0+** (or use the included Gradle wrapper)
+- **Docker** and **Docker Compose** (for Docker-based setup)
 
-### Using Docker
+## Method 1: Using Gradle
 
-The easiest way to run HBase locally is using Docker:
+The simplest way to run Actionbase locally is using Gradle. This method doesn't require Docker and is ideal for quick testing and development.
 
-```bash
-docker run -d \
-  --name hbase \
-  -p 2181:2181 \
-  -p 16000:16000 \
-  -p 16010:16010 \
-  -p 16020:16020 \
-  -p 16030:16030 \
-  harisekhon/hbase:latest
-```
+### Option A: In-Memory Storage (Default)
 
-### Verify HBase is Running
+Actionbase includes a built-in in-memory storage implementation that requires no additional setup. This is the fastest way to get started.
 
-Check HBase status:
+**Running the Server:**
 
 ```bash
-docker exec -it hbase hbase shell
+./gradlew :server:bootRun
 ```
 
-In the HBase shell:
+The server will start on `http://localhost:8080` by default, using in-memory storage.
 
-```bash
-status
-```
+**Note:** Data stored in memory is not persisted. All data will be lost when the server stops. This is suitable for testing and development, but not for scenarios where you need data persistence.
 
-## Building Actionbase
+### Option B: Local HBase
 
-Clone and build the project:
+To use a local HBase instance with Gradle, you'll need to have HBase running locally first.
 
-```bash
-git clone https://github.com/kakao/actionbase.git
-cd actionbase/oss
-./gradlew build
-```
+**1. Start HBase Locally**
 
-## Configuration
+You can run HBase using Docker Compose (see Method 2 below) or install HBase locally.
 
-Create a configuration file for local development:
+**2. Run Actionbase with Local Profile**
 
-```yaml
-# application-local.yml
-datastore:
-  type: hbase
-  hbase:
-    zookeeper:
-      quorum: localhost:2181
-```
-
-## Running the Server
-
-Start the Actionbase server:
+Once HBase is running, start Actionbase with the `local` profile:
 
 ```bash
 ./gradlew :server:bootRun --args='--spring.profiles.active=local'
 ```
 
-The server will start on `http://localhost:8080` by default.
+This connects to HBase running on `localhost:2181` (default ZooKeeper port).
 
-## Testing the Setup
+## Method 2: Using Docker Compose
 
-### Using the CLI
+Docker Compose provides a convenient way to run HBase locally, which you can then use with Actionbase. This method is useful when you want to test with persistent storage.
 
-Install the CLI and connect to your local server:
+### Local HBase
 
-```bash
-actionbase --host http://localhost:8080 --authKey test-key
-```
-
-### Create a Test Database
+Run HBase locally using Docker Compose:
 
 ```bash
-actionbase database create --name testdb
+cd dev/hbase
+docker compose up
 ```
 
-### Create a Test Table
+This starts a local HBase instance that you can use with Actionbase. The HBase instance will be available on `localhost:2181` (ZooKeeper port).
+
+Once HBase is running, start Actionbase using Gradle with the local profile:
 
 ```bash
-actionbase table create \
-  --database testdb \
-  --name testtable \
-  --type EdgeTable
+./gradlew :server:bootRun --args='--spring.profiles.active=local'
 ```
 
-## Development Tips
+Data will be persisted in the HBase container's volumes, so your data will survive container restarts (as long as the volumes are not removed).
 
-### Hot Reload
+**Note:** The Docker Compose setup only starts HBase. You still need to run Actionbase separately using Gradle, as shown above.
 
-For faster development, use Gradle's continuous build:
+## Verifying the Setup
+
+Once the server is running, verify that Actionbase is working:
+
+**1. Check Server Status**
+
+The server should be available at `http://localhost:8080`. You can check if it's running:
 
 ```bash
-./gradlew :server:bootRun --continuous
+curl http://localhost:8080/graph/health
 ```
 
-### Logging
+**2. Using the CLI**
 
-Adjust log levels in `application-local.yml`:
-
-```yaml
-logging:
-  level:
-    com.kakao.actionbase: DEBUG
-```
-
-### Debugging
-
-Attach a debugger on port 5005:
+If you have the Actionbase CLI installed, connect to your local server. See [CLI Guide](/operations/cli/) for installation and usage details.
 
 ```bash
-./gradlew :server:bootRun --args='--spring.profiles.active=local -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
+actionbase --host http://localhost:8080
 ```
 
-## Next Steps
+**3. Using REST API**
 
-- [Quick Start](/quick-start/) - Basic usage guide
-- [Introduction](/introduction/) - Learn about Actionbase
-- [Design Overview](/design/overview/) - Understand architecture
+You can also test using `curl` or any HTTP client. See the [API Reference](/api-references/query/) for detailed endpoint documentation.
+
+## Configuration
+
+Configuration is handled through Spring profiles:
+
+- **Default (in-memory)**: No profile needed, uses in-memory storage
+- **Local HBase**: Use `--spring.profiles.active=local` to connect to local HBase

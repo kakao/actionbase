@@ -1,5 +1,5 @@
 ---
-title: (Draft) CLI
+title: CLI
 description: Command-line interface for managing and maintaining Actionbase clusters
 sidebar:
     order: 1
@@ -9,19 +9,13 @@ The Actionbase CLI provides an interface for managing and maintaining Actionbase
 
 ## Installation
 
-### Using Homebrew
-
-The easiest way to install the Actionbase CLI is using Homebrew. The Actionbase CLI is available through the [kakao/actionbase](https://github.com/kakao/actionbase) tap:
+Install the Actionbase CLI using the installation script:
 
 ```bash
-brew install kakao/actionbase/tap/actionbase
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/kakao/actionbase/main/cli/install.sh)"
 ```
 
-This will install the latest stable version of the CLI. To update to the latest version, run:
-
-```bash
-brew upgrade actionbase
-```
+This script will automatically detect your operating system and architecture, download the latest release, and install it to `/usr/local/bin/actionbase`.
 
 ### Manual Installation
 
@@ -37,11 +31,147 @@ sudo mv actionbase /usr/local/bin/
 The CLI requires connection information to interact with an Actionbase cluster. You can provide this via command-line flags:
 
 ```bash
-actionbase --host <host-url> --authKey <auth-key>
+actionbase --host <host-url> [--authKey <auth-key>]
 ```
 
 For example:
 
 ```bash
-actionbase --host http://actionbase-cluster.example.com --authKey ***
+actionbase --host http://localhost:8080 --authKey your-auth-key
+```
+
+Once connected, the CLI enters an interactive mode where you can execute commands.
+
+## Commands
+
+### Connection and Status
+
+#### `status`
+
+Show current connection status and selected database, table, and alias.
+
+```bash
+status
+```
+
+#### `help`
+
+Display all available commands and their usage.
+
+```bash
+help
+```
+
+#### `exit`
+
+Exit the CLI.
+
+```bash
+exit
+```
+
+For a quick walkthrough using the CLI, see [Quick Start](/quick-start/).
+
+### Metadata Management
+
+#### `create`
+
+Create a database, storage, table, or alias.
+
+```bash
+# Create database
+create database --name <name> --comment <comment>
+
+# Create storage
+create storage --hbaseNamespace <namespace> --hbaseTable <table> --storageType <type> --name <name> --comment <comment>
+
+# Create table
+create table --database <database> --storage <storage> --name <name> --comment <comment> --type <type> --direction <direction> --schema <schema> --indices <indices> --groups <groups>
+
+# Create alias
+create alias --database <database> --table <table> --name <name> --comment <comment>
+```
+
+#### `show`
+
+List databases, storages, tables, indices, or groups.
+
+```bash
+# Show all databases
+show databases
+
+# Show all storages
+show storages
+
+# Show all tables
+show tables
+
+# Show indices for current table/alias
+show indices --using <table|alias>
+
+# Show groups for current table/alias
+show groups --using <table|alias>
+```
+
+#### `use`
+
+Select a database, table, or alias to use for subsequent operations.
+
+```bash
+use database <name>
+use table <name>
+use alias <name>
+```
+
+#### `desc`
+
+Describe a table or alias.
+
+```bash
+desc <name> --using <table|alias>
+```
+
+### Data Operations
+
+#### `get`
+
+Query edges from source to target.
+
+```bash
+get --source <source> --target <target>
+```
+
+#### `scan`
+
+Scan edges using an index.
+
+```bash
+scan --index <index> --start <start> --direction <direction> --limit <limit> [--ranges <ranges>]
+```
+
+#### `count`
+
+Count edges for a table.
+
+```bash
+count --table <table> --start <start> --direction <direction>
+```
+
+#### `mutate`
+
+Insert, update, or delete edges.
+
+```bash
+mutate --type <type> --table <table> --source <source> --target <target> --version <version> --properties <properties>
+```
+
+### Utilities
+
+#### `debug`
+
+Enable or disable debug mode.
+
+```bash
+debug on
+debug off
 ```

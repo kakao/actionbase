@@ -1,0 +1,9 @@
+actionbase:
+  tenant: ab-local
+  datastore:
+    type: hbase
+    configuration:
+      actionbase.hbase.namespace: ab_local
+      # cd dev/hbase
+      # docker-compose up -d
+      hbase.zookeeper.quorum: 127.0.0.1:2181

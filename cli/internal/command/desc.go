@@ -3,46 +3,62 @@ package command
 import (
 	"fmt"
 
-	"github.com/kakao/actionbase/internal/metastore"
+	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/metastore"
+	"github.com/kakao/actionbase/internal/util"
 )
 
-// Desc represents the desc command
 type Desc struct {
-	tableCommand *metastore.TableCommand
+	tableCommand *metastore.Table
+	aliasCommand *metastore.Alias
 }
 
-// DescRunner defines the interface for desc command runner
 type DescRunner interface {
-	GetHost() string
-	GetAuthKey() string
 	GetCurrentDatabase() string
 	GetCurrentTable() string
+	GetCurrentAlias() string
 	SetCurrentTable(table string)
+	SetCurrentDatabase(database string)
+	SetCurrentAlias(alias string)
 }
 
-// NewDesc creates a new Desc command
-func NewDesc(runner DescRunner) *Desc {
+func NewDesc(runner DescRunner, actionbaseClient *client.ActionbaseClient) *Desc {
 	return &Desc{
-		tableCommand: metastore.NewTableCommand(runner),
+		tableCommand: metastore.NewTable(runner, actionbaseClient),
+		aliasCommand: metastore.NewAlias(runner, actionbaseClient),
 	}
 }
 
-// Execute executes the desc command
 func (d *Desc) Execute(args []string) {
 	if len(args) < 1 {
 		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
 		return
 	}
 
-	d.tableCommand.Desc(args[0])
+	parser := util.ParseArgs(args)
+
+	using, found := parser.Get("using")
+	if !found {
+		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
+		return
+	}
+
+	name := args[0]
+	if using == "table" {
+		d.tableCommand.Desc(name)
+		return
+	} else if using == "alias" {
+		d.aliasCommand.Desc(name)
+		return
+	}
+
+	fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
 }
 
-// GetDescription returns the command description
 func (d *Desc) GetDescription() string {
 	return "Describe table"
 }
 
-// GetType returns the command type
-func (d *Desc) GetType() CommandType {
-	return CommandTypeDesc
+func (d *Desc) GetType() Type {
+	return TypeDesc
 }

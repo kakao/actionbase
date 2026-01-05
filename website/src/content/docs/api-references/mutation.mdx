@@ -1,0 +1,427 @@
+---
+title: Mutation API Reference
+description: Edge mutation API reference
+sidebar:
+    order: 2
+tableOfContents:
+    maxHeadingLevel: 2
+---
+
+This API provides mutation operations for edges.
+
+> **Note:** Authentication is not yet implemented. The `Authorization` header is reserved for future use.
+
+For conceptual understanding, see [Mutation](/design/mutation/).
+
+## 1. Edge Mutation
+
+Mutate edges between source nodes and target nodes.
+
+### Endpoint
+
+```
+POST /graph/v3/databases/{database}/tables/{table}/edges
+```
+
+### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | database | Required | Target database name |
+| Path | table | Required | Target table name |
+| Query | lock | Optional (default: true) | Whether to acquire lock during mutation |
+| Body | mutations | Required | List of mutation items |
+
+### Request Body
+
+[EdgeBulkMutationRequest](#edgebulkmutationrequest) - Payload containing mutation items
+
+### Response Type
+
+[EdgeMutationResponse](#edgemutationresponse) - Payload containing mutation results
+
+### Request Example
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| lock | true |
+
+```bash
+# POST /graph/v3/databases/your_database/tables/your_table/edges
+curl -X POST \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges?lock=true" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": 1,
+            "source": "source1",
+            "target": "target1",
+            "properties": {
+              "weight": 0.8,
+              "type": "FOLLOWS"
+            }
+          }
+        }
+      ]
+    }'
+```
+
+### Response Example
+
+```json
+{
+  "results": [
+    {
+      "source": "source1",
+      "target": "target1",
+      "status": "CREATED",
+      "count": 1
+    }
+  ]
+}
+```
+
+## 2. Edge Mutation (Sync)
+
+Mutate edges synchronously. This endpoint waits for the mutation to complete before returning a response.
+
+### Endpoint
+
+```
+POST /graph/v3/databases/{database}/tables/{table}/edges/sync
+```
+
+### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | database | Required | Target database name |
+| Path | table | Required | Target table name |
+| Query | lock | Optional (default: true) | Whether to acquire lock during mutation |
+| Body | mutations | Required | List of mutation items |
+
+### Request Body
+
+[EdgeBulkMutationRequest](#edgebulkmutationrequest) - Payload containing mutation items
+
+### Response Type
+
+[EdgeMutationResponse](#edgemutationresponse) - Payload containing mutation results
+
+### Request Example
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| lock | true |
+
+```bash
+# POST /graph/v3/databases/your_database/tables/your_table/edges/sync
+curl -X POST \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/sync?lock=true" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "mutations": [
+        {
+          "type": "UPDATE",
+          "edge": {
+            "version": 2,
+            "source": "source1",
+            "target": "target1",
+            "properties": {
+              "weight": 0.9,
+              "type": "FOLLOWS"
+            }
+          }
+        }
+      ]
+    }'
+```
+
+### Response Example
+
+```json
+{
+  "results": [
+    {
+      "source": "source1",
+      "target": "target1",
+      "status": "UPDATED",
+      "count": 1
+    }
+  ]
+}
+```
+
+## 3. Multi-Edge Mutation
+
+Mutate multi-edges identified by edge IDs.
+
+### Endpoint
+
+```
+POST /graph/v3/databases/{database}/tables/{table}/multi-edges
+```
+
+### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | database | Required | Target database name |
+| Path | table | Required | Target table name |
+| Query | lock | Optional (default: true) | Whether to acquire lock during mutation |
+| Body | mutations | Required | List of mutation items |
+
+### Request Body
+
+[MultiEdgeBulkMutationRequest](#multiedgebulkmutationrequest) - Payload containing mutation items
+
+### Response Type
+
+[MultiEdgeMutationResponse](#multiedgemutationresponse) - Payload containing mutation results
+
+### Request Example
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| lock | true |
+
+```bash
+# POST /graph/v3/databases/your_database/tables/your_table/multi-edges
+curl -X POST \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/multi-edges?lock=true" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": 1,
+            "id": "edge1",
+            "source": "source1",
+            "target": "target1",
+            "properties": {
+              "weight": 0.8,
+              "type": "FOLLOWS"
+            }
+          }
+        }
+      ]
+    }'
+```
+
+### Response Example
+
+```json
+{
+  "results": [
+    {
+      "id": "edge1",
+      "status": "CREATED",
+      "count": 1
+    }
+  ]
+}
+```
+
+## 4. Multi-Edge Mutation (Sync)
+
+Mutate multi-edges synchronously. This endpoint waits for the mutation to complete before returning a response.
+
+### Endpoint
+
+```
+POST /graph/v3/databases/{database}/tables/{table}/multi-edges/sync
+```
+
+### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | database | Required | Target database name |
+| Path | table | Required | Target table name |
+| Query | lock | Optional (default: true) | Whether to acquire lock during mutation |
+| Body | mutations | Required | List of mutation items |
+
+### Request Body
+
+[MultiEdgeBulkMutationRequest](#multiedgebulkmutationrequest) - Payload containing mutation items
+
+### Response Type
+
+[MultiEdgeMutationResponse](#multiedgemutationresponse) - Payload containing mutation results
+
+### Request Example
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| lock | true |
+
+```bash
+# POST /graph/v3/databases/your_database/tables/your_table/multi-edges/sync
+curl -X POST \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/multi-edges/sync?lock=true" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "mutations": [
+        {
+          "type": "DELETE",
+          "edge": {
+            "version": 3,
+            "id": "edge1",
+            "source": "source1",
+            "target": "target1",
+            "properties": {}
+          }
+        }
+      ]
+    }'
+```
+
+### Response Example
+
+```json
+{
+  "results": [
+    {
+      "id": "edge1",
+      "status": "DELETED",
+      "count": 1
+    }
+  ]
+}
+```
+
+## Event Types
+
+The `type` field in mutation items specifies the operation to perform:
+
+| Type | Description |
+|------|-------------|
+| `INSERT` | Create a new edge or update an existing edge with a new version |
+| `UPDATE` | Update properties of an existing edge |
+| `DELETE` | Delete an edge (marks it as deleted) |
+
+## Lock Parameter
+
+The `lock` parameter controls whether to acquire a lock during mutation:
+
+- **true (default)**: Acquires a lock to prevent concurrent modifications. Ensures data consistency but may have higher latency.
+- **false**: Skips locking. Faster but may lead to race conditions if multiple mutations target the same edge simultaneously.
+
+**Note:** It is recommended to use `lock=true` in production environments to ensure data consistency.
+
+## Data Model
+
+### EdgeBulkMutationRequest
+
+Edge mutation request payload.
+
+```kotlin
+data class EdgeBulkMutationRequest(
+  val mutations: List<MutationItem>, // List of mutation items
+) {
+  data class MutationItem(
+    val type: EventType,        // Event type (INSERT, UPDATE, DELETE)
+    val edge: Edge,             // Edge data
+  )
+}
+```
+
+### MultiEdgeBulkMutationRequest
+
+Multi-edge mutation request payload.
+
+```kotlin
+data class MultiEdgeBulkMutationRequest(
+  val mutations: List<MutationItem>, // List of mutation items
+) {
+  data class MutationItem(
+    val type: EventType,        // Event type (INSERT, UPDATE, DELETE)
+    val edge: MultiEdge,        // Multi-edge data
+  )
+}
+```
+
+### EdgeMutationResponse
+
+Edge mutation response payload.
+
+```kotlin
+data class EdgeMutationResponse(
+  val results: List<Item>,      // List of mutation results
+) {
+  data class Item(
+    val source: Any,            // Source node ID
+    val target: Any,            // Target node ID
+    val status: String,         // Mutation status (e.g., CREATED, UPDATED, DELETED)
+    val count: Int,             // Number of edges affected
+  )
+}
+```
+
+### MultiEdgeMutationResponse
+
+Multi-edge mutation response payload.
+
+```kotlin
+data class MultiEdgeMutationResponse(
+  val results: List<Item>,      // List of mutation results
+) {
+  data class Item(
+    val id: Any,               // Edge ID
+    val status: String,         // Mutation status (e.g., CREATED, UPDATED, DELETED)
+    val count: Int,             // Number of edges affected
+  )
+}
+```
+
+### Edge
+
+Individual edge information for mutation.
+
+```kotlin
+data class Edge(
+  val version: Long,                 // Edge version
+  val source: Any,                   // Source node ID
+  val target: Any,                   // Target node ID
+  val properties: Map<String, Any?>, // Edge properties
+)
+```
+
+### MultiEdge
+
+Individual multi-edge information for mutation.
+
+```kotlin
+data class MultiEdge(
+  val version: Long,                 // Edge version
+  val id: Any,                       // Edge ID
+  val source: Any? = null,           // Source node ID (optional)
+  val target: Any? = null,           // Target node ID (optional)
+  val properties: Map<String, Any?>,  // Edge properties
+)
+```
+
