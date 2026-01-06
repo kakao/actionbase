@@ -1,7 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {useApiLog} from '../../contexts/ApiLogContext';
 import {runCommand} from "../../api/cli";
-import {setApiLogCallback} from '../../api/client';
 import steps from "../../constants/HandsOnStep";
 import '../../styles/cli-terminal.css';
 
@@ -16,8 +14,6 @@ interface HistoryItem {
 }
 
 const PROMPT_PREFIX = 'actionbase';
-const COMMAND_TYPING_SPEED = 15;
-const TYPING_DELAY = 300;
 
 const escapeHTML = (text: string) => text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -25,59 +21,13 @@ const CliTerminal: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [commandHistory, setCommandHistory] = useState<HistoryItem[]>([]);
-  const [isTypingCommand, setIsTypingCommand] = useState(false);
-  const [expandedPayloads, setExpandedPayloads] = useState<Set<number>>(new Set());
 
-  const terminalEndRef = useRef<HTMLDivElement>(null);
-  const apiLogEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clickedButtonsRef = useRef<Set<number>>(new Set());
   const currentCommandDataRef = useRef<{ commandIdx: number, commands: any[], stepDatabase: string | undefined, formatPrompt: (db?: string) => string } | null>(null);
   const terminalBodyRef = useRef<HTMLDivElement>(null);
-  const scrollRefs = useRef({shouldAutoScroll: true, isUserScrolling: false, lastScrollTop: 0, isAutoScrolling: false, shouldScrollDuringTyping: true, userScrolledUp: false});
-
-  const {apiLogs, addApiLog} = useApiLog();
+  const commandHistoryRef = useRef<HTMLDivElement>(null);
 
   const formatPrompt = useCallback((database?: string) => database ? `${PROMPT_PREFIX}(${database})` : PROMPT_PREFIX, []);
-
-  const resetScrollState = useCallback(() => {
-    const refs = scrollRefs.current;
-    refs.shouldAutoScroll = true;
-    refs.shouldScrollDuringTyping = true;
-    refs.isUserScrolling = false;
-    refs.userScrolledUp = false;
-  }, []);
-
-  const updateScrollState = useCallback((atBottom: boolean) => {
-    const refs = scrollRefs.current;
-    refs.isUserScrolling = !atBottom;
-    refs.shouldAutoScroll = atBottom;
-    refs.shouldScrollDuringTyping = atBottom;
-    if (atBottom) refs.userScrolledUp = false;
-  }, []);
-
-  const scrollToBottom = useCallback((force = false) => {
-    if (!terminalEndRef.current || !terminalBodyRef.current) return;
-    const refs = scrollRefs.current;
-    if ((!force && !refs.shouldScrollDuringTyping) || (force && refs.userScrolledUp)) return;
-    if (force) resetScrollState();
-    requestAnimationFrame(() => {
-      refs.isAutoScrolling = true;
-      terminalEndRef.current?.scrollIntoView({behavior: 'smooth', block: 'end'});
-    });
-  }, [resetScrollState]);
-
-  const updateCommandInHistory = useCallback((predicate: (item: HistoryItem) => boolean, updater: (item: HistoryItem) => HistoryItem) => {
-    setCommandHistory(prev => {
-      const newHistory = [...prev];
-      for (let i = newHistory.length - 1; i >= 0; i--) {
-        if (predicate(newHistory[i])) {
-          newHistory[i] = updater(newHistory[i]);
-          break;
-        }
-      }
-      return newHistory;
-    });
-  }, []);
 
   const createResultMessage = useCallback((response: any) => {
     if (response.error) return `<span class="command-result error">${escapeHTML(response.error)}</span>`;
@@ -165,42 +115,14 @@ const CliTerminal: React.FC = () => {
     return result;
   }, [minifyJsonContent]);
 
-  const typeCommand = useCallback((commandText: string, cmdDatabase: string, formatPromptFn: (db?: string) => string, onComplete?: () => void) => {
-    let index = 0;
-    const prompt = formatPromptFn(cmdDatabase);
-    const typeNext = () => {
-      if (index >= commandText.length) {
-        setIsTypingCommand(false);
-        onComplete?.();
-        return;
-      }
-      index++;
-      updateCommandInHistory(
-        (item) => item.type === 'command' && item.prompt === prompt,
-        (item) => ({...item, content: commandText.substring(0, index)})
-      );
-      const refs = scrollRefs.current;
-      if (refs.shouldScrollDuringTyping && !refs.userScrolledUp) scrollToBottom();
-      const text = commandText.substring(0, index);
-      const isInTag = text.lastIndexOf('<') > text.lastIndexOf('>');
-      const speed = isInTag ? 1 + Math.random() * 2 : COMMAND_TYPING_SPEED + Math.random() * 10 - 5;
-      typingTimeoutRef.current = setTimeout(typeNext, Math.max(1, speed));
-    };
-    typingTimeoutRef.current = setTimeout(typeNext, TYPING_DELAY);
-  }, [updateCommandInHistory, scrollToBottom]);
-
   const addCommandToHistory = useCallback((command: any, cmdDatabase: string, formatPromptFn: (db?: string) => string) => {
-    setCommandHistory(prev => [...prev, {type: 'command', prompt: formatPromptFn(cmdDatabase), content: '', originalText: command.text, stepIndex: currentStep}]);
-    setIsTypingCommand(true);
-    scrollRefs.current.shouldScrollDuringTyping = true;
-    typeCommand(command.text, cmdDatabase, formatPromptFn, () => {
-      if (command.result) {
-        setCommandHistory(prev => [...prev, {type: 'command', prompt: '', content: '', result: command.result, stepIndex: currentStep}]);
-      }
-      setCurrentPrompt('');
-      setIsTypingCommand(false);
-    });
-  }, [currentStep, typeCommand]);
+    const prompt = formatPromptFn(cmdDatabase);
+    setCommandHistory(prev => [...prev, {type: 'command', prompt, content: command.text, originalText: command.text, stepIndex: currentStep}]);
+    if (command.result) {
+      setCommandHistory(prev => [...prev, {type: 'command', prompt: '', content: '', result: command.result, stepIndex: currentStep}]);
+    }
+    setCurrentPrompt('');
+  }, [currentStep]);
 
   const proceedToNextCommand = useCallback(() => {
     if (!currentCommandDataRef.current) return;
@@ -227,10 +149,6 @@ const CliTerminal: React.FC = () => {
     const commandLines = processCommandText(textToProcess);
     navigator.clipboard.writeText(commandLines.join('\n')).catch(console.error);
     const processedRequest = processCommandRequest(normalizeCommandForRequest(commandLines));
-    const markAsExecuted = () => updateCommandInHistory(
-      (cmd) => cmd.type === 'command' && cmd.prompt === item.prompt && cmd.originalText === item.originalText && !cmd.result,
-      (cmd) => ({...cmd, isExecuting: false, result: 'executed'})
-    );
 
     let result: string;
     try {
@@ -240,69 +158,27 @@ const CliTerminal: React.FC = () => {
       result = createErrorMessage(err);
       console.error('Failed to execute command:', err);
     }
-    markAsExecuted();
     setCommandHistory(prev => [...prev, {type: 'command', prompt: '', content: '', result, stepIndex: currentStep}]);
-    scrollToBottom(true);
+
+    const itemIndex = commandHistory.findIndex(cmd =>
+      cmd.type === 'command' &&
+      (cmd.originalText === textToProcess || cmd.content === textToProcess)
+    );
+    if (itemIndex !== -1) {
+      clickedButtonsRef.current.delete(itemIndex);
+    }
+
+    setTimeout(() => {
+      if (terminalBodyRef.current) {
+        terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight;
+      }
+      if (commandHistoryRef.current) {
+        commandHistoryRef.current.scrollTop = commandHistoryRef.current.scrollHeight;
+      }
+    }, 100);
+
     proceedToNextCommand();
-  }, [processCommandText, normalizeCommandForRequest, processCommandRequest, createResultMessage, createErrorMessage, updateCommandInHistory, currentStep, scrollToBottom, proceedToNextCommand]);
-
-  useEffect(() => {
-    setApiLogCallback(addApiLog);
-  }, [addApiLog]);
-
-  useEffect(() => {
-    apiLogEndRef.current?.scrollIntoView({behavior: 'smooth'});
-  }, [apiLogs]);
-
-  useEffect(() => {
-    const terminalBody = terminalBodyRef.current;
-    if (!terminalBody) return;
-
-    const isAtBottom = (el: HTMLElement) => el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-    const stopAutoScroll = () => {
-      const refs = scrollRefs.current;
-      refs.isUserScrolling = true;
-      refs.shouldAutoScroll = false;
-      refs.shouldScrollDuringTyping = false;
-      refs.userScrolledUp = true;
-    };
-
-    const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY < 0) stopAutoScroll();
-    };
-
-    const handleScroll = () => {
-      const refs = scrollRefs.current;
-      const currentScrollTop = terminalBody.scrollTop;
-      const scrollDifference = currentScrollTop - refs.lastScrollTop;
-      const atBottom = isAtBottom(terminalBody);
-
-      if (refs.isAutoScrolling) {
-        refs.isAutoScrolling = false;
-        refs.lastScrollTop = currentScrollTop;
-        if (atBottom) updateScrollState(true);
-        return;
-      }
-
-      if (scrollDifference < 0) {
-        stopAutoScroll();
-        refs.lastScrollTop = currentScrollTop;
-        return;
-      }
-
-      if (scrollDifference > 0) updateScrollState(atBottom);
-      refs.lastScrollTop = currentScrollTop;
-    };
-
-    terminalBody.addEventListener('wheel', handleWheel, {passive: true});
-    terminalBody.addEventListener('scroll', handleScroll, {passive: true});
-    scrollRefs.current.lastScrollTop = terminalBody.scrollTop;
-
-    return () => {
-      terminalBody.removeEventListener('wheel', handleWheel);
-      terminalBody.removeEventListener('scroll', handleScroll);
-    };
-  }, [updateScrollState]);
+  }, [processCommandText, normalizeCommandForRequest, processCommandRequest, createResultMessage, createErrorMessage, currentStep, proceedToNextCommand]);
 
   useEffect(() => {
     const handleTourStepChange = (event: CustomEvent) => {
@@ -326,17 +202,11 @@ const CliTerminal: React.FC = () => {
     const {commands = []} = step;
     const stepDatabase = step.database;
 
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-
-    setIsTypingCommand(false);
     setCurrentPrompt('');
     currentCommandDataRef.current = null;
-    scrollRefs.current.isAutoScrolling = false;
-    resetScrollState();
 
     if (commands.length > 0) {
       currentCommandDataRef.current = {commandIdx: 0, commands, stepDatabase, formatPrompt};
-      scrollToBottom(true);
 
       const addNextCommand = () => {
         if (!currentCommandDataRef.current) return;
@@ -349,42 +219,37 @@ const CliTerminal: React.FC = () => {
         addCommandToHistory(currentCommand, cmdDatabase, formatPromptFn);
       };
 
-      typingTimeoutRef.current = setTimeout(addNextCommand, 0);
+      addNextCommand();
     } else {
       const idleDatabase = step.finalDatabase ?? stepDatabase;
       setCurrentPrompt(formatPrompt(idleDatabase));
     }
+  }, [currentStep, formatPrompt, addCommandToHistory]);
 
-    return () => {
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    };
-  }, [currentStep, formatPrompt, typeCommand, scrollToBottom, resetScrollState, addCommandToHistory]);
-
-  const handleCommandButtonClick = useCallback((item: HistoryItem, index: number) => {
+  const handleCommandRun = useCallback((item: HistoryItem, index: number) => {
     const isCurrentStep = item.stepIndex === undefined || item.stepIndex === currentStep;
-    if (!isCurrentStep || item.isExecuting || item.result || item.result === 'executed') return;
+    if (!isCurrentStep || item.result || item.result === 'executed') return;
 
-    scrollToBottom(true);
-    setCommandHistory(prev => {
-      const newHistory = [...prev];
-      if (newHistory[index]) newHistory[index] = {...newHistory[index], isExecuting: true};
-      return newHistory;
-    });
+    const textToProcess = item.originalText || item.content || '';
+    if (!textToProcess) return;
 
-    if (isTypingCommand && index === commandHistory.length - 1 && item.originalText) {
-      scrollRefs.current.shouldScrollDuringTyping = true;
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = null;
-      }
-      updateCommandInHistory(
-        (cmd) => cmd.type === 'command' && cmd.prompt === item.prompt && cmd.originalText === item.originalText,
-        (cmd) => ({...cmd, content: item.originalText!})
-      );
-      setIsTypingCommand(false);
+    if (clickedButtonsRef.current.has(index)) {
+      return;
     }
+
+    clickedButtonsRef.current.add(index);
+
+    setTimeout(() => {
+      if (terminalBodyRef.current) {
+        terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight;
+      }
+      if (commandHistoryRef.current) {
+        commandHistoryRef.current.scrollTop = commandHistoryRef.current.scrollHeight;
+      }
+    }, 0);
+
     executeCommand(item);
-  }, [currentStep, isTypingCommand, commandHistory.length, updateCommandInHistory, scrollToBottom, executeCommand]);
+  }, [currentStep, executeCommand]);
 
   const processLineForDisplay = useCallback((line: string) => {
     const leadingSpaces = line.match(/^\s*/)?.[0] || '';
@@ -395,15 +260,6 @@ const CliTerminal: React.FC = () => {
     return {leadingSpaces, lineText, hasBackslash};
   }, []);
 
-  const toggleExpandedPayload = useCallback((logId: number) => {
-    setExpandedPayloads(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(logId)) newSet.delete(logId);
-      else newSet.add(logId);
-      return newSet;
-    });
-  }, []);
-
   const renderCommandContent = useCallback((item: HistoryItem, index: number) => {
     if (!item.content) {
       return <div className="command-line-item"><span className="prompt">{item.prompt}{"> "}</span></div>;
@@ -411,7 +267,7 @@ const CliTerminal: React.FC = () => {
 
     const lines = item.content.split('\n').filter(line => line.trim() !== '');
     const isLastItem = index === commandHistory.length - 1;
-    const shouldShowCursor = (isTypingCommand && isLastItem) || (isLastItem && !item.result);
+    const shouldShowCursor = isLastItem && !item.result;
     const cursor = shouldShowCursor ? '<span class="cursor">_</span>' : '';
 
     if (lines.length === 1) {
@@ -441,140 +297,80 @@ const CliTerminal: React.FC = () => {
         </div>
       );
     });
-  }, [isTypingCommand, commandHistory.length, processLineForDisplay]);
+  }, [commandHistory.length, processLineForDisplay]);
 
   return (
-    <div className="cli-terminal" id="cli-commands">
-      <div className="terminal-header">
-        <div className="terminal-buttons">
-          <span className="terminal-btn close"></span>
-          <span className="terminal-btn minimize"></span>
-          <span className="terminal-btn maximize"></span>
-        </div>
-        <div className="terminal-title"></div>
-      </div>
-
-      <div className="terminal-body-container">
-        <div className="terminal-body terminal-body-top" ref={terminalBodyRef}>
-          <div className="command-history">
-            {commandHistory.map((item, index) => (
-              <div key={index}>
-                {item.type === 'title' && (
-                  <div className="command-block active">
-                    <div className="command-line">
-                      <div className="command-line-inner">
-                        <span className="step-title">{item.content}</span>
-                      </div>
+    <div className="terminal-body-container" id="cli-commands">
+      <div className="terminal-body terminal-body-top" ref={terminalBodyRef}>
+        <div className="command-history" ref={commandHistoryRef}>
+          {commandHistory.map((item, index) => (
+            <div key={index}>
+              {item.type === 'title' && (
+                <div className="command-block active">
+                  <div className="command-line">
+                    <div className="command-line-inner">
+                      <span className="step-title">{item.content}</span>
                     </div>
                   </div>
-                )}
-                {item.type === 'command' && (
-                  <div className="command-block active">
-                    <div className="command-line">
-                      <div className="command-line-inner">
-                        {item.result && item.result !== 'executed' ? (
-                          <div className="command-content-wrapper">
-                            <div className="command-multiline">
-                              <div className="command-line-item command-line-single">
-                                <span className="command-text" dangerouslySetInnerHTML={{__html: item.result}}></span>
-                              </div>
+                </div>
+              )}
+              {item.type === 'command' && (
+                <div className="command-block active">
+                  <div className="command-line">
+                    <div className="command-line-inner">
+                      {item.result && item.result !== 'executed' ? (
+                        <div className="command-content-wrapper">
+                          <div className="command-multiline">
+                            <div className="command-line-item command-line-single">
+                              <span className="command-text" dangerouslySetInnerHTML={{__html: item.result}}></span>
                             </div>
                           </div>
-                        ) : (
-                          <div className="command-content-wrapper">
-                            <div className="command-multiline">{renderCommandContent(item, index)}</div>
-                          </div>
-                        )}
-                        {(!item.result || item.result === 'executed') && (
+                        </div>
+                      ) : (
+                        <div className="command-content-wrapper">
+                          <div className="command-multiline">{renderCommandContent(item, index)}</div>
+                        </div>
+                      )}
+                      {(!item.result || item.result === 'executed') && (() => {
+                        const commandText = item.originalText || item.content || '';
+                        const isClicked = clickedButtonsRef.current.has(index);
+                        return (
                           <button
-                            className={`copy-command-btn ${item.isExecuting || item.result === 'executed' ? 'disabled' : ''} ${(item.stepIndex !== undefined && item.stepIndex !== currentStep) ? 'hidden-step-btn' : ''}`}
+                            className={`run-command-btn ${item.result === 'executed' || isClicked ? 'disabled' : ''} ${(item.stepIndex !== undefined && item.stepIndex !== currentStep) ? 'hidden-step-btn' : ''}`}
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
-                              handleCommandButtonClick(item, index);
+                              if (isClicked || item.result === 'executed') return;
+                              handleCommandRun(item, index);
                             }}
                             title="Copy command"
-                            disabled={item.isExecuting || item.result === 'executed'}
+                            disabled={item.result === 'executed' || isClicked}
                           >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20"/>
                             </svg>
                           </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {currentPrompt && !isTypingCommand && (
-              <div className="command-block active command-block-prompt">
-                <div className="command-line">
-                  <div className="command-line-inner">
-                    <div className="command-line-item">
-                      <span className="prompt">{currentPrompt}{"> "}</span>
-                      <span className="cursor">_</span>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-            <div ref={terminalEndRef}/>
-          </div>
-        </div>
+              )}
+            </div>
+          ))}
 
-        <div className="terminal-divider"></div>
-
-        <div className="terminal-body terminal-body-bottom">
-          <div className="api-log-content">
-            {apiLogs.length === 0 ? (
-              <div className="api-log-empty"></div>
-            ) : (
-              apiLogs.map((log) => {
-                const isExpanded = expandedPayloads.has(log.id);
-                const hasExpandableContent = log.payload !== undefined || log.requestBody !== undefined;
-
-                return (
-                  <div key={log.id} className={`api-log-item ${!log.success ? 'api-log-item-error' : ''}`}>
-                    <div
-                      className={`api-log-header-line ${hasExpandableContent ? 'api-log-header-clickable' : ''}`}
-                      onClick={() => hasExpandableContent && toggleExpandedPayload(log.id)}
-                    >
-                      <span className={`api-log-expand-icon ${!hasExpandableContent ? 'api-log-expand-icon-empty' : ''}`}>
-                        {hasExpandableContent && (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease'}}>
-                            <path d="M9 18l6-6-6-6"/>
-                          </svg>
-                        )}
-                      </span>
-                      <span className={`api-log-method api-log-method-${log.method.toLowerCase()}`}>{log.method}</span>
-                      <span className={`api-log-url ${!log.success ? 'api-log-url-error' : ''}`}>
-                        {log.url}
-                        {!log.success && log.status && <span className="api-log-status"> ({log.status})</span>}
-                      </span>
-                    </div>
-                    {hasExpandableContent && isExpanded && (
-                      <div className="api-log-body">
-                        {log.requestBody !== undefined && (
-                          <div className="api-log-request-body">
-                            <div className="api-log-section-title">Request</div>
-                            <pre>{typeof log.requestBody === 'string' ? log.requestBody : JSON.stringify(log.requestBody, null, 2)}</pre>
-                          </div>
-                        )}
-                        {log.payload !== undefined && (
-                          <div className="api-log-payload">
-                            <div className="api-log-section-title">Response</div>
-                            <pre>{JSON.stringify(log.payload, null, 2)}</pre>
-                          </div>
-                        )}
-                      </div>
-                    )}
+          {currentPrompt && (
+            <div className="command-block active command-block-prompt">
+              <div className="command-line">
+                <div className="command-line-inner">
+                  <div className="command-line-item">
+                    <span className="prompt">{currentPrompt}{"> "}</span>
+                    <span className="cursor">_</span>
                   </div>
-                );
-              })
-            )}
-            <div ref={apiLogEndRef}/>
-          </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

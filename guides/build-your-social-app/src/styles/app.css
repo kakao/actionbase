@@ -88,11 +88,6 @@ body {
   scrollbar-width: none;
 }
 
-.cli-panel,
-.cli-panel * {
-  pointer-events: auto !important;
-}
-
 body[class*="react-joyride"] .feed-scroll,
 .react-joyride__overlay ~ * .feed-scroll {
   pointer-events: auto !important;

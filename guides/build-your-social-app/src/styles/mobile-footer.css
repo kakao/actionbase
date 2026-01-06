@@ -14,10 +14,6 @@
   margin-top: auto;
 }
 
-.driver-active * {
-  pointer-events: auto !important;
-}
-
 .nav-btn.active {
   color: var(--color-text-primary);
 }

@@ -1,10 +1,11 @@
-import React, {ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useEffect, useMemo, useState} from 'react';
 import DOMPurify from "dompurify";
 import {ApiLogProvider} from '../../contexts/ApiLogContext';
 import {getStarsAsTag} from "../../api/github";
 import CliTerminal from './CliTerminal';
 import MobileFooter from "./MobileFooter";
 import '../../styles/layout.css';
+import ApiLogs from "./ApiLogs";
 
 const OWNER = "kakao";
 const REPOSITORY = "actionbase";
@@ -47,10 +48,6 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
     ADD_ATTR: ['target', 'rel'],
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
   }), [starsImage]);
-
-  const handleRefresh = useCallback(() => {
-    window.location.href = "/";
-  }, []);
 
   useEffect(() => {
     getStarsAsTag(OWNER, REPOSITORY)
@@ -116,18 +113,29 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
           <span className="split-layout-title-text">Actionbase Hands-On: Build Your Social App</span>
         </div>
         <div className="split-layout-header-line"/>
-        <div className="cli-panel">
-          <CliTerminal/>
-        </div>
-        <div className="split-layout">
-          <div className="mobile-preview">
-            <div className="mobile-frame">
-              <div className="mobile-content">
-                {children}
-                <MobileFooter/>
+
+        <div className="browser-frame-wrapper">
+          <div className="browser-frame">
+            <div className="browser-header">
+              <div className="browser-buttons">
+                <span className="browser-btn close"></span>
+                <span className="browser-btn minimize"></span>
+                <span className="browser-btn maximize"></span>
               </div>
             </div>
+            <div className="browser-content">
+              <div className="mobile-frame">
+                <div className="mobile-content">
+                  {children}
+                  <MobileFooter/>
+                </div>
+              </div>
+            </div>
+            <ApiLogs/>
           </div>
+        </div>
+        <div className="terminal-wrapper">
+          <CliTerminal/>
         </div>
       </ApiLogProvider>
     </>
