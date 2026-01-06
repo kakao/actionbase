@@ -1,7 +1,8 @@
-Workflow:
+CI/CD:
   - changed-files:
     - any-glob-to-any-file:
       - .github/workflows/**
+      - .github/labeler.yml
 
 Build:
   - changed-files:
@@ -40,3 +41,16 @@ Website:
   - changed-files:
     - any-glob-to-any-file:
       - website/**
+
+Documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - README.md
+      - CONTRIBUTING.md
+      - NOTICE.md
+      - '**/*.md'
+
+Test:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/src/test/**'
