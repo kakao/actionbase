@@ -140,6 +140,9 @@ export default defineConfig({
 					autogenerate: { directory: 'community' },
 				},
 			],
+      components: {
+        Head: './src/components/favicon.astro',
+      },
 			expressiveCode: { shiki: { langs: [markdocGrammar] } },
 			plugins: [
 				starlightLinksValidator({
