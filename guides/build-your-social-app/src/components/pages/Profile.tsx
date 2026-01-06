@@ -1,14 +1,13 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react'
-import {useParams} from 'react-router-dom';
-import {useDriver} from '../../contexts/DriverContext';
-import {useButtonTypeHandler, useNavigateAndNext} from '../../hooks/useButtonTypeHandler';
-import {useFollowingToggle} from '../../hooks/useFollowingToggle';
-import {DIRECTION, ROUTES, UI} from '../../constants';
-import {getUserFollowData, scanUserPosts} from '../../utils/api';
-import Spinner from "../common/Spinner";
+import React, {useCallback, useEffect, useState} from 'react'
+import {useNavigate, useParams} from 'react-router-dom';
+import {count, get, scanUserPosts} from '../../api/actionbase';
+import {DATABASE, DIRECTION, ROUTES, TABLE} from '../../constants';
 import NotFound from "./NotFound";
 import '../../styles/profile.css';
-import {me, postDetails, users} from "../../modules/dummy";
+import Spinner from "../layout/Spinner";
+import {me, postDetails, users} from "../../constants/dummy";
+import {useToggleFollowing} from "../../hooks/useToggleMutate";
+import {useNavigateStep} from "../../hooks/useNavigateStep";
 
 interface UserPost {
   id: number,
@@ -26,9 +25,9 @@ const Profile: React.FC = () => {
   const [posts, setUserPosts] = useState<UserPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState<boolean>(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const {handleFollowingToggle} = useFollowingToggle(
+  const navigate = useNavigate();
+  const {ToggleFollowing} = useToggleFollowing(
     me.id,
     {
       onSuccess: (isFollowing, followersCount) => {
@@ -41,69 +40,55 @@ const Profile: React.FC = () => {
     });
 
   const handleFollowingToggleWrapper = useCallback(async () => {
-    await handleFollowingToggle(owner.id, isFollowing);
-  }, [owner.id, isFollowing, handleFollowingToggle]);
+    await ToggleFollowing(owner.id, isFollowing);
+  }, [owner.id, isFollowing, ToggleFollowing]);
 
-  const handleNavigateAndNext = useNavigateAndNext();
-  const {moveNextStep} = useDriver();
+  const fetchData = async () => {
+    try {
+      const [isFollowingPayload, followersPayload, followingsPayload, postsPayload] = await Promise.all([
+        get(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, me.id, owner.id),
+        count(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, owner.id, DIRECTION.IN),
+        count(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, owner.id, DIRECTION.OUT),
+        scanUserPosts(owner.id, DIRECTION.OUT)
+      ]);
 
-  useButtonTypeHandler({
-    isLoading,
-    dependencies: [posts, followers, followings],
-    setRefreshTrigger
-  });
+      setIsFollowing(isFollowingPayload.count > 0);
+      setFollowers(followersPayload.counts[0]?.count ?? 0);
+      setFollowings(followingsPayload.counts[0]?.count ?? 0);
 
-  const refreshTriggerProcessedRef = useRef<number>(0);
-  useEffect(() => {
-    if (refreshTrigger > 0 && refreshTriggerProcessedRef.current !== refreshTrigger) {
-      refreshTriggerProcessedRef.current = refreshTrigger;
-      (async () => {
-        try {
-          const {isFollowing: isFollowingValue, followers} = await getUserFollowData(me.id, owner.id);
-          setIsFollowing(isFollowingValue);
-          setFollowers(followers);
-          setTimeout(() => moveNextStep(), UI.REFRESH_DELAY);
-        } catch (err) {
-          console.error("Failed to refresh data:", err);
-        }
-      })();
+      const userPostEdges = postsPayload.edges
+        .map(edge => {
+          const post = postDetails.find(p => p.id == edge.target);
+          return post ? {id: edge.target, image: post.imageUrls} : null;
+        })
+        .filter((post): post is UserPost => post !== null);
+      setUserPosts(userPostEdges);
+    } catch (err) {
+      setHasError(true);
+    } finally {
+      setIsLoading(false);
     }
-  }, [refreshTrigger, moveNextStep, owner.id]);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [followData, postsPayload] = await Promise.all([
-          getUserFollowData(me.id, owner.id),
-          scanUserPosts(owner.id, DIRECTION.OUT)
-        ]);
-
-        setIsFollowing(followData.isFollowing);
-        setFollowers(followData.followers);
-        setFollowings(followData.followings);
-
-        const userPostEdges = postsPayload.edges
-          .map(edge => {
-            const post = postDetails.find(p => p.id == edge.target);
-            return post ? {id: edge.target, image: post.imageUrls} : null;
-          })
-          .filter((post): post is UserPost => post !== null);
-        setUserPosts(userPostEdges);
-      } catch (err) {
-        setHasError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchData();
   }, [id, owner.id]);
+
+  useNavigateStep(isLoading);
+
+  useEffect(() => {
+    window.addEventListener('tourStepRefresh', fetchData as EventListener);
+    return () => {
+      window.removeEventListener('tourStepRefresh', fetchData as EventListener);
+    };
+  }, []);
 
   if (hasError) {
     return <NotFound/>;
   }
 
   return (
-    <div key={refreshTrigger} style={{position: 'relative', height: '100%'}}>
+    <div style={{position: 'relative', height: '100%'}}>
       {isLoading && <Spinner/>}
       <header className="profile-header">
         <button className="icon-btn">
@@ -189,11 +174,11 @@ const Profile: React.FC = () => {
                 <span className="stat-label">Posts</span>
                 <span className="stat-count">{posts.length}</span>
               </div>
-              <div className="stat-item" onClick={() => handleNavigateAndNext(ROUTES.FOLLOWERS(owner.id))}>
+              <div className="stat-item" onClick={() => navigate(ROUTES.FOLLOWERS(owner.id))}>
                 <span className="stat-label">Followers</span>
                 <span className="stat-count">{followers}</span>
               </div>
-              <div className="stat-item" id="profile-follows" onClick={() => handleNavigateAndNext(ROUTES.FOLLOWINGS(owner.id))}>
+              <div className="stat-item" id="profile-follows" onClick={() => navigate(ROUTES.FOLLOWINGS(owner.id))}>
                 <span className="stat-label">Follows</span>
                 <span className="stat-count">{followings}</span>
               </div>
@@ -248,7 +233,7 @@ const Profile: React.FC = () => {
               <div className="posts-grid">
                 {posts.map((post, idx) => (
                   <div id={"profile-post-" + idx}
-                       key={idx} className="grid-item" style={{background: post.image[0] || ''}} onClick={() => handleNavigateAndNext(ROUTES.POST(post.id))}>
+                       key={idx} className="grid-item" style={{background: post.image[0] || ''}} onClick={() => navigate(ROUTES.POST(post.id))}>
                   <span className="grid-icon">
                     <img src={post.image[0]}/>
                   </span>

@@ -1,8 +1,8 @@
 let apiLogCallback: ((method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any) => void) | null = null;
 
-export const setApiLogCallback = (callback: (method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any) => void) => {
+export function setApiLogCallback(callback: (method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any) => void) {
   apiLogCallback = callback;
-};
+}
 
 export async function apiFetch<T>(url: string, options?: RequestInit, enableLogging?: boolean): Promise<T> {
   const method = options?.method || 'GET';

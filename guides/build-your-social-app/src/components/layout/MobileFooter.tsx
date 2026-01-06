@@ -1,12 +1,11 @@
 import React from 'react';
-import {useLocation} from 'react-router-dom';
-import {useNavigateAndNext} from '../../hooks/useButtonTypeHandler';
+import {useLocation, useNavigate} from 'react-router-dom';
 import '../../styles/mobile-footer.css';
-import {me} from "../../modules/dummy";
+import {me} from "../../constants/dummy";
 
 const MobileFooter: React.FC = () => {
   const location = useLocation();
-  const handleNavigateAndNext = useNavigateAndNext();
+  const navigate = useNavigate();
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -14,7 +13,7 @@ const MobileFooter: React.FC = () => {
       <button
         id="nav-btn-feed"
         className={`nav-btn ${isActive('/') ? 'active' : ''}`}
-        onClick={() => handleNavigateAndNext("/")}
+        onClick={() => navigate("/")}
       >
         {isActive('/') ? (
           <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinecap="butt" strokeLinejoin="miter">
@@ -30,7 +29,7 @@ const MobileFooter: React.FC = () => {
       <button
         id="nav-btn-search"
         className={`nav-btn ${isActive('/search') ? 'active' : ''}`}
-        onClick={() => handleNavigateAndNext("/search")}
+        onClick={() => navigate("/search")}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={isActive('/search') ? '3' : '2'}>
           <circle cx="11" cy="11" r="8"/>
@@ -56,7 +55,7 @@ const MobileFooter: React.FC = () => {
       <button
         id="nav-btn-profile"
         className={`nav-btn ${isActive('/profile/doki') ? 'active' : ''}`}
-        onClick={() => handleNavigateAndNext("/profile/doki")}
+        onClick={() => navigate("/profile/doki")}
       >
         <div className="nav-avatar" style={{background: me.gradient}}>
           {me.icon}

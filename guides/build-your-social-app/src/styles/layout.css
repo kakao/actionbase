@@ -20,7 +20,7 @@
   bottom: 0;
   width: calc((100vw - 1200px) / 2);
   background-color: #f7f7f7;
-  z-index: 15000;
+  z-index: 20000;
   pointer-events: none;
 }
 
@@ -314,50 +314,6 @@
   var(--color-white)-space: nowrap;
 }
 
-.tutorial-refresh-btn {
-  position: fixed;
-  left: 1450px;
-  right: 5px;
-  bottom: 370px;
-  z-index: 13000;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  background: var(--color-background);
-  color: #535353;
-  border: 1px solid #cccccc;
-  border-radius: var(--font-size-xs);
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  width: 44px;
-  height: 44px;
-  justify-content: center;
-  pointer-events: auto !important;
-  isolation: isolate;
-}
-
-.tutorial-refresh-btn:hover {
-  transform: scale(1.1) !important;
-  color: var(--color-blue);
-  background-color: #fcfcfc;
-}
-
-.tutorial-refresh-btn:active {
-  transform: scale(0.95) !important;
-}
-
-.tutorial-refresh-btn svg {
-  transition: transform 0.6s ease;
-  flex-shrink: 0;
-}
-
-.tutorial-refresh-btn:hover svg {
-  transform: rotate(360deg);
-}
-
 @keyframes rotate {
   from {
     transform: rotate(0deg);
@@ -432,7 +388,7 @@
   left: 300px;
   top: 160px;
   width: 800px;
-  z-index: 20001 !important;
+  z-index: 200;
 }
 
 .cli-panel .cli-terminal {
@@ -478,9 +434,5 @@
   .breadcrumb-actions {
     height: 70px;
     gap: var(--spacing-md);
-  }
-
-  .tutorial-refresh-btn {
-    top: calc((100vw - 160px) / 2);
   }
 }

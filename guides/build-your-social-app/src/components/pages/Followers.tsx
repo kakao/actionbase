@@ -1,14 +1,14 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {useButtonTypeHandler} from '../../hooks/useButtonTypeHandler';
-import {useFollowingToggle} from '../../hooks/useFollowingToggle';
 import {User} from '../../types';
 import {DIRECTION, ROUTES} from '../../constants';
-import {scanUserFollows} from '../../utils/api';
-import Spinner from "../common/Spinner";
 import NotFound from "./NotFound";
 import '../../styles/followings.css';
-import {me, users} from "../../modules/dummy";
+import {useNavigateStep} from "../../hooks/useNavigateStep";
+import Spinner from "../layout/Spinner";
+import {me, users} from "../../constants/dummy";
+import {useToggleFollowing} from "../../hooks/useToggleMutate";
+import {scanUserFollows} from "../../api/actionbase";
 
 const Followers: React.FC = () => {
   const {id} = useParams()
@@ -47,7 +47,7 @@ const Followers: React.FC = () => {
     }
   }, [owner.id]);
 
-  const {handleFollowingToggle} = useFollowingToggle(
+  const {ToggleFollowing} = useToggleFollowing(
     me.id,
     {
       onSuccess: (isFollowing, followersCount, userId) => {
@@ -59,17 +59,14 @@ const Followers: React.FC = () => {
     });
 
   const handleFollowToggle = useCallback(async (userId: string) => {
-    await handleFollowingToggle(userId, followingStates[userId] ?? false);
-  }, [followingStates, handleFollowingToggle]);
+    await ToggleFollowing(userId, followingStates[userId] ?? false);
+  }, [followingStates, ToggleFollowing]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  useButtonTypeHandler({
-    isLoading,
-    dependencies: [followings, suggestedFollowings, followingStates],
-  });
+  useNavigateStep(isLoading);
 
   return (
     <div className="app" style={{position: 'relative', height: '100%'}}>
@@ -132,7 +129,7 @@ const Followers: React.FC = () => {
 
                 {suggestedFollowings.map((suggested) =>
                   <div key={suggested.id} className="follower-item">
-                    <div className="follower-info" onClick={() => navigate("/profile/" + suggested.id)}>
+                    <div className="follower-info" onClick={() => navigate(ROUTES.PROFILE(suggested.id))}>
                       <div className="follower-avatar" style={{background: suggested.gradient}}>{suggested.icon}</div>
                       <div className="follower-details">
                         <div className="follower-username">{suggested.id}</div>

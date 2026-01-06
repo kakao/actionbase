@@ -1,10 +1,9 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {ButtonType, useDriver} from '../../contexts/DriverContext';
 import {useApiLog} from '../../contexts/ApiLogContext';
 import {runCommand} from "../../api/cli";
 import {setApiLogCallback} from '../../api/client';
+import steps from "../../constants/HandsOnStep";
 import '../../styles/cli-terminal.css';
-import steps from "../../modules/HandsOnStep";
 
 interface HistoryItem {
   type: 'title' | 'command';
@@ -23,7 +22,7 @@ const TYPING_DELAY = 300;
 const escapeHTML = (text: string) => text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const CliTerminal: React.FC = () => {
-  const {currentStep} = useDriver();
+  const [currentStep, setCurrentStep] = useState<number>(0);
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [commandHistory, setCommandHistory] = useState<HistoryItem[]>([]);
   const [isTypingCommand, setIsTypingCommand] = useState(false);
@@ -306,24 +305,19 @@ const CliTerminal: React.FC = () => {
   }, [updateScrollState]);
 
   useEffect(() => {
-    const handleButtonTypeChange = (event: CustomEvent) => {
-      const type = event.detail?.type;
-      if (type === ButtonType.Next || type === ButtonType.Prev) {
-        setCommandHistory(prev => prev.map(item =>
-          item.type === 'command' && item.content && !item.result
-            ? {...item, result: 'executed', isExecuting: false}
-            : item
-        ));
-        scrollToBottom(true);
+    const handleTourStepChange = (event: CustomEvent) => {
+      const {stepIndex} = event.detail;
+      if (stepIndex !== undefined && stepIndex >= 0) {
+        setCurrentStep(stepIndex);
       }
     };
 
-    window.addEventListener('buttonTypeChange', handleButtonTypeChange as EventListener);
+    window.addEventListener('tourStepChange', handleTourStepChange as EventListener);
 
     return () => {
-      window.removeEventListener('buttonTypeChange', handleButtonTypeChange as EventListener);
+      window.removeEventListener('tourStepChange', handleTourStepChange as EventListener);
     };
-  }, [scrollToBottom]);
+  }, []);
 
   useEffect(() => {
     if (currentStep >= steps.length) return;

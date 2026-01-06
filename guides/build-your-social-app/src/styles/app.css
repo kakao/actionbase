@@ -93,68 +93,9 @@ body {
   pointer-events: auto !important;
 }
 
-.driver-popover-container {
-  z-index: 50000 !important;
-}
-
-.driver-popover-description {
-  font-size: var(--font-size-md);
-}
-
-.driver-popover-footer button {
-  font-size: var(--font-size-base);
-  text-shadow: none;
-  font-weight: bold;
-  transition: all var(--transition-fast);
-  border-radius: 6px;
-  background-color: var(--color-white) !important;
-}
-
-.driver-popover-footer button:hover {
-  border: 1px solid #535353;
-  background-color: var(--color-white) !important;
-  transform: translateY(-1px);
-}
-
-.driver-popover-footer button:focus-visible,
-.driver-popover-close-btn:focus-visible,
-.driver-popover button:focus-visible {
-  outline: none !important;
-}
-
-.driver-popover-prev-btn {
-  color: var(--color-text-primary) !important;
-  background-color: var(--color-white) !important;
-}
-
-.driver-popover-next-btn {
-  color: var(--color-blue) !important;
-}
-
-.driver-popover-title {
-  color: var(--color-blue);
-}
-
-.feed-scroll {
-  pointer-events: auto !important;
-  touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-body.driver-active .feed-scroll,
-body[class*="driver"] .feed-scroll {
+body[class*="react-joyride"] .feed-scroll,
+.react-joyride__overlay ~ * .feed-scroll {
   pointer-events: auto !important;
   overflow-y: auto !important;
   touch-action: pan-y !important;
-}
-
-.driver-overlay {
-  pointer-events: none !important;
-}
-
-body.driver-active .feed-scroll,
-body[class*="driver"] .feed-scroll,
-body.driver-active .feed-scroll *,
-body[class*="driver"] .feed-scroll * {
-  pointer-events: auto !important;
 }

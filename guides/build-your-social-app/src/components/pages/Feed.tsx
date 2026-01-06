@@ -1,27 +1,28 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react'
-import {count, get} from "../../api/actionbase";
-import {useButtonTypeHandler, useNavigateAndNext} from '../../hooks/useButtonTypeHandler';
-import {useLikeToggle} from '../../hooks/useLikeToggle';
-import {UserPost, User} from '../../types';
-import {DATABASE, TABLE, DIRECTION, ROUTES, UI} from '../../constants';
+import {count, get, scanUserFollows, scanUserPosts} from "../../api/actionbase";
+import {User, UserPost} from '../../types';
+import {DATABASE, DIRECTION, ROUTES, TABLE, UI} from '../../constants';
 import {formatDate} from '../../utils/date';
-import {scanUserFollows, scanUserPosts} from '../../utils/api';
 import {calculateImageIndex, shouldTriggerSwipe} from '../../utils/image';
-import Spinner from "../common/Spinner";
 import '../../styles/feed.css';
-import {me, postDetails, users} from "../../modules/dummy";
+import {useNavigateStep} from "../../hooks/useNavigateStep";
+import {useToggleLike} from "../../hooks/useToggleMutate";
+import Spinner from "../layout/Spinner";
+import {me, postDetails, users} from "../../constants/dummy";
+import {useNavigate} from "react-router-dom";
 
 const Feed: React.FC = () => {
+  const navigate = useNavigate();
+
   const [followings, setFollowings] = useState<User[]>([]);
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImageIndices, setCurrentImageIndices] = useState<Record<string, number>>({});
   const [touchStart, setTouchStart] = useState<{ postId: number, x: number } | null>(null);
   const [touchEnd, setTouchEnd] = useState<{ postId: number, x: number } | null>(null);
+  const nonMeFollowings = useMemo(() => followings.filter(x => !x.isMe), [followings]);
 
-  const handleNavigateAndNext = useNavigateAndNext();
-
-  const {handleLikeToggle} = useLikeToggle(
+  const {toggleLike} = useToggleLike(
     me.id,
     {
       onSuccess: (newIsLiked, newLikes, postId) => {
@@ -32,10 +33,10 @@ const Feed: React.FC = () => {
       onError: console.error
     });
 
-  const handleLikeToggleWrapper = useCallback(async (postId: number) => {
+  const toggleLikeCallback = useCallback(async (postId: number) => {
     const currentPost = userPosts.find(p => p.id === postId);
-    if (currentPost) await handleLikeToggle(postId, currentPost.isLiked ?? false);
-  }, [userPosts, handleLikeToggle]);
+    if (currentPost) await toggleLike(postId, currentPost.isLiked ?? false);
+  }, [userPosts, toggleLike]);
 
   const changeImageIndex = useCallback((postId: number | string, delta: number) => {
     setCurrentImageIndices(prev => {
@@ -119,8 +120,6 @@ const Feed: React.FC = () => {
     fetchData();
   }, []);
 
-  useButtonTypeHandler({isLoading, dependencies: [userPosts, followings]});
-
   useEffect(() => {
     const feedScrollElement = document.querySelector('.feed-scroll') as HTMLElement;
     if (!feedScrollElement) return;
@@ -151,8 +150,7 @@ const Feed: React.FC = () => {
     };
   }, []);
 
-
-  const nonMeFollowings = useMemo(() => followings.filter(x => !x.isMe), [followings]);
+  useNavigateStep(isLoading);
 
   return (
     <div className="app feed-page" style={{position: 'relative'}}>
@@ -182,7 +180,7 @@ const Feed: React.FC = () => {
         <div className="feed-scroll">
           <div className="stories-container">
             <div className="story">
-              <div className="story-avatar-wrapper your-story" onClick={() => handleNavigateAndNext(ROUTES.PROFILE(me.id))}>
+              <div className="story-avatar-wrapper your-story" onClick={() => navigate(ROUTES.PROFILE(me.id))}>
                 <div className="story-avatar-gray">
                   <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10"/>
@@ -203,7 +201,7 @@ const Feed: React.FC = () => {
             {nonMeFollowings.map((user, idx) => (
               <div key={idx} className="story">
                 <div className="story-avatar-wrapper">
-                    <div className="story-avatar" onClick={() => handleNavigateAndNext(ROUTES.PROFILE(user.id))}>
+                  <div className="story-avatar" onClick={() => navigate(ROUTES.PROFILE(user.id))}>
                     <div className="story-avatar-inner" style={{background: user.gradient}}>
                       <div className="avatar-placeholder">{user.icon}</div>
                     </div>
@@ -225,7 +223,7 @@ const Feed: React.FC = () => {
               return (
                 <article key={post.id || `${post.owner.id}-${index}`} className="post" id="feed-post">
                   <div className="post-header">
-                    <div className="post-profile" onClick={() => handleNavigateAndNext(ROUTES.PROFILE(post.owner.id))}>
+                    <div className="post-profile" onClick={() => navigate(ROUTES.PROFILE(post.owner.id))}>
                       <div className="post-avatar" style={{background: post.owner.gradient}}>{post.owner.icon}</div>
                       <div className="post-user-info">
                         <span className="post-username">{post.owner.id}</span>
@@ -303,7 +301,7 @@ const Feed: React.FC = () => {
 
                   <div className="post-actions">
                     <div className="post-actions-left">
-                      <button className={`action-btn ${post.isLiked ? 'liked' : ''}`} onClick={() => handleLikeToggleWrapper(post.id!!)}>
+                      <button className={`action-btn ${post.isLiked ? 'liked' : ''}`} onClick={() => toggleLikeCallback(post.id!!)}>
                         <svg viewBox="0 0 24 24" fill={post.isLiked ? '#ff3040' : 'none'} stroke="currentColor" strokeWidth="2">
                           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                         </svg>

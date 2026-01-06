@@ -1,14 +1,14 @@
 import React, {useState} from 'react';
-import {useButtonTypeHandler, useNavigateAndNext} from '../../hooks/useButtonTypeHandler';
 import {ROUTES} from '../../constants';
 import '../../styles/search.css';
-import {users} from "../../modules/dummy";
+import {useNavigateStep} from "../../hooks/useNavigateStep";
+import {users} from "../../constants/dummy";
+import {useNavigate} from "react-router-dom";
 
 const Search: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
-  const handleNavigateAndNext = useNavigateAndNext();
-
-  useButtonTypeHandler({isLoading: false});
+  const navigate = useNavigate();
+  useNavigateStep();
 
   return (
     <div className="app">
@@ -42,7 +42,7 @@ const Search: React.FC = () => {
               .map((user, index) => (
                 <div className="search-result-item"
                      id={"searched_user_" + index}
-                     onClick={() => handleNavigateAndNext(ROUTES.PROFILE(user.id))}>
+                     onClick={() => navigate(ROUTES.PROFILE(user.id))}>
                   <div className="result-avatar" style={{background: user.gradient}}>
                     <span className="avatar-text">{user.icon}</span>
                   </div>

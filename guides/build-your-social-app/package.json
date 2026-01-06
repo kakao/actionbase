@@ -14,9 +14,9 @@
     "@types/react-dom": "^18.2.0",
     "axios": "^1.13.2",
     "dompurify": "^3.3.1",
-    "driver.js": "^1.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-joyride": "^2.9.3",
     "react-router-dom": "^6.27.0",
     "typescript": "^5.0.0"
   },

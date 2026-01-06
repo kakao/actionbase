@@ -8,16 +8,10 @@ export const TABLE = {
   USER_FOLLOWS: 'user_follows',
 } as const;
 
-export const INDEX = {
-  CREATED_AT_DESC: 'created_at_desc',
-} as const;
-
 export const DIRECTION = {
   IN: 'IN',
   OUT: 'OUT',
 } as const;
-
-export const DEFAULT_LIMIT = 25;
 
 export const ROUTES = {
   HOME: '/',
@@ -33,9 +27,5 @@ export const UI = {
   SWIPE_THRESHOLD: 50,
   CAROUSEL_TRANSITION_DURATION: 300,
   REFRESH_DELAY: 100,
-} as const;
-
-export const COLORS = {
-  LIKED: '#ff3040',
 } as const;
 

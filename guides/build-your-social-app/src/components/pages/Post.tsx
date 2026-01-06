@@ -1,32 +1,33 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {useDriver} from '../../contexts/DriverContext';
-import {me, postDetails, users} from '../../modules/dummy';
-import {useButtonTypeHandler} from '../../hooks/useButtonTypeHandler';
-import {useLikeToggle} from '../../hooks/useLikeToggle';
-import {UserPost, TouchPosition} from '../../types';
-import {DIRECTION, ROUTES, UI, COLORS} from '../../constants';
+import {TouchPosition, UserPost} from '../../types';
 import {formatDate} from '../../utils/date';
-import {getPostLikeData, scanUserPosts} from '../../utils/api';
-import {shouldTriggerSwipe, calculateImageIndex} from '../../utils/image';
-import Spinner from "../common/Spinner";
+import {count, get, scanUserPosts} from '../../api/actionbase';
+import {DATABASE, DIRECTION, ROUTES, TABLE, UI} from '../../constants';
+import {calculateImageIndex, shouldTriggerSwipe} from '../../utils/image';
 import NotFound from "./NotFound";
 import '../../styles/post.css';
+import {useNavigateStep} from "../../hooks/useNavigateStep";
+import {useToggleLike} from "../../hooks/useToggleMutate";
+import Spinner from "../layout/Spinner";
+import {me, postDetails, users} from "../../constants/dummy";
 
 const Post: React.FC = () => {
   const {id} = useParams();
+  const post = postDetails.find(p => String(p.id) === id);
+  if (!post) {
+    return <NotFound/>;
+  }
+
   const navigate = useNavigate();
   const [userPost, setUserPost] = useState<UserPost | null>(null);
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [likesCount, setLikesCount] = useState<number>(0);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const touchRef = useRef<TouchPosition>({start: null, end: null});
 
-  const post = postDetails.find(p => String(p.id) === id);
-
-  const {handleLikeToggle: toggleLike} = useLikeToggle(
+  const {toggleLike: toggleLike} = useToggleLike(
     me.id,
     {
       onSuccess: (newIsLiked, newLikes) => {
@@ -40,11 +41,38 @@ const Post: React.FC = () => {
     if (userPost?.id) await toggleLike(userPost.id, isLiked);
   }, [userPost?.id, isLiked, toggleLike]);
 
-  const {registerCallback, moveNextStep} = useDriver();
+  const fetchPost = async () => {
+    try {
+      const userPostPayload = await scanUserPosts(post.id, DIRECTION.IN);
+      const posts = userPostPayload.edges.map(edge => ({
+        owner: users.find(u => u.id === edge.source) || users[0],
+        id: edge.target,
+        images: post.imageUrls || [],
+        content: post.content || '',
+        likes: 0,
+        createdAt: formatDate(edge.properties["createdAt"]),
+      }));
 
-  useEffect(() => {
-    registerCallback(UI.TOGGLE_LIKE, handleLikeToggle);
-  }, [registerCallback, handleLikeToggle]);
+      if (posts.length > 0) {
+        const postData = posts[0];
+        setUserPost(postData);
+
+        const [likeCountPayload, userLikePayload] = await Promise.all([
+          count(DATABASE.SOCIAL, TABLE.USER_LIKES, postData.id, DIRECTION.IN),
+          get(DATABASE.SOCIAL, TABLE.USER_LIKES, me.id, postData.id)
+        ]);
+        const likesCount = likeCountPayload.counts[0]?.count ?? 0;
+        const isLiked = userLikePayload.count > 0;
+
+        setLikesCount(likesCount);
+        setIsLiked(isLiked);
+      }
+    } catch (err) {
+      console.error("Failed to fetch post:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!post) {
@@ -52,59 +80,18 @@ const Post: React.FC = () => {
       return;
     }
     setCurrentImageIndex(0);
-    const fetchPost = async () => {
-      try {
-        const userPostPayload = await scanUserPosts(post.id, DIRECTION.IN);
-        const posts = userPostPayload.edges.map(edge => ({
-          owner: users.find(u => u.id === edge.source) || users[0],
-          id: edge.target,
-          images: post.imageUrls || [],
-          content: post.content || '',
-          likes: 0,
-          createdAt: formatDate(edge.properties["createdAt"]),
-        }));
 
-        if (posts.length > 0) {
-          const postData = posts[0];
-          setUserPost(postData);
-          const {likesCount, isLiked} = await getPostLikeData(postData.id, me.id);
-          setLikesCount(likesCount);
-          setIsLiked(isLiked);
-        }
-      } catch (err) {
-        console.error("Failed to fetch post:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchPost();
   }, [id, post?.id, post?.imageUrls, post?.content]);
 
-  useButtonTypeHandler({
-    isLoading,
-    dependencies: [userPost, isLiked, likesCount],
-    setRefreshTrigger
-  });
+  useNavigateStep(isLoading);
 
-  const refreshTriggerProcessedRef = useRef<number>(0);
   useEffect(() => {
-    if (refreshTrigger <= 0 || refreshTriggerProcessedRef.current === refreshTrigger || !userPost?.id) return;
-    refreshTriggerProcessedRef.current = refreshTrigger;
-    (async () => {
-      try {
-        const {likesCount, isLiked} = await getPostLikeData(userPost.id, me.id);
-        setLikesCount(likesCount);
-        setIsLiked(isLiked);
-        setTimeout(() => moveNextStep(), UI.REFRESH_DELAY);
-      } catch (err) {
-        console.error("Failed to refresh like data:", err);
-      }
-    })();
-  }, [refreshTrigger, userPost?.id, moveNextStep]);
-
-  if (!post) {
-    return <NotFound/>;
-  }
+    window.addEventListener('tourStepRefresh', fetchPost as EventListener);
+    return () => {
+      window.removeEventListener('tourStepRefresh', fetchPost as EventListener);
+    };
+  }, []);
 
   return (
     <div className="app" style={{position: 'relative', height: '100%'}}>
@@ -201,7 +188,7 @@ const Post: React.FC = () => {
             <div className="action-buttons-wrapper">
               <div className="actions-left">
                 <button className={`action-icon ${isLiked ? 'liked' : ''}`} onClick={handleLikeToggle}>
-                  <svg viewBox="0 0 24 24" fill={isLiked ? COLORS.LIKED : 'none'} stroke="currentColor" strokeWidth="2">
+                  <svg viewBox="0 0 24 24" fill={isLiked ? '#ff3040' : 'none'} stroke="currentColor" strokeWidth="2">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                   </svg>
                 </button>
