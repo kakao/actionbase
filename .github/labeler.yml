@@ -1,4 +1,42 @@
 Workflow:
   - changed-files:
-      - any-glob-to-any-file:
-          - .github/workflows/**
+    - any-glob-to-any-file:
+      - .github/workflows/**
+
+Build:
+  - changed-files:
+    - any-glob-to-any-file:
+      - build.gradle.kts
+      - '**/build.gradle.kts'
+      - settings.gradle.kts
+      - '**/settings.gradle.kts'
+      - gradle.properties
+      - gradle/**
+
+Core:
+  - changed-files:
+    - any-glob-to-any-file:
+      - codec-java/**
+      - conventions/**
+      - core/**
+      - core-java/**
+
+Engine:
+  - changed-files:
+    - any-glob-to-any-file:
+      - engine/**
+
+Platform:
+  - changed-files:
+    - any-glob-to-any-file:
+      - platform/**
+
+Server:
+  - changed-files:
+    - any-glob-to-any-file:
+      - server/**
+
+Website:
+  - changed-files:
+    - any-glob-to-any-file:
+      - website/**
