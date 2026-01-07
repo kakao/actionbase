@@ -78,13 +78,13 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
 
   return (
     <>
-      <div className="split-layout-gutter split-layout-gutter-left">
+      <div className="gutter gutter-left">
         <div className="breadcrumb-actions">
           <a
             href="https://actionbase.io/"
             target="_blank"
             rel="noopener noreferrer"
-            className="split-layout-doc-link"
+            className="doc-link"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -93,7 +93,7 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
             <span>actionbase.io</span>
           </a>
           <div
-            className="split-layout-stars-image"
+            className="stars-image"
             dangerouslySetInnerHTML={{__html: sanitizedStarsImage}}
           />
         </div>
@@ -109,33 +109,35 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
       </div>
 
       <ApiLogProvider>
-        <div className="split-layout-title">
-          <span className="split-layout-title-text">Actionbase Hands-On: Build Your Social App</span>
+        <div className="title">
+          <span className="title-text">Actionbase Hands-On: Build Your Social App</span>
         </div>
-        <div className="split-layout-header-line"/>
+        <div className="header-line"/>
 
-        <div className="browser-frame-wrapper">
-          <div className="browser-frame">
-            <div className="browser-header">
-              <div className="browser-buttons">
-                <span className="browser-btn close"></span>
-                <span className="browser-btn minimize"></span>
-                <span className="browser-btn maximize"></span>
-              </div>
-            </div>
-            <div className="browser-content">
-              <div className="mobile-frame">
-                <div className="mobile-content">
-                  {children}
-                  <MobileFooter/>
+        <div className="layout">
+          <div className="browser-frame-wrapper">
+            <div className="browser-frame">
+              <div className="browser-header">
+                <div className="browser-buttons">
+                  <span className="browser-btn close"></span>
+                  <span className="browser-btn minimize"></span>
+                  <span className="browser-btn maximize"></span>
                 </div>
               </div>
+              <div className="browser-content">
+                <div className="mobile-frame">
+                  <div className="mobile-content">
+                    {children}
+                    <MobileFooter/>
+                  </div>
+                </div>
+              </div>
+              <ApiLogs/>
             </div>
-            <ApiLogs/>
+            <div className="terminal-wrapper">
+              <CliTerminal/>
+            </div>
           </div>
-        </div>
-        <div className="terminal-wrapper">
-          <CliTerminal/>
         </div>
       </ApiLogProvider>
     </>
