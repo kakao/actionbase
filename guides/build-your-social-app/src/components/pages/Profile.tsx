@@ -7,7 +7,6 @@ import '../../styles/profile.css';
 import Spinner from "../layout/Spinner";
 import {me, postDetails, users} from "../../constants/Dummy";
 import {useToggleFollowing} from "../../hooks/useToggleMutate";
-import {useNavigateStep} from "../../hooks/useNavigateStep";
 
 interface UserPost {
   id: number,
@@ -73,8 +72,6 @@ const Profile: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [id, owner.id]);
-
-  useNavigateStep(isLoading);
 
   useEffect(() => {
     window.addEventListener('tourStepRefresh', fetchData as EventListener);

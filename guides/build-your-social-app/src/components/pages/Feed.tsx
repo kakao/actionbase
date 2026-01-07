@@ -5,7 +5,6 @@ import {DATABASE, DIRECTION, ROUTES, TABLE, UI} from '../../constants';
 import {formatDate} from '../../utils/date';
 import {calculateImageIndex, shouldTriggerSwipe} from '../../utils/image';
 import '../../styles/feed.css';
-import {useNavigateStep} from "../../hooks/useNavigateStep";
 import {useToggleLike} from "../../hooks/useToggleMutate";
 import Spinner from "../layout/Spinner";
 import {me, postDetails, users} from "../../constants/Dummy";
@@ -149,8 +148,6 @@ const Feed: React.FC = () => {
       document.removeEventListener('touchmove', handleEvent as EventListener, {capture: true});
     };
   }, []);
-
-  useNavigateStep(isLoading);
 
   return (
     <div className="app feed-page" style={{position: 'relative'}}>

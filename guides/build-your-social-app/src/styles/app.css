@@ -88,9 +88,49 @@ body {
   scrollbar-width: none;
 }
 
-body[class*="react-joyride"] .feed-scroll,
-.react-joyride__overlay ~ * .feed-scroll {
+body[class*="driver-highlighted-element"] .feed-scroll,
+.driver-overlay ~ * .feed-scroll {
   pointer-events: auto !important;
   overflow-y: auto !important;
   touch-action: pan-y !important;
+}
+
+.driver-popover *, .driver-popover-description * {
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+}
+
+.driver-popover-title {
+  color: #3c53f7;
+  text-align: center;
+}
+
+.driver-active .driver-active-element, .driver-active .driver-active-element *, .driver-popover, .driver-popover * {
+  pointer-events: auto !important;
+}
+
+.driver-popover-description {
+  font-size: 15px;
+  text-align: center;
+}
+
+.driver-popover-footer button {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.driver-popover-close-btn {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.driver-popover-close-btn:focus,
+.driver-popover-close-btn:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.driver-popover-close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
 }

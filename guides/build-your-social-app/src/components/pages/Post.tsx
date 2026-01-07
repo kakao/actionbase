@@ -7,7 +7,6 @@ import {DATABASE, DIRECTION, ROUTES, TABLE, UI} from '../../constants';
 import {calculateImageIndex, shouldTriggerSwipe} from '../../utils/image';
 import NotFound from "./NotFound";
 import '../../styles/post.css';
-import {useNavigateStep} from "../../hooks/useNavigateStep";
 import {useToggleLike} from "../../hooks/useToggleMutate";
 import Spinner from "../layout/Spinner";
 import {me, postDetails, users} from "../../constants/Dummy";
@@ -85,8 +84,6 @@ const Post: React.FC = () => {
 
     fetchPost();
   }, [id, post?.id, post?.imageUrls, post?.content]);
-
-  useNavigateStep(isLoading);
 
   useEffect(() => {
     window.addEventListener('tourStepRefresh', fetchPost as EventListener);

@@ -1,14 +1,12 @@
 import React, {useState} from 'react';
 import {ROUTES} from '../../constants';
 import '../../styles/search.css';
-import {useNavigateStep} from "../../hooks/useNavigateStep";
 import {users} from "../../constants/Dummy";
 import {useNavigate} from "react-router-dom";
 
 const Search: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
   const navigate = useNavigate();
-  useNavigateStep();
 
   return (
     <div className="app">

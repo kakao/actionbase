@@ -7,6 +7,7 @@ import MobileFooter from "./MobileFooter";
 import '../../styles/layout.css';
 import ApiLogs from "./ApiLogs";
 import {breadCrumbSteps} from "../../constants/BreadCrumbSteps";
+import {useDriver} from "../../contexts/DriverContext";
 
 const OWNER = "kakao";
 const REPOSITORY = "actionbase";
@@ -17,6 +18,7 @@ interface SplitLayoutProps {
 }
 
 const Layout: React.FC<SplitLayoutProps> = ({children}) => {
+  const {stepIndex} = useDriver()
   const [starsImage, setStarsImage] = useState<string>(DEFAULT_GITHUB_START);
   const [breadcrumbSteps, setBreadcrumbSteps] = useState(breadCrumbSteps);
 
@@ -32,43 +34,34 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
   }, []);
 
   useEffect(() => {
-    const handleTourStepChange = (event: CustomEvent) => {
-      const {stepIndex} = event.detail;
-      if (stepIndex !== undefined && stepIndex >= 0) {
-        const newStep =
-          breadcrumbSteps.map((step) => {
-            const isMainStepActive = step.stepIndex === stepIndex;
-            const isMainStepCompleted = step.stepIndex < stepIndex;
+    if (stepIndex !== undefined && stepIndex >= 0) {
+      const newStep =
+        breadcrumbSteps.map((step) => {
+          const isMainStepActive = step.stepIndex === stepIndex;
+          const isMainStepCompleted = step.stepIndex < stepIndex;
 
-            const updatedSubSteps = step.subSteps?.map((subStep) => {
-              const isSubStepActive = subStep.stepIndex === stepIndex;
-              const isSubStepCompleted = subStep.stepIndex < stepIndex;
-              return {
-                ...subStep,
-                isActive: isSubStepActive,
-                isCompleted: isSubStepCompleted
-              };
-            });
-
-            const hasActiveSubStep = updatedSubSteps?.some(subStep => subStep.isActive);
-
+          const updatedSubSteps = step.subSteps?.map((subStep) => {
+            const isSubStepActive = subStep.stepIndex === stepIndex;
+            const isSubStepCompleted = subStep.stepIndex < stepIndex;
             return {
-              ...step,
-              isActive: isMainStepActive && !hasActiveSubStep,
-              isCompleted: isMainStepCompleted,
-              subSteps: updatedSubSteps
+              ...subStep,
+              isActive: isSubStepActive,
+              isCompleted: isSubStepCompleted
             };
-          })
-        setBreadcrumbSteps(newStep);
-      }
-    };
+          });
 
-    window.addEventListener('tourStepChange', handleTourStepChange as EventListener);
+          const hasActiveSubStep = updatedSubSteps?.some(subStep => subStep.isActive);
 
-    return () => {
-      window.removeEventListener('tourStepChange', handleTourStepChange as EventListener);
-    };
-  }, []);
+          return {
+            ...step,
+            isActive: isMainStepActive && !hasActiveSubStep,
+            isCompleted: isMainStepCompleted,
+            subSteps: updatedSubSteps
+          };
+        })
+      setBreadcrumbSteps(newStep);
+    }
+  }, [stepIndex]);
 
   return (
     <>

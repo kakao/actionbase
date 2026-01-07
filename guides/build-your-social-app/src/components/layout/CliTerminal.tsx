@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {run} from "../../api/cli";
 import steps from "../../constants/HandsOnStepCommand";
 import '../../styles/cli-terminal.css';
+import {useDriver} from "../../contexts/DriverContext";
 
 interface CommandHistory {
   prompt: string;
@@ -13,7 +14,7 @@ interface CommandHistory {
 const PROMPT_PREFIX = 'actionbase';
 
 const CliTerminal: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState<number>(0);
+  const {stepIndex} = useDriver()
   const [commandHistory, setCommandHistory] = useState<CommandHistory[]>([]);
 
   const clickedButtonsRef = useRef<Set<number>>(new Set());
@@ -39,14 +40,14 @@ const CliTerminal: React.FC = () => {
       } else {
         result = response.success ? '<p class="command-result success">✓ Success</p>' : '<p class="command-result error">Failed</p>';
       }
-      setCommandHistory(prev => [...prev, {type: 'command', prompt: '', content: '', result, stepIndex: currentStep}]);
+      setCommandHistory(prev => [...prev, {type: 'command', prompt: '', content: '', result, stepIndex: stepIndex}]);
     } catch (err: any) {
       const result = `<p class="command-result error">${err.responseData?.error || err.message || 'Failed to execute command'}</p>`;
       console.error('Failed to execute command:', err);
       setCommandHistory(
         prev =>
           [...prev,
-            {type: 'command', prompt: '', content: '', result, stepIndex: currentStep}]);
+            {type: 'command', prompt: '', content: '', result, stepIndex: stepIndex}]);
     }
 
     const itemIndex = commandHistory.findIndex(cmd => (cmd.content === command));
@@ -62,28 +63,13 @@ const CliTerminal: React.FC = () => {
         commandHistoryRef.current.scrollTop = commandHistoryRef.current.scrollHeight;
       }
     }, 100);
-  }, [currentStep]);
+  }, [stepIndex]);
 
   useEffect(() => {
-    const handleTourStepChange = (event: CustomEvent) => {
-      const {stepIndex} = event.detail;
-      if (stepIndex !== undefined && stepIndex >= 0) {
-        setCurrentStep(stepIndex);
-      }
-    };
+    if (stepIndex >= steps.length) return;
 
-    window.addEventListener('tourStepChange', handleTourStepChange as EventListener);
-
-    return () => {
-      window.removeEventListener('tourStepChange', handleTourStepChange as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (currentStep >= steps.length) return;
-
-    const stepCommand = steps.find(value => value.stepIndex == currentStep);
-    if (stepCommand == undefined || stepCommand.stepIndex != currentStep) return;
+    const stepCommand = steps.find(value => value.stepIndex == stepIndex);
+    if (stepCommand == undefined || stepCommand.stepIndex != stepIndex) return;
 
     const {command} = stepCommand;
     const stepDatabase = stepCommand.database;
@@ -93,9 +79,9 @@ const CliTerminal: React.FC = () => {
     if (command) {
       currentCommandDataRef.current = {command, stepDatabase, formatPrompt};
       const prompt = formatPrompt(stepDatabase ?? '');
-      setCommandHistory(prev => [...prev, {type: 'command', prompt, content: command, stepIndex: currentStep}]);
+      setCommandHistory(prev => [...prev, {type: 'command', prompt, content: command, stepIndex: stepIndex}]);
     }
-  }, [currentStep, formatPrompt]);
+  }, [stepIndex, formatPrompt]);
 
   useEffect(() => {
     if (commandHistory.length === 0) return;
@@ -122,7 +108,7 @@ const CliTerminal: React.FC = () => {
   }, [commandHistory.length]);
 
   const runCommand = useCallback((item: CommandHistory, index: number) => {
-    const isCurrentStep = item.stepIndex === undefined || item.stepIndex === currentStep;
+    const isCurrentStep = item.stepIndex === undefined || item.stepIndex === stepIndex;
     if (!isCurrentStep || item.result) return;
 
     if (clickedButtonsRef.current.has(index)) {
@@ -141,7 +127,7 @@ const CliTerminal: React.FC = () => {
     }, 0);
 
     appendCommandHistory(item);
-  }, [currentStep, appendCommandHistory]);
+  }, [stepIndex, appendCommandHistory]);
 
   const renderCommand = useCallback((item: CommandHistory, index: number, hideCursor: boolean = false) => {
     if (!item.content) {
@@ -186,26 +172,26 @@ const CliTerminal: React.FC = () => {
   const lastCommandIndex = useMemo(() => {
     for (let i = commandHistory.length - 1; i >= 0; i--) {
       const item = commandHistory[i];
-      if (item.stepIndex === currentStep && !item.result) {
+      if (item.stepIndex === stepIndex && !item.result) {
         return i;
       }
     }
     return -1;
-  }, [commandHistory, currentStep]);
+  }, [commandHistory, stepIndex]);
 
   const needDefaultPrompt = useMemo(() => {
-    if (currentStep >= steps.length) return false;
+    if (stepIndex >= steps.length) return false;
 
-    const stepCommand = steps.find(value => value.stepIndex === currentStep);
+    const stepCommand = steps.find(value => value.stepIndex === stepIndex);
     if (!stepCommand || !stepCommand.command) {
       return true;
     }
 
-    const currentStepCommands = commandHistory.filter(item => item.stepIndex === currentStep);
+    const currentStepCommands = commandHistory.filter(item => item.stepIndex === stepIndex);
     const hasCommand = currentStepCommands.some(item => item.content === stepCommand.command);
     const hasResult = currentStepCommands.some(item => item.result);
     return hasCommand && hasResult;
-  }, [commandHistory, currentStep]);
+  }, [commandHistory, stepIndex]);
 
   return (
     <div className="terminal-body-container" id="cli-commands">
@@ -234,7 +220,7 @@ const CliTerminal: React.FC = () => {
                         {!item.result && (() => {
                           const isClicked = clickedButtonsRef.current.has(index);
                           const isLastCommand = index === lastCommandIndex;
-                          const shouldHide = !isLastCommand || (item.stepIndex !== undefined && item.stepIndex !== currentStep) || isClicked;
+                          const shouldHide = !isLastCommand || (item.stepIndex !== undefined && item.stepIndex !== stepIndex) || isClicked;
                           return (
                             <button
                               className={`run-command-btn ${shouldHide ? 'hidden-step-btn' : ''}`}
@@ -263,7 +249,7 @@ const CliTerminal: React.FC = () => {
               <div className="command-line">
                 <div className="command-line-inner">
                   <div className="command-line-item">
-                    <span className="prompt">{formatPrompt(steps.find(s => s.stepIndex === currentStep)?.database)}{"> "}</span>
+                    <span className="prompt">{formatPrompt(steps.find(s => s.stepIndex === stepIndex)?.database)}{"> "}</span>
                     <span className="cursor">_</span>
                   </div>
                 </div>

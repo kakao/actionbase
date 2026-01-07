@@ -4,7 +4,6 @@ import {User} from '../../types';
 import {DIRECTION, ROUTES} from '../../constants';
 import NotFound from "./NotFound";
 import '../../styles/followings.css';
-import {useNavigateStep} from "../../hooks/useNavigateStep";
 import Spinner from "../layout/Spinner";
 import {me, users} from "../../constants/Dummy";
 import {useToggleFollowing} from "../../hooks/useToggleMutate";
@@ -69,8 +68,6 @@ const Followings: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  useNavigateStep(isLoading);
 
   return (
     <div className="app" style={{position: 'relative', height: '100%'}}>

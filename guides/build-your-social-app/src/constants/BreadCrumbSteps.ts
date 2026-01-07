@@ -21,7 +21,7 @@ export const breadCrumbSteps: BreadCrumbStep[] = [
       },
       {
         stepIndex: 3,
-        title: "Use context",
+        title: "Set context",
       }
     ]
   },
@@ -65,11 +65,11 @@ export const breadCrumbSteps: BreadCrumbStep[] = [
       },
       {
         stepIndex: 13,
-        title: "me -> merlin's post",
+        title: "Get likes",
       },
       {
         stepIndex: 14,
-        title: "Same as follows",
+        title: "(In Progress: Same as follows)",
       }
     ]
   },
@@ -79,10 +79,10 @@ export const breadCrumbSteps: BreadCrumbStep[] = [
   },
   {
     stepIndex: 16,
-    title: "GoodBye!"
+    title: "End 🎉"
   },
   {
     stepIndex: 17,
-    title: "Note"
+    title: "Goodbye!"
   },
 ];

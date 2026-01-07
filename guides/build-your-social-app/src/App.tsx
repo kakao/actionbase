@@ -1,6 +1,6 @@
 import React from "react";
 import {BrowserRouter, Route, Routes} from "react-router-dom";
-import {TourProvider} from './contexts/TourContext';
+import {DriverProvider} from './contexts/DriverContext';
 import Layout from "./components/layout/Layout";
 import Feed from "./components/pages/Feed";
 import Followers from "./components/pages/Followers";
@@ -14,7 +14,7 @@ import "./styles/app.css";
 function App() {
   return (
     <BrowserRouter>
-      <TourProvider>
+      <DriverProvider>
         <Layout>
           <Routes>
             <Route path="/" element={<Feed/>}/>
@@ -26,7 +26,7 @@ function App() {
             <Route path="*" element={<NotFound/>}/>
           </Routes>
         </Layout>
-      </TourProvider>
+      </DriverProvider>
     </BrowserRouter>
   );
 }
