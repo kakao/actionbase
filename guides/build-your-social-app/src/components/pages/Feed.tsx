@@ -8,7 +8,7 @@ import '../../styles/feed.css';
 import {useNavigateStep} from "../../hooks/useNavigateStep";
 import {useToggleLike} from "../../hooks/useToggleMutate";
 import Spinner from "../layout/Spinner";
-import {me, postDetails, users} from "../../constants/dummy";
+import {me, postDetails, users} from "../../constants/Dummy";
 import {useNavigate} from "react-router-dom";
 
 const Feed: React.FC = () => {

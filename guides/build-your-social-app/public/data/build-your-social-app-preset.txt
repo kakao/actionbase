@@ -1,3 +1,5 @@
+create database --name social --comment 'social database';
+
 create storage
 --name user_posts_storage
 --data '{"desc" : "user post storage", "type" : "HBASE", "conf" : {"namespace" : "test","tableName" : "user_post_table"}}';

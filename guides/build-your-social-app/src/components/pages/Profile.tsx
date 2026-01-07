@@ -5,7 +5,7 @@ import {DATABASE, DIRECTION, ROUTES, TABLE} from '../../constants';
 import NotFound from "./NotFound";
 import '../../styles/profile.css';
 import Spinner from "../layout/Spinner";
-import {me, postDetails, users} from "../../constants/dummy";
+import {me, postDetails, users} from "../../constants/Dummy";
 import {useToggleFollowing} from "../../hooks/useToggleMutate";
 import {useNavigateStep} from "../../hooks/useNavigateStep";
 

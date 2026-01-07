@@ -10,7 +10,7 @@ import '../../styles/post.css';
 import {useNavigateStep} from "../../hooks/useNavigateStep";
 import {useToggleLike} from "../../hooks/useToggleMutate";
 import Spinner from "../layout/Spinner";
-import {me, postDetails, users} from "../../constants/dummy";
+import {me, postDetails, users} from "../../constants/Dummy";
 
 const Post: React.FC = () => {
   const {id} = useParams();

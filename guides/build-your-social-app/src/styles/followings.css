@@ -31,7 +31,6 @@
 
 .followers-list {
   background: var(--color-white);
-  overflow-y: auto;
 }
 
 .follower-item {

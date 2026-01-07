@@ -1,6 +1,6 @@
 import {apiFetch} from './client';
 
-export function runCommand(
+export function run(
   request: CommandRequest
 ) {
   return apiFetch<CommandResponse>(
