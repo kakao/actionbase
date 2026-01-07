@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	DefaultServerPort = "8081"
+	DefaultServerPort = "9300"
 )
 
 type ActionbaseCommandLineRunner struct {
