@@ -26,6 +26,7 @@ const Post: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const touchRef = useRef<TouchPosition>({start: null, end: null});
+  const [hasError, setHasError] = useState<boolean>(false);
 
   const {toggleLike: toggleLike} = useToggleLike(
     me.id,
@@ -69,6 +70,7 @@ const Post: React.FC = () => {
       }
     } catch (err) {
       console.error("Failed to fetch post:", err);
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
@@ -92,6 +94,10 @@ const Post: React.FC = () => {
       window.removeEventListener('tourStepRefresh', fetchPost as EventListener);
     };
   }, []);
+
+  if (hasError) {
+    return <NotFound/>;
+  }
 
   return (
     <div className="app" style={{position: 'relative', height: '100%'}}>
