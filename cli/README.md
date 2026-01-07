@@ -1,6 +1,6 @@
 # Actionbase CLI
 
-The Actionbase CLI is a command-line interface for managing and maintaining Actionbase clusters.
+The Actionbase CLI is a command-line interface for managing and maintaining Actionbase.
 
 ## Development Setup
 
@@ -26,7 +26,7 @@ Or use Go commands directly:
 
 ```bash
 go build -o build/actionbase ./cmd/actionbase
-./build/actionbase --host http://localhost:8080
+./build/actionbase
 ```
 
 ## Release Guide
@@ -95,72 +95,3 @@ Examples:
 - `https://github.com/kakao/actionbase/releases/download/v1.0.0/actionbase-linux-amd64`
 
 After creating a release, verify that the installation script works correctly.
-
-### 5. Automation (Optional)
-
-You can use CI/CD pipelines to automatically build and create releases. Example GitHub Actions workflow:
-
-```yaml
-name: Release
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.19'
-      - name: Build
-        run: |
-          cd oss/cli
-          make build-all
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            oss/cli/build/actionbase-*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-## Testing
-
-```bash
-# Run all tests
-make test
-
-# Test specific package
-go test ./internal/command/...
-```
-
-## Code Quality
-
-```bash
-# Format code
-make fmt
-
-# Static analysis
-make vet
-
-# Linting (if using golangci-lint, etc.)
-make lint
-```
-
-## Makefile Commands
-
-- `make build` - Build binary for current platform
-- `make build-linux` - Build for Linux AMD64
-- `make build-macos` - Build for macOS (Intel + Apple Silicon)
-- `make build-windows` - Build for Windows AMD64
-- `make build-all` - Build for all platforms
-- `make test` - Run tests
-- `make clean` - Remove build artifacts
-- `make deps` - Download dependencies
-- `make fmt` - Format code
-- `make vet` - Run go vet
