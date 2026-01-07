@@ -104,8 +104,18 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
       </div>
 
       <ApiLogProvider>
-        <div className="title">
-          <span className="title-text">Hands-on Guide: Build Your Social App</span>
+        <div className="navbar">
+          <div className="title-text">
+            <span>Hands-on Guide: Build Your Social App</span>
+          </div>
+          <div className="doc-link">
+            <a href="https://actionbase.io/guides/build-your-social-media-app/" target="_blank">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              See Documentation</a>
+          </div>
         </div>
         <div className="header-line"/>
 
