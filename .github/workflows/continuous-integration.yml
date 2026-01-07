@@ -2,9 +2,21 @@ name: 'Continuous Integration'
 
 on:
   push:
+    branches: [ main ]
+
+  pull_request:
+    branches: [ main ]
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 jobs:
   build:
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     name: Build
     runs-on: ubuntu-latest
     steps:
