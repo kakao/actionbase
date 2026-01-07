@@ -210,9 +210,10 @@ const Post: React.FC = () => {
                 </svg>
               </button>
             </div>
-            <div className="likes-count-section">
-              <span className="likes-text">{likesCount.toLocaleString()} likes</span>
-            </div>
+          </div>
+
+          <div className="likes-count-section">
+            <span className="likes-text">{likesCount.toLocaleString()} likes</span>
           </div>
 
           <div className="post-info">
@@ -225,8 +226,8 @@ const Post: React.FC = () => {
                 <span>{userPost?.content}</span>
               </p>
             </div>
-            <div className="post-timestamp">{userPost?.createdAt}</div>
           </div>
+          <div className="post-timestamp">{userPost?.createdAt}</div>
         </div>
       )}
     </div>

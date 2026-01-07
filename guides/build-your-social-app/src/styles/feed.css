@@ -391,10 +391,10 @@
 }
 
 .post-timestamp {
-  padding-bottom: var(--spacing-lg);
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   text-transform: uppercase;
+  padding: var(--spacing-xl);
 }
 
 @media (min-width: 768px) {
