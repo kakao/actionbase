@@ -141,7 +141,7 @@ export default defineConfig({
 				},
 			],
       components: {
-        Head: './src/components/favicon.astro',
+        Head: './src/components/Head.astro',
       },
 			expressiveCode: { shiki: { langs: [markdocGrammar] } },
 			plugins: [
