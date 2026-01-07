@@ -289,19 +289,6 @@ const CliTerminal: React.FC = () => {
               )}
             </div>
           ))}
-
-          {currentPrompt && (
-            <div className="command-block command-block-prompt">
-              <div className="command-line">
-                <div className="command-line-inner">
-                  <div className="command-line-item">
-                    <span className="prompt">{currentPrompt}{"> "}</span>
-                    <span className="cursor">_</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
