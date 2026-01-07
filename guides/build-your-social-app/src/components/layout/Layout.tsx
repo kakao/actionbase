@@ -105,7 +105,7 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
 
       <ApiLogProvider>
         <div className="title">
-          <span className="title-text">Actionbase Hands-On: Build Your Social App</span>
+          <span className="title-text">Hands-on Guide: Build Your Social App</span>
         </div>
         <div className="header-line"/>
 
