@@ -159,7 +159,7 @@ const steps: Step[] = [
     target: "[id='followers-list']",
     title: "See followers list",
     content: "You can see these values are the same as the results.",
-    placement: 'top',
+    placement: 'bottom',
     disableBeacon: true,
   },
   { // 19
@@ -172,7 +172,7 @@ const steps: Step[] = [
     target: "[class='mobile-frame']",
     title: "See following's posts",
     content: "You can see your following's posts!",
-    placement: 'top',
+    placement: 'right',
     disableBeacon: true,
   },
   { // 21
