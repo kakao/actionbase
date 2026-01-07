@@ -48,7 +48,8 @@ private fun Project.generateApplicationArtifactName(timestamp: String = nowKST()
                 "main"
             }
             else -> {
-                throw IllegalArgumentException("Unsupported branch: $branchName. Only main, release/, feature/ branches are allowed.")
+                // throw IllegalArgumentException("Unsupported branch: $branchName. Only main, release/, feature/ branches are allowed.")
+                "unknown"
             }
         }
         val commitHash: String = gitCommitHash()

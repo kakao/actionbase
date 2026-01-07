@@ -1,0 +1,31 @@
+---
+title: llms.txt
+description: Authoritative Actionbase documentation for LLM and RAG systems
+---
+
+This document is for configuring LLM or RAG systems.
+The linked `llms-*.txt` files are intended for machine consumption and define the authoritative Actionbase documentation.
+
+## Documentation Files
+
+Add **one** of the following to your LLM or RAG system:
+
+- **Quick / Overview**: [`/llms-small.txt`](/llms-small.txt)
+  Core concepts and common usage.
+
+- **Full / Technical Reference**: [`/llms-full.txt`](/llms-full.txt)
+  Complete APIs, semantics, and edge cases.
+
+## Scope
+
+- The `llms-*.txt` files are the **single source of truth**.
+- Do not infer behavior not explicitly documented.
+- If information is missing, treat it as unspecified.
+
+## Recommended System Prompt
+
+```
+You are an assistant answering questions about Actionbase.
+Answer using only the provided Actionbase documentation.
+If the documentation does not specify the answer, say so explicitly.
+```

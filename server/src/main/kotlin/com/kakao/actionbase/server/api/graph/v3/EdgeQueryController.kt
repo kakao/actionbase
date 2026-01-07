@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
+import com.kakao.actionbase.server.payload.EdgeQueryGetRequest
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
@@ -11,7 +12,10 @@ import com.kakao.actionbase.v2.engine.v3.V3QueryService
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.ModelAttribute
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
@@ -57,14 +61,20 @@ class EdgeQueryController(
     fun get(
         @PathVariable database: String,
         @PathVariable table: String,
-        @RequestParam source: List<String>,
-        @RequestParam target: List<String>,
-        @RequestParam ranges: String? = null,
-        @RequestParam filters: String? = null,
-        @RequestParam features: List<String> = emptyList(),
+        @ModelAttribute request: EdgeQueryGetRequest,
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
         v3QueryService
-            .gets(database, table, source, target, ranges, filters, features)
+            .gets(database, table, request.source, request.target, request.ranges, request.filters, request.features)
+            .mapToResponseEntity()
+
+    @PostMapping("/graph/v3/databases/{database}/tables/{table}/edges/get")
+    fun getByPost(
+        @PathVariable database: String,
+        @PathVariable table: String,
+        @RequestBody request: EdgeQueryGetRequest,
+    ): Mono<ResponseEntity<DataFrameEdgePayload>> =
+        v3QueryService
+            .gets(database, table, request.source, request.target, request.ranges, request.filters, request.features)
             .mapToResponseEntity()
 
     @GetMapping("/graph/v3/databases/{database}/tables/{table}/edges/scan/{index}")

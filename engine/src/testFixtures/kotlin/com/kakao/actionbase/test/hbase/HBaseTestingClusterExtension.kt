@@ -1,5 +1,7 @@
 package com.kakao.actionbase.test.hbase
 
+import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
+
 import org.apache.hadoop.hbase.client.AsyncConnection
 import org.apache.hadoop.hbase.client.AsyncTable
 import org.apache.hadoop.hbase.client.Connection
@@ -8,6 +10,8 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.api.extension.ParameterContext
 import org.junit.jupiter.api.extension.ParameterResolver
+
+import reactor.core.publisher.Mono
 
 class HBaseTestingClusterExtension :
     BeforeAllCallback,
@@ -22,6 +26,7 @@ class HBaseTestingClusterExtension :
 
     override fun beforeAll(context: ExtensionContext) {
         HBaseTestingCluster.startIfNeeded()
+        DefaultHBaseCluster.initialize(Mono.just(HBaseTestingCluster.asyncConnection), "ab_test", HBaseTestingCluster.hbaseConfiguration)
     }
 
     override fun supportsParameter(

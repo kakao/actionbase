@@ -1,96 +1,105 @@
 ---
-title: (Draft) Datastore
-description: Datastore
+title: Datastore
+description: Understanding datastore backends in Actionbase
 sidebar:
     order: 5
 ---
 
-The datastore is the storage abstraction layer in Actionbase that connects to underlying storage backends like HBase.
+Actionbase builds on proven storage technologies, leveraging their strengths while adding value through graph modeling and write-time optimization. The datastore abstraction layer allows integration with different backends.
 
-## Storage Backends
+## Datastore Abstraction
+
+Actionbase abstracts storage operations through a minimal interface, enabling integration with various backends. By building on established technologies, Actionbase leverages their reliability, scalability, and performance while focusing on interaction-specific capabilities.
+
+### Required Operations
+
+A datastore backend must support:
+
+| Operation | Description |
+|-----------|-------------|
+| get | Retrieve value(s) by key(s) |
+| delete | Delete a value by key |
+| scan | Range scan with prefix, start, stop, limit |
+| checkAndMutate | Atomic check-and-mutate for consistency |
+| batch | Batch mutations (optional, recommended) |
+
+This interface is intentionally minimal. Any backend implementing these operations can be integrated.
+
+## Supported Backends
 
 ### HBase
 
-Actionbase currently uses HBase as its primary storage backend. HBase provides:
+**HBase** is the production datastore backend for Actionbase. It's a distributed, scalable NoSQL database built on HDFS.
 
-- **Reliability**: Proven in production at scale
-- **Scalability**: Horizontal scaling capabilities
-- **Consistency**: Strong consistency guarantees
+| Characteristic | Description |
+|----------------|-------------|
+| Horizontal Scalability | Shards data across nodes, linear scaling |
+| Strong Durability | Data replicated across nodes |
+| Low-latency Access | Optimized for random reads and writes |
+| Automatic Load Balancing | Even distribution across cluster |
+| Proven at Scale | Used for petabyte-scale data |
 
-### Future Backends
+HBase requires expertise when used directly:
+- Row key design
+- Column family organization
+- Region splitting and compaction
+- Cluster management
 
-Actionbase is designed to support multiple storage backends:
+Actionbase provides:
+- HBase's durability, scale, and distribution
+- Simpler usability through high-level abstraction
+- Interaction-specific features (State/Index/Count)
 
-- **SlateDB**: Planned support for distributed transactional storage
+For HBase configuration, see [HBase Operations](/operations/hbase/).
 
-## Datastore Configuration
+### Memory
 
-### HBase Configuration
+**Memory** is an in-memory backend for development and testing.
 
-Configure HBase connection settings:
+| Characteristic | Description |
+|----------------|-------------|
+| Easy Setup | No configuration required |
+| No Persistence | Data lost on server stop |
+| Fast | In-memory operations |
 
-```yaml
-datastore:
-  type: hbase
-  hbase:
-    zookeeper:
-      quorum: localhost:2181
-    client:
-      retries: 3
-      timeout: 30000
-```
+Ideal for local development, testing, and prototyping.
 
-### Connection Pooling
+### SlateDB (Planned)
 
-Actionbase manages connection pools to storage backends for optimal performance:
+**[SlateDB](https://slatedb.io/)** is a planned backend for small to medium-scale deployments.
 
-- Connection reuse reduces latency
-- Pool sizing is configurable based on workload
-- Automatic connection health checks
+| Characteristic | Description |
+|----------------|-------------|
+| Lower Complexity | Simpler setup and maintenance |
+| Resource Efficiency | Less infrastructure overhead |
+| Transactional Support | Suitable for smaller workloads |
 
-## Data Organization
+## How Actionbase Uses Datastore
 
-### Table Mapping
+Actionbase maps its operations to datastore operations:
 
-Actionbase tables map to HBase tables with optimized row key design:
+| Actionbase Operation | Datastore Operation | Data Structure |
+|---------------------|-------------------|----------------|
+| Get Query | get | EdgeState |
+| Scan Query | scan | EdgeIndex |
+| Count Query | get | EdgeCounter |
+| Mutation (lock) | checkAndMutate | Lock |
+| Mutation (write) | batch / put | State, Index, Counter |
+| Mutation (cleanup) | delete | Old indexes |
 
-- Row keys are designed for efficient range scans
-- Column families are organized for optimal read/write patterns
-- Compression is applied for storage efficiency
+By building on proven storage, Actionbase focuses on interaction-specific features while the underlying datastore handles persistence, replication, and scalability.
 
-### Region Management
+## Choosing a Backend
 
-HBase regions are automatically managed:
-
-- Regions split based on size and load
-- Region distribution across cluster nodes
-- Automatic rebalancing for load distribution
-
-## Performance Tuning
-
-### Write Optimization
-
-- Batch writes for better throughput
-- Async writes for non-critical paths
-- Compression to reduce I/O
-
-### Read Optimization
-
-- Caching frequently accessed data
-- Prefetching for scan operations
-- Index usage for fast lookups
-
-## Monitoring
-
-Monitor datastore health and performance:
-
-- Connection pool metrics
-- Read/write latency
-- Storage utilization
-- Region distribution
+| Backend | Use Case | Scale |
+|---------|----------|-------|
+| HBase | Production | Large |
+| SlateDB | Production (planned) | Small to Medium |
+| Memory | Development | Local |
 
 ## Next Steps
 
-- [HBase Setup](/operations/hbase/) - Detailed HBase configuration
-- [Overview](/design/overview/) - Review architecture
-- [Benchmarks](/operations/benchmarks/) - Performance metrics
+- [Data Encoding](/internals/encoding/): How data is encoded in the datastore
+- [HBase Operations](/operations/hbase/): HBase configuration guide
+- [Local Provisioning](/provisioning/local/): Get started locally
+

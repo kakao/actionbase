@@ -1,93 +1,28 @@
 ---
-title: (Draft) Benchmarks
-description: Benchmarks
+title: Benchmarks
+description: Performance benchmarks and metrics for Actionbase
 sidebar:
     order: 3
 ---
 
-This page provides performance benchmarks and metrics for Actionbase.
+This page provides performance benchmarks and metrics for Actionbase. Actionbase is production-proven, serving tens of millions of users in [Kakao](/project/about-kakao/) services including KakaoTalk and KakaoShopping.
 
-## Production Performance
+**Note:** At this initial release stage, we are providing benchmark results at this level. The results presented here contain internal information and are provided in approximate values. We plan to provide transparent benchmark results using generalized datasets in future releases.
 
-Actionbase is production-proven, serving tens of millions of users in [Kakao](/about-kakao) services including KakaoTalk and KakaoShopping.
+## Current Configuration
 
-### Read Latency
+The current infrastructure configuration:
 
-- **p50**: &lt;1ms
-- **p99**: &lt;5ms
-- **p99.9**: &lt;10ms
+- **Ingress**: VM-based nodes, 3 nodes in each of 3 regions (9 nodes total)
+- **Worker**: PM-based nodes, 3 nodes in each of 3 regions (9 nodes total)
+- **HBase**: PM-based nodes, 3 nodes in each of 3 regions (9 nodes total)
 
-### Throughput
+## Performance in Production Traffic
 
-- **Read operations**: Hundreds of thousands of requests per second (RPS)
-- **Write operations**: Tens of thousands of operations per second
-- **Mixed workload**: Optimized for read-heavy workloads
+In a typical production workload with approximately 15% write and 85% read operations (based on average characteristics of Kakao services), Actionbase achieves:
 
-### Data Scale
-
-- **Data volume**: Multiple TB-scale deployments
-- **Graph size**: Billions of vertices and edges
-- **Concurrent users**: Tens of millions
-
-## Benchmark Methodology
-
-### Test Environment
-
-- **Storage**: HBase cluster
-- **Network**: Low-latency internal network
-- **Load**: Realistic production-like workload
-
-### Metrics Collected
-
-- Latency percentiles (p50, p90, p99, p99.9)
-- Throughput (operations per second)
-- Error rates
-- Resource utilization
-
-## Write Performance
-
-Write operations benefit from:
-
-- Batch processing
-- Async writes for non-critical paths
-- Optimized storage layout
-
-Typical write latency:
-- Single writes: &lt;10ms (p99)
-- Batch writes: Higher throughput with similar per-operation latency
-
-## Read Performance
-
-Read operations leverage write-time optimization:
-
-- **Simple lookups**: &lt;1ms (p99)
-- **Count operations**: &lt;5ms (p99)
-- **Scans**: Depends on result size, optimized for common patterns
+- **Throughput**: 60k+ TPS (Read ~5ms, Write ~20ms)
 
 ## Scalability
 
-Actionbase demonstrates linear scalability:
-
-- Horizontal scaling with additional nodes
-- Independent scaling of read and write paths
-- Storage backend scalability (HBase)
-
-## Comparison with Alternatives
-
-### vs. MySQL with Sharding
-
-- **Simplified operations**: No manual sharding logic
-- **Better performance**: Write-time optimization enables faster reads
-- **Easier scaling**: Horizontal scaling without shard management
-
-### vs. Traditional Graph Databases
-
-- **Focused use case**: Optimized for user activity data
-- **Storage flexibility**: Leverage strengths of different storage backends
-- **Production-proven**: Battle-tested at scale
-
-## Next Steps
-
-- [Operations Guide](/operations/cli/) - Learn about operations
-- [HBase Configuration](/operations/hbase/) - Optimize storage backend
-- [Design Overview](/design/overview/) - Understand architecture
+Internal experiments have confirmed linear scalability. Performance increases proportionally as additional Ingress and Worker nodes are added to the cluster.

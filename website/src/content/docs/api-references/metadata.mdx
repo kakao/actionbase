@@ -1,0 +1,1102 @@
+---
+title: Metadata API Reference
+description: Metadata management API reference (v2)
+sidebar:
+    order: 1
+tableOfContents:
+    maxHeadingLevel: 2
+---
+
+> **Note:** Currently, metadata APIs use **v2**. Mutation and query operations have transitioned to v3, but metadata v3 support is planned for the future.
+
+> **Note:** Authentication is not yet implemented. The `Authorization` header is reserved for future use.
+
+Metadata APIs allow you to manage the structure and configuration of graph data in Actionbase, including services (v3: databases), labels (v3: tables), aliases, and queries.
+
+For conceptual understanding, see [Schema](/design/schema/).
+
+## 1. Service
+
+Services are logical groups that contain labels and aliases, providing organization and isolation for related graph structures.
+
+### 1.1 Get Service
+
+Retrieve a single service by name.
+
+#### Endpoint
+
+```
+GET /graph/v2/service/{service}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+
+#### Response Type
+
+[ServiceEntity](#serviceentity) - Service information
+
+#### Request Example
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| service | myservice |
+
+```bash
+# GET /graph/v2/service/myservice
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+#### Response Example
+
+```json
+{
+  "active": true,
+  "name": "myservice",
+  "desc": "My service description"
+}
+```
+
+### 1.2 Get All Services
+
+Retrieve all services.
+
+#### Endpoint
+
+```
+GET /graph/v2/service
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+
+#### Response Type
+
+[DdlPage](#ddlpage) of [ServiceEntity](#serviceentity) - Paginated list of services
+
+#### Request Example
+
+```bash
+# GET /graph/v2/service
+curl -X GET \
+    "http://ab.example.com/graph/v2/service" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+#### Response Example
+
+```json
+{
+  "count": 2,
+  "content": [
+    {
+      "active": true,
+      "name": "myservice",
+      "desc": "My service description"
+    },
+    {
+      "active": true,
+      "name": "anotherservice",
+      "desc": "Another service"
+    }
+  ]
+}
+```
+
+### 1.3 Create Service
+
+Create a new service.
+
+#### Endpoint
+
+```
+POST /graph/v2/service/{service}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Body | desc | Required | Service description |
+
+#### Request Body
+
+[ServiceCreateRequest](#servicecreaterequest) - Service creation payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [ServiceEntity](#serviceentity) - Service creation status
+
+#### Request Example
+
+```bash
+# POST /graph/v2/service/myservice
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "My service description"
+    }'
+```
+
+#### Response Example
+
+```json
+{
+  "status": "CREATED",
+  "result": {
+    "active": true,
+    "name": "myservice",
+    "desc": "My service description"
+  }
+}
+```
+
+### 1.4 Update Service
+
+Update an existing service.
+
+#### Endpoint
+
+```
+PUT /graph/v2/service/{service}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Body | active | Optional | Whether the service is active |
+| Body | desc | Optional | Service description |
+
+#### Request Body
+
+[ServiceUpdateRequest](#serviceupdaterequest) - Service update payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [ServiceEntity](#serviceentity) - Service update status
+
+#### Request Example
+
+```bash
+# PUT /graph/v2/service/myservice
+curl -X PUT \
+    "http://ab.example.com/graph/v2/service/myservice" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "active": true,
+      "desc": "Updated service description"
+    }'
+```
+
+## 2. Label
+
+Labels define the schema for graph edges, specifying the structure of relationships, including source and target node types, edge properties, and indexes.
+
+### 2.1 Get Label
+
+Retrieve a single label by name.
+
+#### Endpoint
+
+```
+GET /graph/v2/service/{service}/label/{label}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | label | Required | Label name |
+
+#### Response Type
+
+[LabelEntity](#labelentity) - Label information
+
+#### Request Example
+
+```bash
+# GET /graph/v2/service/myservice/label/follows
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+#### Response Example
+
+```json
+{
+  "active": true,
+  "name": "myservice.follows",
+  "desc": "User follows relationship",
+  "type": "HASH",
+  "schema": {
+    "src": {
+      "type": "LONG",
+      "desc": "User ID"
+    },
+    "tgt": {
+      "type": "LONG",
+      "desc": "User ID"
+    },
+    "fields": [
+      {
+        "name": "created_at",
+        "type": "LONG",
+        "nullable": false,
+        "desc": "Creation timestamp"
+      }
+    ]
+  },
+  "dirType": "OUT",
+  "storage": "hbase-storage-1",
+  "indices": [],
+  "groups": [],
+  "event": false,
+  "readOnly": false,
+  "mode": "SYNC"
+}
+```
+
+### 2.2 Get All Labels
+
+Retrieve all labels in a service.
+
+#### Endpoint
+
+```
+GET /graph/v2/service/{service}/label
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+
+#### Response Type
+
+[DdlPage](#ddlpage) of [LabelEntity](#labelentity) - Paginated list of labels
+
+#### Request Example
+
+```bash
+# GET /graph/v2/service/myservice/label
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/label" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 2.3 Create Label
+
+Create a new label.
+
+#### Endpoint
+
+```
+POST /graph/v2/service/{service}/label/{label}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | label | Required | Label name |
+| Body | desc | Required | Label description |
+| Body | type | Required | Label type (HASH, INDEXED, MULTI_EDGE) |
+| Body | schema | Required | Edge schema definition |
+| Body | dirType | Required | Direction type (OUT, IN, UNDIRECTED) |
+| Body | storage | Required | Storage name |
+| Body | groups | Optional | List of groups |
+| Body | indices | Optional | List of indexes |
+| Body | event | Optional | Whether events are enabled (default: false) |
+| Body | readOnly | Optional | Whether the label is read-only (default: false) |
+| Body | mode | Optional | Mutation mode (default: SYNC) |
+
+#### Request Body
+
+[LabelCreateRequest](#labelcreaterequest) - Label creation payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [LabelEntity](#labelentity) - Label creation status
+
+#### Request Example
+
+```bash
+# POST /graph/v2/service/myservice/label/follows
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "User follows relationship",
+      "type": "HASH",
+      "schema": {
+        "src": {
+          "type": "LONG",
+          "desc": "User ID"
+        },
+        "tgt": {
+          "type": "LONG",
+          "desc": "User ID"
+        },
+        "fields": [
+          {
+            "name": "created_at",
+            "type": "LONG",
+            "nullable": false,
+            "desc": "Creation timestamp"
+          }
+        ]
+      },
+      "dirType": "OUT",
+      "storage": "hbase-storage-1",
+      "indices": [],
+      "groups": [],
+      "event": false,
+      "readOnly": false,
+      "mode": "SYNC"
+    }'
+```
+
+### 2.4 Update Label
+
+Update an existing label.
+
+#### Endpoint
+
+```
+PUT /graph/v2/service/{service}/label/{label}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | label | Required | Label name |
+| Body | active | Optional | Whether the label is active |
+| Body | desc | Optional | Label description |
+| Body | type | Optional | Label type |
+| Body | schema | Optional | Edge schema definition |
+| Body | groups | Optional | List of groups |
+| Body | indices | Optional | List of indexes |
+| Body | readOnly | Optional | Whether the label is read-only |
+| Body | mode | Optional | Mutation mode |
+
+#### Request Body
+
+[LabelUpdateRequest](#labelupdaterequest) - Label update payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [LabelEntity](#labelentity) - Label update status
+
+#### Request Example
+
+```bash
+# PUT /graph/v2/service/myservice/label/follows
+curl -X PUT \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "active": true,
+      "desc": "Updated label description"
+    }'
+```
+
+### 2.5 Copy Label
+
+Copy an existing label to create a new label.
+
+#### Endpoint
+
+```
+POST /graph/v2/service/{service}/label/{label}/copy
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | label | Required | Source label name |
+| Body | target | Required | Target label name |
+| Body | storage | Required | Storage name for the new label |
+
+#### Request Body
+
+[LabelCopyRequest](#labelcopyrequest) - Label copy payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [LabelEntity](#labelentity) - Label creation status
+
+#### Request Example
+
+```bash
+# POST /graph/v2/service/myservice/label/follows/copy
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows/copy" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "target": "follows_backup",
+      "storage": "hbase-storage-1"
+    }'
+```
+
+### 2.6 Get Label Status
+
+Get the status of a label.
+
+#### Endpoint
+
+```
+GET /graph/v2/service/{service}/label/{label}/status
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | label | Required | Label name |
+
+#### Response Type
+
+String - Label status information
+
+#### Request Example
+
+```bash
+# GET /graph/v2/service/myservice/label/follows/status
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows/status" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+## 3. Alias
+
+Aliases are references that point to labels, enabling alternative names for the same label.
+
+### 3.1 Get Alias
+
+Retrieve a single alias by name.
+
+#### Endpoint
+
+```
+GET /graph/v2/service/{service}/alias/{alias}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | alias | Required | Alias name |
+
+#### Response Type
+
+[AliasEntity](#aliasentity) - Alias information
+
+#### Request Example
+
+```bash
+# GET /graph/v2/service/myservice/alias/friends
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+#### Response Example
+
+```json
+{
+  "active": true,
+  "name": "myservice.friends",
+  "desc": "Alias for follows relationship",
+  "target": "myservice.follows",
+  "label": {
+    "active": true,
+    "name": "myservice.follows",
+    "desc": "User follows relationship",
+    "type": "HASH",
+    "schema": { ... },
+    "dirType": "OUT",
+    "storage": "hbase-storage-1"
+  }
+}
+```
+
+### 3.2 Get All Aliases
+
+Retrieve all aliases in a service.
+
+#### Endpoint
+
+```
+GET /graph/v2/service/{service}/alias
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+
+#### Response Type
+
+[DdlPage](#ddlpage) of [AliasEntity](#aliasentity) - Paginated list of aliases
+
+#### Request Example
+
+```bash
+# GET /graph/v2/service/myservice/alias
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/alias" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 3.3 Create Alias
+
+Create a new alias.
+
+#### Endpoint
+
+```
+POST /graph/v2/service/{service}/alias/{alias}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | alias | Required | Alias name |
+| Body | desc | Required | Alias description |
+| Body | target | Required | Target label name (format: service.label) |
+
+#### Request Body
+
+[AliasCreateRequest](#aliascreaterequest) - Alias creation payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [AliasEntity](#aliasentity) - Alias creation status
+
+#### Request Example
+
+```bash
+# POST /graph/v2/service/myservice/alias/friends
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "Alias for follows relationship",
+      "target": "myservice.follows"
+    }'
+```
+
+### 3.4 Update Alias
+
+Update an existing alias.
+
+#### Endpoint
+
+```
+PUT /graph/v2/service/{service}/alias/{alias}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | alias | Required | Alias name |
+| Body | active | Optional | Whether the alias is active |
+| Body | desc | Optional | Alias description |
+| Body | target | Optional | Target label name |
+
+#### Request Body
+
+[AliasUpdateRequest](#aliasupdaterequest) - Alias update payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [AliasEntity](#aliasentity) - Alias update status
+
+#### Request Example
+
+```bash
+# PUT /graph/v2/service/myservice/alias/friends
+curl -X PUT \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "active": true,
+      "desc": "Updated alias description"
+    }'
+```
+
+### 3.5 Delete Alias
+
+Delete an alias.
+
+#### Endpoint
+
+```
+DELETE /graph/v2/service/{service}/alias/{alias}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | alias | Required | Alias name |
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [AliasEntity](#aliasentity) - Alias deletion status
+
+#### Request Example
+
+```bash
+# DELETE /graph/v2/service/myservice/alias/friends
+curl -X DELETE \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 3.6 Create Label from Alias
+
+Create a new label based on the label that an alias points to.
+
+#### Endpoint
+
+```
+POST /graph/v2/service/{service}/alias/{alias}/new-label
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | alias | Required | Alias name |
+| Body | target | Required | Target label name for the new label |
+| Body | storage | Required | Storage name for the new label |
+
+#### Request Body
+
+[LabelCopyRequest](#labelcopyrequest) - Label creation payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [LabelEntity](#labelentity) - Label creation status
+
+#### Request Example
+
+```bash
+# POST /graph/v2/service/myservice/alias/friends/new-label
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends/new-label" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "target": "follows_new",
+      "storage": "hbase-storage-1"
+    }'
+```
+
+## 4. Query
+
+Queries define reusable query patterns for graph operations.
+
+### 4.1 Get Query
+
+Retrieve a single query by name.
+
+#### Endpoint
+
+```
+GET /graph/v2/service/{service}/query/{query}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | query | Required | Query name |
+
+#### Response Type
+
+[QueryEntity](#queryentity) - Query information
+
+#### Request Example
+
+```bash
+# GET /graph/v2/service/myservice/query/user-followers
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/query/user-followers" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 4.2 Get All Queries
+
+Retrieve all queries in a service.
+
+#### Endpoint
+
+```
+GET /graph/v2/service/{service}/query
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+
+#### Response Type
+
+[DdlPage](#ddlpage) of [QueryEntity](#queryentity) - Paginated list of queries
+
+#### Request Example
+
+```bash
+# GET /graph/v2/service/myservice/query
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/query" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 4.3 Create Query
+
+Create a new query.
+
+#### Endpoint
+
+```
+POST /graph/v2/service/{service}/query/{query}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | query | Required | Query name |
+| Body | desc | Required | Query description |
+| Body | query | Required | Query definition |
+| Body | stats | Optional | Statistics configuration |
+
+#### Request Body
+
+[QueryCreateRequest](#querycreaterequest) - Query creation payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [QueryEntity](#queryentity) - Query creation status
+
+#### Request Example
+
+```bash
+# POST /graph/v2/service/myservice/query/user-followers
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/query/user-followers" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "Get user followers",
+      "query": "SELECT * FROM myservice.follows WHERE src = ?",
+      "stats": null
+    }'
+```
+
+### 4.4 Update Query
+
+Update an existing query.
+
+#### Endpoint
+
+```
+PUT /graph/v2/service/{service}/query/{query}
+```
+
+#### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | service | Required | Service name |
+| Path | query | Required | Query name |
+| Body | active | Optional | Whether the query is active |
+| Body | desc | Optional | Query description |
+| Body | query | Optional | Query definition |
+| Body | stats | Optional | Statistics configuration |
+
+#### Request Body
+
+[QueryUpdateRequest](#queryupdaterequest) - Query update payload
+
+#### Response Type
+
+[DdlStatus](#ddlstatus) of [QueryEntity](#queryentity) - Query update status
+
+#### Request Example
+
+```bash
+# PUT /graph/v2/service/myservice/query/user-followers
+curl -X PUT \
+    "http://ab.example.com/graph/v2/service/myservice/query/user-followers" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "Updated query description",
+      "query": "SELECT * FROM myservice.follows WHERE src = ? LIMIT 100"
+    }'
+```
+
+## Data Model
+
+### ServiceEntity
+
+Service information payload.
+
+```kotlin
+data class ServiceEntity(
+  val active: Boolean,    // Whether the service is active
+  val name: String,       // Service name
+  val desc: String,       // Service description
+)
+```
+
+### LabelEntity
+
+Label information payload.
+
+```kotlin
+data class LabelEntity(
+  val active: Boolean,              // Whether the label is active
+  val name: String,                 // Label name (format: service.label)
+  val desc: String,                 // Label description
+  val type: LabelType,              // Label type (HASH, INDEXED, MULTI_EDGE)
+  val schema: EdgeSchema,           // Edge schema definition
+  val dirType: DirectionType,       // Direction type (OUT, IN, UNDIRECTED)
+  val storage: String,               // Storage name
+  val indices: List<Index>,          // List of indexes
+  val groups: List<Group>,            // List of groups
+  val event: Boolean,                // Whether events are enabled
+  val readOnly: Boolean,             // Whether the label is read-only
+  val mode: MutationMode,            // Mutation mode
+)
+```
+
+### AliasEntity
+
+Alias information payload.
+
+```kotlin
+data class AliasEntity(
+  val active: Boolean,        // Whether the alias is active
+  val name: String,           // Alias name (format: service.alias)
+  val desc: String,           // Alias description
+  val target: String,         // Target label name (format: service.label)
+  val label: LabelEntity?,    // Referenced label information (optional)
+)
+```
+
+### QueryEntity
+
+Query information payload.
+
+```kotlin
+data class QueryEntity(
+  val active: Boolean,    // Whether the query is active
+  val name: String,       // Query name (format: service.query)
+  val desc: String,       // Query description
+  val query: String,      // Query definition
+  val stats: String?,     // Statistics configuration (optional)
+)
+```
+
+### DdlPage
+
+Paginated response payload.
+
+```kotlin
+data class DdlPage&lt;T&gt;(
+  val count: Long,        // Total count
+  val content: List&lt;T&gt;,   // List of items
+)
+```
+
+### DdlStatus
+
+DDL operation status payload.
+
+```kotlin
+data class DdlStatus&lt;T&gt;(
+  val status: String,     // Operation status (e.g., CREATED, UPDATED, DELETED)
+  val result: T?,        // Result entity (optional)
+)
+```
+
+### ServiceCreateRequest
+
+Service creation request payload.
+
+```kotlin
+data class ServiceCreateRequest(
+  val desc: String,       // Service description
+)
+```
+
+### ServiceUpdateRequest
+
+Service update request payload.
+
+```kotlin
+data class ServiceUpdateRequest(
+  val active: Boolean?,   // Whether the service is active (optional)
+  val desc: String?,      // Service description (optional)
+)
+```
+
+### LabelCreateRequest
+
+Label creation request payload.
+
+```kotlin
+data class LabelCreateRequest(
+  val desc: String,              // Label description
+  val type: LabelType,           // Label type
+  val schema: EdgeSchema,        // Edge schema definition
+  val dirType: DirectionType,    // Direction type
+  val storage: String,           // Storage name
+  val groups: List<Group>?,       // List of groups (optional)
+  val indices: List<Index>?,      // List of indexes (optional)
+  val event: Boolean?,            // Whether events are enabled (optional, default: false)
+  val readOnly: Boolean?,         // Whether the label is read-only (optional, default: false)
+  val mode: MutationMode?,       // Mutation mode (optional, default: SYNC)
+)
+```
+
+### LabelUpdateRequest
+
+Label update request payload.
+
+```kotlin
+data class LabelUpdateRequest(
+  val active: Boolean?,           // Whether the label is active (optional)
+  val desc: String?,              // Label description (optional)
+  val type: LabelType?,           // Label type (optional)
+  val schema: EdgeSchema?,        // Edge schema definition (optional)
+  val groups: List<Group>?,       // List of groups (optional)
+  val indices: List<Index>?,      // List of indexes (optional)
+  val readOnly: Boolean?,         // Whether the label is read-only (optional)
+  val mode: MutationMode?,        // Mutation mode (optional)
+)
+```
+
+### LabelCopyRequest
+
+Label copy request payload.
+
+```kotlin
+data class LabelCopyRequest(
+  val target: String,      // Target label name
+  val storage: String,    // Storage name for the new label
+)
+```
+
+### AliasCreateRequest
+
+Alias creation request payload.
+
+```kotlin
+data class AliasCreateRequest(
+  val desc: String,       // Alias description
+  val target: String,     // Target label name (format: service.label)
+)
+```
+
+### AliasUpdateRequest
+
+Alias update request payload.
+
+```kotlin
+data class AliasUpdateRequest(
+  val active: Boolean?,   // Whether the alias is active (optional)
+  val desc: String?,      // Alias description (optional)
+  val target: String?,    // Target label name (optional)
+)
+```
+
+### QueryCreateRequest
+
+Query creation request payload.
+
+```kotlin
+data class QueryCreateRequest(
+  val desc: String,       // Query description
+  val query: String,      // Query definition
+  val stats: String?,     // Statistics configuration (optional)
+)
+```
+
+### QueryUpdateRequest
+
+Query update request payload.
+
+```kotlin
+data class QueryUpdateRequest(
+  val active: Boolean?,   // Whether the query is active (optional)
+  val desc: String?,      // Query description (optional)
+  val query: String?,     // Query definition (optional)
+  val stats: String?,     // Statistics configuration (optional)
+)
+```
+

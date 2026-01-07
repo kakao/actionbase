@@ -30,6 +30,7 @@ import com.kakao.actionbase.v2.engine.service.ddl.ServiceCreateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.StorageCreateRequest
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdcFactory
+import com.kakao.actionbase.v2.engine.test.wal.InMemoryWalFactory
 import com.kakao.actionbase.v2.engine.util.getLogger
 
 import java.util.UUID
@@ -231,7 +232,7 @@ object GraphFixtures {
                 .withMetastoreUrl("jdbc:h2:mem:${UUID.randomUUID()};DB_CLOSE_DELAY=-1;MODE=MYSQL")
                 .build()
 
-        val graph = Graph.create(config, cdcFactory = InMemoryCdcFactory, DefaultKafkaClientFactory, DefaultWebClientFactory)
+        val graph = Graph.create(config, InMemoryWalFactory, InMemoryCdcFactory, DefaultKafkaClientFactory, DefaultWebClientFactory)
 
         if (withTestData) {
             createService(graph, serviceName)

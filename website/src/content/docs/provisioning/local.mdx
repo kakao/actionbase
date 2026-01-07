@@ -1,137 +1,20 @@
 ---
-title: (Draft) Local Development Setup
-description: Local
+title: Local Provisioning
+description: Setting up Actionbase for local development and testing
 sidebar:
     order: 1
 ---
 
-This guide will help you set up Actionbase for local development and testing.
+import {Aside} from "@astrojs/starlight/components";
 
-## Prerequisites
+<Aside>
+    🚧 **Work in Progress**
 
-- Java 17
-- Gradle 7.0+
-- Docker (for HBase)
+    This document is currently under active development.
+</Aside>
 
-## Setting Up HBase
+This guide describes how to set up a local development environment for Actionbase.
 
-### Using Docker
+It will cover the basic prerequisites and steps required to run Actionbase locally for development and hands-on exercises.
 
-The easiest way to run HBase locally is using Docker:
-
-```bash
-docker run -d \
-  --name hbase \
-  -p 2181:2181 \
-  -p 16000:16000 \
-  -p 16010:16010 \
-  -p 16020:16020 \
-  -p 16030:16030 \
-  harisekhon/hbase:latest
-```
-
-### Verify HBase is Running
-
-Check HBase status:
-
-```bash
-docker exec -it hbase hbase shell
-```
-
-In the HBase shell:
-
-```bash
-status
-```
-
-## Building Actionbase
-
-Clone and build the project:
-
-```bash
-git clone https://github.com/kakao/actionbase.git
-cd actionbase/oss
-./gradlew build
-```
-
-## Configuration
-
-Create a configuration file for local development:
-
-```yaml
-# application-local.yml
-datastore:
-  type: hbase
-  hbase:
-    zookeeper:
-      quorum: localhost:2181
-```
-
-## Running the Server
-
-Start the Actionbase server:
-
-```bash
-./gradlew :server:bootRun --args='--spring.profiles.active=local'
-```
-
-The server will start on `http://localhost:8080` by default.
-
-## Testing the Setup
-
-### Using the CLI
-
-Install the CLI and connect to your local server:
-
-```bash
-actionbase --host http://localhost:8080 --authKey test-key
-```
-
-### Create a Test Database
-
-```bash
-actionbase database create --name testdb
-```
-
-### Create a Test Table
-
-```bash
-actionbase table create \
-  --database testdb \
-  --name testtable \
-  --type EdgeTable
-```
-
-## Development Tips
-
-### Hot Reload
-
-For faster development, use Gradle's continuous build:
-
-```bash
-./gradlew :server:bootRun --continuous
-```
-
-### Logging
-
-Adjust log levels in `application-local.yml`:
-
-```yaml
-logging:
-  level:
-    com.kakao.actionbase: DEBUG
-```
-
-### Debugging
-
-Attach a debugger on port 5005:
-
-```bash
-./gradlew :server:bootRun --args='--spring.profiles.active=local -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005'
-```
-
-## Next Steps
-
-- [Quick Start](/quick-start/) - Basic usage guide
-- [Introduction](/introduction/) - Learn about Actionbase
-- [Design Overview](/design/overview/) - Understand architecture
+More detailed setup instructions will be added as the local development workflow is finalized.
