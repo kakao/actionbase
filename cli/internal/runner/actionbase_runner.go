@@ -261,10 +261,10 @@ func (r *ActionbaseCommandLineRunner) StartServer(parser *util.Parser) {
 }
 
 func (r *ActionbaseCommandLineRunner) getServerPort(parser *util.Parser) string {
-	if port, found := parser.Get("server"); found {
+	if port, found := parser.Get("proxy"); found {
 		return port
 	}
-	if _, found := parser.GetLenient("server"); found {
+	if _, found := parser.GetLenient("proxy"); found {
 		return DefaultServerPort
 	}
 	return ""
