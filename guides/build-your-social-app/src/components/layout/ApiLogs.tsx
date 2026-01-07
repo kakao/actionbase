@@ -43,6 +43,7 @@ const ApiLogs: React.FC = () => {
                           </svg>
                         )}
                       </span>
+                  <span>[{log.id + 1}]</span>
                   <span className={`api-log-method api-log-method-${log.method.toLowerCase()}`}>{log.method}</span>
                   <span className={`api-log-url ${!log.success ? 'api-log-url-error' : ''}`}>
                         {log.url}
@@ -51,7 +52,7 @@ const ApiLogs: React.FC = () => {
                 </div>
                 {hasExpandableContent && isExpanded && (
                   <div className="api-log-body">
-                    {log.requestBody !== undefined && (
+                  {log.requestBody !== undefined && (
                       <div className="api-log-request-body">
                         <div className="api-log-section-title">Request</div>
                         <pre>{typeof log.requestBody === 'string' ? log.requestBody : JSON.stringify(log.requestBody, null, 2)}</pre>
