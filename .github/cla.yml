@@ -1,0 +1,3 @@
+exempt:
+  - dependabot[bot]
+  - github-actions[bot]
