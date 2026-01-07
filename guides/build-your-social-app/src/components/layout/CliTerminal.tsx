@@ -242,7 +242,7 @@ const CliTerminal: React.FC = () => {
 
   return (
     <div className="terminal-body-container" id="cli-commands">
-      <div className="terminal-body terminal-body-top" ref={terminalBodyRef}>
+      <div className="terminal-body" ref={terminalBodyRef}>
         <div className="command-history" ref={commandHistoryRef}>
           {commandHistory.map((item, index) => (
             <div key={index}>

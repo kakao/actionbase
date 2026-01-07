@@ -25,13 +25,9 @@
   flex-direction: column;
   scrollbar-width: none;
   min-width: 0;
-  border-bottom: var(--font-size-xs) solid #2b2b2b;
+  border-bottom: 1px solid #2b2b2b;
+  border-right: 1px solid #eaeaea;
   z-index: 200;
-}
-
-.terminal-body-top {
-  flex: 1;
-  min-height: 0;
 }
 
 .terminal-body::-webkit-scrollbar {
