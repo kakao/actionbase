@@ -35,8 +35,8 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
     const handleTourStepChange = (event: CustomEvent) => {
       const {stepIndex} = event.detail;
       if (stepIndex !== undefined && stepIndex >= 0) {
-        setBreadcrumbSteps(prevSteps =>
-          prevSteps.map((step) => {
+        const newStep =
+          breadcrumbSteps.map((step) => {
             const isMainStepActive = step.stepIndex === stepIndex;
             const isMainStepCompleted = step.stepIndex < stepIndex;
 
@@ -59,7 +59,7 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
               subSteps: updatedSubSteps
             };
           })
-        );
+        setBreadcrumbSteps(newStep);
       }
     };
 
@@ -74,18 +74,7 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
     <>
       <div className="gutter gutter-left">
         <div className="breadcrumb-actions">
-          <a
-            href="https://actionbase.io/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="doc-link"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-            </svg>
-            <span>actionbase.io</span>
-          </a>
+          <img className="logo" src="/images/logo.svg"/>
           <div
             className="stars-image"
             dangerouslySetInnerHTML={{__html: sanitizedStarsImage}}
