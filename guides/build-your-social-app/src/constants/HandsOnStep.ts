@@ -1,6 +1,5 @@
 export interface HandsOnStep {
   database?: string;
-  finalDatabase?: string;
   commands?: Command[];
 }
 
@@ -27,7 +26,6 @@ export const steps: HandsOnStep[] = [
 --comment 'default storage'`
       }
     ],
-    finalDatabase: 'social'
   },
   {
     database: 'social',
@@ -94,7 +92,7 @@ export const steps: HandsOnStep[] = [
     database: 'social',
     commands: [
       {
-        text: `mutate user_follows\\
+        text: `mutate user_follows \\
 --type INSERT \\
 --table user_follows \\
 --source doki \\
@@ -123,7 +121,7 @@ export const steps: HandsOnStep[] = [
     database: 'social',
     commands: [
       {
-        text: `mutate user_follows\\
+        text: `mutate user_follows \\
 --type INSERT \\
 --table user_follows \\
 --source doki \\
@@ -156,7 +154,7 @@ export const steps: HandsOnStep[] = [
     database: 'social',
     commands: [
       {
-        text: `mutate user_likes\\
+        text: `mutate user_likes \\
 --type INSERT \\
 --table user_likes \\
 --source doki \\

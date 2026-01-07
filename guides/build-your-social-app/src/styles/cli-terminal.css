@@ -71,12 +71,7 @@
 }
 
 .command-block {
-  opacity: 0.6;
   transition: opacity var(--transition-base);
-}
-
-.command-block.active {
-  opacity: 1;
 }
 
 .command-line {
@@ -137,7 +132,7 @@
 
 .command-text {
   color: var(--color-white);
-  var(--color-white)-space: pre-wrap;
+  white-space: pre-wrap;
   word-break: break-all;
   overflow-wrap: break-word;
   display: inline;
@@ -153,11 +148,15 @@
 
 .command-text-indent {
   color: var(--color-white);
-  var(--color-white)-space: pre-wrap;
+  white-space: pre-wrap;
   word-break: break-all;
   padding-left: 0;
   flex: 1;
   min-width: 0;
+}
+
+.command-result {
+  white-space: pre-wrap;
 }
 
 .command-result.error {
