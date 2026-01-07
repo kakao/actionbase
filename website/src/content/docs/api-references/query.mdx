@@ -1,0 +1,624 @@
+---
+title: Query API Reference
+description: Edge query API reference
+sidebar:
+    order: 3
+tableOfContents:
+    maxHeadingLevel: 2
+---
+
+This API provides query operations for edges (unique-edge). For the difference between unique-edge and multi-edge, see [FAQ](/faq/#what-is-the-difference-between-unique-edge-and-multi-edge).
+
+> **Note:** Authentication is not yet implemented. The `Authorization` header is reserved for future use.
+
+For conceptual understanding, see [Query](/design/query/).
+
+## 1. Count
+
+Retrieve the number of edges starting from a specific node.
+
+### Endpoint
+
+```
+GET /graph/v3/databases/{database}/tables/{table}/edges/count
+```
+
+### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | database | Required | Target database name |
+| Path | table | Required | Target table name |
+| Query | start | Required | Starting node ID |
+| Query | direction | Required | [Query direction](#query-direction) (OUT or IN) |
+| Query | ranges | Optional (default: null) | [Scan range](#index-ranges) |
+
+### Response Type
+
+[Count](#count-response) - Payload containing edge count information
+
+### Request Example
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| start | source1 |
+| direction | OUT |
+
+```bash
+# count?start=source1&direction=OUT
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/count?start=source1&direction=OUT" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "start": "source1",
+  "direction": "OUT",
+  "count": 10,
+  "context": {}
+}
+```
+
+## 2. Get
+
+Retrieve an edge between a source node and a target node.
+
+### Endpoint
+
+```
+GET /graph/v3/databases/{database}/tables/{table}/edges/get
+```
+
+### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | database | Required | Target database name |
+| Path | table | Required | Target table name |
+| Query | source | Required | Source node ID list (comma-separated) |
+| Query | target | Required | Target node ID list (comma-separated) |
+| Query | filters | Optional (default: null) | [Filtering conditions](#filters) |
+
+When multiple source or target IDs are specified, the operation behaves as **mget** to retrieve multiple edges. In this case, a maximum of **25 edges** can be retrieved per API request. To retrieve more edges, make multiple API requests.
+
+### Response Type
+
+[EdgeFrame](#edgeframe-response) - Payload containing edge data
+
+### Request Example (Get) - 1 source, 1 target
+
+Retrieves edge data for (source, target). (Maximum 1 result)
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| source | source1 |
+| target | target1 |
+
+```bash
+# get?source=source1&target=target1
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1&target=target1" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+{
+  "edges": [
+    {
+      "version": 1,
+      "source": "source1",
+      "target": "target1",
+      "properties": {
+        "weight": 0.8,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    }
+  ],
+  "count": 1,
+  "total": 1,
+  "offset": null,
+  "hasNext": false,
+  "context": {}
+}
+```
+
+### Request Example (MGet) - 1 source, N targets
+
+Retrieves edge data for (source, target1) ~ (source, targetN). (Maximum N results)
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| source | source1 |
+| target | target1,target2,target3 |
+
+```bash
+# get?source=source1&target=target1,target2,target3
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1&target=target1,target2,target3" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+{
+  "edges": [
+    {
+      "version": 3,
+      "source": "source1",
+      "target": "target3",
+      "properties": {
+        "weight": 0.75,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    },
+    {
+      "version": 1,
+      "source": "source1",
+      "target": "target1",
+      "properties": {
+        "weight": 0.8,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    }
+  ],
+  "count": 2,
+  "total": 2,
+  "offset": null,
+  "hasNext": false,
+  "context": {}
+}
+```
+
+### Request Example (MGet) - M sources, 1 target
+
+Retrieves edge data for (source1, target) ~ (sourceM, target). (Maximum M results)
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| source | source1,source2,source3 |
+| target | target1 |
+
+```bash
+# get?source=source1,source2,source3&target=target1
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1,source2,source3&target=target1" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+{
+  "edges": [
+    {
+      "version": 3,
+      "source": "source3",
+      "target": "target1",
+      "properties": {
+        "weight": 0.75,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    },
+    {
+      "version": 1,
+      "source": "source1",
+      "target": "target1",
+      "properties": {
+        "weight": 0.8,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    }
+  ],
+  "count": 2,
+  "total": 2,
+  "offset": null,
+  "hasNext": false,
+  "context": {}
+}
+```
+
+### Request Example (MGet) - M sources, N targets (Not Recommended)
+
+Retrieves edge data for (source1, target1) ~ (sourceM, targetN). (Maximum M × N results)
+
+**Note:** This format should not be used in production as it can retrieve up to M × N edges.
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| source | source1,source2,source3 |
+| target | target1,target2,target3 |
+
+```bash
+# get?source=source1,source2,source3&target=target1,target2,target3
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1,source2,source3&target=target1,target2,target3" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+{
+  "edges": [
+    {
+      "version": 3,
+      "source": "source1",
+      "target": "target3",
+      "properties": {
+        "weight": 0.75,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    },
+    {
+      "version": 3,
+      "source": "source3",
+      "target": "target1",
+      "properties": {
+        "weight": 0.75,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    },
+    {
+      "version": 1,
+      "source": "source1",
+      "target": "target1",
+      "properties": {
+        "weight": 0.8,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    }
+  ],
+  "count": 3,
+  "total": 3,
+  "offset": null,
+  "hasNext": false,
+  "context": {}
+}
+```
+
+## 3. Scan
+
+Scan edges using an index.
+
+### Endpoint
+
+```
+GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
+```
+
+### Parameters
+
+| Location | Parameter | Required | Description |
+|----------|-----------|----------|-------------|
+| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Path | database | Required | Target database name |
+| Path | table | Required | Target table name |
+| Path | index | Required | Index name to use |
+| Query | start | Required | Starting node ID |
+| Query | direction | Required | [Query direction](#query-direction) (OUT or IN) |
+| Query | limit | Optional | Maximum number of results to return; 25 is recommended for production |
+| Query | offset | Optional (default: null) | [Pagination](#pagination) offset |
+| Query | ranges | Optional (default: null) | [Scan range](#index-ranges) |
+| Query | filters | Optional (default: null) | [Filtering conditions](#filters) |
+| Query | features | Optional (default: empty list) | List of features to include (e.g., `total` to calculate the total value) |
+
+### Response Type
+
+[EdgeFrame](#edgeframe-response) - Payload containing edge data
+
+### Request Example
+
+| Parameter | Value |
+|-----------|-------|
+| Authorization | YOUR_API_KEY |
+| database | your_database |
+| table | your_table |
+| index | your_index |
+| start | source1 |
+| direction | OUT |
+
+```bash
+# scan/your_index?start=source1&direction=OUT
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/your_index?start=source1&direction=OUT" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "edges": [
+    {
+      "version": 1,
+      "source": "source1",
+      "target": "target1",
+      "properties": {
+        "weight": 0.8,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    }
+  ],
+  "count": 1,
+  "total": -1,
+  "offset": null,
+  "hasNext": false,
+  "context": {}
+}
+```
+
+**Note:** When `total` is -1, the total count is not calculated. If `features=total` is provided, the total is actually calculated.
+
+## Pagination
+
+The `offset` parameter indicates the starting position of the next page, and `hasNext` indicates whether there is a next page. If there is no offset, the first page is returned.
+
+### 1. First Page Request
+
+Request the first page without an offset.
+
+**Request Example**
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| Authorization | YOUR_API_KEY | |
+| database | your_database | |
+| table | your_table | |
+| index | your_index | |
+| start | source1 | |
+| direction | OUT | |
+| limit | | 25 recommended |
+
+```bash
+# scan/your_index?start=source1&direction=OUT
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/your_index?start=source1&direction=OUT" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+{
+  "edges": [
+    {
+      "version": 1,
+      "source": "source1",
+      "target": "target1",
+      "properties": {
+        "weight": 0.8,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    },
+    ...
+  ],
+  "count": 10,
+  "total": -1,
+  "offset": "string_encoded",
+  "hasNext": true,
+  "context": {}
+}
+```
+
+### 2. Next Page Request
+
+Use the `offset` value from the previous response to retrieve the next page.
+
+**Request Example**
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| Authorization | YOUR_API_KEY | |
+| database | your_database | |
+| table | your_table | |
+| index | your_index | |
+| start | source1 | |
+| direction | OUT | |
+| offset | string_encoded | Value received from previous response |
+| limit | | 25 recommended |
+
+```bash
+# scan/your_index?start=source1&direction=OUT&offset=string_encoded
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/your_index?start=source1&direction=OUT&offset=string_encoded" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+{
+  "edges": [
+    {
+      "version": 1,
+      "source": "source1",
+      "target": "target1",
+      "properties": {
+        "weight": 0.8,
+        "type": "FOLLOWS"
+      },
+      "context": {}
+    },
+    ...
+  ],
+  "count": 10,
+  "total": -1,
+  "offset": null,
+  "hasNext": false,
+  "context": {}
+}
+```
+
+## Index Ranges
+
+The `ranges` parameter allows you to specify the data scan range in count/scan queries.
+
+### Relationship between Ranges and Indexes
+
+> **Important:** Ranges can only use fields that are included in the index.
+
+1. **Index Dependency:** Fields used in `ranges` must have an index. Attempting to specify a range on a field without an index will return unexpected results.
+2. **Operator Meaning:** The `eq`, `gt(e)`, `lt(e)`, and `between` operators determine the start and end points of the actual storage scan. They must be used appropriately according to index properties.
+   - When an index is set to `DESC` (descending): `lt` becomes the start point and `gt` becomes the end point.
+   - When an index is set to `ASC` (ascending): `gt` becomes the start point and `lt` becomes the end point.
+3. **Composite Ranges:** Ranges can be used in the order of the field combination that the index is defined on. Ranges must be applied in the order of fields defined in the index.
+
+### Range Syntax
+
+Ranges are written in the following format:
+
+```
+ranges=range1[;range2;range3;...]
+```
+
+Each range follows this format:
+
+```
+field:operator:value
+```
+
+To apply multiple ranges, separate them with semicolons (`;`):
+
+```
+field1:operator1:value1;field2:operator2:value2
+```
+
+When using the `in` or `bt` (between) operator, multiple values are separated by commas (`,`):
+
+```
+field:in:value1,value2,value3
+field:bt:minValue,maxValue
+```
+
+### Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `eq` | Equal | `type:eq:0` |
+| `gt` | Greater than | `createdAt:gt:1000000` |
+| `gte` | Greater than or equal | `createdAt:gte:1000000` |
+| `lt` | Less than | `createdAt:lt:2000000` |
+| `lte` | Less than or equal | `createdAt:lte:2000000` |
+| `bt` | Between two values | `createdAt:bt:1000000,2000000` |
+
+### Examples
+
+**Simple range:**
+
+```
+GET .../scan/your_index?start=10&direction=OUT&ranges=type:eq:0
+```
+
+This example specifies a range to retrieve only edges where the `type` property is 0. Note that `type` refers to `properties.type`, and `properties.type` must be included in `your_index`.
+
+**Composite range:**
+
+```
+GET .../scan/your_index?start=10&direction=OUT&ranges=type:eq:0;createdAt:gt:1000000
+```
+
+This example specifies a range to retrieve only edges where `type` is 0 and `createdAt` is greater than 1000000.
+
+**Between operator:**
+
+```
+GET .../scan/your_index?start=10&direction=OUT&ranges=createdAt:bt:1000000,2000000
+```
+
+This example specifies a range to retrieve only edges where `createdAt` is between 1000000 and 2000000.
+
+## Filters
+
+The `filters` parameter allows you to filter data (edges) in get/scan queries. It uses the same format as [ranges](#index-ranges).
+
+**Difference from ranges:** While [ranges](#index-ranges) pre-specifies the query range and can only use fields set as indexes, `filters` filters the query results and can use fields that are not set as indexes.
+
+### Filter Examples
+
+```
+GET .../get?source=1,2,3&target=10&filters=type:eq:0
+GET .../scan/your_index?start=1&direction=OUT&ranges=createdAt:gte:1000000&filters=type:eq:0
+```
+
+## Data Model
+
+### Query Direction
+
+- **OUT:** Outgoing direction (e.g., retrieving products that a user liked in a user [likes]→ product relationship)
+- **IN:** Incoming direction (e.g., retrieving users who liked a product in the above relationship)
+
+### Count Response
+
+Count query response. Payload containing edge count information.
+
+```kotlin
+data class Count(
+  val start: Any,                 // Starting node ID
+  val direction: Direction,       // Direction (IN, OUT)
+  val count: Long,                // Edge count
+  val context: Map<String, Any?>, // Context information
+)
+```
+
+### EdgeFrame Response
+
+Get and scan query response. Payload containing edge data.
+
+```kotlin
+data class EdgeFrame(
+  val edges: List<Edge>,          // Edge list
+  val count: Int,                 // Number of edges currently returned
+  val total: Long,                // Total edge count (-1 means not calculated)
+  val offset: String?,            // Pagination offset
+  val hasNext: Boolean,           // Whether next page exists
+  val context: Map<String, Any?>, // Context information
+)
+```
+
+### Edge
+
+Individual edge information payload.
+
+```kotlin
+data class Edge(
+  val version: Long,                 // Edge version
+  val source: Any,                   // Source node ID
+  val target: Any,                   // Target node ID
+  val properties: Map<String, Any?>, // Edge properties
+  val context: Map<String, Any?>,    // Context information
+)
+```
+

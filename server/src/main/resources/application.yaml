@@ -2,6 +2,10 @@ management:
   info:
     git:
       mode: full
+  endpoints:
+    web:
+      exposure:
+        include: "*"
 
 spring:
   sql:

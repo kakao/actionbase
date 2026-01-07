@@ -71,4 +71,9 @@ public interface HBaseTablePayload {
   default int numRegions() {
     return 32;
   }
+
+  @Value.Default
+  default int replicationScope() {
+    return 0;
+  }
 }

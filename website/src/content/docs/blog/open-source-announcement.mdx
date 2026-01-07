@@ -1,0 +1,123 @@
+---
+title: Introducing Actionbase as Open Source
+description: An open-source database designed to reliably serve user interactions—such as likes, follows, and recently viewed items—at massive scale.
+date: 2026-01-05
+lastUpdated: 2026-01-05
+tags:
+  - announcement
+  - open-source
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+<Aside type="tip" title="Announcement">
+    We’re open-sourcing Actionbase,
+    a database for serving user interactions
+    such as likes and follows at scale.
+</Aside>
+
+## Likes 👍
+***A simple feature that becomes surprisingly complex at scale***
+
+Imagine adding a "Like" feature to a feed or a product page.
+
+The basic implementation is straightforward.
+You just need to record **who** (user ID) liked **what** (target ID).
+The total number of likes can be calculated by counting (`COUNT`) all records
+with the same target ID.
+Most systems therefore start with a single table containing user IDs and target IDs.
+Indexes are added based on query patterns, and once `COUNT` becomes expensive,
+a cache is introduced. And this approach works well at most scales.
+
+**But once a service grows beyond a certain point, things begin to change.**
+
+You start thinking about sharding.
+You repeatedly add compensating logic to keep caches consistent.
+What was once a simple model gradually becomes complex.
+
+The cost of supporting something as simple as a "Like" keeps increasing.
+
+Teams that have experienced large-scale traffic usually end up asking
+the same question at some point:
+
+> **"Is this really the right way to keep doing this?"**
+
+Faced with that question, our conclusion was clear:
+
+> **"We need a different approach."**
+
+## Actionbase
+***A different answer to the same problem — a database for user interactions***
+
+Actionbase is a database designed to reliably handle user interactions
+even under massive traffic.
+By **interactions**, we mean any kind of action that occurs between a user
+and a target—such as **likes, reactions, and follows**.
+Actionbase models these interactions as:
+
+**who (the actor) performed what action on which target.**
+
+> Example: "User1" (actor) liked (action) "Product A" (target).
+
+### Designing Writes for Reads
+***What "a different approach" actually means***
+
+The core idea behind Actionbase is simple:
+
+> **At write time, precompute everything you'll need at read time.**
+
+When a user clicks "Like," the user's list of liked items is updated,
+the target's like count is incremented,
+and even the ordering information required for sorting and querying
+is updated—**all within a single write flow**.
+As a result, reads require no aggregation or additional computation.
+You simply **read the precomputed results as they are.**
+
+> This is the "different approach" Actionbase is built on.
+
+Instead of starting with "How do we read fast?" and optimizing later,
+Actionbase defines fast reads first—and then designs writes around them.
+This approach has already been proven in production,
+serving large-scale traffic at Kakao services such as KakaoShopping.
+
+## Open Source
+***From individual features to a shared structure***
+
+In this post, we used "Likes" as an example,
+but Actionbase is not limited to a single feature.
+
+Likes 👍, recently viewed items 👀, follows 👥,
+even sent and received gifts 🎁—
+if something can be expressed as a user interaction,
+it can be modeled with Actionbase.
+While these interactions may look different on the surface,
+from a data modeling perspective,
+they eventually converge into a shared structure.
+
+As this structure accumulates,
+it grows beyond individual features into
+**a larger graph of relationships**.
+**Content and products connect around users.
+People connect with people.
+The flow of the entire service becomes something
+that can be stored, queried, and traversed
+within a single coherent structure.**
+
+Rather than solving this problem repeatedly in different ways,
+we believe there should be a **shared structure**
+that can be validated and refined together
+across many environments.
+Actionbase is an attempt to treat user interactions
+not as isolated features,
+but as **connected relationships**—
+and open source is our way of building that structure together.
+
+> ✨ **When your data converges in Actionbase, you may discover possibilities you couldn't see before.** ✨
+
+## Getting Started
+
+- GitHub: https://github.com/kakao/actionbase
+- Documentation: https://actionbase.io/
+- Contribution Guide: https://actionbase.io/community/contributing/
+
+**Explore Actionbase—and help shape its future.**

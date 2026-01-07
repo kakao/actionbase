@@ -1,0 +1,64 @@
+---
+title: Glossary
+description: Key terminology used in Actionbase documentation
+sidebar:
+    order: 6
+---
+
+This page defines key terms used throughout the Actionbase documentation.
+
+## API Version Mapping
+
+Actionbase is in the process of migrating from v2 to v3 APIs. The terminology differs between versions:
+
+| v2 Term | v3 Term | Description |
+|---------|---------|-------------|
+| Service | Database | Namespace for grouping tables |
+| Label | Table | Edge schema definition |
+
+- **Metadata APIs** use v2 (service/label) — will migrate to v3 in a future release
+- **Query/Mutation APIs** use v3 (database/table)
+
+## Data Model
+
+| Term | Description |
+|------|-------------|
+| **Edge** | A graph edge representing a user interaction |
+| **Source** | The entity performing the interaction (e.g., user_id) |
+| **Target** | The entity receiving the interaction (e.g., product_id) |
+| **Properties** | Attributes stored on an edge (e.g., created_at) |
+| **Unique-edge** | An edge identified by (source, target) pair |
+| **Multi-edge** | An edge identified by ID; multiple edges allowed per (source, target) |
+| **Index** | Pre-computed structure for efficient querying |
+| **Alias** | An alternative name for a label (or table) |
+
+## Query and Mutation
+
+| Term | Description |
+|------|-------------|
+| **Count** | Query that returns the number of edges |
+| **Get** | Query that retrieves a specific edge by source and target |
+| **Scan** | Query that scans edges using a pre-computed index |
+| **Start** | Starting node for Scan/Count queries; acts as source when direction is OUT, target when IN |
+| **Direction** | Query direction: `OUT` (source→target) or `IN` (target←source) |
+| **Range** | Index-based scan boundaries applied at storage level |
+| **Filter** | Post-retrieval filtering applied at application level |
+| **Version** | Uses client-provided timestamp (milliseconds or nanoseconds) for concurrency control and event ordering |
+| **Offset** | Encoded string indicating the starting position for pagination |
+| **Limit** | Maximum number of results to return; 25 is recommended for production |
+
+## Write-Time Optimization
+
+| Term | Description |
+|------|-------------|
+| **EdgeState** | Current edge state, accessed by Get queries |
+| **EdgeIndex** | Sorted index entries, accessed by Scan queries |
+| **EdgeCounter** | Pre-computed counters, accessed by Count queries |
+
+## Data Pipeline
+
+| Term | Description |
+|------|-------------|
+| **WAL** | Write-Ahead Log for durability and recovery |
+| **CDC** | Change Data Capture for downstream synchronization |
+

@@ -2,36 +2,33 @@ package command
 
 import (
 	"fmt"
+
+	"github.com/kakao/actionbase/internal/command/model"
 )
 
-// Exit represents the exit command
 type Exit struct {
-	runner Runner
+	runner ExitRunner
 }
 
-// Runner interface defines methods needed by commands to interact with the runner
-type Runner interface {
+type ExitRunner interface {
 	SetRunning(running bool)
 }
 
-// NewExit creates a new Exit command
-func NewExit(runner Runner) *Exit {
+func NewExit(runner ExitRunner) *Exit {
 	return &Exit{runner: runner}
 }
 
-// Execute executes the exit command
-func (e *Exit) Execute(args []string) {
+func (e *Exit) Execute(_ []string) *model.Response {
 	fmt.Println("Goodbye!")
 	e.runner.SetRunning(false)
+
+	return model.Success()
 }
 
-// GetDescription returns the command description
 func (e *Exit) GetDescription() string {
 	return "Exit the console"
 }
 
-// GetType returns the command type
-func (e *Exit) GetType() CommandType {
-	return CommandTypeExit
+func (e *Exit) GetType() Type {
+	return TypeExit
 }
-

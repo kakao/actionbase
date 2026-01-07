@@ -1,0 +1,87 @@
+---
+title: Path to Open Source
+description: Actionbase project development history before open source
+sidebar:
+    order: 1
+---
+
+This document covers the development history of Actionbase before it was open-sourced. Future development will be tracked in public repositories.
+
+## MVP Phase
+
+The MVP phase represents the entire period from project inception to open-source release. During this period, Actionbase was applied to various services and evolved through real-world use.
+
+### Phase 1: Foundation Building (April 2023)
+
+**Focus:** Validating technical feasibility and establishing a technical foundation.
+
+This period was invested to ensure a technical base that would support stable development in subsequent phases.
+
+Key milestones:
+- Project kickoff and initial planning
+- Core design and implementation
+
+### Phase 2: Service Integration (March 2024)
+
+**Focus:** Validating through real-world service deployment.
+
+The system was safely integrated into production by maintaining the existing system, applying dual writes, and gradually migrating read functionality after sufficient validation.
+
+Key activities:
+- First production service write/read migration
+
+### Phase 3: Stabilization (July 2024)
+
+**Focus:** System stabilization and tenant expansion.
+
+Starting from a multi-tenant architecture, this phase introduced support for independent tenant configurations to ensure service isolation and enable isolated deployments.
+
+Key improvements:
+- System stabilization and tenant expansion
+- Support for independent tenant configurations to isolate services
+- Operations automation and monitoring enhancement
+- Applied across KakaoShopping
+
+### Phase 4: Building Sustainable Operations (January 2025 - April 2025)
+
+**Focus:** Improving operational efficiency and developer experience, addressing technical debt.
+
+During this phase, Actionbase continued to be applied to various services while improving its operational foundation. Key efforts included reducing operational overhead, improving developer tooling, and addressing accumulated technical debt.
+
+### Phase 5: Preparing for Open Source (May 2025 - December 2025)
+
+**Focus:** Preparing for open-source release and expanding adoption across Kakao's major services.
+
+Building on the foundation from Phase 4, this phase focused on making Actionbase ready for open source. The reimplementation process led to the decision to open-source Actionbase. While legacy code remains, the reimplementation continues to progress toward a more maintainable codebase. During this period, Actionbase expanded its adoption across [Kakao](/project/about-kakao/)'s major services including KakaoShopping and KakaoTalk.
+
+Key changes:
+- Maintained API compatibility with existing systems
+- Redesigned API structure
+- Repository separation and organization
+- Separated internal and open-source areas
+- Expanded adoption to major services in KakaoShopping and KakaoTalk
+
+## Open Source Release (January 2026)
+
+After this MVP period, during which Actionbase was applied to various services, Actionbase was open-sourced in January 2026.
+
+The codebase released is the same one that was developed, operated, and refined inside Kakao. Only minimal modifications were applied to remove security-sensitive or organization-specific details, and some internal features will be opened gradually as they are reviewed.
+
+### Why We Open-Sourced Actionbase
+
+**1. Transparent real-world history**
+
+The codebase grew organically in production environments. By releasing it as-is (with only essential sanitization), we aim to share its genuine journey rather than a rewritten or polished version.
+
+**2. Long-term sustainability**
+
+The system has gone through multiple generations of requirements, contributors, and architectural changes. Open-sourcing it helps create a healthier long-term lifecycle and encourages community-driven improvement.
+
+### Acknowledgements
+
+This work was supported by Kakao's leaders and engineers, who helped the team build and operate the system.
+
+Special appreciation goes to the HBase engineers at Kakao. Actionbase's reliability benefits from the stability provided by HBase.
+
+This release reflects the efforts of those who contributed to the system and the teams who supported its development. We look forward to continuing this project together with the open-source community.
+

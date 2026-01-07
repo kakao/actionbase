@@ -1,41 +1,30 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"time"
 
 	"github.com/kakao/actionbase/internal/runner"
+	"github.com/kakao/actionbase/internal/util"
+)
+
+const (
+	DefaultHost = "http://localhost:8080"
+
+	hostParamKey = "host"
+	authParamKey = "authKey"
 )
 
 func main() {
-	if len(os.Args) != 5 {
-		fmt.Println("Use --host <host> --authKey <authKey>")
-		return
+	parser := util.ParseArgs(os.Args)
+
+	host, found := parser.Get(hostParamKey)
+	if !found {
+		host = DefaultHost
 	}
 
-	if os.Args[1] != "--host" {
-		fmt.Printf("Invalid argument: %s\n", os.Args[1])
-		return
-	}
-
-	if os.Args[3] != "--authKey" {
-		fmt.Printf("Invalid argument: %s\n", os.Args[3])
-		return
-	}
-
-	start := time.Now()
-
-	host := os.Args[2]
-	authKey := os.Args[4]
-
-	console := runner.NewActionbaseCommandLineRunner(host, authKey)
-
+	authKey, _ := parser.Get(authParamKey)
+	console := runner.NewActionbaseCommandLineRunner(host, &authKey, "", false)
 	console.CheckConnection()
-	console.ShowBanner()
-
-	elapsed := time.Since(start)
-	fmt.Println("Took ", fmt.Sprintf("%.4f", elapsed.Seconds()), " seconds")
-
+	console.StartServer(parser)
 	console.Run()
 }

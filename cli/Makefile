@@ -1,3 +1,5 @@
+export CGO_ENABLED := 0
+
 .PHONY: build clean run test install fmt vet
 
 BINARY_NAME=actionbase
@@ -8,14 +10,14 @@ GOBASE=$(shell pwd)
 GOBIN=$(GOBASE)/bin
 GOFILES=$(wildcard *.go)
 
-LDFLAGS=-ldflags "-w -s"
+LD_FLAGS := -s -w
 
 all: fmt vet build
 
 build:
 	@echo "Building..."
 	@mkdir -p $(BUILD_DIR)
-	@go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+	@go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
 install:
@@ -57,21 +59,23 @@ tidy:
 
 build-linux:
 	@echo "Building for Linux..."
-	@mkdir -p $(BUILD_DIR)
-	@GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
+	@mkdir -p $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64"
 
 build-macos:
 	@echo "Building for macOS..."
-	@mkdir -p $(BUILD_DIR)
-	@GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
-	@GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
+	@echo "CGO_ENABLED=$$CGO_ENABLED"
+	@mkdir -p $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64
+	@CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64/${BINARY_NAME} $(MAIN_PATH)
+	@mkdir -p $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64
+	@CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64/${BINARY_NAME} $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)-darwin-*"
 
 build-windows:
 	@echo "Building for Windows..."
-	@mkdir -p $(BUILD_DIR)
-	@GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe $(MAIN_PATH)
+	@mkdir -p $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64
+	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64/${BINARY_NAME}.exe $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe"
 
 build-all: build-linux build-macos build-windows

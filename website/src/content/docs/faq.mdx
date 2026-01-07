@@ -1,5 +1,5 @@
 ---
-title: Frequently Asked Questions
+title: FAQ
 description: Frequently asked questions about Actionbase
 ---
 
@@ -7,66 +7,262 @@ description: Frequently asked questions about Actionbase
 
 ### What is Actionbase?
 
-Actionbase is a production-proven OLTP graph database designed for efficiently storing and querying user activity data at scale. It uses a graph data model and provides write-time optimization for ultra-fast reads.
+Actionbase is a database for serving user interactions. It is designed to handle user activity data in real time.
+
+It is built for high-throughput, low-latency OLTP workloads and models user interactions as actor→target relationships with schema-defined properties.
+
+Actionbase is **not a general-purpose graph database** like Neo4j.
+Instead, it is a **graph model–based OLTP database specialized for serving user interactions**, with read patterns optimized at write time.
+
+### Why is it called Actionbase?
+
+The name *Actionbase* emphasizes that the system stores user actions, modeled and served as user interactions.
+
+### What do "interactions" and "activities" mean in Actionbase?
+
+In Actionbase, what is commonly called user activity is modeled as interactions.
+
+An interaction captures a user action (such as liking or viewing) as an explicit actor→target relationship with schema-defined properties.
+
+Internally, interactions are represented as edges in a graph for efficient querying.
 
 ### What problems does Actionbase solve?
 
-Actionbase addresses the limitations of single RDB systems like MySQL when dealing with large-scale user activity data. It simplifies complex sharding logic while maintaining OLTP performance and provides sub-5ms read latency.
+Actionbase addresses common challenges in storing and serving large-scale user interactions:
+
+- **Recent views**: Retrieve the most recent items a user has interacted with
+- **Likes and reactions**: Store and query reaction states efficiently
+- **Follows**: Manage directional relationships between users or entities
+
+Instead of reimplementing indexing, ordering, and counting logic in each service,
+Actionbase **pre-computes read-optimized structures at write time**, enabling fast and predictable reads using simple access patterns.
 
 ### Is Actionbase production-ready?
 
-Yes. Actionbase powers several major [Kakao](/about-kakao) services including KakaoTalk and KakaoShopping, serving tens of millions of users with real-time activity data processing.
+Yes. Actionbase is used across [Kakao](/project/about-kakao/) services—including KakaoTalk and KakaoShopping—to serve real-time user interactions at scale.
 
-## Technical Questions
+It has been running in stable production for years, handling multi-terabyte datasets and serving tens of millions of users with predictable latency.
 
-### What storage backends does Actionbase support?
+### What is the history of Actionbase?
 
-Currently, Actionbase uses HBase as its storage layer. Future releases will support additional storage backends including SlateDB.
+Actionbase was developed internally at [Kakao](/project/about-kakao/) starting in April 2023. After being applied to major services including KakaoShopping and KakaoTalk, it was open-sourced in January 2026.
+
+See [Path to Open Source](/project/path-to-open-source/) for the full development history.
+
+## Data Model
+
+### What data model does Actionbase use?
+
+Actionbase uses a **Property Graph model** to represent user interactions:
+
+- **Source (actor)**: The entity performing the interaction (for example, a user)
+- **Target**: The entity being interacted with (for example, a product or content)
+- **Properties**: Schema-defined attributes such as `created_at`, `reaction_type`, and others
+
+This model naturally captures user interactions and supports efficient, property-based access patterns.
+
+### What is the difference between unique-edge and multi-edge?
+
+Actionbase supports two edge types:
+
+- **Unique-edge**: One edge per (source, target) pair. The edge is identified by the source and target.
+- **Multi-edge**: Multiple edges per (source, target) pair. Each edge is identified by a unique `id`.
+
+Unique-edge is suitable for relationships like follows, likes, and recent views. Multi-edge is useful when tracking multiple interactions between the same entities, such as gift records.
+
+> **Note:** The current documentation primarily describes unique-edge behavior. Multi-edge documentation will be expanded in future releases.
+
+### Does Actionbase support vertices (entity data)?
+
+Currently, Actionbase focuses on **edges** (interactions between entities). Entity data such as user profiles or product information is typically stored in an RDB or other systems.
+
+However, as Actionbase becomes a trusted standard within adopting organizations, there is growing demand to store entity data directly in Actionbase—reducing the need to maintain separate systems.
+
+**Vertex support is planned for future releases** to address this need. This will enable storing entity properties alongside interaction data, allowing Actionbase to serve as a more complete data layer.
+
+### Does Actionbase support schemas?
+
+Yes. Actionbase is schema-based.
+
+Schemas define:
+- Source and target identifier types (int, long, string, etc.)
+- Interaction properties and their types
+
+Schemas are used to interpret interaction data and to determine which read-optimized structures (indexes, counts, ordering) are built at write time.
+
+For schema definition details, see [Schema](/design/schema/) and [Metadata API](/api-references/metadata/).
+
+### What are some example interaction models?
+
+**Example 1: Recent views**
+- Source: `user_id`
+- Target: `product_id`
+- Properties:
+    - `created_at`
+
+**Example 2: Reactions**
+- Source: `user_id`
+- Target: `content_id`
+- Properties:
+    - `created_at`
+    - `reaction_type` (like, heart, emoji, etc.)
+
+## Architecture
+
+### How does Actionbase handle writes?
+
+Internally, Actionbase processes interactions using a **state-based mutation model**:
+
+1. Read the current interaction state
+2. Apply the incoming interaction as a state transition
+3. Persist the resulting state and related read-optimized structures
+
+This approach ensures consistent final states even when interaction events arrive out of order (see [How does Actionbase handle out-of-order events?](#how-does-actionbase-handle-out-of-order-events) for details).
 
 ### What is write-time optimization?
 
-Write-time optimization means that Actionbase pre-computes indexes and counters during writes, enabling ultra-fast reads without expensive query-time computations. This results in consistent low-latency read operations (&lt;5ms p99).
+Actionbase’s core design principle is **write-time optimization**.
+
+When an interaction is written, Actionbase pre-computes several data structures:
+
+1. **State**
+The current relationship between source and target
+
+2. **Index**
+Ordered structures based on schema-defined properties (for example, `created_at DESC`)
+
+3. **Count**
+Pre-computed counters such as:
+- Number of items a user interacted with
+- Number of users who interacted with an item
+
+As a result, reads can be satisfied using simple access patterns—such as retrieving recent items, checking existence, counting relationships, or traversing ordered results—without expensive computation at query time.
+
+### How does Actionbase handle out-of-order events?
+
+Clients attach timestamps to interaction events.
+Even if events arrive out of order due to network delays, Actionbase uses these timestamps to compute the correct final state.
+
+This guarantees consistency for interaction state transitions such as toggles, updates, or reversals.
+
+## Storage and Infrastructure
+
+### What storage backends does Actionbase support?
+
+Actionbase currently uses **HBase** as its primary storage backend, leveraging its durability and horizontal scalability. HBase is suited for large-scale deployments.
+
+**[SlateDB](https://slatedb.io/)** is planned as an additional storage backend for small to mid-size deployments in future releases.
+
+### What HBase versions are supported?
+
+There are no strict version requirements. Actionbase has been tested and operated with HBase 2.4 and 2.5.
+
+### Why use HBase?
+
+HBase provides:
+- Horizontal scalability
+- Strong durability and replication
+- Low-latency random reads and writes
+- Proven operation at very large scale
+
+Actionbase builds on these strengths and adds:
+- Interaction-aware data modeling
+- Write-time materialization of read patterns
+- A higher-level abstraction for serving user interactions
+
+In short, Actionbase **builds on proven storage engines while focusing on interaction modeling and serving**.
+
+## Streaming and Data Pipelines
+
+### What are WAL and CDC?
+
+Actionbase emits two types of logs during writes:
+
+- **WAL (Write-Ahead Log)**
+WAL records incoming interaction events as-is, enabling replay and recovery.
+
+- **CDC (Change Data Capture)**
+CDC records the resulting interaction state after mutation, making it easy to synchronize data to downstream systems.
+
+Both WAL and CDC streams are accessible via Kafka consumers.
+
+### How does Actionbase support analytics and pipelines?
+
+WAL and CDC streams can be used for:
+- Recovery and replay
+- Feeding analytics systems (OLAP)
+- Building asynchronous processors and background jobs
+- Migrating or rebuilding data without downtime
+
+### Can Actionbase handle high write throughput?
+
+Yes. For high-frequency interactions (such as recent views):
+
+1. Interaction requests are logged to WAL
+2. Responses are returned immediately
+3. State, index, and count updates are processed asynchronously
+
+This design minimizes request latency while sustaining high write throughput.
+
+## Comparison
 
 ### How does Actionbase compare to Neo4j?
 
-While Neo4j aims to solve a broad range of graph database problems, Actionbase focuses on a specific subset: user activity data processing. Actionbase leverages all the strengths of HBase, including scalability and bulk loading capabilities, while providing improved usability on top. When using HBase, you get HBase's benefits with easier usability; when using SlateDB (planned), you'll get SlateDB's benefits with the same consistent interface.
+Actionbase is **not a competitor to Neo4j**.
 
-### What programming languages are supported?
+- **Neo4j** is a general-purpose graph database
+- **Actionbase** is a specialized OLTP database for serving user interactions
 
-Actionbase modules are built with:
-- **Core modules**: Java, Kotlin (Java 8)
-- **Engine and Server**: Kotlin (Java 17)
-- **Pipeline**: Scala (Java 8)
+Actionbase focuses on a specific interaction-serving workload rather than supporting arbitrary graph queries.
+
+### How does Actionbase compare to traditional RDBMS?
+
+Actionbase is **not a replacement for traditional RDBMS**.
+
+- **Traditional RDBMS** is a general-purpose relational database
+- **Actionbase** is a specialized database for serving user interactions at scale
+
+Actionbase focuses on a specific interaction-serving workload, leveraging horizontally scalable storage and pre-computing read patterns at write time to deliver predictable, low-latency reads.
+
+## Use Cases
+
+### What are typical use cases for Actionbase?
+
+**1. Interaction Ledger (OLTP)**
+Store and serve interaction data previously managed in relational databases, while scaling horizontally.
+
+**2. Serving Systems (Feeds, Timelines, Recommendations)**
+Use Actionbase directly as a read-optimized source for feeds, timelines, and recommendation inputs—without separate ETL pipelines or caches.
 
 ## Getting Started
 
-### How do I get started with Actionbase?
+### What are the system requirements?
 
-See our [Quick Start Guide](/quick-start/) for installation and setup instructions.
+- **Runtime**: Java 17
+- **Memory**: 4 GB or more recommended
+- **OS**: Linux (standard server environment)
+
+### How do I get started?
+
+See the [Quick Start Guide](/quick-start/) for installation and setup instructions.
 
 ### Do I need to set up HBase separately?
 
-Yes, Actionbase requires HBase as a storage backend. See [HBase Setup](/operations/hbase/) for configuration details.
+Yes. Actionbase currently requires HBase as a storage backend. Additional storage backends are planned for future releases.
 
-### Can I run Actionbase locally for development?
+See [HBase Setup](/operations/hbase/) for details.
 
-Yes, see [Local Setup](/provisioning/local/) for instructions on setting up a local development environment.
+### What programming languages are supported?
 
-## Performance
+Actionbase provides a **REST API**, making it usable from any language that supports HTTP, including Python, Go, and Java.
 
-### What kind of performance can I expect?
+See [Query API](/api-references/query/) and [Mutation API](/api-references/mutation/) for endpoint details and usage examples.
 
-In production, Actionbase achieves:
-- Read latency: &lt;5ms (p99)
-- Throughput: Hundreds of thousands of requests per second
-- Data scale: Multiple TB-scale deployments
-
-### How does Actionbase handle horizontal scaling?
-
-Actionbase is designed for horizontal scaling. It leverages the scalability of underlying storage backends like HBase while providing a unified interface for managing distributed data.
+Internally, Actionbase is implemented using Java, Kotlin, and Scala, but users are not exposed to these details.
 
 ## Contributing
 
-### How can I contribute to Actionbase?
+### How can I contribute?
 
-We welcome contributions! See our [Community](/community/github/) page for information on contributing, including code style guidelines and the development workflow.
+We welcome contributions.
+See our [Contributing](/community/contributing/) page for contribution guidelines and development workflow details.

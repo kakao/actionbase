@@ -3,46 +3,76 @@ package command
 import (
 	"fmt"
 
-	"github.com/kakao/actionbase/internal/metastore"
+	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/metastore"
+	"github.com/kakao/actionbase/internal/command/model"
 )
 
-// Desc represents the desc command
 type Desc struct {
-	tableCommand *metastore.TableCommand
+	context      *Context
+	runner       DescRunner
+	tableCommand *metastore.Table
+	aliasCommand *metastore.Alias
 }
 
-// DescRunner defines the interface for desc command runner
 type DescRunner interface {
-	GetHost() string
-	GetAuthKey() string
 	GetCurrentDatabase() string
 	GetCurrentTable() string
+	GetCurrentAlias() string
 	SetCurrentTable(table string)
+	SetCurrentDatabase(database string)
+	SetCurrentAlias(alias string)
 }
 
-// NewDesc creates a new Desc command
-func NewDesc(runner DescRunner) *Desc {
+func NewDesc(runner DescRunner, actionbaseClient *client.ActionbaseClient) *Desc {
 	return &Desc{
-		tableCommand: metastore.NewTableCommand(runner),
+		runner:       runner,
+		tableCommand: metastore.NewTable(runner, actionbaseClient),
+		aliasCommand: metastore.NewAlias(runner, actionbaseClient),
 	}
 }
 
-// Execute executes the desc command
-func (d *Desc) Execute(args []string) {
+func (d *Desc) Execute(args []string) *model.Response {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", d.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", d.GetType().GetCommand()))
 	}
 
-	d.tableCommand.Desc(args[0])
+	resourceType := args[0]
+	if resourceType != "table" && resourceType != "alias" {
+		return model.Fail(fmt.Sprintf("Usage: %s", d.GetType().GetCommand()))
+	}
+
+	if len(args) >= 2 {
+		name := args[1]
+
+		if resourceType == "table" {
+			return d.tableCommand.Desc(name)
+		}
+
+		return d.aliasCommand.Desc(name)
+	}
+
+	if resourceType == "table" {
+		currentTable := d.runner.GetCurrentTable()
+
+		if currentTable == "" {
+			return model.Fail("No table selected. Use 'use <table|alias> <name>'")
+		}
+		return d.tableCommand.Desc(currentTable)
+	}
+
+	currentAlias := d.runner.GetCurrentAlias()
+	if currentAlias == "" {
+		return model.Fail("No alias selected. Use 'use alias <name>'")
+	}
+
+	return d.aliasCommand.Desc(currentAlias)
 }
 
-// GetDescription returns the command description
 func (d *Desc) GetDescription() string {
 	return "Describe table"
 }
 
-// GetType returns the command type
-func (d *Desc) GetType() CommandType {
-	return CommandTypeDesc
+func (d *Desc) GetType() Type {
+	return TypeDesc
 }

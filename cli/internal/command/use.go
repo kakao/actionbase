@@ -2,90 +2,76 @@ package command
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/kakao/actionbase/internal/metastore"
+	"github.com/kakao/actionbase/internal/client"
+	"github.com/kakao/actionbase/internal/command/metastore"
+	"github.com/kakao/actionbase/internal/command/model"
 )
 
-// Use represents the use command
 type Use struct {
+	context         *Context
 	runner          UseRunner
-	databaseCommand *metastore.DatabaseCommand
-	tableCommand    *metastore.TableCommand
+	databaseCommand *metastore.Database
+	tableCommand    *metastore.Table
+	aliasCommand    *metastore.Alias
 }
 
-// UseRunner defines the interface for use command runner
 type UseRunner interface {
-	GetHost() string
-	GetAuthKey() string
 	GetCurrentDatabase() string
 	GetCurrentTable() string
+	GetCurrentAlias() string
 	SetCurrentDatabase(database string)
 	SetCurrentTable(table string)
+	SetCurrentAlias(alias string)
 }
 
-// NewUse creates a new Use command
-func NewUse(runner UseRunner) *Use {
+func NewUse(runner UseRunner, actionbaseClient *client.ActionbaseClient) *Use {
 	return &Use{
 		runner:          runner,
-		databaseCommand: metastore.NewDatabaseCommand(runner),
-		tableCommand:    metastore.NewTableCommand(runner),
+		databaseCommand: metastore.NewDatabase(runner, actionbaseClient),
+		tableCommand:    metastore.NewTable(runner, actionbaseClient),
+		aliasCommand:    metastore.NewAlias(runner, actionbaseClient),
 	}
 }
 
-// Execute executes the use command
-func (u *Use) Execute(args []string) {
+func (u *Use) Execute(args []string) *model.Response {
 	if len(args) < 1 {
-		fmt.Printf("Usage: %s\n", u.GetType().GetCommand())
-		return
+		return model.Fail(fmt.Sprintf("Usage: %s", u.GetType().GetCommand()))
 	}
 
 	commandType := args[0]
 
 	if commandType == "database" {
 		if len(args) < 2 {
-			fmt.Printf("Usage: %s\n", u.GetType().GetCommand())
-			return
+			return model.Fail(fmt.Sprintf("Usage: %s", u.GetType().GetCommand()))
 		}
-		u.databaseCommand.UseDatabase(args[1], true)
-		return
+
+		return u.databaseCommand.Use(args[1])
 	}
 
 	if commandType == "table" {
 		if len(args) < 2 {
-			fmt.Printf("Usage: %s\n", u.GetType().GetCommand())
-			return
+			return model.Fail(fmt.Sprintf("Usage: %s", u.GetType().GetCommand()))
 		}
-		u.tableCommand.UseTable(args[1], true)
-		return
+
+		return u.tableCommand.Use(args[1])
 	}
 
-	// Check for database:table format
-	split := strings.Split(args[0], ":")
-	if len(split) > 1 {
-		isDatabaseSelected := u.databaseCommand.UseDatabase(split[0], false)
-		if !isDatabaseSelected {
-			return
+	if commandType == "alias" {
+		if len(args) < 2 {
+			return model.Fail(fmt.Sprintf("Usage: %s", u.GetType().GetCommand()))
 		}
 
-		isTableSelected := u.tableCommand.UseTable(split[1], false)
-		if !isTableSelected {
-			return
-		}
-
-		fmt.Printf("Changed to %s:%s\n", u.runner.GetCurrentDatabase(), u.runner.GetCurrentTable())
-		return
+		return u.aliasCommand.Use(args[1])
 	}
 
-	fmt.Printf("Usage: %s\n", u.GetType().GetCommand())
+	return model.Fail(fmt.Sprintf("Usage: %s", u.GetType().GetCommand()))
 }
 
-// GetDescription returns the command description
 func (u *Use) GetDescription() string {
-	return "Select a database or table to use"
+	return "Select a database, table or alias to use"
 }
 
-// GetType returns the command type
-func (u *Use) GetType() CommandType {
-	return CommandTypeUse
+func (u *Use) GetType() Type {
+	return TypeUse
 }

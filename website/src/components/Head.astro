@@ -1,0 +1,28 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import StarlightHead from '@astrojs/starlight/components/Head.astro';
+---
+
+<StarlightHead {...Astro.props}>
+</StarlightHead>
+
+<link rel="icon" class="js-site-favicon" href="/favicon.svg" type="image/svg+xml">
+
+<script is:inline>
+  (function() {
+    const updateFavicon = () => {
+      const isDark =
+          localStorage.theme === 'dark' ||
+          (!localStorage.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+      const favicon = document.querySelector('.js-site-favicon');
+      if (favicon) {
+        favicon.href = isDark ? '/favicon-dark.svg' : '/favicon.svg';
+      }
+    };
+
+    updateFavicon();
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateFavicon);
+  })();
+</script>

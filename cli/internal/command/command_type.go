@@ -1,66 +1,86 @@
 package command
 
-// CommandType represents the type and usage of a command
-type CommandType struct {
-	Name    string
-	Command string
+type Type struct {
+	name    string
+	command string
 }
 
 var (
-	// CommandTypeCreate represents the create command
-	CommandTypeCreate = CommandType{
-		Name:    "CREATE",
-		Command: "create <database|table> <name>",
+	TypeCreate = Type{
+		name:    "create",
+		command: "create <database|storage|table|alias> <args>",
 	}
 
-	// CommandTypeDesc represents the desc command
-	CommandTypeDesc = CommandType{
-		Name:    "DESC",
-		Command: "desc <name>",
+	TypeDesc = Type{
+		name:    "desc",
+		command: "desc <table|alias> [<name>]",
 	}
 
-	// CommandTypeExit represents the exit command
-	CommandTypeExit = CommandType{
-		Name:    "EXIT",
-		Command: "exit",
+	TypeExit = Type{
+		name:    "exit",
+		command: "exit",
 	}
 
-	// CommandTypeHelp represents the help command
-	CommandTypeHelp = CommandType{
-		Name:    "HELP",
-		Command: "help",
+	TypeHelp = Type{
+		name:    "help",
+		command: "help",
 	}
 
-	// CommandTypeShow represents the show command
-	CommandTypeShow = CommandType{
-		Name:    "SHOW",
-		Command: "show <databases|tables|indices|groups>",
+	TypeShow = Type{
+		name:    "show",
+		command: "show <databases|storages|tables|indices|groups> --using <table|alias>",
 	}
 
-	// CommandTypeStatus represents the status command
-	CommandTypeStatus = CommandType{
-		Name:    "STATUS",
-		Command: "status",
+	TypeContext = Type{
+		name:    "context",
+		command: "context",
 	}
 
-	// CommandTypeUse represents the use command
-	CommandTypeUse = CommandType{
-		Name:    "USE",
-		Command: "use <database|table> <name> or use <database>:<table>",
+	TypeDebug = Type{
+		name:    "debug",
+		command: "debug <on|off>",
 	}
 
-	CommandTypeGet = CommandType{
-		Name:    "GET",
-		Command: "get --source=<source> --target=<target>",
+	TypeUse = Type{
+		name:    "use",
+		command: "use <database|table|alias> <name>",
 	}
 
-	CommandTypeScan = CommandType{
-		Name:    "Scan",
-		Command: "scan --index=<index> --start=<start> --direction=<direction> --limit=<limit> --ranges=<ranges>",
+	TypeGet = Type{
+		name:    "get",
+		command: "get [<table>|<alias>] --source <source> --target <target>",
+	}
+
+	TypeScan = Type{
+		name:    "scan",
+		command: "scan [<table>|<alias>] --index <index> --start <start> --direction <direction> [--ranges <ranges>] [--limit <limit>]",
+	}
+
+	TypeMutate = Type{
+		name:    "mutate",
+		command: "mutate [<table>|<alias>] --type <type> --source <source> --target <target> --version <version> --properties <properties>",
+	}
+
+	TypeCount = Type{
+		name:    "count",
+		command: "count [<table>|<alias>] --start <start> --direction <direction>",
+	}
+
+	TypeLoad = Type{
+		name:    "load",
+		command: "load <path>",
+	}
+
+	TypeGuide = Type{
+		name:    "guide",
+		command: "guide <name> <start|stop>",
 	}
 )
 
-// GetCommand returns the command usage string
-func (ct CommandType) GetCommand() string {
-	return ct.Command
+func (t Type) GetName() string {
+	return t.name
+}
+
+func (t Type) GetCommand() string {
+	return t.command
 }

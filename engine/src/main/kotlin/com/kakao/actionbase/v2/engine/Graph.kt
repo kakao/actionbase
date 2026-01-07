@@ -43,10 +43,6 @@ import com.kakao.actionbase.v2.engine.metadata.sync.MetadataSyncStatus
 import com.kakao.actionbase.v2.engine.metadata.sync.MetadataType
 import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.migration.Migration
-import com.kakao.actionbase.v2.engine.producer.KafkaProducer
-import com.kakao.actionbase.v2.engine.producer.LoggerProducer
-import com.kakao.actionbase.v2.engine.producer.Producer
-import com.kakao.actionbase.v2.engine.producer.ProducerList
 import com.kakao.actionbase.v2.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.query.ActionbaseQueryExecutor
 import com.kakao.actionbase.v2.engine.query.LabelProvider
@@ -68,11 +64,11 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseOptions
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 import com.kakao.actionbase.v2.engine.util.getLogger
 import com.kakao.actionbase.v2.engine.wal.Wal
+import com.kakao.actionbase.v2.engine.wal.WalFactory
 import com.kakao.actionbase.v2.engine.wal.WalLog
 
 import java.lang.AutoCloseable
 import java.time.Duration
-import java.util.Properties
 import java.util.UUID
 
 import org.jetbrains.exposed.sql.Database
@@ -940,6 +936,7 @@ class Graph(
         @Suppress("LongMethod")
         fun create(
             config: GraphConfig,
+            walFactory: WalFactory,
             cdcFactory: CdcFactory,
             kafkaClientFactory: KafkaClientFactory,
             webClientFactory: WebClientFactory,
@@ -957,7 +954,7 @@ class Graph(
 
             val startupTime = System.currentTimeMillis()
             val hostName = config.hostName
-            val wal = createWalWriter(config.walProperties, kafkaClientFactory)
+            val wal = walFactory.create(config.walProperties, kafkaClientFactory)
             val cdc = cdcFactory.create(config.cdcProperties, kafkaClientFactory)
 
             val edgeEncoderFactory =
@@ -1117,27 +1114,3 @@ class Graph(
         }
     }
 }
-
-private fun createWalWriter(
-    properties: List<Properties>,
-    kafkaClientFactory: KafkaClientFactory,
-): Wal {
-    val producers =
-        if (properties.isNotEmpty()) {
-            properties.map { createWalProducer(it, kafkaClientFactory) }
-        } else {
-            listOf(LoggerProducer())
-        }.let { ProducerList(it) }
-    return Wal(producers)
-}
-
-private fun createWalProducer(
-    properties: Properties,
-    kafkaClientFactory: KafkaClientFactory,
-): Producer =
-    if (properties.getProperty("bootstrap.servers", "") != "" && properties.getProperty("topic", "") != "") {
-        val client = kafkaClientFactory.create(properties)
-        KafkaProducer.createWalProducer(client, properties)
-    } else {
-        LoggerProducer()
-    }
