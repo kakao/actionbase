@@ -1,8 +1,16 @@
-create database --name social --comment 'social database';
+# @out
+The resources have been created:
+ - Database: social
+ - Table with preset data
+   1) user_posts
+   2) user_likes
+#
 
-create storage
---name user_posts_storage
---data '{"desc" : "user post storage", "type" : "HBASE", "conf" : {"namespace" : "test","tableName" : "user_post_table"}}';
+create database
+--name social
+--data '{
+ "comment": "social database"
+}';
 
 create table
 --database social
@@ -41,12 +49,11 @@ create table
      "desc": "order by createdAt"
    }
  ],
- "storage": "user_posts_storage",
+ "storage": "datastore://guides/user_posts",
  "event": false,
  "readOnly": false,
  "mode": "SYNC"
-}
-';
+}';
 
 create edges
 --database social
@@ -111,17 +118,6 @@ create edges
  ]
 }';
 
-load storage
---name user_likes_storage
---data '{
-  "desc": "user likes storage",
-  "type": "HBASE",
-  "conf": {
-    "namespace": "test",
-    "tableName": "user_like_table"
-  }
-}';
-
 load table
 --database social
 --name user_likes
@@ -159,7 +155,7 @@ load table
       "desc": "order by createdAt"
     }
   ],
-  "storage": "user_posts_storage",
+  "storage": "datastore://guides/user_likes",
   "event": false,
   "readOnly": false,
   "mode": "SYNC"
