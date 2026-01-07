@@ -229,12 +229,6 @@
   transition: all var(--transition-fast);
 }
 
-.action-btn:hover {
-  border: 1px solid #535353;
-  background-color: #f8f8f8;
-  transform: translateY(-1px);
-}
-
 .doc-link {
   display: flex;
   align-items: center;
