@@ -11,25 +11,18 @@ import StarlightHead from '@astrojs/starlight/components/Head.astro';
 <script is:inline>
   (function() {
     const updateFavicon = () => {
-      const faviconLink = document.getElementById('favicon-link');
-      if (faviconLink) {
-        faviconLink.href = document.documentElement.dataset.theme === 'dark' ? '/favicon-dark.svg' : '/favicon.svg';
+      const isDark =
+          localStorage.theme === 'dark' ||
+          (!localStorage.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+      const favicon = document.querySelector('.js-site-favicon');
+      if (favicon) {
+        favicon.href = isDark ? '/favicon-dark.svg' : '/favicon.svg';
       }
     };
 
     updateFavicon();
 
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'data-theme') {
-          updateFavicon();
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateFavicon);
   })();
 </script>
