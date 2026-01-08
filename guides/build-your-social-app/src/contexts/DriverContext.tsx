@@ -136,7 +136,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         steps: [
           { // 0
             popover: {
-              title: "Welcome to Actionbase 🙌🏼",
+              title: '<span class="driver-popover-title-number">1</span> Welcome to Actionbase 🙌🏼',
               side: 'over',
               align: 'center',
               nextBtnText: "start",
@@ -144,7 +144,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 1
             popover: {
-              title: "Prepare tutoral ",
+              title: '<span class="driver-popover-title-number">2</span> Prepare tutoral',
               side: 'right',
               align: 'start',
             },
@@ -173,7 +173,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 4
             element: "[id='search-results-list']",
             popover: {
-              title: "Check Prepared data",
+              title: '<span class="driver-popover-title-number">3</span> Check Prepared data',
               description: "(In Progress)",
               side: 'bottom',
               nextBtnText: "done",
@@ -183,7 +183,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 5
             popover: {
-              title: "Follows",
+              title: '<span class="driver-popover-title-number">4</span>Follows',
               side: 'right',
               align: 'start',
               onNextClick: navigateAndMoveNext()
@@ -242,7 +242,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 11
             popover: {
-              title: "Likes",
+              title: '<span class="driver-popover-title-number">5</span> Likes',
               side: 'over',
               align: 'start',
               onNextClick: navigateAndMoveNext()
@@ -281,7 +281,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 15
             element: "[class='mobile-frame']",
             popover: {
-              title: "Feed",
+              title: '<span class="driver-popover-title-number">6</span> Feed',
               description: "(In Progress)",
               side: 'right',
               align: 'start',
@@ -290,7 +290,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 16
             popover: {
-              title: "End 🎉",
+              title: '<span class="driver-popover-title-number">7</span> End 🎉',
               description: "The tutorial has ended. Thanks for joining the tour!",
               side: 'over',
               align: 'center',
@@ -298,7 +298,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 16
             popover: {
-              title: "Goodbye!",
+              title: '<span class="driver-popover-title-number">8</span> Goodbye!',
               description: "(In Progress)",
               side: 'over',
               align: 'center',

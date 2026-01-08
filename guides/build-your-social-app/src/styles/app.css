@@ -134,3 +134,12 @@ body[class*="driver-highlighted-element"] .feed-scroll,
 .driver-popover-close-btn:hover {
   background-color: rgba(0, 0, 0, 0.05) !important;
 }
+
+.driver-popover-title-number {
+  padding: 1px 7px;
+  border-radius: 4px;
+  margin-right: 5px;
+  background-color: #3c53f7;
+  color: white;
+  font-size: 16px;
+}

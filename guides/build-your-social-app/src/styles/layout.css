@@ -400,7 +400,6 @@
 
 .terminal-wrapper * {
   pointer-events: auto;
-  height: 100%;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 }
 
