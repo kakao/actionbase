@@ -173,11 +173,11 @@ const Profile: React.FC = () => {
                 <span className="stat-label">Posts</span>
                 <span className="stat-count">{posts.length}</span>
               </div>
-              <div className="stat-item" onClick={() => navigate(ROUTES.FOLLOWERS(owner.id))}>
+              <div className="stat-item" id="profile-followers" onClick={() => navigate(ROUTES.FOLLOWERS(owner.id))}>
                 <span className="stat-label">Followers</span>
                 <span className="stat-count">{followers}</span>
               </div>
-              <div className="stat-item" id="profile-follows" onClick={() => navigate(ROUTES.FOLLOWINGS(owner.id))}>
+              <div className="stat-item" onClick={() => navigate(ROUTES.FOLLOWINGS(owner.id))}>
                 <span className="stat-label">Follows</span>
                 <span className="stat-count">{followings}</span>
               </div>

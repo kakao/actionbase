@@ -35,6 +35,12 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
 
   useEffect(() => {
     if (stepIndex !== undefined && stepIndex >= 0) {
+      if (!breadcrumbSteps.some(step => step.stepIndex === stepIndex)
+        && !breadcrumbSteps.flatMap(step => step.subSteps)
+          .some(subStep => subStep?.stepIndex === stepIndex)) {
+        return
+      }
+
       const newStep =
         breadcrumbSteps.map((step) => {
           const isMainStepActive = step.stepIndex === stepIndex;

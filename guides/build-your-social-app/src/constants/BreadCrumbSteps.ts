@@ -1,5 +1,5 @@
 export interface BreadCrumbStep {
-  stepIndex: number,
+  stepIndex?: number,
   title?: string;
   isActive?: boolean,
   isCompleted?: boolean,
@@ -42,47 +42,47 @@ export const breadCrumbSteps: BreadCrumbStep[] = [
         title: "me -> merlin",
       },
       {
-        stepIndex: 8,
+        stepIndex: 9,
         title: "Get follows",
       },
       {
-        stepIndex: 9,
+        stepIndex: 10,
         title: "Get follows count",
       },
       {
-        stepIndex: 10,
+        stepIndex: 12,
         title: "Scan follows",
       }
     ]
   },
   {
-    stepIndex: 11,
+    stepIndex: 14,
     title: "Likes",
     subSteps: [
       {
-        stepIndex: 12,
+        stepIndex: 15,
         title: "me -> merlin's post",
       },
       {
-        stepIndex: 13,
+        stepIndex: 17,
         title: "Get likes",
       },
       {
-        stepIndex: 14,
+        stepIndex: 18,
         title: "(In Progress: Same as follows)",
       }
     ]
   },
   {
-    stepIndex: 15,
+    stepIndex: 19,
     title: "Feed"
   },
   {
-    stepIndex: 16,
+    stepIndex: 20,
     title: "End 🎉"
   },
   {
-    stepIndex: 17,
+    stepIndex: 21,
     title: "Goodbye!"
   },
 ];

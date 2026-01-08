@@ -18,7 +18,7 @@ export const steps: HandsOnStepCommand[] = [
     database: 'social',
     command: `create table \\
 --database social \\
---storage default \\
+--storage datastore://guides/user_follows \\
 --name user_follows \\
 --comment 'user follows table' \\
 --type INDEXED \\
@@ -75,17 +75,17 @@ export const steps: HandsOnStepCommand[] = [
     command: 'get user_follows --source doki --target merlin',
   },
   {
-    stepIndex: 9,
+    stepIndex: 10,
     database: 'social',
     command: 'count user_follows --start merlin --direction IN',
   },
   {
-    stepIndex: 10,
+    stepIndex: 12,
     database: 'social',
     command: 'scan user_follows --start merlin --index created_at_desc --direction IN',
   },
   {
-    stepIndex: 12,
+    stepIndex: 15,
     database: 'social',
     command: `mutate user_likes \\
 --type INSERT \\
@@ -98,24 +98,9 @@ export const steps: HandsOnStepCommand[] = [
 }'`,
   },
   {
-    stepIndex: 13,
+    stepIndex: 16,
     database: 'social',
     command: 'get user_likes --source doki --target 1',
-  },
-  {
-    stepIndex: 19,
-    database: 'social',
-    command: 'count user_posts --start doki --direction OUT',
-  },
-  {
-    stepIndex: 20,
-    database: 'social',
-    command: 'count user_follows --start doki --direction OUT',
-  },
-  {
-    stepIndex: 21,
-    database: 'social',
-    command: 'count user_follows --start doki --direction OUT',
   }
 ];
 

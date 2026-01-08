@@ -13,16 +13,18 @@ interface NavigationEvent {
 
 const navigationNextEvent = new Map<number, NavigationEvent>([
   [3, {url: '/search', target: "[id='search-results-list']"}],
-  [5, {url: '/profile/merlin', target: "[id='btn-profile-following']"}],
-  [11, {url: '/post/1', target: "[id='post-detail-actions']"}],
-  [14, {url: '/', target: ""}],
-]);
+  [6, {url: '/profile/merlin', target: "[id='btn-profile-following']"}],
+  [12, {url: '/followers/merlin', target: "[id='followers-list']"}],
+  [14, {url: '/post/1'}],
+  [18, {url: '/'}],
+]);``
 
 const navigationPrevEvent = new Map<number, NavigationEvent>([
   [4, {url: '/search', target: "[id='cli-commands']"}],
-  [6, {url: '/search'}],
-  [12, {url: '/profile/merlin'}],
-  [15, {url: '/post/1'}],
+  [7, {url: '/search'}],
+  [13, {url: '/profile/merlin'}],
+  [15, {url: '/followers/merlin'}],
+  [19, {url: '/post/1'}],
 ]);
 
 const waitForElement = (selector: any, timeout = 3000) => {
@@ -183,10 +185,9 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 5
             popover: {
-              title: '<span class="driver-popover-title-number">4</span>Follows',
+              title: '<span class="driver-popover-title-number">4</span> Follows',
               side: 'right',
               align: 'start',
-              onNextClick: navigateAndMoveNext()
             },
           },
           { // 6
@@ -197,7 +198,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'right',
               align: 'start',
               nextBtnText: 'done',
-              onPrevClick: navigateAndMovePrevious()
+              onNextClick: navigateAndMoveNext()
             },
           },
           { // 7
@@ -208,9 +209,19 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'right',
               align: 'start',
               nextBtnText: 'done',
+              onPrevClick: navigateAndMovePrevious()
             },
           },
           { // 8
+            element: "[id='btn-profile-following']",
+            popover: {
+              description: "Yeah 🎉. (In Progress)",
+              side: 'right',
+              nextBtnText: "done",
+              align: 'start',
+            },
+          },
+          { // 9
             element: "[id='cli-commands']",
             popover: {
               title: "Get follows",
@@ -220,7 +231,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               align: 'start',
             },
           },
-          { // 9
+          { // 10
             element: "[id='cli-commands']",
             popover: {
               title: "Get follows count",
@@ -230,7 +241,16 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               nextBtnText: "done",
             },
           },
-          { // 10
+          { // 11
+            element: "[id='profile-followers']",
+            popover: {
+              description: "Yeah 🎉. (In Progress)",
+              side: 'right',
+              nextBtnText: "done",
+              align: 'start',
+            },
+          },
+          { // 12
             element: "[id='cli-commands']",
             popover: {
               title: "Scan follows",
@@ -238,9 +258,20 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'right',
               align: 'start',
               nextBtnText: "done",
+              onNextClick: navigateAndMoveNext()
             },
           },
-          { // 11
+          { // 13
+            element: "[id='followers-list']",
+            popover: {
+              description: "Yeah 🎉. (In Progress)",
+              side: 'right',
+              nextBtnText: "done",
+              align: 'start',
+              onPrevClick: navigateAndMovePrevious()
+            },
+          },
+          { // 14
             popover: {
               title: '<span class="driver-popover-title-number">5</span> Likes',
               side: 'over',
@@ -248,7 +279,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               onNextClick: navigateAndMoveNext()
             },
           },
-          { // 12
+          { // 15
             element: "[id='cli-commands']",
             popover: {
               title: "me -> merlin's post",
@@ -259,7 +290,16 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               onPrevClick: navigateAndMovePrevious()
             },
           },
-          { // 13
+          { // 16
+            element: "[id='btn-likes']",
+            popover: {
+              description: "Yeah 🎉. (In Progress)",
+              side: 'right',
+              nextBtnText: "done",
+              align: 'start',
+            },
+          },
+          { // 17
             element: "[id='cli-commands']",
             popover: {
               title: "Get follows",
@@ -269,7 +309,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               align: 'start',
             },
           },
-          { // 14
+          { // 18
             popover: {
               title: "Same as follows",
               description: "(In Progress)",
@@ -278,7 +318,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               onNextClick: navigateAndMoveNext()
             },
           },
-          { // 15
+          { // 19
             element: "[class='mobile-frame']",
             popover: {
               title: '<span class="driver-popover-title-number">6</span> Feed',
@@ -288,7 +328,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               onPrevClick: navigateAndMovePrevious()
             },
           },
-          { // 16
+          { // 20
             popover: {
               title: '<span class="driver-popover-title-number">7</span> End 🎉',
               description: "The tutorial has ended. Thanks for joining the tour!",
@@ -296,7 +336,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               align: 'center',
             },
           },
-          { // 16
+          { // 21
             popover: {
               title: '<span class="driver-popover-title-number">8</span> Goodbye!',
               description: "(In Progress)",
