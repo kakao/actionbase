@@ -1,39 +1,61 @@
-import React, {createContext, ReactNode, useContext, useEffect, useRef, useState} from "react";
+import React, {createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {driver, Driver} from "driver.js";
 import "driver.js/dist/driver.css";
 import {useNavigate} from "react-router-dom";
 
+const STEP = {
+  NEXT: 'next',
+  PREV: 'prev'
+}
 const prevBtnText = "< prev"
 const nextBtnText = "next >"
 
 interface NavigationEvent {
   url: string;
-  target?: string;
+  target?: string[];
 }
 
 const navigationNextEvent = new Map<number, NavigationEvent>([
-  [3, {url: '/search', target: "[id='search-results-list']"}],
-  [6, {url: '/profile/merlin', target: "[id='btn-profile-following']"}],
-  [12, {url: '/followers/merlin', target: "[id='followers-list']"}],
+  [3, {url: '/search', target: ["[id='search-results-list']"]}],
+  [6, {url: '/profile/merlin', target: ["[id='btn-profile-following']"]}],
+  [12, {url: '/followers/merlin', target: ["[id='followers-list']"]}],
   [14, {url: '/post/1'}],
   [18, {url: '/'}],
-]);``
+]);
 
 const navigationPrevEvent = new Map<number, NavigationEvent>([
-  [4, {url: '/search', target: "[id='cli-commands']"}],
+  [4, {url: '/search', target: ["[id='cli-commands']"]}],
   [7, {url: '/search'}],
   [13, {url: '/profile/merlin'}],
   [15, {url: '/followers/merlin'}],
   [19, {url: '/post/1'}],
 ]);
 
-const waitForElement = (selector: any, timeout = 3000) => {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(selector)) {
-      return resolve();
+interface DriverContextType {
+  stepIndex: number;
+  setStepIndex: React.Dispatch<React.SetStateAction<number>>;
+  isCallbackExecuted: boolean;
+  runCommandExecutedCallback: () => void;
+  moveNext: () => void;
+}
+
+const DriverContext = createContext<DriverContextType | null>(null);
+
+const waitForElement = (selector: string[], timeout = 3000): Promise<void> => {
+  return new Promise<void>((resolve, reject) => {
+    const selectors = Array.isArray(selector) ? selector : [selector];
+
+    const checkSelectors = () => {
+      return selectors.some(sel => document.querySelector(sel) !== null);
+    };
+
+    if (checkSelectors()) {
+      resolve();
+      return;
     }
+
     const observer = new MutationObserver(() => {
-      if (document.querySelector(selector)) {
+      if (checkSelectors()) {
         observer.disconnect();
         resolve();
       }
@@ -45,13 +67,6 @@ const waitForElement = (selector: any, timeout = 3000) => {
     }, timeout);
   });
 };
-
-interface DriverContextType {
-  stepIndex: number;
-  setStepIndex: React.Dispatch<React.SetStateAction<number>>;
-}
-
-const DriverContext = createContext<DriverContextType | null>(null);
 
 export const useDriver = () => {
   const context = useContext(DriverContext);
@@ -65,61 +80,86 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const navigate = useNavigate();
 
   const [stepIndex, setStepIndex] = useState(0);
+  const [isCallbackExecuted, setCallbackExecuted] = useState<boolean>(false);
   const driverObj = useRef<Driver | null>(null);
 
-  const navigateAndMoveNext = () => {
+  const moveAfterRendering = (type: string, selector: string) => {
     return async () => {
-      const activeIndex = driverObj.current!.getActiveIndex();
-      if (activeIndex == undefined) {
-        console.error('Failed to get active index');
-        return;
-      }
-
-      const navigationEvent = navigationNextEvent.get(activeIndex);
-      if (navigationEvent == undefined) {
-        console.error('Failed to get event to navigate');
-        return;
-      }
-
-      navigate(navigationEvent.url);
-
-      try {
-        if (navigationEvent.target) {
-          await waitForElement(navigationEvent.target);
-          await new Promise(r => setTimeout(r, 100));
+      if (driverObj.current) {
+        const activeIndex = driverObj.current.getActiveIndex();
+        if (activeIndex == undefined) {
+          console.error('Failed to get active index');
+          return;
         }
-        driverObj.current!.moveNext();
-        setStepIndex(activeIndex + 1)
-      } catch (error) {
-        console.error('Failed to find target element');
-      }
-    };
-  };
 
-  const navigateAndMovePrevious = () => {
+        const indexToDrive = type === STEP.NEXT ? activeIndex + 1 : activeIndex - 1;
+
+        const navigationEvent = type === STEP.NEXT ? navigationNextEvent.get(activeIndex) : navigationPrevEvent.get(activeIndex);
+        if (navigationEvent) {
+          navigate(navigationEvent.url);
+        }
+
+        window.dispatchEvent(new CustomEvent('render', {detail: {nextIndex: indexToDrive}}));
+        setCallbackExecuted(true);
+
+        let targetSelectors
+        if (navigationEvent && navigationEvent.target) {
+          targetSelectors = [...navigationEvent.target, selector];
+        } else {
+          targetSelectors = [selector]
+        }
+
+        try {
+          await waitForElement(targetSelectors);
+          await new Promise(r => setTimeout(r, 100));
+          driverObj.current.drive(indexToDrive);
+          setStepIndex(indexToDrive)
+        } catch (error) {
+          console.error('Failed to find target element');
+        }
+      }
+    }
+  }
+
+  const handleRunCommandExecuted = useCallback(moveAfterRendering(STEP.NEXT, `[id="run-command-btn-${stepIndex + 1}-active"]`), [stepIndex]);
+
+  const moveNext = useCallback(() => {
+    if (driverObj.current) {
+      driverObj.current.moveNext();
+    }
+  }, []);
+
+  const moveStepAfterNavigate = (type: string) => {
     return async () => {
-      const activeIndex = driverObj.current!.getActiveIndex();
-      if (!activeIndex) {
-        console.error('Failed to get active index');
-        return;
-      }
+      setCallbackExecuted(false);
 
-      const navigationEvent = navigationPrevEvent.get(activeIndex);
-      if (!navigationEvent) {
-        console.error('Failed to get event to navigate');
-        return;
-      }
-
-      navigate(navigationEvent.url);
-      try {
-        if (navigationEvent.target) {
-          await waitForElement(navigationEvent.target);
-          await new Promise(r => setTimeout(r, 100));
+      if (driverObj.current) {
+        const activeIndex = driverObj.current.getActiveIndex();
+        if (!activeIndex) {
+          console.error('Failed to get active index');
+          return;
         }
-        driverObj.current!.movePrevious();
-        setStepIndex(activeIndex - 1)
-      } catch (error) {
-        console.error('Failed to find target element');
+
+        const navigationEvent = type === STEP.NEXT ? navigationNextEvent.get(activeIndex) : navigationPrevEvent.get(activeIndex);
+        if (!navigationEvent) {
+          console.error('Failed to get event to navigate');
+          return;
+        }
+
+        navigate(navigationEvent.url);
+
+        try {
+          if (navigationEvent.target) {
+            await waitForElement(navigationEvent.target);
+            await new Promise(r => setTimeout(r, 100));
+          }
+
+          const indexToDrive = type === STEP.NEXT ? activeIndex + 1 : activeIndex - 1;
+          driverObj.current.drive(indexToDrive)
+          setStepIndex(indexToDrive)
+        } catch (error) {
+          console.error('Failed to find target element');
+        }
       }
     };
   };
@@ -131,7 +171,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         showProgress: false,
         showButtons: ['next', 'previous', 'close'],
         allowClose: true,
-        overlayColor: 'rgba(0, 0, 0, 0.3)',
+        overlayColor: 'rgba(0, 0, 0, 0.7)',
         prevBtnText: prevBtnText,
         nextBtnText: nextBtnText,
         doneBtnText: 'Bye 👋🏻',
@@ -149,27 +189,30 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               title: '<span class="driver-popover-title-number">2</span> Prepare tutoral',
               side: 'right',
               align: 'start',
-            },
+              onNextClick: moveAfterRendering(STEP.NEXT, `[id="run-command-btn-2-active"]`)
+            }
           },
           { // 2
-            element: "[id='cli-commands']",
+            element: "[id='run-command-btn-2-active']",
             popover: {
               title: "Load preset data",
               description: "Let's load prepared data",
               side: 'right',
               align: 'start',
               nextBtnText: "done",
+              onNextClick: moveAfterRendering(STEP.NEXT, `[id="run-command-btn-3-active"]`)
             },
           },
           { // 3
-            element: "[id='cli-commands']",
+            element: "[id='run-command-btn-3-active']",
             popover: {
               title: "Set context",
               description: "Set Database context as 'social'",
               side: 'right',
               align: 'start',
               nextBtnText: "done",
-              onNextClick: navigateAndMoveNext()
+              onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-2-active']"),
+              onNextClick: moveStepAfterNavigate(STEP.NEXT)
             },
           },
           { // 4
@@ -180,7 +223,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'bottom',
               nextBtnText: "done",
               align: 'start',
-              onPrevClick: navigateAndMovePrevious()
+              onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-3-active']"),
             },
           },
           { // 5
@@ -188,28 +231,29 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               title: '<span class="driver-popover-title-number">4</span> Follows',
               side: 'right',
               align: 'start',
+              onNextClick: moveAfterRendering(STEP.NEXT, `[id="run-command-btn-6-active"]`)
             },
           },
           { // 6
-            element: "[id='cli-commands']",
+            element: "[id='run-command-btn-6-active']",
             popover: {
               title: "Create table",
               description: "First, we have to create a table that represents the `user follow` relation. Click.",
               side: 'right',
               align: 'start',
               nextBtnText: 'done',
-              onNextClick: navigateAndMoveNext()
+              onNextClick: moveAfterRendering(STEP.NEXT, `[id="run-command-btn-7-active"]`)
             },
           },
           { // 7
-            element: "[id='cli-commands']",
+            element: "[id='run-command-btn-7-active']",
             popover: {
               title: "me -> merlin",
               description: "(In Progress)",
               side: 'right',
               align: 'start',
               nextBtnText: 'done',
-              onPrevClick: navigateAndMovePrevious()
+              onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-6-active']"),
             },
           },
           { // 8
@@ -219,26 +263,30 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'right',
               nextBtnText: "done",
               align: 'start',
+              onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-7-active']"),
+              onNextClick: moveAfterRendering(STEP.NEXT, `[id="run-command-btn-9-active"]`)
             },
           },
           { // 9
-            element: "[id='cli-commands']",
+            element: "[id='run-command-btn-9-active']",
             popover: {
               title: "Get follows",
               description: "(In Progress)",
               side: 'right',
               nextBtnText: "done",
               align: 'start',
+              onNextClick: moveAfterRendering(STEP.NEXT, `[id="run-command-btn-10-active"]`)
             },
           },
           { // 10
-            element: "[id='cli-commands']",
+            element: "[id='run-command-btn-10-active']",
             popover: {
               title: "Get follows count",
               description: "(In Progress)",
               side: 'right',
               align: 'start',
               nextBtnText: "done",
+              onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-9-active']"),
             },
           },
           { // 11
@@ -248,17 +296,19 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'right',
               nextBtnText: "done",
               align: 'start',
+              onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-10-active']"),
+              onNextClick: moveAfterRendering(STEP.NEXT, `[id="run-command-btn-12-active"]`)
             },
           },
           { // 12
-            element: "[id='cli-commands']",
+            element: "[id='run-command-btn-12-active']",
             popover: {
               title: "Scan follows",
               description: "(In Progress)",
               side: 'right',
               align: 'start',
               nextBtnText: "done",
-              onNextClick: navigateAndMoveNext()
+              onNextClick: moveStepAfterNavigate(STEP.NEXT)
             },
           },
           { // 13
@@ -268,7 +318,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'right',
               nextBtnText: "done",
               align: 'start',
-              onPrevClick: navigateAndMovePrevious()
+              onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-12-active']"),
             },
           },
           { // 14
@@ -276,18 +326,18 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               title: '<span class="driver-popover-title-number">5</span> Likes',
               side: 'over',
               align: 'start',
-              onNextClick: navigateAndMoveNext()
+              onNextClick: moveAfterRendering(STEP.NEXT, `[id="run-command-btn-15-active"]`)
             },
           },
           { // 15
-            element: "[id='cli-commands']",
+            element: "[id='run-command-btn-15-active']",
             popover: {
               title: "me -> merlin's post",
               description: "Insert an Edge to add a like to this post. Click.",
               side: 'right',
               align: 'start',
               nextBtnText: "done",
-              onPrevClick: navigateAndMovePrevious()
+              onPrevClick: moveStepAfterNavigate(STEP.PREV)
             },
           },
           { // 16
@@ -297,10 +347,12 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'right',
               nextBtnText: "done",
               align: 'start',
+              onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-15-active']"),
+              onNextClick: moveAfterRendering(STEP.NEXT, `[id="run-command-btn-17-active"]`)
             },
           },
           { // 17
-            element: "[id='cli-commands']",
+            element: "[id='run-command-btn-17-active']",
             popover: {
               title: "Get follows",
               description: "(In Progress)",
@@ -311,11 +363,12 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 18
             popover: {
-              title: "Same as follows",
+              title: "Same as likes",
               description: "(In Progress)",
               side: 'over',
               align: 'start',
-              onNextClick: navigateAndMoveNext()
+              onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-17-active']"),
+              onNextClick: moveStepAfterNavigate(STEP.NEXT)
             },
           },
           { // 19
@@ -325,7 +378,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: "(In Progress)",
               side: 'right',
               align: 'start',
-              onPrevClick: navigateAndMovePrevious()
+              onPrevClick: moveStepAfterNavigate(STEP.PREV)
             },
           },
           { // 20
@@ -345,6 +398,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               nextBtnText: 'Bye 👋🏻',
               onNextClick: () => {
                 if (driverObj.current) {
+                  setCallbackExecuted(false);
                   driverObj.current.destroy();
                 }
               }
@@ -352,9 +406,11 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
         ],
         onDestroyStarted: () => {
+          setCallbackExecuted(false);
           setStepIndex(0);
         },
         onDestroyed: () => {
+          setCallbackExecuted(false);
           setStepIndex(0);
         },
         onCloseClick: () => {
@@ -364,6 +420,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         },
         onPrevClick: () => {
           if (driverObj.current) {
+            setCallbackExecuted(false);
             const previousIndex = driverObj.current.getActiveIndex()! - 1
             setStepIndex(previousIndex)
             driverObj.current.moveTo(previousIndex);
@@ -371,6 +428,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         },
         onNextClick: () => {
           if (driverObj.current) {
+            setCallbackExecuted(false);
             const nextIndex = driverObj.current.getActiveIndex()! + 1
             setStepIndex(nextIndex)
             driverObj.current.moveTo(nextIndex);
@@ -390,8 +448,16 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     };
   }, []);
 
+  const contextValue = useMemo(() => ({
+    stepIndex,
+    setStepIndex,
+    isCallbackExecuted,
+    runCommandExecutedCallback: handleRunCommandExecuted,
+    moveNext
+  }), [stepIndex, handleRunCommandExecuted, moveNext]);
+
   return (
-    <DriverContext.Provider value={{stepIndex, setStepIndex}}>
+    <DriverContext.Provider value={contextValue}>
       {children}
     </DriverContext.Provider>
   );

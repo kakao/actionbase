@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {run} from "../../api/cli";
 import steps from "../../constants/HandsOnStepCommand";
 import '../../styles/cli-terminal.css';
@@ -14,17 +14,74 @@ interface CommandHistory {
 const PROMPT_PREFIX = 'actionbase';
 
 const CliTerminal: React.FC = () => {
-  const {stepIndex} = useDriver()
+  const {stepIndex, isCallbackExecuted, runCommandExecutedCallback, moveNext} = useDriver()
+  const [currentCommand, setCurrentCommand] = useState<CommandHistory | null>();
   const [commandHistory, setCommandHistory] = useState<CommandHistory[]>([]);
+  const [isDefaultPromptEnabled, setDefaultPromptEnabled] = useState<boolean>(true);
+  const [isCommandExecuted, setCommandExecuted] = useState<boolean>(true);
 
-  const clickedButtonsRef = useRef<Set<number>>(new Set());
   const currentCommandDataRef = useRef<{ command: string, stepDatabase: string | undefined, formatPrompt: (db?: string) => string } | null>(null);
   const terminalBodyRef = useRef<HTMLDivElement>(null);
   const commandHistoryRef = useRef<HTMLDivElement>(null);
+  const currentCommandRef = useRef<CommandHistory | undefined>(undefined);
 
-  const formatPrompt = useCallback((database?: string) => database ? `${PROMPT_PREFIX}(${database})` : PROMPT_PREFIX, []);
+  function formatPrompt(database?: string) {
+    return database ? `${PROMPT_PREFIX}(${database})` : PROMPT_PREFIX;
+  }
 
-  const appendCommandHistory = useCallback(async (item: CommandHistory) => {
+  function appendCommand(stepIndex: number) {
+    const stepCommand = steps.find(value => value.stepIndex == stepIndex);
+    if (stepCommand == undefined || stepCommand.stepIndex != stepIndex) return;
+
+    const {command} = stepCommand;
+    const stepDatabase = stepCommand.database;
+
+    currentCommandDataRef.current = null;
+
+    if (command) {
+      currentCommandDataRef.current = {command, stepDatabase, formatPrompt};
+      const prompt = formatPrompt(stepDatabase ?? '');
+      setCurrentCommand({prompt, content: command, stepIndex: stepIndex});
+    }
+  }
+
+  const renderCommand = useCallback((item: CommandHistory, index: number, hideCursor: boolean = true) => {
+    if (!item.content) {
+      return <div className="command-line-item"><span className="prompt">{item.prompt}{"> "}</span></div>;
+    }
+
+    const lines = item.content.split('\n').filter(line => line.trim() !== '');
+    const cursor = !hideCursor ? '<span class="cursor">_</span>' : '';
+
+    if (lines.length === 1) {
+      return (
+        <div className="command-line-item command-line-single">
+          <span className="prompt">{item.prompt}{"> "}</span><span className="command-text" dangerouslySetInnerHTML={{__html: lines[0].trim() + cursor}}></span>
+        </div>
+      );
+    }
+
+    return lines.map((line, lineIdx) => {
+      const hasBackslash = line.endsWith('\\');
+      const lineText = hasBackslash ? line.slice(0, -1).trim() : line;
+      const isLastLine = lineIdx === lines.length - 1;
+      const lineWithCursor = lineText + (hasBackslash && !isLastLine ? ' \\' : '') + (!hideCursor && isLastLine ? cursor : '');
+
+      return (
+        <div key={lineIdx} className="command-line-item">
+          {lineIdx === 0 ? (
+            <>
+              <span className="prompt">{item.prompt}{"> "}</span><p className="command-text" dangerouslySetInnerHTML={{__html: lineWithCursor}}></p>
+            </>
+          ) : (
+            <span className="command-text-indent" dangerouslySetInnerHTML={{__html: lineWithCursor}}></span>
+          )}
+        </div>
+      );
+    });
+  }, []);
+
+  const runCommand = useCallback(async (item: CommandHistory, stepIndex: number) => {
     const command = item.content || '';
     if (!command) return;
 
@@ -40,48 +97,35 @@ const CliTerminal: React.FC = () => {
       } else {
         result = response.success ? '<p class="command-result success">✓ Success</p>' : '<p class="command-result error">Failed</p>';
       }
-      setCommandHistory(prev => [...prev, {type: 'command', prompt: '', content: '', result, stepIndex: stepIndex}]);
+      setCommandHistory(prev => [...prev, {...item, result}]);
     } catch (err: any) {
       const result = `<p class="command-result error">${err.responseData?.error || err.message || 'Failed to execute command'}</p>`;
+      setCommandHistory(prev => [...prev, {...item, result}]);
       console.error('Failed to execute command:', err);
-      setCommandHistory(
-        prev =>
-          [...prev,
-            {type: 'command', prompt: '', content: '', result, stepIndex: stepIndex}]);
     }
 
-    const itemIndex = commandHistory.findIndex(cmd => (cmd.content === command));
-    if (itemIndex !== -1) {
-      clickedButtonsRef.current.delete(itemIndex);
+    if (currentCommandRef.current) {
+      currentCommandRef.current = undefined;
     }
 
-    setTimeout(() => {
-      if (terminalBodyRef.current) {
-        terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight;
+    setCurrentCommand(null);
+    setDefaultPromptEnabled(true);
+    setCommandExecuted(true);
+
+    const itemStepIndex = item.stepIndex
+    if (itemStepIndex) {
+      const hasNextCommand = steps.find(step => step.stepIndex == itemStepIndex + 1)
+      if (hasNextCommand) {
+        runCommandExecutedCallback();
+      } else {
+        moveNext();
       }
-      if (commandHistoryRef.current) {
-        commandHistoryRef.current.scrollTop = commandHistoryRef.current.scrollHeight;
-      }
-    }, 100);
-  }, [stepIndex]);
-
-  useEffect(() => {
-    if (stepIndex >= steps.length) return;
-
-    const stepCommand = steps.find(value => value.stepIndex == stepIndex);
-    if (stepCommand == undefined || stepCommand.stepIndex != stepIndex) return;
-
-    const {command} = stepCommand;
-    const stepDatabase = stepCommand.database;
-
-    currentCommandDataRef.current = null;
-
-    if (command) {
-      currentCommandDataRef.current = {command, stepDatabase, formatPrompt};
-      const prompt = formatPrompt(stepDatabase ?? '');
-      setCommandHistory(prev => [...prev, {type: 'command', prompt, content: command, stepIndex: stepIndex}]);
     }
-  }, [stepIndex, formatPrompt]);
+  }, []);
+
+  const handleRunCommand = useCallback((item: CommandHistory, index: number) => {
+    runCommand(item, stepIndex)
+  }, []);
 
   useEffect(() => {
     if (commandHistory.length === 0) return;
@@ -105,93 +149,42 @@ const CliTerminal: React.FC = () => {
         }
       }
     }, 0);
-  }, [commandHistory.length]);
+  }, [currentCommand, commandHistory]);
 
-  const runCommand = useCallback((item: CommandHistory, index: number) => {
-    const isCurrentStep = item.stepIndex === undefined || item.stepIndex === stepIndex;
-    if (!isCurrentStep || item.result) return;
+  useEffect(() => {
+    currentCommandRef.current = currentCommand;
+  }, [currentCommand]);
 
-    if (clickedButtonsRef.current.has(index)) {
-      return;
-    }
+  useEffect(() => {
+    function render(event: CustomEvent) {
+      setCommandExecuted(false);
+      setDefaultPromptEnabled(true);
 
-    clickedButtonsRef.current.add(index);
-
-    setTimeout(() => {
-      if (terminalBodyRef.current) {
-        terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight;
+      const latestCurrentCommand = currentCommandRef.current;
+      if (latestCurrentCommand) {
+        setCommandHistory(prev => [...prev, latestCurrentCommand]);
       }
-      if (commandHistoryRef.current) {
-        commandHistoryRef.current.scrollTop = commandHistoryRef.current.scrollHeight;
+
+      appendCommand(event.detail.nextIndex);
+      setDefaultPromptEnabled(false);
+    }
+
+    window.addEventListener('render', render as EventListener);
+    return () => {
+      window.removeEventListener('render', render as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isCommandExecuted && !isCallbackExecuted) {
+      const latestCurrentCommand = currentCommandRef.current;
+      if (latestCurrentCommand) {
+        setCommandHistory(prev => [...prev, latestCurrentCommand]);
       }
-    }, 0);
-
-    appendCommandHistory(item);
-  }, [stepIndex, appendCommandHistory]);
-
-  const renderCommand = useCallback((item: CommandHistory, index: number, hideCursor: boolean = false) => {
-    if (!item.content) {
-      return <div className="command-line-item"><span className="prompt">{item.prompt}{"> "}</span></div>;
+      setCurrentCommand(null);
+      setCommandExecuted(true);
     }
-
-    const lines = item.content.split('\n').filter(line => line.trim() !== '');
-    const isLastItem = index === commandHistory.length - 1;
-    const shouldShowCursor = isLastItem && !item.result && !hideCursor;
-    const cursor = shouldShowCursor ? '<span class="cursor">_</span>' : '';
-
-    if (lines.length === 1) {
-      return (
-        <div className="command-line-item command-line-single">
-          <span className="prompt">{item.prompt}{"> "}</span>
-          <span className="command-text" dangerouslySetInnerHTML={{__html: lines[0].trim() + cursor}}></span>
-        </div>
-      );
-    }
-
-    return lines.map((line, lineIdx) => {
-      const hasBackslash = line.endsWith('\\');
-      const lineText = hasBackslash ? line.slice(0, -1).trim() : line;
-      const isLastLine = lineIdx === lines.length - 1;
-      const lineWithCursor = lineText + (hasBackslash && !isLastLine ? ' \\' : '') + (shouldShowCursor && isLastLine ? cursor : '');
-
-      return (
-        <div key={lineIdx} className="command-line-item">
-          {lineIdx === 0 ? (
-            <>
-              <span className="prompt">{item.prompt}{"> "}</span>
-              <p className="command-text" dangerouslySetInnerHTML={{__html: lineWithCursor}}></p>
-            </>
-          ) : (
-            <span className="command-text-indent" dangerouslySetInnerHTML={{__html: lineWithCursor}}></span>
-          )}
-        </div>
-      );
-    });
-  }, [commandHistory.length]);
-
-  const lastCommandIndex = useMemo(() => {
-    for (let i = commandHistory.length - 1; i >= 0; i--) {
-      const item = commandHistory[i];
-      if (item.stepIndex === stepIndex && !item.result) {
-        return i;
-      }
-    }
-    return -1;
-  }, [commandHistory, stepIndex]);
-
-  const needDefaultPrompt = useMemo(() => {
-    if (stepIndex >= steps.length) return false;
-
-    const stepCommand = steps.find(value => value.stepIndex === stepIndex);
-    if (!stepCommand || !stepCommand.command) {
-      return true;
-    }
-
-    const currentStepCommands = commandHistory.filter(item => item.stepIndex === stepIndex);
-    const hasCommand = currentStepCommands.some(item => item.content === stepCommand.command);
-    const hasResult = currentStepCommands.some(item => item.result);
-    return hasCommand && hasResult;
-  }, [commandHistory, stepIndex]);
+  }, [stepIndex, isCallbackExecuted]);
 
   return (
     <div className="terminal-body-container" id="cli-commands">
@@ -204,39 +197,27 @@ const CliTerminal: React.FC = () => {
                   <div className="command-block">
                     <div className="command-line">
                       <div className="command-line-inner">
-                        {item.result ? (
+                        <div className="command-content-wrapper">
+                          <div className="command-multiline">{renderCommand(item, commandHistory.length)}</div>
+                          <button className={`run-command-btn hidden-step-btn`} disabled={true}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="command-line-inner">
+                      <div className="command-content-wrapper">
+                        {item.result && (
                           <div className="command-content-wrapper">
-                            <div className="command-multiline">
+                            <div className="command-multiline result">
                               <div className="command-line-item command-line-single">
                                 <span className="command-text" dangerouslySetInnerHTML={{__html: item.result}}></span>
                               </div>
                             </div>
                           </div>
-                        ) : (
-                          <div className="command-content-wrapper">
-                            <div className="command-multiline">{renderCommand(item, index, needDefaultPrompt)}</div>
-                          </div>
                         )}
-                        {!item.result && (() => {
-                          const isClicked = clickedButtonsRef.current.has(index);
-                          const isLastCommand = index === lastCommandIndex;
-                          const shouldHide = !isLastCommand || (item.stepIndex !== undefined && item.stepIndex !== stepIndex) || isClicked;
-                          return (
-                            <button
-                              className={`run-command-btn ${shouldHide ? 'hidden-step-btn' : ''}`}
-                              onClick={(e) => {
-                                if (isClicked) return;
-                                runCommand(item, index);
-                              }}
-                              title="Copy command"
-                              disabled={isClicked}
-                            >
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20"/>
-                              </svg>
-                            </button>
-                          );
-                        })()}
                       </div>
                     </div>
                   </div>
@@ -244,7 +225,41 @@ const CliTerminal: React.FC = () => {
               </div>
             );
           })}
-          {needDefaultPrompt && (
+          {currentCommand && (
+            <div className="command-block">
+              <div className="command-line">
+                <div className="command-line-inner">
+                  <div className="command-content-wrapper">
+                    <div className="command-multiline">{renderCommand(currentCommand, commandHistory.length, false)}</div>
+                    <button
+                      id={`run-command-btn-${currentCommand.stepIndex}-active`}
+                      className={`run-command-btn`}
+                      onClick={(e) => {
+                        handleRunCommand(currentCommand, commandHistory.length)
+                      }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="command-line-inner">
+                <div className="command-content-wrapper">
+                  {currentCommand.result && (
+                    <div className="command-content-wrapper">
+                      <div className="command-multiline result">
+                        <div className="command-line-item command-line-single">
+                          <span className="command-text" dangerouslySetInnerHTML={{__html: currentCommand.result}}></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {isDefaultPromptEnabled && (
             <div className="command-block command-block-prompt">
               <div className="command-line">
                 <div className="command-line-inner">

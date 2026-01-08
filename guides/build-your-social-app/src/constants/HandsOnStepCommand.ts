@@ -70,7 +70,7 @@ export const steps: HandsOnStepCommand[] = [
 `,
   },
   {
-    stepIndex: 8,
+    stepIndex: 9,
     database: 'social',
     command: 'get user_follows --source doki --target merlin',
   },
@@ -98,7 +98,7 @@ export const steps: HandsOnStepCommand[] = [
 }'`,
   },
   {
-    stepIndex: 16,
+    stepIndex: 17,
     database: 'social',
     command: 'get user_likes --source doki --target 1',
   }
