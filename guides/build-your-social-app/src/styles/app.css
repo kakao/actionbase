@@ -104,8 +104,14 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   text-align: center;
 }
 
-.driver-active .driver-active-element, .driver-active .driver-active-element *, .driver-popover, .driver-popover * {
+.driver-active * {
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+}
+
+.driver-active-el, .driver-popover * {
   pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 .driver-popover-description {
