@@ -60,6 +60,7 @@
   box-sizing: border-box;
   flex: 1;
   min-height: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 }
 
 .command-history .command-line-inner {

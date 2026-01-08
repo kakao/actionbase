@@ -396,12 +396,12 @@
   height: calc((1000px - 26px) / 1.3 - 40px);
   z-index: 200;
   pointer-events: none;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 }
 
-.terminal-wrapper > * {
+.terminal-wrapper * {
   pointer-events: auto;
   height: 100%;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 }
 
 .browser-header {

@@ -1,7 +1,6 @@
 @import './common.css';
 
 .api-log-container {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
   flex: 0.3;
   overflow-y: auto;
   overflow-x: hidden;
@@ -17,6 +16,10 @@
   border-bottom: var(--font-size-xs) solid #2b2b2b;
   min-height: 0;
   border-top: 1px solid #5d5d5d;
+}
+
+.api-log-container * {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 }
 
 .api-log-content {
