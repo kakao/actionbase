@@ -7,6 +7,7 @@ import '../../styles/profile.css';
 import Spinner from "../layout/Spinner";
 import {me, postDetails, users} from "../../constants/Dummy";
 import {useToggleFollowing} from "../../hooks/useToggleMutate";
+import {useToast} from "../../contexts/ToastContext";
 
 interface UserPost {
   id: number,
@@ -16,6 +17,7 @@ interface UserPost {
 const Profile: React.FC = () => {
   const {id} = useParams();
   const owner = users.find(x => x.id === id);
+  const {showToast} = useToast();
   if (!owner) return <NotFound/>;
 
   const [followers, setFollowers] = useState<number>(0);
@@ -88,7 +90,7 @@ const Profile: React.FC = () => {
     <div style={{position: 'relative', height: '100%'}}>
       {isLoading && <Spinner/>}
       <header className="profile-header">
-        <button className="icon-btn">
+        <button className="icon-btn" onClick={() => showToast('Unsupported')}>
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path
               d="M12 2C11.172 2 10.5 2.672 10.5 3.5V4.341C9.672 4.541 8.891 4.875 8.184 5.325L7.525 4.666C6.947 4.088 6.009 4.088 5.431 4.666L4.666 5.431C4.088 6.009 4.088 6.947 4.666 7.525L5.325 8.184C4.875 8.891 4.541 9.672 4.341 10.5H3.5C2.672 10.5 2 11.172 2 12C2 12.828 2.672 13.5 3.5 13.5H4.341C4.541 14.328 4.875 15.109 5.325 15.816L4.666 16.475C4.088 17.053 4.088 17.991 4.666 18.569L5.431 19.334C6.009 19.912 6.947 19.912 7.525 19.334L8.184 18.675C8.891 19.125 9.672 19.459 10.5 19.659V20.5C10.5 21.328 11.172 22 12 22C12.828 22 13.5 21.328 13.5 20.5V19.659C14.328 19.459 15.109 19.125 15.816 18.675L16.475 19.334C17.053 19.912 17.991 19.912 18.569 19.334L19.334 18.569C19.912 17.991 19.912 17.053 19.334 16.475L18.675 15.816C19.125 15.109 19.459 14.328 19.659 13.5H20.5C21.328 13.5 22 12.828 22 12C22 11.172 21.328 10.5 20.5 10.5H19.659C19.459 9.672 19.125 8.891 18.675 8.184L19.334 7.525C19.912 6.947 19.912 6.009 19.334 5.431L18.569 4.666C17.991 4.088 17.053 4.088 16.475 4.666L15.816 5.325C15.109 4.875 14.328 4.541 13.5 4.341V3.5C13.5 2.672 12.828 2 12 2ZM12 8C14.209 8 16 9.791 16 12C16 14.209 14.209 16 12 16C9.791 16 8 14.209 8 12C8 9.791 9.791 8 12 8Z"/>
@@ -100,7 +102,7 @@ const Profile: React.FC = () => {
             <path d="M6 9l6 6 6-6"/>
           </svg>
         </div>
-        <button className="icon-btn">
+        <button className="icon-btn" onClick={() => showToast('Unsupported')}>
           <svg viewBox="0 0 24 24" fill="currentColor">
             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
             <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2"/>
@@ -121,7 +123,7 @@ const Profile: React.FC = () => {
                 <div className="profile-right-section">
                   <div className="profile-username-row">
                     <h2 className="profile-username">{owner?.name}</h2>
-                    <button className="icon-btn-menu">
+                    <button className="icon-btn-menu" onClick={() => showToast('Unsupported')}>
                       <svg viewBox="0 0 24 24" fill="currentColor">
                         <circle cx="12" cy="5" r="1.5"/>
                         <circle cx="12" cy="12" r="1.5"/>
@@ -133,8 +135,8 @@ const Profile: React.FC = () => {
                   <div className="profile-actions">
                     {owner?.isMe ? (
                       <>
-                        <button className="action-button-primary">Edit profile</button>
-                        <button className="action-button-primary">Share profile</button>
+                        <button className="action-button-primary" onClick={() => showToast('Unsupported')}>Edit profile</button>
+                        <button className="action-button-primary" onClick={() => showToast('Unsupported')}>Share profile</button>
                       </>
                     ) : (
                       <>
@@ -190,7 +192,7 @@ const Profile: React.FC = () => {
                   <rect x="14" y="14" width="7" height="7"/>
                 </svg>
               </button>
-              <button className="tab-btn">
+              <button className="tab-btn" onClick={() => showToast('Unsupported')}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="18" height="18" rx="2"/>
                   <line x1="9" y1="3" x2="9" y2="21"/>
@@ -199,12 +201,12 @@ const Profile: React.FC = () => {
                   <line x1="3" y1="15" x2="21" y2="15"/>
                 </svg>
               </button>
-              <button className="tab-btn">
+              <button className="tab-btn" onClick={() => showToast('Unsupported')}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                 </svg>
               </button>
-              <button className="tab-btn">
+              <button className="tab-btn" onClick={() => showToast('Unsupported')}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="8" r="4"/>
                   <path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/>

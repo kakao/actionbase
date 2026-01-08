@@ -2,10 +2,12 @@ import React from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import '../../styles/mobile-footer.css';
 import {me} from "../../constants/Dummy";
+import {useToast} from "../../contexts/ToastContext";
 
 const MobileFooter: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const {showToast} = useToast();
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -37,7 +39,7 @@ const MobileFooter: React.FC = () => {
         </svg>
       </button>
 
-      <button className="nav-btn">
+      <button className="nav-btn" onClick={() => showToast('Unsupported')}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="2" y="2" width="20" height="20" rx="5"/>
           <circle cx="12" cy="12" r="3"/>
@@ -45,7 +47,7 @@ const MobileFooter: React.FC = () => {
         </svg>
       </button>
 
-      <button className="nav-btn">
+      <button className="nav-btn" onClick={() => showToast('Unsupported')}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="2" y="2" width="20" height="20" rx="2"/>
           <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
