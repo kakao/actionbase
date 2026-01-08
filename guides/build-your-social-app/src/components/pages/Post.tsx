@@ -45,7 +45,7 @@ const Post: React.FC = () => {
 
   const fetchPost = async () => {
     try {
-      const userPostPayload = await scanUserPosts(post.id, DIRECTION.IN);
+      const userPostPayload = await scanUserPosts(String(post.id), DIRECTION.IN);
       const posts = userPostPayload.edges.map(edge => ({
         owner: users.find(u => u.id === edge.source) || users[0],
         id: edge.target,
@@ -88,9 +88,9 @@ const Post: React.FC = () => {
   }, [id, post?.id, post?.imageUrls, post?.content]);
 
   useEffect(() => {
-    window.addEventListener('tourStepRefresh', fetchPost as EventListener);
+    window.addEventListener('reload', fetchPost as EventListener);
     return () => {
-      window.removeEventListener('tourStepRefresh', fetchPost as EventListener);
+      window.removeEventListener('reload', fetchPost as EventListener);
     };
   }, []);
 

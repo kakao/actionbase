@@ -18,14 +18,14 @@
   overflow-x: hidden;
   padding: var(--spacing-2xl);
   color: #d0d0d0;
-  background-color: #2b2b2b;
+  background-color: #303030;
   font-size: var(--font-size-sm);
   line-height: 1.6;
   display: flex;
   flex-direction: column;
   scrollbar-width: none;
   min-width: 0;
-  border-bottom: 1px solid #2b2b2b;
+  border-bottom: 1px solid #303030;
   border-right: 1px solid #eaeaea;
   z-index: 200;
 }
@@ -172,12 +172,12 @@
 }
 
 .run-command-btn {
-  background: rgb(255 255 255 / 21%);
-  border: 1px solid #666666;
+  background: #303030;
+  border: 1px solid #b3b3b3;
   border-radius: var(--spacing-xs);
   cursor: pointer;
   padding: 3px var(--spacing-xs);
-  color: #c4c4c4;
+  color: #ffffff;
   transition: all var(--transition-fast);
   flex-shrink: 0;
   display: flex;
@@ -217,18 +217,18 @@
 }
 
 .run-command-btn.hidden-step-btn {
-  background: #2b2b2b;
-  border-color: #2b2b2b;
-  color: #2b2b2b;
+  background: #303030;
+  border-color: #303030;
+  color: #303030;
   opacity: 1;
   pointer-events: none;
   cursor: default;
 }
 
 .command-block:hover .run-command-btn.hidden-step-btn {
-  background: #2b2b2b;
-  border-color: #2b2b2b;
-  color: #2b2b2b;
+  background: #303030;
+  border-color: #303030;
+  color: #303030;
   opacity: 1;
 }
 

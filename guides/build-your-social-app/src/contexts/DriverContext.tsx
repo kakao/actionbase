@@ -31,6 +31,16 @@ const navigationPrevEvent = new Map<number, NavigationEvent>([
   [19, {url: '/post/1'}],
 ]);
 
+interface ReloadEvent {
+  target: string;
+}
+
+const reloadEvent = new Map<number, ReloadEvent>([
+  [7, {target: "[id='btn-profile-following']"}],
+  [10, {target: "[id='profile-followers']"}],
+  [15, {target: "[id='btn-likes']"}],
+])
+
 interface DriverContextType {
   stepIndex: number;
   setStepIndex: React.Dispatch<React.SetStateAction<number>>;
@@ -83,11 +93,11 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const [isCallbackExecuted, setCallbackExecuted] = useState<boolean>(false);
   const driverObj = useRef<Driver | null>(null);
 
-  const moveAfterRendering = (type: string, selector: string) => {
+  const moveAfterRendering = useCallback((type: string, selector: string) => {
     return async () => {
       if (driverObj.current) {
         const activeIndex = driverObj.current.getActiveIndex();
-        if (activeIndex == undefined) {
+        if (!activeIndex) {
           console.error('Failed to get active index');
           return;
         }
@@ -119,20 +129,10 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         }
       }
     }
-  }
-
-  const handleRunCommandExecuted = useCallback(moveAfterRendering(STEP.NEXT, `[id="run-command-btn-${stepIndex + 1}-active"]`), [stepIndex]);
-
-  const moveNext = useCallback(() => {
-    if (driverObj.current) {
-      driverObj.current.moveNext();
-    }
-  }, []);
+  }, [navigate]);
 
   const moveStepAfterNavigate = (type: string) => {
     return async () => {
-      setCallbackExecuted(false);
-
       if (driverObj.current) {
         const activeIndex = driverObj.current.getActiveIndex();
         if (!activeIndex) {
@@ -147,6 +147,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         }
 
         navigate(navigationEvent.url);
+        setCallbackExecuted(true);
 
         try {
           if (navigationEvent.target) {
@@ -164,6 +165,69 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     };
   };
 
+  const moveNextAfterReload = () => {
+    return async () => {
+      const activeIndex = driverObj.current!.getActiveIndex();
+      if (!activeIndex) {
+        console.error('Failed to get active index');
+        return;
+      }
+
+      if (!reloadEvent.has(activeIndex)) {
+        console.error('Failed to get event to reload');
+        return;
+      }
+
+      try {
+        const event = reloadEvent.get(activeIndex)
+        if (event) {
+          window.dispatchEvent(new CustomEvent('reload', {detail: {reload: true}}));
+
+          setCallbackExecuted(false);
+          await waitForElement([event.target]);
+          await new Promise(r => setTimeout(r, 100));
+        }
+        driverObj.current!.moveNext();
+        setStepIndex(activeIndex + 1)
+      } catch (error) {
+        console.error('Failed to find target element');
+      }
+    }
+  }
+
+  const handleRunCommandExecuted = useCallback(async () => {
+    if (driverObj.current) {
+      const activeIndex = driverObj.current.getActiveIndex();
+      if (!activeIndex) {
+        console.error('Failed to get active index');
+        return;
+      }
+      return moveAfterRendering(STEP.NEXT, `[id="run-command-btn-${activeIndex + 1}-active"]`)();
+    }
+  }, [stepIndex, moveAfterRendering]);
+
+  const moveNext = useCallback(async () => {
+    if (driverObj.current) {
+      const activeStep = driverObj.current.getActiveStep();
+
+      if (activeStep?.popover?.onNextClick) {
+        const element = activeStep.element
+          ? (typeof activeStep.element === 'string'
+            ? document.querySelector(activeStep.element) as HTMLElement
+            : activeStep.element as HTMLElement)
+          : null;
+        if (element) {
+          activeStep.popover.onNextClick(element, activeStep,
+            {
+              config: driverObj.current.getConfig(),
+              state: driverObj.current.getState(),
+              driver: driverObj.current
+            });
+        }
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!driverObj.current) {
       driverObj.current = driver({
@@ -171,7 +235,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         showProgress: false,
         showButtons: ['next', 'previous', 'close'],
         allowClose: true,
-        overlayColor: 'rgba(0, 0, 0, 0.7)',
+        overlayColor: 'rgba(0, 0, 0, 0.4)',
         prevBtnText: prevBtnText,
         nextBtnText: nextBtnText,
         doneBtnText: 'Bye 👋🏻',
@@ -254,6 +318,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               align: 'start',
               nextBtnText: 'done',
               onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-6-active']"),
+              onNextClick: moveNextAfterReload(),
             },
           },
           { // 8
@@ -287,6 +352,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               align: 'start',
               nextBtnText: "done",
               onPrevClick: moveAfterRendering(STEP.PREV, "[id='run-command-btn-9-active']"),
+              onNextClick: moveNextAfterReload(),
             },
           },
           { // 11
@@ -337,7 +403,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'right',
               align: 'start',
               nextBtnText: "done",
-              onPrevClick: moveStepAfterNavigate(STEP.PREV)
+              onPrevClick: moveStepAfterNavigate(STEP.PREV),
+              onNextClick: moveNextAfterReload()
             },
           },
           { // 16
@@ -453,7 +520,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     setStepIndex,
     isCallbackExecuted,
     runCommandExecutedCallback: handleRunCommandExecuted,
-    moveNext
+    moveNext,
   }), [stepIndex, handleRunCommandExecuted, moveNext]);
 
   return (

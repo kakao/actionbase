@@ -44,7 +44,7 @@ const Profile: React.FC = () => {
     await ToggleFollowing(owner.id, isFollowing);
   }, [owner.id, isFollowing, ToggleFollowing]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [isFollowingPayload, followersPayload, followingsPayload, postsPayload] = await Promise.all([
         get(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, me.id, owner.id),
@@ -69,18 +69,18 @@ const Profile: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [owner.id, isFollowing, followers, followings]);
 
   useEffect(() => {
     fetchData();
-  }, [id, owner.id]);
+  }, [fetchData]);
 
   useEffect(() => {
-    window.addEventListener('tourStepRefresh', fetchData as EventListener);
+    window.addEventListener('reload', fetchData);
     return () => {
-      window.removeEventListener('tourStepRefresh', fetchData as EventListener);
+      window.removeEventListener('reload', fetchData);
     };
-  }, []);
+  }, [fetchData]);
 
   if (hasError) {
     return <NotFound/>;

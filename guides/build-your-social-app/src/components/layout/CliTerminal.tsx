@@ -152,7 +152,9 @@ const CliTerminal: React.FC = () => {
   }, [currentCommand, commandHistory]);
 
   useEffect(() => {
-    currentCommandRef.current = currentCommand;
+    if (currentCommand) {
+      currentCommandRef.current = currentCommand;
+    }
   }, [currentCommand]);
 
   useEffect(() => {

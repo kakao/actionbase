@@ -1,5 +1,5 @@
 export interface BreadCrumbStep {
-  stepIndex?: number,
+  stepIndex: number,
   title?: string;
   isActive?: boolean,
   isCompleted?: boolean,

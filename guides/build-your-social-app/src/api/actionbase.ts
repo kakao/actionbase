@@ -81,12 +81,12 @@ export function scan(
   );
 }
 
-export async function scanUserPosts(userId: string, direction: string = DIRECTION.OUT) {
+export async function scanUserPosts(postId: string, direction: string = DIRECTION.OUT) {
   return scan(
     DATABASE.SOCIAL,
     TABLE.USER_POSTS,
     INDEX.CREATED_AT_DESC,
-    userId,
+    postId,
     direction,
     DEFAULT_LIMIT,
     undefined
