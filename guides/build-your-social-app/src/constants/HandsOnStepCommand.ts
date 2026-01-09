@@ -11,8 +11,11 @@ export const stepCommands: HandsOnStepCommand[] = [
   },
   {
     stepIndex: 3,
-    database: 'social',
     command: 'use database social',
+  },
+  {
+    stepIndex: 4,
+    database: 'social',
   },
   {
     stepIndex: 6,

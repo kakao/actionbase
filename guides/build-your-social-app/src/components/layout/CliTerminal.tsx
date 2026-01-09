@@ -158,13 +158,13 @@ const CliTerminal: React.FC = () => {
     function render(event: CustomEvent) {
       setDefaultPromptEnabled(true);
 
-      if (currentCommandRef.current) {
-        setCurrentContext({database: currentCommandRef.current.database});
-      }
-
       const latestCurrentCommand = currentCommandRef.current;
       if (latestCurrentCommand) {
         setCommandHistory(prev => [...prev, latestCurrentCommand]);
+      }
+
+      if (currentCommandRef.current) {
+        setCurrentContext({database: currentCommandRef.current.database});
       }
 
       appendCommand(event.detail.nextIndex);
@@ -187,14 +187,15 @@ const CliTerminal: React.FC = () => {
     if (isUnExecutedCommandRemained()) {
       const stepCommandToCheck = buttonEvent.type === STEP.NEXT ? stepIndex + 1 : stepIndex - 1;
 
-      if (!stepCommands.find(step => step.stepIndex === stepCommandToCheck)) {
-        if (currentCommandRef.current) {
-          setCurrentContext({database: currentCommandRef.current.database});
-        }
-
+      const nextCommand = stepCommands.find(step => step.stepIndex === stepCommandToCheck);
+      if (!nextCommand || (nextCommand && !nextCommand.command)) {
         const latestCurrentCommand = currentCommandRef.current;
         if (latestCurrentCommand) {
           setCommandHistory(prev => [...prev, latestCurrentCommand]);
+        }
+
+        if (currentCommandRef.current) {
+          setCurrentContext({database: currentCommandRef.current.database});
         }
 
         setCurrentCommand(null);
