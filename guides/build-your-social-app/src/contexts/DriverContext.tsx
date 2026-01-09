@@ -100,7 +100,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const setButtonEventRef = useRef(setButtonEvent);
 
   const onAfterMove = useCallback(
-    (type: string, event: Map<number, StepEvent>, eventName: string | undefined = undefined, selector: string | undefined = undefined, timeout: number = 100) => {
+    (type: string, stepEvents: Map<number, StepEvent>, eventName: string | undefined = undefined, selector: string | undefined = undefined, timeout: number = 100) => {
       if (!(type === STEP.NEXT || type === STEP.PREV)) {
         console.error('Unsupported eventType:', type);
         return;
@@ -115,7 +115,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             return;
           }
 
-          const navigationEvent = event.get(activeIndex);
+          const navigationEvent = stepEvents.get(activeIndex);
           if (navigationEvent && navigationEvent.to) {
             navigate(navigationEvent.to);
           }
