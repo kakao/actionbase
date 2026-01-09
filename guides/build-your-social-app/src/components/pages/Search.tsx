@@ -38,8 +38,9 @@ const Search: React.FC = () => {
             {users
               .filter(x => !x.isMe)
               .map((user, index) => (
-                <div className="search-result-item"
-                     id={"searched_user_" + index}
+                <div key={user.id}
+                     className="search-result-item"
+                     id={`searched-user-${index}`}
                      onClick={() => navigate(ROUTES.PROFILE(user.id))}>
                   <div className="result-avatar" style={{background: user.gradient}}>
                     <span className="avatar-text">{user.icon}</span>
