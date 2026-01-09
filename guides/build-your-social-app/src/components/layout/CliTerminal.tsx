@@ -201,7 +201,7 @@ const CliTerminal: React.FC = () => {
     }
 
     if (isUnExecutedCommandRemained()) {
-      const stepCommandToCheck = buttonEvent.type === STEP.NEXT ? stepIndex + 1 : stepIndex - 1;
+      const stepCommandToCheck = buttonEvent.type === STEP.NEXT ? stepIndex + 1 : stepIndex;
 
       const nextCommand = stepCommands.find(step => step.stepIndex === stepCommandToCheck);
       if (!nextCommand || (nextCommand && !nextCommand.command)) {
