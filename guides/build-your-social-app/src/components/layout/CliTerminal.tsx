@@ -129,24 +129,34 @@ const CliTerminal: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (commandHistory.length === 0) return;
-
     setTimeout(() => {
-      if (commandHistoryRef.current && terminalBodyRef.current) {
-        const commandBlocks = commandHistoryRef.current.querySelectorAll('.command-block');
-        const lastCommandBlock = commandBlocks[commandBlocks.length - 1] as HTMLElement;
-        if (lastCommandBlock) {
-          const commandLine = lastCommandBlock.querySelector('.command-line-item') as HTMLElement;
-          if (commandLine) {
-            const scrollContainer = terminalBodyRef.current;
-            const historyContainer = commandHistoryRef.current;
+      if (terminalBodyRef.current && commandHistoryRef.current) {
+        const scrollContainer = terminalBodyRef.current;
+        let targetElement: HTMLElement | null = null;
 
-            const itemRect = commandLine.getBoundingClientRect();
-            const historyRect = historyContainer.getBoundingClientRect();
-            const relativeOffset = itemRect.top - historyRect.top;
-
-            scrollContainer.scrollTop = scrollContainer.scrollTop + relativeOffset;
+        if (currentCommand) {
+          const runButton = document.getElementById('run-command-btn');
+          if (runButton) {
+            const commandBlock = runButton.closest('.command-block') as HTMLElement;
+            if (commandBlock) {
+              targetElement = commandBlock.querySelector('.command-line-item') as HTMLElement;
+            }
           }
+        }
+
+        if (!targetElement && commandHistory.length > 0) {
+          const commandBlocks = commandHistoryRef.current.querySelectorAll('.command-block');
+          const lastCommandBlock = commandBlocks[commandBlocks.length - 1] as HTMLElement;
+          if (lastCommandBlock) {
+            targetElement = lastCommandBlock.querySelector('.command-line-item') as HTMLElement;
+          }
+        }
+
+        if (targetElement) {
+          const targetRect = targetElement.getBoundingClientRect();
+          const containerRect = scrollContainer.getBoundingClientRect();
+
+          scrollContainer.scrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 20;
         }
       }
     }, 0);
