@@ -10,6 +10,7 @@ interface CommandHistory {
   result?: string;
   stepIndex?: number;
   database?: string | undefined;
+  isContextChanged?: boolean;
 }
 
 interface Context {
@@ -30,6 +31,11 @@ const CliTerminal: React.FC = () => {
   const terminalBodyRef = useRef<HTMLDivElement>(null);
   const commandHistoryRef = useRef<HTMLDivElement>(null);
   const currentCommandRef = useRef<CommandHistory | undefined>(undefined);
+  const currentContextRef = useRef<Context | null>(null);
+
+  const handleRunCommand = useCallback((item: CommandHistory) => {
+    runCommand(item, stepIndex)
+  }, []);
 
   function formatPrompt(database?: string) {
     return database ? `${PROMPT_PREFIX}(${database})` : PROMPT_PREFIX;
@@ -38,14 +44,11 @@ const CliTerminal: React.FC = () => {
   function appendCommand(stepIndex: number) {
     const stepCommand = stepCommands.find(value => value.stepIndex == stepIndex);
     if (stepCommand == undefined || stepCommand.stepIndex != stepIndex) return;
-    const {command, database} = stepCommand;
-
-    const newContext = {database: database};
-    setCurrentContext(newContext);
+    const {command, context} = stepCommand;
 
     if (command) {
-      const prompt = formatPrompt(database);
-      setCurrentCommand({prompt, content: command, stepIndex: stepIndex, database: database});
+      const prompt = formatPrompt(currentContextRef.current?.database);
+      setCurrentCommand({prompt, content: command, stepIndex: stepIndex, database: context?.database, isContextChanged: context !== undefined});
     }
   }
 
@@ -115,13 +118,14 @@ const CliTerminal: React.FC = () => {
     setCurrentCommand(null);
     setDefaultPromptEnabled(true);
     setCommandClicked(false);
-    setCurrentContext({database: item.database});
+
+    if (item.isContextChanged) {
+      const newContext = {database: item.database};
+      setCurrentContext(newContext);
+      currentContextRef.current = newContext;
+    }
 
     moveNext();
-  }, []);
-
-  const handleRunCommand = useCallback((item: CommandHistory) => {
-    runCommand(item, stepIndex)
   }, []);
 
   useEffect(() => {
@@ -155,16 +159,18 @@ const CliTerminal: React.FC = () => {
   }, [currentCommand]);
 
   useEffect(() => {
+    if (currentContext) {
+      currentContextRef.current = currentContext;
+    }
+  }, [currentContext]);
+
+  useEffect(() => {
     function render(event: CustomEvent) {
       setDefaultPromptEnabled(true);
 
       const latestCurrentCommand = currentCommandRef.current;
       if (latestCurrentCommand) {
         setCommandHistory(prev => [...prev, latestCurrentCommand]);
-      }
-
-      if (currentCommandRef.current) {
-        setCurrentContext({database: currentCommandRef.current.database});
       }
 
       appendCommand(event.detail.nextIndex);
@@ -192,10 +198,6 @@ const CliTerminal: React.FC = () => {
         const latestCurrentCommand = currentCommandRef.current;
         if (latestCurrentCommand) {
           setCommandHistory(prev => [...prev, latestCurrentCommand]);
-        }
-
-        if (currentCommandRef.current) {
-          setCurrentContext({database: currentCommandRef.current.database});
         }
 
         setCurrentCommand(null);
