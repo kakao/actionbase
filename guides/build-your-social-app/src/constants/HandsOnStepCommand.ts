@@ -4,7 +4,7 @@ export interface HandsOnStepCommand {
   command?: string;
 }
 
-export const steps: HandsOnStepCommand[] = [
+export const stepCommands: HandsOnStepCommand[] = [
   {
     stepIndex: 2,
     command: `load ./hands-on-social/data/build-your-social-app-preset.txt`,
@@ -104,5 +104,5 @@ export const steps: HandsOnStepCommand[] = [
   }
 ];
 
-export default steps;
+export default stepCommands;
 

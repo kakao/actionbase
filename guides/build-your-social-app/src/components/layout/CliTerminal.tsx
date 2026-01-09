@@ -1,8 +1,8 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {run} from "../../api/cli";
-import steps from "../../constants/HandsOnStepCommand";
+import stepCommands from "../../constants/HandsOnStepCommand";
 import '../../styles/cli-terminal.css';
-import {useDriver} from "../../contexts/DriverContext";
+import {STEP, useDriver} from "../../contexts/DriverContext";
 
 interface CommandHistory {
   prompt: string;
@@ -14,15 +14,16 @@ interface CommandHistory {
 const PROMPT_PREFIX = 'actionbase';
 
 const CliTerminal: React.FC = () => {
-  const {stepIndex, isCallbackExecuted, runCommandExecutedCallback, moveNext} = useDriver()
+  const {stepIndex, buttonEvent, moveNext} = useDriver()
+
   const [currentCommand, setCurrentCommand] = useState<CommandHistory | null>();
   const [commandHistory, setCommandHistory] = useState<CommandHistory[]>([]);
   const [isDefaultPromptEnabled, setDefaultPromptEnabled] = useState<boolean>(true);
-  const [isCommandExecuted, setCommandExecuted] = useState<boolean>(true);
+  const [isCommandClicked, setCommandClicked] = useState<boolean>(false);
 
-  const currentCommandDataRef = useRef<{ command: string, stepDatabase: string | undefined, formatPrompt: (db?: string) => string } | null>(null);
   const terminalBodyRef = useRef<HTMLDivElement>(null);
   const commandHistoryRef = useRef<HTMLDivElement>(null);
+  const currentCommandDataRef = useRef<{ command: string, stepDatabase: string | undefined, formatPrompt: (db?: string) => string } | null>(null);
   const currentCommandRef = useRef<CommandHistory | undefined>(undefined);
 
   function formatPrompt(database?: string) {
@@ -30,7 +31,7 @@ const CliTerminal: React.FC = () => {
   }
 
   function appendCommand(stepIndex: number) {
-    const stepCommand = steps.find(value => value.stepIndex == stepIndex);
+    const stepCommand = stepCommands.find(value => value.stepIndex == stepIndex);
     if (stepCommand == undefined || stepCommand.stepIndex != stepIndex) return;
 
     const {command} = stepCommand;
@@ -110,20 +111,11 @@ const CliTerminal: React.FC = () => {
 
     setCurrentCommand(null);
     setDefaultPromptEnabled(true);
-    setCommandExecuted(true);
-
-    const itemStepIndex = item.stepIndex
-    if (itemStepIndex) {
-      const hasNextCommand = steps.find(step => step.stepIndex == itemStepIndex + 1)
-      if (hasNextCommand) {
-        runCommandExecutedCallback();
-      } else {
-        moveNext();
-      }
-    }
+    setCommandClicked(false);
+    moveNext();
   }, []);
 
-  const handleRunCommand = useCallback((item: CommandHistory, index: number) => {
+  const handleRunCommand = useCallback((item: CommandHistory) => {
     runCommand(item, stepIndex)
   }, []);
 
@@ -159,7 +151,6 @@ const CliTerminal: React.FC = () => {
 
   useEffect(() => {
     function render(event: CustomEvent) {
-      setCommandExecuted(false);
       setDefaultPromptEnabled(true);
 
       const latestCurrentCommand = currentCommandRef.current;
@@ -178,15 +169,26 @@ const CliTerminal: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!isCommandExecuted && !isCallbackExecuted) {
-      const latestCurrentCommand = currentCommandRef.current;
-      if (latestCurrentCommand) {
-        setCommandHistory(prev => [...prev, latestCurrentCommand]);
-      }
-      setCurrentCommand(null);
-      setCommandExecuted(true);
+    function isUnExecutedCommandRemained() {
+      return !isCommandClicked &&
+        currentCommandRef.current &&
+        (buttonEvent?.type === STEP.NEXT || buttonEvent?.type === STEP.PREV);
     }
-  }, [stepIndex, isCallbackExecuted]);
+
+    if (isUnExecutedCommandRemained()) {
+      const stepCommandToCheck = buttonEvent.type === STEP.NEXT ? stepIndex + 1 : stepIndex - 1;
+
+      if (!stepCommands.find(step => step.stepIndex === stepCommandToCheck)) {
+        const latestCurrentCommand = currentCommandRef.current;
+        if (latestCurrentCommand) {
+          setCommandHistory(prev => [...prev, latestCurrentCommand]);
+        }
+        setCurrentCommand(null);
+        setDefaultPromptEnabled(false);
+        currentCommandRef.current = undefined;
+      }
+    }
+  }, [buttonEvent]);
 
   return (
     <div className="terminal-body-container" id="cli-commands">
@@ -237,7 +239,8 @@ const CliTerminal: React.FC = () => {
                       id={`run-command-btn-${currentCommand.stepIndex}-active`}
                       className={`run-command-btn driver-active-el`}
                       onClick={(e) => {
-                        handleRunCommand(currentCommand, commandHistory.length)
+                        setCommandClicked(true)
+                        handleRunCommand(currentCommand)
                       }}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20"/>
@@ -266,7 +269,7 @@ const CliTerminal: React.FC = () => {
               <div className="command-line">
                 <div className="command-line-inner">
                   <div className="command-line-item">
-                    <span className="prompt">{formatPrompt(steps.find(s => s.stepIndex === stepIndex)?.database)}{"> "}</span>
+                    <span className="prompt">{formatPrompt(stepCommands.find(s => s.stepIndex === stepIndex)?.database)}{"> "}</span>
                     <span className="cursor">_</span>
                   </div>
                 </div>
