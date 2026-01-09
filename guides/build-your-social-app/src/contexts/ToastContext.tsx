@@ -1,9 +1,9 @@
-import React, {createContext, ReactNode, useCallback, useContext, useState} from 'react';
+import React, {createContext, ReactNode, useCallback, useContext, useEffect, useState} from 'react';
 import {flushSync} from 'react-dom';
 import {ToastContainer} from "../components/layout/Toast";
 
 interface ToastContextType {
-  showToast: (message: string) => void;
+  showToast: (message: string, duration?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextType | null>(null);
@@ -19,21 +19,61 @@ export const useToast = () => {
 interface Toast {
   id: string;
   message: string;
+  duration?: number;
 }
 
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({children}) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string) => {
+  const showToast = useCallback((message: string, duration?: number) => {
     const id = Math.random().toString(36).substring(2, 9);
     flushSync(() => {
-      setToasts([{id, message}]);
+      const newToasts = [{id, message, duration}];
+      setToasts(newToasts);
     });
   }, []);
 
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   }, []);
+
+  const removeAllToasts = useCallback(() => {
+    setToasts([]);
+  }, []);
+
+  useEffect(() => {
+    if (toasts.length === 0) {
+      return;
+    }
+
+    let clickTimestamp = 0;
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const currentTime = Date.now();
+
+      if (target.closest('.toast') || target.closest('.toast-container')) {
+        return;
+      }
+
+      if (target.closest('button')) {
+        clickTimestamp = currentTime;
+        return;
+      }
+
+      if (currentTime - clickTimestamp < 200) {
+        return;
+      }
+
+      removeAllToasts();
+    };
+
+    document.addEventListener('click', handleClick, false);
+
+    return () => {
+      document.removeEventListener('click', handleClick, false);
+    };
+  }, [toasts.length, removeAllToasts]);
 
   return (
     <ToastContext.Provider value={{showToast}}>

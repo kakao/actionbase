@@ -2,17 +2,23 @@ import React, {createContext, ReactNode, useCallback, useContext, useEffect, use
 import {driver, Driver} from "driver.js";
 import "driver.js/dist/driver.css";
 import {useNavigate} from "react-router-dom";
+import {get, getDatabase, getTable} from "../api/actionbase";
+import {DATABASE, TABLE} from "../constants";
+import {useToast} from "./ToastContext";
 
 export const STEP = {
   NEXT: 'next',
   PREV: 'prev',
-  CLOSE: 'close'
+  CLOSE: 'close',
+  RELOAD: 'reload'
 }
 
 const BUTTON_TEXT = {
   PREV: "< prev",
   NEXT: "next >"
 }
+
+const TOAST_DURATION = 1700
 
 interface ButtonEvent {
   type: string | undefined;
@@ -54,6 +60,36 @@ const stepPrevEvent = new Map<number, StepEvent>([
   [18, {target: ["[id='run-command-btn-17-active']"]}],
   [19, {to: '/post/1'}],
 ]);
+
+export const stepVerifiers = new Map<number, () => Promise<boolean>>([
+  [2, async () => {
+    const [database, userPosts, userLikes] = await Promise.all([
+      getDatabase(DATABASE.SOCIAL, false),
+      getTable(DATABASE.SOCIAL, TABLE.USER_POSTS, false),
+      getTable(DATABASE.SOCIAL, TABLE.USER_LIKES, false),
+    ])
+    if (!database || database?.active === false) {
+      return false;
+    } else if (!userPosts || userPosts?.active === false) {
+      return false;
+    } else if (!userLikes || userLikes?.active === false) {
+      return false;
+    }
+    return true;
+  }],
+  [6, async () => {
+    const userFollows = await getTable(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, false)
+    return !(!userFollows || userFollows?.active === false);
+  }],
+  [7, async () => {
+    const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, "doki", "merlin", false)
+    return edgeState.count > 0;
+  }],
+  [15, async () => {
+    const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_LIKES, "doki", 1, false)
+    return edgeState.count > 0;
+  }],
+])
 
 interface DriverContextType {
   stepIndex: number;
@@ -101,39 +137,54 @@ export const useDriver = () => {
 
 export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) => {
   const navigate = useNavigate();
+  const {showToast} = useToast();
 
   const [stepIndex, setStepIndex] = useState(0);
   const [buttonEvent, setButtonEvent] = useState<ButtonEvent | undefined>(undefined);
 
   const driverObj = useRef<Driver | null>(null);
   const setButtonEventRef = useRef(setButtonEvent);
+  const showToastRef = useRef(showToast);
 
   const onMoveAfter = useCallback(
-    (type: string, stepEvents: Map<number, StepEvent>, eventType: string | undefined = undefined, timeout: number = 100) => {
-      if (!(type === STEP.NEXT || type === STEP.PREV)) {
+    (type: string, stepEvents: Map<number, StepEvent>, eventType: string | undefined = undefined, stepIndex: number | undefined = undefined, timeout: number = 100) => {
+      if (!(type === STEP.NEXT || type === STEP.PREV || type === STEP.RELOAD)) {
         console.error('Unsupported eventType:', type);
         return;
       }
-      return async () => {
-        setButtonEvent({type: type})
 
+      return async () => {
         if (driverObj.current) {
-          const activeIndex = driverObj.current.getActiveIndex();
-          if (!activeIndex) {
-            console.error('Failed to get active index');
-            return;
+
+          let currentIndex = stepIndex;
+          if (!currentIndex) {
+            currentIndex = driverObj.current.getActiveIndex();
+            if (!currentIndex) {
+              console.error('Failed to get active index');
+              return;
+            }
           }
 
-          const stepEvent = stepEvents.get(activeIndex);
+          if (type === STEP.NEXT) {
+            if (!await isStepValid(currentIndex)) {
+              showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION);
+              return;
+            }
+          }
+
+          setButtonEvent({type: type})
+
+          const stepEvent = stepEvents.get(currentIndex);
           if (!stepEvent) {
             console.error('Failed to get target stepEvent');
             return;
           }
+
           if (stepEvent.to) {
             navigate(stepEvent.to);
           }
 
-          const indexToDrive = type === STEP.NEXT ? activeIndex + 1 : activeIndex - 1;
+          const indexToDrive = type === STEP.NEXT ? currentIndex + 1 : currentIndex - 1;
           if (eventType) {
             window.dispatchEvent(new CustomEvent(eventType, {detail: {nextIndex: indexToDrive}}));
           }
@@ -157,14 +208,21 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     setButtonEvent({type: STEP.NEXT})
 
     if (driverObj.current) {
-      const activeStep = driverObj.current.getActiveStep();
+      const activeIndex = driverObj.current.getActiveIndex()
+      if (activeIndex !== undefined) {
+        if (!await isStepValid(activeIndex)) {
+          showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION)
+          const movePrev = onMoveAfter(STEP.RELOAD, stepPrevEvent, 'render', activeIndex + 1);
+          if (movePrev) {
+            await movePrev();
+          }
+          return;
+        }
+      }
 
+      const activeStep = driverObj.current.getActiveStep();
       if (activeStep?.popover?.onNextClick) {
-        const element = activeStep.element
-          ? (typeof activeStep.element === 'string'
-            ? document.querySelector(activeStep.element) as HTMLElement
-            : activeStep.element as HTMLElement)
-          : null;
+        const element = activeStep.element as HTMLElement
         if (element) {
           activeStep.popover.onNextClick(element, activeStep,
             {
@@ -177,9 +235,23 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     }
   }, [buttonEvent]);
 
+  const isStepValid = async (stepIndex: number) => {
+    const stepVerifier = stepVerifiers.get(stepIndex)
+    if (!stepVerifier) {
+      return true;
+    }
+
+    try {
+      return await stepVerifier()
+    } catch (err) {
+      return false;
+    }
+  }
+
   useEffect(() => {
     setButtonEventRef.current = setButtonEvent;
-  }, [setButtonEvent]);
+    showToastRef.current = showToast;
+  }, [setButtonEvent, showToast]);
 
   useEffect(() => {
     if (!driverObj.current) {
@@ -446,18 +518,28 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           setButtonEventRef.current({type: STEP.PREV});
 
           if (driverObj.current) {
-            const previousIndex = driverObj.current.getActiveIndex()! - 1
-            setStepIndex(previousIndex)
-            driverObj.current.moveTo(previousIndex);
+            const stepIndex = driverObj.current.getActiveIndex();
+            if (stepIndex !== undefined) {
+              setStepIndex(stepIndex - 1)
+              driverObj.current.moveTo(stepIndex - 1);
+            }
           }
         },
-        onNextClick: () => {
-          setButtonEventRef.current({type: STEP.NEXT});
-
+        onNextClick: async () => {
           if (driverObj.current) {
-            const nextIndex = driverObj.current.getActiveIndex()! + 1
-            setStepIndex(nextIndex)
-            driverObj.current.moveTo(nextIndex);
+            const stepIndex = driverObj.current.getActiveIndex();
+            if (stepIndex !== undefined) {
+              if (!await isStepValid(stepIndex)) {
+                showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION);
+                return;
+              }
+
+              const event = {type: STEP.NEXT, isClicked: true};
+              setButtonEventRef.current(event);
+
+              setStepIndex(stepIndex + 1)
+              driverObj.current.moveTo(stepIndex + 1);
+            }
           }
         },
       });

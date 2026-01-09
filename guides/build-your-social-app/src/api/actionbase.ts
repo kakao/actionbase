@@ -6,11 +6,43 @@ const INDEX = {
   CREATED_AT_DESC: 'created_at_desc',
 } as const;
 
+export function getDatabase(
+  name: string,
+  enableLogging: boolean = true
+) {
+  return apiFetch<DatabaseEntity | undefined>(
+    `/graph/v2/service/${name}`,
+    {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    },
+    enableLogging
+  );
+}
+
+export function getTable(
+  database: string,
+  name: string,
+  enableLogging: boolean = true
+) {
+  return apiFetch<TableEntity | undefined>(
+    `/graph/v2/service/${database}/label/${name}`,
+    {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    },
+    enableLogging
+  );
+}
+
 export function get(
   database: string,
   table: string,
   source: any,
-  target: any
+  target: any,
+  enableLogging: boolean = true
 ) {
   return apiFetch<DataPayload>(
     `/graph/v3/databases/${database}/tables/${table}/edges/get?source=${source}&target=${target}`,
@@ -18,7 +50,8 @@ export function get(
       headers: {
         'Content-Type': 'application/json'
       }
-    }
+    },
+    enableLogging
   );
 }
 

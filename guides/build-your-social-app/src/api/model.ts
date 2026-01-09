@@ -5,6 +5,18 @@ interface Edge {
   properties: Record<string, any | null>
 }
 
+interface DatabaseEntity {
+  active: boolean,
+  name: string,
+  desc: string
+}
+
+interface TableEntity {
+  active: boolean,
+  name: string,
+  desc: string,
+}
+
 interface DataPayload {
   edges: Edge[],
   count: number,

@@ -23,7 +23,6 @@ const CliTerminal: React.FC = () => {
 
   const terminalBodyRef = useRef<HTMLDivElement>(null);
   const commandHistoryRef = useRef<HTMLDivElement>(null);
-  const currentCommandDataRef = useRef<{ command: string, stepDatabase: string | undefined, formatPrompt: (db?: string) => string } | null>(null);
   const currentCommandRef = useRef<CommandHistory | undefined>(undefined);
 
   function formatPrompt(database?: string) {
@@ -37,10 +36,7 @@ const CliTerminal: React.FC = () => {
     const {command} = stepCommand;
     const stepDatabase = stepCommand.database;
 
-    currentCommandDataRef.current = null;
-
     if (command) {
-      currentCommandDataRef.current = {command, stepDatabase, formatPrompt};
       const prompt = formatPrompt(stepDatabase ?? '');
       setCurrentCommand({prompt, content: command, stepIndex: stepIndex});
     }
