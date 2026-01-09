@@ -18,33 +18,29 @@ interface ButtonEvent {
   type: string | undefined;
 }
 
-interface NavigationEvent {
+interface StepEvent {
   type: string;
-  url?: string;
+  to?: string;
   target?: string[];
 }
 
-const navigationNextEvent = new Map<number, NavigationEvent>([
-  [3, {type: STEP.NEXT, url: '/search', target: ["[id='search-results-list']"]}],
-  [6, {type: STEP.NEXT, url: '/profile/merlin', target: ["[id='btn-profile-following']"]}],
-  [12, {type: STEP.NEXT, url: '/followers/merlin', target: ["[id='followers-list']"]}],
-  [14, {type: STEP.NEXT, url: '/post/1'}],
-  [18, {type: STEP.NEXT, url: '/'}],
+const navigationNextEvent = new Map<number, StepEvent>([
+  [3, {type: STEP.NEXT, to: '/search', target: ["[id='search-results-list']"]}],
+  [6, {type: STEP.NEXT, to: '/profile/merlin', target: ["[id='btn-profile-following']"]}],
+  [12, {type: STEP.NEXT, to: '/followers/merlin', target: ["[id='followers-list']"]}],
+  [14, {type: STEP.NEXT, to: '/post/1'}],
+  [18, {type: STEP.NEXT, to: '/'}],
 ]);
 
-const navigationPrevEvent = new Map<number, NavigationEvent>([
-  [4, {type: STEP.PREV, url: '/search', target: ["[id='cli-commands']"]}],
-  [7, {type: STEP.PREV, url: '/search'}],
-  [13, {type: STEP.PREV, url: '/profile/merlin'}],
-  [15, {type: STEP.PREV, url: '/followers/merlin'}],
-  [19, {type: STEP.PREV, url: '/post/1'}],
+const navigationPrevEvent = new Map<number, StepEvent>([
+  [4, {type: STEP.PREV, to: '/search', target: ["[id='cli-commands']"]}],
+  [7, {type: STEP.PREV, to: '/search'}],
+  [13, {type: STEP.PREV, to: '/profile/merlin'}],
+  [15, {type: STEP.PREV, to: '/followers/merlin'}],
+  [19, {type: STEP.PREV, to: '/post/1'}],
 ]);
 
-interface ReloadEvent {
-  target: string;
-}
-
-const reloadEvent = new Map<number, NavigationEvent>([
+const reloadEvent = new Map<number, StepEvent>([
   [7, {type: STEP.NEXT, target: ["[id='btn-profile-following']"]}],
   [10, {type: STEP.NEXT, target: ["[id='profile-followers']"]}],
   [15, {type: STEP.NEXT, target: ["[id='btn-likes']"]}],
@@ -104,7 +100,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const setButtonEventRef = useRef(setButtonEvent);
 
   const onAfterMove = useCallback(
-    (type: string, event: Map<number, NavigationEvent>, eventName: string | undefined = undefined, selector: string | undefined = undefined, timeout: number = 100) => {
+    (type: string, event: Map<number, StepEvent>, eventName: string | undefined = undefined, selector: string | undefined = undefined, timeout: number = 100) => {
       if (!(type === STEP.NEXT || type === STEP.PREV)) {
         console.error('Unsupported eventType:', type);
         return;
@@ -120,8 +116,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           }
 
           const navigationEvent = event.get(activeIndex);
-          if (navigationEvent && navigationEvent.url) {
-            navigate(navigationEvent.url);
+          if (navigationEvent && navigationEvent.to) {
+            navigate(navigationEvent.to);
           }
 
           let targetSelectors
