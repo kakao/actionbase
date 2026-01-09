@@ -33,15 +33,19 @@ const CliTerminal: React.FC = () => {
   const currentCommandRef = useRef<CommandHistory | undefined>(undefined);
   const currentContextRef = useRef<Context | null>(null);
 
-  const handleRunCommand = useCallback((item: CommandHistory) => {
-    runCommand(item, stepIndex)
-  }, []);
-
   function formatPrompt(database?: string) {
     return database ? `${PROMPT_PREFIX}(${database})` : PROMPT_PREFIX;
   }
 
-  function appendCommand(stepIndex: number) {
+  function renderCurrentCommand(event: CustomEvent) {
+    setDefaultPromptEnabled(true);
+
+    const latestCurrentCommand = currentCommandRef.current;
+    if (latestCurrentCommand) {
+      setCommandHistory(prev => [...prev, latestCurrentCommand]);
+    }
+
+    const stepIndex = event.detail.nextIndex;
     const stepCommand = stepCommands.find(value => value.stepIndex == stepIndex);
     if (stepCommand == undefined || stepCommand.stepIndex != stepIndex) return;
     const {command, context} = stepCommand;
@@ -50,7 +54,67 @@ const CliTerminal: React.FC = () => {
       const prompt = formatPrompt(currentContextRef.current?.database);
       setCurrentCommand({prompt, content: command, stepIndex: stepIndex, database: context?.database, isContextChanged: context !== undefined});
     }
+
+    setDefaultPromptEnabled(false);
   }
+
+  function moveScrollbar() {
+    if (terminalBodyRef.current && commandHistoryRef.current) {
+      const scrollContainer = terminalBodyRef.current;
+      let targetElement: HTMLElement | null = null;
+
+      if (currentCommand) {
+        const runButton = document.getElementById('run-command-btn');
+        if (runButton) {
+          const commandBlock = runButton.closest('.command-block') as HTMLElement;
+          if (commandBlock) {
+            targetElement = commandBlock.querySelector('.command-line-item') as HTMLElement;
+          }
+        }
+      }
+
+      if (!targetElement && commandHistory.length > 0) {
+        const commandBlocks = commandHistoryRef.current.querySelectorAll('.command-block');
+        const lastCommandBlock = commandBlocks[commandBlocks.length - 1] as HTMLElement;
+        if (lastCommandBlock) {
+          targetElement = lastCommandBlock.querySelector('.command-line-item') as HTMLElement;
+        }
+      }
+
+      if (targetElement) {
+        const targetRect = targetElement.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+
+        scrollContainer.scrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 20;
+      }
+    }
+  }
+
+  function clearUnExecutedCurrentCommand() {
+    const isUnExecutedCommandRemained = !isCommandClicked &&
+      currentCommandRef.current &&
+      (buttonEvent?.type === STEP.NEXT || buttonEvent?.type === STEP.PREV);
+
+    if (isUnExecutedCommandRemained) {
+      const stepCommandToCheck = buttonEvent.type === STEP.NEXT ? stepIndex + 1 : stepIndex;
+
+      const nextCommand = stepCommands.find(step => step.stepIndex === stepCommandToCheck);
+      if (!nextCommand || (nextCommand && !nextCommand.command)) {
+        const latestCurrentCommand = currentCommandRef.current;
+        if (latestCurrentCommand) {
+          setCommandHistory(prev => [...prev, latestCurrentCommand]);
+        }
+
+        setCurrentCommand(null);
+        setDefaultPromptEnabled(false);
+        currentCommandRef.current = undefined;
+      }
+    }
+  }
+
+  const handleRunCommand = useCallback((item: CommandHistory) => {
+    runCommand(item, stepIndex)
+  }, []);
 
   const renderCommand = useCallback((item: CommandHistory, index: number, hideCursor: boolean = true) => {
     if (!item.content) {
@@ -88,36 +152,40 @@ const CliTerminal: React.FC = () => {
     });
   }, []);
 
+  const call = useCallback(async (command: string) => {
+    try {
+      const response = await run({command: command});
+
+      if (response.error) {
+        return `<p class="command-result error">${response.error}</p>`;
+      }
+
+      if (response.result) {
+        return `<p class="command-result">${response.result}</p>`;
+      }
+
+      return response.success ? '<p class="command-result success">✓ Success</p>' : '<p class="command-result error">Failed</p>';
+    } catch (err: any) {
+      console.error('Failed to execute command:', err);
+      return `<p class="command-result error">${err.responseData?.error || err.message || 'Failed to execute command'}</p>`;
+    }
+  }, []);
+
   const runCommand = useCallback(async (item: CommandHistory, stepIndex: number) => {
     const command = item.content || '';
     if (!command) return;
 
     const normalizedCommand = command.replaceAll('\\\n', '')
+    const result = await call(normalizedCommand)
 
-    try {
-      const response = await run({command: normalizedCommand});
-      let result: string;
-      if (response.error) {
-        result = `<p class="command-result error">${response.error}</p>`;
-      } else if (response.result) {
-        result = `<p class="command-result">${response.result}</p>`;
-      } else {
-        result = response.success ? '<p class="command-result success">✓ Success</p>' : '<p class="command-result error">Failed</p>';
-      }
-      setCommandHistory(prev => [...prev, {...item, result}]);
-    } catch (err: any) {
-      const result = `<p class="command-result error">${err.responseData?.error || err.message || 'Failed to execute command'}</p>`;
-      setCommandHistory(prev => [...prev, {...item, result}]);
-      console.error('Failed to execute command:', err);
-    }
+    setCommandHistory(prev => [...prev, {...item, result}]);
+    setDefaultPromptEnabled(true);
+    setCommandClicked(false);
+    setCurrentCommand(null);
 
     if (currentCommandRef.current) {
       currentCommandRef.current = undefined;
     }
-
-    setCurrentCommand(null);
-    setDefaultPromptEnabled(true);
-    setCommandClicked(false);
 
     if (item.isContextChanged) {
       const newContext = {database: item.database};
@@ -130,35 +198,7 @@ const CliTerminal: React.FC = () => {
 
   useEffect(() => {
     setTimeout(() => {
-      if (terminalBodyRef.current && commandHistoryRef.current) {
-        const scrollContainer = terminalBodyRef.current;
-        let targetElement: HTMLElement | null = null;
-
-        if (currentCommand) {
-          const runButton = document.getElementById('run-command-btn');
-          if (runButton) {
-            const commandBlock = runButton.closest('.command-block') as HTMLElement;
-            if (commandBlock) {
-              targetElement = commandBlock.querySelector('.command-line-item') as HTMLElement;
-            }
-          }
-        }
-
-        if (!targetElement && commandHistory.length > 0) {
-          const commandBlocks = commandHistoryRef.current.querySelectorAll('.command-block');
-          const lastCommandBlock = commandBlocks[commandBlocks.length - 1] as HTMLElement;
-          if (lastCommandBlock) {
-            targetElement = lastCommandBlock.querySelector('.command-line-item') as HTMLElement;
-          }
-        }
-
-        if (targetElement) {
-          const targetRect = targetElement.getBoundingClientRect();
-          const containerRect = scrollContainer.getBoundingClientRect();
-
-          scrollContainer.scrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 20;
-        }
-      }
+      moveScrollbar()
     }, 0);
   }, [currentCommand, commandHistory]);
 
@@ -175,46 +215,14 @@ const CliTerminal: React.FC = () => {
   }, [currentContext]);
 
   useEffect(() => {
-    function render(event: CustomEvent) {
-      setDefaultPromptEnabled(true);
-
-      const latestCurrentCommand = currentCommandRef.current;
-      if (latestCurrentCommand) {
-        setCommandHistory(prev => [...prev, latestCurrentCommand]);
-      }
-
-      appendCommand(event.detail.nextIndex);
-      setDefaultPromptEnabled(false);
-    }
-
-    window.addEventListener('render', render as EventListener);
+    window.addEventListener('render', renderCurrentCommand as EventListener);
     return () => {
-      window.removeEventListener('render', render as EventListener);
+      window.removeEventListener('render', renderCurrentCommand as EventListener);
     };
   }, []);
 
   useEffect(() => {
-    function isUnExecutedCommandRemained() {
-      return !isCommandClicked &&
-        currentCommandRef.current &&
-        (buttonEvent?.type === STEP.NEXT || buttonEvent?.type === STEP.PREV);
-    }
-
-    if (isUnExecutedCommandRemained()) {
-      const stepCommandToCheck = buttonEvent.type === STEP.NEXT ? stepIndex + 1 : stepIndex;
-
-      const nextCommand = stepCommands.find(step => step.stepIndex === stepCommandToCheck);
-      if (!nextCommand || (nextCommand && !nextCommand.command)) {
-        const latestCurrentCommand = currentCommandRef.current;
-        if (latestCurrentCommand) {
-          setCommandHistory(prev => [...prev, latestCurrentCommand]);
-        }
-
-        setCurrentCommand(null);
-        setDefaultPromptEnabled(false);
-        currentCommandRef.current = undefined;
-      }
-    }
+    clearUnExecutedCurrentCommand()
   }, [buttonEvent]);
 
   return (
