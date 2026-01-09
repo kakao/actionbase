@@ -30,35 +30,35 @@ export const stepCommands: HandsOnStepCommand[] = [
 --type INDEXED \\
 --direction BOTH \\
 --schema '{
-      "src": {
-      "type": "STRING",
-      "desc": "userId"
-      },
-      "tgt": {
-      "type": "STRING",
-      "desc": "followee Id"
-      },
-      "fields": [
-      {
+  "src": {
+    "type": "STRING",
+    "desc": "userId"
+  },
+  "tgt": {
+    "type": "STRING",
+    "desc": "followee Id"
+  },
+  "fields": [
+    {
       "name": "createdAt",
       "type": "LONG",
       "desc": "created at",
       "nullable": false
-      }
-      ]
-      } ' \\
+    }
+  ]
+}' \\
 --indices '[
+  {
+    "name": "created_at_desc",
+    "fields": [
       {
-      "name": "created_at_desc",
-      "fields": [
-      {
-      "name": "createdAt",
-      "order": "DESC"
+        "name": "createdAt",
+        "order": "DESC"
       }
-      ],
-      "desc": "order by createdAt"
-      }
-      ]'
+    ],
+    "desc": "order by createdAt"
+  }
+]'
 `,
   },
   {
