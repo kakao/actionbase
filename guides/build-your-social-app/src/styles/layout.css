@@ -478,6 +478,10 @@
     justify-content: space-between;
   }
 
+  .navbar * {
+    pointer-events: auto !important;
+  }
+
   .doc-link {
     align-items: flex-end;
   }
@@ -503,6 +507,10 @@
   .breadcrumb-actions {
     height: 70px;
     gap: var(--spacing-md);
+  }
+
+  .breadcrumb-actions * {
+    pointer-events: auto !important;
   }
 
   .browser-frame {
