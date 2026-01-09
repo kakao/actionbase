@@ -114,6 +114,9 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               </svg>
               See Documentation</a>
+            <div className="resolution-text">
+              Recommended resolution is minimum 1400 x 1000
+            </div>
           </div>
         </div>
         <div className="header-line"/>
