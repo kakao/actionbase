@@ -48,3 +48,17 @@ gradle-app.setting
 # Eclipse
 .project
 .classpath
+
+# Website & Guides
+dist/
+.astro/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
