@@ -69,6 +69,7 @@ export default defineConfig({
 				baseUrl: 'https://github.com/kakao/actionbase/edit/main/website/',
 			},
 			social: [
+				{ icon: 'document', label: 'Documentation', href: '/introduction/' },
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/kakao/actionbase' },
 			],
 			head: [
