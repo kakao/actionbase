@@ -264,6 +264,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         prevBtnText: BUTTON_TEXT.PREV,
         nextBtnText: BUTTON_TEXT.NEXT,
         doneBtnText: 'Bye 👋🏻',
+        overlayClickBehavior: () => {},
         steps: [
           { // 0
             popover: {
@@ -501,17 +502,12 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             setButtonEventRef.current({type: undefined});
           }, 0);
         },
-        onDestroyStarted: () => {
-          setStepIndex(0);
-        },
-        onDestroyed: () => {
-          setStepIndex(0);
-        },
         onCloseClick: () => {
           setButtonEventRef.current({type: STEP.CLOSE});
 
           if (driverObj.current) {
             driverObj.current.destroy();
+            setStepIndex(0);
           }
         },
         onPrevClick: () => {
