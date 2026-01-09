@@ -9,6 +9,11 @@ interface CommandHistory {
   content?: string;
   result?: string;
   stepIndex?: number;
+  database?: string | undefined;
+}
+
+interface Context {
+  database: string | undefined
 }
 
 const PROMPT_PREFIX = 'actionbase';
@@ -17,6 +22,7 @@ const CliTerminal: React.FC = () => {
   const {stepIndex, buttonEvent, moveNext} = useDriver()
 
   const [currentCommand, setCurrentCommand] = useState<CommandHistory | null>();
+  const [currentContext, setCurrentContext] = useState<Context | null>();
   const [commandHistory, setCommandHistory] = useState<CommandHistory[]>([]);
   const [isDefaultPromptEnabled, setDefaultPromptEnabled] = useState<boolean>(true);
   const [isCommandClicked, setCommandClicked] = useState<boolean>(false);
@@ -32,13 +38,14 @@ const CliTerminal: React.FC = () => {
   function appendCommand(stepIndex: number) {
     const stepCommand = stepCommands.find(value => value.stepIndex == stepIndex);
     if (stepCommand == undefined || stepCommand.stepIndex != stepIndex) return;
+    const {command, database} = stepCommand;
 
-    const {command} = stepCommand;
-    const stepDatabase = stepCommand.database;
+    const newContext = {database: database};
+    setCurrentContext(newContext);
 
     if (command) {
-      const prompt = formatPrompt(stepDatabase ?? '');
-      setCurrentCommand({prompt, content: command, stepIndex: stepIndex});
+      const prompt = formatPrompt(database);
+      setCurrentCommand({prompt, content: command, stepIndex: stepIndex, database: database});
     }
   }
 
@@ -108,6 +115,8 @@ const CliTerminal: React.FC = () => {
     setCurrentCommand(null);
     setDefaultPromptEnabled(true);
     setCommandClicked(false);
+    setCurrentContext({database: item.database});
+
     moveNext();
   }, []);
 
@@ -149,6 +158,10 @@ const CliTerminal: React.FC = () => {
     function render(event: CustomEvent) {
       setDefaultPromptEnabled(true);
 
+      if (currentCommandRef.current) {
+        setCurrentContext({database: currentCommandRef.current.database});
+      }
+
       const latestCurrentCommand = currentCommandRef.current;
       if (latestCurrentCommand) {
         setCommandHistory(prev => [...prev, latestCurrentCommand]);
@@ -175,10 +188,15 @@ const CliTerminal: React.FC = () => {
       const stepCommandToCheck = buttonEvent.type === STEP.NEXT ? stepIndex + 1 : stepIndex - 1;
 
       if (!stepCommands.find(step => step.stepIndex === stepCommandToCheck)) {
+        if (currentCommandRef.current) {
+          setCurrentContext({database: currentCommandRef.current.database});
+        }
+
         const latestCurrentCommand = currentCommandRef.current;
         if (latestCurrentCommand) {
           setCommandHistory(prev => [...prev, latestCurrentCommand]);
         }
+
         setCurrentCommand(null);
         setDefaultPromptEnabled(false);
         currentCommandRef.current = undefined;
@@ -265,7 +283,7 @@ const CliTerminal: React.FC = () => {
               <div className="command-line">
                 <div className="command-line-inner">
                   <div className="command-line-item">
-                    <span className="prompt">{formatPrompt(stepCommands.find(s => s.stepIndex === stepIndex)?.database)}{"> "}</span>
+                    <span className="prompt">{formatPrompt(currentContext?.database)}{"> "}</span>
                     <span className="cursor">_</span>
                   </div>
                 </div>
