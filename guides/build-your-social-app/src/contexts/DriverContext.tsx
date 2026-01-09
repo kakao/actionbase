@@ -50,7 +50,7 @@ const stepNextEvent = new Map<number, StepEvent>([
 const stepPrevEvent = new Map<number, StepEvent>([
   [3, {target: ["[id='run-command-btn']"]}],
   [4, {to: '/search', target: ["[id='cli-commands']", "[id='run-command-btn']"]}],
-  [7, {to: '/search'}],
+  [7, {to: '/search', target: ["[id='run-command-btn']"]}],
   [8, {target: ["[id='run-command-btn']"]}],
   [10, {target: ["[id='run-command-btn']"]}],
   [11, {target: ["[id='run-command-btn']"]}],
