@@ -30,34 +30,34 @@ interface StepEvent {
 }
 
 const stepNextEvent = new Map<number, StepEvent>([
-  [1, {target: ["[id='run-command-btn-2-active']"]}],
-  [2, {target: ["[id='run-command-btn-3-active']"]}],
+  [1, {target: ["[id='run-command-btn']"]}],
+  [2, {target: ["[id='run-command-btn']"]}],
   [3, {to: '/search', target: ["[id='search-results-list']"]}],
-  [5, {target: ["[id='run-command-btn-6-active']"]}],
-  [6, {to: '/profile/merlin', target: ["[id='btn-profile-following']", "[id='run-command-btn-7-active']"]}],
+  [5, {target: ["[id='run-command-btn']"]}],
+  [6, {to: '/profile/merlin', target: ["[id='btn-profile-following']", "[id='run-command-btn']"]}],
   [7, {target: ["[id='btn-profile-following']"]}],
-  [8, {target: ["[id='run-command-btn-9-active']"]}],
-  [9, {target: ["[id='run-command-btn-10-active']"]}],
+  [8, {target: ["[id='run-command-btn']"]}],
+  [9, {target: ["[id='run-command-btn']"]}],
   [10, {target: ["[id='profile-followers']"]}],
-  [11, {target: ["[id='run-command-btn-12-active']"]}],
+  [11, {target: ["[id='run-command-btn']"]}],
   [12, {to: '/followers/merlin', target: ["[id='followers-list']"]}],
-  [14, {to: '/post/1', target: ["[id='run-command-btn-15-active']"]}],
+  [14, {to: '/post/1', target: ["[id='run-command-btn']"]}],
   [15, {target: ["[id='btn-likes']"]}],
-  [16, {target: ["[id='run-command-btn-17-active']"]}],
+  [16, {target: ["[id='run-command-btn']"]}],
   [18, {to: '/'}],
 ]);
 
 const stepPrevEvent = new Map<number, StepEvent>([
-  [3, {target: ["[id='run-command-btn-2-active']"]}],
-  [4, {to: '/search', target: ["[id='cli-commands']", "[id='run-command-btn-3-active']"]}],
+  [3, {target: ["[id='run-command-btn']"]}],
+  [4, {to: '/search', target: ["[id='cli-commands']", "[id='run-command-btn']"]}],
   [7, {to: '/search'}],
-  [8, {target: ["[id='run-command-btn-7-active']"]}],
-  [10, {target: ["[id='run-command-btn-9-active']"]}],
-  [11, {target: ["[id='run-command-btn-10-active']"]}],
-  [13, {to: '/profile/merlin', target: ["[id='run-command-btn-12-active']"]}],
+  [8, {target: ["[id='run-command-btn']"]}],
+  [10, {target: ["[id='run-command-btn']"]}],
+  [11, {target: ["[id='run-command-btn']"]}],
+  [13, {to: '/profile/merlin', target: ["[id='run-command-btn']"]}],
   [15, {to: '/followers/merlin'}],
-  [16, {target: ["[id='run-command-btn-15-active']"]}],
-  [18, {target: ["[id='run-command-btn-17-active']"]}],
+  [16, {target: ["[id='run-command-btn']"]}],
+  [18, {target: ["[id='run-command-btn']"]}],
   [19, {to: '/post/1'}],
 ]);
 
@@ -282,7 +282,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             }
           },
           { // 2
-            element: "[id='run-command-btn-2-active']",
+            element: "[id='run-command-btn']",
             popover: {
               title: "Load preset data",
               description: "Let's load prepared data",
@@ -293,7 +293,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             },
           },
           { // 3
-            element: "[id='run-command-btn-3-active']",
+            element: "[id='run-command-btn']",
             popover: {
               title: "Set context",
               description: "Set Database context as 'social'",
@@ -324,7 +324,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             },
           },
           { // 6
-            element: "[id='run-command-btn-6-active']",
+            element: "[id='run-command-btn']",
             popover: {
               title: "Create table",
               description: "First, we have to create a table that represents the `user follow` relation. Click.",
@@ -335,9 +335,9 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             },
           },
           { // 7
-            element: "[id='run-command-btn-7-active']",
+            element: "[id='run-command-btn']",
             popover: {
-              title: "me -> merlin",
+              title: "doki -> merlin",
               description: "(In Progress)",
               side: 'right',
               align: 'start',
@@ -358,7 +358,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             },
           },
           { // 9
-            element: "[id='run-command-btn-9-active']",
+            element: "[id='run-command-btn']",
             popover: {
               title: "Get follows",
               description: "(In Progress)",
@@ -369,7 +369,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             },
           },
           { // 10
-            element: "[id='run-command-btn-10-active']",
+            element: "[id='run-command-btn']",
             popover: {
               title: "Get follows count",
               description: "(In Progress)",
@@ -392,7 +392,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             },
           },
           { // 12
-            element: "[id='run-command-btn-12-active']",
+            element: "[id='run-command-btn']",
             popover: {
               title: "Scan follows",
               description: "(In Progress)",
@@ -421,9 +421,9 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             },
           },
           { // 15
-            element: "[id='run-command-btn-15-active']",
+            element: "[id='run-command-btn']",
             popover: {
-              title: "me -> merlin's post",
+              title: "doki -> merlin's post",
               description: "Insert an Edge to add a like to this post. Click.",
               side: 'right',
               align: 'start',
@@ -444,7 +444,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             },
           },
           { // 17
-            element: "[id='run-command-btn-17-active']",
+            element: "[id='run-command-btn']",
             popover: {
               title: "Get likes",
               description: "(In Progress)",

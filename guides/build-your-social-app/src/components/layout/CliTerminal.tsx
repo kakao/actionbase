@@ -232,7 +232,7 @@ const CliTerminal: React.FC = () => {
                   <div className="command-content-wrapper">
                     <div className="command-multiline">{renderCommand(currentCommand, commandHistory.length, false)}</div>
                     <button
-                      id={`run-command-btn-${currentCommand.stepIndex}-active`}
+                      id="run-command-btn"
                       className={`run-command-btn driver-active-el`}
                       onClick={(e) => {
                         setCommandClicked(true)
