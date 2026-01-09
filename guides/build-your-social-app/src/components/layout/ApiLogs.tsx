@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useApiLog} from '../../contexts/ApiLogContext';
 import {setApiLogCallback} from '../../api/client';
 import '../../styles/api-log.css';
@@ -6,10 +6,17 @@ import '../../styles/api-log.css';
 const ApiLogs: React.FC = () => {
   const [expandedPayloads, setExpandedPayloads] = useState<Set<number>>(new Set());
   const {apiLogs, addApiLog} = useApiLog();
+  const apiLogContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setApiLogCallback(addApiLog);
   }, [addApiLog]);
+
+  useEffect(() => {
+    if (apiLogContentRef.current && apiLogs.length > 0) {
+      apiLogContentRef.current.scrollTop = apiLogContentRef.current.scrollHeight;
+    }
+  }, [apiLogs]);
 
   const toggleExpandedPayload = useCallback((logId: number) => {
     setExpandedPayloads(prev => {
@@ -22,7 +29,7 @@ const ApiLogs: React.FC = () => {
 
   return (
     <div className="api-log-container">
-      <div className="api-log-content">
+      <div className="api-log-content" ref={apiLogContentRef}>
         {apiLogs.length === 0 ? (
           <div className="api-log-empty"></div>
         ) : (
