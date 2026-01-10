@@ -16,7 +16,7 @@ class RootController(
 
     @GetMapping("/")
     fun root(): Mono<ResponseEntity<Map<String, String>>> {
-        val version = buildProperties?.version ?: "0.1.0"
+        val version = buildProperties?.version ?: "unknown"
         val timestamp = Instant.now(Clock.systemUTC()).toString()
         
         val response = mapOf(
