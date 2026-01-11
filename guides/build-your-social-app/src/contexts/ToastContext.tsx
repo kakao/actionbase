@@ -46,32 +46,26 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({children}) => 
       return;
     }
 
-    let clickTimestamp = 0;
+    const handleCloseToast = () => {
+      removeAllToasts();
+    };
 
     const handleClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      const currentTime = Date.now();
 
-      if (target.closest('.toast') || target.closest('.toast-container')) {
-        return;
-      }
-
-      if (target.closest('button')) {
-        clickTimestamp = currentTime;
-        return;
-      }
-
-      if (currentTime - clickTimestamp < 200) {
+      if (target.closest('.driver-popover')) {
         return;
       }
 
       removeAllToasts();
     };
 
-    document.addEventListener('click', handleClick, false);
+    window.addEventListener('close-toast', handleCloseToast);
+    document.addEventListener('click', handleClick, true);
 
     return () => {
-      document.removeEventListener('click', handleClick, false);
+      window.removeEventListener('close-toast', handleCloseToast);
+      document.removeEventListener('click', handleClick, true);
     };
   }, [toasts.length, removeAllToasts]);
 

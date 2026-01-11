@@ -194,6 +194,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         nextBtnText: BUTTON_TEXT.NEXT,
         doneBtnText: 'Bye 👋🏻',
         overlayClickBehavior: () => {
+          window.dispatchEvent(new CustomEvent('close-toast'));
         },
         steps: [
           {

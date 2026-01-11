@@ -95,10 +95,15 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   touch-action: pan-y !important;
 }
 
+.driver-overlay {
+  z-index: 19999 !important;
+}
+
 .driver-popover {
   display: block;
   padding: 40px 20px 25px 20px;
   max-width: 400px;
+  z-index: 20000 !important;
 }
 
 .driver-popover, .driver-popover *, .driver-popover-description, .driver-popover-description * {
