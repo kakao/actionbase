@@ -9,7 +9,7 @@ import NotFound from "./NotFound";
 import '../../styles/post.css';
 import {useToggleLike} from "../../hooks/useToggleMutate";
 import Spinner from "../layout/Spinner";
-import {me, postDetails, users} from "../../constants/Dummy";
+import {me, postDetails, users} from "../../constants/dummy";
 import {useToast} from "../../contexts/ToastContext";
 
 const Post: React.FC = () => {

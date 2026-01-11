@@ -7,7 +7,7 @@ import {calculateImageIndex, shouldTriggerSwipe} from '../../utils/image';
 import '../../styles/feed.css';
 import {useToggleLike} from "../../hooks/useToggleMutate";
 import Spinner from "../layout/Spinner";
-import {me, postDetails, users} from "../../constants/Dummy";
+import {me, postDetails, users} from "../../constants/dummy";
 import {useNavigate} from "react-router-dom";
 import {useToast} from "../../contexts/ToastContext";
 

@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {run} from "../../api/cli";
-import stepCommands from "../../constants/HandsOnStepCommand";
+import stepCommands from "../../constants/handsOnStepCommand";
 import '../../styles/cli-terminal.css';
 import {STEP, useDriver} from "../../contexts/DriverContext";
 

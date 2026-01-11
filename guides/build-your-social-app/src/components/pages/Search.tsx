@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {ROUTES} from '../../constants';
 import '../../styles/search.css';
-import {users} from "../../constants/Dummy";
+import {users} from "../../constants/dummy";
 import {useNavigate} from "react-router-dom";
 
 const Search: React.FC = () => {

@@ -6,7 +6,7 @@ import CliTerminal from './CliTerminal';
 import MobileFooter from "./MobileFooter";
 import '../../styles/layout.css';
 import ApiLogs from "./ApiLogs";
-import {breadCrumbSteps} from "../../constants/BreadCrumbSteps";
+import {breadCrumbSteps} from "../../constants/breadCrumbSteps";
 import {useDriver} from "../../contexts/DriverContext";
 
 const OWNER = "kakao";

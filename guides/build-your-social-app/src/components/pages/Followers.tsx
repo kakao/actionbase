@@ -5,7 +5,7 @@ import {DIRECTION, ROUTES} from '../../constants';
 import NotFound from "./NotFound";
 import '../../styles/followings.css';
 import Spinner from "../layout/Spinner";
-import {me, users} from "../../constants/Dummy";
+import {me, users} from "../../constants/dummy";
 import {useToggleFollowing} from "../../hooks/useToggleMutate";
 import {scanUserFollows} from "../../api/actionbase";
 
