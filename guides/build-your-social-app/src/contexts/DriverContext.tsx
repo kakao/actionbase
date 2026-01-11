@@ -5,6 +5,7 @@ import {useNavigate} from "react-router-dom";
 import {get, getDatabase, getTable} from "../api/actionbase";
 import {DATABASE, TABLE} from "../constants";
 import {useToast} from "./ToastContext";
+import {DESCRIPTION, TITLE} from "../constants/BreadCrumbSteps";
 
 export const STEP = {
   NEXT: 'next',
@@ -268,7 +269,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         steps: [
           { // 0
             popover: {
-              title: '<span class="driver-popover-title-number">1</span> Welcome to Actionbase 🙌🏼',
+              title: `<span class="driver-popover-title-number">1</span> ${TITLE.STEP_0}`,
+              description: DESCRIPTION.STEP_0,
               side: 'over',
               align: 'center',
               nextBtnText: "start",
@@ -276,7 +278,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 1
             popover: {
-              title: '<span class="driver-popover-title-number">2</span> Prepare tutoral',
+              title: `<span class="driver-popover-title-number">2</span> ${TITLE.STEP_1}`,
+              description: DESCRIPTION.STEP_1,
               side: 'right',
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
@@ -285,8 +288,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 2
             element: "[id='run-command-btn']",
             popover: {
-              title: "Load preset data",
-              description: "Let's load prepared data",
+              title: TITLE.STEP_2,
+              description: DESCRIPTION.STEP_2,
               side: 'right',
               align: 'start',
               nextBtnText: "done",
@@ -296,8 +299,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 3
             element: "[id='run-command-btn']",
             popover: {
-              title: "Set context",
-              description: "Set Database context as 'social'",
+              title: TITLE.STEP_3,
+              description: DESCRIPTION.STEP_3,
               side: 'right',
               align: 'start',
               nextBtnText: "done",
@@ -308,8 +311,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 4
             element: "[id='search-results-list']",
             popover: {
-              title: '<span class="driver-popover-title-number">3</span> Check Prepared data',
-              description: "(In Progress)",
+              title: `<span class="driver-popover-title-number">3</span> ${TITLE.STEP_4}`,
+              description: DESCRIPTION.STEP_4,
               side: 'bottom',
               nextBtnText: "done",
               align: 'start',
@@ -318,7 +321,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 5
             popover: {
-              title: '<span class="driver-popover-title-number">4</span> Follows',
+              title: `<span class="driver-popover-title-number">4</span> ${TITLE.STEP_5}`,
+              description: DESCRIPTION.STEP_5,
               side: 'right',
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
@@ -327,8 +331,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 6
             element: "[id='run-command-btn']",
             popover: {
-              title: "Create table",
-              description: "First, we have to create a table that represents the `user follow` relation. Click.",
+              title: TITLE.STEP_6,
+              description: DESCRIPTION.STEP_6,
               side: 'right',
               align: 'start',
               nextBtnText: 'done',
@@ -338,8 +342,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 7
             element: "[id='run-command-btn']",
             popover: {
-              title: "doki -> merlin",
-              description: "(In Progress)",
+              title: TITLE.STEP_7,
+              description: DESCRIPTION.STEP_7,
               side: 'right',
               align: 'start',
               nextBtnText: 'done',
@@ -350,7 +354,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 8
             element: "[id='btn-profile-following']",
             popover: {
-              description: "Yeah 🎉. (In Progress)",
+              description: DESCRIPTION.STEP_8,
               side: 'right',
               nextBtnText: "done",
               align: 'start',
@@ -361,8 +365,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 9
             element: "[id='run-command-btn']",
             popover: {
-              title: "Get follows",
-              description: "(In Progress)",
+              title: TITLE.STEP_9,
+              description: DESCRIPTION.STEP_9,
               side: 'right',
               nextBtnText: "done",
               align: 'start',
@@ -372,8 +376,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 10
             element: "[id='run-command-btn']",
             popover: {
-              title: "Get follows count",
-              description: "(In Progress)",
+              title: TITLE.STEP_10,
+              description: DESCRIPTION.STEP_10,
               side: 'right',
               align: 'start',
               nextBtnText: "done",
@@ -384,7 +388,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 11
             element: "[id='profile-followers']",
             popover: {
-              description: "Yeah 🎉. (In Progress)",
+              description: DESCRIPTION.STEP_11,
               side: 'right',
               nextBtnText: "done",
               align: 'start',
@@ -395,8 +399,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 12
             element: "[id='run-command-btn']",
             popover: {
-              title: "Scan follows",
-              description: "(In Progress)",
+              title: TITLE.STEP_12,
+              description: DESCRIPTION.STEP_12,
               side: 'right',
               align: 'start',
               nextBtnText: "done",
@@ -406,7 +410,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 13
             element: "[id='followers-list']",
             popover: {
-              description: "Yeah 🎉. (In Progress)",
+              description: DESCRIPTION.STEP_13,
               side: 'right',
               nextBtnText: "done",
               align: 'start',
@@ -415,7 +419,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 14
             popover: {
-              title: '<span class="driver-popover-title-number">5</span> Likes',
+              title: `<span class="driver-popover-title-number">5</span> ${TITLE.STEP_14}`,
+              description: DESCRIPTION.STEP_14,
               side: 'over',
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
@@ -424,8 +429,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 15
             element: "[id='run-command-btn']",
             popover: {
-              title: "doki -> merlin's post",
-              description: "Insert an Edge to add a like to this post. Click.",
+              title: TITLE.STEP_15,
+              description: DESCRIPTION.STEP_15,
               side: 'right',
               align: 'start',
               nextBtnText: "done",
@@ -436,7 +441,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 16
             element: "[id='btn-likes']",
             popover: {
-              description: "Yeah 🎉. (In Progress)",
+              description: DESCRIPTION.STEP_16,
               side: 'right',
               nextBtnText: "done",
               align: 'start',
@@ -447,8 +452,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 17
             element: "[id='run-command-btn']",
             popover: {
-              title: "Get likes",
-              description: "(In Progress)",
+              title: TITLE.STEP_17,
+              description: DESCRIPTION.STEP_17,
               side: 'right',
               nextBtnText: "done",
               align: 'start',
@@ -456,8 +461,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 18
             popover: {
-              title: "Same as likes",
-              description: "(In Progress)",
+              title: TITLE.STEP_18,
+              description: DESCRIPTION.STEP_18,
               side: 'over',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
@@ -467,8 +472,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           { // 19
             element: "[class='mobile-frame']",
             popover: {
-              title: '<span class="driver-popover-title-number">6</span> Feed',
-              description: "(In Progress)",
+              title: `<span class="driver-popover-title-number">6</span> ${TITLE.STEP_19}`,
+              description: DESCRIPTION.STEP_19,
               side: 'right',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent)
@@ -476,16 +481,16 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           { // 20
             popover: {
-              title: '<span class="driver-popover-title-number">7</span> End 🎉',
-              description: "The tutorial has ended. Thanks for joining the tour!",
+              title: `<span class="driver-popover-title-number">7</span> ${TITLE.STEP_20}`,
+              description: DESCRIPTION.STEP_20,
               side: 'over',
               align: 'center',
             },
           },
           { // 21
             popover: {
-              title: '<span class="driver-popover-title-number">8</span> Goodbye!',
-              description: "(In Progress)",
+              title: `<span class="driver-popover-title-number">8</span> ${TITLE.STEP_21}`,
+              description: DESCRIPTION.STEP_21,
               side: 'over',
               align: 'center',
               nextBtnText: 'Bye 👋🏻',
