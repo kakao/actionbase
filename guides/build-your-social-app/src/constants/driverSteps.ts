@@ -1,4 +1,4 @@
-import {getTable} from "../api/actionbase";
+import {get, getTable} from "../api/actionbase";
 import {DATABASE, TABLE} from "./index";
 
 export interface ButtonEvent {
@@ -71,9 +71,14 @@ stepVerifiers.set(6, async () => {
   return !(!userFollows || userFollows?.active === false);
 });
 
+stepVerifiers.set(7, async () => {
+  const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, 'doki', 'merlin', false)
+  return !(!edgeState || edgeState?.count < 1);
+});
+
 stepVerifiers.set(15, async () => {
-  const userLikes = await getTable(DATABASE.SOCIAL, TABLE.USER_LIKES, false)
-  return !(!userLikes || userLikes?.active === false);
+  const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_LIKES, 'doki', 1, false)
+  return !(!edgeState || edgeState?.count < 1);
 });
 
 stepVerifiers.set(19, async () => {
@@ -93,5 +98,5 @@ stepVerifiers.set(19, async () => {
 });
 
 setDelegatingVerifiers([3, 4, 5], 2);
-setDelegatingVerifiers([7, 8, 9, 10, 11, 12, 13, 14], 6);
+setDelegatingVerifiers([8, 9, 10, 11, 12, 13, 14], 7);
 setDelegatingVerifiers([16, 17], 15);
