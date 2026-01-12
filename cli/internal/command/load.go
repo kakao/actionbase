@@ -18,6 +18,10 @@ import (
 const (
 	singleQuote = '\''
 	doubleQuote = '"'
+
+	multilineOutCommentStart = "# @out"
+	multilineOutCommentEnd   = "#"
+	singleLineOutComment     = "# @out:"
 )
 
 type Load struct {
@@ -66,14 +70,37 @@ func (l *Load) Execute(args []string) *model.Response {
 }
 
 func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
+	var resultBuffer strings.Builder
+	var command strings.Builder
+	var multilineOutComment strings.Builder
+	isInOutCommentBlock := false
+
 	for {
-		chunk, err := reader.ReadString(';')
-		chunk = l.normalize(chunk)
+		line, err := reader.ReadString('\n')
 		if err == io.EOF {
-			if len(chunk) > 0 {
-				if result := l.doLoad(chunk); !result.IsSuccess {
-					return model.Fail(fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path))
+			if isInOutCommentBlock {
+				decoratedOutComment := fmt.Sprintf("/**\n%s\n*/\n", strings.TrimSpace(multilineOutComment.String()))
+				resultBuffer.WriteString(decoratedOutComment)
+				fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
+
+				multilineOutComment.Reset()
+				isInOutCommentBlock = false
+				break
+			}
+			if command.Len() > 0 {
+				chunk := l.normalize(command.String())
+				if len(chunk) == 0 {
+					break
 				}
+
+				result := l.doLoad(chunk)
+				if !result.IsSuccess {
+					resultMessage := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
+					fmt.Printf(resultMessage)
+					resultBuffer.WriteString(resultMessage)
+					return model.FailWithNoOut(resultBuffer.String())
+				}
+				resultBuffer.WriteString(*result.Result)
 			}
 			break
 		}
@@ -81,12 +108,62 @@ func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
 			log.Fatal(err)
 		}
 
-		if result := l.doLoad(chunk); !result.IsSuccess {
-			return model.Fail(fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path))
+		trimmedLine := strings.TrimSpace(line)
+
+		if strings.HasPrefix(trimmedLine, singleLineOutComment) {
+			outContent := strings.TrimPrefix(trimmedLine, singleLineOutComment)
+
+			decoratedOutComment := fmt.Sprintf("/* %s */\n", strings.TrimSpace(outContent))
+			resultBuffer.WriteString(decoratedOutComment)
+			fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
+
+			command.Reset()
+			continue
+		}
+
+		if trimmedLine == multilineOutCommentStart {
+			isInOutCommentBlock = true
+			multilineOutComment.Reset()
+			continue
+		}
+
+		if isInOutCommentBlock && trimmedLine == multilineOutCommentEnd {
+			decoratedOutComment := fmt.Sprintf("/**\n%s\n*/\n", strings.TrimSpace(multilineOutComment.String()))
+			resultBuffer.WriteString(decoratedOutComment)
+			fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
+
+			multilineOutComment.Reset()
+			isInOutCommentBlock = false
+			command.Reset()
+			continue
+		}
+
+		if isInOutCommentBlock {
+			multilineOutComment.WriteString(strings.TrimSuffix(line, "\n"))
+			multilineOutComment.WriteString("\n")
+			continue
+		}
+
+		command.WriteString(line)
+
+		if strings.HasSuffix(strings.TrimSpace(line), ";") {
+			chunk := l.normalize(command.String())
+
+			if len(chunk) > 0 {
+				result := l.doLoad(chunk)
+				if !result.IsSuccess {
+					resultMessage := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
+					fmt.Println(resultMessage)
+					resultBuffer.WriteString(resultMessage)
+					return model.FailWithNoOut(resultBuffer.String())
+				}
+				resultBuffer.WriteString(*result.Result)
+			}
+			command.Reset()
 		}
 	}
 
-	return model.Success()
+	return model.SuccessWithResultNoOut(resultBuffer.String())
 }
 
 func (l *Load) doLoad(data string) *model.Response {

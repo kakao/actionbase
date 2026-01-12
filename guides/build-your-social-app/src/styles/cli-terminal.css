@@ -1,0 +1,256 @@
+@import './common.css';
+
+.terminal-body-container {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 200;
+  pointer-events: auto;
+}
+
+.terminal-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--spacing-2xl);
+  color: #d0d0d0;
+  background-color: #303030;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none;
+  min-width: 0;
+  border-bottom: 1px solid #303030;
+  border-right: 1px solid #eaeaea;
+  z-index: 200;
+}
+
+.terminal-body::-webkit-scrollbar {
+  width: var(--spacing-md);
+}
+
+.terminal-body::-webkit-scrollbar-track {
+  background: #d0d0d0;
+}
+
+.terminal-body::-webkit-scrollbar-thumb {
+  background: #a0a0a0;
+  border-radius: var(--spacing-xs);
+}
+
+.terminal-body::-webkit-scrollbar-thumb:hover {
+  background: #808080;
+}
+
+.terminal-divider {
+  height: 1px;
+  background-color: #555;
+  flex-shrink: 0;
+}
+
+.command-history {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+}
+
+.command-history .command-line-inner {
+  column-gap: 7px;
+}
+
+.command-block {
+  transition: opacity var(--transition-base);
+}
+
+.command-line {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-md) 0 0 0;
+  background: transparent;
+  border-radius: var(--spacing-xs);
+}
+
+.command-line-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.command-content-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  flex: 1;
+  min-width: 0;
+}
+
+.command-multiline {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.command-line-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+}
+
+.command-line-item.command-line-single {
+  display: block;
+}
+
+.prompt {
+  font-weight: bold;
+  var(--color-white)-space: nowrap;
+  flex-shrink: 0;
+  display: inline;
+  color: #52b9ec;
+}
+
+.command-line-single .prompt {
+  display: inline;
+}
+
+.command-text {
+  color: var(--color-white);
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  display: inline;
+  flex: 1;
+  min-width: 0;
+}
+
+.command-line-single .command-text {
+  display: inline;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.command-text-indent {
+  color: var(--color-white);
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding-left: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.command-result {
+  white-space: pre-wrap;
+}
+
+.command-result.error {
+  color: #f48771;
+}
+
+.command-result.success {
+  color: var(--color-success);
+}
+
+.step-title {
+  color: #949494;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  var(--color-white)-space: nowrap;
+}
+
+.run-command-btn {
+  background: #303030;
+  border: 1px solid #b3b3b3;
+  border-radius: var(--spacing-xs);
+  cursor: pointer;
+  padding: 3px var(--spacing-xs);
+  color: #ffffff;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.command-block:hover .run-command-btn {
+  opacity: 1;
+}
+
+.run-command-btn:hover {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.15);
+  opacity: 1;
+}
+
+.run-command-btn:active {
+  transform: scale(0.9);
+}
+
+.run-command-btn.disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
+.run-command-btn.disabled:hover {
+  color: #888;
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0.3;
+}
+
+.command-block:hover .run-command-btn.disabled {
+  opacity: 0.3;
+}
+
+.run-command-btn.hidden-step-btn {
+  background: #303030;
+  border-color: #303030;
+  color: #303030;
+  opacity: 1;
+  pointer-events: none;
+  cursor: default;
+}
+
+.command-block:hover .run-command-btn.hidden-step-btn {
+  background: #303030;
+  border-color: #303030;
+  color: #303030;
+  opacity: 1;
+}
+
+.run-command-btn svg {
+  width: var(--font-size-base);
+  height: var(--font-size-base);
+}
+
+.cursor {
+  display: inline-block;
+  font-weight: bold;
+  margin-left: 2px;
+  animation: blink 1s linear infinite;
+  flex-shrink: 0;
+  color: var(--color-white);
+}
+
+@keyframes blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}

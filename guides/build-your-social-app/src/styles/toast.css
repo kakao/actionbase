@@ -1,0 +1,71 @@
+.toast-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+  align-items: center;
+}
+
+.toast {
+  min-width: 200px;
+  max-width: 400px;
+  padding: 30px 20px;
+  background-color: white;
+  color: #656565;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.37);
+  transform: scale(1);
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.toast.toast-closing {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.toast-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.note-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.note-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.note-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.note-text {
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1.4;
+}
+
+.toast-message {
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+}

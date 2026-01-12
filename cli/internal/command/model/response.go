@@ -22,9 +22,17 @@ func SuccessWithResult(result string) *Response {
 	cleanResult := stripANSICodes(result)
 	return &Response{IsSuccess: true, Result: &cleanResult}
 }
+func SuccessWithResultNoOut(result string) *Response {
+	cleanResult := stripANSICodes(result)
+	return &Response{IsSuccess: true, Result: &cleanResult}
+}
 
 func Fail(message string) *Response {
 	fmt.Println(message)
+	return &Response{IsSuccess: false, ErrorMessage: &message}
+}
+
+func FailWithNoOut(message string) *Response {
 	return &Response{IsSuccess: false, ErrorMessage: &message}
 }
 

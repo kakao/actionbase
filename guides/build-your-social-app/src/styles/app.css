@@ -1,0 +1,174 @@
+:root {
+  --color-text-primary: #262626;
+  --color-text-secondary: #8e8e8e;
+  --color-text-tertiary: #c7c7c7;
+  --color-link: #0095f6;
+  --color-link-hover: #1877f2;
+  --color-link-active: #0088e1;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-background: #ffffff;
+  --color-background-light: #fafafa;
+  --color-background-gray: #efefef;
+  --color-border: #dbdbdb;
+  --color-error: #ff3040;
+  --color-success: #98c379;
+  --color-blue: #3c53f7;
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 28px;
+  --spacing-xs: 4px;
+  --spacing-sm: 6px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 20px;
+  --spacing-3xl: 24px;
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-full: 50%;
+  --z-index-base: 1;
+  --z-index-dropdown: 100;
+  --z-index-sticky: 1000;
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-width: 800px;
+  height: 100%;
+  overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.mobile-content .app {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100%;
+  background-color: var(--color-white) !important;
+}
+
+.mobile-content {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-background);
+  overflow-y: hidden;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.mobile-content::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-content .app::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-content .app {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body[class*="driver-highlighted-element"] .feed-scroll,
+.driver-overlay ~ * .feed-scroll {
+  pointer-events: auto !important;
+  overflow-y: auto !important;
+  touch-action: pan-y !important;
+}
+
+.driver-overlay {
+  z-index: 19999 !important;
+}
+
+.driver-popover {
+  display: block;
+  padding: 40px 20px 25px 20px;
+  max-width: 400px;
+  z-index: 20000 !important;
+}
+
+.driver-popover, .driver-popover *, .driver-popover-description, .driver-popover-description * {
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+}
+
+.driver-popover-title {
+  color: #3c53f7;
+  text-align: center;
+}
+
+.driver-active-el {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.driver-popover-description {
+  font-size: 15px !important;
+  white-space: pre-line;
+  margin-top: 25px !important;
+}
+
+.driver-popover-description pre {
+  font-size: 12px !important;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace !important;
+  display: inline-block;
+}
+
+.driver-popover-description p {
+  text-align: center;
+  white-space: pre-line;
+}
+
+.driver-popover button {
+  cursor: pointer !important;
+}
+
+.driver-popover-footer button {
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer !important;
+}
+
+.driver-popover-close-btn {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.driver-popover-close-btn:focus,
+.driver-popover-close-btn:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.driver-popover-close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.driver-popover-title-number {
+  padding: 1px 7px;
+  border-radius: 4px;
+  margin-right: 5px;
+  background-color: #3c53f7;
+  color: white;
+  font-size: 16px;
+}

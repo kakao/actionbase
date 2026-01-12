@@ -1,0 +1,176 @@
+@import './common.css';
+
+.api-log-container {
+  flex: 0.3;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--spacing-2xl);
+  color: #d0d0d0;
+  background-color: #303030;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none;
+  min-width: 0;
+  border-bottom: var(--font-size-xs) solid #303030;
+  min-height: 0;
+  border-top: 1px solid #5d5d5d;
+}
+
+.api-log-container * {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+}
+
+.api-log-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.api-log-empty {
+  color: #888;
+  font-style: italic;
+  padding: var(--spacing-md) 0;
+}
+
+.api-log-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) 0;
+  font-size: 11px;
+  border-bottom: 1px solid #333;
+}
+
+.api-log-item:last-child {
+  border-bottom: none;
+}
+
+.api-log-item-error {
+  opacity: 1;
+}
+
+.api-log-header-line {
+  display: flex;
+  gap: var(--spacing-lg);
+  align-items: flex-start;
+}
+
+.api-log-header-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.api-log-header-clickable:hover {
+  opacity: 0.8;
+}
+
+.api-log-expand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--font-size-md);
+  height: var(--font-size-md);
+  flex-shrink: 0;
+  color: #888;
+  margin-right: var(--spacing-xs);
+}
+
+.api-log-expand-icon-empty {
+  visibility: hidden;
+}
+
+.api-log-expand-icon svg {
+  width: var(--font-size-sm);
+  height: var(--font-size-sm);
+}
+
+.api-log-method {
+  font-weight: 800;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.api-log-method-get {
+  color: #61afef;
+}
+
+.api-log-method-post {
+  color: var(--color-success);
+}
+
+.api-log-method-put {
+  color: #e5c07b;
+}
+
+.api-log-method-delete {
+  color: #e06c75;
+}
+
+.api-log-method-patch {
+  color: #c678dd;
+}
+
+.api-log-url {
+  word-break: break-all;
+  flex: 1;
+  font-weight: 600;
+}
+
+.api-log-url-error {
+  color: #f48771;
+  font-weight: 600;
+}
+
+.api-log-status {
+  color: #f48771;
+  font-weight: 600;
+}
+
+.api-log-body {
+  margin-left: 52px;
+  margin-top: var(--spacing-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.api-log-request-body,
+.api-log-payload {
+  padding: var(--spacing-md);
+  background-color: #1e1e1e;
+  border-radius: var(--spacing-xs);
+  overflow-x: auto;
+  font-weight: 600;
+}
+
+.api-log-request-body {
+  border-left: 2px solid #8b8b8b;
+}
+
+.api-log-payload {
+  border-left: 2px solid #8b8b8b;
+}
+
+.api-log-section-title {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: #888;
+  margin-bottom: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.api-log-request-body pre,
+.api-log-payload pre {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: #d4d4d4;
+  var(--color-white)-space: pre-wrap;
+  word-break: break-word;
+}

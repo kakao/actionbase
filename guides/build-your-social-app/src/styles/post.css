@@ -1,0 +1,282 @@
+@import './common.css';
+
+.app {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--color-white);
+  color: var(--color-text-primary);
+  max-width: 100%;
+  margin: 0 auto;
+  height: 100%;
+  padding-bottom: 60px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.detail-header {
+  position: sticky;
+  top: 0;
+  background-color: var(--color-white);
+  padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-lg) var(--spacing-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: var(--z-index-sticky);
+}
+
+.back-btn,
+.menu-btn {
+  padding: var(--spacing-md);
+  color: var(--color-text-primary);
+}
+
+.page-title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.post-detail-container {
+  max-width: 100%;
+  background-color: var(--color-white);
+}
+
+.post-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg) var(--spacing-xl) var(--font-size-sm) 7px;
+}
+
+.author-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  cursor: pointer;
+}
+
+.author-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-full);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-white);
+}
+
+.author-name {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.follow-btn {
+  background: none;
+  border: none;
+  color: var(--color-link);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-md);
+}
+
+.follow-btn:hover {
+  opacity: 0.7;
+}
+
+.post-detail-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.image-carousel {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.image-carousel-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+.image-content {
+  width: 100%;
+  height: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.main-icon {
+  font-size: 120px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.carousel-arrow-left {
+  left: var(--font-size-sm);
+}
+
+.carousel-arrow-right {
+  right: var(--font-size-sm);
+}
+
+.carousel-indicators {
+  bottom: var(--font-size-sm);
+}
+
+.post-detail-actions {
+  padding: var(--spacing-xs) var(--spacing-md) 0;
+}
+
+.action-buttons-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+  margin: 0 -var(--spacing-md);
+}
+
+.actions-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.action-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-md);
+  color: var(--color-text-primary);
+  transition: transform var(--transition-fast), color var(--transition-base);
+}
+
+.action-icon:active {
+  transform: scale(0.9);
+}
+
+.action-icon svg {
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
+  display: block;
+  transition: fill var(--transition-base), stroke var(--transition-base), transform var(--transition-fast);
+}
+
+.action-icon.liked {
+  color: var(--color-error);
+}
+
+.action-icon.liked svg {
+  fill: var(--color-error);
+  stroke: var(--color-error);
+  transform: scale(1.1);
+  animation: likeBounce 0.4s ease;
+}
+
+@keyframes likeBounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+.action-bookmark {
+  margin-left: auto;
+}
+
+.likes-count-section {
+  padding: var(--spacing-xs) var(--spacing-xl) 0;
+}
+
+.likes-text {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.post-info {
+  padding: 0 var(--spacing-xl);
+}
+
+.caption-section {
+  padding: var(--spacing-md) 0 var(--spacing-xl);
+}
+
+.caption-content {
+  font-size: var(--font-size-base);
+  line-height: 18px;
+  color: var(--color-text-primary);
+}
+
+.caption-author {
+  font-weight: 600;
+}
+
+.caption-author-hyphen {
+  padding: 0 var(--spacing-xs);
+}
+
+.post-timestamp {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+::-webkit-scrollbar {
+  width: var(--spacing-md);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--spacing-xs);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+@media (min-width: 768px) {
+  .app {
+    max-width: 935px;
+    margin: 0 auto;
+    background-color: var(--color-background-light);
+    padding-bottom: var(--spacing-2xl);
+  }
+
+  .post-detail-container {
+    border-radius: var(--spacing-md);
+    max-width: 614px;
+  }
+}

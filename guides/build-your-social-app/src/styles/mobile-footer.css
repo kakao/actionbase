@@ -1,0 +1,36 @@
+@import './common.css';
+
+.bottom-nav {
+  position: sticky;
+  bottom: 0;
+  background-color: var(--color-white);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: var(--spacing-md) 0;
+  z-index: var(--z-index-sticky);
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.nav-btn.active {
+  color: var(--color-text-primary);
+}
+
+.nav-btn.active .nav-avatar {
+  border: 2px solid var(--color-text-primary);
+}
+
+.nav-avatar {
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
+  border-radius: var(--border-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--spacing-md);
+  font-weight: 600;
+  color: var(--color-white);
+  border: 1px solid var(--color-border);
+}
