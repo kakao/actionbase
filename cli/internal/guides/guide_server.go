@@ -1,8 +1,6 @@
 package guides
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -13,20 +11,15 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 )
 
 var (
-	mutex    sync.Mutex
 	listener net.Listener
 	server   *http.Server
 )
 
 func Start(cwd, name, apiHost, serverPort string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
-
 	if server != nil {
 		fmt.Println("guide server is already running")
 		return nil
@@ -39,96 +32,48 @@ func Start(cwd, name, apiHost, serverPort string) error {
 		return fmt.Errorf("guide assets not found at %s: %w", assetsPath, err)
 	}
 
-	assetsFs := os.DirFS(assetsPath)
-	fileServer := http.FileServer(http.FS(assetsFs))
-
 	apiURL, err := url.Parse(apiHost)
 	if err != nil {
 		return fmt.Errorf("invalid API host URL: %w", err)
 	}
 
-	cliURL, err := url.Parse("http://localhost:" + serverPort)
+	address := "http://localhost:" + serverPort
+
+	cliURL, err := url.Parse(address + "/api/command")
 	if err != nil {
 		return fmt.Errorf("invalid CLI host URL: %w", err)
 	}
 
-	ln, err := net.Listen("tcp", "127.0.0.1:"+serverPort)
-	if err != nil {
-		return fmt.Errorf("failed to listen on local port: %w", err)
-	}
-	listener = ln
-
 	indexPath := filepath.Join(assetsPath, "index.html")
-	server = &http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(r.URL.Path, "/graph") {
-				proxy(w, r, apiURL)
-				return
-			}
-
-			if strings.HasPrefix(r.URL.Path, "/api/command") {
-				proxy(w, r, cliURL)
-				return
-			}
-
-			rw := &responseWriter{ResponseWriter: w, status: http.StatusOK, headerSent: false}
-			fileServer.ServeHTTP(rw, r)
-
-			if rw.status == http.StatusNotFound {
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				http.ServeFile(w, r, indexPath)
-				return
-			}
-		}),
-	}
-
-	address := "http://" + ln.Addr().String()
-
-	go func() {
-		fmt.Printf("Starting guide server at %s\n", address)
-		if serveErr := server.Serve(ln); serveErr != nil &&
-			!errors.Is(serveErr, http.ErrServerClosed) &&
-			!errors.Is(serveErr, net.ErrClosed) {
-			fmt.Println("HTTP server error:", serveErr)
+	assetsFs := os.DirFS(assetsPath)
+	guideHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/graph") {
+			proxy(w, r, apiURL)
+			return
 		}
 
-		mutex.Lock()
-		listener = nil
-		server = nil
-		mutex.Unlock()
-	}()
+		if strings.HasPrefix(r.URL.Path, "/api/command") {
+			proxy(w, r, cliURL)
+			return
+		}
+
+		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK, headerSent: false}
+		http.FileServer(http.FS(assetsFs)).ServeHTTP(rw, r)
+
+		if rw.status == http.StatusNotFound {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			http.ServeFile(w, r, indexPath)
+			return
+		}
+	})
+
+	http.Handle("/", guideHandler)
 
 	if err := openBrowser(address); err != nil {
 		fmt.Println("failed to open browser automatically; open this URL manually:", address)
 	}
 
-	return nil
-}
-
-func Stop() error {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	if server == nil {
-		return fmt.Errorf("guide server is not running")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil && !errors.Is(err, context.Canceled) {
-		return fmt.Errorf("failed to stop guide server: %w", err)
-	}
-
-	if listener != nil {
-		_ = listener.Close()
-	}
-
-	listener = nil
-	server = nil
-
-	fmt.Println("guide server is stopped")
-
+	fmt.Println("The guide is running on:", address)
 	return nil
 }
 

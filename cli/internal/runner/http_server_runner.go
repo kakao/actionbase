@@ -23,7 +23,7 @@ func (r *ActionbaseCommandLineRunner) Start(port string, ready chan<- error) err
 	http.HandleFunc("/api/command", r.handleCommand)
 	http.HandleFunc("/health", r.handleHealth)
 
-	addr := ":" + port
+	addr := "127.0.0.1:" + port
 
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -33,7 +33,7 @@ func (r *ActionbaseCommandLineRunner) Start(port string, ready chan<- error) err
 		return err
 	}
 
-	fmt.Printf("Started as server mode on http://localhost%s/api/command\n", addr)
+	fmt.Printf("Started as server mode on %s/api/command\n", addr)
 
 	if ready != nil {
 		ready <- nil
