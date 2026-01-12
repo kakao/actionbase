@@ -30,7 +30,7 @@ func (g *Guide) Execute(args []string) *model.Response {
 		return nil
 	}
 
-	if args[1] == "start" {
+	if args[1] != "start" {
 		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 		return nil
 	}
