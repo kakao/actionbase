@@ -52,7 +52,7 @@ func Start(cwd, name, apiHost, serverPort string) error {
 		return fmt.Errorf("invalid CLI host URL: %w", err)
 	}
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := net.Listen("tcp", "127.0.0.1:"+serverPort)
 	if err != nil {
 		return fmt.Errorf("failed to listen on local port: %w", err)
 	}
