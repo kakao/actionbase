@@ -1,4 +1,4 @@
-import React, {ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import DOMPurify from "dompurify";
 import {ApiLogProvider} from '../../contexts/ApiLogContext';
 import {getStarsAsTag} from "../../api/github";
@@ -6,7 +6,7 @@ import CliTerminal from './CliTerminal';
 import MobileFooter from "./MobileFooter";
 import '../../styles/layout.css';
 import ApiLogs from "./ApiLogs";
-import {breadCrumbSteps} from "../../constants/breadCrumbSteps";
+import {BreadCrumbStep, breadCrumbSteps} from "../../constants/breadCrumbSteps";
 import {useDriver} from "../../contexts/DriverContext";
 
 const OWNER = "kakao";
@@ -20,7 +20,8 @@ interface SplitLayoutProps {
 const Layout: React.FC<SplitLayoutProps> = ({children}) => {
   const {stepIndex} = useDriver()
   const [starsImage, setStarsImage] = useState<string>(DEFAULT_GITHUB_START);
-  const [breadcrumbSteps, setBreadcrumbSteps] = useState(breadCrumbSteps);
+  const [breadcrumbSteps, setBreadcrumbSteps] = useState<BreadCrumbStep[]>(breadCrumbSteps);
+  const previousStepIndexRef = useRef<number | undefined>(undefined);
 
   const sanitizedStarsImage = useMemo(() => DOMPurify.sanitize(starsImage, {
     ADD_ATTR: ['target', 'rel'],
@@ -33,40 +34,49 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
       .catch(err => console.log("Failed to get repository", err));
   }, []);
 
-  useEffect(() => {
-    if (stepIndex !== undefined && stepIndex >= 0) {
-      if (!breadcrumbSteps.some(step => step.stepIndex === stepIndex)
-        && !breadcrumbSteps.flatMap(step => step.subSteps)
-          .some(subStep => subStep?.stepIndex === stepIndex)) {
-        return
-      }
-
-      const newStep =
-        breadcrumbSteps.map((step) => {
-          const isMainStepActive = step.stepIndex === stepIndex;
-          const isMainStepCompleted = step.stepIndex < stepIndex;
-
-          const updatedSubSteps = step.subSteps?.map((subStep) => {
-            const isSubStepActive = subStep.stepIndex === stepIndex;
-            const isSubStepCompleted = subStep.stepIndex < stepIndex;
-            return {
-              ...subStep,
-              isActive: isSubStepActive,
-              isCompleted: isSubStepCompleted
-            };
-          });
-
-          const hasActiveSubStep = updatedSubSteps?.some(subStep => subStep.isActive);
-
-          return {
-            ...step,
-            isActive: isMainStepActive && !hasActiveSubStep,
-            isCompleted: isMainStepCompleted,
-            subSteps: updatedSubSteps
-          };
-        })
-      setBreadcrumbSteps(newStep);
+  useLayoutEffect(() => {
+    if (stepIndex === previousStepIndexRef.current) {
+      return;
     }
+
+    previousStepIndexRef.current = stepIndex;
+
+    if (stepIndex === undefined || stepIndex < 0) {
+      return;
+    }
+
+    const stepExists = breadCrumbSteps.some(step => step.stepIndex === stepIndex)
+      || breadCrumbSteps.flatMap(step => step.subSteps || [])
+        .some(subStep => subStep?.stepIndex === stepIndex);
+
+    if (!stepExists) {
+      return;
+    }
+
+    const updatedSteps = breadCrumbSteps.map((step) => {
+      const isMainStepActive = step.stepIndex === stepIndex;
+      const isMainStepCompleted = step.stepIndex < stepIndex;
+
+      const updatedSubSteps = step.subSteps?.map((subStep) => {
+        const isSubStepActive = subStep.stepIndex === stepIndex;
+        const isSubStepCompleted = subStep.stepIndex < stepIndex;
+        return {
+          ...subStep,
+          isActive: isSubStepActive,
+          isCompleted: isSubStepCompleted
+        };
+      });
+
+      const hasActiveSubStep = updatedSubSteps?.some(subStep => subStep.isActive);
+
+      return {
+        ...step,
+        isActive: isMainStepActive && !hasActiveSubStep,
+        isCompleted: isMainStepCompleted,
+        subSteps: updatedSubSteps
+      };
+    });
+    setBreadcrumbSteps(updatedSteps);
   }, [stepIndex]);
 
   return (

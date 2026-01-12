@@ -127,6 +127,7 @@
 
 .breadcrumb-item-wrapper {
   width: 100%;
+  contain: layout style paint;
 }
 
 .driver-breadcrumb {
@@ -154,6 +155,7 @@
   z-index: 21000;
   height: calc(100vh - 100px);
   overflow-y: auto;
+  contain: layout style;
 }
 
 .breadcrumb-item {
@@ -163,15 +165,21 @@
   padding: 4px 4px 4px 10px;
   margin: 4px 4px 4px 0;
   border-radius: 4px;
-  transition: background-color var(--transition-fast);
   color: #666;
   width: 100%;
   opacity: .5;
   box-sizing: border-box;
   font-weight: 500;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
 }
 
-.breadcrumb-item:hover {
+.breadcrumb-item:not(.active):not(:hover) {
+  transition: none;
+}
+
+.breadcrumb-item:hover:not(.active) {
   background-color: rgba(0, 0, 0, 0.05);
 }
 
@@ -180,6 +188,7 @@
   background-color: var(--color-blue);
   opacity: 1;
   font-weight: 700;
+  transition: none !important;
 }
 
 .breadcrumb-item.completed {
@@ -212,6 +221,7 @@
   color: #e3f2fd;
   background-color: var(--color-blue);
   opacity: 1;
+  transition: none !important;
 }
 
 .actions {
