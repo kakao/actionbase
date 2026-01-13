@@ -35,6 +35,13 @@ func (g *Guide) Execute(args []string) *model.Response {
 		return nil
 	}
 
+	serverPort := g.runner.GetCurrentPort()
+
+	if serverPort == "" {
+		fmt.Println("Server mode is required. Run `actionbase --proxy` to continue")
+		return nil
+	}
+
 	guideTypeString := args[0]
 	guideType, found := guides.TypeFromString(guideTypeString)
 	if !found {
@@ -61,7 +68,7 @@ func (g *Guide) Execute(args []string) *model.Response {
 	}
 
 	host := g.client.GetHost()
-	if err := guides.Start(cwd, guideType.Name, host, g.runner.GetCurrentPort()); err != nil {
+	if err := guides.Start(cwd, guideType.Name, host, serverPort); err != nil {
 		fmt.Println("Failed to start guide server:", err)
 	}
 
