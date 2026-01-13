@@ -1,4 +1,4 @@
-package guides
+package httpserver
 
 import "net/http"
 

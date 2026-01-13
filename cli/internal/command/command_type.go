@@ -73,7 +73,7 @@ var (
 
 	TypeGuide = Type{
 		name:    "guide",
-		command: "guide <name> <start|stop>",
+		command: "guide start <name>",
 	}
 )
 

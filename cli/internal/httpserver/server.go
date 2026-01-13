@@ -1,6 +1,7 @@
-package guides
+package httpserver
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,10 +11,58 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
-func Start(cwd, name, apiHost, serverPort string) error {
+type CommandRequest struct {
+	Command string `json:"command"`
+}
+
+type CommandResponse struct {
+	Success bool    `json:"success"`
+	Error   *string `json:"error,omitempty"`
+	Result  *string `json:"result,omitempty"`
+	Elapsed string  `json:"elapsed,omitempty"`
+}
+
+var current atomic.Value
+var defaultHandler atomic.Value
+
+func Start(port string, ready chan<- error, handlerFunc http.HandlerFunc) error {
+	defaultHandler.Store(handlerFunc)
+	current.Store(handlerFunc)
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		handler := current.Load().(http.Handler)
+		handler.ServeHTTP(w, r)
+	})
+
+	addr := "127.0.0.1:" + port
+
+	go func() {
+		if err := http.ListenAndServe(addr, nil); err != nil {
+			if ready != nil {
+				ready <- err
+			}
+		}
+	}()
+
+	fmt.Printf("Started as server mode running on %s\n", addr)
+
+	if ready != nil {
+		ready <- nil
+	}
+
+	return nil
+}
+
+func StartGuide(cwd, name, apiHost, serverPort string) error {
+	if current.Load() == nil {
+		fmt.Println("Server mode is required. Run `actionbase --proxy` to continue")
+		return nil
+	}
+
 	assetsPath := filepath.Join(cwd, name)
 
 	if _, err := os.Stat(assetsPath); os.IsNotExist(err) {
@@ -21,28 +70,39 @@ func Start(cwd, name, apiHost, serverPort string) error {
 		return fmt.Errorf("guide assets not found at %s: %w", assetsPath, err)
 	}
 
-	apiURL, err := url.Parse(apiHost)
+	guideHandler, err := guideHandler(apiHost, assetsPath)
 	if err != nil {
-		return fmt.Errorf("invalid API host URL: %w", err)
+		return err
 	}
 
-	address := "http://localhost:" + serverPort
+	current.Store(guideHandler)
 
-	cliURL, err := url.Parse(address + "/api/command")
+	address := "http://localhost:" + serverPort
+	if err := openBrowser(address); err != nil {
+		fmt.Println("failed to open browser automatically; open this URL manually:", address)
+	}
+
+	fmt.Println("The guide is now being served")
+	return nil
+}
+
+func guideHandler(apiHost, assetsPath string) (http.HandlerFunc, error) {
+	actionbaseURL, err := url.Parse(apiHost)
 	if err != nil {
-		return fmt.Errorf("invalid CLI host URL: %w", err)
+		return nil, fmt.Errorf("invalid API host URL: %w", err)
 	}
 
 	indexPath := filepath.Join(assetsPath, "index.html")
 	assetsFs := os.DirFS(assetsPath)
+
 	guideHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/graph") {
-			proxy(w, r, apiURL)
+		if strings.HasPrefix(r.URL.Path, "/api/command") {
+			defaultHandler.Load().(http.HandlerFunc)(w, r)
 			return
 		}
 
-		if strings.HasPrefix(r.URL.Path, "/api/command") {
-			proxy(w, r, cliURL)
+		if strings.HasPrefix(r.URL.Path, "/graph") {
+			proxy(w, r, actionbaseURL)
 			return
 		}
 
@@ -55,15 +115,15 @@ func Start(cwd, name, apiHost, serverPort string) error {
 			return
 		}
 	})
+	return guideHandler, nil
+}
 
-	http.Handle("/", guideHandler)
-
-	if err := openBrowser(address); err != nil {
-		fmt.Println("failed to open browser automatically; open this URL manually:", address)
+func BuildResponse(w http.ResponseWriter, httpStatus int, response *CommandResponse) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(httpStatus)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		fmt.Println("Failed to encode response:", err)
 	}
-
-	fmt.Println("The guide is running on:", address)
-	return nil
 }
 
 func proxy(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
