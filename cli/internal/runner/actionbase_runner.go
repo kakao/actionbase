@@ -1,17 +1,21 @@
 package runner
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/chzyer/readline"
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/command"
 	"github.com/kakao/actionbase/internal/command/model"
+	"github.com/kakao/actionbase/internal/httpserver"
 	"github.com/kakao/actionbase/internal/util"
 )
 
@@ -23,6 +27,7 @@ type ActionbaseCommandLineRunner struct {
 	ReadLine *readline.Instance
 	logger   *slog.Logger
 	*CommandLineRunner
+	handler         *atomic.Value
 	client          *client.ActionbaseClient
 	clientContext   *client.Context
 	currentDatabase string
@@ -196,6 +201,10 @@ func (r *ActionbaseCommandLineRunner) SetCurrentPort(port string) {
 	r.currentPort = port
 }
 
+func (r *ActionbaseCommandLineRunner) GetHandler() *atomic.Value {
+	return r.handler
+}
+
 func (r *ActionbaseCommandLineRunner) BuildPrompt() string {
 	if r.currentAlias != "" {
 		return fmt.Sprintf("%s(%s:%s)", "actionbase", r.currentDatabase, r.currentAlias)
@@ -246,7 +255,7 @@ func (r *ActionbaseCommandLineRunner) StartServer(parser *util.Parser) {
 
 	serverReady := make(chan error, 1)
 	go func() {
-		if err := r.Start(port, serverReady); err != nil {
+		if err := httpserver.Start(port, serverReady, r.commandHandler); err != nil {
 			fmt.Printf("Failed to start actionbase as server mode. %v\n", err)
 			os.Exit(1)
 		}
@@ -268,4 +277,70 @@ func (r *ActionbaseCommandLineRunner) getServerPort(parser *util.Parser) string 
 		return DefaultServerPort
 	}
 	return ""
+}
+
+func (r *ActionbaseCommandLineRunner) commandHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		fmt.Println("Method not allowed")
+		httpserver.BuildResponse(w, http.StatusMethodNotAllowed, nil)
+		return
+	}
+
+	var request httpserver.CommandRequest
+	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+		errorMessage := fmt.Sprintf("Invalid request: %v", err)
+		httpserver.BuildResponse(
+			w,
+			http.StatusBadRequest,
+			&httpserver.CommandResponse{
+				Success: false,
+				Error:   &errorMessage,
+			})
+		return
+	}
+
+	if request.Command == "" {
+		errorMessage := "Command is required"
+
+		httpserver.BuildResponse(
+			w,
+			http.StatusBadRequest,
+			&httpserver.CommandResponse{
+				Success: false,
+				Error:   &errorMessage,
+			})
+		return
+	}
+
+	normalizedCommand := strings.TrimSpace(request.Command)
+
+	r.ReadLine.Terminal.Print(fmt.Sprintf("\n\033[38;5;208m%s>\033[0m %s\n", r.BuildPrompt(), normalizedCommand))
+	result, elapsed := r.RunCommand(normalizedCommand)
+
+	var response httpserver.CommandResponse
+	if result == nil {
+		errorMessage := "Unsupported command"
+		response = httpserver.CommandResponse{
+			Success: false,
+			Elapsed: fmt.Sprintf("%.4f seconds", elapsed),
+			Error:   &errorMessage,
+		}
+	} else {
+		response = httpserver.CommandResponse{
+			Success: result.IsSuccess,
+			Elapsed: fmt.Sprintf("%.4f seconds", elapsed),
+			Result:  result.Result,
+			Error:   result.ErrorMessage,
+		}
+	}
+
+	statusCode := http.StatusOK
+	if !response.Success {
+		statusCode = http.StatusInternalServerError
+	}
+
+	httpserver.BuildResponse(w, statusCode, &response)
+
+	r.ReadLine.SetPrompt(fmt.Sprintf("\033[34m%s%s \033[0m", r.BuildPrompt(), defaultPrompt))
+	r.ReadLine.Terminal.Print(fmt.Sprintf("\033[34m%s>\033[0m ", r.BuildPrompt()))
 }

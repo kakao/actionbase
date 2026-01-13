@@ -8,6 +8,7 @@ import (
 	"github.com/kakao/actionbase/internal/client"
 	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/guides"
+	"github.com/kakao/actionbase/internal/httpserver"
 )
 
 type Guide struct {
@@ -30,7 +31,7 @@ func (g *Guide) Execute(args []string) *model.Response {
 		return nil
 	}
 
-	if args[1] != "start" {
+	if args[0] != "start" {
 		fmt.Printf("Usage: %s\n", g.GetType().GetCommand())
 		return nil
 	}
@@ -42,7 +43,7 @@ func (g *Guide) Execute(args []string) *model.Response {
 		return nil
 	}
 
-	guideTypeString := args[0]
+	guideTypeString := args[1]
 	guideType, found := guides.TypeFromString(guideTypeString)
 	if !found {
 		fmt.Printf("Invalid guide '%s': only '%s' are supported\n", guideTypeString, strings.Join(guides.SupportedGuideTypes, ","))
@@ -68,7 +69,7 @@ func (g *Guide) Execute(args []string) *model.Response {
 	}
 
 	host := g.client.GetHost()
-	if err := guides.Start(cwd, guideType.Name, host, serverPort); err != nil {
+	if err := httpserver.StartGuide(cwd, guideType.Name, host, serverPort); err != nil {
 		fmt.Println("Failed to start guide server:", err)
 	}
 
