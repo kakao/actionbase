@@ -6,7 +6,7 @@ BINARY_NAME=actionbase
 MAIN_PATH=./cmd/actionbase
 BUILD_DIR=./build
 
-VERSION?=
+VERSION?=latest
 GOBASE=$(shell pwd)
 GOBIN=$(GOBASE)/bin
 GOFILES=$(wildcard *.go)
