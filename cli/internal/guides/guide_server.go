@@ -3,7 +3,6 @@ package guides
 import (
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,17 +13,7 @@ import (
 	"time"
 )
 
-var (
-	listener net.Listener
-	server   *http.Server
-)
-
 func Start(cwd, name, apiHost, serverPort string) error {
-	if server != nil {
-		fmt.Println("guide server is already running")
-		return nil
-	}
-
 	assetsPath := filepath.Join(cwd, name)
 
 	if _, err := os.Stat(assetsPath); os.IsNotExist(err) {
