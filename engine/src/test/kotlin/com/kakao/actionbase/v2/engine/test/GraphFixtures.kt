@@ -221,14 +221,17 @@ object GraphFixtures {
     }
 
     fun create(withTestData: Boolean = true): Graph {
+        return create(GraphConfig.Builder(), withTestData)
+    }
+
+    fun create(configBuilder: GraphConfig.Builder, withTestData: Boolean = true): Graph {
         BlockHound
             .builder()
             .allowBlockingCallsInside("org.apache.hadoop.hbase.client.mock.MockHTable", "mutateRow")
             .install()
 
         val config =
-            GraphConfig
-                .Builder()
+            configBuilder
                 .withMetastoreUrl("jdbc:h2:mem:${UUID.randomUUID()};DB_CLOSE_DELAY=-1;MODE=MYSQL")
                 .build()
 

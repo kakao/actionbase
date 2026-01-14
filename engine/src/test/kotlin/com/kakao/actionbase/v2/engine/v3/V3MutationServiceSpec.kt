@@ -6,9 +6,11 @@ import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
+import com.kakao.actionbase.v2.engine.GraphConfig
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
+import com.kakao.actionbase.core.metadata.common.MutationMode
 
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
@@ -27,15 +29,24 @@ class V3MutationServiceSpec :
         lateinit var graph: Graph
         lateinit var v3MutationService: V3MutationService
         lateinit var v3QueryService: V3QueryService
+        lateinit var asyncGraph: Graph
+        lateinit var asyncMutationService: V3MutationService
 
         beforeTest {
             graph = GraphFixtures.create()
             v3MutationService = V3MutationService(graph)
             v3QueryService = V3QueryService(graph)
+
+            // Create a graph with globalMutationMode set to ASYNC for testing
+            asyncGraph = GraphFixtures.create(
+                GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC)
+            )
+            asyncMutationService = V3MutationService(asyncGraph)
         }
 
         afterTest {
             graph.close()
+            asyncGraph.close()
         }
 
         "mutation" {
@@ -351,6 +362,32 @@ class V3MutationServiceSpec :
                 }.verifyComplete()
 
             executionCompleted.get() shouldBe true
+        }
+
+        "globalMutationMode ASYNC should override sync table behavior" {
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.hbaseIndexed
+            val insertRequest =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 100, "source": "2000", "target": "3000", "properties": {"permission": "test", "createdAt": 100}}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+
+            // With globalMutationMode set to ASYNC, even sync tables should process mutations asynchronously
+            asyncMutationService
+                .mutateEdge(database, table, insertRequest)
+                .test()
+                .assertNext { actualObject ->
+                    // In ASYNC mode, the result should indicate QUEUED status
+                    actualObject.results.size shouldBe 1
+                    actualObject.results[0].status shouldBe "QUEUED"
+                    actualObject.results[0].source shouldBe 2000L
+                    actualObject.results[0].target shouldBe 3000L
+                    actualObject.results[0].count shouldBe 1
+                }.verifyComplete()
         }
     }) {
     companion object {
