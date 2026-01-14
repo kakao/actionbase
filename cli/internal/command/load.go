@@ -70,7 +70,7 @@ func (l *Load) Execute(args []string) *model.Response {
 }
 
 func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
-	var resultBuffer strings.Builder
+	var results []string
 	var command strings.Builder
 	var multilineOutComment strings.Builder
 	isInOutCommentBlock := false
@@ -80,7 +80,7 @@ func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
 		if err == io.EOF {
 			if isInOutCommentBlock {
 				decoratedOutComment := fmt.Sprintf("/**\n%s\n*/\n", strings.TrimSpace(multilineOutComment.String()))
-				resultBuffer.WriteString(decoratedOutComment)
+				results = append(results, decoratedOutComment)
 				fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
 
 				multilineOutComment.Reset()
@@ -97,10 +97,10 @@ func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
 				if !result.IsSuccess {
 					resultMessage := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
 					fmt.Printf(resultMessage)
-					resultBuffer.WriteString(resultMessage)
-					return model.FailWithNoOut(resultBuffer.String())
+					results = append(results, resultMessage)
+					return model.FailWithNoOut(strings.Join(results, "\n"))
 				}
-				resultBuffer.WriteString(*result.Result)
+				results = append(results, *result.Result)
 			}
 			break
 		}
@@ -114,7 +114,7 @@ func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
 			outContent := strings.TrimPrefix(trimmedLine, singleLineOutComment)
 
 			decoratedOutComment := fmt.Sprintf("/* %s */\n", strings.TrimSpace(outContent))
-			resultBuffer.WriteString(decoratedOutComment)
+			results = append(results, decoratedOutComment)
 			fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
 
 			command.Reset()
@@ -129,7 +129,7 @@ func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
 
 		if isInOutCommentBlock && trimmedLine == multilineOutCommentEnd {
 			decoratedOutComment := fmt.Sprintf("/**\n%s\n*/\n", strings.TrimSpace(multilineOutComment.String()))
-			resultBuffer.WriteString(decoratedOutComment)
+			results = append(results, decoratedOutComment)
 			fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
 
 			multilineOutComment.Reset()
@@ -154,16 +154,16 @@ func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
 				if !result.IsSuccess {
 					resultMessage := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
 					fmt.Println(resultMessage)
-					resultBuffer.WriteString(resultMessage)
-					return model.FailWithNoOut(resultBuffer.String())
+					results = append(results, resultMessage)
+					return model.FailWithNoOut(strings.Join(results, "\n"))
 				}
-				resultBuffer.WriteString(*result.Result)
+				results = append(results, *result.Result)
 			}
 			command.Reset()
 		}
 	}
 
-	return model.SuccessWithResultNoOut(resultBuffer.String())
+	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
 }
 
 func (l *Load) doLoad(data string) *model.Response {
