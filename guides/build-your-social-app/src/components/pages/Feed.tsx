@@ -202,7 +202,9 @@ const Feed: React.FC = () => {
                 <div className="story-avatar-wrapper">
                   <div className="story-avatar" onClick={() => navigate(ROUTES.PROFILE(user.id))}>
                     <div className="story-avatar-inner" style={{background: user.gradient}}>
-                      <div className="avatar-placeholder">{user.icon}</div>
+                      <div className="avatar-placeholder">
+                        <img src={user.avatar} alt={user.name} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -223,7 +225,9 @@ const Feed: React.FC = () => {
                 <article key={post.id || `${post.owner.id}-${index}`} className="post" id="feed-post">
                   <div className="post-header">
                     <div className="post-profile" onClick={() => navigate(ROUTES.PROFILE(post.owner.id))}>
-                      <div className="post-avatar" style={{background: post.owner.gradient}}>{post.owner.icon}</div>
+                      <div className="post-avatar" style={{background: post.owner.gradient}}>
+                        <img src={post.owner.avatar} alt={post.owner.name} />
+                      </div>
                       <div className="post-user-info">
                         <span className="post-username">{post.owner.id}</span>
                         <span className="post-location">{post.owner.name}</span>

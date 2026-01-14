@@ -66,6 +66,14 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
+  overflow: hidden;
+}
+
+.profile-avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius-full);
 }
 
 .memo-bubble {
@@ -378,12 +386,32 @@
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-white);
+  overflow: hidden;
+}
+
+.nav-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius-full);
 }
 
 .profile-icon {
   font-size: 40px;
   font-weight: 600;
   color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.profile-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius-full);
 }
 
 .profile-scroll {

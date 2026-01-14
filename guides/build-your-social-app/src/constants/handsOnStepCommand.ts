@@ -66,8 +66,8 @@ export const stepCommands: HandsOnStepCommand[] = [
     command: `mutate user_follows \\
 --type INSERT \\
 --table user_follows \\
---source doki \\
---target merlin \\
+--source zipdoki \\
+--target j4rami \\
 --version __CURRENT_TIMESTAMP__ \\
 --properties '{
     "createdAt": __CURRENT_TIMESTAMP__
@@ -76,22 +76,22 @@ export const stepCommands: HandsOnStepCommand[] = [
   },
   {
     stepIndex: 9,
-    command: 'get user_follows --source doki --target merlin',
+    command: 'get user_follows --source zipdoki --target j4rami',
   },
   {
     stepIndex: 10,
-    command: 'count user_follows --start merlin --direction IN',
+    command: 'count user_follows --start j4rami --direction IN',
   },
   {
     stepIndex: 12,
-    command: 'scan user_follows --start merlin --index created_at_desc --direction IN',
+    command: 'scan user_follows --start j4rami --index created_at_desc --direction IN',
   },
   {
     stepIndex: 15,
     command: `mutate user_likes \\
 --type INSERT \\
 --table user_likes \\
---source doki \\
+--source zipdoki \\
 --target 1 \\
 --version __CURRENT_TIMESTAMP__ \\
 --properties '{
@@ -100,7 +100,7 @@ export const stepCommands: HandsOnStepCommand[] = [
   },
   {
     stepIndex: 17,
-    command: 'get user_likes --source doki --target 1',
+    command: 'get user_likes --source zipdoki --target 1',
   }
 ];
 

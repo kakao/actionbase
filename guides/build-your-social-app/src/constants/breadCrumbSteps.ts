@@ -14,12 +14,12 @@ export const TITLE = {
   STEP_4: "Review the Prepared Data",
   STEP_5: "Follows",
   STEP_6: "Create the `user_follows` Table",
-  STEP_7: "Make doki Follow merlin",
+  STEP_7: "Make zipdoki Follow j4rami",
   STEP_9: "Get Follow Relationship",
   STEP_10: "Check Follower Count",
   STEP_12: "Scan Followers",
   STEP_14: "Likes",
-  STEP_15: "doki Likes merlin’s Post",
+  STEP_15: "zipdoki Likes j4rami’s Post",
   STEP_17: "Get Likes",
   STEP_18: "Explore Further",
   STEP_19: "Feed",
@@ -61,26 +61,26 @@ Follow relationships are a core feature in most social applications and serve as
   STEP_6: `Create a <pre>\`user_follows\`</pre> table to store follow interaction between users.
 
 Each edge represents a single interaction: one user follows another.`,
-  STEP_7: `Write an interaction where doki follows merlin.
+  STEP_7: `Write an interaction where zipdoki follows j4rami.
 
 This single mutation adds an edge  and allows Actionbase to derive multiple query paths from it.`,
-  STEP_8: "doki is now following merlin.",
+  STEP_8: "zipdoki is now following j4rami.",
   STEP_9: `Use a Get query to verify that the follow interaction exists.
 
 This query checks for the presence of a specific edge between two user nodes.`,
-  STEP_10: `Check the follower count for merlin.
+  STEP_10: `Check the follower count for j4rami.
 
 Actionbase derives this value directly—no explicit counters are defined.`,
-  STEP_11: `Merlin has one follower.`,
-  STEP_12: `Traverse the interaction graph to list users who are following merlin.
+  STEP_11: `j4rami has one follower.`,
+  STEP_12: `Traverse the interaction graph to list users who are following j4rami.
 
 This demonstrates how Actionbase supports common traversal patterns over interaction edges.`,
   STEP_13: "(pop up)",
   STEP_14: `In this step, you’ll work with like interactions.
 
 Likes are modeled as interactions between a user node and a post node, following the same graph-based principles as follows.`,
-  STEP_15: `Write a like interaction between doki and one of merlin’s posts.`,
-  STEP_16: `doki liked merlin’s post.`,
+  STEP_15: `Write a like interaction between zipdoki and one of j4rami’s posts.`,
+  STEP_16: `zipdoki liked j4rami’s post.`,
   STEP_17: `Use a Get query to confirm that the like interaction exists between the user and the post.`,
   STEP_18: `Just like follows, you can check the count or scan for likes. Give it a try later!`,
   STEP_19: `As with follows, you can also:

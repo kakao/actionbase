@@ -1,5 +1,5 @@
 # @out
-The resources have been created:
+The following resources have been created:
  - Database: social
  - Table with preset data
    1) user_posts
@@ -64,7 +64,7 @@ create edges
      "type": "INSERT",
      "edge": {
        "version": __CURRENT_TIMESTAMP__,
-       "source": "merlin",
+       "source": "j4rami",
        "target": 1,
        "properties": {
          "createdAt": __CURRENT_TIMESTAMP__
@@ -75,7 +75,7 @@ create edges
      "type": "INSERT",
      "edge": {
        "version": __CURRENT_TIMESTAMP__,
-       "source": "emeth",
+       "source": "em3s",
        "target": 2,
        "properties": {
          "createdAt": __CURRENT_TIMESTAMP__
@@ -86,7 +86,7 @@ create edges
      "type": "INSERT",
      "edge": {
        "version": __CURRENT_TIMESTAMP__,
-       "source": "emeth",
+       "source": "em3s",
        "target": 3,
        "properties": {
          "createdAt": __CURRENT_TIMESTAMP__
@@ -97,7 +97,7 @@ create edges
      "type": "INSERT",
      "edge": {
        "version": __CURRENT_TIMESTAMP__,
-       "source": "emeth",
+       "source": "em3s",
        "target": 4,
        "properties": {
          "createdAt": __CURRENT_TIMESTAMP__
@@ -108,7 +108,7 @@ create edges
      "type": "INSERT",
      "edge": {
        "version": __CURRENT_TIMESTAMP__,
-       "source": "doki",
+       "source": "zipdoki",
        "target": 5,
        "properties": {
          "createdAt": __CURRENT_TIMESTAMP__
@@ -170,7 +170,7 @@ load edges
       "type": "INSERT",
       "edge": {
         "version": __CURRENT_TIMESTAMP__,
-        "source": "dave",
+        "source": "d4v1d",
         "target": 1,
         "properties": {
           "createdAt": __CURRENT_TIMESTAMP__
@@ -181,7 +181,7 @@ load edges
       "type": "INSERT",
       "edge": {
         "version": __CURRENT_TIMESTAMP__,
-        "source": "dave",
+        "source": "d4v1d",
         "target": 2,
         "properties": {
           "createdAt": __CURRENT_TIMESTAMP__
@@ -192,7 +192,7 @@ load edges
       "type": "INSERT",
       "edge": {
         "version": __CURRENT_TIMESTAMP__,
-        "source": "sonu",
+        "source": "punsoo",
         "target": 2,
         "properties": {
           "createdAt": __CURRENT_TIMESTAMP__
@@ -203,7 +203,7 @@ load edges
       "type": "INSERT",
       "edge": {
         "version": __CURRENT_TIMESTAMP__,
-        "source": "ben",
+        "source": "ipoemigmail",
         "target": 2,
         "properties": {
           "createdAt": __CURRENT_TIMESTAMP__

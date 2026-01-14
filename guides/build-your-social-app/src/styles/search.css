@@ -175,6 +175,18 @@
   font-size: var(--font-size-2xl);
   font-weight: 600;
   color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-text img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius-full);
 }
 
 .recent-info,

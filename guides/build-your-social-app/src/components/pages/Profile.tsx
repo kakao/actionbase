@@ -116,7 +116,9 @@ const Profile: React.FC = () => {
               <div className="profile-header-section">
                 <div className="profile-avatar-container">
                   <div className="profile-avatar-large" style={{background: owner?.gradient}}>
-                    <span className="profile-icon ">{owner?.icon}</span>
+                    <span className="profile-icon ">
+                      <img src={owner?.avatar} alt={owner?.name} />
+                    </span>
                   </div>
                 </div>
 

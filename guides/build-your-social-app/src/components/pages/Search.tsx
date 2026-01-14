@@ -43,7 +43,9 @@ const Search: React.FC = () => {
                      id={`searched-user-${index}`}
                      onClick={() => navigate(ROUTES.PROFILE(user.id))}>
                   <div className="result-avatar" style={{background: user.gradient}}>
-                    <span className="avatar-text">{user.icon}</span>
+                    <span className="avatar-text">
+                      <img src={user.avatar} alt={user.name} />
+                    </span>
                   </div>
                   <div className="result-info" id={user.id}>
                     <span className="result-name">{user.id}</span>

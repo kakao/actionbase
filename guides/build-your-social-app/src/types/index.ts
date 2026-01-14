@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   isMe: boolean;
-  icon: string;
+  avatar: string;
   gradient: string;
   name: string;
   message: string;

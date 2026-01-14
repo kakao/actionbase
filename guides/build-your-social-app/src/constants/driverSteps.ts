@@ -1,5 +1,6 @@
 import {get, getTable} from "../api/actionbase";
 import {DATABASE, TABLE} from "./index";
+import {me} from "./dummy";
 
 export interface ButtonEvent {
   type: string | undefined;
@@ -15,13 +16,13 @@ export const stepNextEvent = new Map<number, StepEvent>([
   [2, {target: ["[id='run-command-btn']"]}],
   [3, {to: '/search', target: ["[id='search-results-list']"]}],
   [5, {target: ["[id='run-command-btn']"]}],
-  [6, {to: '/profile/merlin', target: ["[id='btn-profile-following']", "[id='run-command-btn']"]}],
+  [6, {to: '/profile/j4rami', target: ["[id='btn-profile-following']", "[id='run-command-btn']"]}],
   [7, {target: ["[id='btn-profile-following']"]}],
   [8, {target: ["[id='run-command-btn']"]}],
   [9, {target: ["[id='run-command-btn']"]}],
   [10, {target: ["[id='profile-followers']"]}],
   [11, {target: ["[id='run-command-btn']"]}],
-  [12, {to: '/followers/merlin', target: ["[id='followers-list']"]}],
+  [12, {to: '/followers/j4rami', target: ["[id='followers-list']"]}],
   [14, {to: '/post/1', target: ["[id='run-command-btn']"]}],
   [15, {target: ["[id='btn-likes']"]}],
   [16, {target: ["[id='run-command-btn']"]}],
@@ -35,8 +36,8 @@ export const stepPrevEvent = new Map<number, StepEvent>([
   [8, {target: ["[id='run-command-btn']"]}],
   [10, {target: ["[id='run-command-btn']"]}],
   [11, {target: ["[id='run-command-btn']"]}],
-  [13, {to: '/profile/merlin', target: ["[id='run-command-btn']"]}],
-  [15, {to: '/followers/merlin'}],
+  [13, {to: '/profile/j4rami', target: ["[id='run-command-btn']"]}],
+  [15, {to: '/followers/j4rami'}],
   [16, {target: ["[id='run-command-btn']"]}],
   [18, {target: ["[id='run-command-btn']"]}],
   [19, {to: '/post/1'}],
@@ -72,12 +73,12 @@ stepVerifiers.set(6, async () => {
 });
 
 stepVerifiers.set(7, async () => {
-  const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, 'doki', 'merlin', false)
+  const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, me.id, 'j4rami', false)
   return !(!edgeState || edgeState?.count < 1);
 });
 
 stepVerifiers.set(15, async () => {
-  const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_LIKES, 'doki', 1, false)
+  const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_LIKES, me.id, 1, false)
   return !(!edgeState || edgeState?.count < 1);
 });
 

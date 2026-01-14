@@ -151,6 +151,18 @@
   font-size: 30px;
   font-weight: 600;
   color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .story-username {
@@ -214,6 +226,14 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-white);
+  overflow: hidden;
+}
+
+.post-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius-full);
 }
 
 .post-user-info {

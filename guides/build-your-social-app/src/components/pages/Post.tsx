@@ -123,7 +123,9 @@ const Post: React.FC = () => {
         <div className="post-detail-container">
           <div className="post-detail-header">
             <div className="author-info" onClick={() => navigate(ROUTES.PROFILE(userPost?.owner.id || ''))}>
-              <div className="author-avatar" style={{background: userPost?.owner.gradient}}>{userPost?.owner.icon}</div>
+              <div className="author-avatar" style={{background: userPost?.owner.gradient}}>
+                <img src={userPost?.owner.avatar} alt={userPost?.owner.name} />
+              </div>
               <span className="author-name">{userPost?.owner.name}</span>
             </div>
           </div>

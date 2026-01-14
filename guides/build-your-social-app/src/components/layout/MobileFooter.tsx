@@ -57,10 +57,10 @@ const MobileFooter: React.FC = () => {
       <button
         id="nav-btn-profile"
         className={`nav-btn ${isActive('/profile/doki') ? 'active' : ''}`}
-        onClick={() => navigate("/profile/doki")}
+        onClick={() => navigate("/profile/" + me.id)}
       >
         <div className="nav-avatar" style={{background: me.gradient}}>
-          {me.icon}
+          <img src={me.avatar} alt={me.name} />
         </div>
       </button>
     </div>
