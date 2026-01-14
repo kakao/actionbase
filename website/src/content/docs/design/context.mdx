@@ -1,0 +1,91 @@
+---
+title: Context
+description: context behind Actionbase design
+sidebar:
+  order: 1
+---
+
+> This document expands on the context briefly outlined in [the discussion](https://github.com/kakao/actionbase/discussions/32).
+>
+> While the discussion frames the open questions around Actionbase,
+> this document focuses on the background and conditions under which
+> its design took shape through use and adoption.
+
+
+This document provides context for the design decisions behind Actionbase.
+
+It explains **what Actionbase is**, the problem it addresses, and the constraints under which it evolved.
+Detailed design mechanisms are documented separately.
+This document is intended as an entry point.
+
+## Actionbase and the Problem It Serves
+
+Actionbase is a system built to serve user interactions—likes, follows, reactions, views—under continuous write pressure, with predictable and low-latency reads for user-facing features.
+
+These interactions sit directly on product paths such as feeds, lists, counters, and per-user states.
+They are written continuously and read immediately.
+
+The core challenge was not how to model interactions, but how to **serve them reliably and consistently at scale**.
+
+Actionbase emerged from addressing that challenge in production.
+
+## Adoption as the First Constraint
+
+From the start, Actionbase was shaped by a simple idea:
+
+> If interactions can be expressed as
+> *who did what to which target*,
+> they can share a common structure across services.
+
+For that idea to hold, it had to be adopted.
+
+Actionbase was offered internally as a service that made adding interaction features easy and low-friction.
+At this stage, it functioned as a shared component rather than a platform.
+
+Adoption shaped the system before abstraction did.
+
+## Interactions as a Shared Shape
+
+As interactions accumulated across services—
+
+* user–content
+* user–product
+* user–user
+
+—they converged on the same write model and access patterns.
+
+Despite appearing as different product features, they consistently required the same operations:
+
+* checking interaction state
+* counting interactions
+* listing recent interactions
+
+This repetition revealed a shared interaction shape, and with it, the opportunity for a unified interaction layer.
+
+## A Deliberate Scope
+
+Actionbase focuses on a small set of bounded operations:
+existence checks, counts, and recent interaction scans.
+
+This scope reflects the needs of user-facing interaction workloads, where predictability and simplicity matter more than flexibility or expressive querying.
+
+Design decisions throughout the system favor **bounded cost and stable latency**.
+
+## Code Shaped by Survival
+
+Actionbase has been shaped by sustained use in production.
+
+Many aspects of the current system reflect trade-offs made under real operational constraints.
+Some choices prioritize predictability over elegance, and simplicity over completeness.
+
+The current codebase is not an idealized design.
+
+It is **code that survived**.
+
+## Reading the Design Notes
+
+The design notes that follow describe *how* Actionbase works.
+
+This document explains *why* those designs exist.
+
+Together, they provide the context needed to evaluate Actionbase as a system shaped by real use, real constraints, and repeated adoption.
