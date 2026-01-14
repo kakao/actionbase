@@ -222,7 +222,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_2,
               side: 'right',
               align: 'start',
-              nextBtnText: "done",
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
             },
           },
@@ -233,7 +232,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_3,
               side: 'right',
               align: 'start',
-              nextBtnText: "done",
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent)
             },
@@ -244,7 +242,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               title: `<span class="driver-popover-title-number">3</span> ${TITLE.STEP_4}`,
               description: DESCRIPTION.STEP_4,
               side: 'bottom',
-              nextBtnText: "done",
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render')
             },
@@ -286,7 +283,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               description: DESCRIPTION.STEP_8,
               side: 'right',
-              nextBtnText: "done",
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
@@ -298,7 +294,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               title: TITLE.STEP_9,
               description: DESCRIPTION.STEP_9,
               side: 'right',
-              nextBtnText: "done",
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
             },
@@ -310,7 +305,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_10,
               side: 'right',
               align: 'start',
-              nextBtnText: "done",
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload'),
             },
@@ -320,7 +314,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               description: DESCRIPTION.STEP_11,
               side: 'right',
-              nextBtnText: "done",
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
@@ -333,7 +326,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_12,
               side: 'right',
               align: 'start',
-              nextBtnText: "done",
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent),
             },
           },
@@ -342,7 +334,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               description: DESCRIPTION.STEP_13,
               side: 'right',
-              nextBtnText: "done",
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
             },
@@ -363,7 +354,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_15,
               side: 'right',
               align: 'start',
-              nextBtnText: "done",
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload')
             },
@@ -373,7 +363,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               description: DESCRIPTION.STEP_16,
               side: 'right',
-              nextBtnText: "done",
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
@@ -385,7 +374,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               title: TITLE.STEP_17,
               description: DESCRIPTION.STEP_17,
               side: 'right',
-              nextBtnText: "done",
               align: 'start',
             },
           },
