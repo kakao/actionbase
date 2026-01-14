@@ -5,9 +5,7 @@ description: Run Actionbase locally and define your first interactions.
 
 import { Aside, Steps, Badge } from '@astrojs/starlight/components';
 
-<Aside>
-    This guide assumes a local, in-memory setup for quick evaluation.
-</Aside>
+<Aside>This guide assumes a local, in-memory setup for quick evaluation.</Aside>
 
 ## Prerequisites
 
@@ -44,8 +42,8 @@ cd actionbase
 ## Define metadata
 
 > <Badge text="Note" variant="caution" />
-> Metadata management currently uses **v2 APIs** (service / label),
-> while data read & write operations use **v3 APIs** (database / table).
+> Metadata management currently uses **v2 APIs** (service / label), while data read & write
+> operations use **v3 APIs** (database / table).
 
 Before writing any interaction data, you must define its schema and indexes using metadata APIs. In Actionbase, interactions are stored as edges in a graph model. Create a service and label to define the structure of your edges.
 
@@ -111,18 +109,20 @@ Before writing any interaction data, you must define its schema and indexes usin
        "desc": "Like",
        "type": "INDEXED",
        "schema": {
-         "src": {"type": "STRING", "desc": ""},
-         "tgt": {"type": "STRING", "desc": ""},
-         "fields": [{"name": "created_at", "type": "LONG", "nullable": false, "desc": ""}]
+         "src": { "type": "STRING", "desc": "" },
+         "tgt": { "type": "STRING", "desc": "" },
+         "fields": [{ "name": "created_at", "type": "LONG", "nullable": false, "desc": "" }]
        },
        "dirType": "BOTH",
        "storage": "datastore://awesome/likes",
        "groups": [],
-       "indices": [{
-         "name": "created_at_desc",
-         "fields": [{"name": "created_at", "order": "DESC"}],
-         "desc": ""
-       }],
+       "indices": [
+         {
+           "name": "created_at_desc",
+           "fields": [{ "name": "created_at", "order": "DESC" }],
+           "desc": ""
+         }
+       ],
        "event": false,
        "readOnly": false,
        "mode": "SYNC"
@@ -172,9 +172,9 @@ Insert interaction edges to record user actions.
    ```json
    {
      "results": [
-       {"source": "Alice", "target": "Laptop", "status": "CREATED", "count": 1},
-       {"source": "Alice", "target": "Phone", "status": "CREATED", "count": 1},
-       {"source": "Bob", "target": "Phone", "status": "CREATED", "count": 1}
+       { "source": "Alice", "target": "Laptop", "status": "CREATED", "count": 1 },
+       { "source": "Alice", "target": "Phone", "status": "CREATED", "count": 1 },
+       { "source": "Bob", "target": "Phone", "status": "CREATED", "count": 1 }
      ]
    }
    ```
@@ -199,13 +199,15 @@ Query edges using get, scan, and count operations.
 
    ```json
    {
-     "edges": [{
-       "version": 1767571200000,
-       "source": "Alice",
-       "target": "Phone",
-       "properties": {"created_at": 1767571200000},
-       "context": {}
-     }],
+     "edges": [
+       {
+         "version": 1767571200000,
+         "source": "Alice",
+         "target": "Phone",
+         "properties": { "created_at": 1767571200000 },
+         "context": {}
+       }
+     ],
      "count": 1,
      "total": 1,
      "offset": null,
@@ -231,14 +233,14 @@ Query edges using get, scan, and count operations.
          "version": 1767571200000,
          "source": "Alice",
          "target": "Laptop",
-         "properties": {"created_at": 1767571200000},
+         "properties": { "created_at": 1767571200000 },
          "context": {}
        },
        {
          "version": 1767571200000,
          "source": "Alice",
          "target": "Phone",
-         "properties": {"created_at": 1767571200000},
+         "properties": { "created_at": 1767571200000 },
          "context": {}
        }
      ],
@@ -267,14 +269,14 @@ Query edges using get, scan, and count operations.
          "version": 1767571200000,
          "source": "Alice",
          "target": "Phone",
-         "properties": {"created_at": 1767571200000},
+         "properties": { "created_at": 1767571200000 },
          "context": {}
        },
        {
          "version": 1767571200000,
          "source": "Bob",
          "target": "Phone",
-         "properties": {"created_at": 1767571200000},
+         "properties": { "created_at": 1767571200000 },
          "context": {}
        }
      ],

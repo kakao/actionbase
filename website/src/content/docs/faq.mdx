@@ -16,7 +16,7 @@ Instead, it is a **graph model–based OLTP database specialized for serving use
 
 ### Why is it called Actionbase?
 
-The name *Actionbase* emphasizes that the system stores user actions, modeled and served as user interactions.
+The name _Actionbase_ emphasizes that the system stores user actions, modeled and served as user interactions.
 
 ### What do "interactions" and "activities" mean in Actionbase?
 
@@ -85,6 +85,7 @@ However, as Actionbase becomes a trusted standard within adopting organizations,
 Yes. Actionbase is schema-based.
 
 Schemas define:
+
 - Source and target identifier types (int, long, string, etc.)
 - Interaction properties and their types
 
@@ -95,17 +96,19 @@ For schema definition details, see [Schema](/design/schema/) and [Metadata API](
 ### What are some example interaction models?
 
 **Example 1: Recent views**
+
 - Source: `user_id`
 - Target: `product_id`
 - Properties:
-    - `created_at`
+  - `created_at`
 
 **Example 2: Reactions**
+
 - Source: `user_id`
 - Target: `content_id`
 - Properties:
-    - `created_at`
-    - `reaction_type` (like, heart, emoji, etc.)
+  - `created_at`
+  - `reaction_type` (like, heart, emoji, etc.)
 
 ## Architecture
 
@@ -126,13 +129,14 @@ Actionbase’s core design principle is **write-time optimization**.
 When an interaction is written, Actionbase pre-computes several data structures:
 
 1. **State**
-The current relationship between source and target
+   The current relationship between source and target
 
 2. **Index**
-Ordered structures based on schema-defined properties (for example, `created_at DESC`)
+   Ordered structures based on schema-defined properties (for example, `created_at DESC`)
 
 3. **Count**
-Pre-computed counters such as:
+   Pre-computed counters such as:
+
 - Number of items a user interacted with
 - Number of users who interacted with an item
 
@@ -160,12 +164,14 @@ There are no strict version requirements. Actionbase has been tested and operate
 ### Why use HBase?
 
 HBase provides:
+
 - Horizontal scalability
 - Strong durability and replication
 - Low-latency random reads and writes
 - Proven operation at very large scale
 
 Actionbase builds on these strengths and adds:
+
 - Interaction-aware data modeling
 - Write-time materialization of read patterns
 - A higher-level abstraction for serving user interactions
@@ -179,16 +185,17 @@ In short, Actionbase **builds on proven storage engines while focusing on intera
 Actionbase emits two types of logs during writes:
 
 - **WAL (Write-Ahead Log)**
-WAL records incoming interaction events as-is, enabling replay and recovery.
+  WAL records incoming interaction events as-is, enabling replay and recovery.
 
 - **CDC (Change Data Capture)**
-CDC records the resulting interaction state after mutation, making it easy to synchronize data to downstream systems.
+  CDC records the resulting interaction state after mutation, making it easy to synchronize data to downstream systems.
 
 Both WAL and CDC streams are accessible via Kafka consumers.
 
 ### How does Actionbase support analytics and pipelines?
 
 WAL and CDC streams can be used for:
+
 - Recovery and replay
 - Feeding analytics systems (OLAP)
 - Building asynchronous processors and background jobs

@@ -2,9 +2,9 @@
 title: Query API Reference
 description: Edge query API reference
 sidebar:
-    order: 3
+  order: 3
 tableOfContents:
-    maxHeadingLevel: 2
+  maxHeadingLevel: 2
 ---
 
 This API provides query operations for edges (unique-edge). For the difference between unique-edge and multi-edge, see [FAQ](/faq/#what-is-the-difference-between-unique-edge-and-multi-edge).
@@ -25,14 +25,14 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/count
 
 ### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Query | start | Required | Starting node ID |
-| Query | direction | Required | [Query direction](#query-direction) (OUT or IN) |
-| Query | ranges | Optional (default: null) | [Scan range](#index-ranges) |
+| Location | Parameter     | Required                 | Description                                     |
+| -------- | ------------- | ------------------------ | ----------------------------------------------- |
+| Header   | Authorization | Optional                 | Authentication key (reserved for future use)    |
+| Path     | database      | Required                 | Target database name                            |
+| Path     | table         | Required                 | Target table name                               |
+| Query    | start         | Required                 | Starting node ID                                |
+| Query    | direction     | Required                 | [Query direction](#query-direction) (OUT or IN) |
+| Query    | ranges        | Optional (default: null) | [Scan range](#index-ranges)                     |
 
 ### Response Type
 
@@ -40,13 +40,13 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/count
 
 ### Request Example
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| start | source1 |
-| direction | OUT |
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| start         | source1       |
+| direction     | OUT           |
 
 ```bash
 # count?start=source1&direction=OUT
@@ -78,14 +78,14 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/get
 
 ### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Query | source | Required | Source node ID list (comma-separated) |
-| Query | target | Required | Target node ID list (comma-separated) |
-| Query | filters | Optional (default: null) | [Filtering conditions](#filters) |
+| Location | Parameter     | Required                 | Description                                  |
+| -------- | ------------- | ------------------------ | -------------------------------------------- |
+| Header   | Authorization | Optional                 | Authentication key (reserved for future use) |
+| Path     | database      | Required                 | Target database name                         |
+| Path     | table         | Required                 | Target table name                            |
+| Query    | source        | Required                 | Source node ID list (comma-separated)        |
+| Query    | target        | Required                 | Target node ID list (comma-separated)        |
+| Query    | filters       | Optional (default: null) | [Filtering conditions](#filters)             |
 
 When multiple source or target IDs are specified, the operation behaves as **mget** to retrieve multiple edges. In this case, a maximum of **25 edges** can be retrieved per API request. To retrieve more edges, make multiple API requests.
 
@@ -97,13 +97,13 @@ When multiple source or target IDs are specified, the operation behaves as **mge
 
 Retrieves edge data for (source, target). (Maximum 1 result)
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| source | source1 |
-| target | target1 |
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| source        | source1       |
+| target        | target1       |
 
 ```bash
 # get?source=source1&target=target1
@@ -140,13 +140,13 @@ curl -X GET \
 
 Retrieves edge data for (source, target1) ~ (source, targetN). (Maximum N results)
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| source | source1 |
-| target | target1,target2,target3 |
+| Parameter     | Value                   |
+| ------------- | ----------------------- |
+| Authorization | YOUR_API_KEY            |
+| database      | your_database           |
+| table         | your_table              |
+| source        | source1                 |
+| target        | target1,target2,target3 |
 
 ```bash
 # get?source=source1&target=target1,target2,target3
@@ -193,13 +193,13 @@ curl -X GET \
 
 Retrieves edge data for (source1, target) ~ (sourceM, target). (Maximum M results)
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| source | source1,source2,source3 |
-| target | target1 |
+| Parameter     | Value                   |
+| ------------- | ----------------------- |
+| Authorization | YOUR_API_KEY            |
+| database      | your_database           |
+| table         | your_table              |
+| source        | source1,source2,source3 |
+| target        | target1                 |
 
 ```bash
 # get?source=source1,source2,source3&target=target1
@@ -248,13 +248,13 @@ Retrieves edge data for (source1, target1) ~ (sourceM, targetN). (Maximum M × N
 
 **Note:** This format should not be used in production as it can retrieve up to M × N edges.
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| source | source1,source2,source3 |
-| target | target1,target2,target3 |
+| Parameter     | Value                   |
+| ------------- | ----------------------- |
+| Authorization | YOUR_API_KEY            |
+| database      | your_database           |
+| table         | your_table              |
+| source        | source1,source2,source3 |
+| target        | target1,target2,target3 |
 
 ```bash
 # get?source=source1,source2,source3&target=target1,target2,target3
@@ -319,19 +319,19 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
 
 ### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Path | index | Required | Index name to use |
-| Query | start | Required | Starting node ID |
-| Query | direction | Required | [Query direction](#query-direction) (OUT or IN) |
-| Query | limit | Optional | Maximum number of results to return; 25 is recommended for production |
-| Query | offset | Optional (default: null) | [Pagination](#pagination) offset |
-| Query | ranges | Optional (default: null) | [Scan range](#index-ranges) |
-| Query | filters | Optional (default: null) | [Filtering conditions](#filters) |
-| Query | features | Optional (default: empty list) | List of features to include (e.g., `total` to calculate the total value) |
+| Location | Parameter     | Required                       | Description                                                              |
+| -------- | ------------- | ------------------------------ | ------------------------------------------------------------------------ |
+| Header   | Authorization | Optional                       | Authentication key (reserved for future use)                             |
+| Path     | database      | Required                       | Target database name                                                     |
+| Path     | table         | Required                       | Target table name                                                        |
+| Path     | index         | Required                       | Index name to use                                                        |
+| Query    | start         | Required                       | Starting node ID                                                         |
+| Query    | direction     | Required                       | [Query direction](#query-direction) (OUT or IN)                          |
+| Query    | limit         | Optional                       | Maximum number of results to return; 25 is recommended for production    |
+| Query    | offset        | Optional (default: null)       | [Pagination](#pagination) offset                                         |
+| Query    | ranges        | Optional (default: null)       | [Scan range](#index-ranges)                                              |
+| Query    | filters       | Optional (default: null)       | [Filtering conditions](#filters)                                         |
+| Query    | features      | Optional (default: empty list) | List of features to include (e.g., `total` to calculate the total value) |
 
 ### Response Type
 
@@ -339,14 +339,14 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
 
 ### Request Example
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| index | your_index |
-| start | source1 |
-| direction | OUT |
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| index         | your_index    |
+| start         | source1       |
+| direction     | OUT           |
 
 ```bash
 # scan/your_index?start=source1&direction=OUT
@@ -391,15 +391,15 @@ Request the first page without an offset.
 
 **Request Example**
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| Authorization | YOUR_API_KEY | |
-| database | your_database | |
-| table | your_table | |
-| index | your_index | |
-| start | source1 | |
-| direction | OUT | |
-| limit | | 25 recommended |
+| Parameter     | Value         | Description    |
+| ------------- | ------------- | -------------- |
+| Authorization | YOUR_API_KEY  |                |
+| database      | your_database |                |
+| table         | your_table    |                |
+| index         | your_index    |                |
+| start         | source1       |                |
+| direction     | OUT           |                |
+| limit         |               | 25 recommended |
 
 ```bash
 # scan/your_index?start=source1&direction=OUT
@@ -439,16 +439,16 @@ Use the `offset` value from the previous response to retrieve the next page.
 
 **Request Example**
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| Authorization | YOUR_API_KEY | |
-| database | your_database | |
-| table | your_table | |
-| index | your_index | |
-| start | source1 | |
-| direction | OUT | |
-| offset | string_encoded | Value received from previous response |
-| limit | | 25 recommended |
+| Parameter     | Value          | Description                           |
+| ------------- | -------------- | ------------------------------------- |
+| Authorization | YOUR_API_KEY   |                                       |
+| database      | your_database  |                                       |
+| table         | your_table     |                                       |
+| index         | your_index     |                                       |
+| start         | source1        |                                       |
+| direction     | OUT            |                                       |
+| offset        | string_encoded | Value received from previous response |
+| limit         |                | 25 recommended                        |
 
 ```bash
 # scan/your_index?start=source1&direction=OUT&offset=string_encoded
@@ -525,14 +525,14 @@ field:bt:minValue,maxValue
 
 ### Operators
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `eq` | Equal | `type:eq:0` |
-| `gt` | Greater than | `createdAt:gt:1000000` |
-| `gte` | Greater than or equal | `createdAt:gte:1000000` |
-| `lt` | Less than | `createdAt:lt:2000000` |
-| `lte` | Less than or equal | `createdAt:lte:2000000` |
-| `bt` | Between two values | `createdAt:bt:1000000,2000000` |
+| Operator | Description           | Example                        |
+| -------- | --------------------- | ------------------------------ |
+| `eq`     | Equal                 | `type:eq:0`                    |
+| `gt`     | Greater than          | `createdAt:gt:1000000`         |
+| `gte`    | Greater than or equal | `createdAt:gte:1000000`        |
+| `lt`     | Less than             | `createdAt:lt:2000000`         |
+| `lte`    | Less than or equal    | `createdAt:lte:2000000`        |
+| `bt`     | Between two values    | `createdAt:bt:1000000,2000000` |
 
 ### Examples
 
@@ -621,4 +621,3 @@ data class Edge(
   val context: Map<String, Any?>,    // Context information
 )
 ```
-

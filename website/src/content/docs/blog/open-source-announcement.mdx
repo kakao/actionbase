@@ -8,16 +8,16 @@ tags:
   - open-source
 ---
 
-import { Aside } from "@astrojs/starlight/components";
+import { Aside } from '@astrojs/starlight/components';
 
 <Aside type="tip" title="Announcement">
-    We’re open-sourcing Actionbase,
-    a database for serving user interactions
-    such as likes and follows at scale.
+  We’re open-sourcing Actionbase, a database for serving user interactions such as likes and follows
+  at scale.
 </Aside>
 
 ## Likes 👍
-***A simple feature that becomes surprisingly complex at scale***
+
+**_A simple feature that becomes surprisingly complex at scale_**
 
 Imagine adding a "Like" feature to a feed or a product page.
 
@@ -47,7 +47,8 @@ Faced with that question, our conclusion was clear:
 > **"We need a different approach."**
 
 ## Actionbase
-***A different answer to the same problem — a database for user interactions***
+
+**_A different answer to the same problem — a database for user interactions_**
 
 Actionbase is a database designed to reliably handle user interactions
 even under massive traffic.
@@ -60,7 +61,8 @@ Actionbase models these interactions as:
 > Example: "User1" (actor) liked (action) "Product A" (target).
 
 ### Designing Writes for Reads
-***What "a different approach" actually means***
+
+**_What "a different approach" actually means_**
 
 The core idea behind Actionbase is simple:
 
@@ -81,7 +83,8 @@ This approach has already been proven in production,
 serving large-scale traffic at Kakao services such as KakaoShopping.
 
 ## Open Source
-***From individual features to a shared structure***
+
+**_From individual features to a shared structure_**
 
 In this post, we used "Likes" as an example,
 but Actionbase is not limited to a single feature.
