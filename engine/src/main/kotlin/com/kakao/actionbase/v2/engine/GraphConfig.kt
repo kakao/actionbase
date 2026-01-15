@@ -1,8 +1,8 @@
 package com.kakao.actionbase.v2.engine
 
+import com.kakao.actionbase.core.metadata.common.MutationMode
 import com.kakao.actionbase.v2.engine.entity.DefaultStorageEntity
 import com.kakao.actionbase.v2.engine.warmup.WarmUpConfig
-import com.kakao.actionbase.core.metadata.common.MutationMode
 
 import java.net.InetAddress
 import java.time.Duration

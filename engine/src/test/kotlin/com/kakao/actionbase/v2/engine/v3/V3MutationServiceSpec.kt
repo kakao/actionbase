@@ -3,6 +3,8 @@ package com.kakao.actionbase.v2.engine.v3
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
+import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
+import com.kakao.actionbase.core.metadata.common.MutationMode
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
@@ -10,7 +12,6 @@ import com.kakao.actionbase.v2.engine.GraphConfig
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
-import com.kakao.actionbase.core.metadata.common.MutationMode
 
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
@@ -30,7 +31,7 @@ class V3MutationServiceSpec :
         lateinit var v3MutationService: V3MutationService
         lateinit var v3QueryService: V3QueryService
         lateinit var asyncGraph: Graph
-        lateinit var asyncMutationService: V3MutationService
+        lateinit var asyncV3MutationService: V3MutationService
 
         beforeTest {
             graph = GraphFixtures.create()
@@ -38,10 +39,11 @@ class V3MutationServiceSpec :
             v3QueryService = V3QueryService(graph)
 
             // Create a graph with globalMutationMode set to ASYNC for testing
-            asyncGraph = GraphFixtures.create(
-                GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC)
-            )
-            asyncMutationService = V3MutationService(asyncGraph)
+            asyncGraph =
+                GraphFixtures.create(
+                    GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC),
+                )
+            asyncV3MutationService = V3MutationService(asyncGraph)
         }
 
         afterTest {
@@ -364,9 +366,9 @@ class V3MutationServiceSpec :
             executionCompleted.get() shouldBe true
         }
 
-        "globalMutationMode ASYNC should override sync table behavior" {
+        "mutateEdge should queue mutations when globalMutationMode is ASYNC" {
             val database = GraphFixtures.serviceName
-            val table = GraphFixtures.hbaseIndexed
+            val table = GraphFixtures.syncTable
             val insertRequest =
                 """
                 {
@@ -377,7 +379,7 @@ class V3MutationServiceSpec :
                 """.trimIndent().toEdgeBulkMutationRequest()
 
             // With globalMutationMode set to ASYNC, even sync tables should process mutations asynchronously
-            asyncMutationService
+            asyncV3MutationService
                 .mutateEdge(database, table, insertRequest)
                 .test()
                 .assertNext { actualObject ->
@@ -389,11 +391,38 @@ class V3MutationServiceSpec :
                     actualObject.results[0].count shouldBe 1
                 }.verifyComplete()
         }
+
+        "mutateMultiEdge should queue mutations when globalMutationMode is ASYNC" {
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.syncTable // todo: replace with multiEdgeSyncTable
+            val multiEdgeInsertRequest =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 100, "id": 5000, "source": "2000", "target": "3000", "properties": {"permission": "test", "createdAt": 100}}}
+                  ]
+                }
+                """.trimIndent().toMultiEdgeBulkMutationRequest()
+
+            // With globalMutationMode set to ASYNC, even sync tables should process multi-edge mutations asynchronously
+            asyncV3MutationService
+                .mutateMultiEdge(database, table, multiEdgeInsertRequest)
+                .test()
+                .assertNext { actualObject ->
+                    // In ASYNC mode, the result should indicate QUEUED status
+                    actualObject.results.size shouldBe 1
+                    actualObject.results[0].status shouldBe "QUEUED"
+                    actualObject.results[0].id shouldBe 5000L
+                    actualObject.results[0].count shouldBe 1
+                }.verifyComplete()
+        }
     }) {
     companion object {
         val mapper = jacksonObjectMapper()
 
         fun String.toEdgeBulkMutationRequest(): EdgeBulkMutationRequest = mapper.readValue(this)
+
+        fun String.toMultiEdgeBulkMutationRequest(): MultiEdgeBulkMutationRequest = mapper.readValue<MultiEdgeBulkMutationRequest>(this)
 
         fun String.toEdgeMutationResponse(): EdgeMutationResponse = mapper.readValue(this)
 

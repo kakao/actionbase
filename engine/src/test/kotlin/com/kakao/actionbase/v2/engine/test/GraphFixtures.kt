@@ -9,6 +9,7 @@ import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
 import com.kakao.actionbase.v2.core.metadata.LabelType
+import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.Field
@@ -68,6 +69,10 @@ object GraphFixtures {
     const val hbaseHash = "hbase_hash"
 
     const val hbaseIndexed = "hbase_indexed"
+
+    const val syncTable = "sync"
+
+    const val asyncTable = "async"
 
     const val index1 = "permission_created_at_desc"
 
@@ -191,6 +196,7 @@ object GraphFixtures {
         name: String,
         type: LabelType,
         storageName: String,
+        mode: MutationMode,
     ) {
         val entity =
             LabelEntity(
@@ -202,6 +208,7 @@ object GraphFixtures {
                 dirType = if (type == LabelType.INDEXED) DirectionType.BOTH else DirectionType.OUT,
                 storage = storageName,
                 indices = if (type == LabelType.INDEXED) sampleIndices else emptyList(),
+                mode = mode,
             )
 
         graph.labelDdl
@@ -220,11 +227,12 @@ object GraphFixtures {
             }.verifyComplete()
     }
 
-    fun create(withTestData: Boolean = true): Graph {
-        return create(GraphConfig.Builder(), withTestData)
-    }
+    fun create(withTestData: Boolean = true): Graph = create(GraphConfig.Builder(), withTestData)
 
-    fun create(configBuilder: GraphConfig.Builder, withTestData: Boolean = true): Graph {
+    fun create(
+        configBuilder: GraphConfig.Builder,
+        withTestData: Boolean = true,
+    ): Graph {
         BlockHound
             .builder()
             .allowBlockingCallsInside("org.apache.hadoop.hbase.client.mock.MockHTable", "mutateRow")
@@ -243,10 +251,13 @@ object GraphFixtures {
             createStorage(graph, jdbcStorage, StorageType.JDBC, mockStorageConf())
             createStorage(graph, hbaseStorage, StorageType.HBASE, mockStorageConf())
 
-            performSampleDDLAndDML(graph, serviceName, jdbcHash, LabelType.HASH, jdbcStorage)
+            performSampleDDLAndDML(graph, serviceName, jdbcHash, LabelType.HASH, jdbcStorage, MutationMode.SYNC)
 
-            performSampleDDLAndDML(graph, serviceName, hbaseHash, LabelType.HASH, hbaseStorage)
-            performSampleDDLAndDML(graph, serviceName, hbaseIndexed, LabelType.INDEXED, datastoreStorage)
+            performSampleDDLAndDML(graph, serviceName, hbaseHash, LabelType.HASH, hbaseStorage, MutationMode.SYNC)
+            performSampleDDLAndDML(graph, serviceName, hbaseIndexed, LabelType.INDEXED, datastoreStorage, MutationMode.SYNC)
+
+            performSampleDDLAndDML(graph, serviceName, syncTable, LabelType.INDEXED, datastoreStorage, MutationMode.SYNC)
+            performSampleDDLAndDML(graph, serviceName, asyncTable, LabelType.INDEXED, datastoreStorage, MutationMode.ASYNC)
         }
         graph.updateAllMetadata().test().verifyComplete()
         return graph
