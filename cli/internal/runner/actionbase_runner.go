@@ -238,6 +238,7 @@ func (r *ActionbaseCommandLineRunner) CheckConnection() {
 }
 
 func (r *ActionbaseCommandLineRunner) showBanner() {
+	version := "(v" + r.version + ")"
 	proxyMode := "on"
 	if !r.IsProxyModeEnabled() {
 		proxyMode = "off"
@@ -249,12 +250,12 @@ func (r *ActionbaseCommandLineRunner) showBanner() {
 	}
 
 	fmt.Println()
-	fmt.Printf("\033[33m╭──── Actionbase v%s ─────────────────────────────────────────────────────────────────────────╮\033[0m\n", r.version)
+	fmt.Println("\033[33m╭────────────────────────────────────────────────────────────────────────────────────────────────╮\033[0m")
 	fmt.Println("\033[33m│                                                                                                │\033[0m")
 	fmt.Printf("\033[33m│\033[0m")
 	fmt.Println("                    _____________                                                               \033[33m│\033[0m")
 	fmt.Printf("\033[33m│\033[0m")
-	fmt.Println("                 __/      ___    \\        Welcome to Actionbase!                                \033[33m│\033[0m")
+	fmt.Printf("                 __/      ___    \\        Welcome to Actionbase! %-21s          \033[33m│\033[0m\n", version)
 	fmt.Printf("\033[33m│\033[0m")
 	fmt.Println("               _/\\   ____/   \\____\\_                                                            \033[33m│\033[0m")
 	fmt.Printf("\033[33m│\033[0m")
