@@ -2,9 +2,9 @@
 title: Metadata API Reference
 description: Metadata management API reference (v2)
 sidebar:
-    order: 1
+  order: 1
 tableOfContents:
-    maxHeadingLevel: 2
+  maxHeadingLevel: 2
 ---
 
 > **Note:** Currently, metadata APIs use **v2**. Mutation and query operations have transitioned to v3, but metadata v3 support is planned for the future.
@@ -31,10 +31,10 @@ GET /graph/v2/service/{service}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
 
 #### Response Type
 
@@ -42,10 +42,10 @@ GET /graph/v2/service/{service}
 
 #### Request Example
 
-| Parameter | Value |
-|-----------|-------|
+| Parameter     | Value        |
+| ------------- | ------------ |
 | Authorization | YOUR_API_KEY |
-| service | myservice |
+| service       | myservice    |
 
 ```bash
 # GET /graph/v2/service/myservice
@@ -76,9 +76,9 @@ GET /graph/v2/service
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
 
 #### Response Type
 
@@ -125,11 +125,11 @@ POST /graph/v2/service/{service}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Body | desc | Required | Service description |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Body     | desc          | Required | Service description                          |
 
 #### Request Body
 
@@ -177,12 +177,12 @@ PUT /graph/v2/service/{service}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Body | active | Optional | Whether the service is active |
-| Body | desc | Optional | Service description |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Body     | active        | Optional | Whether the service is active                |
+| Body     | desc          | Optional | Service description                          |
 
 #### Request Body
 
@@ -222,11 +222,11 @@ GET /graph/v2/service/{service}/label/{label}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | label | Required | Label name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | label         | Required | Label name                                   |
 
 #### Response Type
 
@@ -289,10 +289,10 @@ GET /graph/v2/service/{service}/label
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
 
 #### Response Type
 
@@ -319,21 +319,21 @@ POST /graph/v2/service/{service}/label/{label}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | label | Required | Label name |
-| Body | desc | Required | Label description |
-| Body | type | Required | Label type (HASH, INDEXED, MULTI_EDGE) |
-| Body | schema | Required | Edge schema definition |
-| Body | dirType | Required | Direction type (OUT, IN, UNDIRECTED) |
-| Body | storage | Required | Storage name |
-| Body | groups | Optional | List of groups |
-| Body | indices | Optional | List of indexes |
-| Body | event | Optional | Whether events are enabled (default: false) |
-| Body | readOnly | Optional | Whether the label is read-only (default: false) |
-| Body | mode | Optional | Mutation mode (default: SYNC) |
+| Location | Parameter     | Required | Description                                     |
+| -------- | ------------- | -------- | ----------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use)    |
+| Path     | service       | Required | Service name                                    |
+| Path     | label         | Required | Label name                                      |
+| Body     | desc          | Required | Label description                               |
+| Body     | type          | Required | Label type (HASH, INDEXED, MULTI_EDGE)          |
+| Body     | schema        | Required | Edge schema definition                          |
+| Body     | dirType       | Required | Direction type (OUT, IN, UNDIRECTED)            |
+| Body     | storage       | Required | Storage name                                    |
+| Body     | groups        | Optional | List of groups                                  |
+| Body     | indices       | Optional | List of indexes                                 |
+| Body     | event         | Optional | Whether events are enabled (default: false)     |
+| Body     | readOnly      | Optional | Whether the label is read-only (default: false) |
+| Body     | mode          | Optional | Mutation mode (default: SYNC)                   |
 
 #### Request Body
 
@@ -394,19 +394,19 @@ PUT /graph/v2/service/{service}/label/{label}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | label | Required | Label name |
-| Body | active | Optional | Whether the label is active |
-| Body | desc | Optional | Label description |
-| Body | type | Optional | Label type |
-| Body | schema | Optional | Edge schema definition |
-| Body | groups | Optional | List of groups |
-| Body | indices | Optional | List of indexes |
-| Body | readOnly | Optional | Whether the label is read-only |
-| Body | mode | Optional | Mutation mode |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | label         | Required | Label name                                   |
+| Body     | active        | Optional | Whether the label is active                  |
+| Body     | desc          | Optional | Label description                            |
+| Body     | type          | Optional | Label type                                   |
+| Body     | schema        | Optional | Edge schema definition                       |
+| Body     | groups        | Optional | List of groups                               |
+| Body     | indices       | Optional | List of indexes                              |
+| Body     | readOnly      | Optional | Whether the label is read-only               |
+| Body     | mode          | Optional | Mutation mode                                |
 
 #### Request Body
 
@@ -442,13 +442,13 @@ POST /graph/v2/service/{service}/label/{label}/copy
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | label | Required | Source label name |
-| Body | target | Required | Target label name |
-| Body | storage | Required | Storage name for the new label |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | label         | Required | Source label name                            |
+| Body     | target        | Required | Target label name                            |
+| Body     | storage       | Required | Storage name for the new label               |
 
 #### Request Body
 
@@ -484,11 +484,11 @@ GET /graph/v2/service/{service}/label/{label}/status
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | label | Required | Label name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | label         | Required | Label name                                   |
 
 #### Response Type
 
@@ -519,11 +519,11 @@ GET /graph/v2/service/{service}/alias/{alias}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | alias | Required | Alias name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | alias         | Required | Alias name                                   |
 
 #### Response Type
 
@@ -570,10 +570,10 @@ GET /graph/v2/service/{service}/alias
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
 
 #### Response Type
 
@@ -600,13 +600,13 @@ POST /graph/v2/service/{service}/alias/{alias}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | alias | Required | Alias name |
-| Body | desc | Required | Alias description |
-| Body | target | Required | Target label name (format: service.label) |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | alias         | Required | Alias name                                   |
+| Body     | desc          | Required | Alias description                            |
+| Body     | target        | Required | Target label name (format: service.label)    |
 
 #### Request Body
 
@@ -642,14 +642,14 @@ PUT /graph/v2/service/{service}/alias/{alias}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | alias | Required | Alias name |
-| Body | active | Optional | Whether the alias is active |
-| Body | desc | Optional | Alias description |
-| Body | target | Optional | Target label name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | alias         | Required | Alias name                                   |
+| Body     | active        | Optional | Whether the alias is active                  |
+| Body     | desc          | Optional | Alias description                            |
+| Body     | target        | Optional | Target label name                            |
 
 #### Request Body
 
@@ -685,11 +685,11 @@ DELETE /graph/v2/service/{service}/alias/{alias}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | alias | Required | Alias name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | alias         | Required | Alias name                                   |
 
 #### Response Type
 
@@ -716,13 +716,13 @@ POST /graph/v2/service/{service}/alias/{alias}/new-label
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | alias | Required | Alias name |
-| Body | target | Required | Target label name for the new label |
-| Body | storage | Required | Storage name for the new label |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | alias         | Required | Alias name                                   |
+| Body     | target        | Required | Target label name for the new label          |
+| Body     | storage       | Required | Storage name for the new label               |
 
 #### Request Body
 
@@ -762,11 +762,11 @@ GET /graph/v2/service/{service}/query/{query}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | query | Required | Query name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | query         | Required | Query name                                   |
 
 #### Response Type
 
@@ -793,10 +793,10 @@ GET /graph/v2/service/{service}/query
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
 
 #### Response Type
 
@@ -823,14 +823,14 @@ POST /graph/v2/service/{service}/query/{query}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | query | Required | Query name |
-| Body | desc | Required | Query description |
-| Body | query | Required | Query definition |
-| Body | stats | Optional | Statistics configuration |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | query         | Required | Query name                                   |
+| Body     | desc          | Required | Query description                            |
+| Body     | query         | Required | Query definition                             |
+| Body     | stats         | Optional | Statistics configuration                     |
 
 #### Request Body
 
@@ -867,15 +867,15 @@ PUT /graph/v2/service/{service}/query/{query}
 
 #### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | service | Required | Service name |
-| Path | query | Required | Query name |
-| Body | active | Optional | Whether the query is active |
-| Body | desc | Optional | Query description |
-| Body | query | Optional | Query definition |
-| Body | stats | Optional | Statistics configuration |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | service       | Required | Service name                                 |
+| Path     | query         | Required | Query name                                   |
+| Body     | active        | Optional | Whether the query is active                  |
+| Body     | desc          | Optional | Query description                            |
+| Body     | query         | Optional | Query definition                             |
+| Body     | stats         | Optional | Statistics configuration                     |
 
 #### Request Body
 
@@ -1099,4 +1099,3 @@ data class QueryUpdateRequest(
   val stats: String?,     // Statistics configuration (optional)
 )
 ```
-

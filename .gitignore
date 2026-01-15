@@ -57,11 +57,25 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-.env
 .env.production
-
-# macOS-specific files
-.DS_Store
 
 # Local runtime artifacts
 .run/
+
+# AI Coding Assistants (any depth)
+
+## Claude Code
+**/.claude/*
+!**/.claude/
+!**/.claude/CLAUDE.md
+!**/.claude/README.md
+
+## OpenAI Codex
+**/.codex/
+**/.codex-cache/
+
+## Cursor
+**/.cursor/*
+!**/.cursor/
+!**/.cursor/rules/
+!**/.cursor/rules/**

@@ -2,7 +2,7 @@
 title: Core Concepts
 description: Core concepts behind Actionbase design
 sidebar:
-    order: 1
+  order: 1
 ---
 
 Actionbase is an OLTP engine specialized for user interactions, optimized for high-throughput, low-latency workloads. It uses graph-based modeling specifically designed for user interactions, not as a general-purpose graph database.
@@ -34,8 +34,8 @@ User (source)
 User --[likes]--> Product (edge)
   ├─ source: "user123"
   ├─ target: "product456"
-  └─ properties: { 
-      timestamp: 1234567890, 
+  └─ properties: {
+      timestamp: 1234567890,
       type: "heart",
       device: "mobile",
       location: "US"
@@ -44,7 +44,7 @@ User --[likes]--> Product (edge)
 User --[follows]--> User (edge)
   ├─ source: "user123"
   ├─ target: "user789"
-  └─ properties: { 
+  └─ properties: {
       timestamp: 1234567891,
       notification_enabled: true
     }
@@ -60,6 +60,7 @@ Internally, Actionbase uses a **State and Event model** to ensure consistency:
 - **Event**: Input that transitions the state (e.g., "user clicked like button")
 
 When a user action occurs, Actionbase:
+
 1. Reads the current state
 2. Performs a state transition based on the incoming event
 3. Stores the new state
@@ -89,6 +90,7 @@ Client → Server → Engine → WAL → Storage → CDC
 ```
 
 The write path involves:
+
 1. Writing to WAL (Write-Ahead Log) for durability
 2. Acquiring locks for consistency
 3. Reading current state
@@ -106,6 +108,7 @@ Client → Server → Engine → Storage → Response
 ```
 
 The read path retrieves pre-computed data structures:
+
 - **Count Query** → EdgeCounter
 - **Get Query** → EdgeState
 - **Scan Query** → EdgeIndex
@@ -118,4 +121,3 @@ For detailed read flow, see [Query](/design/query/).
 - [Mutation](/design/mutation/): Understand how writes work
 - [Query](/design/query/): Learn how to query your data
 - [Datastore](/design/datastore/): Explore datastore backend options
-

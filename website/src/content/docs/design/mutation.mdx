@@ -2,7 +2,7 @@
 title: Mutation
 description: Understanding how mutations work in Actionbase
 sidebar:
-    order: 3
+  order: 3
 ---
 
 Mutations in Actionbase allow you to insert, update, and delete edges in your graph. The mutation process ensures data consistency, durability, and write-time optimization.
@@ -103,13 +103,14 @@ This mechanism ensures **eventual consistency**—the final state is always corr
 
 During mutations, Actionbase pre-computes:
 
-| Structure | Purpose | Query Type |
-|-----------|---------|------------|
-| EdgeState | Current edge state | Get |
-| EdgeIndex | Sorted index entries | Scan |
-| EdgeCounter | Aggregated counts | Count |
+| Structure   | Purpose              | Query Type |
+| ----------- | -------------------- | ---------- |
+| EdgeState   | Current edge state   | Get        |
+| EdgeIndex   | Sorted index entries | Scan       |
+| EdgeCounter | Aggregated counts    | Count      |
 
 **Benefits**:
+
 - **Fast Reads**: No query-time computation needed
 - **Consistent Performance**: Read latency remains low regardless of data size
 - **Efficient Storage**: Indexes and counters are maintained incrementally
@@ -120,12 +121,12 @@ By computing at write time, Actionbase shifts computational cost from reads to w
 
 The mutation process ensures consistency through:
 
-| Mechanism | Guarantee |
-|-----------|-----------|
-| Locking | Prevents concurrent modifications |
-| Atomic Writes | State and indexes written together |
-| WAL | Durability and recovery |
-| Read-Modify-Write | Mutations based on latest state |
+| Mechanism          | Guarantee                                       |
+| ------------------ | ----------------------------------------------- |
+| Locking            | Prevents concurrent modifications               |
+| Atomic Writes      | State and indexes written together              |
+| WAL                | Durability and recovery                         |
+| Read-Modify-Write  | Mutations based on latest state                 |
 | Timestamp Ordering | Correct final state despite out-of-order events |
 
 ## Next Steps

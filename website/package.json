@@ -13,7 +13,11 @@
     "linkcheck": "CHECK_LINKS=true pnpm build",
     "astro": "astro",
     "lunaria:build": "lunaria build",
-    "grammars": "node grammars/generate.mjs"
+    "grammars": "node grammars/generate.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix ."
   },
   "dependencies": {
     "@astro-community/astro-embed-youtube": "^0.5.6",
@@ -29,9 +33,14 @@
     "starlight-llms-txt": "^0.6.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
     "@playwright/test": "^1.45.0",
     "axe-playwright": "^2.0.3",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
     "sitemapper": "^3.2.12",
-    "starlight-links-validator": "^0.14.0"
+    "starlight-links-validator": "^0.14.0",
+    "typescript-eslint": "^8.19.1"
   }
 }

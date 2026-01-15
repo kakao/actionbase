@@ -2,7 +2,7 @@
 title: Schema
 description: Defining the structure of your interaction data
 sidebar:
-    order: 2
+  order: 2
 ---
 
 Schema defines the structure and configuration of interaction data in Actionbase. Before storing any data, you must define how your edges are structured, what properties they have, and how they can be queried.
@@ -32,6 +32,7 @@ Service
 A **Service** is a logical namespace that contains labels and aliases, providing organization and isolation for related graph structures.
 
 **Properties:**
+
 - **name**: Service identifier (e.g., `myservice`)
 - **desc**: Description of the service
 - **active**: Whether the service is active
@@ -43,6 +44,7 @@ Services group related labels together. For example, an e-commerce service might
 A **Label** defines the complete schema for edges, specifying the structure of relationships including source and target types, properties, and indexes.
 
 **Properties:**
+
 - **name**: Label identifier in the format `service.label`
 - **schema**: Defines the structure of edges
   - **src**: Source node type (e.g., user_id)
@@ -66,6 +68,7 @@ The `schema` property defines what data edges can contain:
   - description: Property description
 
 **Example: Recent Views**
+
 ```
 source: user_id (LONG)
 target: product_id (LONG)
@@ -74,6 +77,7 @@ properties:
 ```
 
 **Example: Reactions**
+
 ```
 source: user_id (LONG)
 target: product_id (LONG)
@@ -107,11 +111,13 @@ For how indexes are used in queries, see [Query](/design/query/).
 An **Alias** provides an alternative name for a label, enabling different names for the same underlying data.
 
 **Properties:**
+
 - **name**: Alias identifier in the format `service.alias`
 - **target**: The label this alias points to (`service.label`)
 - **active**: Whether the alias is active
 
 Aliases are useful for:
+
 - Gradual migrations between label names
 - Providing domain-specific names for shared labels
 
@@ -120,6 +126,7 @@ Aliases are useful for:
 **Storage** defines where data is physically stored, specifying the storage backend configuration.
 
 **Properties:**
+
 - **type**: Storage type (e.g., `hbase`)
 - **name**: Storage identifier
 - **conf**: Configuration map with storage-specific settings
@@ -129,22 +136,22 @@ Labels reference a storage by name. For available datastore backends, see [Datas
 
 ## Naming Conventions
 
-| Type | Format | Example |
-|------|--------|---------|
-| Service | Simple identifier | `myservice` |
-| Label | `service.label` | `myservice.likes` |
-| Alias | `service.alias` | `myservice.friends` |
-| Storage | Simple identifier | `hbase-storage-1` |
+| Type    | Format            | Example             |
+| ------- | ----------------- | ------------------- |
+| Service | Simple identifier | `myservice`         |
+| Label   | `service.label`   | `myservice.likes`   |
+| Alias   | `service.alias`   | `myservice.friends` |
+| Storage | Simple identifier | `hbase-storage-1`   |
 
 ## Version Information
 
 Actionbase has two versions of schema APIs: v2 and v3. Currently, **schema uses v2 API**, while mutation and query operations use v3. The terminology mapping:
 
-| v2 Term | v3 Term |
-|---------|---------|
+| v2 Term | v3 Term  |
+| ------- | -------- |
 | Service | Database |
-| Label | Table |
-| Alias | Alias |
+| Label   | Table    |
+| Alias   | Alias    |
 
 Schema v3 support is planned for future releases.
 
@@ -163,4 +170,3 @@ When you perform a mutation, data follows the label's schema. When you query, yo
 - [Mutation](/design/mutation/): Write data following your schema
 - [Query](/design/query/): Query data using defined indexes
 - [API Reference](/api-references/metadata/): Complete API documentation
-

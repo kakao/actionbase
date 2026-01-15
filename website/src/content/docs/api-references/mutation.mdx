@@ -2,9 +2,9 @@
 title: Mutation API Reference
 description: Edge mutation API reference
 sidebar:
-    order: 2
+  order: 2
 tableOfContents:
-    maxHeadingLevel: 2
+  maxHeadingLevel: 2
 ---
 
 This API provides mutation operations for edges.
@@ -25,13 +25,13 @@ POST /graph/v3/databases/{database}/tables/{table}/edges
 
 ### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Query | lock | Optional (default: true) | Whether to acquire lock during mutation |
-| Body | mutations | Required | List of mutation items |
+| Location | Parameter     | Required                 | Description                                  |
+| -------- | ------------- | ------------------------ | -------------------------------------------- |
+| Header   | Authorization | Optional                 | Authentication key (reserved for future use) |
+| Path     | database      | Required                 | Target database name                         |
+| Path     | table         | Required                 | Target table name                            |
+| Query    | lock          | Optional (default: true) | Whether to acquire lock during mutation      |
+| Body     | mutations     | Required                 | List of mutation items                       |
 
 ### Request Body
 
@@ -43,12 +43,12 @@ POST /graph/v3/databases/{database}/tables/{table}/edges
 
 ### Request Example
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| lock | true |
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| lock          | true          |
 
 ```bash
 # POST /graph/v3/databases/your_database/tables/your_table/edges
@@ -101,13 +101,13 @@ POST /graph/v3/databases/{database}/tables/{table}/edges/sync
 
 ### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Query | lock | Optional (default: true) | Whether to acquire lock during mutation |
-| Body | mutations | Required | List of mutation items |
+| Location | Parameter     | Required                 | Description                                  |
+| -------- | ------------- | ------------------------ | -------------------------------------------- |
+| Header   | Authorization | Optional                 | Authentication key (reserved for future use) |
+| Path     | database      | Required                 | Target database name                         |
+| Path     | table         | Required                 | Target table name                            |
+| Query    | lock          | Optional (default: true) | Whether to acquire lock during mutation      |
+| Body     | mutations     | Required                 | List of mutation items                       |
 
 ### Request Body
 
@@ -119,12 +119,12 @@ POST /graph/v3/databases/{database}/tables/{table}/edges/sync
 
 ### Request Example
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| lock | true |
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| lock          | true          |
 
 ```bash
 # POST /graph/v3/databases/your_database/tables/your_table/edges/sync
@@ -177,13 +177,13 @@ POST /graph/v3/databases/{database}/tables/{table}/multi-edges
 
 ### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Query | lock | Optional (default: true) | Whether to acquire lock during mutation |
-| Body | mutations | Required | List of mutation items |
+| Location | Parameter     | Required                 | Description                                  |
+| -------- | ------------- | ------------------------ | -------------------------------------------- |
+| Header   | Authorization | Optional                 | Authentication key (reserved for future use) |
+| Path     | database      | Required                 | Target database name                         |
+| Path     | table         | Required                 | Target table name                            |
+| Query    | lock          | Optional (default: true) | Whether to acquire lock during mutation      |
+| Body     | mutations     | Required                 | List of mutation items                       |
 
 ### Request Body
 
@@ -195,12 +195,12 @@ POST /graph/v3/databases/{database}/tables/{table}/multi-edges
 
 ### Request Example
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| lock | true |
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| lock          | true          |
 
 ```bash
 # POST /graph/v3/databases/your_database/tables/your_table/multi-edges
@@ -253,13 +253,13 @@ POST /graph/v3/databases/{database}/tables/{table}/multi-edges/sync
 
 ### Parameters
 
-| Location | Parameter | Required | Description |
-|----------|-----------|----------|-------------|
-| Header | Authorization | Optional | Authentication key (reserved for future use) |
-| Path | database | Required | Target database name |
-| Path | table | Required | Target table name |
-| Query | lock | Optional (default: true) | Whether to acquire lock during mutation |
-| Body | mutations | Required | List of mutation items |
+| Location | Parameter     | Required                 | Description                                  |
+| -------- | ------------- | ------------------------ | -------------------------------------------- |
+| Header   | Authorization | Optional                 | Authentication key (reserved for future use) |
+| Path     | database      | Required                 | Target database name                         |
+| Path     | table         | Required                 | Target table name                            |
+| Query    | lock          | Optional (default: true) | Whether to acquire lock during mutation      |
+| Body     | mutations     | Required                 | List of mutation items                       |
 
 ### Request Body
 
@@ -271,12 +271,12 @@ POST /graph/v3/databases/{database}/tables/{table}/multi-edges/sync
 
 ### Request Example
 
-| Parameter | Value |
-|-----------|-------|
-| Authorization | YOUR_API_KEY |
-| database | your_database |
-| table | your_table |
-| lock | true |
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| lock          | true          |
 
 ```bash
 # POST /graph/v3/databases/your_database/tables/your_table/multi-edges/sync
@@ -318,11 +318,11 @@ curl -X POST \
 
 The `type` field in mutation items specifies the operation to perform:
 
-| Type | Description |
-|------|-------------|
+| Type     | Description                                                     |
+| -------- | --------------------------------------------------------------- |
 | `INSERT` | Create a new edge or update an existing edge with a new version |
-| `UPDATE` | Update properties of an existing edge |
-| `DELETE` | Delete an edge (marks it as deleted) |
+| `UPDATE` | Update properties of an existing edge                           |
+| `DELETE` | Delete an edge (marks it as deleted)                            |
 
 ## Lock Parameter
 
@@ -424,4 +424,3 @@ data class MultiEdge(
   val properties: Map<String, Any?>,  // Edge properties
 )
 ```
-

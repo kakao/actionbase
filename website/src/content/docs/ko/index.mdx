@@ -21,22 +21,26 @@ hero:
       variant: minimal
       link: https://github.com/kakao/actionbase
 banner:
-    content: '🚀 오픈소스 공개 — <a href="/ko/blog/open-source-announcement/">자세히 보기</a>'
+  content: '🚀 오픈소스 공개 — <a href="/ko/blog/open-source-announcement/">자세히 보기</a>'
 ---
 
 import { CardGrid, Card } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
-	<Card title="쓰기 시점 사전 계산" icon="rocket">
-		빠르고 예측 가능한 읽기를 위해 필요한 데이터를 쓰기 시점에 미리 준비하여, 서비스별 인덱싱이나 카운팅 로직을 제거합니다.
-	</Card>
-	<Card title="활동 지향 그래프 모델" icon="document">
-		스키마로 정의된 속성을 가진 행위자(actor)→대상(target) 관계로 활동을 표현하여, 사용자 상호작용의 구조에 맞게 모델링합니다.
-	</Card>
-	<Card title="통합 REST API" icon="puzzle">
-		활동 데이터를 조회하고 변경하기 위한 간단하고 저장소에 독립적인 인터페이스를 제공합니다. 최소한의 설정으로 빠르게 시작할 수 있습니다.
-	</Card>
-	<Card title="WAL/CDC 통합" icon="external">
-		복구, 벌크 로딩, 비동기 프로세서, 연결된 데이터 파이프라인을 위한 write-ahead(WAL) 및 변경 로그(CDC)를 생성합니다.
-	</Card>
+  <Card title="쓰기 시점 사전 계산" icon="rocket">
+    빠르고 예측 가능한 읽기를 위해 필요한 데이터를 쓰기 시점에 미리 준비하여, 서비스별 인덱싱이나
+    카운팅 로직을 제거합니다.
+  </Card>
+  <Card title="활동 지향 그래프 모델" icon="document">
+    스키마로 정의된 속성을 가진 행위자(actor)→대상(target) 관계로 활동을 표현하여, 사용자 상호작용의
+    구조에 맞게 모델링합니다.
+  </Card>
+  <Card title="통합 REST API" icon="puzzle">
+    활동 데이터를 조회하고 변경하기 위한 간단하고 저장소에 독립적인 인터페이스를 제공합니다.
+    최소한의 설정으로 빠르게 시작할 수 있습니다.
+  </Card>
+  <Card title="WAL/CDC 통합" icon="external">
+    복구, 벌크 로딩, 비동기 프로세서, 연결된 데이터 파이프라인을 위한 write-ahead(WAL) 및 변경
+    로그(CDC)를 생성합니다.
+  </Card>
 </CardGrid>

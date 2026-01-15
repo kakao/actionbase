@@ -23,30 +23,30 @@ a higher-level abstraction tailored for real-time interaction serving.
 ## Design Goals
 
 - **Shared Interaction Layer**
-Provide a unified platform for storing and serving user interactions as a shared, canonical interaction graph.
+  Provide a unified platform for storing and serving user interactions as a shared, canonical interaction graph.
 
 - **Natural Interaction Modeling**
-Model interactions as actor→target relationships with schema-defined properties, closely reflecting how user interactions appear in real applications.
+  Model interactions as actor→target relationships with schema-defined properties, closely reflecting how user interactions appear in real applications.
 
 - **Write-Time Optimization**
-Optimize for reads at write time, enabling fast and predictable queries without expensive read-time computation.
+  Optimize for reads at write time, enabling fast and predictable queries without expensive read-time computation.
 
 - **Leverage Proven Storage**
-Build on the strengths of existing storage engines (for example, HBase), allowing Actionbase to focus on interaction modeling and serving rather than reimplementing durability, scalability, or distribution.
+  Build on the strengths of existing storage engines (for example, HBase), allowing Actionbase to focus on interaction modeling and serving rather than reimplementing durability, scalability, or distribution.
 
 ## Key Features
 
 - **Write-Time Materialization**
-Pre-compute the data required for fast, predictable reads at write time, eliminating service-specific indexing and counting logic.
+  Pre-compute the data required for fast, predictable reads at write time, eliminating service-specific indexing and counting logic.
 
 - **Interaction-Oriented Graph Model**
-Represent user interactions as actor→target edges with schema-defined properties for efficient querying.
+  Represent user interactions as actor→target edges with schema-defined properties for efficient querying.
 
 - **Unified REST API**
-Expose a simple API for querying and mutating interaction-driven data.
+  Expose a simple API for querying and mutating interaction-driven data.
 
 - **WAL / CDC Integration**
-Emit write-ahead logs and change data capture streams for recovery, replay, asynchronous processing, and downstream data pipelines.
+  Emit write-ahead logs and change data capture streams for recovery, replay, asynchronous processing, and downstream data pipelines.
 
 ## Datastore
 
