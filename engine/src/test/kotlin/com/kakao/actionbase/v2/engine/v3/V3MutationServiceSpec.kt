@@ -394,12 +394,12 @@ class V3MutationServiceSpec :
 
         "mutateMultiEdge should queue mutations when globalMutationMode is ASYNC" {
             val database = GraphFixtures.serviceName
-            val table = GraphFixtures.syncTable // todo: replace with multiEdgeSyncTable
+            val table = GraphFixtures.multiEdgeAsyncTable
             val multiEdgeInsertRequest =
                 """
                 {
                   "mutations": [
-                    {"type": "INSERT", "edge": {"version": 100, "id": 5000, "source": "2000", "target": "3000", "properties": {"permission": "test", "createdAt": 100}}}
+                    {"type": "INSERT", "edge": {"version": 100, "id": 5000, "source": "2000", "target": "3000", "properties": {"createdAt": 100}}}
                   ]
                 }
                 """.trimIndent().toMultiEdgeBulkMutationRequest()
