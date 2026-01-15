@@ -423,7 +423,7 @@ class V3MutationServiceSpec :
 
         fun String.toEdgeBulkMutationRequest(): EdgeBulkMutationRequest = mapper.readValue(this)
 
-        fun String.toMultiEdgeBulkMutationRequest(): MultiEdgeBulkMutationRequest = mapper.readValue<MultiEdgeBulkMutationRequest>(this)
+        fun String.toMultiEdgeBulkMutationRequest(): MultiEdgeBulkMutationRequest = mapper.readValue(this)
 
         fun String.toEdgeMutationResponse(): EdgeMutationResponse = mapper.readValue(this)
 
