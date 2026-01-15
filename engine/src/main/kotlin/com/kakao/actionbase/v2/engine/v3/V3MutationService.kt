@@ -72,7 +72,8 @@ class V3MutationService(
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation"))
         }
 
-        val mutationMode = MutationModeContext.of(label.entity.mode, sync)
+        val mutationMode = graph.globalMutationMode ?: sync
+        val mutationModeContext = MutationModeContext.of(label.entity.mode, mutationMode)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)
@@ -85,12 +86,12 @@ class V3MutationService(
                 val edge = edgeEvent.toTraceEdge()
                 val operation = edgeEvent.event.type.toV2()
                 graph.wal
-                    .write(aliasEntityName, label.name, edge, operation, audit, requestId, mutationMode)
+                    .write(aliasEntityName, label.name, edge, operation, audit, requestId, mutationModeContext)
                     .thenReturn(edgeEvent)
             }.groupBy { it.source to it.target }
             .flatMap { groupedFlux ->
                 val key = groupedFlux.key()
-                if (mutationMode.queue) {
+                if (mutationModeContext.queue) {
                     groupedFlux
                         .collectList()
                         .flatMap { group ->
@@ -184,7 +185,8 @@ class V3MutationService(
         if (label !is HBaseIndexedLabel) {
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}) is not indexed or not supported for edge mutation"))
         }
-        val mutationMode = MutationModeContext.of(label.entity.mode, sync)
+        val mutationMode = graph.globalMutationMode ?: sync
+        val mutationModeContext = MutationModeContext.of(label.entity.mode, mutationMode)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)
@@ -197,12 +199,12 @@ class V3MutationService(
                 val edge = multiEdgeEvent.toTraceEdge()
                 val operation = multiEdgeEvent.event.type.toV2()
                 graph.wal
-                    .write(aliasEntityName, label.name, edge, operation, audit, requestId, mutationMode)
+                    .write(aliasEntityName, label.name, edge, operation, audit, requestId, mutationModeContext)
                     .thenReturn(multiEdgeEvent)
             }.groupBy { it.id }
             .flatMap { groupedFlux ->
                 val key = groupedFlux.key()
-                if (mutationMode.queue) {
+                if (mutationModeContext.queue) {
                     groupedFlux
                         .collectList()
                         .flatMap { group ->

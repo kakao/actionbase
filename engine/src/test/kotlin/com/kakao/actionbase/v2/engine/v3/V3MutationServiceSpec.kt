@@ -4,9 +4,9 @@ import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
-import com.kakao.actionbase.core.metadata.common.MutationMode
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.GraphConfig
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -30,8 +30,9 @@ class V3MutationServiceSpec :
         lateinit var graph: Graph
         lateinit var v3MutationService: V3MutationService
         lateinit var v3QueryService: V3QueryService
-        lateinit var asyncGraph: Graph
-        lateinit var asyncV3MutationService: V3MutationService
+
+        lateinit var graphGlobalAsync: Graph
+        lateinit var v3MutationServiceGlobalAsync: V3MutationService
 
         beforeTest {
             graph = GraphFixtures.create()
@@ -39,16 +40,16 @@ class V3MutationServiceSpec :
             v3QueryService = V3QueryService(graph)
 
             // Create a graph with globalMutationMode set to ASYNC for testing
-            asyncGraph =
+            graphGlobalAsync =
                 GraphFixtures.create(
                     GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC),
                 )
-            asyncV3MutationService = V3MutationService(asyncGraph)
+            v3MutationServiceGlobalAsync = V3MutationService(graphGlobalAsync)
         }
 
         afterTest {
             graph.close()
-            asyncGraph.close()
+            graphGlobalAsync.close()
         }
 
         "mutation" {
@@ -379,7 +380,7 @@ class V3MutationServiceSpec :
                 """.trimIndent().toEdgeBulkMutationRequest()
 
             // With globalMutationMode set to ASYNC, even sync tables should process mutations asynchronously
-            asyncV3MutationService
+            v3MutationServiceGlobalAsync
                 .mutateEdge(database, table, insertRequest)
                 .test()
                 .assertNext { actualObject ->
@@ -394,7 +395,7 @@ class V3MutationServiceSpec :
 
         "mutateMultiEdge should queue mutations when globalMutationMode is ASYNC" {
             val database = GraphFixtures.serviceName
-            val table = GraphFixtures.multiEdgeAsyncTable
+            val table = GraphFixtures.multiEdgeSyncTable
             val multiEdgeInsertRequest =
                 """
                 {
@@ -405,7 +406,7 @@ class V3MutationServiceSpec :
                 """.trimIndent().toMultiEdgeBulkMutationRequest()
 
             // With globalMutationMode set to ASYNC, even sync tables should process multi-edge mutations asynchronously
-            asyncV3MutationService
+            v3MutationServiceGlobalAsync
                 .mutateMultiEdge(database, table, multiEdgeInsertRequest)
                 .test()
                 .assertNext { actualObject ->

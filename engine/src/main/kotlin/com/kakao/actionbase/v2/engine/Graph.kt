@@ -165,6 +165,8 @@ class Graph(
 
     val encoderPoolSize = config.encoderPoolSize
 
+    val globalMutationMode: MutationMode? = config.globalMutationMode
+
     init {
         if (config.metastoreReloadInitialDelay != null && config.metastoreReloadInterval != null) {
             startMetastoreReload(config.metastoreReloadInitialDelay, config.metastoreReloadInterval, log)

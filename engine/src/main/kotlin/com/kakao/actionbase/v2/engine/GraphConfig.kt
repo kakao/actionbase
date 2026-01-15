@@ -1,6 +1,6 @@
 package com.kakao.actionbase.v2.engine
 
-import com.kakao.actionbase.core.metadata.common.MutationMode
+import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.entity.DefaultStorageEntity
 import com.kakao.actionbase.v2.engine.warmup.WarmUpConfig
 
