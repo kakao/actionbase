@@ -33,7 +33,7 @@ Actionbase leverages proven storage engines—currently HBase for durability and
 
 ## Production Usage
 
-Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home) (KR, e.g., the heart buttons on product lists). Running in stable production for over two years.
+Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home) (KR, e.g., the heart buttons on product lists)—handling over 1M requests/min at peak. Running in stable production for over two years.
 
 ## Learn More
 
