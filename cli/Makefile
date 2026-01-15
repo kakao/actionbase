@@ -6,19 +6,21 @@ BINARY_NAME=actionbase
 MAIN_PATH=./cmd/actionbase
 BUILD_DIR=./build
 
-VERSION?=0.0.1
+SERVICE := cli
+VERSION := $(shell git describe --tags --always --match "$(SERVICE)/*" 2>/dev/null | sed 's|$(SERVICE)/||')
 GOBASE=$(shell pwd)
 GOBIN=$(GOBASE)/bin
 GOFILES=$(wildcard *.go)
 
-LD_FLAGS := -s -w
+LD_FLAGS := -s -w -X main.Version=$(VERSION)
 
 all: fmt vet build
 
 build:
 	@echo "Building..."
 	@mkdir -p $(BUILD_DIR)
-	@go build -ldflags "$(LD_FLAGS) -X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+	@echo "$(VERSION)"
+	@go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
 install:
@@ -60,19 +62,23 @@ tidy:
 
 build-linux:
 	@echo "Building for Linux..."
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LD_FLAGS) -X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)_$(VERSION)_linux_amd64/$(BINARY_NAME) $(MAIN_PATH)
+
+	@echo "$(BUILD_DIR)"
+	@echo "$(BINARY_NAME)"
+	@echo "$(VERSION)"
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)_$(VERSION)_linux_amd64/$(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)_linux_amd64"
 
 build-macos:
 	@echo "Building for macOS..."
 	@echo "CGO_ENABLED=$$CGO_ENABLED"
-	@CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$(LD_FLAGS) -X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_amd64/${BINARY_NAME} $(MAIN_PATH)
-	@CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LD_FLAGS) -X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_arm64/${BINARY_NAME} $(MAIN_PATH)
+	@CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_amd64/${BINARY_NAME} $(MAIN_PATH)
+	@CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)_$(VERSION)_darwin_arm64/${BINARY_NAME} $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)_darwin_*"
 
 build-windows:
 	@echo "Building for Windows..."
-	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LD_FLAGS) -X main.Version=$(VERSION)" -o $(BUILD_DIR)/$(BINARY_NAME)_$(VERSION)_windows_amd64/${BINARY_NAME}.exe $(MAIN_PATH)
+	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "$(LD_FLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)_$(VERSION)_windows_amd64/${BINARY_NAME}.exe $(MAIN_PATH)
 	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)_windows_amd64.exe"
 
 build-all: build-linux build-macos build-windows
