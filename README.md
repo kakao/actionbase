@@ -29,7 +29,7 @@ Actionbase serves interaction-derived data—**views**, **likes**, **reactions**
 
 User interactions are modeled as **who** did **what** to which **target**. Actionbase materializes read-optimized structures at write time, enabling fast and predictable queries without expensive read-time computation.
 
-Actionbase currently uses HBase as its primary storage backend. Lighter backends (e.g., SlateDB) are planned for smaller deployments.
+Actionbase leverages proven storage engines. It currently uses HBase for durability and horizontal scalability. Lighter backends (e.g., SlateDB) are planned for smaller deployments.
 
 ## Production Usage
 
