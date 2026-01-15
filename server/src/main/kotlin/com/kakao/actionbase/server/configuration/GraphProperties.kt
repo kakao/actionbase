@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.configuration
 
+import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.entity.DefaultStorageEntity
 import com.kakao.actionbase.v2.engine.warmup.WarmUpConfig
 
@@ -30,4 +31,5 @@ data class GraphProperties(
     val allowMirror: Boolean = false,
     val mutationRequestTimeout: Long?,
     val hbase: Map<String, String> = emptyMap(),
+    val globalMutationMode: MutationMode? = null,
 )
