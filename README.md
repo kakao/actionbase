@@ -29,7 +29,7 @@ Actionbase serves interaction-derived data—**views**, **likes**, **reactions**
 
 User interactions are modeled as **who** did **what** to which **target**. Actionbase materializes read-optimized structures at write time, enabling fast and predictable queries without expensive read-time computation.
 
-Actionbase leverages proven storage engines. It currently uses HBase for durability and horizontal scalability. Lighter backends (e.g., SlateDB) are planned for smaller deployments.
+Actionbase leverages proven storage engines—currently HBase for durability and horizontal scalability (lighter backends such as SlateDB planned for smaller deployments). Built-in WAL and CDC publish to Kafka for downstream pipelines.
 
 ## Production Usage
 
@@ -46,7 +46,7 @@ We welcome contributions. See our [Contributing](https://actionbase.io/community
 
 ## Current Status
 
-The codebase is released as it evolved inside Kakao. Additional modules and guides will be added over time.
+The codebase is released largely as it evolved inside Kakao. Additional modules and guides will be added over time.
 
 ## Architecture
 
