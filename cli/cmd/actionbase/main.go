@@ -23,7 +23,7 @@ func main() {
 	parser := util.ParseArgs(os.Args)
 
 	if _, found := parser.GetLenient("version"); found {
-		fmt.Printf("v%s", Version)
+		fmt.Println("v" + Version)
 		return
 	}
 
