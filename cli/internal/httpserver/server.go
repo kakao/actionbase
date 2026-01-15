@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -40,13 +41,13 @@ func Start(port string, ready chan<- error, handlerFunc http.HandlerFunc) error 
 
 	addr := "127.0.0.1:" + port
 
-	go func() {
-		if err := http.ListenAndServe(addr, nil); err != nil {
-			if ready != nil {
-				ready <- err
-			}
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		if ready != nil {
+			ready <- err
 		}
-	}()
+		return err
+	}
 
 	fmt.Printf("Started as server mode running on %s\n", addr)
 
@@ -54,7 +55,7 @@ func Start(port string, ready chan<- error, handlerFunc http.HandlerFunc) error 
 		ready <- nil
 	}
 
-	return nil
+	return http.Serve(listener, nil)
 }
 
 func StartGuide(cwd, name, apiHost, serverPort string) error {
