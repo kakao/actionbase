@@ -7,8 +7,11 @@ import (
 	"github.com/kakao/actionbase/internal/util"
 )
 
+var (
+	Version = "0.0.1"
+)
+
 const (
-	version     = "0.0.1"
 	DefaultHost = "http://localhost:8080"
 
 	hostParamKey = "host"
@@ -24,7 +27,7 @@ func main() {
 	}
 
 	authKey, _ := parser.Get(authParamKey)
-	console := runner.NewActionbaseCommandLineRunner(version, host, &authKey, "", false)
+	console := runner.NewActionbaseCommandLineRunner(Version, host, &authKey, "", false)
 	console.CheckConnection()
 	console.StartServer(parser)
 	console.Run()
