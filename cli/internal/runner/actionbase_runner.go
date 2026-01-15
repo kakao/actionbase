@@ -26,6 +26,7 @@ const (
 type ActionbaseCommandLineRunner struct {
 	logger   *slog.Logger
 	version  string
+	host     string
 	ReadLine *readline.Instance
 	*CommandLineRunner
 	handler         *atomic.Value
@@ -47,6 +48,7 @@ func NewActionbaseCommandLineRunner(version, host string, authKey *string, curre
 	runner := &ActionbaseCommandLineRunner{
 		logger:            logger,
 		version:           version,
+		host:              host,
 		CommandLineRunner: NewCommandLineRunner("Actionbase", "0.0.1"),
 		client:            client.NewActionbaseClient(httpClient, &clientContext),
 		clientContext:     &clientContext,
@@ -154,6 +156,10 @@ func (r *ActionbaseCommandLineRunner) RunCommand(input string) (*model.Response,
 	return result, elapsed
 }
 
+func (r *ActionbaseCommandLineRunner) GetHost() string {
+	return r.host
+}
+
 func (r *ActionbaseCommandLineRunner) GetCurrentDatabase() string {
 	return r.currentDatabase
 }
@@ -226,7 +232,7 @@ func (r *ActionbaseCommandLineRunner) CheckConnection() {
 	response := r.client.GetTenant()
 
 	if response.IsError() {
-		fmt.Println("Connection Failed. Check if a server is available")
+		fmt.Printf("Failed to connect to %s. Check if the server is available", r.GetHost())
 		os.Exit(0)
 	}
 }
@@ -254,7 +260,7 @@ func (r *ActionbaseCommandLineRunner) showBanner() {
 	fmt.Printf("\033[33m│\033[0m")
 	fmt.Println("              / \\/ _/      @    \\_\033[33m♥/\033[0m\\     \033[33mActionbase                                            │\033[0m")
 	fmt.Printf("\033[33m│\033[0m")
-	fmt.Printf("             /   /                | |     %-54s\033[33m│\033[0m\n", r.client.GetHost())
+	fmt.Printf("             /   /                | |     %-54s\033[33m│\033[0m\n", r.GetHost())
 	fmt.Printf("\033[33m│\033[0m")
 	fmt.Println("           _/   /             ___/ \\/                                                           \033[33m│\033[0m")
 	fmt.Printf("\033[33m│\033[0m")
