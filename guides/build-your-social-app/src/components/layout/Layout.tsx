@@ -23,6 +23,8 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
   const [breadcrumbSteps, setBreadcrumbSteps] = useState<BreadCrumbStep[]>(breadCrumbSteps);
   const previousStepIndexRef = useRef<number | undefined>(undefined);
 
+  const isStepCompleted = stepIndex !== undefined && stepIndex > 21;
+
   const sanitizedStarsImage = useMemo(() => DOMPurify.sanitize(starsImage, {
     ADD_ATTR: ['target', 'rel'],
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
@@ -133,7 +135,7 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
 
         <div className="layout">
           <div className="browser-frame-wrapper">
-            <div className="browser-frame">
+            <div className={`browser-frame ${isStepCompleted ? 'step-completed' : ''}`}>
               <div className="browser-header">
                 <div className="browser-buttons">
                   <span className="browser-btn close"></span>
@@ -141,19 +143,23 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
                   <span className="browser-btn maximize"></span>
                 </div>
               </div>
-              <div className="browser-content">
-                <div className="mobile-frame">
+              <div className={`browser-content ${isStepCompleted ? 'step-completed' : ''}`}>
+                <div className={`mobile-frame ${isStepCompleted ? 'step-completed' : ''}`}>
                   <div className="mobile-content">
                     {children}
                     <MobileFooter/>
                   </div>
                 </div>
               </div>
-              <ApiLogs/>
+              <div className={`api-logs-wrapper ${isStepCompleted ? 'step-completed' : ''}`}>
+                <ApiLogs/>
+              </div>
             </div>
-            <div className="terminal-wrapper">
-              <CliTerminal/>
-            </div>
+            {!isStepCompleted && (
+              <div className="terminal-wrapper">
+                <CliTerminal/>
+              </div>
+            )}
           </div>
         </div>
       </ApiLogProvider>

@@ -16,6 +16,7 @@
   min-width: 0;
   border-bottom: var(--font-size-xs) solid #303030;
   border-top: 1px solid #5d5d5d;
+  transition: height 0.3s ease-in-out, width 0.3s ease-in-out, padding 0.3s ease-in-out;
 }
 
 .api-log-container * {
