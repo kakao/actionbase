@@ -237,6 +237,23 @@
   height: var(--font-size-base);
 }
 
+#run-command-btn {
+  animation: blink-button 1.5s ease-in-out infinite;
+}
+
+@keyframes blink-button {
+  0%, 50%, 100% {
+    opacity: 1;
+    background: #303030;
+    border-color: #b3b3b3;
+  }
+  25%, 75% {
+    opacity: 0.4;
+    background: rgba(93, 93, 93, 0.3);
+    border-color: #303030;
+  }
+}
+
 .cursor {
   display: inline-block;
   font-weight: bold;
