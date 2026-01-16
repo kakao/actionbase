@@ -47,20 +47,31 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
       return;
     }
 
-    const stepExists = breadCrumbSteps.some(step => step.stepIndex === stepIndex)
-      || breadCrumbSteps.flatMap(step => step.subSteps || [])
-        .some(subStep => subStep?.stepIndex === stepIndex);
+    const allBreadcrumbStepIndices = [
+      ...breadCrumbSteps.map(step => step.stepIndex),
+      ...breadCrumbSteps.flatMap(step => step.subSteps || []).map(subStep => subStep.stepIndex)
+    ].sort((a, b) => a - b);
 
+    const stepExists = allBreadcrumbStepIndices.includes(stepIndex);
+
+    let targetStepIndex = stepIndex;
     if (!stepExists) {
-      return;
+      const closestPrevStep = allBreadcrumbStepIndices
+        .filter(idx => idx < stepIndex)
+        .pop();
+      if (closestPrevStep !== undefined) {
+        targetStepIndex = closestPrevStep;
+      } else {
+        return;
+      }
     }
 
     const updatedSteps = breadCrumbSteps.map((step) => {
-      const isMainStepActive = step.stepIndex === stepIndex;
+      const isMainStepActive = step.stepIndex === targetStepIndex;
       const isMainStepCompleted = step.stepIndex < stepIndex;
 
       const updatedSubSteps = step.subSteps?.map((subStep) => {
-        const isSubStepActive = subStep.stepIndex === stepIndex;
+        const isSubStepActive = subStep.stepIndex === targetStepIndex;
         const isSubStepCompleted = subStep.stepIndex < stepIndex;
         return {
           ...subStep,

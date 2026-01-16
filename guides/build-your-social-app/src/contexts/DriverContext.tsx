@@ -64,16 +64,41 @@ export const useDriver = () => {
   return context;
 };
 
+export const STEP_INDEX_STORAGE_KEY = 'active-step-index';
+
 export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) => {
   const navigate = useNavigate();
   const {showToast} = useToast();
 
-  const [stepIndex, setStepIndex] = useState(0);
+  const getStoredStepIndex = (): number => {
+    try {
+      const activeIndex = localStorage.getItem(STEP_INDEX_STORAGE_KEY);
+      if (activeIndex !== null) {
+        const index = parseInt(activeIndex, 10);
+        if (!isNaN(index) && index >= 0) {
+          return index;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to get current active step index:', error);
+    }
+    return 0;
+  };
+
+  const [stepIndex, setStepIndex] = useState(getStoredStepIndex);
   const [buttonEvent, setButtonEvent] = useState<ButtonEvent | undefined>(undefined);
 
   const driverObj = useRef<Driver | null>(null);
   const setButtonEventRef = useRef(setButtonEvent);
   const showToastRef = useRef(showToast);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STEP_INDEX_STORAGE_KEY, stepIndex.toString());
+    } catch (error) {
+      console.error('Failed to save current active step index:', error);
+    }
+  }, [stepIndex]);
 
   const onMoveAfter = useCallback(
     (type: string, stepEvents: Map<number, StepEvent>, eventType: string | undefined = undefined, stepIndex: number | undefined = undefined, timeout: number = 100) => {
@@ -88,10 +113,15 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           let currentIndex = stepIndex;
           if (!currentIndex) {
             currentIndex = driverObj.current.getActiveIndex();
-            if (!currentIndex) {
-              console.error('Failed to get active index');
-              return;
-            }
+          }
+
+          if (!currentIndex) {
+            currentIndex = getStoredStepIndex() - 1;
+          }
+
+          if (!currentIndex) {
+            console.error('Failed to get active index');
+            return;
           }
 
           if (type === STEP.NEXT) {
@@ -410,12 +440,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_21,
               side: 'over',
               align: 'center',
-              nextBtnText: 'Bye 👋🏻',
-              onNextClick: () => {
-                if (driverObj.current) {
-                  driverObj.current.destroy();
-                }
-              }
+              nextBtnText: 'Bye 👋🏻'
             },
           },
         ],
@@ -423,14 +448,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           setTimeout(() => {
             setButtonEventRef.current({type: undefined});
           }, 0);
-        },
-        onCloseClick: () => {
-          setButtonEventRef.current({type: STEP.CLOSE});
-
-          if (driverObj.current) {
-            driverObj.current.destroy();
-            setStepIndex(0);
-          }
         },
         onPrevClick: () => {
           setButtonEventRef.current({type: STEP.PREV});
@@ -463,14 +480,33 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       });
     }
 
-    const timer = setTimeout(() => {
+    const rafId = requestAnimationFrame(() => {
       if (driverObj.current) {
-        driverObj.current.drive();
+        const currentStepIndex = getStoredStepIndex();
+        const steps = driverObj.current.getConfig().steps
+        if (!steps) {
+          console.error('Failed to get steps from driver');
+          return;
+        }
+
+        const prevStep = steps[currentStepIndex - 1]
+
+        if (prevStep?.popover?.onNextClick) {
+          prevStep.popover.onNextClick(
+            undefined,
+            prevStep, {
+              config: driverObj.current.getConfig(),
+              state: driverObj.current.getState(),
+              driver: driverObj.current
+            });
+        } else {
+          driverObj.current.drive(currentStepIndex);
+        }
       }
-    }, 100);
+    });
 
     return () => {
-      clearTimeout(timer);
+      cancelAnimationFrame(rafId);
     };
   }, []);
 

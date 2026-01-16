@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {run} from "../../api/cli";
 import stepCommands from "../../constants/handsOnStepCommand";
 import '../../styles/cli-terminal.css';
-import {STEP, useDriver} from "../../contexts/DriverContext";
+import {STEP, STEP_INDEX_STORAGE_KEY, useDriver} from "../../contexts/DriverContext";
 
 interface CommandHistory {
   prompt: string;
@@ -32,12 +32,19 @@ const CliTerminal: React.FC = () => {
   const commandHistoryRef = useRef<HTMLDivElement>(null);
   const currentCommandRef = useRef<CommandHistory | undefined>(undefined);
   const currentContextRef = useRef<Context | null>(null);
+  const isInitializedRef = useRef<boolean>(false);
+  const isRestoredRef = useRef<boolean>(false);
 
   function formatPrompt(database?: string) {
     return database ? `${PROMPT_PREFIX}(${database})` : PROMPT_PREFIX;
   }
 
   function renderCurrentCommand(event: CustomEvent) {
+    if (isRestoredRef.current) {
+      isRestoredRef.current = false;
+      return;
+    }
+
     setDefaultPromptEnabled(true);
 
     const latestCurrentCommand = currentCommandRef.current;
@@ -91,6 +98,10 @@ const CliTerminal: React.FC = () => {
   }
 
   function clearUnExecutedCurrentCommand() {
+    if (!isInitializedRef.current) {
+      return;
+    }
+
     const isUnExecutedCommandRemained = !isCommandClicked &&
       currentCommandRef.current &&
       (buttonEvent?.type === STEP.NEXT || buttonEvent?.type === STEP.PREV);
@@ -216,8 +227,35 @@ const CliTerminal: React.FC = () => {
 
   useEffect(() => {
     window.addEventListener('render', renderCurrentCommand as EventListener);
+
+    const storedStepIndex = localStorage.getItem(STEP_INDEX_STORAGE_KEY);
+    if (storedStepIndex) {
+      const index = parseInt(storedStepIndex, 10);
+      if (!isNaN(index) && index > 0) {
+        const stepCommand = stepCommands.find(value => value.stepIndex === index);
+        if (stepCommand?.command) {
+          isRestoredRef.current = true;
+
+          const prompt = formatPrompt(currentContextRef.current?.database);
+          setCurrentCommand({
+            prompt,
+            content: stepCommand.command,
+            stepIndex: index,
+            database: stepCommand.context?.database,
+            isContextChanged: stepCommand.context !== undefined
+          });
+          setDefaultPromptEnabled(false);
+        }
+      }
+    }
+
+    const timeoutId = setTimeout(() => {
+      isInitializedRef.current = true;
+    }, 500);
+
     return () => {
       window.removeEventListener('render', renderCurrentCommand as EventListener);
+      clearTimeout(timeoutId);
     };
   }, []);
 
