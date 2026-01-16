@@ -204,6 +204,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               side: 'over',
               align: 'center',
               nextBtnText: "start",
+              showButtons: ['next', 'close'],
             },
           },
           {
@@ -262,7 +263,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_6,
               side: 'right',
               align: 'start',
-              nextBtnText: 'done',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
             },
           },
@@ -273,7 +273,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_7,
               side: 'right',
               align: 'start',
-              nextBtnText: 'done',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload'),
             },
