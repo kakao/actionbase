@@ -1,7 +1,8 @@
 @import './common.css';
 
 .api-log-container {
-  flex: 0.3;
+  flex: 0 0 auto;
+  height: 353px;
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--spacing-2xl);
@@ -14,7 +15,6 @@
   scrollbar-width: none;
   min-width: 0;
   border-bottom: var(--font-size-xs) solid #303030;
-  min-height: 0;
   border-top: 1px solid #5d5d5d;
 }
 
@@ -174,3 +174,4 @@
   var(--color-white)-space: pre-wrap;
   word-break: break-word;
 }
+

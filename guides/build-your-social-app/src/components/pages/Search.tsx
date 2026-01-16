@@ -32,27 +32,29 @@ const Search: React.FC = () => {
         </div>
         <button className="cancel-btn" onClick={() => setSearchValue('')}>Cancel</button>
       </header>
-      <div className="search-content">
-        <div className="recent-section" id="search-results-list">
-          <div className="search-results-list">
-            {users
-              .filter(x => !x.isMe)
-              .map((user, index) => (
-                <div key={user.id}
-                     className="search-result-item"
-                     id={`searched-user-${index}`}
-                     onClick={() => navigate(ROUTES.PROFILE(user.id))}>
-                  <div className="result-avatar" style={{background: user.gradient}}>
-                    <span className="avatar-text">
-                      <img src={user.avatar} alt={user.name} />
-                    </span>
+      <div className="search-scroll">
+        <div className="search-content">
+          <div className="recent-section" id="search-results-list">
+            <div className="search-results-list">
+              {users
+                .filter(x => !x.isMe)
+                .map((user, index) => (
+                  <div key={user.id}
+                       className="search-result-item"
+                       id={`searched-user-${index}`}
+                       onClick={() => navigate(ROUTES.PROFILE(user.id))}>
+                    <div className="result-avatar" style={{background: user.gradient}}>
+                      <span className="avatar-text">
+                        <img src={user.avatar} alt={user.name} />
+                      </span>
+                    </div>
+                    <div className="result-info" id={user.id}>
+                      <span className="result-name">{user.id}</span>
+                      <span className="result-subtitle">{user.name}</span>
+                    </div>
                   </div>
-                  <div className="result-info" id={user.id}>
-                    <span className="result-name">{user.id}</span>
-                    <span className="result-subtitle">{user.name}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+            </div>
           </div>
         </div>
       </div>

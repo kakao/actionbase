@@ -121,36 +121,6 @@ const Feed: React.FC = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const feedScrollElement = document.querySelector('.feed-scroll') as HTMLElement;
-    if (!feedScrollElement) return;
-
-    const enableScrolling = () => {
-      Object.assign(feedScrollElement.style, {
-        pointerEvents: 'auto',
-        touchAction: 'pan-y',
-        overflowY: 'auto'
-      });
-    };
-
-    enableScrolling();
-    const observer = new MutationObserver(enableScrolling);
-    observer.observe(document.body, {attributes: true, attributeFilter: ['class']});
-
-    const handleEvent = (e: WheelEvent | TouchEvent) => {
-      if (feedScrollElement.contains(e.target as Node)) e.stopPropagation();
-    };
-
-    document.addEventListener('wheel', handleEvent as EventListener, {passive: true, capture: true});
-    document.addEventListener('touchmove', handleEvent as EventListener, {passive: true, capture: true});
-
-    return () => {
-      observer.disconnect();
-      document.removeEventListener('wheel', handleEvent as EventListener, {capture: true});
-      document.removeEventListener('touchmove', handleEvent as EventListener, {capture: true});
-    };
-  }, []);
-
   return (
     <div className="app feed-page" style={{position: 'relative'}}>
       {isLoading && <Spinner/>}

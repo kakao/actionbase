@@ -1,14 +1,38 @@
 @import './common.css';
 
+.mobile-content .app {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.mobile-content-inner-scroll {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  min-height: 0;
+  position: relative;
+  padding-bottom: 60px;
+}
+
+.mobile-content-inner-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .followers-header {
   display: flex;
   align-items: center;
-  padding: 30px var(--spacing-xl) var(--spacing-lg) var(--spacing-xl);
+  padding: 30px var(--spacing-xl) var(--spacing-lg) 5px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-white);
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: var(--z-index-sticky);
+  flex-shrink: 0;
 }
 
 .header-title {

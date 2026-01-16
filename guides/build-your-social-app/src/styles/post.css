@@ -17,7 +17,7 @@
   position: sticky;
   top: 0;
   background-color: var(--color-white);
-  padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-lg) var(--spacing-xl);
+  padding: var(--spacing-xl) 0 var(--spacing-lg) 0;
   display: flex;
   justify-content: space-between;
   align-items: center;

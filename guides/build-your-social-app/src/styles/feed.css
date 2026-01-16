@@ -422,10 +422,6 @@
     background-color: var(--color-background);
   }
 
-  .app-header {
-    padding: 30px var(--spacing-2xl) var(--spacing-lg) var(--spacing-2xl);
-  }
-
   .stories-container {
     border-radius: var(--border-radius-md);
   }

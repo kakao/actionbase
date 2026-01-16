@@ -415,10 +415,11 @@
 .browser-content {
   display: flex;
   flex-direction: row;
-  flex: 1;
+  height: 617px;
   overflow: hidden;
   position: relative;
   padding-left: 700px;
+  flex-shrink: 0;
 }
 
 .terminal-wrapper {
@@ -426,7 +427,7 @@
   left: 26px;
   top: 67px;
   width: 700px;
-  height: calc((1000px - 26px) / 1.3 - 40px);
+  height: 618px;
   z-index: 200;
   pointer-events: none;
 }
@@ -444,6 +445,7 @@
   align-items: center;
   gap: var(--spacing-lg);
   border-bottom: 1px solid #c0c0c0;
+  flex-shrink: 0;
 }
 
 .browser-buttons {
@@ -529,6 +531,19 @@
 
   .terminal-wrapper {
     top: 67px;
-    height: 617px;
+    height: 618px;
+  }
+}
+
+@media (max-height: 1000px) {
+  .browser-frame {
+    height: calc(100vh - 120px);
+    min-height: 710px;
+  }
+}
+
+@media (min-height: 1001px) {
+  .browser-frame {
+    max-height: 1200px;
   }
 }
