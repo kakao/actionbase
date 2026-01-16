@@ -158,7 +158,7 @@ const Profile: React.FC = () => {
                             'Follow'
                           )}
                         </button>
-                        <button className="action-button-primary">Message</button>
+                        <button className="action-button-primary" onClick={() => showToast('Unsupported')}>Message</button>
                       </>
                     )}
                   </div>
