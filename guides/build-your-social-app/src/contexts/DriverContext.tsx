@@ -24,7 +24,8 @@ interface DriverContextType {
   stepIndex: number;
   setStepIndex: React.Dispatch<React.SetStateAction<number>>;
   moveNext: () => void;
-  buttonEvent: ButtonEvent | undefined,
+  buttonEvent: ButtonEvent | undefined;
+  resetStep: () => void;
 }
 
 const DriverContext = createContext<DriverContextType | null>(null);
@@ -162,6 +163,23 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         }
       }
     }, [navigate, buttonEvent, setStepIndex]);
+
+  const resetStep = useCallback(() => {
+    try {
+      localStorage.removeItem(STEP_INDEX_STORAGE_KEY);
+      setStepIndex(0);
+      if (driverObj.current) {
+        driverObj.current.destroy();
+        setTimeout(() => {
+          if (driverObj.current) {
+            driverObj.current.drive(0);
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Failed to reset step:', error);
+    }
+  }, []);
 
   const moveNext = useCallback(async () => {
     setButtonEvent({type: STEP.NEXT})
@@ -516,8 +534,9 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       setStepIndex,
       moveNext,
       buttonEvent,
+      resetStep,
     };
-  }, [stepIndex, setStepIndex, moveNext, buttonEvent]);
+  }, [stepIndex, setStepIndex, moveNext, buttonEvent, resetStep]);
 
   return (
     <DriverContext.Provider value={contextValue}>

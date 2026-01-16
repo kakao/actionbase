@@ -18,7 +18,7 @@ interface SplitLayoutProps {
 }
 
 const Layout: React.FC<SplitLayoutProps> = ({children}) => {
-  const {stepIndex} = useDriver()
+  const {stepIndex, resetStep} = useDriver()
   const [starsImage, setStarsImage] = useState<string>(DEFAULT_GITHUB_START);
   const [breadcrumbSteps, setBreadcrumbSteps] = useState<BreadCrumbStep[]>(breadCrumbSteps);
   const previousStepIndexRef = useRef<number | undefined>(undefined);
@@ -104,6 +104,16 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
         </div>
 
         <div className="driver-breadcrumb">
+          <button className="reset-step-btn" onClick={resetStep} title="Reset to beginning">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+              <path d="M3 21v-5h5"/>
+            </svg>
+            Restart hands-on guide
+          </button>
+
           {breadcrumbSteps.map((step, index) => (
             <div key={index} className="breadcrumb-item-wrapper">
               <div className={`breadcrumb-item ${step.isActive ? 'active' : ''} ${step.isCompleted ? 'completed' : ''}`}>
