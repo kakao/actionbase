@@ -172,3 +172,17 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   color: white;
   font-size: 16px;
 }
+
+.driver-popover-description .profile-image {
+  display: block;
+  margin: 0 auto 5px auto;
+  width: 100px;
+  height: 100px;
+  border-radius: var(--border-radius-full);
+}
+
+.driver-popover-description .profile-name {
+  text-align: center;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+}

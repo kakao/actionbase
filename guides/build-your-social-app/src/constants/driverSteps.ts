@@ -12,35 +12,35 @@ export interface StepEvent {
 }
 
 export const stepNextEvent = new Map<number, StepEvent>([
-  [1, {target: ["[id='run-command-btn']"]}],
   [2, {target: ["[id='run-command-btn']"]}],
-  [3, {to: '/search', target: ["[id='search-results-list']"]}],
-  [5, {target: ["[id='run-command-btn']"]}],
-  [6, {to: '/profile/j4rami', target: ["[id='btn-profile-following']", "[id='run-command-btn']"]}],
-  [7, {target: ["[id='btn-profile-following']"]}],
-  [8, {target: ["[id='run-command-btn']"]}],
+  [3, {target: ["[id='run-command-btn']"]}],
+  [4, {to: '/search', target: ["[id='search-results-list']"]}],
+  [6, {target: ["[id='run-command-btn']"]}],
+  [7, {to: '/profile/j4rami', target: ["[id='btn-profile-following']", "[id='run-command-btn']"]}],
+  [8, {target: ["[id='btn-profile-following']"]}],
   [9, {target: ["[id='run-command-btn']"]}],
-  [10, {target: ["[id='profile-followers']"]}],
-  [11, {target: ["[id='run-command-btn']"]}],
-  [12, {to: '/followers/j4rami', target: ["[id='followers-list']"]}],
-  [14, {to: '/post/1', target: ["[id='run-command-btn']"]}],
-  [15, {target: ["[id='btn-likes']"]}],
-  [16, {target: ["[id='run-command-btn']"]}],
-  [18, {to: '/'}],
+  [10, {target: ["[id='run-command-btn']"]}],
+  [11, {target: ["[id='profile-followers']"]}],
+  [12, {target: ["[id='run-command-btn']"]}],
+  [13, {to: '/followers/j4rami', target: ["[id='followers-list']"]}],
+  [15, {to: '/post/1', target: ["[id='run-command-btn']"]}],
+  [16, {target: ["[id='btn-likes']"]}],
+  [17, {target: ["[id='run-command-btn']"]}],
+  [19, {to: '/'}],
 ]);
 
 export const stepPrevEvent = new Map<number, StepEvent>([
-  [3, {target: ["[id='run-command-btn']"]}],
-  [4, {to: '/search', target: ["[id='cli-commands']", "[id='run-command-btn']"]}],
-  [7, {to: '/search', target: ["[id='run-command-btn']"]}],
-  [8, {target: ["[id='run-command-btn']"]}],
-  [10, {target: ["[id='run-command-btn']"]}],
+  [4, {target: ["[id='run-command-btn']"]}],
+  [5, {to: '/search', target: ["[id='cli-commands']", "[id='run-command-btn']"]}],
+  [8, {to: '/search', target: ["[id='run-command-btn']"]}],
+  [9, {target: ["[id='run-command-btn']"]}],
   [11, {target: ["[id='run-command-btn']"]}],
-  [13, {to: '/profile/j4rami', target: ["[id='run-command-btn']"]}],
-  [15, {to: '/followers/j4rami'}],
-  [16, {target: ["[id='run-command-btn']"]}],
-  [18, {target: ["[id='run-command-btn']"]}],
-  [19, {to: '/post/1'}],
+  [12, {target: ["[id='run-command-btn']"]}],
+  [14, {to: '/profile/j4rami', target: ["[id='run-command-btn']"]}],
+  [16, {to: '/followers/j4rami'}],
+  [17, {target: ["[id='run-command-btn']"]}],
+  [19, {target: ["[id='run-command-btn']"]}],
+  [20, {to: '/post/1'}],
 ]);
 
 export const stepVerifiers = new Map<number, () => Promise<boolean>>();
@@ -53,7 +53,7 @@ const setDelegatingVerifiers = (targetSteps: number[], sourceStep: number) => {
   });
 };
 
-stepVerifiers.set(2, async () => {
+stepVerifiers.set(3, async () => {
   const [userPosts, userLikes] = await Promise.all([
     getTable(DATABASE.SOCIAL, TABLE.USER_POSTS, false),
     getTable(DATABASE.SOCIAL, TABLE.USER_LIKES, false),
@@ -67,22 +67,22 @@ stepVerifiers.set(2, async () => {
   return true;
 });
 
-stepVerifiers.set(6, async () => {
+stepVerifiers.set(7, async () => {
   const userFollows = await getTable(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, false)
   return !(!userFollows || userFollows?.active === false);
 });
 
-stepVerifiers.set(7, async () => {
+stepVerifiers.set(8, async () => {
   const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, me.id, 'j4rami', false)
   return !(!edgeState || edgeState?.count < 1);
 });
 
-stepVerifiers.set(15, async () => {
+stepVerifiers.set(16, async () => {
   const edgeState = await get(DATABASE.SOCIAL, TABLE.USER_LIKES, me.id, 1, false)
   return !(!edgeState || edgeState?.count < 1);
 });
 
-stepVerifiers.set(19, async () => {
+stepVerifiers.set(20, async () => {
   const [userFollows, userPosts, userLikes] = await Promise.all([
     getTable(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, false),
     getTable(DATABASE.SOCIAL, TABLE.USER_POSTS, false),
@@ -98,6 +98,6 @@ stepVerifiers.set(19, async () => {
   return true;
 });
 
-setDelegatingVerifiers([3, 4, 5], 2);
-setDelegatingVerifiers([8, 9, 10, 11, 12, 13, 14], 7);
-setDelegatingVerifiers([16, 17], 15);
+setDelegatingVerifiers([4, 5, 6], 3);
+setDelegatingVerifiers([9, 10, 11, 12, 13, 14, 15], 8);
+setDelegatingVerifiers([17, 18], 16);

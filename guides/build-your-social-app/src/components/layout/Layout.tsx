@@ -23,7 +23,7 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
   const [breadcrumbSteps, setBreadcrumbSteps] = useState<BreadCrumbStep[]>(breadCrumbSteps);
   const previousStepIndexRef = useRef<number | undefined>(undefined);
 
-  const isStepCompleted = stepIndex !== undefined && stepIndex > 21;
+  const isStepCompleted = stepIndex !== undefined && stepIndex > 22;
 
   const sanitizedStarsImage = useMemo(() => DOMPurify.sanitize(starsImage, {
     ADD_ATTR: ['target', 'rel'],

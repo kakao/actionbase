@@ -10,18 +10,18 @@ export interface CliContext {
 
 export const stepCommands: HandsOnStepCommand[] = [
   {
-    stepIndex: 2,
+    stepIndex: 3,
     command: `load ./hands-on-social/data/build-your-social-app-preset.txt`,
   },
   {
-    stepIndex: 3,
+    stepIndex: 4,
     command: 'use database social',
     context: {
       database: 'social'
     }
   },
   {
-    stepIndex: 6,
+    stepIndex: 7,
     command: `create table \\
 --database social \\
 --storage datastore://guides/user_follows \\
@@ -62,7 +62,7 @@ export const stepCommands: HandsOnStepCommand[] = [
 `,
   },
   {
-    stepIndex: 7,
+    stepIndex: 8,
     command: `mutate user_follows \\
 --type INSERT \\
 --table user_follows \\
@@ -75,19 +75,19 @@ export const stepCommands: HandsOnStepCommand[] = [
 `,
   },
   {
-    stepIndex: 9,
+    stepIndex: 10,
     command: 'get user_follows --source zipdoki --target j4rami',
   },
   {
-    stepIndex: 10,
+    stepIndex: 11,
     command: 'count user_follows --start j4rami --direction IN',
   },
   {
-    stepIndex: 12,
+    stepIndex: 13,
     command: 'scan user_follows --start j4rami --index created_at_desc --direction IN',
   },
   {
-    stepIndex: 15,
+    stepIndex: 16,
     command: `mutate user_likes \\
 --type INSERT \\
 --table user_likes \\
@@ -99,7 +99,7 @@ export const stepCommands: HandsOnStepCommand[] = [
 }'`,
   },
   {
-    stepIndex: 17,
+    stepIndex: 18,
     command: 'get user_likes --source zipdoki --target 1',
   }
 ];
