@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/kakao/actionbase/internal/runner"
@@ -20,6 +21,11 @@ const (
 
 func main() {
 	parser := util.ParseArgs(os.Args)
+
+	if _, found := parser.GetLenient("version"); found {
+		fmt.Println("v" + Version)
+		return
+	}
 
 	host, found := parser.Get(hostParamKey)
 	if !found {
