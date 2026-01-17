@@ -62,10 +62,10 @@ The codebase is released largely as it evolved inside Kakao, with sensitive deta
 
 ## Architecture
 
-- **core** — Data model definitions and processing logic (Java, Kotlin)
-- **engine** — Business logic engine (Kotlin)
+- **core** — Data model, mutation, query, and encoding logic (Java, Kotlin)
+- **engine** — Binds core to storage (HBase) and messaging (Kafka) (Kotlin)
 - **server** — REST API server (Kotlin, Spring WebFlux)
-- **pipeline** *(planned)* — Data processing and background workloads (Scala, Spark)
+- **pipeline** *(planned)* — Bulk loading, WAL/CDC processing, and more (Scala, Spark)
 
 ## License
 
