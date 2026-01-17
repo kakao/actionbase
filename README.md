@@ -62,6 +62,16 @@ The codebase is released largely as it evolved inside Kakao, with sensitive deta
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    Client --> Actionbase
+    Actionbase -.->|Metastore| JDBC["JDBC
+(to be consolidated into HBase)"]
+    Actionbase -->|Storage| HBase
+    Actionbase -->|WAL/CDC| Kafka
+    Kafka --> Downstream["Downstream Pipelines"]
+```
+
 - **core** — Data model, mutation, query, and encoding logic (Java, Kotlin)
 - **engine** — Binds core to storage (HBase) and messaging (Kafka) (Kotlin)
 - **server** — REST API server (Kotlin, Spring WebFlux)
