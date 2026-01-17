@@ -2,7 +2,7 @@
 
 > 🚀 **Open-sourced** — [Learn more](https://actionbase.io/blog/open-source-announcement/)
 
-Actionbase is a database built to serve user interactions in real time, at scale.
+Actionbase is a database for serving user interactions. Built because we kept rebuilding likes, views, and follows across teams—and because a single database stopped scaling.
 
 For background on why it exists and the problems it addresses, see [the discussion](https://github.com/kakao/actionbase/discussions/32).
 
