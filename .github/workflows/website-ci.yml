@@ -1,0 +1,37 @@
+name: Website CI
+
+on:
+  pull_request:
+    paths:
+      - "website/**"
+      - ".github/workflows/website-ci.yml"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./website
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./website
+        run: npm run lint
+
+      - name: Check Prettier formatting
+        working-directory: ./website
+        run: npm run format:check
+
+      - name: Build website
+        working-directory: ./website
+        run: npm run build
