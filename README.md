@@ -13,6 +13,18 @@ For background on why it exists and the problems it addresses, see [the discussi
 - Follow/following feeds
 - Per-user interaction histories
 
+## What Actionbase Is (and Isn't)
+
+| Focuses on | Explicitly avoids |
+|------------|-------------------|
+| Real-time user interactions (likes, views, follows) | General-purpose graph queries |
+| Bounded access patterns (GET, COUNT, SCAN) | Unbounded traversal or analytics |
+| Continuous writes, immediate reads | Batch ingestion or deferred indexing |
+| WAL/CDC to Kafka (yours or ours) | Owning downstream processing |
+| Pluggable storage (HBase now, others planned) | Building yet another storage engine |
+
+If a single well-tuned database handles your workload, that's probably the better answer. Actionbase exists for cases where interaction features are rebuilt repeatedly across teams, and the cost of fragmentation outweighs the cost of a dedicated system.
+
 ## Getting Started
 
 - **Quick Start**  
@@ -25,15 +37,15 @@ For background on why it exists and the problems it addresses, see [the discussi
 
 ## What It Does
 
-Actionbase serves interaction-derived data—**views**, **likes**, **reactions**, **follows**—that power product listings, feeds, and other interaction-driven surfaces.
+Actionbase serves interaction-derived data—**likes**, **recent views**, **reactions**, **follows**—that power product listings, feeds, and other interaction-driven surfaces.
 
 User interactions are modeled as **who** did **what** to which **target**. Actionbase materializes read-optimized structures at write time, enabling fast and predictable queries without expensive read-time computation.
 
-Actionbase leverages proven storage engines—currently HBase for durability and horizontal scalability (lighter backends such as SlateDB planned for smaller deployments). Built-in WAL and CDC publish to Kafka for downstream pipelines.
+Actionbase leverages proven storage engines—currently HBase for durability and horizontal scalability (lighter backends planned for smaller deployments). Built-in WAL and CDC publish to Kafka for downstream pipelines.
 
 ## Production Usage
 
-Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home) (KR, e.g., the heart buttons on product lists)—handling over 1M requests/min at peak. Running in stable production for over two years.
+Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home) (KR, e.g., the heart buttons on product lists)—handling over 1M requests/min at peak. Running in stable production for years.
 
 ## Learn More
 
