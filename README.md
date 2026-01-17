@@ -45,7 +45,7 @@ Actionbase leverages proven storage engines—currently HBase for durability and
 
 ## Production Usage
 
-Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home) (KR, e.g., the heart buttons on product lists)—handling over 1M requests/min at peak. Running in stable production for years.
+Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home) (KR, e.g., the heart buttons on product lists)—serving tens of millions of users, handling over 1M requests/min at peak, on multi-terabyte datasets. Running in stable production for years.
 
 ## Learn More
 
@@ -58,7 +58,7 @@ We welcome contributions. See our [Contributing](https://actionbase.io/community
 
 ## Current Status
 
-The codebase is released largely as it evolved inside Kakao. Additional modules and guides will be added over time.
+The codebase is released largely as it evolved inside Kakao, with sensitive details removed. Some internal modules and operational guides—including Kubernetes and HBase—will be added in future releases.
 
 ## Architecture
 
