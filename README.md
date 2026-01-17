@@ -72,6 +72,8 @@ flowchart LR
     Kafka --> Downstream["Downstream Pipelines"]
 ```
 
+### Codebase
+
 - **core** — Data model, mutation, query, and encoding logic (Java, Kotlin)
 - **engine** — Binds core to storage (HBase) and messaging (Kafka) (Kotlin)
 - **server** — REST API server (Kotlin, Spring WebFlux)
