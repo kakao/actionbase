@@ -2,7 +2,7 @@
 
 > 🚀 **Open-sourced** — [Learn more](https://actionbase.io/blog/open-source-announcement/)
 
-Likes, recent views, follows—look simple, but get complex as you scale.
+Likes, recent views, follows—look simple, but get complex as you scale, and end up rebuilt again and again.
 
 Actionbase is a database for serving these user interactions at scale. Currently backed by HBase, built at Kakao, handling millions of requests per minute at peak for years.
 
