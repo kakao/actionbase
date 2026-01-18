@@ -1,13 +1,28 @@
 name: Website CI
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - "website/**"
+      - ".github/workflows/website-ci.yml"
+
   pull_request:
+    branches: [ main ]
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
     paths:
       - "website/**"
       - ".github/workflows/website-ci.yml"
 
 jobs:
   lint:
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
