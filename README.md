@@ -8,11 +8,12 @@ Actionbase is a database for serving these user interactions at scale. Currently
 
 ## Demo
 
+> ⚠️ **WIP**: Demo GIF (#28), Docker one-liner (#53)
+
 ![Demo](https://img.shields.io/badge/demo-coming%20soon-lightgrey)
 
 Try it yourself:
 ```bash
-# coming soon
 docker run ...
 ```
 
