@@ -68,13 +68,11 @@ Additional storage backends are planned for small to mid-size deployments.
 
 Early open-source preparation phase. The first release focuses on introducing core concepts and hands-on guides. Production installation, operations guides, and additional components will be released over time.
 
-## Feedback, Discussion, & Contributing
-
-If you've built or operated similar systems, we'd like to hear from you.
-
-→ [GitHub Discussions](https://github.com/kakao/actionbase/discussions/)
+## Contribute
 
 We welcome contributions. See our [Contributing Guide](https://actionbase.io/community/contributing/).
+
+For questions, feedback, or discussion, join us on [GitHub Discussions](https://github.com/kakao/actionbase/discussions/).
 
 ## Learn More
 
