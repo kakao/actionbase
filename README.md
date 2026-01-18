@@ -17,13 +17,13 @@ Try it yourself:
 docker run ...
 ```
 
-Want to go deeper? See [Build Your Social Media App](https://actionbase.io/guides/build-your-social-media-app/).
+Want to go deeper? See [Build Your Social Media App with Actionbase](https://actionbase.io/guides/build-your-social-media-app/).
 
 ## How It Works
 
 Actionbase serves interaction-derived data that powers feeds, product listings, recommendations, and other user-facing surfaces.
 
-Interactions are modeled as: _**who** did **what** to which **target**_
+Interactions are modeled as: **who** did **what** to which **target**
 
 At write time, Actionbase precomputes everything needed for reads—accurate counts, consistent toggles, and ordering information for sorting and querying. At read time, there's no aggregation or additional computation. You simply read the precomputed results as they are.
 
@@ -36,11 +36,11 @@ Supported operations focus on high-frequency access patterns:
 ## When (Not) to Use It
 
 Use Actionbase when:
-- Interaction features are rebuilt repeatedly across teams
 - A single database no longer scales for your workload
+- Interaction features are rebuilt repeatedly across teams
 - You need predictable read latency without read-time computation
 
-If a single, well-tuned database can handle your workload, that's the better choice.
+If a single database can handle your workload, that's the better choice.
 
 ## Architecture
 
@@ -78,7 +78,7 @@ For questions, feedback, or discussion, join us on [GitHub Discussions](https://
 ## Learn More
 
 * [Documentation](https://actionbase.io/)
-* [Introduction to Actionbase (Korean) / if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE)
+* [Actionbase at if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE) (YouTube, Korean)
 
 ## License
 
