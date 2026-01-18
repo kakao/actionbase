@@ -8,18 +8,35 @@ Actionbase is a database for serving these user interactions at scale. Currently
 
 ## Quick Start
 
-> ⚠️ **WIP**: Demo GIF (#28), Docker one-liner (#53)
+> ⚠️ **WIP**: Docker one-liner (#53)
 
-![Demo](https://img.shields.io/badge/demo-coming%20soon-lightgrey)
-
-Try it yourself:
+## Quick Start
 ```bash
 docker run -it ghcr.io/kakao/actionbase:standalone
 ```
+```
+actionbase> load preset likes
+│ Loaded: 3 edges (Alice→Post1, Bob→Post1, Alice→Post2)
 
-See [Quick Start](https://actionbase.io/quick-start/) for CLI examples.
+# When rendering a feed item:
 
-Want to go deeper? See [Build Your Social Media App with Actionbase](https://actionbase.io/guides/build-your-social-media-app/).
+# Did Alice like Post1?
+actionbase> get likes --source Alice --target Post1
+│ GET /graph/v3/databases/demo/tables/likes/edges/get?source=Alice&target=Post1
+│ ...
+
+# How many likes does Post1 have?
+actionbase> count likes --start Post1 --direction IN
+│ GET /graph/v3/databases/demo/tables/likes/edges/count?start=Post1&direction=IN
+│ ...
+
+# Who liked Post1?
+actionbase> scan likes --start Post1 --direction IN
+│ GET /graph/v3/databases/demo/tables/likes/edges/scan?start=Post1&direction=IN
+│ ...
+```
+
+See [Quick Start](https://actionbase.io/quick-start/) for more details, or [Build Your Social Media App with Actionbase](https://actionbase.io/guides/build-your-social-media-app/) to go deeper.
 
 ## How It Works
 
