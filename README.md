@@ -2,65 +2,48 @@
 
 > 🚀 **Open-sourced** — [Learn more](https://actionbase.io/blog/open-source-announcement/)
 
-Actionbase is a database for serving user interactions. Built because we kept rebuilding likes, views, and follows across teams—and because a single database stopped scaling.
+Likes, recent views, follows—look simple, but get complex as you scale.
 
-For background on why it exists and the problems it addresses, see [the discussion](https://github.com/kakao/actionbase/discussions/32).
+Actionbase is a database for serving these user interactions at scale. Currently backed by HBase, built at Kakao, handling millions of requests per minute at peak.
 
-## What You Can Build
+## Demo
 
-- Like buttons and reaction counts
-- "Recently viewed" lists
-- Follow/following feeds
-- Per-user interaction histories
+![Demo](https://img.shields.io/badge/demo-coming%20soon-lightgrey)
 
-## What Actionbase Is (and Isn't)
+Try it yourself:
+```bash
+# coming soon
+docker run ...
+```
 
-| Focuses on | Explicitly avoids |
-|------------|-------------------|
-| Real-time user interactions (likes, views, follows) | General-purpose graph queries |
-| Bounded access patterns (GET, COUNT, SCAN) | Unbounded traversal or analytics |
-| Continuous writes, immediate reads | Batch ingestion or deferred indexing |
-| WAL/CDC to Kafka (yours or ours) | Owning downstream processing |
-| Pluggable storage (HBase now, others planned) | Building yet another storage engine |
+Want to go deeper? See [Build Your Social Media App](https://actionbase.io/guides/build-your-social-media-app/).
 
-If a single well-tuned database handles your workload, that's probably the better answer. Actionbase exists for cases where interaction features are rebuilt repeatedly across teams, and the cost of fragmentation outweighs the cost of a dedicated system.
+## How It Works
 
-## Getting Started
+Actionbase serves interaction-derived data that powers feeds, product listings, recommendations, and other user-facing surfaces.
 
-- **Quick Start**  
-  Get Actionbase running quickly with minimal setup.  
-  → https://actionbase.io/quick-start/
+Interactions are modeled as: _**who** did **what** to which **target**_
 
-- **Hands-on Guide: Build Your Social Media App**  
-  A step-by-step guide that walks through modeling and serving real-world user interactions.  
-  → https://actionbase.io/guides/build-your-social-media-app/
+At write time, Actionbase precomputes everything needed for reads—accurate counts, consistent toggles, and ordering information for sorting and querying. At read time, there's no aggregation or additional computation. You simply read the precomputed results as they are.
 
-## What It Does
+Supported operations focus on high-frequency access patterns:
 
-Actionbase serves interaction-derived data—**likes**, **recent views**, **reactions**, **follows**—that power product listings, feeds, and other interaction-driven surfaces.
+* Edge lookups (GET, multi-get)
+* Edge counts (COUNT)
+* Indexed edge scans (SCAN)
 
-User interactions are modeled as **who** did **what** to which **target**. Actionbase materializes read-optimized structures at write time, enabling fast and predictable queries without expensive read-time computation.
+## When (Not) to Use It
 
-Actionbase leverages proven storage engines—currently HBase for durability and horizontal scalability (lighter backends planned for smaller deployments). Built-in WAL and CDC publish to Kafka for downstream pipelines.
+Use Actionbase when:
+- Interaction features are rebuilt repeatedly across teams
+- A single database no longer scales for your workload
+- You need predictable read latency without read-time computation
 
-## Production Usage
-
-Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home) (KR, e.g., the heart buttons on product lists)—serving tens of millions of users, handling over 1M requests/min at peak, on multi-terabyte datasets. Running in stable production for years.
-
-## Learn More
-
-- [Documentation](https://actionbase.io/)
-- [Introduction to Actionbase (Korean) / if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE)
-
-## Contributing
-
-We welcome contributions. See our [Contributing](https://actionbase.io/community/contributing/) page.
-
-## Current Status
-
-The codebase is released largely as it evolved inside Kakao, with sensitive details removed. Some internal modules and operational guides—including Kubernetes and HBase—will be added in future releases.
+If a single, well-tuned database can handle your workload, that's the better choice.
 
 ## Architecture
+
+Actionbase writes to HBase for storage and emits a WAL to Kafka for recovery, replay, and downstream pipelines. HBase provides strong durability and horizontal scalability.
 
 ```mermaid
 flowchart LR
@@ -68,16 +51,35 @@ flowchart LR
     Actionbase -.->|Metastore| JDBC["JDBC
 (to be consolidated into HBase)"]
     Actionbase -->|Storage| HBase
-    Actionbase -->|WAL/CDC| Kafka
+    Actionbase -->|WAL / CDC| Kafka
     Kafka --> Downstream["Downstream Pipelines"]
 ```
 
-### Codebase
+Additional storage backends are planned for small to mid-size deployments.
 
-- **core** — Data model, mutation, query, and encoding logic (Java, Kotlin)
-- **engine** — Binds core to storage (HBase) and messaging (Kafka) (Kotlin)
-- **server** — REST API server (Kotlin, Spring WebFlux)
-- **pipeline** *(planned)* — Bulk loading, WAL/CDC processing, and more (Scala, Spark)
+## Codebase Overview
+
+* **core** — Data model, mutation, query, encoding logic (Java, Kotlin)
+* **engine** — Storage and messaging bindings (Kotlin)
+* **server** — REST API server (Kotlin, Spring WebFlux)
+* **pipeline** *(planned)* — Bulk loading and CDC processing (Scala, Spark)
+
+## Current Status
+
+Early open-source preparation phase. The first release focuses on introducing core concepts and hands-on guides. Production installation, operations guides, and additional components will be released over time.
+
+## Feedback, Discussion, & Contributing
+
+If you've built or operated similar systems, we'd like to hear from you.
+
+→ [GitHub Discussions](https://github.com/kakao/actionbase/discussions/)
+
+We welcome contributions. See our [Contributing Guide](https://actionbase.io/community/contributing/).
+
+## Learn More
+
+* [Documentation](https://actionbase.io/)
+* [Introduction to Actionbase (Korean) / if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE)
 
 ## License
 
@@ -85,12 +87,6 @@ This software is licensed under the [Apache 2 license](LICENSE).
 
 Copyright 2026 Kakao Corp. <http://www.kakaocorp.com>
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not
-use this project except in compliance with the License. You may obtain a copy
-of the License at http://www.apache.org/licenses/LICENSE-2.0.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this project except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
