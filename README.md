@@ -6,7 +6,7 @@ Likes, recent views, follows—look simple, but get complex as you scale, and en
 
 Actionbase is a database for serving these user interactions at scale. Currently backed by HBase, built at Kakao, handling millions of requests per minute at peak for years.
 
-## Demo
+## Quick Start
 
 > ⚠️ **WIP**: Demo GIF (#28), Docker one-liner (#53)
 
@@ -14,8 +14,10 @@ Actionbase is a database for serving these user interactions at scale. Currently
 
 Try it yourself:
 ```bash
-docker run ...
+docker run -it ghcr.io/kakao/actionbase:standalone
 ```
+
+See [Quick Start](https://actionbase.io/quick-start/) for CLI examples.
 
 Want to go deeper? See [Build Your Social Media App with Actionbase](https://actionbase.io/guides/build-your-social-media-app/).
 
