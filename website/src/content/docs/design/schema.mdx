@@ -10,6 +10,7 @@ Schema defines the structure of interaction data. Before storing data, define ho
 See [Core Concepts](/design/concepts/) for background.
 
 ## Schema Hierarchy
+
 ```
 Service
 ├── Label (edge schema)
@@ -28,11 +29,11 @@ Service
 
 A namespace that contains labels and aliases.
 
-| Property | Description |
-|----------|-------------|
-| name | Service identifier (e.g., `myservice`) |
-| desc | Description |
-| active | Whether active |
+| Property | Description                            |
+| -------- | -------------------------------------- |
+| name     | Service identifier (e.g., `myservice`) |
+| desc     | Description                            |
+| active   | Whether active                         |
 
 Example: an e-commerce service might contain labels for `likes`, `recent_views`, and `purchases`.
 
@@ -40,14 +41,14 @@ Example: an e-commerce service might contain labels for `likes`, `recent_views`,
 
 Defines the schema for edges—source, target, properties, and indexes.
 
-| Property | Description |
-|----------|-------------|
-| name | Format: `service.label` |
-| schema | Edge structure (src, tgt, fields) |
-| indices | Indexes for querying |
-| storage | Storage name |
-| dirType | Direction type |
-| active | Whether active |
+| Property | Description                       |
+| -------- | --------------------------------- |
+| name     | Format: `service.label`           |
+| schema   | Edge structure (src, tgt, fields) |
+| indices  | Indexes for querying              |
+| storage  | Storage name                      |
+| dirType  | Direction type                    |
+| active   | Whether active                    |
 
 ### Schema Definition
 
@@ -56,6 +57,7 @@ Defines the schema for edges—source, target, properties, and indexes.
 - **fields**: properties, each with name, type, nullable
 
 **Example: Recent Views**
+
 ```
 source: user_id (LONG)
 target: product_id (LONG)
@@ -64,6 +66,7 @@ properties:
 ```
 
 **Example: Reactions**
+
 ```
 source: user_id (LONG)
 target: product_id (LONG)
@@ -75,6 +78,7 @@ properties:
 ### Index Definition
 
 Indexes enable efficient querying. Each index has a name and a list of fields with sort order.
+
 ```
 indexes:
   - name: by_created_at
@@ -89,11 +93,11 @@ Indexes are pre-computed at write time. See [Query](/design/query/).
 
 An alternative name for a label.
 
-| Property | Description |
-|----------|-------------|
-| name | Format: `service.alias` |
-| target | The label it points to |
-| active | Whether active |
+| Property | Description             |
+| -------- | ----------------------- |
+| name     | Format: `service.alias` |
+| target   | The label it points to  |
+| active   | Whether active          |
 
 Useful for gradual migrations or domain-specific naming.
 
@@ -101,12 +105,12 @@ Useful for gradual migrations or domain-specific naming.
 
 Where data is physically stored.
 
-| Property | Description |
-|----------|-------------|
-| type | Storage type (e.g., `hbase`) |
-| name | Storage identifier |
-| conf | Configuration map |
-| active | Whether active |
+| Property | Description                  |
+| -------- | ---------------------------- |
+| type     | Storage type (e.g., `hbase`) |
+| name     | Storage identifier           |
+| conf     | Configuration map            |
+| active   | Whether active               |
 
 See [Datastore](/design/datastore/).
 

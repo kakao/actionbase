@@ -24,6 +24,7 @@ Actionbase models interactions as edges:
 - **Source**: who (e.g., user_id)
 - **Target**: what (e.g., product_id, content_id, user_id)
 - **Properties**: schema-defined attributes (e.g., `created_at`, `reaction_type`)
+
 ```
 User --[likes]--> Product (edge)
   ├─ source: "user123"
@@ -75,6 +76,7 @@ See [Mutation](/design/mutation/) for how these are created. See [Query](/design
 ## Data Flow
 
 ### Write Path
+
 ```
 Client → Server → Engine → WAL → Storage → CDC
 ```
@@ -90,6 +92,7 @@ Client → Server → Engine → WAL → Storage → CDC
 See [Mutation](/design/mutation/).
 
 ### Read Path
+
 ```
 Client → Server → Engine → Storage → Response
 ```

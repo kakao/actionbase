@@ -28,6 +28,7 @@ Returns the number of edges for a source node.
 **Use case**: "How many products has this user viewed?"
 
 **Processing**:
+
 1. Construct EdgeCounter key from source, table, direction
 2. Return pre-computed counter
 
@@ -38,10 +39,12 @@ Retrieves edge state by source and target.
 **Use case**: "Has this user viewed this product?"
 
 **Processing**:
+
 1. Construct EdgeState key from source and target
 2. Return edge state
 
 **MGet**:
+
 - Multiple source or target IDs → multi-get
 - Max 25 edges per request
 - Patterns: 1 source with N targets, or M sources with 1 target
@@ -53,6 +56,7 @@ Scans edges using a pre-computed index with range filtering and pagination.
 **Use case**: "Recent products viewed by this user"
 
 **Processing**:
+
 1. Construct EdgeIndex key prefix from source, table, direction, index
 2. Apply range filters
 3. Scan index entries
@@ -61,10 +65,12 @@ Scans edges using a pre-computed index with range filtering and pagination.
 6. Return matching edges
 
 **Index Requirement**:
+
 - Must specify which index to use
 - Index must be defined in schema
 
 ## Query Flow
+
 ```mermaid
 flowchart TD
     Request([Query Request]) --> Route{Query Type}
@@ -83,12 +89,12 @@ flowchart TD
 
 SCAN queries can specify ranges to filter at storage level.
 
-| Concept        | Description                                    |
-| -------------- | ---------------------------------------------- |
-| Explicit Index | Must specify which index                       |
+| Concept        | Description                                     |
+| -------------- | ----------------------------------------------- |
+| Explicit Index | Must specify which index                        |
 | Operators      | `eq`, `gt`, `lt`, `between` set scan boundaries |
-| Index Order    | Ranges applied in field order                  |
-| Sort Direction | Operator meaning depends on ASC/DESC           |
+| Index Order    | Ranges applied in field order                   |
+| Sort Direction | Operator meaning depends on ASC/DESC            |
 
 ### Range vs Filter
 
@@ -99,11 +105,11 @@ SCAN queries can specify ranges to filter at storage level.
 
 ## Pagination
 
-| Parameter | Description                         |
-| --------- | ----------------------------------- |
-| offset    | Encoded starting position           |
-| limit     | Max results (25 recommended)        |
-| hasNext   | More results available              |
+| Parameter | Description                  |
+| --------- | ---------------------------- |
+| offset    | Encoded starting position    |
+| limit     | Max results (25 recommended) |
+| hasNext   | More results available       |
 
 ## Query Direction
 
@@ -115,6 +121,7 @@ SCAN queries can specify ranges to filter at storage level.
 Separate indexes and counters maintained for each direction.
 
 ## Read Path
+
 ```
 Client → Server → Engine → Storage → Response
 ```

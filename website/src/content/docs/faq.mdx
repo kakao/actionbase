@@ -82,11 +82,13 @@ See [Schema](/design/schema/) and [Metadata API](/api-references/metadata/).
 ### What are some example interaction models?
 
 **Recent views**
+
 - Source: `user_id`
 - Target: `product_id`
 - Properties: `created_at`
 
 **Reactions**
+
 - Source: `user_id`
 - Target: `content_id`
 - Properties: `created_at`, `reaction_type`
@@ -192,10 +194,12 @@ When these outgrow your RDBMS—sharding gets painful, caches drift—Actionbase
 ### What are the system requirements?
 
 **Local (development)**
+
 - Java 17
 - In-memory storage, no external dependencies
 
 **Production**
+
 - Java 17
 - 4 GB+ memory recommended (scales out horizontally)
 - Requires: HBase, Kafka, MySQL (to be removed)

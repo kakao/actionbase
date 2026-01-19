@@ -52,6 +52,7 @@ Start by migrating only the tables that present scaling challenges.
 ## Example: Mapping a Table
 
 **RDB**
+
 ```sql
 CREATE TABLE user_product_wish (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -61,6 +62,7 @@ CREATE TABLE user_product_wish (
     visibility VARCHAR(50)
 );
 ```
+
 ```mermaid
 erDiagram
     user_product_wish {
@@ -73,6 +75,7 @@ erDiagram
 ```
 
 **Actionbase**
+
 ```mermaid
 graph LR
     Alice((Alice)) -->|wishes| Phone((📱 Phone))

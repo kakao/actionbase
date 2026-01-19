@@ -19,43 +19,43 @@ Key terms used in Actionbase documentation.
 
 ## Data Model
 
-| Term            | Description                                                |
-| --------------- | ---------------------------------------------------------- |
-| **Edge**        | A relationship representing a user interaction             |
-| **Source**      | Who — the entity performing the interaction (e.g., user_id)   |
+| Term            | Description                                                    |
+| --------------- | -------------------------------------------------------------- |
+| **Edge**        | A relationship representing a user interaction                 |
+| **Source**      | Who — the entity performing the interaction (e.g., user_id)    |
 | **Target**      | What — the entity receiving the interaction (e.g., product_id) |
-| **Properties**  | Attributes on an edge (e.g., `created_at`)                 |
-| **Unique-edge** | Edge identified by (source, target) pair                   |
-| **Multi-edge**  | Edge identified by ID; multiple per (source, target)       |
-| **Index**       | Pre-computed structure for querying                        |
-| **Alias**       | Alternative name for a label/table                         |
+| **Properties**  | Attributes on an edge (e.g., `created_at`)                     |
+| **Unique-edge** | Edge identified by (source, target) pair                       |
+| **Multi-edge**  | Edge identified by ID; multiple per (source, target)           |
+| **Index**       | Pre-computed structure for querying                            |
+| **Alias**       | Alternative name for a label/table                             |
 
 ## Query and Mutation
 
-| Term          | Description                                                                |
-| ------------- | -------------------------------------------------------------------------- |
-| **COUNT**     | Query returning number of edges                                            |
-| **GET**       | Query retrieving edge by source and target                                 |
-| **SCAN**      | Query scanning edges using pre-computed index                              |
-| **Start**     | Starting node for SCAN/COUNT; source when OUT, target when IN              |
-| **Direction** | `OUT` (source→target) or `IN` (target←source)                              |
-| **Range**     | Index-based scan boundaries at storage level                               |
-| **Filter**    | Post-retrieval filtering at application level                              |
-| **Version**   | Client timestamp (ms/ns) for concurrency and event ordering                |
-| **Offset**    | Encoded pagination position                                                |
-| **Limit**     | Max results (25 recommended)                                               |
+| Term          | Description                                                   |
+| ------------- | ------------------------------------------------------------- |
+| **COUNT**     | Query returning number of edges                               |
+| **GET**       | Query retrieving edge by source and target                    |
+| **SCAN**      | Query scanning edges using pre-computed index                 |
+| **Start**     | Starting node for SCAN/COUNT; source when OUT, target when IN |
+| **Direction** | `OUT` (source→target) or `IN` (target←source)                 |
+| **Range**     | Index-based scan boundaries at storage level                  |
+| **Filter**    | Post-retrieval filtering at application level                 |
+| **Version**   | Client timestamp (ms/ns) for concurrency and event ordering   |
+| **Offset**    | Encoded pagination position                                   |
+| **Limit**     | Max results (25 recommended)                                  |
 
 ## Write-Time Optimization
 
-| Term            | Description                            |
-| --------------- | -------------------------------------- |
-| **EdgeState**   | Current edge state, accessed by GET    |
-| **EdgeIndex**   | Sorted index entries, accessed by SCAN |
+| Term            | Description                              |
+| --------------- | ---------------------------------------- |
+| **EdgeState**   | Current edge state, accessed by GET      |
+| **EdgeIndex**   | Sorted index entries, accessed by SCAN   |
 | **EdgeCounter** | Pre-computed counters, accessed by COUNT |
 
 ## Data Pipeline
 
-| Term    | Description                              |
-| ------- | ---------------------------------------- |
-| **WAL** | Write-Ahead Log for durability/recovery  |
-| **CDC** | Change Data Capture for downstream sync  |
+| Term    | Description                             |
+| ------- | --------------------------------------- |
+| **WAL** | Write-Ahead Log for durability/recovery |
+| **CDC** | Change Data Capture for downstream sync |

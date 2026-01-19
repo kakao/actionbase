@@ -25,11 +25,11 @@ A datastore backend must support:
 
 Production backend. Distributed, scalable NoSQL on HDFS.
 
-| Characteristic           | Description                              |
-| ------------------------ | ---------------------------------------- |
-| Horizontal Scalability   | Shards data across nodes                 |
-| Strong Durability        | Data replicated across nodes             |
-| Low-latency Access       | Optimized for random reads and writes    |
+| Characteristic         | Description                           |
+| ---------------------- | ------------------------------------- |
+| Horizontal Scalability | Shards data across nodes              |
+| Strong Durability      | Data replicated across nodes          |
+| Low-latency Access     | Optimized for random reads and writes |
 
 HBase requires expertise when used directly (row key design, region splitting, cluster management). Actionbase provides a higher-level abstraction with interaction-specific features (State/Index/Count).
 
