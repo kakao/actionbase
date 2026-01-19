@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -70,7 +71,28 @@ func (l *Load) Execute(args []string) *model.Response {
 	}
 }
 
+func validatePath(path string) error {
+	if filepath.IsAbs(path) {
+		return fmt.Errorf("absolute paths are not allowed: %s", path)
+	}
+
+	cleaned := filepath.Clean(path)
+	if strings.HasPrefix(cleaned, "..") {
+		return fmt.Errorf("path traversal is not allowed: %s", path)
+	}
+
+	return nil
+}
+
 func (l *Load) loadFile(path string) *model.Response {
+	if err := validatePath(path); err != nil {
+		return model.Fail(err.Error())
+	}
+
+	return l.loadFileInternal(path)
+}
+
+func (l *Load) loadFileInternal(path string) *model.Response {
 	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
 		return l.loadYAMLFile(path)
 	}
@@ -365,6 +387,10 @@ func (l *Load) parseArgsWithQuotes(line string) []string {
 }
 
 func (l *Load) loadPreset(filename, refs string) *model.Response {
+	if err := validatePath(filename); err != nil {
+		return model.Fail(err.Error())
+	}
+
 	var url string
 	if refs != "" {
 		url = "https://raw.githubusercontent.com/kakao/actionbase/" + refs + "/examples/presets/" + filename
@@ -383,7 +409,7 @@ func (l *Load) loadPreset(filename, refs string) *model.Response {
 		return nil
 	}
 
-	return l.loadFile(cwd + "/" + filename)
+	return l.loadFileInternal(filepath.Join(cwd, filename))
 }
 
 func (l *Load) GetDescription() string {
