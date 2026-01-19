@@ -68,7 +68,7 @@ var (
 
 	TypeLoad = Type{
 		name:    "load",
-		command: "load <path>",
+		command: "load <file>|<preset> <path>",
 	}
 
 	TypeGuide = Type{

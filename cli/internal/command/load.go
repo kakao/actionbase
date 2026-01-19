@@ -47,11 +47,27 @@ func NewLoad(runner LoadRunner, actionbaseClient *client.ActionbaseClient) *Load
 }
 
 func (l *Load) Execute(args []string) *model.Response {
-	if len(args) != 1 {
-		return model.Fail(fmt.Sprintf("Invalid arguments: %s", args))
+	if len(args) < 2 {
+		return model.Fail(fmt.Sprintf("Usage: %s", l.GetType().GetCommand()))
 	}
 
-	path := args[0]
+	switch args[0] {
+	case "file":
+		if len(args) != 2 {
+			return model.Fail(fmt.Sprintf("Usage: %s", l.GetType().GetCommand()))
+		}
+
+		return l.loadFile(args[1])
+	case "preset":
+		parser := util.ParseArgs(args)
+		refs, _ := parser.GetLenient("ref")
+		return l.loadPreset(args[1], refs)
+	default:
+		return model.Fail(fmt.Sprintf("Usage: %s", l.GetType().GetCommand()))
+	}
+}
+
+func (l *Load) loadFile(path string) *model.Response {
 	file, err := os.Open(path)
 	if err != nil {
 		return model.Fail(err.Error())
@@ -66,10 +82,10 @@ func (l *Load) Execute(args []string) *model.Response {
 
 	reader := bufio.NewReader(file)
 
-	return l.load(reader, path)
+	return l.doLoadFile(reader, path)
 }
 
-func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
+func (l *Load) doLoadFile(reader *bufio.Reader, path string) *model.Response {
 	var results []string
 	var command strings.Builder
 	var multilineOutComment strings.Builder
@@ -355,6 +371,30 @@ func (l *Load) parseArgsWithQuotes(line string) []string {
 	}
 
 	return args
+}
+
+func (l *Load) loadPreset(presetName, refs string) *model.Response {
+	filename := presetName + ".txt"
+
+	var url string
+	if refs != "" {
+		url = "https://raw.githubusercontent.com/kakao/actionbase/" + refs + "/examples/presets/" + filename
+	} else {
+		url = "https://raw.githubusercontent.com/kakao/actionbase/examples/presets/" + filename
+	}
+
+	ok := util.Download(filename, url)
+	if !ok {
+		return model.Fail("Failed to download preset file")
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Failed to get current working directory:", err)
+		return nil
+	}
+
+	return l.loadFile(cwd + "/" + filename)
 }
 
 func (l *Load) GetDescription() string {
