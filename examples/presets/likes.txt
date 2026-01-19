@@ -1,0 +1,51 @@
+load edges
+--database social
+--table user_likes
+--data '{
+  "mutations": [
+    {
+      "type": "INSERT",
+      "edge": {
+        "version": __CURRENT_TIMESTAMP__,
+        "source": "d4v1d",
+        "target": 1,
+        "properties": {
+          "createdAt": __CURRENT_TIMESTAMP__
+        }
+      }
+    },
+    {
+      "type": "INSERT",
+      "edge": {
+        "version": __CURRENT_TIMESTAMP__,
+        "source": "d4v1d",
+        "target": 2,
+        "properties": {
+          "createdAt": __CURRENT_TIMESTAMP__
+        }
+      }
+    },
+    {
+      "type": "INSERT",
+      "edge": {
+        "version": __CURRENT_TIMESTAMP__,
+        "source": "punsoo",
+        "target": 2,
+        "properties": {
+          "createdAt": __CURRENT_TIMESTAMP__
+        }
+      }
+    },
+    {
+      "type": "INSERT",
+      "edge": {
+        "version": __CURRENT_TIMESTAMP__,
+        "source": "ipoemigmail",
+        "target": 2,
+        "properties": {
+          "createdAt": __CURRENT_TIMESTAMP__
+        }
+      }
+    }
+  ]
+}'
