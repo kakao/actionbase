@@ -266,7 +266,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: `<span class="driver-popover-title-number">2</span> ${TITLE.STEP_2}`,
               description: DESCRIPTION.STEP_2,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
             }
@@ -276,7 +276,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: TITLE.STEP_2,
               description: DESCRIPTION.STEP_2,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
             },
@@ -286,7 +286,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: TITLE.STEP_4,
               description: DESCRIPTION.STEP_4,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent)
@@ -297,7 +297,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: `<span class="driver-popover-title-number">3</span> ${TITLE.STEP_5}`,
               description: DESCRIPTION.STEP_5,
-              side: 'bottom',
+              side: 'right',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render')
             },
@@ -306,7 +306,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: `<span class="driver-popover-title-number">4</span> ${TITLE.STEP_6}`,
               description: DESCRIPTION.STEP_6,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
             },
@@ -316,7 +316,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: TITLE.STEP_7,
               description: DESCRIPTION.STEP_7,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
             },
@@ -326,7 +326,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: TITLE.STEP_8,
               description: DESCRIPTION.STEP_8,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload'),
@@ -336,7 +336,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             element: "[id='btn-profile-following']",
             popover: {
               description: DESCRIPTION.STEP_9,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
@@ -347,7 +347,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: TITLE.STEP_10,
               description: DESCRIPTION.STEP_10,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
             },
@@ -357,7 +357,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: TITLE.STEP_11,
               description: DESCRIPTION.STEP_11,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload'),
@@ -367,7 +367,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             element: "[id='profile-followers']",
             popover: {
               description: DESCRIPTION.STEP_12,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
@@ -378,7 +378,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: TITLE.STEP_13,
               description: DESCRIPTION.STEP_13,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent),
             },
@@ -387,7 +387,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             element: "[id='followers-list']",
             popover: {
               description: DESCRIPTION.STEP_14,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
             },
@@ -406,7 +406,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: TITLE.STEP_16,
               description: DESCRIPTION.STEP_16,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload')
@@ -416,7 +416,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             element: "[id='btn-likes']",
             popover: {
               description: DESCRIPTION.STEP_17,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
@@ -427,7 +427,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: TITLE.STEP_18,
               description: DESCRIPTION.STEP_18,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
             },
           },
@@ -446,7 +446,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
             popover: {
               title: `<span class="driver-popover-title-number">6</span> ${TITLE.STEP_20}`,
               description: DESCRIPTION.STEP_20,
-              side: 'right',
+              side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent)
             },
