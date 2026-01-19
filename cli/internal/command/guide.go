@@ -9,6 +9,7 @@ import (
 	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/guides"
 	"github.com/kakao/actionbase/internal/httpserver"
+	"github.com/kakao/actionbase/internal/util"
 )
 
 type Guide struct {
@@ -50,7 +51,9 @@ func (g *Guide) Execute(args []string) *model.Response {
 		return nil
 	}
 
-	if ok := guides.Download(guideType.Name); !ok {
+	filename := guideType.Name + "-latest.zip"
+	url := "https://github.com/kakao/actionbase/releases/download/guides/" + guideType.Name + "/" + filename
+	if ok := util.Download(filename, url); !ok {
 		return nil
 	}
 
@@ -60,10 +63,9 @@ func (g *Guide) Execute(args []string) *model.Response {
 		return nil
 	}
 
-	src := fmt.Sprintf("%s/%s-latest.zip", cwd, guideType.Name)
-	dest := fmt.Sprintf("%s", cwd)
+	src := cwd + "/" + guideType.Name + "-latest.zip"
 
-	if err := guides.Unzip(src, dest); err != nil {
+	if err := util.Unzip(src, cwd); err != nil {
 		fmt.Println("Failed to unzip guide:", err)
 		return nil
 	}
