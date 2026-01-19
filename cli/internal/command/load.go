@@ -29,7 +29,6 @@ const (
 )
 
 type Load struct {
-	context          *Context
 	runner           LoadRunner
 	actionbaseClient *client.ActionbaseClient
 }
@@ -80,17 +79,9 @@ func (l *Load) loadFile(path string) *model.Response {
 	if err != nil {
 		return model.Fail(err.Error())
 	}
+	defer func() { _ = file.Close() }()
 
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-
-		}
-	}(file)
-
-	reader := bufio.NewReader(file)
-
-	return l.doLoadFile(reader, path)
+	return l.doLoadFile(bufio.NewReader(file), path)
 }
 
 func (l *Load) loadYAMLFile(path string) *model.Response {
@@ -139,23 +130,29 @@ func (l *Load) doLoadFile(reader *bufio.Reader, path string) *model.Response {
 	var results []string
 	var command strings.Builder
 
+	executeCommand := func() *model.Response {
+		chunk := l.normalize(command.String())
+		if len(chunk) == 0 {
+			return nil
+		}
+		result := l.doLoad(chunk)
+		if !result.IsSuccess {
+			msg := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
+			fmt.Println(msg)
+			results = append(results, msg)
+			return model.FailWithNoOut(strings.Join(results, "\n"))
+		}
+		results = append(results, *result.Result)
+		return nil
+	}
+
 	for {
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
 			if command.Len() > 0 {
-				chunk := l.normalize(command.String())
-				if len(chunk) == 0 {
-					break
+				if resp := executeCommand(); resp != nil {
+					return resp
 				}
-
-				result := l.doLoad(chunk)
-				if !result.IsSuccess {
-					resultMessage := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
-					fmt.Printf(resultMessage)
-					results = append(results, resultMessage)
-					return model.FailWithNoOut(strings.Join(results, "\n"))
-				}
-				results = append(results, *result.Result)
 			}
 			break
 		}
@@ -166,17 +163,8 @@ func (l *Load) doLoadFile(reader *bufio.Reader, path string) *model.Response {
 		command.WriteString(line)
 
 		if strings.HasSuffix(strings.TrimSpace(line), ";") {
-			chunk := l.normalize(command.String())
-
-			if len(chunk) > 0 {
-				result := l.doLoad(chunk)
-				if !result.IsSuccess {
-					resultMessage := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
-					fmt.Println(resultMessage)
-					results = append(results, resultMessage)
-					return model.FailWithNoOut(strings.Join(results, "\n"))
-				}
-				results = append(results, *result.Result)
+			if resp := executeCommand(); resp != nil {
+				return resp
 			}
 			command.Reset()
 		}
