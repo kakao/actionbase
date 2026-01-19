@@ -9,19 +9,23 @@ import (
 	"os"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/kakao/actionbase/internal/client"
 	clientModel "github.com/kakao/actionbase/internal/client/model"
 	"github.com/kakao/actionbase/internal/command/model"
 	"github.com/kakao/actionbase/internal/util"
 )
 
+type YAMLCommand struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+	Command     string `yaml:"command"`
+}
+
 const (
 	singleQuote = '\''
 	doubleQuote = '"'
-
-	multilineOutCommentStart = "# @out"
-	multilineOutCommentEnd   = "#"
-	singleLineOutComment     = "# @out:"
 )
 
 type Load struct {
@@ -68,6 +72,10 @@ func (l *Load) Execute(args []string) *model.Response {
 }
 
 func (l *Load) loadFile(path string) *model.Response {
+	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
+		return l.loadYAMLFile(path)
+	}
+
 	file, err := os.Open(path)
 	if err != nil {
 		return model.Fail(err.Error())
@@ -85,24 +93,55 @@ func (l *Load) loadFile(path string) *model.Response {
 	return l.doLoadFile(reader, path)
 }
 
+func (l *Load) loadYAMLFile(path string) *model.Response {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return model.Fail(err.Error())
+	}
+
+	var commands []YAMLCommand
+	err = yaml.Unmarshal(data, &commands)
+	if err != nil {
+		return model.Fail(fmt.Sprintf("Failed to parse YAML: %s", err.Error()))
+	}
+
+	var results []string
+	for _, cmd := range commands {
+		if cmd.Command == "" {
+			continue
+		}
+
+		if cmd.Description != "" {
+			decoratedDescription := fmt.Sprintf("/* %s */\n", cmd.Description)
+			results = append(results, decoratedDescription)
+			fmt.Printf("\033[90m%s\033[0m", decoratedDescription)
+		}
+
+		chunk := l.normalize(cmd.Command)
+		if len(chunk) == 0 {
+			continue
+		}
+
+		result := l.doLoad(chunk)
+		if !result.IsSuccess {
+			resultMessage := fmt.Sprintf("Failed to execute command. Please check your command syntax or system log")
+			fmt.Println(resultMessage)
+			results = append(results, resultMessage)
+			return model.FailWithNoOut(strings.Join(results, "\n"))
+		}
+		results = append(results, *result.Result)
+	}
+
+	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
+}
+
 func (l *Load) doLoadFile(reader *bufio.Reader, path string) *model.Response {
 	var results []string
 	var command strings.Builder
-	var multilineOutComment strings.Builder
-	isInOutCommentBlock := false
 
 	for {
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
-			if isInOutCommentBlock {
-				decoratedOutComment := fmt.Sprintf("/**\n%s\n*/\n", strings.TrimSpace(multilineOutComment.String()))
-				results = append(results, decoratedOutComment)
-				fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
-
-				multilineOutComment.Reset()
-				isInOutCommentBlock = false
-				break
-			}
 			if command.Len() > 0 {
 				chunk := l.normalize(command.String())
 				if len(chunk) == 0 {
@@ -122,42 +161,6 @@ func (l *Load) doLoadFile(reader *bufio.Reader, path string) *model.Response {
 		}
 		if err != nil {
 			log.Fatal(err)
-		}
-
-		trimmedLine := strings.TrimSpace(line)
-
-		if strings.HasPrefix(trimmedLine, singleLineOutComment) {
-			outContent := strings.TrimPrefix(trimmedLine, singleLineOutComment)
-
-			decoratedOutComment := fmt.Sprintf("/* %s */\n", strings.TrimSpace(outContent))
-			results = append(results, decoratedOutComment)
-			fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
-
-			command.Reset()
-			continue
-		}
-
-		if trimmedLine == multilineOutCommentStart {
-			isInOutCommentBlock = true
-			multilineOutComment.Reset()
-			continue
-		}
-
-		if isInOutCommentBlock && trimmedLine == multilineOutCommentEnd {
-			decoratedOutComment := fmt.Sprintf("/**\n%s\n*/\n", strings.TrimSpace(multilineOutComment.String()))
-			results = append(results, decoratedOutComment)
-			fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
-
-			multilineOutComment.Reset()
-			isInOutCommentBlock = false
-			command.Reset()
-			continue
-		}
-
-		if isInOutCommentBlock {
-			multilineOutComment.WriteString(strings.TrimSuffix(line, "\n"))
-			multilineOutComment.WriteString("\n")
-			continue
 		}
 
 		command.WriteString(line)
@@ -306,7 +309,7 @@ func (l *Load) loadEdge(parser *util.Parser, data string) *model.Response {
 		}
 	}
 
-	return model.SuccessWithResult(fmt.Sprintf("%d edges are mutated (total: %d, failed: %d)\n", len(edgeBulkMutations.Mutations), updatedCount, failedCount))
+	return model.SuccessWithResult(fmt.Sprintf("%d edges of '%s' are mutated (total: %d, failed: %d)", len(edgeBulkMutations.Mutations), table, updatedCount, failedCount))
 }
 
 func (l *Load) normalize(chunk string) string {
@@ -373,9 +376,7 @@ func (l *Load) parseArgsWithQuotes(line string) []string {
 	return args
 }
 
-func (l *Load) loadPreset(presetName, refs string) *model.Response {
-	filename := presetName + ".txt"
-
+func (l *Load) loadPreset(filename, refs string) *model.Response {
 	var url string
 	if refs != "" {
 		url = "https://raw.githubusercontent.com/kakao/actionbase/" + refs + "/examples/presets/" + filename
