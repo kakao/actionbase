@@ -71,25 +71,32 @@ func (l *Load) Execute(args []string) *model.Response {
 	}
 }
 
-func validatePath(path string) error {
+func validatePath(path string) (string, error) {
 	if filepath.IsAbs(path) {
-		return fmt.Errorf("absolute paths are not allowed: %s", path)
+		return "", fmt.Errorf("absolute paths are not allowed: %s", path)
 	}
 
 	cleaned := filepath.Clean(path)
 	if strings.HasPrefix(cleaned, "..") {
-		return fmt.Errorf("path traversal is not allowed: %s", path)
+		return "", fmt.Errorf("path traversal is not allowed: %s", path)
 	}
 
-	return nil
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current working directory: %w", err)
+	}
+
+	safePath := filepath.Join(cwd, cleaned)
+	return safePath, nil
 }
 
 func (l *Load) loadFile(path string) *model.Response {
-	if err := validatePath(path); err != nil {
+	safePath, err := validatePath(path)
+	if err != nil {
 		return model.Fail(err.Error())
 	}
 
-	return l.loadFileInternal(path)
+	return l.loadFileInternal(safePath)
 }
 
 func (l *Load) loadFileInternal(path string) *model.Response {
@@ -387,29 +394,26 @@ func (l *Load) parseArgsWithQuotes(line string) []string {
 }
 
 func (l *Load) loadPreset(filename, refs string) *model.Response {
-	if err := validatePath(filename); err != nil {
+	safePath, err := validatePath(filename)
+	if err != nil {
 		return model.Fail(err.Error())
 	}
 
+	cleanedFilename := filepath.Clean(filename)
+
 	var url string
 	if refs != "" {
-		url = "https://raw.githubusercontent.com/kakao/actionbase/" + refs + "/examples/presets/" + filename
+		url = "https://raw.githubusercontent.com/kakao/actionbase/" + refs + "/examples/presets/" + cleanedFilename
 	} else {
-		url = "https://github.com/kakao/actionbase/releases/download/examples/" + filename
+		url = "https://github.com/kakao/actionbase/releases/download/examples/" + cleanedFilename
 	}
 
-	ok := util.Download(filename, url)
+	ok := util.Download(cleanedFilename, url)
 	if !ok {
 		return model.Fail("Failed to download preset file")
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Failed to get current working directory:", err)
-		return nil
-	}
-
-	return l.loadFileInternal(filepath.Join(cwd, filename))
+	return l.loadFileInternal(safePath)
 }
 
 func (l *Load) GetDescription() string {
