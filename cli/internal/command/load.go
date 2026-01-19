@@ -132,6 +132,10 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 	}
 
 	absPath, err := filepath.Abs(filepath.Join(safeDirAbs, path))
+	if err != nil {
+		return model.Fail(fmt.Sprintf("failed to resolve absolute path: %s", err.Error()))
+	}
+
 	rel, err := filepath.Rel(safeDirAbs, absPath)
 	if err != nil || rel == ".." || rel == "." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return model.Fail("invalid file path")
