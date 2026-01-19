@@ -155,6 +155,12 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
         <div className="header-line"/>
 
         <div className="layout">
+          <div className="mobile-frame">
+            <div className="mobile-content">
+              {children}
+              <MobileFooter/>
+            </div>
+          </div>
           <div className="browser-frame-wrapper">
             <div className={`browser-frame ${isStepCompleted ? 'step-completed' : ''}`}>
               <div className="browser-header">
@@ -165,22 +171,16 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
                 </div>
               </div>
               <div className={`browser-content ${isStepCompleted ? 'step-completed' : ''}`}>
-                <div className={`mobile-frame ${isStepCompleted ? 'step-completed' : ''}`}>
-                  <div className="mobile-content">
-                    {children}
-                    <MobileFooter/>
+                {!isStepCompleted && (
+                  <div className="terminal-wrapper">
+                    <CliTerminal/>
                   </div>
-                </div>
+                )}
               </div>
               <div className={`api-logs-wrapper ${isStepCompleted ? 'step-completed' : ''}`}>
                 <ApiLogs/>
               </div>
             </div>
-            {!isStepCompleted && (
-              <div className="terminal-wrapper">
-                <CliTerminal/>
-              </div>
-            )}
           </div>
         </div>
       </ApiLogProvider>

@@ -2,7 +2,7 @@
 
 .api-log-container {
   flex: 0 0 auto;
-  height: 353px;
+  height: 250px;
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--spacing-2xl);
@@ -176,3 +176,9 @@
   word-break: break-word;
 }
 
+
+@media (max-height: 1250px) {
+  .api-log-container {
+    height: calc(100vh - 800px);
+  }
+}
