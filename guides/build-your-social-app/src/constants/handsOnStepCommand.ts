@@ -11,7 +11,7 @@ export interface CliContext {
 export const stepCommands: HandsOnStepCommand[] = [
   {
     stepIndex: 3,
-    command: `load ./hands-on-social/data/build-your-social-app-preset.txt`,
+    command: `load preset build-your-social-app`,
   },
   {
     stepIndex: 4,
