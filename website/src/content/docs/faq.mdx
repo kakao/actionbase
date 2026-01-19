@@ -31,11 +31,20 @@ Internally, interactions are represented as edges in a graph.
 
 Instead of reimplementing indexing, ordering, and counting logic per service, Actionbase pre-computes these at write time.
 
+### When should I NOT use Actionbase?
+
+- A single database instance handles your workload
+- You need general-purpose graph queries or traversals
+- Your team doesn't have HBase operational experience
+- You're not hitting scaling walls yet
+
+Documentation for production deployment (Kubernetes, HBase operations) is still in progress.
+
 ### Is Actionbase production-ready?
 
 Actionbase runs in production at Kakao—including KakaoTalk and Kakao Gift—handling over 1M requests/min at peak.
 
-That said, documentation for production deployment (Kubernetes, HBase operations) is still in progress. More guides will be added in future releases.
+At Kakao's scale, this became necessary. At smaller scale, a well-tuned RDBMS is almost always the better choice.
 
 ### What is the history of Actionbase?
 
