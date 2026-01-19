@@ -2,6 +2,10 @@
 
 Thank you for your interest in Actionbase. Any form of participation—using the project, asking questions, reporting issues, improving documentation, or contributing code—is appreciated.
 
+## Getting started
+
+New to open source? Look for issues labeled **[good first issue](https://github.com/kakao/actionbase/labels/good%20first%20issue)**.
+
 ## How we collaborate
 
 We collaborate through [GitHub](https://github.com/kakao/actionbase):
