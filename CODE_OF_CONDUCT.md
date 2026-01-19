@@ -1,9 +1,4 @@
----
-title: Code of Conduct
-description: Community code of conduct for Actionbase
-sidebar:
-  order: 3
----
+# Code of Conduct
 
 ## Our Pledge
 

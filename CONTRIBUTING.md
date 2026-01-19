@@ -1,4 +1,31 @@
-## Submitting Pull Requests
+# Contributing
 
-When you are sending a pull request, please sign the [CLA](https://cla-assistant.io/kakao/actionbase)(Contributor Licensing Agreement) for Individual.  
-If you need a Contributor Licensing Agreement for Corporate, please [contact us](mailto:oss@kakaocorp.com).
+Thank you for your interest in Actionbase. Any form of participation—using the project, asking questions, reporting issues, improving documentation, or contributing code—is appreciated.
+
+## Getting started
+
+New to open source? Look for issues labeled **[good first issue](https://github.com/kakao/actionbase/labels/good%20first%20issue)**.
+
+## How we collaborate
+
+We collaborate through [GitHub](https://github.com/kakao/actionbase):
+
+- **[Discussions](https://github.com/kakao/actionbase/discussions)**: Questions, ideas, and open-ended conversations
+- **[Issues](https://github.com/kakao/actionbase/issues)**: Bug reports, feature requests, and concrete improvements
+- **[Pull Requests](https://github.com/kakao/actionbase/pulls)**: Code and documentation changes
+
+If you're unsure where something belongs or have a question, start with a Discussion.
+
+Pull requests are reviewed collaboratively and merged by Maintainers.
+
+When submitting a pull request, please sign the [CLA](https://cla-assistant.io/kakao/actionbase) (Contributor Licensing Agreement) for Individual. If you need a Contributor Licensing Agreement for Corporate, please [contact us](mailto:oss@kakaocorp.com).
+
+## Security
+
+Report security vulnerabilities through [GitHub Security Advisories](https://github.com/kakao/actionbase/security/advisories/new) instead of opening a public issue.
+
+## Community standards
+
+All contributors are expected to follow the **[Code of Conduct](https://github.com/kakao/actionbase/blob/main/CODE_OF_CONDUCT.md)**.
+
+For project roles, see [Governance](https://actionbase.io/community/governance/).
