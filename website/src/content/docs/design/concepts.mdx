@@ -5,7 +5,12 @@ sidebar:
 order: 1
 ---
 
-Actionbase is a database for serving user interactions. It uses graph-based modeling for interactions, not as a general-purpose graph database.
+Actionbase is a database for serving user interactions—not a general-purpose graph database.
+
+## Design Goals
+
+- **Write-Time Optimization** — Pre-compute read structures at write time. Reads become simple lookups.
+- **Leverage Proven Storage** — Build on HBase for durability and scale. Don't reinvent storage.
 
 ## User Interactions
 
