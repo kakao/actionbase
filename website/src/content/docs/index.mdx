@@ -3,13 +3,13 @@ title: Actionbase
 head:
   - tag: title
     content: Actionbase
-description: A database for serving user interactions.
+description: A real-time database for serving user interactions, production-proven in Kakao services.
 template: splash
 editUrl: false
 lastUpdated: false
 hero:
   title: Actionbase
-  tagline: A database for serving user interactions.
+  tagline: Likes · Recent Views · Follows — easy once you're set up.
   image:
     file: ~/assets/hero.webp
   actions:
@@ -28,19 +28,19 @@ banner:
 import { CardGrid, Card } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
-  <Card title="Write-Time Materialization" icon="rocket">
-    Pre-compute the data required for fast, predictable reads at write time, eliminating
-    service-specific indexing and counting logic.
+  <Card title="Likes·Reactions·Counts" icon="star">
+    Pre-computed at write time. Reads are fast and predictable.
   </Card>
-  <Card title="Interaction-Oriented Graph Model" icon="document">
-    Represent user interactions as actor→target edges with schema-defined properties for efficient
-    querying.
+  <Card title="Recent Views·History" icon="seti:clock">
+    Sorted by recency, score, or custom order — out of the box.
   </Card>
-  <Card title="Unified REST API" icon="puzzle">
-    Expose a simple, storage-agnostic API for querying and mutating interaction data.
+  <Card title="Follows·Feeds" icon="puzzle">
+    Likes, follows, subscriptions, feeds — one consistent model.
   </Card>
-  <Card title="WAL / CDC Integration" icon="external">
-    Emit write-ahead logs and change data capture streams for recovery, replay, asynchronous
-    processing, and downstream data pipelines.
+  <Card title="REST API" icon="forward-slash">
+    Metadata, writes, reads — all via REST.
+  </Card>
+  <Card title="WAL·CDC" icon="seti:pipeline">
+    Recovery (WAL) and pipeline integration (CDC) built in.
   </Card>
 </CardGrid>
