@@ -380,7 +380,7 @@ func (l *Load) loadPreset(presetName, refs string) *model.Response {
 	if refs != "" {
 		url = "https://raw.githubusercontent.com/kakao/actionbase/" + refs + "/examples/presets/" + filename
 	} else {
-		url = "https://raw.githubusercontent.com/kakao/actionbase/examples/presets/" + filename
+		url = "https://github.com/kakao/actionbase/releases/download/examples/" + filename
 	}
 
 	ok := util.Download(filename, url)
