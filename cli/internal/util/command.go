@@ -1,4 +1,4 @@
-package guides
+package util
 
 import (
 	"archive/zip"
@@ -10,10 +10,8 @@ import (
 	"strings"
 )
 
-func Download(name string) bool {
-	filename := fmt.Sprintf("%s-latest.zip", name)
-	url := fmt.Sprintf("https://github.com/kakao/actionbase/releases/download/guides/%s/%s", name, filename)
-	fmt.Println("Downloading guide assets from", url)
+func Download(filename, url string) bool {
+	fmt.Println("Downloading file from", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	req.Header.Set("Accept", "application/octet-stream")
@@ -26,7 +24,7 @@ func Download(name string) bool {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Failed to download guide assets")
+		fmt.Println("Failed to download file")
 		return false
 	}
 	defer func(Body io.ReadCloser) {
@@ -43,7 +41,7 @@ func Download(name string) bool {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println("Failed to download guide assets")
+		fmt.Println("Failed to download file")
 		return false
 	}
 
@@ -52,7 +50,7 @@ func Download(name string) bool {
 		return false
 	}
 
-	fmt.Println("Successfully downloaded guide assets")
+	fmt.Println("Successfully downloaded file")
 	return true
 }
 
