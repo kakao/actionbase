@@ -79,20 +79,38 @@ func (l *Load) loadFile(path string) *model.Response {
 	return l.loadNonYAMLFile(path)
 }
 
-func (l *Load) loadNonYAMLFile(path string) *model.Response {
+func resolveSafePath(path string) (string, *model.Response) {
+	if filepath.IsAbs(path) || filepath.VolumeName(path) != "" {
+		return "", model.Fail("invalid file path")
+	}
+
 	cwd, err := os.Getwd()
 	if err != nil {
-		return model.Fail(fmt.Sprintf("failed to get current working directory: %s", err.Error()))
+		return "", model.Fail(fmt.Sprintf("failed to get current working directory: %s", err.Error()))
 	}
 
 	safeDirAbs, err := filepath.Abs(cwd)
 	if err != nil {
-		return model.Fail(fmt.Sprintf("failed to resolve safe directory: %s", err.Error()))
+		return "", model.Fail(fmt.Sprintf("failed to resolve safe directory: %s", err.Error()))
 	}
 
 	absPath, err := filepath.Abs(filepath.Join(safeDirAbs, path))
-	if err != nil || !strings.HasPrefix(absPath, safeDirAbs+string(filepath.Separator)) && absPath != safeDirAbs {
-		return model.Fail("invalid file path")
+	if err != nil {
+		return "", model.Fail("invalid file path")
+	}
+
+	prefix := safeDirAbs + string(filepath.Separator)
+	if absPath != safeDirAbs && !strings.HasPrefix(absPath, prefix) {
+		return "", model.Fail("invalid file path")
+	}
+
+	return absPath, nil
+}
+
+func (l *Load) loadNonYAMLFile(path string) *model.Response {
+	absPath, resp := resolveSafePath(path)
+	if resp != nil {
+		return resp
 	}
 
 	file, err := os.Open(absPath)
@@ -116,7 +134,8 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 	}
 
 	absPath, err := filepath.Abs(filepath.Join(safeDirAbs, path))
-	if err != nil || !strings.HasPrefix(absPath, safeDirAbs+string(filepath.Separator)) && absPath != safeDirAbs {
+	rel, err := filepath.Rel(safeDirAbs, absPath)
+	if err != nil || rel == ".." || rel == "." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return model.Fail("invalid file path")
 	}
 
