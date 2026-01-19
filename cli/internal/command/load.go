@@ -72,12 +72,20 @@ func (l *Load) Execute(args []string) *model.Response {
 }
 
 func validatePath(path string) (string, error) {
+	if path == "" {
+		return "", fmt.Errorf("path must not be empty")
+	}
+
 	if filepath.IsAbs(path) {
 		return "", fmt.Errorf("absolute paths are not allowed: %s", path)
 	}
 
 	cleaned := filepath.Clean(path)
-	if strings.HasPrefix(cleaned, "..") {
+	if cleaned == "." {
+		cleaned = ""
+	}
+
+	if strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) || cleaned == ".." {
 		return "", fmt.Errorf("path traversal is not allowed: %s", path)
 	}
 
@@ -86,7 +94,21 @@ func validatePath(path string) (string, error) {
 		return "", fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	safePath := filepath.Join(cwd, cleaned)
+	cwdAbs, err := filepath.Abs(cwd)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve current working directory: %w", err)
+	}
+
+	joined := filepath.Join(cwdAbs, cleaned)
+	safePath, err := filepath.Abs(joined)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve path: %w", err)
+	}
+
+	if safePath != cwdAbs && !strings.HasPrefix(safePath, cwdAbs+string(filepath.Separator)) {
+		return "", fmt.Errorf("path is outside of current working directory: %s", path)
+	}
+
 	return safePath, nil
 }
 
@@ -101,40 +123,20 @@ func (l *Load) loadFile(path string) *model.Response {
 
 func (l *Load) loadFileInternal(path string) *model.Response {
 	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
-		return l.loadYAMLFile(path)
+		return l.loadYAMLFileInternal(path)
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return model.Fail(fmt.Sprintf("failed to get current working directory: %s", err.Error()))
-	}
-
-	cleanPath := filepath.Clean(path)
-	if !strings.HasPrefix(cleanPath, cwd+string(filepath.Separator)) && cleanPath != cwd {
-		return model.Fail("path is outside of current working directory")
-	}
-
-	file, err := os.Open(cleanPath)
+	file, err := os.Open(path)
 	if err != nil {
 		return model.Fail(err.Error())
 	}
 	defer func() { _ = file.Close() }()
 
-	return l.doLoadFile(bufio.NewReader(file), cleanPath)
+	return l.doLoadFile(bufio.NewReader(file), path)
 }
 
-func (l *Load) loadYAMLFile(path string) *model.Response {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return model.Fail(fmt.Sprintf("failed to get current working directory: %s", err.Error()))
-	}
-
-	cleanPath := filepath.Clean(path)
-	if !strings.HasPrefix(cleanPath, cwd+string(filepath.Separator)) && cleanPath != cwd {
-		return model.Fail("path is outside of current working directory")
-	}
-
-	data, err := os.ReadFile(cleanPath)
+func (l *Load) loadYAMLFileInternal(path string) *model.Response {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return model.Fail(err.Error())
 	}
