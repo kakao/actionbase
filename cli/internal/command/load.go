@@ -94,13 +94,11 @@ func resolveSafePath(path string) (string, *model.Response) {
 		return "", model.Fail(fmt.Sprintf("failed to resolve safe directory: %s", err.Error()))
 	}
 
-	absPath, err := filepath.Abs(filepath.Join(safeDirAbs, path))
-	if err != nil {
-		return "", model.Fail("invalid file path")
-	}
+	cleanPath := filepath.Clean(path)
 
-	prefix := safeDirAbs + string(filepath.Separator)
-	if absPath != safeDirAbs && !strings.HasPrefix(absPath, prefix) {
+	absPath := filepath.Join(safeDirAbs, cleanPath)
+	rel, err := filepath.Rel(safeDirAbs, absPath)
+	if err != nil || filepath.IsAbs(rel) || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || rel == ".." {
 		return "", model.Fail("invalid file path")
 	}
 
