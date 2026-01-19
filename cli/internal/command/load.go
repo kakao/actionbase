@@ -100,29 +100,41 @@ func (l *Load) loadFile(path string) *model.Response {
 }
 
 func (l *Load) loadFileInternal(path string) *model.Response {
-	if !filepath.IsAbs(path) {
-		return model.Fail("internal error: path must be absolute")
-	}
-
 	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
 		return l.loadYAMLFile(path)
 	}
 
-	file, err := os.Open(path)
+	cwd, err := os.Getwd()
+	if err != nil {
+		return model.Fail(fmt.Sprintf("failed to get current working directory: %s", err.Error()))
+	}
+
+	cleanPath := filepath.Clean(path)
+	if !strings.HasPrefix(cleanPath, cwd+string(filepath.Separator)) && cleanPath != cwd {
+		return model.Fail("path is outside of current working directory")
+	}
+
+	file, err := os.Open(cleanPath)
 	if err != nil {
 		return model.Fail(err.Error())
 	}
 	defer func() { _ = file.Close() }()
 
-	return l.doLoadFile(bufio.NewReader(file), path)
+	return l.doLoadFile(bufio.NewReader(file), cleanPath)
 }
 
 func (l *Load) loadYAMLFile(path string) *model.Response {
-	if !filepath.IsAbs(path) {
-		return model.Fail("internal error: path must be absolute")
+	cwd, err := os.Getwd()
+	if err != nil {
+		return model.Fail(fmt.Sprintf("failed to get current working directory: %s", err.Error()))
 	}
 
-	data, err := os.ReadFile(path)
+	cleanPath := filepath.Clean(path)
+	if !strings.HasPrefix(cleanPath, cwd+string(filepath.Separator)) && cleanPath != cwd {
+		return model.Fail("path is outside of current working directory")
+	}
+
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return model.Fail(err.Error())
 	}
