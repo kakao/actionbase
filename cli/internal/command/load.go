@@ -72,52 +72,12 @@ func (l *Load) Execute(args []string) *model.Response {
 }
 
 func (l *Load) loadFile(path string) *model.Response {
-	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
-		return l.loadYAMLFile(path)
+	if !strings.HasSuffix(path, ".yaml") && !strings.HasSuffix(path, ".yml") {
+		return model.Fail(fmt.Sprintf("Unsupported file extension: %s", filepath.Ext(path)))
+
 	}
 
-	return l.loadNonYAMLFile(path)
-}
-
-func resolveSafePath(path string) (string, *model.Response) {
-	if filepath.IsAbs(path) || filepath.VolumeName(path) != "" {
-		return "", model.Fail("invalid file path")
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", model.Fail(fmt.Sprintf("failed to get current working directory: %s", err.Error()))
-	}
-
-	safeDirAbs, err := filepath.Abs(cwd)
-	if err != nil {
-		return "", model.Fail(fmt.Sprintf("failed to resolve safe directory: %s", err.Error()))
-	}
-
-	cleanPath := filepath.Clean(path)
-
-	absPath := filepath.Join(safeDirAbs, cleanPath)
-	rel, err := filepath.Rel(safeDirAbs, absPath)
-	if err != nil || filepath.IsAbs(rel) || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || rel == ".." {
-		return "", model.Fail("invalid file path")
-	}
-
-	return absPath, nil
-}
-
-func (l *Load) loadNonYAMLFile(path string) *model.Response {
-	absPath, resp := resolveSafePath(path)
-	if resp != nil {
-		return resp
-	}
-
-	file, err := os.Open(absPath)
-	if err != nil {
-		return model.Fail(err.Error())
-	}
-	defer func() { _ = file.Close() }()
-
-	return l.doLoadFile(bufio.NewReader(file), absPath)
+	return l.loadYAMLFile(path)
 }
 
 func (l *Load) loadYAMLFile(path string) *model.Response {
