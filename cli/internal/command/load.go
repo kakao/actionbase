@@ -100,6 +100,10 @@ func (l *Load) loadFile(path string) *model.Response {
 }
 
 func (l *Load) loadFileInternal(path string) *model.Response {
+	if !filepath.IsAbs(path) {
+		return model.Fail("internal error: path must be absolute")
+	}
+
 	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
 		return l.loadYAMLFile(path)
 	}
@@ -114,6 +118,10 @@ func (l *Load) loadFileInternal(path string) *model.Response {
 }
 
 func (l *Load) loadYAMLFile(path string) *model.Response {
+	if !filepath.IsAbs(path) {
+		return model.Fail("internal error: path must be absolute")
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return model.Fail(err.Error())
