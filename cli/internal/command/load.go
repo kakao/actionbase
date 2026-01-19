@@ -306,7 +306,7 @@ func (l *Load) loadEdge(parser *util.Parser, data string) *model.Response {
 		}
 	}
 
-	return model.SuccessWithResult(fmt.Sprintf("%d edges are mutated (total: %d, failed: %d)\n", len(edgeBulkMutations.Mutations), updatedCount, failedCount))
+	return model.SuccessWithResult(fmt.Sprintf("%d edges of '%s' are mutated (total: %d, failed: %d)", len(edgeBulkMutations.Mutations), table, updatedCount, failedCount))
 }
 
 func (l *Load) normalize(chunk string) string {
