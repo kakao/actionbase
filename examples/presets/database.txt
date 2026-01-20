@@ -1,5 +1,0 @@
-create database
---name social
---data '{
- "comment": "social database"
-}';
