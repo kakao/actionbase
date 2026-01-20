@@ -8,7 +8,6 @@ Actionbase is a database for serving these user interactions at scale. Currently
 
 ## Quick Start
 
-## Quick Start
 ```bash
 docker run -it --pull always ghcr.io/kakao/actionbase:standalone
 ```
