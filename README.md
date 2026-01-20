@@ -8,32 +8,74 @@ Actionbase is a database for serving these user interactions at scale. Currently
 
 ## Quick Start
 
-> ⚠️ **WIP**: Docker one-liner (#53)
-
 ## Quick Start
 ```bash
-docker run -it ghcr.io/kakao/actionbase:standalone
+docker run -it --pull always ghcr.io/kakao/actionbase:standalone
 ```
 ```
 actionbase> load preset likes
-│ Loaded: 3 edges (Alice→Post1, Bob→Post1, Alice→Post2)
+Database 'likes' is created
+Table 'likes' is created
+/* Insert edge Alice → Phone */
+1 edges of 'likes' are mutated (total: 1, failed: 0)
+/* Insert edge Alice → Laptop */
+1 edges of 'likes' are mutated (total: 1, failed: 0)
+/* Insert edge Bob → Phone */
+1 edges of 'likes' are mutated (total: 1, failed: 0)
+(Took 0.5992 seconds)
 
-# When rendering a feed item:
+actionbase> use database likes
+[2026-01-20 20:38:32][DEBUG] GET /graph/v2/service/likes
+[2026-01-20 20:38:32][DEBUG] 200 OK
+ {"active":true,"name":"likes","desc":""}
+The database is changed to 'likes'
+(Took 0.0139 seconds)
 
-# Did Alice like Post1?
-actionbase> get likes --source Alice --target Post1
-│ GET /graph/v3/databases/demo/tables/likes/edges/get?source=Alice&target=Post1
-│ ...
+actionbase(likes)> use table likes
+[2026-01-20 20:38:39][DEBUG] GET /graph/v2/service/likes/label/likes
+[2026-01-20 20:38:39][DEBUG] 200 OK
+ {"active":true,"name":"likes.likes","desc":"Like","type":"INDEXED","schema":{"src":{"type":"STRING","desc":"userId"},"tgt":{"type":"STRING","desc":"targetId"},"fields":[{"name":"created_at","type":"LONG","nullable":false,"desc":"created_at"}]},"dirType":"BOTH","storage":"datastore://likes/likes","groups":[],"indices":[{"name":"created_at_desc","fields":[{"name":"created_at","order":"DESC"}],"desc":"order by created_at"}],"event":false,"readOnly":false,"mode":"SYNC"}
+The table is changed to 'likes:likes'
+(Took 0.0182 seconds)
 
-# How many likes does Post1 have?
-actionbase> count likes --start Post1 --direction IN
-│ GET /graph/v3/databases/demo/tables/likes/edges/count?start=Post1&direction=IN
-│ ...
+actionbase(likes:likes)> get --source Alice --target Phone
+[2026-01-20 20:46:17][DEBUG] GET /graph/v3/databases/likes/tables/likes/edges/get?source=Alice&target=Phone
+[2026-01-20 20:46:17][DEBUG] 200 OK
+ {"edges":[{"version":1768909550245,"source":"Alice","target":"Phone","properties":{"created_at":1768909550245},"context":{}}],"count":1,"total":1,"offset":null,"hasNext":false,"context":{}}
 
-# Who liked Post1?
-actionbase> scan likes --start Post1 --direction IN
-│ GET /graph/v3/databases/demo/tables/likes/edges/scan?start=Post1&direction=IN
-│ ...
+The edge is found: [Alice -> Phone]
+|---------------|--------|--------|---------------------------|
+| VERSION       | SOURCE | TARGET | PROPERTIES                |
+|---------------|--------|--------|---------------------------|
+| 1768909550245 | Alice  | Phone  | created_at: 1768909550245 |
+|---------------|--------|--------|---------------------------|
+(Took 0.0717 seconds)
+
+actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction OUT
+[2026-01-20 20:46:25][DEBUG] GET /graph/v3/databases/likes/tables/likes/edges/scan/created_at_desc?direction=OUT&limit=25&start=Alice
+[2026-01-20 20:46:25][DEBUG] 200 OK
+ {"edges":[{"version":1768909550297,"source":"Alice","target":"Laptop","properties":{"created_at":1768909550297},"context":{}},{"version":1768909550245,"source":"Alice","target":"Phone","properties":{"created_at":1768909550245},"context":{}}],"count":2,"total":-1,"offset":null,"hasNext":false,"context":{}}
+The 2 edges found (offset: -, hasNext: false)
+|---|---------------|--------|--------|---------------------------|
+| # | VERSION       | SOURCE | TARGET | PROPERTIES                |
+|---|---------------|--------|--------|---------------------------|
+| 1 | 1768909550297 | Alice  | Laptop | created_at: 1768909550297 |
+| 2 | 1768909550245 | Alice  | Phone  | created_at: 1768909550245 |
+|---|---------------|--------|--------|---------------------------|
+(Took 0.0270 seconds)
+
+actionbase(likes:likes)> count --start Alice --direction OUT
+[2026-01-20 20:46:40][DEBUG] GET /graph/v3/databases/likes/tables/likes/edges/counts?start=Alice&direction=OUT
+[2026-01-20 20:46:40][DEBUG] 200 OK
+ {"counts":[{"start":"Alice","direction":"OUT","count":2,"context":{}}],"count":1,"context":{}}
+
+The count of 1 edges found
+|---|-------|-----------|-------|
+| # | START | DIRECTION | COUNT |
+|---|-------|-----------|-------|
+| 1 | Alice | OUT       | 2     |
+|---|-------|-----------|-------|
+(Took 0.0306 seconds)
 ```
 
 See [Quick Start](https://actionbase.io/quick-start/) for more details, or [Build Your Social Media App with Actionbase](https://actionbase.io/guides/build-your-social-media-app/) to go deeper.
