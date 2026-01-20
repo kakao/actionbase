@@ -1,9 +1,6 @@
 # Actionbase Standalone for Quick Start
 #
-# Try Actionbase instantly with a single command:
-#   docker run -it ghcr.io/kakao/actionbase:standalone
-#
-# Build: ./docker/standalone/build.sh
+# docker run -it ghcr.io/kakao/actionbase:standalone
 
 FROM azul/zulu-openjdk-alpine:17-jre
 

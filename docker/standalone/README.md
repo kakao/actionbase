@@ -9,16 +9,17 @@ docker run -it ghcr.io/kakao/actionbase:standalone
 - Server (in-memory storage)
 - CLI (interactive interface)
 
-## Build
+## CI
 
-```bash
-./docker/standalone/build.sh
-```
+GitHub Actions workflow: `.github/workflows/standalone-image.yml`
 
-Supports linux/amd64 and linux/arm64.
+Triggers:
+- Push to `main` (when docker/standalone, server, or cli changes)
+- Manual dispatch
+
+Platforms: linux/amd64, linux/arm64
 
 ## Note
 
-Currently requires local build. Planned:
-- Docker multi-stage build
-- GitHub Actions for automated publishing
+Planned:
+- Docker multi-stage build (no local build dependency)
