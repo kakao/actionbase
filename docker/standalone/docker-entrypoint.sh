@@ -42,5 +42,5 @@ if [ $ELAPSED -ge $MAX_WAIT_SECONDS ]; then
     exit 1
 fi
 
-# Start CLI in foreground
-actionbase --host "${SERVER_URL}"
+# Start CLI in foreground with proxy mode
+actionbase --host "${SERVER_URL}" --proxy "$@"
