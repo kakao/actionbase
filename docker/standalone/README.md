@@ -9,6 +9,12 @@ docker run -it ghcr.io/kakao/actionbase:standalone
 - Server (in-memory storage)
 - CLI (interactive interface)
 
+## Local Build & Run
+
+```bash
+./docker/standalone/build-and-run.sh
+```
+
 ## CI
 
 GitHub Actions workflow: `.github/workflows/standalone-image.yml`
