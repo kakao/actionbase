@@ -30,7 +30,7 @@ install:
 
 run: build
 	@echo "Running..."
-	@$(BUILD_DIR)/$(BINARY_NAME)
+	@$(BUILD_DIR)/$(BINARY_NAME) $(ARGS)
 
 test:
 	@echo "Testing..."
