@@ -268,10 +268,12 @@ const CliTerminal: React.FC = () => {
       <div className="terminal-body" ref={terminalBodyRef}>
         <div className="command-history" ref={commandHistoryRef}>
           {commandHistory.map((item, index) => {
+            const isLastItem = index === commandHistory.length - 1;
+            const shouldApplyPadding = isLastItem && !currentCommand && !isDefaultPromptEnabled;
             return (
               <div key={index}>
                 {(
-                  <div className="command-block">
+                  <div className="command-block" style={shouldApplyPadding ? {paddingBottom: "20px"} : undefined}>
                     <div className="command-line">
                       <div className="command-line-inner">
                         <div className="command-content-wrapper">
@@ -303,7 +305,7 @@ const CliTerminal: React.FC = () => {
             );
           })}
           {currentCommand && (
-            <div className="command-block">
+            <div className="command-block" style={{paddingBottom: "20px"}}>
               <div className="command-line">
                 <div className="command-line-inner">
                   <div className="command-content-wrapper">
@@ -338,7 +340,7 @@ const CliTerminal: React.FC = () => {
             </div>
           )}
           {isDefaultPromptEnabled && (
-            <div className="command-block command-block-prompt">
+            <div className="command-block command-block-prompt" style={{paddingBottom: "20px"}}>
               <div className="command-line">
                 <div className="command-line-inner">
                   <div className="command-line-item">
