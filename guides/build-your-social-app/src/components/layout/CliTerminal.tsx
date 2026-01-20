@@ -263,6 +263,23 @@ const CliTerminal: React.FC = () => {
     clearUnExecutedCurrentCommand()
   }, [buttonEvent]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (currentCommand) {
+          setCommandClicked(true);
+          handleRunCommand(currentCommand);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [currentCommand, handleRunCommand]);
+
   return (
     <div className="terminal-body-container" id="cli-commands">
       <div className="terminal-body" ref={terminalBodyRef}>
