@@ -115,9 +115,9 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 		}
 
 		if cmd.Description != "" {
-			decoratedDescription := fmt.Sprintf("/* %s */\n", cmd.Description)
+			decoratedDescription := fmt.Sprintf("/* %s */", cmd.Description)
 			results = append(results, decoratedDescription)
-			fmt.Printf("\033[90m%s\033[0m", decoratedDescription)
+			fmt.Printf("\033[90m%s\033[0m\n", decoratedDescription)
 		}
 
 		chunk := l.normalize(cmd.Command)
