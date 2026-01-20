@@ -20,6 +20,7 @@ COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties ./
 COPY gradle/ gradle/
 COPY conventions/ conventions/
 COPY platform/ platform/
+COPY .git/ .git/
 
 # Copy source modules
 COPY codec-java/ codec-java/
@@ -34,9 +35,9 @@ RUN chmod +x gradlew && \
     ./gradlew :server:bootJar -x test --no-daemon
 
 # ============================================================================
-# Stage 2: Build CLI binary
+# Stage 2: Build CLI binaries (cross-compile both architectures)
 # ============================================================================
-FROM golang:1.21-alpine AS cli-builder
+FROM --platform=$BUILDPLATFORM golang:1.21-alpine AS cli-builder
 
 WORKDIR /build
 
@@ -46,12 +47,14 @@ RUN apk add --no-cache git
 # Copy CLI source
 COPY cli/ .
 
-# Determine version and build for target architecture
-ARG TARGETARCH
+# Cross-compile for both architectures
 RUN VERSION=$(git describe --tags --always --match "cli/*" 2>/dev/null | sed 's|cli/||' || echo "standalone") && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -ldflags "-s -w -X main.Version=${VERSION}" \
-    -o /actionbase ./cmd/actionbase
+    -o /actionbase-amd64 ./cmd/actionbase && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=arm64 \
+    go build -ldflags "-s -w -X main.Version=${VERSION}" \
+    -o /actionbase-arm64 ./cmd/actionbase
 
 # ============================================================================
 # Stage 3: Runtime image
@@ -75,8 +78,9 @@ WORKDIR /app
 # Copy server JAR
 COPY --from=server-builder /build/server/build/libs/server-*-SNAPSHOT.jar /app/server.jar
 
-# Copy CLI binary
-COPY --from=cli-builder /actionbase /usr/local/bin/actionbase
+# Copy CLI binary for target architecture
+ARG TARGETARCH
+COPY --from=cli-builder /actionbase-${TARGETARCH} /usr/local/bin/actionbase
 
 # Copy entrypoint script
 COPY docker/standalone/docker-entrypoint.sh /docker-entrypoint.sh
