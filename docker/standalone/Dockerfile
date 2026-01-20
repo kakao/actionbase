@@ -35,6 +35,7 @@ ENV AB_SERVER_PORT=8080
 EXPOSE 8080
 
 # Switch to non-root user
+RUN chown -R actionbase:actionbase /app
 USER actionbase
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
