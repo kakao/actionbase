@@ -1,11 +1,8 @@
 package command
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,7 +71,6 @@ func (l *Load) Execute(args []string) *model.Response {
 func (l *Load) loadFile(path string) *model.Response {
 	if !strings.HasSuffix(path, ".yaml") && !strings.HasSuffix(path, ".yml") {
 		return model.Fail(fmt.Sprintf("Unsupported file extension: %s", filepath.Ext(path)))
-
 	}
 
 	return l.loadYAMLFile(path)
@@ -137,53 +133,6 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 			return model.FailWithNoOut(strings.Join(results, "\n"))
 		}
 		results = append(results, *result.Result)
-	}
-
-	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
-}
-
-func (l *Load) doLoadFile(reader *bufio.Reader, path string) *model.Response {
-	var results []string
-	var command strings.Builder
-
-	executeCommand := func() *model.Response {
-		chunk := l.normalize(command.String())
-		if len(chunk) == 0 {
-			return nil
-		}
-		result := l.doLoad(chunk)
-		if !result.IsSuccess {
-			msg := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
-			fmt.Println(msg)
-			results = append(results, msg)
-			return model.FailWithNoOut(strings.Join(results, "\n"))
-		}
-		results = append(results, *result.Result)
-		return nil
-	}
-
-	for {
-		line, err := reader.ReadString('\n')
-		if err == io.EOF {
-			if command.Len() > 0 {
-				if resp := executeCommand(); resp != nil {
-					return resp
-				}
-			}
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		command.WriteString(line)
-
-		if strings.HasSuffix(strings.TrimSpace(line), ";") {
-			if resp := executeCommand(); resp != nil {
-				return resp
-			}
-			command.Reset()
-		}
 	}
 
 	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
