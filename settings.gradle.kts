@@ -1,3 +1,8 @@
+plugins {
+    // Auto-provisions required JDKs for Dockerfile-based builds (not needed for Jib).
+    id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
+}
+
 rootProject.name = "actionbase"
 
 includeBuild("conventions")
