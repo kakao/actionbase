@@ -9,49 +9,28 @@ production-proven across Kakao services.
 
 ## Overview
 
-Actionbase is built for high-throughput, low-latency OLTP workloads where
-user interactions are continuously written and queried. Actionbase focuses on serving interaction-derived data—such as **recent views**, **likes**, **reactions**,
-and **follows**—that power product listings, recommendations, feeds, and other interaction-driven surfaces in large-scale services.
+Actionbase serves interaction-derived data—**likes**, **recent views**, **follows**, **reactions**—in real time.
 
-User interactions naturally form actor→target relationships with associated properties. Actionbase models
-these relationships using a graph data model and materializes read-optimized structures at write time, enabling
-fast and predictable queries without expensive read-time computation.
+An interaction is modeled as: **who** did **what** to which **target**.
 
-When backed by HBase, Actionbase inherits strong durability and horizontal scalability, and provides
-a higher-level abstraction tailored for real-time interaction serving.
+Actionbase materializes read-optimized structures at write time. Reads use bounded access patterns (GET, COUNT, SCAN) without expensive computation.
 
-## Design Goals
+When backed by HBase, Actionbase inherits durability and horizontal scalability.
 
-- **Shared Interaction Layer**
-  Provide a unified platform for storing and serving user interactions as a shared, canonical interaction graph.
+## Focus
 
-- **Natural Interaction Modeling**
-  Model interactions as actor→target relationships with schema-defined properties, closely reflecting how user interactions appear in real applications.
-
-- **Write-Time Optimization**
-  Optimize for reads at write time, enabling fast and predictable queries without expensive read-time computation.
-
-- **Leverage Proven Storage**
-  Build on the strengths of existing storage engines (for example, HBase), allowing Actionbase to focus on interaction modeling and serving rather than reimplementing durability, scalability, or distribution.
-
-## Key Features
-
-- **Write-Time Materialization**
-  Pre-compute the data required for fast, predictable reads at write time, eliminating service-specific indexing and counting logic.
-
-- **Interaction-Oriented Graph Model**
-  Represent user interactions as actor→target edges with schema-defined properties for efficient querying.
-
-- **Unified REST API**
-  Expose a simple API for querying and mutating interaction-driven data.
-
-- **WAL / CDC Integration**
-  Emit write-ahead logs and change data capture streams for recovery, replay, asynchronous processing, and downstream data pipelines.
+| Focuses on                                          | Explicitly avoids                    |
+| --------------------------------------------------- | ------------------------------------ |
+| Real-time user interactions (likes, views, follows) | General-purpose graph queries        |
+| Bounded access patterns (GET, COUNT, SCAN)          | Unbounded traversal or analytics     |
+| Continuous writes, immediate reads                  | Batch ingestion or deferred indexing |
+| WAL/CDC to Kafka (yours or ours)                    | Owning downstream processing         |
+| Pluggable storage (HBase now, others planned)       | Building yet another storage engine  |
 
 ## Datastore
 
-Actionbase currently uses HBase as its primary storage backend, leveraging its durability and horizontal scalability. HBase is suited for large-scale deployments. [SlateDB](https://slatedb.io/) is planned as an additional storage backend for small to mid-size deployments in future releases.
+Actionbase currently uses HBase as its primary storage backend. Lighter backends are planned for smaller deployments.
 
 ## Production Usage
 
-Actionbase is used across Kakao services—including KakaoTalk and KakaoShopping—to power real-time user interaction serving at scale. It has been running in stable production for years, delivering predictable reads, consistent writes, and reliable handling of multi-terabyte datasets.
+Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home)—handling over 1M requests/min at peak. Running in stable production for years.

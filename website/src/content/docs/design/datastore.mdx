@@ -5,13 +5,9 @@ sidebar:
   order: 5
 ---
 
-Actionbase builds on proven storage technologies, leveraging their strengths while adding value through graph modeling and write-time optimization. The datastore abstraction layer allows integration with different backends.
+Actionbase abstracts storage through a minimal interface. Different backends can be integrated.
 
-## Datastore Abstraction
-
-Actionbase abstracts storage operations through a minimal interface, enabling integration with various backends. By building on established technologies, Actionbase leverages their reliability, scalability, and performance while focusing on interaction-specific capabilities.
-
-### Required Operations
+## Required Operations
 
 A datastore backend must support:
 
@@ -23,62 +19,34 @@ A datastore backend must support:
 | checkAndMutate | Atomic check-and-mutate for consistency    |
 | batch          | Batch mutations (optional, recommended)    |
 
-This interface is intentionally minimal. Any backend implementing these operations can be integrated.
-
 ## Supported Backends
 
 ### HBase
 
-**HBase** is the production datastore backend for Actionbase. It's a distributed, scalable NoSQL database built on HDFS.
+Production backend. Distributed, scalable NoSQL on HDFS.
 
-| Characteristic           | Description                              |
-| ------------------------ | ---------------------------------------- |
-| Horizontal Scalability   | Shards data across nodes, linear scaling |
-| Strong Durability        | Data replicated across nodes             |
-| Low-latency Access       | Optimized for random reads and writes    |
-| Automatic Load Balancing | Even distribution across cluster         |
-| Proven at Scale          | Used for petabyte-scale data             |
+| Characteristic         | Description                           |
+| ---------------------- | ------------------------------------- |
+| Horizontal Scalability | Shards data across nodes              |
+| Strong Durability      | Data replicated across nodes          |
+| Low-latency Access     | Optimized for random reads and writes |
 
-HBase requires expertise when used directly:
+HBase requires expertise when used directly (row key design, region splitting, cluster management). Actionbase provides a higher-level abstraction with interaction-specific features (State/Index/Count).
 
-- Row key design
-- Column family organization
-- Region splitting and compaction
-- Cluster management
-
-Actionbase provides:
-
-- HBase's durability, scale, and distribution
-- Simpler usability through high-level abstraction
-- Interaction-specific features (State/Index/Count)
-
-For HBase configuration, see [HBase Operations](/operations/hbase/).
+See [HBase Operations](/operations/hbase/).
 
 ### Memory
 
-**Memory** is an in-memory backend for development and testing.
+In-memory backend for development and testing.
 
 | Characteristic | Description               |
 | -------------- | ------------------------- |
 | Easy Setup     | No configuration required |
 | No Persistence | Data lost on server stop  |
-| Fast           | In-memory operations      |
 
-Ideal for local development, testing, and prototyping.
-
-### SlateDB (Planned)
-
-**[SlateDB](https://slatedb.io/)** is a planned backend for small to medium-scale deployments.
-
-| Characteristic        | Description                    |
-| --------------------- | ------------------------------ |
-| Lower Complexity      | Simpler setup and maintenance  |
-| Resource Efficiency   | Less infrastructure overhead   |
-| Transactional Support | Suitable for smaller workloads |
+Ideal for local development and prototyping.
 
 ## How Actionbase Uses Datastore
-
-Actionbase maps its operations to datastore operations:
 
 | Actionbase Operation | Datastore Operation | Data Structure        |
 | -------------------- | ------------------- | --------------------- |
@@ -89,18 +57,17 @@ Actionbase maps its operations to datastore operations:
 | Mutation (write)     | batch / put         | State, Index, Counter |
 | Mutation (cleanup)   | delete              | Old indexes           |
 
-By building on proven storage, Actionbase focuses on interaction-specific features while the underlying datastore handles persistence, replication, and scalability.
-
 ## Choosing a Backend
 
-| Backend | Use Case             | Scale           |
-| ------- | -------------------- | --------------- |
-| HBase   | Production           | Large           |
-| SlateDB | Production (planned) | Small to Medium |
-| Memory  | Development          | Local           |
+| Backend | Use Case    |
+| ------- | ----------- |
+| HBase   | Production  |
+| Memory  | Development |
+
+Lighter backends are planned for smaller deployments.
 
 ## Next Steps
 
-- [Data Encoding](/internals/encoding/): How data is encoded in the datastore
-- [HBase Operations](/operations/hbase/): HBase configuration guide
+- [Data Encoding](/internals/encoding/): How data is encoded
+- [HBase Operations](/operations/hbase/): HBase configuration
 - [Local Provisioning](/provisioning/local/): Get started locally

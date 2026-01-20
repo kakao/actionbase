@@ -3,98 +3,55 @@ title: For RDB Users
 description: Understanding Actionbase from a relational database perspective
 ---
 
-This document is for users familiar with relational databases (RDB)
-who want to understand how Actionbase fits alongside an RDB-based system.
+For users familiar with relational databases who want to understand how Actionbase fits alongside an RDB.
 
-Actionbase is not a general-purpose database.
-It focuses on relationship data—such as user–item or user–user connections—and models these relationships as interactions.
+## Why Consider Actionbase?
 
-## Why Consider Actionbase with an RDB?
-
-Relational databases are commonly used to manage transactional data.
-
-As a service grows, tables that store large volumes of relationships or
-interaction histories often present scaling challenges:
+As services grow, tables storing user interactions—likes, recent views, follows—often hit scaling walls:
 
 - Shard key management and hot entities
-- High read and write throughput
-- Cross-shard queries and rebalancing
+- Cross-shard queries
+- Cache consistency
 
-Actionbase addresses these challenges by modeling relationships as interactions and leveraging horizontally scalable storage such as HBase.
-
-For more details, see [Introduction](/introduction/).
+Actionbase handles these by modeling interactions as **who** did **what** to which **target**, with write-time materialization on horizontally scalable storage.
 
 ## From Tables to Interactions
 
-The difference lies in how relationships are represented and queried,
-not in how entities are defined.
+In an RDB, interaction data often lives in tables like:
 
-### Relationship Tables in an RDB
+- `user_follows` (user–user)
+- `user_likes` (user–item)
+- `user_views` (user–item)
 
-In an RDB, relationships are typically modeled using tables that:
+In Actionbase, these become edges:
 
-- Connect two entity identifiers
-- Store limited relationship metadata
-- Exist mainly to support relationship-based queries
+- **Source**: who (e.g., user_id)
+- **Target**: what (e.g., product_id, user_id)
+- **Properties**: schema-defined (e.g., `created_at`)
 
-Examples include:
+Read-optimized structures (indexes, counts) are pre-computed at write time.
 
-- User–user relationships (follows, blocks)
-- User–item relationships (likes, recent views, wishes)
-- User–content relationships (reactions, comments)
+## When Actionbase Fits
 
-These tables are often accessed from one side of the relationship
-and grow large over time.
+- Interaction tables dominate volume
+- Queries focus on listing or counting relationships
+- Sharding these tables gets painful
 
-### Interactions in Actionbase
+## Using Actionbase with an RDB
 
-In Actionbase:
+Actionbase complements an RDB, not replaces it.
 
-- Entities are identified by source and target
-- Relationships are modeled as interactions with schema-defined properties
-- Read-optimized structures (indexes, counts) are pre-computed at write time
+A common pattern:
 
-This design enables fast lookups such as:
+1. Transactional and domain data stays in RDB
+2. Large-scale interaction data moves to Actionbase
+3. Interaction queries served from Actionbase
 
-- Listing items a user interacted with
-- Counting interactions per user or per item
-- Checking whether a specific interaction exists
+Start by migrating only the tables that present scaling challenges.
 
-RDB tables whose primary role is to represent relationships can often be mapped directly to interactions.
+## Example: Mapping a Table
 
-## When Actionbase Is a Good Fit
-
-Actionbase is a good fit when:
-
-- Interaction data dominates table volume
-- Queries focus on listing or traversing relationships
-- Scaling these tables in an RDB becomes operationally complex
-
-Examples include:
-
-- Social graphs (follows, blocks)
-- User–item interactions (likes, recent views, wishes)
-- User–content interactions (reactions, comments)
-
-See [FAQ - What problems does Actionbase solve?](/faq/#what-problems-does-actionbase-solve) for more examples.
-
-## Using Actionbase Together with an RDB
-
-Actionbase is designed to complement an RDB, not replace it.
-
-**Best practice**: If you are considering Actionbase, start by migrating only the large-scale user interaction tables that present scaling challenges—such as likes, follows, and recent views. Keep transactional and domain data in your RDB.
-
-A common pattern is:
-
-1. Transactional and domain data remains in the RDB
-2. Large-scale user interaction data is stored in Actionbase
-3. Interaction-centric queries are served from Actionbase
-
-This separates transactional workloads from interaction-heavy access patterns.
-
-## Example: Mapping an RDB Table to Actionbase
-
-### RDB Table
+**RDB**
 
 ```sql
 CREATE TABLE user_product_wish (
@@ -117,9 +74,7 @@ erDiagram
     }
 ```
 
-### Actionbase Table (Label)
-
-In Actionbase, the same data is modeled as edges in a graph:
+**Actionbase**
 
 ```mermaid
 graph LR
@@ -128,21 +83,15 @@ graph LR
     Bob((Bob)) -->|wishes| Phone
 ```
 
-Each arrow represents an interaction (edge) with properties such as `created_at` and `visibility`.
+- **Source**: user_id (STRING)
+- **Target**: product_id (STRING)
+- **Properties**: `created_at` (LONG), `visibility` (STRING)
 
-This table maps to a Label with the following schema:
+The `id` column is not needed—edges are identified by source and target.
 
-- **source**: user_id (STRING)
-- **target**: product_id (STRING)
-- **properties**:
-  - created_at (LONG)
-  - visibility (STRING)
+Indexes for efficient queries:
 
-The `id` column is not needed—Actionbase identifies edges by source and target.
+- `created_at DESC` — recent wishes
+- `visibility, created_at DESC` — filtered by visibility
 
-Indexes can be defined for efficient queries:
-
-- `created_at DESC` for retrieving recent wishes
-- `visibility ASC, created_at DESC` for filtering by visibility
-
-For schema definition details, see [Schema](/design/schema/). For a complete walkthrough, see [Quick Start](/quick-start/).
+See [Schema](/design/schema/) and [Quick Start](/quick-start/).

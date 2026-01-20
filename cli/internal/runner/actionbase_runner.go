@@ -38,11 +38,11 @@ type ActionbaseCommandLineRunner struct {
 	currentPort     string
 }
 
-func NewActionbaseCommandLineRunner(version, host string, authKey *string, currentPort string, IsServerEnabled bool) *ActionbaseCommandLineRunner {
+func NewActionbaseCommandLineRunner(version, host string, authKey *string, currentPort string, IsServerEnabled, isDebugEnabled bool) *ActionbaseCommandLineRunner {
 	logger := util.NewLogger(slog.LevelDebug)
 	slog.SetDefault(logger)
 
-	clientContext := client.Context{IsProxyModeEnabled: IsServerEnabled, IsDebugEnabled: false}
+	clientContext := client.Context{IsProxyModeEnabled: IsServerEnabled, IsDebugEnabled: isDebugEnabled}
 	httpClient := client.NewHTTPClient(host, authKey, &clientContext)
 
 	runner := &ActionbaseCommandLineRunner{
@@ -212,6 +212,10 @@ func (r *ActionbaseCommandLineRunner) GetHandler() *atomic.Value {
 	return r.handler
 }
 
+func (r *ActionbaseCommandLineRunner) isDebugEnabled() bool {
+	return r.clientContext.IsDebugEnabled
+}
+
 func (r *ActionbaseCommandLineRunner) BuildPrompt() string {
 	if r.currentAlias != "" {
 		return fmt.Sprintf("%s(%s:%s)", "actionbase", r.currentDatabase, r.currentAlias)
@@ -239,14 +243,15 @@ func (r *ActionbaseCommandLineRunner) CheckConnection() {
 
 func (r *ActionbaseCommandLineRunner) showBanner() {
 	version := "(v" + r.version + ")"
-	proxyMode := "on"
-	if !r.IsProxyModeEnabled() {
-		proxyMode = "off"
+
+	proxy := "off (port -)"
+	if r.IsProxyModeEnabled() {
+		proxy = "on (port " + r.GetCurrentPort() + ")"
 	}
 
-	port := "-"
-	if r.GetCurrentPort() != "" {
-		port = r.GetCurrentPort()
+	debug := "off"
+	if r.IsDebugEnabled() {
+		debug = "on"
 	}
 
 	fmt.Println()
@@ -259,17 +264,17 @@ func (r *ActionbaseCommandLineRunner) showBanner() {
 	fmt.Printf("\033[33m│\033[0m")
 	fmt.Println("               _/\\   ____/   \\____\\_                                                            \033[33m│\033[0m")
 	fmt.Printf("\033[33m│\033[0m")
-	fmt.Println("              / \\/ _/      @    \\_\033[33m♥/\033[0m\\     \033[33mActionbase                                            │\033[0m")
+	fmt.Printf("              / \\/ _/      @    \\_\033[33m♥/\033[0m\\     \033[33mActionbase %-42s │\033[0m\n", r.GetHost())
 	fmt.Printf("\033[33m│\033[0m")
-	fmt.Printf("             /   /                | |     %-54s\033[33m│\033[0m\n", r.GetHost())
+	fmt.Println("             /   /                | |                                                           \033[33m│\033[0m")
 	fmt.Printf("\033[33m│\033[0m")
-	fmt.Println("           _/   /             ___/ \\/                                                           \033[33m│\033[0m")
+	fmt.Printf("           _/   /             ___/ \\/     \033[33mproxy\033[0m %-48s\033[33m│\033[0m\n", proxy)
 	fmt.Printf("\033[33m│\033[0m")
-	fmt.Println("          /     |           ______/       \033[33mCLI                                                   │\033[0m")
+	fmt.Printf("          /     |           ______/       \033[33mdebug\033[0m %-48s\033[33m│\033[0m\n", debug)
 	fmt.Printf("\033[33m│\033[0m")
-	fmt.Printf("       __/      |          /              proxy mode: %-42s\033[33m│\033[0m\n", proxyMode)
+	fmt.Println("       __/      |          /                                                                    \033[33m│\033[0m")
 	fmt.Printf("\033[33m│\033[0m")
-	fmt.Printf("   ___/         \\        _/               proxy port: %-42s\033[33m│\033[0m\n", port)
+	fmt.Println("   ___/         \\        _/                                                                     \033[33m│\033[0m")
 	fmt.Printf("\033[33m│\033[0m")
 	fmt.Println("                 |      /\\__                                                                    \033[33m│\033[0m")
 	fmt.Printf("\033[33m│\033[0m")

@@ -32,8 +32,13 @@ func main() {
 		host = DefaultHost
 	}
 
+	isDebugEnabled := false
+	if _, found := parser.GetLenient("debug"); found {
+		isDebugEnabled = true
+	}
+
 	authKey, _ := parser.Get(authParamKey)
-	console := runner.NewActionbaseCommandLineRunner(Version, host, &authKey, "", false)
+	console := runner.NewActionbaseCommandLineRunner(Version, host, &authKey, "", false, isDebugEnabled)
 	console.CheckConnection()
 	console.StartServer(parser)
 	console.Run()

@@ -1,12 +1,10 @@
 package command
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -71,21 +69,35 @@ func (l *Load) Execute(args []string) *model.Response {
 }
 
 func (l *Load) loadFile(path string) *model.Response {
-	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
-		return l.loadYAMLFile(path)
+	if !strings.HasSuffix(path, ".yaml") && !strings.HasSuffix(path, ".yml") {
+		return model.Fail(fmt.Sprintf("Unsupported file extension: %s", filepath.Ext(path)))
 	}
 
-	file, err := os.Open(path)
-	if err != nil {
-		return model.Fail(err.Error())
-	}
-	defer func() { _ = file.Close() }()
-
-	return l.doLoadFile(bufio.NewReader(file), path)
+	return l.loadYAMLFile(path)
 }
 
 func (l *Load) loadYAMLFile(path string) *model.Response {
-	data, err := os.ReadFile(path)
+	cwd, err := os.Getwd()
+	if err != nil {
+		return model.Fail(fmt.Sprintf("failed to get current working directory: %s", err.Error()))
+	}
+
+	safeDirAbs, err := filepath.Abs(cwd)
+	if err != nil {
+		return model.Fail(fmt.Sprintf("failed to resolve safe directory: %s", err.Error()))
+	}
+
+	absPath, err := filepath.Abs(filepath.Join(safeDirAbs, path))
+	if err != nil {
+		return model.Fail(fmt.Sprintf("failed to resolve absolute path: %s", err.Error()))
+	}
+
+	rel, err := filepath.Rel(safeDirAbs, absPath)
+	if err != nil || rel == ".." || rel == "." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return model.Fail("invalid file path")
+	}
+
+	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return model.Fail(err.Error())
 	}
@@ -121,53 +133,6 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 			return model.FailWithNoOut(strings.Join(results, "\n"))
 		}
 		results = append(results, *result.Result)
-	}
-
-	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
-}
-
-func (l *Load) doLoadFile(reader *bufio.Reader, path string) *model.Response {
-	var results []string
-	var command strings.Builder
-
-	executeCommand := func() *model.Response {
-		chunk := l.normalize(command.String())
-		if len(chunk) == 0 {
-			return nil
-		}
-		result := l.doLoad(chunk)
-		if !result.IsSuccess {
-			msg := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
-			fmt.Println(msg)
-			results = append(results, msg)
-			return model.FailWithNoOut(strings.Join(results, "\n"))
-		}
-		results = append(results, *result.Result)
-		return nil
-	}
-
-	for {
-		line, err := reader.ReadString('\n')
-		if err == io.EOF {
-			if command.Len() > 0 {
-				if resp := executeCommand(); resp != nil {
-					return resp
-				}
-			}
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		command.WriteString(line)
-
-		if strings.HasSuffix(strings.TrimSpace(line), ";") {
-			if resp := executeCommand(); resp != nil {
-				return resp
-			}
-			command.Reset()
-		}
 	}
 
 	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
@@ -365,25 +330,25 @@ func (l *Load) parseArgsWithQuotes(line string) []string {
 }
 
 func (l *Load) loadPreset(filename, refs string) *model.Response {
-	var url string
-	if refs != "" {
-		url = "https://raw.githubusercontent.com/kakao/actionbase/" + refs + "/examples/presets/" + filename
-	} else {
-		url = "https://github.com/kakao/actionbase/releases/download/examples/" + filename
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {
+		return model.Fail("invalid preset filename")
 	}
 
-	ok := util.Download(filename, url)
+	cleanedFilename := filepath.Clean(filename) + ".preset.yaml"
+
+	var url string
+	if refs != "" {
+		url = "https://raw.githubusercontent.com/kakao/actionbase/" + refs + "/examples/presets/" + cleanedFilename
+	} else {
+		url = "https://github.com/kakao/actionbase/releases/download/examples/" + cleanedFilename
+	}
+
+	ok := util.Download(cleanedFilename, url)
 	if !ok {
 		return model.Fail("Failed to download preset file")
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Failed to get current working directory:", err)
-		return nil
-	}
-
-	return l.loadFile(cwd + "/" + filename)
+	return l.loadFile(cleanedFilename)
 }
 
 func (l *Load) GetDescription() string {

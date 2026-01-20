@@ -5,13 +5,11 @@ sidebar:
   order: 3
 ---
 
-Mutations in Actionbase allow you to insert, update, and delete edges in your graph. The mutation process ensures data consistency, durability, and write-time optimization.
+Mutations insert, update, and delete edges. The process ensures consistency, durability, and write-time optimization.
 
-For the conceptual foundation, see [Core Concepts](/design/concepts/).
+See [Core Concepts](/design/concepts/) for background.
 
 ## Mutation Flow
-
-The complete mutation process:
 
 ```mermaid
 flowchart TD
@@ -33,104 +31,87 @@ flowchart TD
 
 A mutation request contains:
 
-- **Event**: The data change to be applied (e.g., new property values, edge creation)
-- **Operation**: The type of operation:
-  - **Insert**: Create a new edge
-  - **Update**: Modify an existing edge
-  - **Delete**: Remove an edge
+- **Event**: The data change (e.g., new property values, edge creation)
+- **Operation**: Insert, Update, or Delete
 
 ## Mutation Process
 
-### 1. Write WAL (Write-Ahead Log)
+### 1. Write WAL
 
-Before any changes are made to the datastore, the mutation is written to the Write-Ahead Log (WAL). This ensures durability and enables recovery in case of failures.
+Mutation is written to WAL before changes are made. Enables recovery and replay.
 
-In production, Actionbase uses Kafka as the WAL backend. The WAL can be replayed to restore the final state, even if events arrive out of order.
+In production, Kafka is used as WAL backend.
 
 ### 2. Acquire Lock
 
-To prevent concurrent modifications, Actionbase acquires a lock on the specific edge being mutated:
+Prevents concurrent modifications:
 
-- **Unique edges**: Locks based on (source, target) pair
-- **Multi edges**: Locks based on edge ID
+- **Unique edges**: Lock on (source, target)
+- **Multi edges**: Lock on edge ID
 
 ### 3. Read State
 
-The current state of the edge is read from the datastore, including all existing properties, timestamps, and metadata.
+Read current state from datastore—properties, timestamps, metadata.
 
 ### 4. Apply Event
 
-The event is applied to the state, transitioning it based on the operation type:
+Transition state based on operation:
 
-- **INSERT**: Updates `createdAt` timestamp and sets properties. The state becomes active when `createdAt > deletedAt`.
-- **UPDATE**: Updates only the specified properties without changing timestamps.
-- **DELETE**: Updates `deletedAt` timestamp and marks properties as deleted. The state becomes inactive when `deletedAt >= createdAt`.
+- **INSERT**: Set `createdAt`, set properties. Active when `createdAt > deletedAt`.
+- **UPDATE**: Update properties only.
+- **DELETE**: Set `deletedAt`. Inactive when `deletedAt >= createdAt`.
 
-The transition respects version ordering—newer versions override older ones.
+Newer versions override older ones.
 
 ### 5. Compute Indexes and Counters
 
-Based on the changed state, Actionbase computes additional structures for fast reads:
+Based on changed state:
 
-- **Indexes**: Old indexes are deleted, new indexes are created based on the changed state
-- **Counters**: Counts are incremented or decremented
-
-This write-time optimization ensures read queries can be answered quickly without expensive computations.
+- **Indexes**: Delete old, create new
+- **Counters**: Increment or decrement
 
 ### 6. Write to Storage
 
-The modified state along with indexes and counters is written atomically to the datastore.
+State, indexes, and counters written atomically.
 
 ### 7. Release Lock
 
-Once the write is complete, the lock is released.
+Lock released after write.
 
-### 8. Write CDC (Change Data Capture)
+### 8. Write CDC
 
-The mutation is recorded in the CDC system for downstream systems. In production, Actionbase uses Kafka as the CDC backend.
-
-CDC stores the resulting state after processing, enabling synchronization to external systems (e.g., Iceberg, MPP, Trino) for analytics.
+Mutation recorded in CDC (Kafka in production). Resulting state available for downstream systems.
 
 ## Event Ordering
 
-Clients attach timestamps to events (typically millisecond or nanosecond precision). Even if network delays cause events to arrive out of order, Actionbase uses the original timestamps to compute the correct final state.
+Clients attach timestamps to events. Even if events arrive out of order, Actionbase uses timestamps to compute correct final state.
 
-**Example**: If ON/OFF events arrive as `ON, OFF, ON, OFF` but were originally `ON, ON, OFF, OFF`, Actionbase ensures the final state is correct based on timestamps.
-
-This mechanism ensures **eventual consistency**—the final state is always correct regardless of event arrival order.
+Example: If ON/OFF events arrive as `ON, OFF, ON, OFF` but were originally `ON, ON, OFF, OFF`, final state is computed from timestamps.
 
 ## Write-Time Optimization
 
 During mutations, Actionbase pre-computes:
 
-| Structure   | Purpose              | Query Type |
-| ----------- | -------------------- | ---------- |
-| EdgeState   | Current edge state   | Get        |
-| EdgeIndex   | Sorted index entries | Scan       |
-| EdgeCounter | Aggregated counts    | Count      |
+| Structure   | Purpose            | Query Type |
+| ----------- | ------------------ | ---------- |
+| EdgeState   | Current edge state | GET        |
+| EdgeIndex   | Sorted entries     | SCAN       |
+| EdgeCounter | Aggregated counts  | COUNT      |
 
-**Benefits**:
-
-- **Fast Reads**: No query-time computation needed
-- **Consistent Performance**: Read latency remains low regardless of data size
-- **Efficient Storage**: Indexes and counters are maintained incrementally
-
-By computing at write time, Actionbase shifts computational cost from reads to writes—ideal for read-heavy workloads.
+Reads use simple GET, COUNT, SCAN without query-time computation.
 
 ## Consistency Guarantees
 
-The mutation process ensures consistency through:
-
-| Mechanism          | Guarantee                                       |
-| ------------------ | ----------------------------------------------- |
-| Locking            | Prevents concurrent modifications               |
-| Atomic Writes      | State and indexes written together              |
-| WAL                | Durability and recovery                         |
-| Read-Modify-Write  | Mutations based on latest state                 |
-| Timestamp Ordering | Correct final state despite out-of-order events |
+| Mechanism          | Guarantee                                 |
+| ------------------ | ----------------------------------------- |
+| Locking            | Prevents concurrent modifications         |
+| Atomic Writes      | State and indexes written together        |
+| WAL                | Durability and recovery                   |
+| Read-Modify-Write  | Mutations based on latest state           |
+| Timestamp Ordering | Correct final state despite event arrival |
 
 ## Next Steps
 
-- [Query](/design/query/): How to read the pre-computed data
-- [Datastore](/design/datastore/): Datastore backend details
-- [API Reference](/api-references/mutation/): Complete mutation API
+- [Query](/design/query/): Read pre-computed data
+- [Datastore](/design/datastore/): Storage backends
+- [Mutation API](/api-references/mutation/): API reference

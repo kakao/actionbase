@@ -5,24 +5,26 @@ sidebar:
   order: 3
 ---
 
-This page provides performance benchmarks and metrics for Actionbase. Actionbase is production-proven, serving tens of millions of users in [Kakao](/project/about-kakao/) services including KakaoTalk and KakaoShopping.
+Performance benchmarks for Actionbase.
 
-**Note:** At this initial release stage, we are providing benchmark results at this level. The results presented here contain internal information and are provided in approximate values. We plan to provide transparent benchmark results using generalized datasets in future releases.
+**Note:** At this initial release, benchmark results are approximate. We plan to provide transparent benchmarks using generalized datasets in future releases.
 
 ## Current Configuration
 
-The current infrastructure configuration:
+- **Ingress**: 9 nodes (6 cores, 12GB RAM)
+- **Worker**: 9 nodes (40 cores, 64GB RAM)
+- **HBase**: 9 region servers (20 cores, 64GB RAM each)
 
-- **Ingress**: VM-based nodes, 3 nodes in each of 3 regions (9 nodes total)
-- **Worker**: PM-based nodes, 3 nodes in each of 3 regions (9 nodes total)
-- **HBase**: PM-based nodes, 3 nodes in each of 3 regions (9 nodes total)
+## Production Traffic
 
-## Performance in Production Traffic
+Current peak: ~33k RPS (2M RPM). Typical workload: ~15% write, ~85% read.
 
-In a typical production workload with approximately 15% write and 85% read operations (based on average characteristics of Kakao services), Actionbase achieves:
+- **Latency**: Read ~5ms, Write ~20ms
 
-- **Throughput**: 60k+ TPS (Read ~5ms, Write ~20ms)
+## Capacity
+
+60k+ RPS in internal testing.
 
 ## Scalability
 
-Internal experiments have confirmed linear scalability. Performance increases proportionally as additional Ingress and Worker nodes are added to the cluster.
+Linear within tested range.

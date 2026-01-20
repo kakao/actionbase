@@ -5,55 +5,51 @@ sidebar:
   order: 4
 ---
 
-Queries in Actionbase retrieve data that was pre-computed during mutations. The query system accesses these structures directly, providing ultra-fast reads with consistent low latency.
+Queries retrieve data pre-computed during mutations.
 
-For the conceptual foundation, see [Core Concepts](/design/concepts/).
+See [Core Concepts](/design/concepts/) for background.
 
-## Query Philosophy
-
-Actionbase queries read optimized data structures created during mutations:
+## Pre-computed Structures
 
 | Structure   | Created During | Accessed By |
 | ----------- | -------------- | ----------- |
-| EdgeState   | Mutation       | Get Query   |
-| EdgeIndex   | Mutation       | Scan Query  |
-| EdgeCounter | Mutation       | Count Query |
+| EdgeState   | Mutation       | GET         |
+| EdgeIndex   | Mutation       | SCAN        |
+| EdgeCounter | Mutation       | COUNT       |
 
-You explicitly choose the query type and specify the index to use, ensuring each query follows an optimized path prepared during write time.
+You specify the query type and index. Each query accesses structures prepared at write time.
 
 ## Query Types
 
-### Count Query
+### COUNT
 
-Returns the number of edges matching a source node.
+Returns the number of edges for a source node.
 
 **Use case**: "How many products has this user viewed?"
 
 **Processing**:
 
-1. Construct EdgeCounter key from source, table, and direction
-2. Return pre-computed counter value
+1. Construct EdgeCounter key from source, table, direction
+2. Return pre-computed counter
 
-**Example**: Answered instantly with a single get operation.
+### GET
 
-### Get Query
-
-Retrieves edge state by source and target node IDs.
+Retrieves edge state by source and target.
 
 **Use case**: "Has this user viewed this product?"
 
 **Processing**:
 
 1. Construct EdgeState key from source and target
-2. Return edge state directly
+2. Return edge state
 
-**MGet Support**:
+**MGet**:
 
-- Multiple source or target IDs → multi-get operation
-- Maximum 25 edges per API request
+- Multiple source or target IDs → multi-get
+- Max 25 edges per request
 - Patterns: 1 source with N targets, or M sources with 1 target
 
-### Scan Query
+### SCAN
 
 Scans edges using a pre-computed index with range filtering and pagination.
 
@@ -61,30 +57,29 @@ Scans edges using a pre-computed index with range filtering and pagination.
 
 **Processing**:
 
-1. Construct EdgeIndex key prefix from source, table, direction, and index
-2. Apply range filters to determine scan boundaries
-3. Scan pre-computed index entries
-4. Apply optional filters to results
+1. Construct EdgeIndex key prefix from source, table, direction, index
+2. Apply range filters
+3. Scan index entries
+4. Apply optional filters
 5. Apply pagination (limit, offset)
 6. Return matching edges
 
 **Index Requirement**:
 
-- You must specify which index to use
-- The index must be defined in the schema
-- Index entries are created during mutations
+- Must specify which index to use
+- Index must be defined in schema
 
 ## Query Flow
 
 ```mermaid
 flowchart TD
     Request([Query Request]) --> Route{Query Type}
-    Route -->|Count| CountQuery[Count Query]
-    Route -->|Get| GetQuery[Get Query]
-    Route -->|Scan| ScanQuery[Scan Query]
-    CountQuery --> EdgeCounter[Read EdgeCounter<br/>Pre-computed during mutation]
-    GetQuery --> EdgeState[Read EdgeState<br/>Pre-computed during mutation]
-    ScanQuery --> EdgeIndex[Read EdgeIndex<br/>Pre-computed during mutation]
+    Route -->|COUNT| CountQuery[Count Query]
+    Route -->|GET| GetQuery[Get Query]
+    Route -->|SCAN| ScanQuery[Scan Query]
+    CountQuery --> EdgeCounter[Read EdgeCounter]
+    GetQuery --> EdgeState[Read EdgeState]
+    ScanQuery --> EdgeIndex[Read EdgeIndex]
     EdgeCounter --> Response([Response])
     EdgeState --> Response
     EdgeIndex --> Response
@@ -92,16 +87,14 @@ flowchart TD
 
 ## Index Ranges
 
-Scan queries can specify ranges to filter data efficiently at the storage level.
+SCAN queries can specify ranges to filter at storage level.
 
-### Key Concepts
-
-| Concept        | Description                                           |
-| -------------- | ----------------------------------------------------- |
-| Explicit Index | You must specify which index to use                   |
-| Operators      | `eq`, `gt`, `lt`, `between` determine scan boundaries |
-| Index Order    | Ranges applied in order of fields defined in index    |
-| Sort Direction | Operator meaning depends on ASC/DESC                  |
+| Concept        | Description                                     |
+| -------------- | ----------------------------------------------- |
+| Explicit Index | Must specify which index                        |
+| Operators      | `eq`, `gt`, `lt`, `between` set scan boundaries |
+| Index Order    | Ranges applied in field order                   |
+| Sort Direction | Operator meaning depends on ASC/DESC            |
 
 ### Range vs Filter
 
@@ -110,31 +103,22 @@ Scan queries can specify ranges to filter data efficiently at the storage level.
 | Range  | Storage     | Yes        | Fast            |
 | Filter | Application | No         | After retrieval |
 
-**Ranges** work with the pre-computed index structure, filtering at the storage level.
-**Filters** are applied after retrieval and can use any field.
-
 ## Pagination
 
-Scan queries support pagination:
-
-| Parameter | Description                                       |
-| --------- | ------------------------------------------------- |
-| offset    | Encoded string indicating starting position       |
-| limit     | Maximum results; 25 is recommended for production |
-| hasNext   | Boolean indicating more results available         |
-
-Pagination works with the sorted index structure for efficient large result sets.
+| Parameter | Description                  |
+| --------- | ---------------------------- |
+| offset    | Encoded starting position    |
+| limit     | Max results (25 recommended) |
+| hasNext   | More results available       |
 
 ## Query Direction
-
-Queries support two directions:
 
 | Direction | Description    | Example                   |
 | --------- | -------------- | ------------------------- |
 | OUT       | Outgoing edges | Products a user liked     |
 | IN        | Incoming edges | Users who liked a product |
 
-Separate index entries and counters are maintained for each direction during mutations.
+Separate indexes and counters maintained for each direction.
 
 ## Read Path
 
@@ -142,25 +126,14 @@ Separate index entries and counters are maintained for each direction during mut
 Client → Server → Engine → Storage → Response
 ```
 
-1. **Client**: Sends query via REST API, specifying query type and parameters
-2. **Server**: Validates the request
-3. **Engine**: Constructs storage key and retrieves pre-computed data
-4. **Storage**: Returns EdgeState, EdgeIndex, or EdgeCounter
-5. **Response**: Formatted results to client
-
-This simple path accesses pre-optimized data, ensuring consistent low-latency performance.
-
-## Performance Characteristics
-
-| Characteristic            | Guarantee                                               |
-| ------------------------- | ------------------------------------------------------- |
-| No Query-time Computation | Queries retrieve pre-computed data                      |
-| Explicit Access Patterns  | You choose query type and index                         |
-| Consistent Structure      | Data structure matches what was created during mutation |
-| Predictable Latency       | Performance is consistent regardless of data size       |
+1. **Client**: Query via REST API
+2. **Server**: Validate request
+3. **Engine**: Construct key, retrieve data
+4. **Storage**: Return EdgeState/EdgeIndex/EdgeCounter
+5. **Response**: Return to client
 
 ## Next Steps
 
-- [Schema](/design/schema/): Define indexes for your queries
-- [Mutation](/design/mutation/): How pre-computed structures are created
-- [API Reference](/api-references/query/): Complete query API
+- [Schema](/design/schema/): Define indexes
+- [Mutation](/design/mutation/): How structures are created
+- [Query API](/api-references/query/): API reference

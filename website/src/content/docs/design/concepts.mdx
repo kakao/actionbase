@@ -5,81 +5,78 @@ sidebar:
   order: 1
 ---
 
-Actionbase is an OLTP engine specialized for user interactions, optimized for high-throughput, low-latency workloads. It uses graph-based modeling specifically designed for user interactions, not as a general-purpose graph database.
+Actionbase is a database for serving user interactions—not a general-purpose graph database.
+
+## Design Goals
+
+- **Write-Time Optimization** — Pre-compute read structures at write time. Reads become simple lookups.
+- **Leverage Proven Storage** — Build on HBase for durability and scale. Don't reinvent storage.
 
 ## User Interactions
 
-Actionbase handles various types of user interactions:
+Actionbase handles:
 
 - Recent views (products, content)
-- Likes and reactions (hearts, care, emojis, etc.)
-- Follows and relationships
+- Likes and reactions
+- Follows
 
-These activities share common characteristics: they represent relationships between users and entities, require real-time access, and are queried in predictable patterns.
+These share common characteristics: **who** did **what** to which **target**, real-time access, predictable query patterns.
 
 ## Property Graph Model
 
-Actionbase represents user interactions using a Property Graph model:
+Actionbase models interactions as edges:
 
-- **Source (actor)**: User ID or any entity that performs an action
-- **Target**: Product, content, user ID, or any entity that receives an action
-- **Properties**: Schema-defined attributes like `timestamp`, `type`, `metadata`, etc.
-
-This model naturally fits user interactions and enables rich query patterns based on properties.
+- **Source**: who (e.g., user_id)
+- **Target**: what (e.g., product_id, content_id, user_id)
+- **Properties**: schema-defined attributes (e.g., `created_at`, `reaction_type`)
 
 ```
-User (source)
-  └─ id: "user123"
-
 User --[likes]--> Product (edge)
   ├─ source: "user123"
   ├─ target: "product456"
   └─ properties: {
-      timestamp: 1234567890,
-      type: "heart",
-      device: "mobile",
-      location: "US"
+      created_at: 1234567890,
+      reaction_type: "heart"
     }
 
 User --[follows]--> User (edge)
   ├─ source: "user123"
   ├─ target: "user789"
   └─ properties: {
-      timestamp: 1234567891,
-      notification_enabled: true
+      created_at: 1234567891
     }
 ```
 
-For how to define schemas for your graph, see [Schema](/design/schema/).
+See [Schema](/design/schema/) for defining your edges.
 
 ## State and Event Model
 
-Internally, Actionbase uses a **State and Event model** to ensure consistency:
+Actionbase uses a state-based mutation model:
 
-- **State**: The current state of the state machine (e.g., "user liked product")
-- **Event**: Input that transitions the state (e.g., "user clicked like button")
+- **State**: current state (e.g., "user liked product")
+- **Event**: input that transitions state (e.g., "user clicked like")
 
-When a user action occurs, Actionbase:
+When an interaction occurs:
 
-1. Reads the current state
-2. Performs a state transition based on the incoming event
-3. Stores the new state
+1. Read current state
+2. Apply state transition
+3. Store new state
 
-The system is designed so that even if events arrive out of order, the final state remains consistent. Clients attach timestamps to events, and Actionbase uses these timestamps to compute the correct final state regardless of arrival order.
+Clients attach timestamps to events. Even if events arrive out of order, Actionbase computes the correct final state.
 
-For detailed information on how mutations work, see [Mutation](/design/mutation/).
+See [Mutation](/design/mutation/) for details.
 
 ## Write-Time Optimization
 
-Actionbase's key strength is **pre-computing data structures at write time** for fast, predictable reads. When an edge is written, Actionbase creates three types of pre-computed data:
+When an edge is written, Actionbase pre-computes:
 
-1. **State**: Direct records representing connections between source and target nodes
-2. **Index**: Pre-computed indexes based on schema-defined properties (e.g., `created_at DESC`)
-3. **Count**: Pre-computed counters (e.g., "number of products viewed by user")
+1. **State** — current relationship between source and target
+2. **Index** — ordered structures based on properties (e.g., `created_at DESC`)
+3. **Count** — counters (e.g., number of likes per item)
 
-By pre-computing these structures during writes, reads can use simple GET/SCAN/COUNT operations for ultra-fast responses without expensive query-time computations.
+Reads use simple GET, COUNT, SCAN operations without query-time computation.
 
-For details on how these structures are created, see [Mutation](/design/mutation/). For how queries access them, see [Query](/design/query/).
+See [Mutation](/design/mutation/) for how these are created. See [Query](/design/query/) for how to access them.
 
 ## Data Flow
 
@@ -89,17 +86,15 @@ For details on how these structures are created, see [Mutation](/design/mutation
 Client → Server → Engine → WAL → Storage → CDC
 ```
 
-The write path involves:
+1. Write to WAL for durability
+2. Acquire lock
+3. Read current state
+4. Apply state transition
+5. Compute indexes and counters
+6. Write to storage
+7. Emit CDC for downstream systems
 
-1. Writing to WAL (Write-Ahead Log) for durability
-2. Acquiring locks for consistency
-3. Reading current state
-4. Applying state transition
-5. Computing indexes and counters
-6. Writing to storage
-7. Emitting CDC for downstream systems
-
-For detailed write flow, see [Mutation](/design/mutation/).
+See [Mutation](/design/mutation/).
 
 ### Read Path
 
@@ -107,17 +102,15 @@ For detailed write flow, see [Mutation](/design/mutation/).
 Client → Server → Engine → Storage → Response
 ```
 
-The read path retrieves pre-computed data structures:
+- **COUNT** → EdgeCounter
+- **GET** → EdgeState
+- **SCAN** → EdgeIndex
 
-- **Count Query** → EdgeCounter
-- **Get Query** → EdgeState
-- **Scan Query** → EdgeIndex
-
-For detailed read flow, see [Query](/design/query/).
+See [Query](/design/query/).
 
 ## Next Steps
 
-- [Schema](/design/schema/): Define the structure of your edges
-- [Mutation](/design/mutation/): Understand how writes work
-- [Query](/design/query/): Learn how to query your data
-- [Datastore](/design/datastore/): Explore datastore backend options
+- [Schema](/design/schema/): Define edge structure
+- [Mutation](/design/mutation/): How writes work
+- [Query](/design/query/): How to query
+- [Datastore](/design/datastore/): Storage backends

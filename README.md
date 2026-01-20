@@ -73,7 +73,7 @@ Early open-source preparation phase. The first release focuses on introducing co
 
 We welcome contributions. See our [Contributing Guide](https://actionbase.io/community/contributing/).
 
-For questions, feedback, or discussion, join us on [GitHub Discussions](https://github.com/kakao/actionbase/discussions/).
+For questions, ideas, or feedback, join us on [GitHub Discussions](https://github.com/kakao/actionbase/discussions/).
 
 ## Learn More
 
