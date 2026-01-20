@@ -14,7 +14,7 @@ docker run -it ghcr.io/kakao/actionbase:standalone
 GitHub Actions workflow: `.github/workflows/standalone-image.yml`
 
 Triggers:
-- Push to `main` (when docker/standalone, server, or cli changes)
+- Push tag `standalone/*` (e.g., `standalone/v1.0.0`)
 - Manual dispatch
 
 Platforms: linux/amd64, linux/arm64

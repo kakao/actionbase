@@ -3,11 +3,8 @@ name: 'Standalone Image'
 on:
   workflow_dispatch:
   push:
-    branches: [main]
-    paths:
-      - 'docker/standalone/**'
-      - 'server/**'
-      - 'cli/**'
+    tags:
+      - 'standalone/*'
 
 env:
   REGISTRY: ghcr.io
