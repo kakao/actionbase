@@ -102,7 +102,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   }, [stepIndex]);
 
   const onMoveAfter = useCallback(
-    (type: string, stepEvents: Map<number, StepEvent>, eventType: string | undefined = undefined, stepIndex: number | undefined = undefined, timeout: number = 100) => {
+    (type: string, stepEvents: Map<number, StepEvent>, eventTypes: string[] | undefined = undefined, stepIndex: number | undefined = undefined, timeout: number = 100) => {
       if (!(type === STEP.NEXT || type === STEP.PREV || type === STEP.RELOAD)) {
         console.error('Unsupported eventType:', type);
         return;
@@ -145,8 +145,10 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           }
 
           const indexToDrive = type === STEP.NEXT ? currentIndex + 1 : currentIndex - 1;
-          if (eventType) {
-            window.dispatchEvent(new CustomEvent(eventType, {detail: {nextIndex: indexToDrive}}));
+          if (eventTypes && eventTypes.length > 0) {
+            eventTypes.forEach(eventType => {
+              window.dispatchEvent(new CustomEvent(eventType, {detail: {nextIndex: indexToDrive}}));
+            });
           }
 
           if (stepEvent.target) {
@@ -155,6 +157,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               await new Promise(r => setTimeout(r, timeout));
             } catch (error) {
               console.error('Failed to find target elements');
+              return;
             }
           }
 
@@ -189,7 +192,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       if (activeIndex !== undefined) {
         if (!await isStepValid(activeIndex)) {
           showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION)
-          const movePrev = onMoveAfter(STEP.RELOAD, stepPrevEvent, 'render', activeIndex + 1);
+          const movePrev = onMoveAfter(STEP.RELOAD, stepPrevEvent, ['render'], activeIndex + 1);
           if (movePrev) {
             await movePrev();
           }
@@ -268,17 +271,17 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_2,
               side: 'bottom',
               align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
+              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, ['render'])
             }
           },
           {
             element: "[id='run-command-btn']",
             popover: {
-              title: TITLE.STEP_2,
-              description: DESCRIPTION.STEP_2,
+              title: TITLE.STEP_3,
+              description: DESCRIPTION.STEP_3,
               side: 'bottom',
               align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
+              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, ['render'])
             },
           },
           {
@@ -288,7 +291,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_4,
               side: 'bottom',
               align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render']),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent)
             },
           },
@@ -299,7 +302,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_5,
               side: 'right',
               align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render')
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render'])
             },
           },
           {
@@ -308,7 +311,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_6,
               side: 'bottom',
               align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
+              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, ['render'])
             },
           },
           {
@@ -318,7 +321,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_7,
               side: 'bottom',
               align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
+              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, ['render'])
             },
           },
           {
@@ -328,18 +331,19 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_8,
               side: 'bottom',
               align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload'),
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render']),
+              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, ['reload', 'render']),
             },
           },
           {
-            element: "[id='btn-profile-following']",
+            element: "[id='run-command-btn']",
             popover: {
+              title: TITLE.STEP_9,
               description: DESCRIPTION.STEP_9,
               side: 'bottom',
               align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render']),
+              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, ['render'])
             },
           },
           {
@@ -349,7 +353,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_10,
               side: 'bottom',
               align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render']),
+              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, ['render'])
             },
           },
           {
@@ -359,18 +364,17 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_11,
               side: 'bottom',
               align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload'),
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render']),
             },
           },
           {
-            element: "[id='profile-followers']",
             popover: {
+              title: `<span class="driver-popover-title-number">5</span> ${TITLE.STEP_12}`,
               description: DESCRIPTION.STEP_12,
-              side: 'bottom',
+              side: 'over',
               align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render']),
+              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, ['render']),
             },
           },
           {
@@ -380,72 +384,43 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
               description: DESCRIPTION.STEP_13,
               side: 'bottom',
               align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent),
+              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, ['reload', 'render']),
             },
           },
           {
-            element: "[id='followers-list']",
+            element: "[id='run-command-btn']",
             popover: {
+              title: TITLE.STEP_14,
               description: DESCRIPTION.STEP_14,
               side: 'bottom',
               align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render']),
             },
           },
           {
             popover: {
-              title: `<span class="driver-popover-title-number">5</span> ${TITLE.STEP_15}`,
+              title: TITLE.STEP_15,
               description: DESCRIPTION.STEP_15,
               side: 'over',
               align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_16,
-              description: DESCRIPTION.STEP_16,
-              side: 'bottom',
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload')
-            },
-          },
-          {
-            element: "[id='btn-likes']",
-            popover: {
-              description: DESCRIPTION.STEP_17,
-              side: 'bottom',
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_18,
-              description: DESCRIPTION.STEP_18,
-              side: 'bottom',
-              align: 'start',
-            },
-          },
-          {
-            popover: {
-              title: TITLE.STEP_18,
-              description: DESCRIPTION.STEP_18,
-              side: 'over',
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render']),
               onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent)
             },
           },
           {
             element: "[class='mobile-frame']",
             popover: {
-              title: `<span class="driver-popover-title-number">6</span> ${TITLE.STEP_20}`,
-              description: DESCRIPTION.STEP_20,
+              title: TITLE.STEP_16,
+              description: DESCRIPTION.STEP_16,
+              side: 'over',
+              align: 'start',
+              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, ['render']),
+            },
+          },
+          {
+            popover: {
+              title: `<span class="driver-popover-title-number">6</span> ${TITLE.STEP_17}`,
+              description: DESCRIPTION.STEP_17,
               side: 'bottom',
               align: 'start',
               onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent)
@@ -453,19 +428,10 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           },
           {
             popover: {
-              title: `<span class="driver-popover-title-number">7</span> ${TITLE.STEP_21}`,
-              description: DESCRIPTION.STEP_21,
+              title: `<span class="driver-popover-title-number">7</span> ${TITLE.STEP_18}`,
+              description: DESCRIPTION.STEP_18,
               side: 'over',
               align: 'center',
-            },
-          },
-          {
-            popover: {
-              title: `<span class="driver-popover-title-number">8</span> ${TITLE.STEP_22}`,
-              description: DESCRIPTION.STEP_22,
-              side: 'over',
-              align: 'center',
-              nextBtnText: 'Bye 👋🏻'
             },
           },
         ],

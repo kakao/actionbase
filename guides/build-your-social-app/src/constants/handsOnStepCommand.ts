@@ -75,19 +75,19 @@ export const stepCommands: HandsOnStepCommand[] = [
 `,
   },
   {
-    stepIndex: 10,
+    stepIndex: 9,
     command: 'get user_follows --source zipdoki --target j4rami',
   },
   {
-    stepIndex: 11,
+    stepIndex: 10,
     command: 'count user_follows --start j4rami --direction IN',
   },
   {
-    stepIndex: 13,
+    stepIndex: 11,
     command: 'scan user_follows --start j4rami --index created_at_desc --direction IN',
   },
   {
-    stepIndex: 16,
+    stepIndex: 13,
     command: `mutate user_likes \\
 --type INSERT \\
 --table user_likes \\
@@ -99,7 +99,7 @@ export const stepCommands: HandsOnStepCommand[] = [
 }'`,
   },
   {
-    stepIndex: 18,
+    stepIndex: 14,
     command: 'get user_likes --source zipdoki --target 1',
   }
 ];
