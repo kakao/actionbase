@@ -334,7 +334,7 @@ func (l *Load) loadPreset(filename, refs string) *model.Response {
 		return model.Fail("invalid preset filename")
 	}
 
-	cleanedFilename := filepath.Clean(filename)
+	cleanedFilename := filepath.Clean(filename) + ".preset.yaml"
 
 	var url string
 	if refs != "" {
