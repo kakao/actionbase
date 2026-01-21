@@ -71,6 +71,8 @@ CLAUDE.md
 # Negation for exp/claude-code-setup branch (allows git add without -f)
 !CLAUDE.md
 !.claude/
+# But keep local settings ignored
+*.local.*
 
 ## OpenAI Codex
 **/.codex/
