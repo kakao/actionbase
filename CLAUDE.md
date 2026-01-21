@@ -177,9 +177,10 @@ docker compose up -d               # Start local environment
 
 ### Before Push
 
-Always show commit tree before pushing for confirmation:
+Show commit tree, then immediately execute push (user confirms via permission prompt):
 ```bash
 git log --graph --oneline --decorate -5
+git push
 ```
 
 ### Templates
