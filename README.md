@@ -12,6 +12,8 @@ Actionbase is a database for serving these user interactions at scale. Currently
 docker run -it --pull always ghcr.io/kakao/actionbase:standalone
 ```
 
+This runs the Actionbase server in the background and the CLI in the foreground.
+
 **Write: Insert 3 edges with metadata** (via preset)
 ```
 actionbase> load preset likes
@@ -90,11 +92,11 @@ If a single database can handle your workload, that's the better choice.
 Actionbase writes to HBase for storage and emits a WAL to Kafka for recovery, replay, and downstream pipelines. HBase provides strong durability and horizontal scalability.
 
 ```
-Client ──> Actionbase ──> HBase (Storage for user interactions)
-               │
-               ├──> JDBC (Metastore, to be consolidated to HBase)
-               │
-               └──> Kafka (WAL/CDC) ──> Downstream Pipelines
+Client ─(REST API)─> Actionbase ──> HBase (Storage for user interactions)
+                          │
+                          ├──> JDBC (Metastore, to be consolidated to HBase)
+                          │
+                          └──> Kafka (WAL/CDC) ──> Downstream Pipelines
 ```
 
 Additional storage backends are planned for small to mid-size deployments.
