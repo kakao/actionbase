@@ -1,24 +1,23 @@
 # Performance Guidelines
 
-## HBase Performance
+## Storage Performance
 
-### Row Key Design
+### Key Design
 ```kotlin
 // GOOD: Efficient scan pattern
 // userId first for user-centric queries
-val rowKey = "$schema#$userId#$reversedTimestamp"
+val key = "$schema#$userId#$reversedTimestamp"
 
 // BAD: Timestamp first causes hotspots
-val rowKey = "$timestamp#$userId"  // All writes to same region!
+val key = "$timestamp#$userId"  // All writes to same region!
 ```
 
 ### Scan Optimization
 ```kotlin
 // GOOD: Bounded scan
 val scan = Scan()
-    .setRowPrefixFilter(prefix)
+    .setPrefix(prefix)
     .setLimit(100)
-    .setCaching(100)  // Prefetch
 
 // BAD: Unbounded scan
 val scan = Scan()  // Full table scan!
@@ -27,13 +26,13 @@ val scan = Scan()  // Full table scan!
 ### Batch Operations
 ```kotlin
 // GOOD: Batch writes
-table.put(listOfPuts)  // Single RPC
+storage.putAll(listOfPuts)  // Single RPC
 
 // BAD: Individual writes
-puts.forEach { table.put(it) }  // N RPCs
+puts.forEach { storage.put(it) }  // N RPCs
 ```
 
-## Kafka Performance
+## Messaging Performance
 
 ### Producer
 - Use async sends for throughput
@@ -47,20 +46,11 @@ puts.forEach { table.put(it) }  // N RPCs
 
 ## Spring WebFlux
 
-### Non-Blocking I/O
-```kotlin
-// GOOD: Non-blocking
-return repository.findById(id)
-    .map { toResponse(it) }
+See `CLAUDE.md` for reactive patterns.
 
-// BAD: Blocking in reactive chain
-val result = blockingOperation()  // BLOCKS event loop!
-return Mono.just(result)
-```
-
-### Use boundedElastic for blocking
 ```kotlin
-Mono.fromCallable { blockingHBaseCall() }
+// Use boundedElastic for blocking calls
+Mono.fromCallable { blockingStorageCall() }
     .subscribeOn(Schedulers.boundedElastic())
 ```
 
