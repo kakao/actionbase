@@ -41,16 +41,16 @@ Fine-tune for Actionbase tech stack:
 - [x] `doc-updater.md` - EDIT (minor)
 
 ### Commands (10)
-- [ ] `plan.md`
-- [ ] `build.md`
-- [ ] `build-fix.md`
-- [ ] `tdd.md`
-- [ ] `test.md`
-- [ ] `code-review.md`
-- [ ] `review.md`
-- [ ] `refactor-clean.md`
-- [ ] `update-docs.md`
-- [ ] `e2e.md`
+- [x] `plan.md` - EDIT (Storage/Messaging abstraction)
+- [x] `build.md` - KEEP
+- [x] `build-fix.md` - KEEP
+- [x] `tdd.md` - EDIT (Storage abstraction)
+- [x] `test.md` - KEEP
+- [x] `code-review.md` - EDIT (Storage abstraction)
+- [x] `review.md` - KEEP (alias)
+- [x] `refactor-clean.md` - EDIT (Storage/Messaging abstraction)
+- [x] `update-docs.md` - KEEP
+- [x] `e2e.md` - EDIT (minor)
 
 ### Rules (8)
 - [x] `security.md` - EDIT (generalized HBase to Storage)
@@ -81,7 +81,7 @@ Fine-tune for Actionbase tech stack:
 |----------|------|-------|
 | Root     | 1    | 1     |
 | Agents   | 9    | 9     |
-| Commands | 0    | 10    |
+| Commands | 10   | 10    |
 | Rules    | 8    | 8     |
 | Skills   | 0    | 4     |
-| **Total**| 18   | 32    |
+| **Total**| 28   | 32    |
