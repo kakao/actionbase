@@ -9,21 +9,17 @@ Generate and update codebase architecture documentation.
 ## Codemap Files
 
 ```
-website/src/content/docs/
-├── design/
-│   ├── concepts.mdx      # Core concepts
-│   ├── mutation.mdx      # Mutation flow
-│   ├── query.mdx         # Query flow
-│   ├── schema.mdx        # Schema design
-│   ├── datastore.mdx     # Storage architecture
-│   └── glossary.mdx      # Terms
-├── internals/
-│   └── encoding.mdx      # Row key encoding (FIXED)
-└── api-references/
-    ├── mutation.mdx      # Mutation API
-    ├── query.mdx         # Query API
-    └── metadata.mdx      # Metadata API
+.claude/codemaps/
+├── architecture.md   # Overall architecture
+├── core.md           # Core module (model, encoding)
+├── engine.md         # Engine module (storage, messaging)
+├── server.md         # Server module (REST API)
+├── cli.md            # Go CLI
+└── data.md           # Data model, storage format
 ```
+
+Reference docs (user-facing):
+- `website/src/content/docs/internals/encoding.mdx` - Row key encoding (FIXED)
 
 ## Process
 
@@ -65,12 +61,12 @@ Agent:
 - core/src/.../MutationProcessor.kt (modified)
 - server/src/.../MutationController.kt (modified)
 
-### Documentation Status
-| Doc | Status | Action |
-|-----|--------|--------|
-| design/mutation.mdx | OUTDATED | Update flow diagram |
-| api-references/mutation.mdx | OK | No changes |
-| internals/encoding.mdx | FIXED | Skip (finalized) |
+### Codemap Status
+| File | Status | Action |
+|------|--------|--------|
+| codemaps/engine.md | OUTDATED | Update storage interface |
+| codemaps/server.md | OK | No changes |
+| codemaps/data.md | FIXED | Skip (encoding finalized) |
 
 ### Change Summary
 - 2 files need updates
