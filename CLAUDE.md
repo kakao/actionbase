@@ -59,6 +59,13 @@ Documentation:
 - Input validation at API boundaries
 - Run `./gradlew spotlessApply` before committing
 
+### Backend Language
+
+- **Kotlin preferred**, Java only when necessary
+- New code: Write in Kotlin
+- Existing Java: Maintain as-is, or migrate to Kotlin when appropriate
+- Java exceptions: Performance-critical code, HBase/Hadoop interop
+
 ### Kotlin/Java Specifics
 
 ```kotlin
