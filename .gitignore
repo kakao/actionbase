@@ -65,10 +65,10 @@ pnpm-debug.log*
 # AI Coding Assistants (any depth)
 
 ## Claude Code
-# Local (user-specific) - ignore all *.local.* files
-.claude/*.local.*
-# But keep templates for sharing
-!.claude/*.template
+# Currently ignored to allow testing from experiment branches (#91)
+# To test: git checkout exp/claude-code-setup -- .claude/ CLAUDE.md
+CLAUDE.md
+.claude/
 
 ## OpenAI Codex
 **/.codex/
