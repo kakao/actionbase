@@ -7,10 +7,6 @@
       "comment": "likes database"
     }'
 
-- name: Use database
-  description: Switch to likes database
-  command: use database likes
-
 - name: Create table
   description: Create likes table with schema
   command: |
@@ -57,10 +53,6 @@
       "mode": "SYNC"
     }'
 
-- name: Use table
-  description: Switch to likes table
-  command: use table likes
-
 - name: Insert edges
   description: Insert 3 edges with metadata
   command: |
@@ -104,3 +96,11 @@
         }
       ]
     }'
+
+- name: Use database
+  description: Switch to likes database
+  command: use database likes
+
+- name: Use table
+  description: Switch to likes table
+  command: use table likes
