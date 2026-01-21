@@ -223,10 +223,8 @@ object GraphFixtures {
             }.verifyComplete()
     }
 
-    fun create(withTestData: Boolean = true): Graph = create(GraphConfig.Builder(), withTestData)
-
     fun create(
-        configBuilder: GraphConfig.Builder,
+        configBuilder: GraphConfig.Builder = GraphConfig.Builder(),
         withTestData: Boolean = true,
     ): Graph {
         BlockHound
