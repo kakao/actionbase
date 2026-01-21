@@ -1,5 +1,5 @@
 {
-  "_comment": "Local changes: allowed / Remote changes: explicit approval",
+  "_comment": "Local changes: allowed / Remote changes: ask every time",
   "permissions": {
     "allow": [
       "Bash(ls:*)",
@@ -54,6 +54,20 @@
       "WebFetch(domain:actionbase.io)",
       "WebFetch(domain:raw.githubusercontent.com)"
     ],
-    "deny": []
+    "deny": [],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git push)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr create)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr merge)",
+      "Bash(gh pr close:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue create)",
+      "Bash(gh issue close:*)",
+      "Bash(gh release create:*)",
+      "Bash(docker push:*)"
+    ]
   }
 }
