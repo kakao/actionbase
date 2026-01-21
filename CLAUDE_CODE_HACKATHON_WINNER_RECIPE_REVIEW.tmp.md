@@ -30,15 +30,15 @@ Fine-tune for Actionbase tech stack:
 - [x] `CLAUDE.md` - REWRITE (Actionbase context, Backend Language policy)
 
 ### Agents (9)
-- [ ] `planner.md`
-- [ ] `architect.md`
-- [ ] `code-reviewer.md`
-- [ ] `security-reviewer.md`
-- [ ] `build-error-resolver.md`
-- [ ] `tdd-guide.md`
-- [ ] `e2e-runner.md`
-- [ ] `refactor-cleaner.md`
-- [ ] `doc-updater.md`
+- [x] `planner.md` - EDIT (Storage/Messaging abstraction)
+- [x] `architect.md` - EDIT (Storage/Messaging abstraction)
+- [x] `code-reviewer.md` - EDIT (Storage/Messaging abstraction)
+- [x] `security-reviewer.md` - EDIT (Storage/Messaging abstraction)
+- [x] `build-error-resolver.md` - KEEP
+- [x] `tdd-guide.md` - KEEP
+- [x] `e2e-runner.md` - EDIT (minor)
+- [x] `refactor-cleaner.md` - EDIT (minor)
+- [x] `doc-updater.md` - EDIT (minor)
 
 ### Commands (10)
 - [ ] `plan.md`
@@ -80,8 +80,8 @@ Fine-tune for Actionbase tech stack:
 | Category | Done | Total |
 |----------|------|-------|
 | Root     | 1    | 1     |
-| Agents   | 0    | 9     |
+| Agents   | 9    | 9     |
 | Commands | 0    | 10    |
 | Rules    | 8    | 8     |
 | Skills   | 0    | 4     |
-| **Total**| 9    | 32    |
+| **Total**| 18   | 32    |
