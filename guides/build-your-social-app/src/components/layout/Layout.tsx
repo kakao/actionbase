@@ -6,7 +6,7 @@ import CliTerminal from './CliTerminal';
 import MobileFooter from "./MobileFooter";
 import '../../styles/layout.css';
 import ApiLogs from "./ApiLogs";
-import {BreadCrumbStep, breadCrumbSteps} from "../../constants/breadCrumbSteps";
+import {BreadCrumbStep, generateBreadCrumbSteps} from "../../constants/stepsConfig";
 import {useDriver} from "../../contexts/DriverContext";
 
 const OWNER = "kakao";
@@ -20,7 +20,9 @@ interface SplitLayoutProps {
 const Layout: React.FC<SplitLayoutProps> = ({children}) => {
   const {stepIndex, resetStep} = useDriver()
   const [starsImage, setStarsImage] = useState<string>(DEFAULT_GITHUB_START);
-  const [breadcrumbSteps, setBreadcrumbSteps] = useState<BreadCrumbStep[]>(breadCrumbSteps);
+
+  const initialBreadcrumbSteps = useMemo(() => generateBreadCrumbSteps(), []);
+  const [breadcrumbSteps, setBreadcrumbSteps] = useState<BreadCrumbStep[]>(initialBreadcrumbSteps);
   const previousStepIndexRef = useRef<number | undefined>(undefined);
 
   const isStepCompleted = stepIndex !== undefined && stepIndex > 18;
@@ -48,8 +50,8 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
     }
 
     const allBreadcrumbStepIndices = [
-      ...breadCrumbSteps.map(step => step.stepIndex),
-      ...breadCrumbSteps.flatMap(step => step.subSteps || []).map(subStep => subStep.stepIndex)
+      ...initialBreadcrumbSteps.map(step => step.stepIndex),
+      ...initialBreadcrumbSteps.flatMap(step => step.subSteps || []).map(subStep => subStep.stepIndex)
     ].sort((a, b) => a - b);
 
     const stepExists = allBreadcrumbStepIndices.includes(stepIndex);
@@ -66,7 +68,7 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
       }
     }
 
-    const updatedSteps = breadCrumbSteps.map((step) => {
+    const updatedSteps = initialBreadcrumbSteps.map((step) => {
       const isMainStepActive = step.stepIndex === targetStepIndex;
       const isMainStepCompleted = step.stepIndex < stepIndex;
 
@@ -90,7 +92,7 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
       };
     });
     setBreadcrumbSteps(updatedSteps);
-  }, [stepIndex]);
+  }, [stepIndex, initialBreadcrumbSteps]);
 
   return (
     <>
