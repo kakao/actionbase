@@ -25,6 +25,7 @@ The Actionbase CLI provides an interactive console for managing databases, table
     ```
 
     This is sufficient for exploring Actionbase and understanding its core capabilities.
+
   </TabItem>
   <TabItem label="Homebrew">
     ```bash
@@ -40,6 +41,7 @@ The Actionbase CLI provides an interactive console for managing databases, table
     ```
 
     The binary is created at `cli/bin/actionbase`.
+
   </TabItem>
 </Tabs>
 
@@ -50,7 +52,8 @@ actionbase [options]
 ```
 
 <Aside type="tip">
-When using Docker standalone (`ghcr.io/kakao/actionbase:standalone`), the CLI starts with `--debug --proxy` enabled by default.
+  When using Docker standalone (`ghcr.io/kakao/actionbase:standalone`), the CLI starts with `--debug
+  --proxy` enabled by default.
 </Aside>
 
 ### Startup Options
@@ -425,7 +428,8 @@ actionbase(likes:likes)> mutate --type INSERT --source Charlie --target Phone --
 <Aside type="tip">
   Actionbase requires client-issued timestamps for [event ordering](/design/mutation/#event-ordering). Even if events arrive out of order, Actionbase uses these timestamps to compute the correct final state.
 
-  Use `$NOW` as a placeholder for the current Unix timestamp in milliseconds. It works in both `--version` and `--properties` values.
+Use `$NOW` as a placeholder for the current Unix timestamp in milliseconds. It works in both `--version` and `--properties` values.
+
 </Aside>
 
 ## Utility Commands
