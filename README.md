@@ -12,7 +12,7 @@ Actionbase is a database for serving these user interactions at scale. Currently
 docker run -it --pull always ghcr.io/kakao/actionbase:standalone
 ```
 
-**Write: Insert 3 edges with metadata**
+**Write: Insert 3 edges with metadata** (via preset)
 ```
 actionbase> load preset likes
   │ 3 edges inserted
