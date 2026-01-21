@@ -9,7 +9,6 @@ import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
 import com.kakao.actionbase.v2.core.metadata.LabelType
-import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.Field
@@ -192,7 +191,6 @@ object GraphFixtures {
         name: String,
         type: LabelType,
         storageName: String,
-        mode: MutationMode,
     ) {
         val entity =
             LabelEntity(
@@ -204,7 +202,6 @@ object GraphFixtures {
                 dirType = if (type == LabelType.INDEXED) DirectionType.BOTH else DirectionType.OUT,
                 storage = storageName,
                 indices = if (type == LabelType.INDEXED) sampleIndices else emptyList(),
-                mode = mode,
             )
 
         graph.labelDdl
@@ -245,9 +242,9 @@ object GraphFixtures {
             createStorage(graph, jdbcStorage, StorageType.JDBC, mockStorageConf())
             createStorage(graph, hbaseStorage, StorageType.HBASE, mockStorageConf())
 
-            performSampleDDLAndDML(graph, serviceName, jdbcHash, LabelType.HASH, jdbcStorage, MutationMode.SYNC)
-            performSampleDDLAndDML(graph, serviceName, hbaseHash, LabelType.HASH, hbaseStorage, MutationMode.SYNC)
-            performSampleDDLAndDML(graph, serviceName, hbaseIndexed, LabelType.INDEXED, datastoreStorage, MutationMode.SYNC)
+            performSampleDDLAndDML(graph, serviceName, jdbcHash, LabelType.HASH, jdbcStorage)
+            performSampleDDLAndDML(graph, serviceName, hbaseHash, LabelType.HASH, hbaseStorage)
+            performSampleDDLAndDML(graph, serviceName, hbaseIndexed, LabelType.INDEXED, datastoreStorage)
         }
         graph.updateAllMetadata().test().verifyComplete()
         return graph
