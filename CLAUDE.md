@@ -179,8 +179,7 @@ docker compose up -d               # Start local environment
 
 Always show commit tree before pushing for confirmation:
 ```bash
-git log origin/<branch>..HEAD --oneline
-git diff origin/<branch> --stat
+git log --graph --oneline --decorate -5
 ```
 
 ### Templates
