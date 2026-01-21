@@ -175,6 +175,14 @@ docker compose up -d               # Start local environment
 - PRs require review before merge
 - All tests must pass before merge
 
+### Before Push
+
+Always show commit tree before pushing for confirmation:
+```bash
+git log origin/<branch>..HEAD --oneline
+git diff origin/<branch> --stat
+```
+
 ### Templates
 
 When creating PRs or issues, read the templates first and follow their format:
