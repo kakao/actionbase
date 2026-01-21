@@ -84,13 +84,13 @@ Query(
 
 ### 4. Datastore
 
-The datastore is the storage layer (HBase) that persists interactions.
+The datastore is the storage layer that persists interactions.
 
 ```
 +-------------------+
-|     HBase         |
+|     Storage       |
 +-------------------+
-| Row Key           | Column Family: data     |
+| Row Key           | Data                    |
 |-------------------|-------------------------|
 | likes#user123#001 | target=post456, ts=...  |
 | likes#user123#002 | target=post789, ts=...  |
@@ -119,23 +119,23 @@ Examples:
         ▼                              ▼                              ▼
 ┌───────────────┐            ┌───────────────┐            ┌───────────────┐
 │    Server     │            │    Engine     │            │     Core      │
-│ (Spring WebFlux)│──────────▶│ (HBase/Kafka) │◀──────────│   (Model)     │
-│  REST API     │            │   Bindings    │            │   Logic       │
+│ (Spring WebFlux)│──────────▶│  (Storage/    │◀──────────│   (Model)     │
+│  REST API     │            │   Messaging)  │            │   Logic       │
 └───────────────┘            └───────────────┘            └───────────────┘
         │                              │
         │                    ┌─────────┴─────────┐
         │                    │                   │
         │                    ▼                   ▼
         │            ┌───────────────┐   ┌───────────────┐
-        │            │    HBase      │   │    Kafka      │
+        │            │   Storage     │   │   Messaging   │
         │            │  (Data Store) │   │  (WAL/CDC)    │
         │            └───────────────┘   └───────────────┘
         │
         ▼
 ┌───────────────┐
 │   Metastore   │
-│   (MySQL)     │
-│   Schemas     │
+│   (Schemas)   │
+│               │
 └───────────────┘
 ```
 
@@ -159,11 +159,11 @@ Examples:
    - Build row key
    - Encode data
 
-4. Engine persists to HBase
+4. Engine persists to Storage
    - Put operation
    - Single row write
 
-5. Kafka receives CDC event
+5. Messaging receives CDC event
    - Event: INTERACTION_CREATED
    - Enables downstream processing
 
@@ -187,7 +187,7 @@ Examples:
    - Build row key prefix
    - Set scan parameters
 
-4. Engine queries HBase
+4. Engine queries Storage
    - Scan with prefix filter
    - Limit results
 
@@ -210,8 +210,8 @@ Examples:
 - Business logic
 
 ### Engine Module (`engine/`)
-- HBase client bindings
-- Kafka producer/consumer
+- Storage client bindings
+- Messaging producer/consumer
 - Storage operations
 - Message handling
 
@@ -312,10 +312,10 @@ query(schema = "views", userId = "alice", limit = 10)
 | **Schema** | Definition of an interaction type |
 | **Mutation** | Write operation (create/delete interaction) |
 | **Query** | Read operation (retrieve interactions) |
-| **Datastore** | HBase storage layer |
-| **Row Key** | Unique identifier for HBase row |
-| **CDC** | Change Data Capture via Kafka |
+| **Datastore** | Storage layer (currently HBase) |
+| **Row Key** | Unique identifier for storage row |
+| **CDC** | Change Data Capture via Messaging |
 | **WAL** | Write-Ahead Log for durability |
-| **Metastore** | MySQL database for schema metadata |
+| **Metastore** | Database for schema metadata (currently MySQL) |
 
 **Remember**: Actionbase is designed for high-throughput, low-latency user interaction serving. Always consider scale when designing schemas and queries.

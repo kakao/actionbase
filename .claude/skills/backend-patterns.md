@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Backend architecture patterns, API design, HBase optimization, Kafka integration, and Spring WebFlux best practices for Actionbase.
+description: Backend architecture patterns, API design, storage optimization, messaging integration, and Spring WebFlux best practices for Actionbase.
 ---
 
 # Backend Development Patterns
@@ -9,19 +9,11 @@ Backend architecture patterns and best practices for Actionbase.
 
 ## Architecture Overview
 
-```
-+----------------+     +----------------+     +----------------+
-|   Clients      | --> |   Server       | --> |   Engine       |
-| (REST/CLI)     |     | (Spring WebFlux)|    | (HBase/Kafka)  |
-+----------------+     +----------------+     +----------------+
-                              |
-                       +------+------+
-                       |             |
-                  +--------+    +---------+
-                  |  Core  |    | Metastore|
-                  | (Model)|    | (MySQL)  |
-                  +--------+    +---------+
-```
+See CLAUDE.md for the full architecture diagram. Key layers:
+- **Server**: Spring WebFlux REST API
+- **Engine**: Storage and Messaging bindings
+- **Core**: Data model and business logic
+- **Metastore**: Schema metadata
 
 ## API Design Patterns
 
@@ -81,32 +73,21 @@ interface InteractionRepository {
     fun findByUserAndTarget(userId: String, targetId: String): Mono<Interaction?>
 }
 
-// HBase implementation
-class HBaseInteractionRepository(
-    private val connection: Connection
+// Storage implementation (currently HBase)
+class StorageInteractionRepository(
+    private val storageClient: StorageClient
 ) : InteractionRepository {
 
     override fun save(interaction: Interaction): Mono<Void> {
         return Mono.fromCallable {
-            val table = connection.getTable(TableName.valueOf("interactions"))
-            val put = Put(buildRowKey(interaction))
-            put.addColumn(CF_DATA, COL_USER_ID, interaction.userId.toByteArray())
-            put.addColumn(CF_DATA, COL_TARGET_ID, interaction.targetId.toByteArray())
-            table.put(put)
+            storageClient.put(buildRowKey(interaction), interaction.toBytes())
         }.subscribeOn(Schedulers.boundedElastic()).then()
     }
 
     override fun findByUserId(userId: String, limit: Int): Flux<Interaction> {
         return Flux.create<Interaction> { sink ->
-            val table = connection.getTable(TableName.valueOf("interactions"))
-            val scan = Scan()
-                .setRowPrefixFilter(userId.toByteArray())
-                .setLimit(limit)
-
-            table.getScanner(scan).use { scanner ->
-                for (result in scanner) {
-                    sink.next(resultToInteraction(result))
-                }
+            storageClient.scan(userId, limit).forEach { result ->
+                sink.next(resultToInteraction(result))
             }
             sink.complete()
         }.subscribeOn(Schedulers.boundedElastic())
@@ -121,7 +102,7 @@ class HBaseInteractionRepository(
 @Service
 class MutationService(
     private val repository: InteractionRepository,
-    private val kafkaProducer: KafkaProducer,
+    private val messagingProducer: MessagingProducer,
     private val validator: MutationValidator
 ) {
     fun process(mutation: Mutation): Mono<MutationResult> {
@@ -132,111 +113,38 @@ class MutationService(
                     .thenReturn(validMutation)
             }
             .flatMap { savedMutation ->
-                kafkaProducer.send(savedMutation.toEvent())
+                messagingProducer.send(savedMutation.toEvent())
                     .thenReturn(MutationResult(id = savedMutation.id, success = true))
             }
     }
 }
 ```
 
-## HBase Patterns
+## Storage Patterns
 
-### Row Key Design (CRITICAL)
+Row key design, scan optimization, and batch operations are documented in CLAUDE.md and `.claude/rules/performance.md`.
 
-```kotlin
-// GOOD: Composite row key for efficient scans
-fun buildRowKey(schema: String, userId: String, timestamp: Long): ByteArray {
-    // Format: schema#userId#reversedTimestamp
-    // Reversed timestamp ensures newest first in scans
-    val reversedTs = Long.MAX_VALUE - timestamp
-    return "$schema#$userId#$reversedTs".toByteArray()
-}
+Key principles:
+- UserId first in row key for efficient scans
+- Reversed timestamp for newest-first ordering
+- Bounded scans with prefix filters and limits
+- Batch operations for throughput
 
-// GOOD: Avoid hotspotting with salted keys
-fun buildSaltedRowKey(userId: String): ByteArray {
-    val salt = userId.hashCode() % 10  // 0-9 prefix
-    return "$salt#$userId".toByteArray()
-}
-
-// BAD: Timestamp first (creates hotspots)
-fun badRowKey(timestamp: Long, userId: String): ByteArray {
-    return "$timestamp#$userId".toByteArray()  // All writes go to same region
-}
-```
-
-### Scan Optimization
-
-```kotlin
-// GOOD: Bounded scans with filters
-fun queryInteractions(userId: String, limit: Int): List<Interaction> {
-    val scan = Scan()
-        .setRowPrefixFilter("likes#$userId#".toByteArray())
-        .setLimit(limit)
-        .setCaching(100)  // Prefetch rows
-        .addFamily(CF_DATA)  // Only needed column family
-
-    return table.getScanner(scan).use { scanner ->
-        scanner.map { resultToInteraction(it) }
-    }
-}
-
-// BAD: Full table scan
-fun badQuery(): List<Interaction> {
-    val scan = Scan()  // No filter - scans entire table!
-    return table.getScanner(scan).use { scanner ->
-        scanner.map { resultToInteraction(it) }
-    }
-}
-```
-
-### Batch Operations
-
-```kotlin
-// GOOD: Batch writes for efficiency
-fun saveBatch(interactions: List<Interaction>) {
-    val puts = interactions.map { interaction ->
-        Put(buildRowKey(interaction)).apply {
-            addColumn(CF_DATA, COL_USER_ID, interaction.userId.toByteArray())
-            addColumn(CF_DATA, COL_TARGET_ID, interaction.targetId.toByteArray())
-        }
-    }
-    table.put(puts)  // Single RPC for all puts
-}
-
-// BAD: Individual puts
-fun badSaveBatch(interactions: List<Interaction>) {
-    interactions.forEach { interaction ->
-        table.put(buildPut(interaction))  // N RPCs
-    }
-}
-```
-
-## Kafka Patterns
+## Messaging Patterns
 
 ### Producer Pattern
 
 ```kotlin
 @Component
 class InteractionEventProducer(
-    private val kafkaTemplate: ReactiveKafkaProducerTemplate<String, InteractionEvent>
+    private val messagingTemplate: MessagingTemplate<String, InteractionEvent>
 ) {
     fun send(event: InteractionEvent): Mono<Void> {
-        return kafkaTemplate.send(
+        return messagingTemplate.send(
             TOPIC_INTERACTIONS,
             event.userId,  // Key for partitioning
             event
         ).then()
-    }
-
-    fun sendBatch(events: List<InteractionEvent>): Flux<SenderResult<Void>> {
-        return kafkaTemplate.send(
-            Flux.fromIterable(events).map { event ->
-                SenderRecord.create(
-                    ProducerRecord(TOPIC_INTERACTIONS, event.userId, event),
-                    null
-                )
-            }
-        )
     }
 }
 ```
@@ -248,10 +156,6 @@ class InteractionEventProducer(
 class InteractionEventConsumer(
     private val processor: EventProcessor
 ) {
-    @KafkaListener(
-        topics = ["\${kafka.topic.interactions}"],
-        groupId = "\${kafka.consumer.group-id}"
-    )
     fun consume(event: InteractionEvent, ack: Acknowledgment) {
         try {
             processor.process(event)
@@ -269,12 +173,12 @@ class InteractionEventConsumer(
 ```kotlin
 // Emit events on data changes
 class CDCEnabledRepository(
-    private val hbaseRepository: HBaseInteractionRepository,
+    private val storageRepository: StorageInteractionRepository,
     private val eventProducer: InteractionEventProducer
-) : InteractionRepository by hbaseRepository {
+) : InteractionRepository by storageRepository {
 
     override fun save(interaction: Interaction): Mono<Void> {
-        return hbaseRepository.save(interaction)
+        return storageRepository.save(interaction)
             .then(
                 eventProducer.send(
                     InteractionEvent(
@@ -324,16 +228,16 @@ fun process(mutation: Mutation): Mono<Result> {
 
 ```kotlin
 // GOOD: Non-blocking with subscribeOn
-fun queryHBase(userId: String): Mono<List<Interaction>> {
+fun queryStorage(userId: String): Mono<List<Interaction>> {
     return Mono.fromCallable {
-        // Blocking HBase call
-        hbaseClient.query(userId)
+        // Blocking storage call
+        storageClient.query(userId)
     }.subscribeOn(Schedulers.boundedElastic())  // Run on blocking scheduler
 }
 
 // BAD: Blocking in reactive chain
 fun badQuery(userId: String): Mono<List<Interaction>> {
-    val result = hbaseClient.query(userId)  // BLOCKS event loop!
+    val result = storageClient.query(userId)  // BLOCKS event loop!
     return Mono.just(result)
 }
 ```
