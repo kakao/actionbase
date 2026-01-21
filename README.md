@@ -89,14 +89,12 @@ If a single database can handle your workload, that's the better choice.
 
 Actionbase writes to HBase for storage and emits a WAL to Kafka for recovery, replay, and downstream pipelines. HBase provides strong durability and horizontal scalability.
 
-```mermaid
-flowchart LR
-    Client --> Actionbase
-    Actionbase -.->|Metastore| JDBC["JDBC
-(to be consolidated into HBase)"]
-    Actionbase -->|Storage| HBase
-    Actionbase -->|WAL / CDC| Kafka
-    Kafka --> Downstream["Downstream Pipelines"]
+```
+Client ──> Actionbase ──> HBase (Storage)
+               │
+               ├──> JDBC (Metastore, to be consolidated)
+               │
+               └──> Kafka (WAL/CDC) ──> Downstream Pipelines
 ```
 
 Additional storage backends are planned for small to mid-size deployments.
