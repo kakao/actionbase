@@ -3,20 +3,21 @@ package util
 import (
 	"fmt"
 	"strings"
+	"sync/atomic"
 )
 
 const OutputPrefix = "  \u2502 "
 
-var plainMode = false
+var plainMode atomic.Bool
 
 // SetPlainMode enables or disables plain output mode.
 // When enabled, output will not have the prefix.
 func SetPlainMode(enabled bool) {
-	plainMode = enabled
+	plainMode.Store(enabled)
 }
 
 func getPrefix() string {
-	if plainMode {
+	if plainMode.Load() {
 		return ""
 	}
 	return OutputPrefix

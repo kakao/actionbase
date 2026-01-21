@@ -97,6 +97,10 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 		return model.Fail("invalid file path")
 	}
 
+	return l.executeYAMLCommands(absPath)
+}
+
+func (l *Load) executeYAMLCommands(absPath string) *model.Response {
 	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return model.Fail(err.Error())
@@ -132,7 +136,9 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 			results = append(results, resultMessage)
 			return model.FailWithNoOut(strings.Join(results, "\n"))
 		}
-		results = append(results, *result.Result)
+		if result.Result != nil {
+			results = append(results, *result.Result)
+		}
 	}
 
 	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
@@ -406,50 +412,9 @@ func (l *Load) loadPreset(filename, refs string) *model.Response {
 		return model.Fail("Failed to download preset file")
 	}
 
-	return l.loadPresetFile(downloadPath)
+	return l.executeYAMLCommands(downloadPath)
 }
 
-func (l *Load) loadPresetFile(absPath string) *model.Response {
-	data, err := os.ReadFile(absPath)
-	if err != nil {
-		return model.Fail(err.Error())
-	}
-
-	var commands []YAMLCommand
-	err = yaml.Unmarshal(data, &commands)
-	if err != nil {
-		return model.Fail(fmt.Sprintf("Failed to parse YAML: %s", err.Error()))
-	}
-
-	var results []string
-	for _, cmd := range commands {
-		if cmd.Command == "" {
-			continue
-		}
-
-		if cmd.Description != "" {
-			decoratedDescription := fmt.Sprintf("/* %s */", cmd.Description)
-			results = append(results, decoratedDescription)
-			util.Print("\033[90m%s\033[0m\n", decoratedDescription)
-		}
-
-		chunk := l.normalize(cmd.Command)
-		if len(chunk) == 0 {
-			continue
-		}
-
-		result := l.doLoad(chunk)
-		if !result.IsSuccess {
-			resultMessage := "Failed to execute command. Please check your command syntax or system log"
-			util.Println(resultMessage)
-			results = append(results, resultMessage)
-			return model.FailWithNoOut(strings.Join(results, "\n"))
-		}
-		results = append(results, *result.Result)
-	}
-
-	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
-}
 
 func (l *Load) GetDescription() string {
 	return "Load resources"
