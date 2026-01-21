@@ -1,4 +1,4 @@
----
+제---
 name: actionbase-concepts
 description: Core Actionbase concepts including mutation, query, schema, and datastore architecture.
 ---
@@ -98,14 +98,7 @@ The datastore is the storage layer that persists interactions.
 +-------------------+-------------------------+
 ```
 
-**Row Key Design:**
-```
-{schema}#{userId}#{reversedTimestamp}
-
-Examples:
-- likes#user123#9999999999999
-- follows#user456#9999999999998
-```
+**Row Key Design:** See [Encoding Documentation](/internals/encoding/) for the finalized row key format.
 
 ## Architecture
 
@@ -242,17 +235,10 @@ DON'T:
 ```
 
 ### Row Key Design
-```
-DO:
-- Put userId first for efficient scans
-- Use reversed timestamp for newest-first
-- Keep row keys compact
 
-DON'T:
-- Put timestamp first (causes hotspots)
-- Use unpredictable prefixes
-- Make row keys too long
-```
+Row key format is finalized. See [Encoding Documentation](/internals/encoding/) for details.
+
+When modifying storage code, follow the existing implementation patterns.
 
 ### Query Optimization
 ```

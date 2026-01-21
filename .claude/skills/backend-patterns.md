@@ -122,13 +122,12 @@ class MutationService(
 
 ## Storage Patterns
 
-Row key design, scan optimization, and batch operations are documented in CLAUDE.md and `.claude/rules/performance.md`.
+Row key encoding is finalized. See [Encoding Documentation](/internals/encoding/) for the format specification.
 
-Key principles:
-- UserId first in row key for efficient scans
-- Reversed timestamp for newest-first ordering
+Key operational principles:
 - Bounded scans with prefix filters and limits
 - Batch operations for throughput
+- Follow existing implementation patterns when modifying storage code
 
 ## Messaging Patterns
 
