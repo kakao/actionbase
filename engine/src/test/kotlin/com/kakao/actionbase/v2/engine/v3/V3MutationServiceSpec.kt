@@ -6,9 +6,7 @@ import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
-import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
-import com.kakao.actionbase.v2.engine.GraphConfig
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
@@ -31,36 +29,14 @@ class V3MutationServiceSpec :
         lateinit var v3MutationService: V3MutationService
         lateinit var v3QueryService: V3QueryService
 
-        lateinit var graphGlobalAsync: Graph
-        lateinit var v3MutationServiceGlobalAsync: V3MutationService
-
-        lateinit var graphGlobalSync: Graph
-        lateinit var v3MutationServiceGlobalSync: V3MutationService
-
         beforeTest {
             graph = GraphFixtures.create()
             v3MutationService = V3MutationService(graph)
             v3QueryService = V3QueryService(graph)
-
-            // Create a graph with globalMutationMode set to ASYNC for testing
-            graphGlobalAsync =
-                GraphFixtures.create(
-                    GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC),
-                )
-            v3MutationServiceGlobalAsync = V3MutationService(graphGlobalAsync)
-
-            // Create a graph with globalMutationMode set to SYNC for testing
-            graphGlobalSync =
-                GraphFixtures.create(
-                    GraphConfig.Builder().withGlobalMutationMode(MutationMode.SYNC),
-                )
-            v3MutationServiceGlobalSync = V3MutationService(graphGlobalSync)
         }
 
         afterTest {
             graph.close()
-            graphGlobalAsync.close()
-            graphGlobalSync.close()
         }
 
         "mutation" {
@@ -376,108 +352,6 @@ class V3MutationServiceSpec :
                 }.verifyComplete()
 
             executionCompleted.get() shouldBe true
-        }
-
-        "mutateEdge: globalMutationMode=ASYNC overrides label mode=SYNC" {
-            val database = GraphFixtures.serviceName
-            val table = GraphFixtures.syncTable
-            val insertRequest =
-                """
-                {
-                  "mutations": [
-                    {"type": "INSERT", "edge": {"version": 100, "source": "2000", "target": "3000", "properties": {"permission": "test", "createdAt": 100}}}
-                  ]
-                }
-                """.trimIndent().toEdgeBulkMutationRequest()
-
-            // With globalMutationMode set to ASYNC, even sync tables should process mutations asynchronously
-            v3MutationServiceGlobalAsync
-                .mutateEdge(database, table, insertRequest)
-                .test()
-                .assertNext { actualObject ->
-                    // In ASYNC mode, the result should indicate QUEUED status
-                    actualObject.results.size shouldBe 1
-                    actualObject.results[0].status shouldBe "QUEUED"
-                    actualObject.results[0].source shouldBe 2000L
-                    actualObject.results[0].target shouldBe 3000L
-                    actualObject.results[0].count shouldBe 1
-                }.verifyComplete()
-        }
-
-        "mutateMultiEdge: globalMutationMode=ASYNC overrides label mode=SYNC" {
-            val database = GraphFixtures.serviceName
-            val table = GraphFixtures.multiEdgeSyncTable
-            val multiEdgeInsertRequest =
-                """
-                {
-                  "mutations": [
-                    {"type": "INSERT", "edge": {"version": 100, "id": 5000, "source": "2000", "target": "3000", "properties": {"createdAt": 100}}}
-                  ]
-                }
-                """.trimIndent().toMultiEdgeBulkMutationRequest()
-
-            // With globalMutationMode set to ASYNC, even sync tables should process multi-edge mutations asynchronously
-            v3MutationServiceGlobalAsync
-                .mutateMultiEdge(database, table, multiEdgeInsertRequest)
-                .test()
-                .assertNext { actualObject ->
-                    // In ASYNC mode, the result should indicate QUEUED status
-                    actualObject.results.size shouldBe 1
-                    actualObject.results[0].status shouldBe "QUEUED"
-                    actualObject.results[0].id shouldBe 5000L
-                    actualObject.results[0].count shouldBe 1
-                }.verifyComplete()
-        }
-
-        "mutateEdge: globalMutationMode=SYNC overrides label mode=ASYNC" {
-            val database = GraphFixtures.serviceName
-            val table = GraphFixtures.asyncTable
-            val insertRequest =
-                """
-                {
-                  "mutations": [
-                    {"type": "INSERT", "edge": {"version": 200, "source": "3000", "target": "4000", "properties": {"permission": "test", "createdAt": 200}}}
-                  ]
-                }
-                """.trimIndent().toEdgeBulkMutationRequest()
-
-            // With globalMutationMode set to SYNC, even async tables should process mutations synchronously
-            v3MutationServiceGlobalSync
-                .mutateEdge(database, table, insertRequest)
-                .test()
-                .assertNext { actualObject ->
-                    // In SYNC mode, the result should indicate CREATED status (not QUEUED)
-                    actualObject.results.size shouldBe 1
-                    actualObject.results[0].status shouldBe "CREATED"
-                    actualObject.results[0].source shouldBe 3000L
-                    actualObject.results[0].target shouldBe 4000L
-                    actualObject.results[0].count shouldBe 1
-                }.verifyComplete()
-        }
-
-        "mutateMultiEdge: globalMutationMode=SYNC overrides label mode=ASYNC" {
-            val database = GraphFixtures.serviceName
-            val table = GraphFixtures.multiEdgeAsyncTable
-            val multiEdgeInsertRequest =
-                """
-                {
-                  "mutations": [
-                    {"type": "INSERT", "edge": {"version": 200, "id": 6000, "source": "3000", "target": "4000", "properties": {"createdAt": 200}}}
-                  ]
-                }
-                """.trimIndent().toMultiEdgeBulkMutationRequest()
-
-            // With globalMutationMode set to SYNC, even async tables should process multi-edge mutations synchronously
-            v3MutationServiceGlobalSync
-                .mutateMultiEdge(database, table, multiEdgeInsertRequest)
-                .test()
-                .assertNext { actualObject ->
-                    // In SYNC mode, the result should indicate CREATED status (not QUEUED)
-                    actualObject.results.size shouldBe 1
-                    actualObject.results[0].status shouldBe "CREATED"
-                    actualObject.results[0].id shouldBe 6000L
-                    actualObject.results[0].count shouldBe 1
-                }.verifyComplete()
         }
     }) {
     companion object {

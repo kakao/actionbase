@@ -6,12 +6,14 @@ import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
 import com.kakao.actionbase.v2.core.metadata.LabelType
+import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.VertexField
 import com.kakao.actionbase.v2.core.types.VertexType
 import com.kakao.actionbase.v2.engine.Graph
+import com.kakao.actionbase.v2.engine.GraphConfig
 import com.kakao.actionbase.v2.engine.audit.Audit
 import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -1123,5 +1125,101 @@ class DdlServiceSpec :
 
             walQueue[0].audit shouldBe auditLog
             cdcQueue[0].audit shouldBe auditLog
+        }
+
+        "DDL operations should be synchronous even with globalMutationMode=ASYNC" {
+            val graphGlobalAsync =
+                GraphFixtures.create(
+                    GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC),
+                    withTestData = false,
+                )
+
+            try {
+                // Create service first (required for label creation)
+                val serviceName = "test_async_service"
+                graphGlobalAsync.serviceDdl
+                    .create(
+                        EntityName.fromOrigin(serviceName),
+                        ServiceCreateRequest(desc = "test service"),
+                    ).test()
+                    .assertNext { ddlResult ->
+                        ddlResult.status shouldBe DdlStatus.Status.CREATED
+                    }.verifyComplete()
+
+                val labelName = EntityName(serviceName, "ddl_async_test_label")
+                val labelCreateRequest =
+                    LabelCreateRequest(
+                        desc = "test",
+                        type = LabelType.HASH,
+                        schema =
+                            EdgeSchema(
+                                VertexField(VertexType.STRING),
+                                VertexField(VertexType.STRING),
+                                listOf(
+                                    Field("permission", DataType.STRING, false),
+                                ),
+                            ),
+                        dirType = DirectionType.OUT,
+                        indices = emptyList(),
+                        storage = Metadata.metastoreName,
+                    )
+
+                // Create should return CREATED, not QUEUED
+                graphGlobalAsync.labelDdl
+                    .create(labelName, labelCreateRequest)
+                    .test()
+                    .assertNext { ddlResult ->
+                        ddlResult.status shouldBe DdlStatus.Status.CREATED
+                    }.verifyComplete()
+
+                // Update should return UPDATED, not QUEUED
+                val labelUpdateRequest =
+                    LabelUpdateRequest(
+                        active = null,
+                        desc = "updated desc",
+                        type = null,
+                        readOnly = null,
+                        mode = null,
+                        schema = null,
+                        groups = null,
+                        indices = null,
+                    )
+
+                graphGlobalAsync.labelDdl
+                    .update(labelName, labelUpdateRequest)
+                    .test()
+                    .assertNext { ddlResult ->
+                        ddlResult.status shouldBe DdlStatus.Status.UPDATED
+                    }.verifyComplete()
+
+                // Deactivate then delete should return DELETED, not QUEUED
+                val deactivateRequest =
+                    LabelUpdateRequest(
+                        active = false,
+                        desc = null,
+                        type = null,
+                        readOnly = null,
+                        mode = null,
+                        schema = null,
+                        groups = null,
+                        indices = null,
+                    )
+
+                graphGlobalAsync.labelDdl
+                    .update(labelName, deactivateRequest)
+                    .test()
+                    .assertNext { ddlResult ->
+                        ddlResult.status shouldBe DdlStatus.Status.UPDATED
+                    }.verifyComplete()
+
+                graphGlobalAsync.labelDdl
+                    .delete(labelName, LabelDeleteRequest())
+                    .test()
+                    .assertNext { ddlResult ->
+                        ddlResult.status shouldBe DdlStatus.Status.DELETED
+                    }.verifyComplete()
+            } finally {
+                graphGlobalAsync.close()
+            }
         }
     })

@@ -72,8 +72,7 @@ class V3MutationService(
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation"))
         }
 
-        val mutationMode = graph.globalMutationMode ?: sync
-        val mutationModeContext = MutationModeContext.of(label.entity.mode, mutationMode)
+        val mutationModeContext = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, sync)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)
@@ -185,8 +184,7 @@ class V3MutationService(
         if (label !is HBaseIndexedLabel) {
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}) is not indexed or not supported for edge mutation"))
         }
-        val mutationMode = graph.globalMutationMode ?: sync
-        val mutationModeContext = MutationModeContext.of(label.entity.mode, mutationMode)
+        val mutationModeContext = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, sync)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)

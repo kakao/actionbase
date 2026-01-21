@@ -276,7 +276,7 @@ class Graph(
         mode: MutationMode? = null,
         failOnExist: Boolean = false,
     ): Mono<MutationResult> {
-        val mutationModeContext = MutationModeContext.of(label.entity.mode, mode)
+        val mutationModeContext = MutationModeContext.of(label.entity.mode, globalMutationMode, mode)
 
         return Flux
             .fromIterable(edges)

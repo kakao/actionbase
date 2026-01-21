@@ -5,6 +5,7 @@ import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Active
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
+import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.edge.HashEdge
 import com.kakao.actionbase.v2.engine.edge.MutationResult
@@ -32,7 +33,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
         request: Create,
     ): Mono<MutationResult> {
         val edge = request.toEdge(name)
-        return graph.mutate(label.name, label, listOf(edge), EdgeOperation.INSERT)
+        return graph.mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, mode = MutationMode.SYNC)
     }
 
     fun create(
@@ -44,6 +45,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                 if (it.isEmpty()) {
                     val edge = request.toEdge(name)
                     // mutate should call to write WAL
+                    // DDL operations must always be synchronous regardless of globalMutationMode
                     graph
                         .mutate(
                             label.name,
@@ -51,6 +53,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                             listOf(edge),
                             EdgeOperation.INSERT,
                             audit = request.audit,
+                            mode = MutationMode.SYNC,
                             failOnExist = true,
                         ).map {
                             val result = it.result.first()
@@ -82,8 +85,9 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
             .flatMap {
                 if (it.isEmpty()) {
                     val edge = request.toEdge(name)
+                    // DDL operations must always be synchronous regardless of globalMutationMode
                     graph
-                        .mutate(label.name, label, listOf(edge), EdgeOperation.UPDATE, audit = request.audit)
+                        .mutate(label.name, label, listOf(edge), EdgeOperation.UPDATE, audit = request.audit, mode = MutationMode.SYNC)
                         .map {
                             val result = it.result.first()
                             DdlStatus.fromEdgeOperationStatus(
@@ -114,8 +118,9 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
         // mutate should call to write WAL
         return checkDeletePrecondition(name, request).flatMap {
             if (it.isEmpty()) {
+                // DDL operations must always be synchronous regardless of globalMutationMode
                 graph
-                    .mutate(label.name, label, listOf(edge), EdgeOperation.DELETE, audit = request.audit)
+                    .mutate(label.name, label, listOf(edge), EdgeOperation.DELETE, audit = request.audit, mode = MutationMode.SYNC)
                     .map {
                         val result = it.result.first()
                         DdlStatus.fromEdgeOperationStatus(
@@ -153,8 +158,9 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                         to.name,
                         fromEdge.props + props,
                     ).toTraceEdge()
+                // DDL operations must always be synchronous regardless of globalMutationMode
                 graph
-                    .mutate(label.name, label, listOf(edge), EdgeOperation.INSERT)
+                    .mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, mode = MutationMode.SYNC)
                     .map {
                         val result = it.result.first()
                         DdlStatus.fromEdgeOperationStatus(
