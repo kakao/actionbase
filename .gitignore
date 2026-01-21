@@ -65,10 +65,10 @@ pnpm-debug.log*
 # AI Coding Assistants (any depth)
 
 ## Claude Code
-**/.claude/*
-!**/.claude/
-!**/.claude/CLAUDE.md
-!**/.claude/README.md
+# Local (user-specific) - ignore all *.local.* files
+.claude/*.local.*
+# But keep templates for sharing
+!.claude/*.template
 
 ## OpenAI Codex
 **/.codex/

@@ -1,0 +1,55 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.kt ]] || [[ \"$file\" == *.java ]] || [[ \"$file\" == *.go ]]; then echo '[Advisory] Remember to run build after changes: ./gradlew build (Kotlin/Java) or make build (Go)'; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=\"$CLAUDE_BASH_COMMAND\"; if [[ \"$cmd\" == *gradlew* ]] || [[ \"$cmd\" == *\"make build\"* ]] || [[ \"$cmd\" == *\"go test\"* ]]; then echo '[Advisory] Consider using background mode (run_in_background) for long-running commands'; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.kt ]]; then echo '[Advisory] Run ./gradlew spotlessApply to format Kotlin code'; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.kt ]] || [[ \"$file\" == *.java ]]; then if grep -q 'println\\|System.out' \"$file\" 2>/dev/null; then echo '[Advisory] Found println/System.out statements. Consider using proper logging (SLF4J/Logback)'; fi; elif [[ \"$file\" == *.go ]]; then if grep -q 'fmt.Print' \"$file\" 2>/dev/null; then echo '[Advisory] Found fmt.Print statements. Consider using proper logging'; fi; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[Advisory] Session ending. Remember to check for debug statements (println, System.out, fmt.Print) before committing.'"
+          }
+        ]
+      }
+    ]
+  }
+}
