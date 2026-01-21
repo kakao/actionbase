@@ -33,7 +33,7 @@ cd cli && go test -tags=e2e ./...
 ### With Test Containers
 
 ```bash
-# Starts HBase/Kafka containers automatically
+# Starts external dependency containers automatically
 ./gradlew :server:integrationTest -Ptestcontainers
 ```
 

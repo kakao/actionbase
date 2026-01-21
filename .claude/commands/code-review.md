@@ -10,7 +10,7 @@ Invoke the **code-reviewer** agent to review recent changes.
 
 ### Security (CRITICAL)
 - Hardcoded credentials
-- HBase injection risks
+- Storage injection risks
 - Input validation
 - Authentication/authorization
 
@@ -22,7 +22,7 @@ Invoke the **code-reviewer** agent to review recent changes.
 - Test coverage
 
 ### Performance (MEDIUM)
-- HBase scan efficiency
+- Storage scan efficiency
 - N+1 queries
 - Unbounded operations
 - Blocking in reactive code
@@ -62,7 +62,7 @@ Agent:
 
 [CRITICAL] Missing input validation
 File: server/src/.../MutationController.kt:45
-Issue: User input passed directly to HBase
+Issue: User input passed directly to storage
 Fix: Add validation before processing
 
 [MEDIUM] Function too long

@@ -60,7 +60,7 @@ cd cli && go test -cover ./...
 ## Test Types
 
 1. **Unit Tests** - Individual functions/classes
-2. **Integration Tests** - API endpoints, HBase queries
+2. **Integration Tests** - API endpoints, storage queries
 3. **CLI Tests** - Command execution
 
 ## Commands

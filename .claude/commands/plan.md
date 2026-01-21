@@ -55,9 +55,9 @@ Agent (planner):
 - Add validation rules for bookmark mutations
 
 ### Phase 2: Engine Module
-- Add HBase table configuration for bookmarks
-- Update row key builder for bookmark pattern
-- Add Kafka topic for bookmark events
+- Add storage configuration for bookmarks
+- Update key builder for bookmark pattern
+- Add messaging topic for bookmark events
 
 ### Phase 3: Server Module
 - Add REST endpoints for bookmark operations
@@ -74,12 +74,12 @@ Agent (planner):
 - CLI tests
 
 ## Dependencies
-- HBase table creation
-- Kafka topic setup
+- Storage table creation
+- Messaging topic setup
 - Schema registry update
 
 ## Risks
-- MEDIUM: HBase table creation in production
+- MEDIUM: Storage table creation in production
 - LOW: Migration needed for existing data
 - LOW: API versioning considerations
 

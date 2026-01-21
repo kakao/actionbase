@@ -53,8 +53,8 @@ Invoke the **refactor-cleaner** agent to clean up the codebase.
 
 ## NEVER Remove
 
-- HBase client code
-- Kafka producer/consumer
+- Storage client code
+- Messaging producer/consumer
 - Core model classes
 - REST API endpoints
 - CLI commands
