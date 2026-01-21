@@ -63,7 +63,7 @@ class V3MutationService(
         alias: String,
         request: EdgeBulkMutationRequest,
         lock: Boolean = true,
-        sync: MutationMode? = null,
+        mode: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<EdgeMutationResponse> {
         val aliasEntityName = EntityName(database, alias)
@@ -72,7 +72,7 @@ class V3MutationService(
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation"))
         }
 
-        val mutationModeContext = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, sync)
+        val mutationModeContext = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, mode)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)
@@ -176,7 +176,7 @@ class V3MutationService(
         alias: String,
         request: MultiEdgeBulkMutationRequest,
         lock: Boolean = true,
-        sync: MutationMode? = null,
+        mode: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<MultiEdgeMutationResponse> {
         val aliasEntityName = EntityName(database, alias)
@@ -184,7 +184,7 @@ class V3MutationService(
         if (label !is HBaseIndexedLabel) {
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}) is not indexed or not supported for edge mutation"))
         }
-        val mutationModeContext = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, sync)
+        val mutationModeContext = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, mode)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)

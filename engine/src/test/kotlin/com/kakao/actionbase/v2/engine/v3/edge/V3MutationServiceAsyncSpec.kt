@@ -218,7 +218,7 @@ class V3MutationServiceAsyncSpec :
             val request = mapper.readValue<MultiEdgeBulkMutationRequest>(multiEdgeRequestString)
 
             v3MutationService
-                .mutateMultiEdge(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, request, sync = MutationMode.SYNC)
+                .mutateMultiEdge(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, request, mode = MutationMode.SYNC)
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1},{"id":100001,"status":"CREATED","count":1},{"id":100002,"status":"CREATED","count":1}]}"""
@@ -268,7 +268,7 @@ class V3MutationServiceAsyncSpec :
             val request = mapper.readValue<EdgeBulkMutationRequest>(edgeRequestString)
 
             v3MutationService
-                .mutateEdge(edgeTableName.service, edgeTableName.nameNotNull, request, sync = MutationMode.SYNC)
+                .mutateEdge(edgeTableName.service, edgeTableName.nameNotNull, request, mode = MutationMode.SYNC)
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"CREATED","count":1},{"source":1,"target":2,"status":"CREATED","count":2}]}"""
