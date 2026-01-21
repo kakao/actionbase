@@ -11,17 +11,20 @@ Actionbase is a database for serving these user interactions at scale. Currently
 ```bash
 docker run -it --pull always ghcr.io/kakao/actionbase:standalone
 ```
+
+**Write: Insert 3 edges with metadata**
 ```
 actionbase> load preset likes
-  │ Database 'likes' is created
-  │ Table 'likes' is created
   │ 3 edges inserted
   │  - Alice → Phone
   │  - Alice → Laptop
   │  - Bob → Phone
-  │ Database changed to 'likes'
-  │ Table changed to 'likes'
+```
 
+At write time, Actionbase precomputes everything for reads—no aggregation needed at query time.
+
+**Read: Query precomputed results**
+```
 actionbase(likes:likes)> get --source Alice --target Phone
   │ → GET /graph/v3/databases/likes/tables/likes/edges/get?source=Alice&target=Phone
   │ ← 200 OK {"edges":[{"version":1737377177245,"source":"Alice","ta...
