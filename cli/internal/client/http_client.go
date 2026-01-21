@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/kakao/actionbase/internal/util"
 )
 
 type Context struct {
@@ -92,9 +94,9 @@ func Post[T any, R any](c *HTTPClient, uri string, requestBody T) *Response[R] {
 func call[T any](c *HTTPClient, request *http.Request, requestBody []byte) *Response[T] {
 	if c.context.IsDebugEnabled {
 		if requestBody == nil {
-			slog.Debug(fmt.Sprintf("%s %s", request.Method, request.URL.RequestURI()))
+			slog.Debug(fmt.Sprintf("\u2192 %s %s", request.Method, request.URL.RequestURI()))
 		} else {
-			slog.Debug(fmt.Sprintf("%s %s\n %s", request.Method, request.URL.RequestURI(), string(requestBody)))
+			slog.Debug(fmt.Sprintf("\u2192 %s %s %s", request.Method, request.URL.RequestURI(), util.Truncate(string(requestBody), 60)))
 		}
 	}
 
@@ -115,7 +117,7 @@ func call[T any](c *HTTPClient, request *http.Request, requestBody []byte) *Resp
 	body, err := io.ReadAll(response.Body)
 
 	if c.context.IsDebugEnabled {
-		slog.Debug(fmt.Sprintf("%s\n %s", response.Status, string(body)))
+		slog.Debug(fmt.Sprintf("\u2190 %s %s", response.Status, util.Truncate(string(body), 60)))
 	}
 
 	if err != nil {

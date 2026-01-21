@@ -76,7 +76,7 @@ func (c *Count) doCount(database string, table string, start string, direction s
 		results = append(results, data)
 	}
 
-	fmt.Println()
+	util.PrintEmpty()
 
 	columnOrder := []string{"#", "start", "direction", "count"}
 	resultMessage := fmt.Sprintf("The count of %s edges found", util.Int64WithCommas(response.Body.Count)) +
