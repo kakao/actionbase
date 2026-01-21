@@ -243,6 +243,7 @@ object GraphFixtures {
             createStorage(graph, hbaseStorage, StorageType.HBASE, mockStorageConf())
 
             performSampleDDLAndDML(graph, serviceName, jdbcHash, LabelType.HASH, jdbcStorage)
+
             performSampleDDLAndDML(graph, serviceName, hbaseHash, LabelType.HASH, hbaseStorage)
             performSampleDDLAndDML(graph, serviceName, hbaseIndexed, LabelType.INDEXED, datastoreStorage)
         }
