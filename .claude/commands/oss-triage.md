@@ -15,19 +15,21 @@ Help maintainers triage GitHub issues efficiently.
 
 2. **Classify Type**
    - `bug` - Something isn't working
-   - `feature` - New feature request
-   - `question` - Support question
-   - `docs` - Documentation improvement
+   - `enhancement` - New feature or request
+   - `question` - Further information is requested
+   - `documentation` - Improvements or additions to documentation
 
-3. **Assess Priority**
-   - `priority/critical` - Security, data loss, crashes
-   - `priority/high` - Major functionality broken
-   - `priority/medium` - Important but not urgent
-   - `priority/low` - Nice to have
+3. **Identify Module**
+   - `module:core` - Core module
+   - `module:engine` - Engine module
+   - `module:server` - Server module
+   - `module:cli` - CLI module
+   - `module:website` - Website/docs
+   - `module:guides` - Tutorial guides
 
 4. **Add Labels**
    ```bash
-   gh issue edit <number> --add-label "bug,priority/high,module/core"
+   gh issue edit <number> --add-label "bug,module:server"
    ```
 
 5. **Respond** (if needed)
@@ -38,21 +40,48 @@ Help maintainers triage GitHub issues efficiently.
 ## Labels
 
 ### Type
-- `bug`, `feature`, `question`, `docs`, `refactor`
-
-### Priority
-- `priority/critical`, `priority/high`, `priority/medium`, `priority/low`
+| Label | Description |
+|-------|-------------|
+| `bug` | Something isn't working |
+| `enhancement` | New feature or request |
+| `documentation` | Improvements or additions to documentation |
+| `question` | Further information is requested |
+| `maintenance` | Maintenance work |
 
 ### Module
-- `module/core`, `module/engine`, `module/server`, `module/cli`, `module/docs`
+| Label | Description |
+|-------|-------------|
+| `module:core` | Changes related to the module `core` |
+| `module:engine` | Changes related to the module `engine` |
+| `module:server` | Changes related to the module `server` |
+| `module:cli` | Changes related to the module `cli` |
+| `module:website` | Changes related to the module `website` |
+| `module:guides` | Changes related to the module `guides` |
 
 ### Status
-- `needs-info`, `confirmed`, `wontfix`, `duplicate`
+| Label | Description |
+|-------|-------------|
+| `duplicate` | This issue or pull request already exists |
+| `invalid` | This doesn't seem right |
+| `wontfix` | This will not be worked on |
+| `help wanted` | Community contributions are welcome |
+| `good first issue` | Good for newcomers |
+| `lgtm` | This PR has been approved by a maintainer |
+
+### PR Size (automated)
+| Label | Lines Changed |
+|-------|---------------|
+| `size:XS` | 0-9 |
+| `size:S` | 10-29 |
+| `size:M` | 30-99 |
+| `size:L` | 100-499 |
+| `size:XL` | 500-999 |
+| `size:XXL` | 1000+ |
 
 ## Usage
 
 ```
-User: /triage 123
+User: /oss-triage 123
 
 Agent:
 ## Issue #123 Triage
@@ -62,11 +91,10 @@ User reports mutation API returning 500 error with specific payload.
 
 ### Classification
 - **Type**: bug
-- **Priority**: high (API broken for valid input)
 - **Module**: server
 
 ### Suggested Labels
-gh issue edit 123 --add-label "bug,priority/high,module/server"
+gh issue edit 123 --add-label "bug,module:server"
 
 ### Suggested Response
 Thanks for reporting! I can reproduce this issue.
@@ -80,11 +108,15 @@ We'll fix this in the next patch release.
 ## Quick Commands
 
 ```bash
-# List open issues needing triage
-gh issue list --label "needs-triage" --state open
+# List open issues by type
+gh issue list --label "bug" --state open
+gh issue list --label "enhancement" --state open
 
-# List by priority
-gh issue list --label "priority/critical" --state open
+# List by module
+gh issue list --label "module:cli" --state open
+
+# Good first issues
+gh issue list --label "good first issue" --state open
 
 # Close as duplicate
 gh issue close <number> --reason "duplicate" --comment "Duplicate of #<other>"

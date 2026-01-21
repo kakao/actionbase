@@ -16,7 +16,7 @@ Located in `.github/ISSUE_TEMPLATE/`:
 ---
 name: Bug Report
 about: Report something that isn't working
-labels: bug, needs-triage
+labels: bug
 ---
 
 ## Description
@@ -44,7 +44,7 @@ What actually happens.
 ---
 name: Feature Request
 about: Suggest a new feature
-labels: feature, needs-triage
+labels: enhancement
 ---
 
 ## Problem
@@ -92,37 +92,40 @@ Closes #<number>
 | Label | Color | Description |
 |-------|-------|-------------|
 | `bug` | #d73a4a | Something isn't working |
-| `feature` | #0075ca | New feature request |
-| `docs` | #0052cc | Documentation only |
-| `refactor` | #fbca04 | Code improvement |
-| `question` | #d876e3 | Support question |
-
-### Priority Labels
-| Label | Color | Description |
-|-------|-------|-------------|
-| `priority/critical` | #b60205 | Urgent, security/data issues |
-| `priority/high` | #d93f0b | Important, major functionality |
-| `priority/medium` | #fbca04 | Normal priority |
-| `priority/low` | #0e8a16 | Nice to have |
+| `enhancement` | #a2eeef | New feature or request |
+| `documentation` | #0075ca | Improvements or additions to documentation |
+| `question` | #d876e3 | Further information is requested |
+| `maintenance` | #57075e | Maintenance work |
 
 ### Module Labels
 | Label | Color | Description |
 |-------|-------|-------------|
-| `module/core` | #c5def5 | Core module |
-| `module/engine` | #c5def5 | Engine module |
-| `module/server` | #c5def5 | Server module |
-| `module/cli` | #c5def5 | CLI module |
-| `module/docs` | #c5def5 | Documentation |
+| `module:core` | #c08cf1 | Changes related to the module `core` |
+| `module:engine` | #3bab6c | Changes related to the module `engine` |
+| `module:server` | #95ea9a | Changes related to the module `server` |
+| `module:cli` | #d5d792 | Changes related to the module `cli` |
+| `module:website` | #d2cf42 | Changes related to the module `website` |
+| `module:guides` | #0c24f0 | Changes related to the module `guides` |
 
 ### Status Labels
 | Label | Color | Description |
 |-------|-------|-------------|
-| `needs-triage` | #ededed | Needs maintainer review |
-| `needs-info` | #ededed | Waiting for reporter |
-| `confirmed` | #0e8a16 | Verified by maintainer |
-| `in-progress` | #fbca04 | Being worked on |
-| `help-wanted` | #008672 | Open for contribution |
-| `good-first-issue` | #7057ff | Good for newcomers |
+| `duplicate` | #cfd3d7 | This issue or pull request already exists |
+| `invalid` | #e4e669 | This doesn't seem right |
+| `wontfix` | #ffffff | This will not be worked on |
+| `help wanted` | #008672 | Community contributions are welcome |
+| `good first issue` | #7057ff | Good for newcomers |
+| `lgtm` | #238636 | This PR has been approved by a maintainer |
+
+### PR Size Labels (automated)
+| Label | Color | Description |
+|-------|-------|-------------|
+| `size:XS` | #00ff00 | 0-9 lines changed |
+| `size:S` | #77b800 | 10-29 lines changed |
+| `size:M` | #ebb800 | 30-99 lines changed |
+| `size:L` | #eb9500 | 100-499 lines changed |
+| `size:XL` | #ff823f | 500-999 lines changed |
+| `size:XXL` | #ffb8b8 | 1000+ lines changed |
 
 ## Release Process
 
@@ -166,9 +169,8 @@ Issues are marked stale after 90 days of inactivity:
 - Closed after 14 more days if no response
 
 Exceptions:
-- `priority/critical` or `priority/high`
-- `confirmed` bugs
-- Issues with `keep-open` label
+- Critical bugs
+- Issues with `help wanted` label
 
 ## Security Policy
 
