@@ -1,46 +1,30 @@
 # Testing Requirements
 
-## Test Coverage
+## Test Framework
 
-Aim for good coverage on critical paths.
+- Existing: Kotest (legacy)
+- New tests: JUnit 5
 
-Test Types (ALL required for new features):
+## Test Types
+
+ALL required for new features:
 1. **Unit Tests** - Individual functions, classes
-2. **Integration Tests** - API endpoints, HBase operations
+2. **Integration Tests** - API endpoints, Storage operations
 3. **CLI Tests** - Command execution
+
+## Test Structure
+
+See `CLAUDE.md` for patterns:
+- Given/When/Then structure
+- `@ParameterizedTest` for same logic, different inputs
 
 ## Test-Driven Development
 
-Recommended workflow:
 1. Write test first (RED)
 2. Run test - it should FAIL
 3. Write minimal implementation (GREEN)
 4. Run test - it should PASS
 5. Refactor (IMPROVE)
-6. Verify coverage
-
-## Commands
-
-```bash
-# Kotlin/Java
-./gradlew test
-./gradlew :core:test
-./gradlew :server:test
-
-# Go CLI
-cd cli && go test ./...
-cd cli && go test -cover ./...
-
-# With coverage report
-./gradlew test jacocoTestReport
-```
-
-## Troubleshooting Test Failures
-
-1. Use **tdd-guide** agent
-2. Check test isolation
-3. Verify mocks are correct
-4. Fix implementation, not tests (unless tests are wrong)
 
 ## Agent Support
 
