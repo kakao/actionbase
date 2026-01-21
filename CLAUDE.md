@@ -7,21 +7,27 @@ Actionbase is a database for serving user interactions (likes, views, follows) a
 **Core Concept**: _who_ did _what_ to which _target_
 
 **Tech Stack**:
-- **Backend**: Kotlin/Java with Spring WebFlux (reactive)
-- **CLI**: Go with Cobra
-- **Storage**: HBase for data, MySQL for metastore
-- **Messaging**: Kafka for WAL/CDC
+- **Backend**: Kotlin/Java with Spring WebFlux (Mono/Flux, not coroutines)
+- **Storage**: Abstracted (currently HBase, SlateDB planned)
+- **Metastore**: Abstracted (currently MySQL, consolidating into storage)
+- **Messaging**: Abstracted (currently Kafka, file-based via SLF4J also supported)
 - **Build**: Gradle (Kotlin/Java), Make (Go)
-- **Docs**: Astro + Starlight
 
 ## Architecture
 
 ```
-core/       Data model, mutation, query, encoding (Java/Kotlin)
-engine/     HBase and Kafka bindings (Kotlin)
-server/     REST API with Spring WebFlux (Kotlin)
-cli/        Command-line client (Go)
-website/    Documentation site (Astro/Starlight)
+Backend:
+  core/         Data model, mutation, query, encoding (Kotlin/Java)
+  engine/       Storage and messaging bindings (Kotlin)
+  server/       REST API with Spring WebFlux (Kotlin)
+  (legacy: codec-java, core-java)
+
+DX:
+  cli/          Command-line client (Go + Cobra)
+  guides/       Interactive demos (JavaScript)
+
+Documentation:
+  website/      Astro + Starlight
 ```
 
 ## Critical Rules
@@ -51,6 +57,7 @@ website/    Documentation site (Astro/Starlight)
 - No println/System.out in production code (use SLF4J/Logback)
 - No fmt.Print in Go production code (use proper logging)
 - Input validation at API boundaries
+- Run `./gradlew spotlessApply` before committing
 
 ### Kotlin/Java Specifics
 
@@ -69,8 +76,9 @@ sealed class Result<out T> {
     data class Error(val message: String) : Result<Nothing>()
 }
 
-// Non-blocking with Spring WebFlux
+// Reactive with Mono/Flux (NOT coroutines)
 fun findById(id: String): Mono<Entity> = repository.findById(id)
+fun findAll(): Flux<Entity> = repository.findAll()
 ```
 
 ### Go Specifics
@@ -96,27 +104,17 @@ if err != nil {
 ```kotlin
 // Mutation path
 class MutationService(val engine: MutationEngine)
-class MutationEngine(val hbase: HBaseClient, val kafka: KafkaProducer)
+class MutationEngine(val storage: StorageClient, val messaging: MessagingClient)
 
 // Query path
 class QueryService(val engine: QueryEngine)
-class QueryEngine(val hbase: HBaseClient)
-```
-
-### HBase Row Key Design
-
-```kotlin
-// GOOD: userId first for user-centric queries
-val rowKey = "$schema#$userId#$reversedTimestamp"
-
-// BAD: Timestamp first causes hotspots
-val rowKey = "$timestamp#$userId"  // All writes to same region!
+class QueryEngine(val storage: StorageClient)
 ```
 
 ### Reactive Non-Blocking
 
 ```kotlin
-// GOOD: Non-blocking
+// GOOD: Non-blocking with Mono/Flux
 return repository.findById(id).map { toResponse(it) }
 
 // BAD: Blocking in reactive chain
@@ -124,7 +122,7 @@ val result = blockingOperation()  // BLOCKS event loop!
 return Mono.just(result)
 
 // Use boundedElastic for blocking calls
-Mono.fromCallable { blockingHBaseCall() }
+Mono.fromCallable { blockingStorageCall() }
     .subscribeOn(Schedulers.boundedElastic())
 ```
 
@@ -134,7 +132,7 @@ Mono.fromCallable { blockingHBaseCall() }
 # Kotlin/Java
 ./gradlew build                    # Full build
 ./gradlew test                     # Run tests
-./gradlew spotlessApply            # Format code
+./gradlew spotlessApply            # Format code (run before commit)
 ./gradlew :server:bootRun          # Run server
 
 # Go CLI
@@ -149,11 +147,50 @@ docker compose up -d               # Start local environment
 
 ## Testing
 
+### Principles
+
 - TDD: Write tests first when possible
-- 80% minimum coverage target
-- Unit tests for utilities and domain logic
-- Integration tests with TestContainers for HBase/Kafka
-- Use `./gradlew test` for Kotlin/Java, `go test ./...` for Go
+- Given/When/Then structure
+- Use JUnit 5 `@ParameterizedTest` for same logic, different inputs
+
+### Parameterized Test Pattern
+
+```kotlin
+@ParameterizedTest(name = "{0}. {1}")
+@CsvSource(
+    delimiter = '|',
+    value = [
+        // | # | description        | given  | when   | then   |
+        "   1 | Empty state INSERT | false  | INSERT | true   ",
+        "   2 | Active state UPDATE| true   | UPDATE | true   ",
+        "   3 | Active state DELETE| true   | DELETE | false  ",
+    ]
+)
+fun `test state transition`(
+    index: Int,
+    description: String,
+    givenActive: Boolean,
+    whenAction: String,
+    thenActive: Boolean
+) {
+    // Given
+    val state = createState(active = givenActive)
+
+    // When
+    val result = state.apply(whenAction)
+
+    // Then
+    assertThat(result.active).isEqualTo(thenActive)
+}
+```
+
+### Commands
+
+```bash
+./gradlew test                     # Kotlin/Java tests
+./gradlew :core:test               # Specific module
+go test ./...                      # Go CLI tests
+```
 
 ## Available Commands
 
@@ -170,10 +207,21 @@ docker compose up -d               # Start local environment
 
 ## Git Workflow
 
-- Conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `perf:`
-- Main branch: `main`
-- PRs require review before merge
-- All tests must pass before merge
+### Conventional Commits
+
+Format: `type(scope): description`
+
+Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`
+
+Scopes: `core`, `engine`, `server`, `cli`, `website`, `readme`, etc.
+
+Examples:
+```
+feat(core): add bookmark schema support
+fix(server): handle null userId in mutation
+docs(readme): update quick start section
+test(engine): add storage integration tests
+```
 
 ### Before Push
 
@@ -193,29 +241,9 @@ When creating PRs or issues, read the templates first and follow their format:
 
 - No hardcoded secrets (use environment variables)
 - Validate all user inputs at API boundaries
-- HBase ACLs for data access control
-- Kafka ACLs for topic access
-- HTTPS for production traffic
-
-## Environment Variables
-
-```bash
-# HBase
-HBASE_ZOOKEEPER_QUORUM=localhost:2181
-
-# Kafka
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-
-# Server
-SERVER_PORT=8080
-
-# MySQL (metastore)
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-```
 
 ## Project Links
 
-- [Documentation](https://actionbase.io/)
-- [GitHub](https://github.com/kakao/actionbase)
+- [Documentation](https://actionbase.io/) - `website/` deployed on GitHub Pages
+- [GitHub](https://github.com/kakao/actionbase) - This codebase
 - [Discussions](https://github.com/kakao/actionbase/discussions/)
