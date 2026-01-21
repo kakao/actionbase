@@ -70,14 +70,6 @@ object GraphFixtures {
 
     const val hbaseIndexed = "hbase_indexed"
 
-    const val syncTable = "sync"
-
-    const val asyncTable = "async"
-
-    const val multiEdgeSyncTable = "multi_edge_sync"
-
-    const val multiEdgeAsyncTable = "multi_edge_async"
-
     const val index1 = "permission_created_at_desc"
 
     const val index2 = "created_at_desc"
@@ -102,16 +94,6 @@ object GraphFixtures {
                 Field("createdAt", DataType.LONG, false),
                 Field("permission", DataType.STRING, true),
                 Field("receivedFrom", DataType.STRING, true),
-            ),
-        )
-
-    val multiEdgeSchema =
-        EdgeSchema(
-            VertexField(VertexType.LONG),
-            VertexField(VertexType.LONG),
-            listOf(
-                Field("_id", DataType.LONG, false),
-                Field("createdAt", DataType.LONG, false),
             ),
         )
 
@@ -241,35 +223,6 @@ object GraphFixtures {
             }.verifyComplete()
     }
 
-    private fun performMultiEdgeDDL(
-        graph: Graph,
-        service: String,
-        name: String,
-        storageName: String,
-        mode: MutationMode,
-    ) {
-        val entity =
-            LabelEntity(
-                active = true,
-                name = EntityName(service, name),
-                desc = "$service.$name multi-edge label",
-                type = LabelType.MULTI_EDGE,
-                schema = multiEdgeSchema,
-                dirType = DirectionType.BOTH,
-                storage = storageName,
-                indices = emptyList(),
-                readOnly = true,
-                mode = mode,
-            )
-
-        graph.labelDdl
-            .create(entity.name, entity.toRequest())
-            .test()
-            .assertNext { ddlResult ->
-                ddlResult.status shouldBe DdlStatus.Status.CREATED
-            }.verifyComplete()
-    }
-
     fun create(withTestData: Boolean = true): Graph = create(GraphConfig.Builder(), withTestData)
 
     fun create(
@@ -295,15 +248,8 @@ object GraphFixtures {
             createStorage(graph, hbaseStorage, StorageType.HBASE, mockStorageConf())
 
             performSampleDDLAndDML(graph, serviceName, jdbcHash, LabelType.HASH, jdbcStorage, MutationMode.SYNC)
-
             performSampleDDLAndDML(graph, serviceName, hbaseHash, LabelType.HASH, hbaseStorage, MutationMode.SYNC)
             performSampleDDLAndDML(graph, serviceName, hbaseIndexed, LabelType.INDEXED, datastoreStorage, MutationMode.SYNC)
-
-            performSampleDDLAndDML(graph, serviceName, syncTable, LabelType.INDEXED, datastoreStorage, MutationMode.SYNC)
-            performSampleDDLAndDML(graph, serviceName, asyncTable, LabelType.INDEXED, datastoreStorage, MutationMode.ASYNC)
-
-            performMultiEdgeDDL(graph, serviceName, multiEdgeSyncTable, datastoreStorage, MutationMode.SYNC)
-            performMultiEdgeDDL(graph, serviceName, multiEdgeAsyncTable, datastoreStorage, MutationMode.ASYNC)
         }
         graph.updateAllMetadata().test().verifyComplete()
         return graph
@@ -528,5 +474,4 @@ fun LabelEntity.toRequest(): LabelCreateRequest =
         dirType = dirType,
         storage = storage,
         indices = indices,
-        readOnly = readOnly,
     )

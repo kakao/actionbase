@@ -3,7 +3,6 @@ package com.kakao.actionbase.v2.engine.v3
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
-import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
@@ -358,8 +357,6 @@ class V3MutationServiceSpec :
         val mapper = jacksonObjectMapper()
 
         fun String.toEdgeBulkMutationRequest(): EdgeBulkMutationRequest = mapper.readValue(this)
-
-        fun String.toMultiEdgeBulkMutationRequest(): MultiEdgeBulkMutationRequest = mapper.readValue(this)
 
         fun String.toEdgeMutationResponse(): EdgeMutationResponse = mapper.readValue(this)
 
