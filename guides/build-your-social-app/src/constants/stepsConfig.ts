@@ -204,35 +204,35 @@ Each edge represents a single interaction: one user follows another.`,
 --type INDEXED \\
 --direction BOTH \\
 --schema '{
-        "src": {
+    "src": {
         "type": "STRING",
         "desc": "userId"
-        },
-        "tgt": {
+    },
+    "tgt": {
         "type": "STRING",
         "desc": "followee Id"
-        },
-        "fields": [
+    },
+    "fields": [
         {
-        "name": "createdAt",
-        "type": "LONG",
-        "desc": "created at",
-        "nullable": false
+          "name": "createdAt",
+          "type": "LONG",
+          "desc": "created at",
+          "nullable": false
         }
-        ]
-        } ' \\
+    ]
+} ' \\
 --indices '[
-        {
+    {
         "name": "created_at_desc",
         "fields": [
         {
-        "name": "createdAt",
-        "order": "DESC"
+            "name": "createdAt",
+            "order": "DESC"
         }
-        ],
-        "desc": "order by createdAt"
-        }
-        ]'
+    ],
+    "desc": "order by createdAt"
+    }
+]'
 `
     },
     navigation: {

@@ -6,7 +6,6 @@ const CliTerminal: React.FC = () => {
   const {
     currentCommand,
     commandHistory,
-    terminalContext,
     isExecuting,
     executeCommand
   } = useDriver();
@@ -102,9 +101,7 @@ const CliTerminal: React.FC = () => {
     });
   }, []);
 
-  const formatPrompt = (database?: string) => {
-    return database ? `actionbase(${database})` : 'actionbase';
-  };
+  const formatPrompt = () => 'actionbase';
 
   const showDefaultPrompt = !currentCommand;
 
@@ -119,7 +116,7 @@ const CliTerminal: React.FC = () => {
 
             return (
               <div key={index}>
-                <div className="command-block" style={shouldApplyPadding ? {paddingBottom: "20px"} : undefined}>
+                <div className="command-block">
                   <div className="command-line">
                     <div className="command-line-inner">
                       <div className="command-content-wrapper">
@@ -175,11 +172,11 @@ const CliTerminal: React.FC = () => {
 
           {/* Default Prompt */}
           {showDefaultPrompt && (
-            <div className="command-block command-block-prompt" style={{paddingBottom: "20px"}}>
+            <div className="command-block command-block-prompt" style={{paddingBottom: "22.5px"}}>
               <div className="command-line">
                 <div className="command-line-inner">
                   <div className="command-line-item">
-                    <span className="prompt">{formatPrompt(terminalContext.database)}{"> "}</span>
+                    <span className="prompt">{formatPrompt()}{"> "}</span>
                     <span className="cursor">_</span>
                   </div>
                 </div>
