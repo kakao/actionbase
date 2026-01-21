@@ -134,7 +134,7 @@ zipdoki liked j4rami's post.
 <div style="position: relative; white-space: normal">
   <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10"></div>
   <div class="post-detail-container" style="padding: 0">
-    <div class="post-detail-header" style="padding: 0 0 4px 0">
+    <div class="post-detail-header" style="padding: 0 0 12px 0">
       <div class="author-info" style="cursor: default; gap: 12px; display: flex; align-items: center">
         <div class="author-avatar" style="background: linear-gradient(135deg, rgb(242 209 168) 0%, rgb(223 134 44) 100%); width: 32px; height: 32px">
           <img src="https://avatars.githubusercontent.com/u/382000?v=4" alt="j4rami" />
