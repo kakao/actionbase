@@ -19,15 +19,15 @@ Fine-tune for Actionbase tech stack:
 
 ## Review Checklist
 
-- [ ] Relevant to Actionbase
-- [ ] Correct tech stack
-- [ ] No Node.js/React leftovers
-- [ ] English, community tone
+- [x] Relevant to Actionbase
+- [x] Correct tech stack
+- [x] No Node.js/React leftovers
+- [x] English, community tone
 
 ## Files
 
 ### Root
-- [ ] `CLAUDE.md`
+- [x] `CLAUDE.md` - REWRITE (Actionbase context, Backend Language policy)
 
 ### Agents (9)
 - [ ] `planner.md`
@@ -53,14 +53,14 @@ Fine-tune for Actionbase tech stack:
 - [ ] `e2e.md`
 
 ### Rules (8)
-- [ ] `security.md`
-- [ ] `testing.md`
-- [ ] `coding-style.md`
-- [ ] `git-workflow.md`
-- [ ] `performance.md`
-- [ ] `agents.md`
-- [ ] `patterns.md`
-- [ ] `hooks.md`
+- [x] `security.md` - EDIT (generalized HBase to Storage)
+- [x] `testing.md` - EDIT (Kotest/JUnit5, reference CLAUDE.md)
+- [x] `coding-style.md` - REWRITE (Kotlin/Java/Go patterns from codebase)
+- [ ] `git-workflow.md` - EDIT (add scope, reference CLAUDE.md)
+- [ ] `performance.md` - EDIT (generalize HBase/Kafka to Storage/Messaging)
+- [x] `agents.md` - KEEP
+- [ ] `patterns.md` - EDIT (generalize, reference CLAUDE.md)
+- [x] `hooks.md` - KEEP
 
 ### Skills (4)
 - [ ] `coding-standards.md`
@@ -79,9 +79,9 @@ Fine-tune for Actionbase tech stack:
 
 | Category | Done | Total |
 |----------|------|-------|
-| Root     | 0    | 1     |
+| Root     | 1    | 1     |
 | Agents   | 0    | 9     |
 | Commands | 0    | 10    |
-| Rules    | 0    | 8     |
+| Rules    | 5    | 8     |
 | Skills   | 0    | 4     |
-| **Total**| 0    | 32    |
+| **Total**| 6    | 32    |
