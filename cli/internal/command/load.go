@@ -387,6 +387,12 @@ func (l *Load) loadPreset(filename, refs string) *model.Response {
 	}
 
 	cleanedFilename := filepath.Clean(filename) + ".preset.yaml"
+	downloadPath := filepath.Join("build", cleanedFilename)
+
+	// Ensure build directory exists
+	if err := os.MkdirAll("build", 0755); err != nil {
+		return model.Fail(fmt.Sprintf("Failed to create build directory: %s", err.Error()))
+	}
 
 	var url string
 	if refs != "" {
@@ -395,12 +401,12 @@ func (l *Load) loadPreset(filename, refs string) *model.Response {
 		url = "https://github.com/kakao/actionbase/releases/download/examples/" + cleanedFilename
 	}
 
-	ok := util.Download(cleanedFilename, url)
+	ok := util.Download(downloadPath, url)
 	if !ok {
 		return model.Fail("Failed to download preset file")
 	}
 
-	return l.loadFile(cleanedFilename)
+	return l.loadFile(downloadPath)
 }
 
 func (l *Load) GetDescription() string {
