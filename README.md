@@ -90,9 +90,9 @@ If a single database can handle your workload, that's the better choice.
 Actionbase writes to HBase for storage and emits a WAL to Kafka for recovery, replay, and downstream pipelines. HBase provides strong durability and horizontal scalability.
 
 ```
-Client ──> Actionbase ──> HBase (Storage)
+Client ──> Actionbase ──> HBase (Storage for user interactions)
                │
-               ├──> JDBC (Metastore, to be consolidated)
+               ├──> JDBC (Metastore, to be consolidated to HBase)
                │
                └──> Kafka (WAL/CDC) ──> Downstream Pipelines
 ```
