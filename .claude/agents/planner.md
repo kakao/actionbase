@@ -21,8 +21,9 @@ You are an expert planning specialist focused on creating comprehensive, actiona
 - **Core/Engine/Server**: Kotlin/Java with Spring WebFlux (reactive)
 - **CLI**: Go 1.21+
 - **Build System**: Gradle 8+ (Kotlin DSL)
-- **Storage**: HBase (data), MySQL (metastore)
-- **Messaging**: Kafka (WAL/CDC)
+- **Storage**: Abstracted (currently HBase)
+- **Metastore**: Abstracted (currently MySQL)
+- **Messaging**: Abstracted (currently Kafka)
 - **Documentation**: Astro/Starlight
 
 ## Planning Process
@@ -121,8 +122,8 @@ Create detailed steps with:
 - Encoding/decoding
 
 **Engine Module (`engine/`):**
-- Storage bindings (HBase)
-- Messaging bindings (Kafka)
+- Storage bindings
+- Messaging bindings
 
 **Server Module (`server/`):**
 - REST API endpoints (Spring WebFlux)

@@ -206,7 +206,7 @@ description: Overview of Actionbase architecture
 ```
 +----------------+     +----------------+     +----------------+
 |   Clients      | --> |   Server       | --> |   Engine       |
-| (REST/CLI)     |     | (Spring WebFlux)|    | (HBase/Kafka)  |
+| (REST/CLI)     |     | (Spring WebFlux)|    | (Storage/Msg)  |
 +----------------+     +----------------+     +----------------+
 ```
 
@@ -218,8 +218,8 @@ description: Overview of Actionbase architecture
 - Encoding/decoding
 
 ### Engine Module
-- HBase bindings
-- Kafka bindings
+- Storage bindings
+- Messaging bindings
 
 ### Server Module
 - REST API (Spring WebFlux)

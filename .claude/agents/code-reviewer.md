@@ -18,8 +18,8 @@ When invoked:
 - **Go**: CLI module
 - **Gradle**: Build system
 - **Spring WebFlux**: Reactive REST API
-- **HBase**: Data storage
-- **Kafka**: Messaging
+- **Storage**: Abstracted (currently HBase)
+- **Messaging**: Abstracted (currently Kafka)
 
 Review checklist:
 - Code is simple and readable
@@ -44,12 +44,12 @@ Include specific examples of how to fix issues.
 
 - Hardcoded credentials (API keys, passwords, tokens)
 - SQL injection risks (string concatenation in queries)
-- HBase injection risks (unvalidated row keys)
+- Storage injection risks (unvalidated keys)
 - Missing input validation
 - Insecure dependencies (outdated, vulnerable)
 - Path traversal risks (user-controlled file paths)
 - Authentication bypasses
-- Kafka message tampering risks
+- Message tampering risks
 
 ## Code Quality - Kotlin/Java (HIGH)
 
@@ -75,7 +75,7 @@ Include specific examples of how to fix issues.
 ## Performance (MEDIUM)
 
 - Inefficient algorithms (O(n^2) when O(n log n) possible)
-- Missing pagination in HBase scans
+- Missing pagination in storage scans
 - Unbounded queries
 - N+1 query patterns
 - Missing caching
@@ -201,9 +201,9 @@ userService.findById(id)
 ## Project-Specific Guidelines
 
 - Follow MANY SMALL FILES principle (200-400 lines typical)
-- Verify HBase row key design is efficient
-- Check Kafka message serialization
+- Verify storage key design is efficient
+- Check message serialization
 - Validate Spring WebFlux reactive patterns
 - Ensure CLI commands have proper help text
 
-Customize based on your project's `CLAUDE.md` or skill files.
+See `CLAUDE.md` for project-specific patterns.

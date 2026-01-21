@@ -22,7 +22,7 @@ You are an expert end-to-end testing specialist focused on API integration testi
 **Server (REST API):**
 - Spring WebFlux
 - JUnit 5 + WebTestClient
-- TestContainers for HBase/Kafka
+- TestContainers for external dependencies
 
 **CLI (Go):**
 - Go testing

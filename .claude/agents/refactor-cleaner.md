@@ -164,8 +164,8 @@ dependencies {
 ## Actionbase-Specific Rules
 
 **CRITICAL - NEVER REMOVE:**
-- HBase client code
-- Kafka producer/consumer code
+- Storage client code
+- Messaging producer/consumer code
 - Core model classes (Mutation, Query, Schema)
 - REST API endpoints
 - CLI command handlers

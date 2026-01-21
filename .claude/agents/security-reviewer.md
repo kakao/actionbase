@@ -53,8 +53,8 @@ a) Run automated security tools
 
 b) Review high-risk areas
    - REST API endpoints (server module)
-   - HBase query construction
-   - Kafka message handling
+   - Storage query construction
+   - Message handling
    - CLI input parsing
 ```
 
@@ -62,9 +62,9 @@ b) Review high-risk areas
 
 For each category, check:
 
-1. **Injection (HBase, Command)**
-   - Are HBase queries parameterized?
-   - Is user input sanitized before row key construction?
+1. **Injection (Storage, Command)**
+   - Are storage queries parameterized?
+   - Is user input sanitized before key construction?
    - Are shell commands avoided or properly escaped?
 
 2. **Broken Authentication**
@@ -127,14 +127,14 @@ if apiKey == "" {
 }
 ```
 
-### 2. HBase Injection (CRITICAL)
+### 2. Storage Injection (CRITICAL)
 
 ```kotlin
-// CRITICAL: User input directly in row key
-val rowKey = "user:$userId:$action"  // BAD if userId is user input
+// CRITICAL: User input directly in key
+val key = "user:$userId:$action"  // BAD if userId is user input
 
 // CORRECT: Validate and sanitize
-fun buildRowKey(userId: String, action: String): String {
+fun buildKey(userId: String, action: String): String {
     require(userId.matches(Regex("^[a-zA-Z0-9]+$"))) { "Invalid userId" }
     require(action in validActions) { "Invalid action" }
     return "user:$userId:$action"
@@ -193,16 +193,16 @@ fun getUser(@PathVariable id: String, auth: Authentication): Mono<User> {
 **CRITICAL - Production System:**
 
 ```
-HBase Security:
-- [ ] Row key construction validates input
-- [ ] Column family access is controlled
+Storage Security:
+- [ ] Key construction validates input
+- [ ] Access is controlled
 - [ ] Scans are bounded (no full table scans)
 - [ ] Connection credentials are secure
 
-Kafka Security:
+Messaging Security:
 - [ ] Message serialization is safe
-- [ ] Consumer group access is controlled
-- [ ] Topic permissions are enforced
+- [ ] Consumer access is controlled
+- [ ] Topic/channel permissions are enforced
 - [ ] TLS is enabled for connections
 
 REST API Security:
@@ -258,8 +258,8 @@ CLI Security:
 
 - [ ] No hardcoded secrets
 - [ ] All inputs validated
-- [ ] HBase queries are safe
-- [ ] Kafka messages are validated
+- [ ] Storage queries are safe
+- [ ] Messages are validated
 - [ ] Authentication required
 - [ ] Authorization verified
 - [ ] Rate limiting enabled
@@ -274,7 +274,7 @@ CLI Security:
 - New API endpoints added
 - Authentication/authorization code changed
 - User input handling added
-- HBase/Kafka queries modified
+- Storage/Messaging queries modified
 - Dependencies updated
 
 **IMMEDIATELY review when:**
