@@ -133,6 +133,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const [commandHistory, setCommandHistory] = useState<CommandHistory[]>(getStoredCommandHistory);
   const [terminalContext, setTerminalContext] = useState<TerminalContext>(getStoredTerminalContext);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [showRestartNotice, setShowRestartNotice] = useState(false);
 
   const driverObj = useRef<Driver | null>(null);
   const showToastRef = useRef(showToast);
@@ -243,10 +244,13 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         setTerminalContext({database: stepConfig.command.context.database});
       }
 
+      if (stepConfig?.command?.reload) {
+        window.dispatchEvent(new CustomEvent('reload'));
+      }
+
       // Clear current command
       setCurrentCommand(null);
 
-      // Auto-advance to next step
       if (driverObj.current) {
         const activeStep = driverObj.current.getActiveStep();
         if (activeStep?.popover?.onNextClick) {
@@ -272,7 +276,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     // Validate for NEXT
     if (type === STEP.NEXT) {
       if (!await isStepValid(currentIndex)) {
-        showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION);
+        showToastRef.current("Please complete the current step before proceeding.", 'warning', TOAST_DURATION);
         return;
       }
     }
@@ -287,7 +291,10 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
 
     const targetIndex = type === STEP.NEXT ? currentIndex + 1 : currentIndex - 1;
 
-    // Clear current command if moving away without executing
+    if (currentIndex === 0 && type === STEP.NEXT) {
+      setShowRestartNotice(false);
+    }
+
     if (currentCommand) {
       clearCurrentCommand(true);
     }
@@ -345,14 +352,11 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       setCurrentCommand(null);
       setCommandHistory([]);
       setTerminalContext({});
+      setShowRestartNotice(true);
 
       if (driverObj.current) {
         driverObj.current.destroy();
-        setTimeout(() => {
-          if (driverObj.current) {
-            driverObj.current.drive(0);
-          }
-        }, 100);
+        driverObj.current = null;
       }
     } catch (error) {
       console.error('Failed to reset step:', error);
@@ -365,9 +369,19 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         ? `<span class="driver-popover-title-number">${step.titleNumber}</span> ${step.title || ''}`
         : step.title;
 
+      let description = step.description;
+
+      if (step.index === 0 && showRestartNotice) {
+        description += `
+
+<div style="margin-top: 12px; padding: 10px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; font-size: 13px; display: flex; align-items: center;">
+<span><b>Note:</b> Please restart the Actionbase server before proceeding.</span>
+</div>`;
+      }
+
       const popover: DriveStep['popover'] = {
         title,
-        description: step.description,
+        description,
         side: step.popover?.side || 'bottom',
         align: step.popover?.align || 'start',
       };
@@ -395,7 +409,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
 
       return driverStep;
     });
-  }, [createNavigationHandler]);
+  }, [createNavigationHandler, showRestartNotice]);
 
   useEffect(() => {
     if (!driverObj.current) {
@@ -407,7 +421,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         overlayColor: 'rgba(0, 0, 0, 0.4)',
         prevBtnText: BUTTON_TEXT.PREV,
         nextBtnText: BUTTON_TEXT.NEXT,
-        doneBtnText: 'Bye',
+        doneBtnText: 'Explore',
         allowKeyboardControl: true,
         overlayClickBehavior: () => {
           window.dispatchEvent(new CustomEvent('close-toast'));
@@ -490,6 +504,59 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       };
     }
   }, [generateDriverSteps, isStepValid, setCommandForStep, clearCurrentCommand]);
+
+  useEffect(() => {
+    if (showRestartNotice && driverObj.current) {
+      navigate('/');
+      setTimeout(() => {
+        if (driverObj.current) {
+          driverObj.current.drive(0);
+        }
+      }, 100);
+    }
+  }, [showRestartNotice, navigate]);
+
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return;
+      if (!driverObj.current) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const runButton = document.getElementById('run-command-btn');
+      if (runButton && currentCommandRef.current?.content && !isExecuting) {
+        runButton.click();
+        return;
+      }
+
+      const index = driverObj.current.getActiveIndex();
+      if (index === undefined) return;
+
+      const activeStep = driverObj.current.getActiveStep();
+      if (activeStep?.popover?.onNextClick) {
+        const element = activeStep.element as HTMLElement;
+        activeStep.popover.onNextClick(element || undefined, activeStep, {
+          config: driverObj.current.getConfig(),
+          state: driverObj.current.getState(),
+          driver: driverObj.current
+        });
+      } else {
+        if (!await isStepValid(index)) {
+          showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION);
+          return;
+        }
+        if (currentCommandRef.current) {
+          clearCurrentCommand(true);
+        }
+        setStepIndex(index + 1);
+        driverObj.current.moveTo(index + 1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isExecuting, isStepValid, clearCurrentCommand, currentCommand]);
 
   const contextValue = useMemo(() => ({
     stepIndex,

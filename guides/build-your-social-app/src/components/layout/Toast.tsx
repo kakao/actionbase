@@ -1,13 +1,52 @@
 import React, {useState} from 'react';
 import '../../styles/toast.css';
 
+type ToastType = 'success' | 'error' | 'info' | 'warning';
+
 interface ToastProps {
   message: string;
+  type?: ToastType;
   duration?: number;
   onClose: () => void;
 }
 
-export const Toast: React.FC<ToastProps> = ({message, duration = 500, onClose}) => {
+const toastIcons: Record<ToastType, React.ReactNode> = {
+  success: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6L9 17l-5-5"/>
+    </svg>
+  ),
+  error: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="15" y1="9" x2="9" y2="15"/>
+      <line x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+  ),
+  info: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="16" x2="12" y2="12"/>
+      <line x1="12" y1="8" x2="12.01" y2="8"/>
+    </svg>
+  ),
+  warning: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  ),
+};
+
+const toastLabels: Record<ToastType, string> = {
+  success: 'Success',
+  error: 'Error',
+  info: 'Info',
+  warning: 'Warning',
+};
+
+export const Toast: React.FC<ToastProps> = ({message, type = 'info', duration = 500, onClose}) => {
   const [isClosing, setIsClosing] = useState(false);
   const toastRef = React.useRef<HTMLDivElement>(null);
 
@@ -23,17 +62,13 @@ export const Toast: React.FC<ToastProps> = ({message, duration = 500, onClose}) 
   return (
     <div
       ref={toastRef}
-      className={`toast ${isClosing ? 'toast-closing' : ''}`}
+      className={`toast toast-${type} ${isClosing ? 'toast-closing' : ''}`}
     >
+      <div className="toast-icon">
+        {toastIcons[type]}
+      </div>
       <div className="toast-content">
-        <div className="note-header">
-          <span className="note-icon">
-            <svg viewBox="0 0 14 16">
-              <path fillRule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path>
-            </svg>
-          </span>
-          <span className="note-text">Note</span>
-        </div>
+        <div className="toast-label">{toastLabels[type]}</div>
         <div className="toast-message">{message}</div>
       </div>
     </div>
@@ -41,7 +76,7 @@ export const Toast: React.FC<ToastProps> = ({message, duration = 500, onClose}) 
 };
 
 interface ToastContainerProps {
-  toasts: Array<{ id: string; message: string; duration?: number }>;
+  toasts: Array<{ id: string; message: string; type?: ToastType; duration?: number }>;
   removeToast: (id: string) => void;
 }
 
@@ -52,6 +87,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({toasts, removeToa
         <Toast
           key={toast.id}
           message={toast.message}
+          type={toast.type}
           duration={toast.duration}
           onClose={() => removeToast(toast.id)}
         />

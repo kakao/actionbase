@@ -2,8 +2,10 @@ import React, {createContext, ReactNode, useCallback, useContext, useEffect, use
 import {flushSync} from 'react-dom';
 import {ToastContainer} from "../components/layout/Toast";
 
+type ToastType = 'success' | 'error' | 'info' | 'warning';
+
 interface ToastContextType {
-  showToast: (message: string, duration?: number) => void;
+  showToast: (message: string, type?: ToastType, duration?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextType | null>(null);
@@ -19,16 +21,17 @@ export const useToast = () => {
 interface Toast {
   id: string;
   message: string;
+  type?: ToastType;
   duration?: number;
 }
 
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({children}) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, duration?: number) => {
+  const showToast = useCallback((message: string, type: ToastType = 'info', duration?: number) => {
     const id = Math.random().toString(36).substring(2, 9);
     flushSync(() => {
-      const newToasts = [{id, message, duration}];
+      const newToasts = [{id, message, type, duration}];
       setToasts(newToasts);
     });
   }, []);

@@ -12,6 +12,7 @@ export interface CommandConfig {
   context?: {
     database?: string;
   };
+  reload?: boolean;
 }
 
 export interface PopoverConfig {
@@ -40,6 +41,7 @@ export interface BreadCrumbStep {
   stepIndex: number;
   title?: string;
   isActive?: boolean;
+  hasActiveSubStep?: boolean;
   isCompleted?: boolean;
   subSteps?: BreadCrumbStep[];
 }
@@ -101,26 +103,25 @@ export const stepsConfig: StepConfig[] = [
     index: 0,
     titleNumber: '1',
     title: "Welcome",
-    description: `Welcome to the Actionbase hands-on guide.
+    description: `Welcome to the Actionbase hands-on guide!
 
-In this guide, you'll work with a small but realistic social media dataset and build interaction features step by step.
-Each step introduces a common social pattern and shows how Actionbase supports it through simple data operations.`,
+You'll build social features like <b>follows</b> and <b>likes</b> using a sample dataset. Each step walks you through the commands and shows results in real time.
+
+<b>Tip:</b> Press <b>Enter</b> to continue to the next step.`,
     popover: {side: 'over', align: 'center', nextBtnText: 'start', showButtons: ['next', 'close']},
   },
   // Step 1
   {
     index: 1,
-    description: `<img class="profile-image" src="${me.avatar}" /><p class="profile-name">zipdoki</p>Let's assume you are zipdoki.`,
+    description: `<img class="profile-image" src="${me.avatar}" /><p class="profile-name">@zipdoki</p>You are <b>@zipdoki</b> for this guide.`,
     popover: {side: 'over', align: 'center'},
   },
   // Step 2
   {
     index: 2,
     titleNumber: '2',
-    title: "Prepare the Environment",
-    description: `Before we begin, let's prepare the environment for this guide.
-
-To help you focus on interaction patterns rather than setup details, we provide a preset dataset and a ready-to-use database context.`,
+    title: "Set Up",
+    description: `First, let's load <b>sample data</b> so you can focus on building features instead of setup.`,
     navigation: {
       next: {waitFor: ["[id='run-command-btn']"]},
     },
@@ -129,10 +130,8 @@ To help you focus on interaction patterns rather than setup details, we provide 
   // Step 3
   {
     index: 3,
-    title: "Load preset data",
-    description: `Load the prepared data for this hands-on.
-
-This step creates a database and tables with sample data commonly used in social media applications.`,
+    title: "Load Sample Data",
+    description: `Click <b>Run</b> to create a database with users, posts, and likes.`,
     element: "[id='run-command-btn']",
     command: {content: `load preset build-your-social-app`},
     navigation: {
@@ -145,9 +144,8 @@ This step creates a database and tables with sample data commonly used in social
   // Step 4
   {
     index: 4,
-    title: "Set Database Context",
-    description: `Set the current database context to <pre>\`social\`</pre>.
-All subsequent steps in this guide assume this context.`,
+    title: "Select Database",
+    description: `Switch to the <pre>\`social\`</pre> database for the rest of this guide.`,
     element: "[id='run-command-btn']",
     command: {content: 'use database social', context: {database: 'social'}},
     navigation: {
@@ -161,11 +159,13 @@ All subsequent steps in this guide assume this context.`,
   {
     index: 5,
     titleNumber: '3',
-    title: "Review the Prepared Data",
-    description: `Before adding new interactions, take a moment to review the prepared data.
+    title: "Explore the Data",
+    description: `In the previous step, we created these tables:
 
-The dataset includes users and posts represented as nodes, along with existing interactions such as likes.
-Rather than focusing on schema definitions, this guide emphasizes how Actionbase builds queryable relationships directly from interaction data.`,
+<b>user_posts</b> - who posted what
+<b>user_likes</b> - who liked which post
+
+The users are our maintainers as dummy data. Browse around before we add new interactions.`,
     element: "[id='search-results-list']",
     navigation: {
       prev: {to: '/search', waitFor: ["[id='cli-commands']", "[id='run-command-btn']"]},
@@ -178,9 +178,7 @@ Rather than focusing on schema definitions, this guide emphasizes how Actionbase
     index: 6,
     titleNumber: '4',
     title: "Follows",
-    description: `In this step, you'll walk through an interactive flow to create and query follow relationships between users.
-
-Follow relationships are a core feature in most social applications and serve as a good introduction to Actionbase's interaction model.`,
+    description: `Let's build a <b>follow</b> feature. You'll create a table, add a relationship, and query it.`,
     navigation: {
       next: {waitFor: ["[id='run-command-btn']"]},
     },
@@ -190,10 +188,8 @@ Follow relationships are a core feature in most social applications and serve as
   // Step 7
   {
     index: 7,
-    title: "Create the \`user_follows\` Table",
-    description: `Create a <pre>\`user_follows\`</pre> table to store follow interaction between users.
-
-Each edge represents a single interaction: one user follows another.`,
+    title: "Create Follows Table",
+    description: `Create a <pre>\`user_follows\`</pre> table. Each row stores one follow: who follows whom.`,
     element: "[id='run-command-btn']",
     command: {
       content: `create table \\
@@ -245,13 +241,10 @@ Each edge represents a single interaction: one user follows another.`,
   // Step 8
   {
     index: 8,
-    title: "Make zipdoki Follow j4rami",
-    description: `Write an interaction where zipdoki follows j4rami.
+    title: "Follow a User",
+    description: `Make <b>@zipdoki</b> follow <b>@j4rami</b>. This creates a connection between two users.
 
-This single mutation adds an edge  and allows Actionbase to derive multiple query paths from it.
-
-[Result]
-zipdoki is now following j4rami.
+<b>Result:</b> @zipdoki is now following @j4rami.
 
 <div style="position: relative; white-space: normal">
   <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10"></div>
@@ -296,7 +289,8 @@ zipdoki is now following j4rami.
 --properties '{
     "createdAt": __CURRENT_TIMESTAMP__
 }'
-`
+`,
+      reload: true
     },
     navigation: {
       next: {waitFor: ["[id='btn-profile-following']", "[id='run-command-btn']"]},
@@ -308,10 +302,8 @@ zipdoki is now following j4rami.
   // Step 9
   {
     index: 9,
-    title: "Get Follow Relationship",
-    description: `Use a Get query to verify that the follow interaction exists.
-
-This query checks for the presence of a specific edge between two user nodes.`,
+    title: "Check Follow Status",
+    description: `Verify the follow exists by querying the relationship between two users.`,
     element: "[id='run-command-btn']",
     command: {content: 'get user_follows --source zipdoki --target j4rami'},
     navigation: {
@@ -324,10 +316,8 @@ This query checks for the presence of a specific edge between two user nodes.`,
   // Step 10
   {
     index: 10,
-    title: "Check Follower Count",
-    description: `Check the follower count for j4rami.
-
-Actionbase derives this value directly—no explicit counters are defined.`,
+    title: "Count Followers",
+    description: `Get <b>@j4rami</b>'s follower count. Actionbase calculates this <b>automatically</b> from the data.`,
     element: "[id='run-command-btn']",
     command: {content: 'count user_follows --start j4rami --direction IN'},
     navigation: {
@@ -340,13 +330,10 @@ Actionbase derives this value directly—no explicit counters are defined.`,
   // Step 11
   {
     index: 11,
-    title: "Scan Followers",
-    description: `Traverse the interaction graph to list users who are following j4rami.
+    title: "List Followers",
+    description: `Get the list of users following <b>@j4rami</b>.
 
-This demonstrates how Actionbase supports common traversal patterns over interaction edges.
-
-[Result]
-Merlin has one follower.
+<b>Result:</b> @j4rami has one follower.
 
 <div style="position: relative; white-space: normal">
   <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10"></div>
@@ -380,9 +367,7 @@ Merlin has one follower.
     index: 12,
     titleNumber: '5',
     title: "Likes",
-    description: `In this step, you'll work with like interactions.
-
-Likes are modeled as interactions between a user node and a post node, following the same graph-based principles as follows.`,
+    description: `Now let's add <b>likes</b>. Same pattern as follows: a user interacts with a post.`,
     navigation: {
       next: {to: '/post/1', waitFor: ["[id='btn-likes']", "[id='run-command-btn']"]},
       prev: {waitFor: ["[id='run-command-btn']"]},
@@ -393,11 +378,10 @@ Likes are modeled as interactions between a user node and a post node, following
   // Step 13
   {
     index: 13,
-    title: "zipdoki Likes j4rami's Post",
-    description: `Write a like interaction between zipdoki and one of j4rami's posts.
+    title: "Like a Post",
+    description: `Make <b>@zipdoki</b> like <b>@j4rami</b>'s post.
 
-[Result]
-zipdoki liked j4rami's post.
+<b>Result:</b> @zipdoki liked the post.
 
 <div style="position: relative; white-space: normal">
   <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10"></div>
@@ -464,7 +448,8 @@ zipdoki liked j4rami's post.
 --version __CURRENT_TIMESTAMP__ \\
 --properties '{
     "createdAt": __CURRENT_TIMESTAMP__
-}'`
+}'`,
+      reload: true
     },
     navigation: {
       next: {waitFor: ["[id='run-command-btn']"]},
@@ -476,8 +461,8 @@ zipdoki liked j4rami's post.
   // Step 14
   {
     index: 14,
-    title: "Get Likes",
-    description: `Use a Get query to confirm that the like interaction exists between the user and the post.`,
+    title: "Check Like Status",
+    description: `Verify that <b>@zipdoki</b>'s like was recorded.`,
     element: "[id='run-command-btn']",
     command: {content: 'get user_likes --source zipdoki --target 1'},
     navigation: {
@@ -490,8 +475,10 @@ zipdoki liked j4rami's post.
   // Step 15
   {
     index: 15,
-    title: "Explore Further",
-    description: `Just like follows, you can check the count or scan for likes. Give it a try later!`,
+    title: "And More",
+    description: `Just like follows, you can <b>count</b> likes and <b>list</b> who liked a post.
+
+Same pattern, same simplicity.`,
     navigation: {
       next: {to: '/'},
       prev: {waitFor: ["[id='run-command-btn']"]},
@@ -502,12 +489,11 @@ zipdoki liked j4rami's post.
   // Step 16
   {
     index: 16,
+    titleNumber: '6',
     title: "Feed",
-    description: `As with follows, you can also:
+    description: `Your <b>feed</b> now shows posts from users you follow with real like counts.
 
-Query derived like counts
-Traverse users who liked a post
-These patterns are supported directly by the interaction graph.`,
+With just <b>follows</b> and <b>likes</b>, you can build a feed. This is the core pattern behind most social apps.`,
     element: "[class='mobile-frame']",
     navigation: {
       prev: {to: '/post/1'},
@@ -517,24 +503,13 @@ These patterns are supported directly by the interaction graph.`,
   // Step 17
   {
     index: 17,
-    titleNumber: '6',
-    title: "End",
-    description: `At this point, you've created only follow and like interactions.
-
-Even with this limited set of interactions, you can already construct feed-style queries by traversing the interaction graph.
-This reflects a common social application pattern and aligns naturally with Actionbase's graph-based design.`,
-    popover: {side: 'bottom', align: 'start'},
-  },
-  // Step 18
-  {
-    index: 18,
     titleNumber: '7',
-    title: "Goodbye!",
-    description: `The application is now open for further exploration.
+    title: "All Done!",
+    description: `You just built a <b>feed</b> with <b>follows</b> and <b>likes</b> — all powered by Actionbase.
 
-Follow and like features are available, and additional features can be built by extending the same interaction patterns introduced in this guide.
+We built this guide to help you get to know Actionbase. We did our best, but it may fall short in places. We appreciate your understanding — and your feedback means a lot.
 
-Thank you for trying Actionbase.`,
+<a href="https://github.com/kakao/actionbase/discussions/94" target="_blank">Share your thoughts</a>`,
     popover: {side: 'over', align: 'center'},
   },
 ];
