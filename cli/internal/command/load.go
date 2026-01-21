@@ -387,11 +387,11 @@ func (l *Load) loadPreset(filename, refs string) *model.Response {
 	}
 
 	cleanedFilename := filepath.Clean(filename) + ".preset.yaml"
-	downloadPath := filepath.Join("build", cleanedFilename)
+	downloadPath := filepath.Join(os.TempDir(), "actionbase-presets", cleanedFilename)
 
-	// Ensure build directory exists
-	if err := os.MkdirAll("build", 0755); err != nil {
-		return model.Fail(fmt.Sprintf("Failed to create build directory: %s", err.Error()))
+	// Ensure temp directory exists
+	if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
+		return model.Fail(fmt.Sprintf("Failed to create temp directory: %s", err.Error()))
 	}
 
 	var url string
@@ -406,7 +406,49 @@ func (l *Load) loadPreset(filename, refs string) *model.Response {
 		return model.Fail("Failed to download preset file")
 	}
 
-	return l.loadFile(downloadPath)
+	return l.loadPresetFile(downloadPath)
+}
+
+func (l *Load) loadPresetFile(absPath string) *model.Response {
+	data, err := os.ReadFile(absPath)
+	if err != nil {
+		return model.Fail(err.Error())
+	}
+
+	var commands []YAMLCommand
+	err = yaml.Unmarshal(data, &commands)
+	if err != nil {
+		return model.Fail(fmt.Sprintf("Failed to parse YAML: %s", err.Error()))
+	}
+
+	var results []string
+	for _, cmd := range commands {
+		if cmd.Command == "" {
+			continue
+		}
+
+		if cmd.Description != "" {
+			decoratedDescription := fmt.Sprintf("/* %s */", cmd.Description)
+			results = append(results, decoratedDescription)
+			util.Print("\033[90m%s\033[0m\n", decoratedDescription)
+		}
+
+		chunk := l.normalize(cmd.Command)
+		if len(chunk) == 0 {
+			continue
+		}
+
+		result := l.doLoad(chunk)
+		if !result.IsSuccess {
+			resultMessage := "Failed to execute command. Please check your command syntax or system log"
+			util.Println(resultMessage)
+			results = append(results, resultMessage)
+			return model.FailWithNoOut(strings.Join(results, "\n"))
+		}
+		results = append(results, *result.Result)
+	}
+
+	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
 }
 
 func (l *Load) GetDescription() string {
