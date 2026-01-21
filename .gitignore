@@ -65,10 +65,12 @@ pnpm-debug.log*
 # AI Coding Assistants (any depth)
 
 ## Claude Code
-# Currently ignored to allow testing from experiment branches (#91)
-# To test: git checkout exp/claude-code-setup -- .claude/ CLAUDE.md
+# To apply: git fetch origin && git checkout origin/exp/claude-code-setup -- .claude/ CLAUDE.md
 CLAUDE.md
 .claude/
+# Negation for exp/claude-code-setup branch (allows git add without -f)
+!CLAUDE.md
+!.claude/
 
 ## OpenAI Codex
 **/.codex/
