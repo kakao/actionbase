@@ -1,7 +1,6 @@
 const ANALYTICS_STORAGE_KEY = 'analytics-choice';
 const UMAMI_SCRIPT_SRC = 'https://cloud.umami.is/script.js';
-// TODO: Replace with actual Umami website ID
-const UMAMI_WEBSITE_ID = 'YOUR_WEBSITE_ID';
+const UMAMI_WEBSITE_ID = 'ab2dbebd-9f39-4ad5-97c0-155a3b37593f';
 
 export type AnalyticsChoice = 'yes' | 'no' | null;
 
