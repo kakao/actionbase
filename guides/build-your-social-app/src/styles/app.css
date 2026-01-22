@@ -356,4 +356,32 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   margin-top: 4px !important;
 }
 
+.completion-actions {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 0 16px 0 !important;
+}
+
+.completion-actions li {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 10px 0 !important;
+  font-size: 14px !important;
+  color: #374151 !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.completion-actions li:last-child {
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+}
+
+.completion-actions li svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+  color: var(--color-blue) !important;
+}
+
 
