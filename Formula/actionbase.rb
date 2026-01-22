@@ -19,6 +19,6 @@ class Actionbase < Formula
   end
 
   test do
-    system "#{bin}/actionbase", "--version"
+    system bin/"actionbase", "--version"
   end
 end
