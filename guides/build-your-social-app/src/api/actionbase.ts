@@ -59,7 +59,8 @@ export function count(
   database: string,
   table: string,
   start: any,
-  direction: string
+  direction: string,
+  enableLogging: boolean = true
 ) {
   return apiFetch<DataCountPayload>(
     `/graph/v3/databases/${database}/tables/${table}/edges/counts?start=${start}&direction=${direction}`,
@@ -67,7 +68,8 @@ export function count(
       headers: {
         'Content-Type': 'application/json'
       }
-    }
+    },
+    enableLogging
   );
 }
 
@@ -95,7 +97,8 @@ export function scan(
   start: any,
   direction: string,
   limit: number | undefined | 25,
-  ranges: string | undefined = undefined
+  ranges: string | undefined = undefined,
+  enableLogging: boolean = true
 ) {
   const urlBuilder: string[] = [];
   urlBuilder.push(`/graph/v3/databases/${database}/tables/${table}/edges/scan/${index}?start=${start}&direction=${direction}&limit=${limit}`);
@@ -110,11 +113,12 @@ export function scan(
       headers: {
         'Content-Type': 'application/json'
       }
-    }
+    },
+    enableLogging
   );
 }
 
-export async function scanUserPosts(postId: string, direction: string = DIRECTION.OUT) {
+export async function scanUserPosts(postId: string, direction: string = DIRECTION.OUT, enableLogging: boolean = true) {
   return scan(
     DATABASE.SOCIAL,
     TABLE.USER_POSTS,
@@ -122,11 +126,12 @@ export async function scanUserPosts(postId: string, direction: string = DIRECTIO
     postId,
     direction,
     DEFAULT_LIMIT,
-    undefined
+    undefined,
+    enableLogging
   );
 }
 
-export async function scanUserFollows(userId: string, direction: string = DIRECTION.OUT) {
+export async function scanUserFollows(userId: string, direction: string = DIRECTION.OUT, enableLogging: boolean = true) {
   return scan(
     DATABASE.SOCIAL,
     TABLE.USER_FOLLOWS,
@@ -134,7 +139,8 @@ export async function scanUserFollows(userId: string, direction: string = DIRECT
     userId,
     direction,
     DEFAULT_LIMIT,
-    undefined
+    undefined,
+    enableLogging
   );
 }
 

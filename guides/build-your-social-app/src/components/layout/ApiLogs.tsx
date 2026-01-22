@@ -55,6 +55,14 @@ const ApiLogs: React.FC = () => {
     return 'status-warning';
   };
 
+  const ACTION_GAP_MS = 500;
+  const shouldShowSeparator = (currentIndex: number) => {
+    if (currentIndex === 0) return false;
+    const current = apiLogs[currentIndex];
+    const prev = apiLogs[currentIndex - 1];
+    return current.timestamp.getTime() - prev.timestamp.getTime() > ACTION_GAP_MS;
+  };
+
   return (
     <div className="api-log-container">
       <div className="api-log-toolbar">
@@ -79,15 +87,18 @@ const ApiLogs: React.FC = () => {
         {apiLogs.length === 0 ? (
           <div className="api-log-empty">Recording network activity...</div>
         ) : (
-          apiLogs.map((log) => {
+          apiLogs.map((log, index) => {
             const isExpanded = expandedPayloads.has(log.id);
             const hasRequest = log.requestBody !== undefined;
             const hasResponse = log.payload !== undefined;
             const hasExpandableContent = hasRequest || hasResponse;
             const activeTab = activeTabs.get(log.id) || (hasRequest ? 'request' : 'response');
+            const showSeparator = shouldShowSeparator(index);
 
             return (
-              <div key={log.id} className={`api-log-row ${isExpanded ? 'expanded' : ''} ${!log.success ? 'error' : ''}`}>
+              <React.Fragment key={log.id}>
+                {showSeparator && <div className="api-log-separator" />}
+                <div className={`api-log-row ${isExpanded ? 'expanded' : ''} ${!log.success ? 'error' : ''}`}>
                 <div
                   className={`api-log-row-main ${hasExpandableContent ? 'clickable' : ''}`}
                   onClick={() => hasExpandableContent && toggleExpandedPayload(log.id, hasRequest)}
@@ -104,7 +115,15 @@ const ApiLogs: React.FC = () => {
                         <path d="M9 18l6-6-6-6"/>
                       </svg>
                     </span>
-                    <span className="api-log-url" title={log.url}>{log.url}</span>
+                    <div className="api-log-url-container">
+                      <span className="api-log-url" title={log.url}>{log.url}</span>
+                      {log.proxiedTo && (
+                        <span className="api-log-proxied" title={`Proxied to: ${log.proxiedTo}`}>
+                          <span className="api-log-proxied-arrow">-&gt;</span>
+                          <span className="api-log-proxied-url">{log.proxiedTo}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="api-log-col-method">
                     <span className={`api-log-method api-log-method-${log.method.toLowerCase()}`}>{log.method}</span>
@@ -150,6 +169,7 @@ const ApiLogs: React.FC = () => {
                   </div>
                 )}
               </div>
+              </React.Fragment>
             );
           })
         )}

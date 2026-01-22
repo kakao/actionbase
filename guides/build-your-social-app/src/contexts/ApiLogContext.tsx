@@ -1,7 +1,7 @@
 import React, {createContext, ReactNode, useCallback, useContext, useRef, useState} from 'react';
-import {getCommandCategory, CommandCategory} from '../utils/command';
+import {getCommandCategory, getProxiedApiPattern, CommandCategory} from '../utils/command';
 
-type ApiType = CommandCategory | 'API';
+type ApiType = CommandCategory;
 
 interface ApiLog {
   id: number;
@@ -13,6 +13,7 @@ interface ApiLog {
   payload?: any;
   requestBody?: any;
   apiType: ApiType;
+  proxiedTo?: string;
 }
 
 interface ApiLogContextProps {
@@ -27,30 +28,43 @@ export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
   const logIdCounterRef = useRef(0);
 
-  const getApiType = (url: string, requestBody?: any): ApiType => {
+  const getApiType = (method: string, url: string, requestBody?: any): ApiType => {
+    // CLI command
     if (url.includes('/api/command') && requestBody?.command) {
       return getCommandCategory(requestBody.command);
     }
+    // REST API
     if (url.includes('/graph/')) {
-      if (url.includes('/mutate')) return 'DML';
-      if (url.includes('/get')) return 'GET';
-      if (url.includes('/scan')) return 'SCAN';
-      if (url.includes('/count')) return 'COUNT';
+      // DDL: create database/table
+      if (url.includes('/graph/v2/service')) return 'DDL';
+      // Query operations
+      if (url.includes('/edges/get')) return 'GET';
+      if (url.includes('/edges/scan')) return 'SCAN';
+      if (url.includes('/edges/count')) return 'COUNT';
+      // DML: mutation (POST to /edges without get/scan/count)
+      if (url.includes('/edges') && method === 'POST' && requestBody?.mutations) return 'DML';
     }
-    return 'API';
+    return 'ETC';
   };
 
   const addApiLog = useCallback((method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any) => {
+    const isCliCommand = url.includes('/api/command') && requestBody?.command;
+    const displayUrl = isCliCommand ? `actionbase> ${requestBody.command}` : url;
+    const proxiedTo = isCliCommand
+      ? getProxiedApiPattern(requestBody.command) ?? undefined
+      : undefined;
+
     setApiLogs(prev => [...prev, {
       id: logIdCounterRef.current++,
       method,
-      url,
+      url: displayUrl,
       timestamp: new Date(),
       success,
       status,
       payload,
       requestBody,
-      apiType: getApiType(url, requestBody),
+      apiType: getApiType(method, url, requestBody),
+      proxiedTo,
     }]);
   }, []);
 

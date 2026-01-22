@@ -4,9 +4,6 @@ import {DATABASE} from '../constants';
 
 const VALID_STATUSES = ["CREATED", "DELETED", "UPDATED"] as const;
 
-const useFollowingToggleBase = createToggleHook<string>("user_follows");
-const useLikeToggleBase = createToggleHook<number>("user_likes");
-
 interface ToggleOptions<T> {
   onSuccess?: (isActive: boolean, count: number, target: T) => void;
   onError?: (error: Error) => void;
@@ -23,23 +20,26 @@ interface UseToggleLikeOptions {
 }
 
 export function useToggleFollowing(source: string, options?: UserToggleFollowingOptions) {
-  const {handleToggle} = useFollowingToggleBase(source, options);
+  const {handleToggle} = useToggleBase<string>("user_follows", source, options);
   return {ToggleFollowing: handleToggle};
 }
 
 export function useToggleLike(source: string, options?: UseToggleLikeOptions) {
-  const {handleToggle} = useLikeToggleBase(source, options);
+  const {handleToggle} = useToggleBase<number>("user_likes", source, options);
   return {toggleLike: handleToggle};
 }
 
-function createToggleHook<T extends string | number>(table: string) {
-  return (source: string, options?: ToggleOptions<T>) => {
-    const handleToggle = useCallback(async (target: T, currentIsActive: boolean) => {
-      const mutationType = currentIsActive ? "DELETE" : "INSERT";
-      const now = Date.now();
+function useToggleBase<T extends string | number>(
+  table: string,
+  source: string,
+  options?: ToggleOptions<T>
+) {
+  const handleToggle = useCallback(async (target: T, currentIsActive: boolean) => {
+    const mutationType = currentIsActive ? "DELETE" : "INSERT";
+    const now = Date.now();
 
-      try {
-        const result = await mutate(DATABASE.SOCIAL, table, {
+    try {
+      const result = await mutate(DATABASE.SOCIAL, table, {
           mutations: [{
             type: mutationType,
             edge: {version: now, source, target, properties: {createdAt: now}}
@@ -61,9 +61,8 @@ function createToggleHook<T extends string | number>(table: string) {
       } catch (error) {
         options?.onError?.(error as Error);
       }
-    }, [source, options, table]);
+  }, [source, options, table]);
 
-    return {handleToggle};
-  };
+  return {handleToggle};
 }
 
