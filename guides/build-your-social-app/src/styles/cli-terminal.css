@@ -270,3 +270,25 @@
     opacity: 0;
   }
 }
+
+.terminal-help-notice {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  font-size: 11px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 300;
+}
+
+.terminal-help-notice a {
+  color: #888;
+  text-decoration: none;
+}
+
+.terminal-help-notice a:hover {
+  color: #aaa;
+  text-decoration: underline;
+}
