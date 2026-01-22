@@ -70,21 +70,6 @@ body {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.mobile-content::-webkit-scrollbar {
-  display: none;
-}
-
-.mobile-content .app::-webkit-scrollbar {
-  display: none;
-}
-
-.mobile-content .app {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
 
 body[class*="driver-highlighted-element"] .feed-scroll,

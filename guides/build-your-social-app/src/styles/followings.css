@@ -14,14 +14,9 @@
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;
   min-height: 0;
   position: relative;
   padding-bottom: 60px;
-}
-
-.mobile-content-inner-scroll::-webkit-scrollbar {
-  display: none;
 }
 
 .followers-header {

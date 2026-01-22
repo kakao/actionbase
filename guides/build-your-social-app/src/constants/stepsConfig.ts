@@ -1,6 +1,7 @@
 import {get, getTable} from "../api/actionbase";
 import {DATABASE, TABLE} from "./index";
 import {me} from "./dummy";
+import {SVG_ICONS} from "./icons";
 
 export interface NavigationConfig {
   to?: string;
@@ -107,9 +108,9 @@ export const stepsConfig: StepConfig[] = [
     description: `Welcome to the Actionbase hands-on guide!
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Build follows</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Build likes</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>See your feed</span></li>
+  <li>${SVG_ICONS.users}<span>Build follows</span></li>
+  <li>${SVG_ICONS.heart}<span>Build likes</span></li>
+  <li>${SVG_ICONS.home}<span>See your feed</span></li>
 </ul>
 
 <div class="driver-popover-footer analytics-footer">
@@ -137,8 +138,8 @@ export const stepsConfig: StepConfig[] = [
     description: `First, let's load <b>sample data</b> so you can focus on building.
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>Create database & tables</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Add sample users & posts</span></li>
+  <li>${SVG_ICONS.package}<span>Create database & tables</span></li>
+  <li>${SVG_ICONS.users}<span>Add sample users & posts</span></li>
 </ul>`,
     navigation: {
       next: {waitFor: ["[id='run-command-btn']"]},
@@ -152,8 +153,8 @@ export const stepsConfig: StepConfig[] = [
     description: `Click <b>Run</b> to create:
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>Database with users</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>Posts & likes tables</span></li>
+  <li>${SVG_ICONS.package}<span>Database with users</span></li>
+  <li>${SVG_ICONS.table}<span>Posts & likes tables</span></li>
 </ul>`,
     element: "[id='run-command-btn']",
     command: {content: `load preset build-your-social-app`, skipIfDone: true},
@@ -171,7 +172,7 @@ export const stepsConfig: StepConfig[] = [
     description: `Switch to the <pre>\`social\`</pre> database.
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>Use database social</span></li>
+  <li>${SVG_ICONS.package}<span>Use database social</span></li>
 </ul>`,
     element: "[id='run-command-btn']",
     command: {content: 'use database social', context: {database: 'social'}, skipIfDone: true},
@@ -190,8 +191,8 @@ export const stepsConfig: StepConfig[] = [
     description: `In the previous step, we created these tables:
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>user_posts — who posted what</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>user_likes — who liked which post</span></li>
+  <li>${SVG_ICONS.table}<span>user_posts — who posted what</span></li>
+  <li>${SVG_ICONS.heart}<span>user_likes — who liked which post</span></li>
 </ul>
 
 Browse around before we add new interactions.`,
@@ -210,9 +211,9 @@ Browse around before we add new interactions.`,
     description: `Let's build a <b>follow</b> feature.
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>Create a table</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Add a relationship</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Query it</span></li>
+  <li>${SVG_ICONS.table}<span>Create a table</span></li>
+  <li>${SVG_ICONS.users}<span>Add a relationship</span></li>
+  <li>${SVG_ICONS.search}<span>Query it</span></li>
 </ul>`,
     navigation: {
       next: {waitFor: ["[id='run-command-btn']"]},
@@ -227,7 +228,7 @@ Browse around before we add new interactions.`,
     description: `Create a <pre>\`user_follows\`</pre> table.
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg><span>Who follows whom</span></li>
+  <li>${SVG_ICONS.userPlus}<span>Who follows whom</span></li>
 </ul>`,
     element: "[id='run-command-btn']",
     command: {
@@ -284,7 +285,7 @@ Browse around before we add new interactions.`,
     title: "Follow a User",
     description: `Make <b>@zipdoki</b> follow <b>@j4rami</b>. This creates a connection between two users.
 
-<ul class="feature-hint"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Precomputing count & index</span></li></ul>
+<ul class="feature-hint"><li>${SVG_ICONS.lightning}<span>Precomputing count & index</span></li></ul>
 
 <b>Result:</b> @zipdoki is now following @j4rami.
 
@@ -348,7 +349,7 @@ Browse around before we add new interactions.`,
     description: `Verify the follow exists.
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>Query relationship</span></li>
+  <li>${SVG_ICONS.check}<span>Query relationship</span></li>
 </ul>`,
     element: "[id='run-command-btn']",
     command: {content: 'get user_follows --source zipdoki --target j4rami'},
@@ -365,7 +366,7 @@ Browse around before we add new interactions.`,
     title: "Count Followers",
     description: `Get <b>@j4rami</b>'s follower count.
 
-<ul class="feature-hint"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg><span>No aggregation</span></li></ul>`,
+<ul class="feature-hint"><li>${SVG_ICONS.rocket}<span>No aggregation</span></li></ul>`,
     element: "[id='run-command-btn']",
     command: {content: 'count user_follows --start j4rami --direction IN'},
     navigation: {
@@ -381,7 +382,7 @@ Browse around before we add new interactions.`,
     title: "List Followers",
     description: `Get the list of users following <b>@j4rami</b>.
 
-<ul class="feature-hint"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg><span>Already indexed</span></li></ul>
+<ul class="feature-hint"><li>${SVG_ICONS.rocket}<span>Already indexed</span></li></ul>
 
 <b>Result:</b> @j4rami has one follower.
 
@@ -420,7 +421,7 @@ Browse around before we add new interactions.`,
     description: `Now let's add <b>likes</b>. Same pattern as follows.
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>A user interacts with a post</span></li>
+  <li>${SVG_ICONS.heart}<span>A user interacts with a post</span></li>
 </ul>`,
     navigation: {
       next: {to: '/post/1', waitFor: ["[id='btn-likes']", "[id='run-command-btn']"]},
@@ -435,7 +436,7 @@ Browse around before we add new interactions.`,
     title: "Like a Post",
     description: `Make <b>@zipdoki</b> like <b>@j4rami</b>'s post.
 
-<ul class="feature-hint"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Precomputing count & index</span></li></ul>
+<ul class="feature-hint"><li>${SVG_ICONS.lightning}<span>Precomputing count & index</span></li></ul>
 
 <b>Result:</b> @zipdoki liked the post.
 
@@ -521,7 +522,7 @@ Browse around before we add new interactions.`,
     description: `Verify that <b>@zipdoki</b>'s like was recorded.
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>Query like status</span></li>
+  <li>${SVG_ICONS.check}<span>Query like status</span></li>
 </ul>`,
     element: "[id='run-command-btn']",
     command: {content: 'get user_likes --source zipdoki --target 1'},
@@ -539,8 +540,8 @@ Browse around before we add new interactions.`,
     description: `Just like follows, you can:
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg><span>Count likes</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg><span>List who liked a post</span></li>
+  <li>${SVG_ICONS.barChart}<span>Count likes</span></li>
+  <li>${SVG_ICONS.list}<span>List who liked a post</span></li>
 </ul>
 
 Same pattern, same simplicity.`,
@@ -559,8 +560,8 @@ Same pattern, same simplicity.`,
     description: `Your <b>feed</b> now shows:
 
 <ul class="feature-hint">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Posts from users you follow</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Real like counts</span></li>
+  <li>${SVG_ICONS.users}<span>Posts from users you follow</span></li>
+  <li>${SVG_ICONS.heart}<span>Real like counts</span></li>
 </ul>
 
 This is the core pattern behind most social apps.`,
@@ -579,9 +580,9 @@ This is the core pattern behind most social apps.`,
 
 <p style="margin: 16px 0 0; color: #6b7280; font-size: 14px;">Now try it yourself:</p>
 <ul class="completion-actions">
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Follow someone</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Check your feed</span></li>
-  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Like a post</span></li>
+  <li>${SVG_ICONS.search}<span>Follow someone</span></li>
+  <li>${SVG_ICONS.home}<span>Check your feed</span></li>
+  <li>${SVG_ICONS.heart}<span>Like a post</span></li>
 </ul>
 
 We built this guide to help you get to know Actionbase. We did our best, but it may fall short in places. We appreciate your understanding — and your feedback means a lot.

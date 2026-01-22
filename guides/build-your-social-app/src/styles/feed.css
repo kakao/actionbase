@@ -69,12 +69,7 @@
   border-left: none;
   border-right: none;
   overflow-x: auto;
-  scrollbar-width: none;
   flex-shrink: 0;
-}
-
-.stories-container::-webkit-scrollbar {
-  display: none;
 }
 
 .story {
@@ -180,14 +175,9 @@
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;
   min-height: 0;
   position: relative;
   padding-bottom: 50px;
-}
-
-.feed-scroll::-webkit-scrollbar {
-  display: none;
 }
 
 .feed {

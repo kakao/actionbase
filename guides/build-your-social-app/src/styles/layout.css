@@ -451,13 +451,6 @@
   flex-direction: column;
 }
 
-/*.mobile-frame.step-completed {*/
-/*  position: absolute;*/
-/*  width: 348px;*/
-/*  height: 617px;*/
-/*  z-index: 200;*/
-/*}*/
-
 .mobile-status-bar {
   display: flex;
   align-items: center;
