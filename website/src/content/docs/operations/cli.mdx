@@ -1,21 +1,651 @@
 ---
 title: CLI
-description: Command-line interface for managing and maintaining Actionbase clusters
+description: Command-line interface for interacting with Actionbase
 sidebar:
   order: 1
+  badge:
+    text: Preview
+    variant: caution
+tableOfContents:
+  maxHeadingLevel: 2
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
 
-<Aside>
-    🚧 **Work in Progress**
+The Actionbase CLI provides an interactive console for managing databases, tables, and edges. It connects to an Actionbase server and supports all metadata and data operations.
 
-    This document is currently under active development.
+## Installation
+
+<Tabs>
+  <TabItem label="Docker (Recommended)">
+    The easiest way to experience Actionbase is using Docker. The standalone image runs the server in the background and the CLI in the foreground:
+
+    ```bash
+    docker run -it --pull always ghcr.io/kakao/actionbase:standalone
+    ```
+
+    This is sufficient for exploring Actionbase and understanding its core capabilities.
+
+  </TabItem>
+  <TabItem label="Homebrew">
+    ```bash
+    brew tap kakao/actionbase https://github.com/kakao/actionbase
+    brew install actionbase
+    ```
+  </TabItem>
+  <TabItem label="From Source">
+    ```bash
+    git clone https://github.com/kakao/actionbase.git
+    cd actionbase/cli
+    make build
+    ```
+
+    The binary is created at `cli/bin/actionbase`.
+
+  </TabItem>
+</Tabs>
+
+## Starting the CLI
+
+```bash
+actionbase [options]
+```
+
+<Aside type="tip">
+  When using Docker standalone (`ghcr.io/kakao/actionbase:standalone`), the CLI starts with `--debug
+  --proxy` enabled by default.
+</Aside>
+
+### Startup Options
+
+| Option            | Description                                          | Default                 |
+| ----------------- | ---------------------------------------------------- | ----------------------- |
+| `--host <url>`    | Actionbase server URL                                | `http://localhost:8080` |
+| `--authKey <key>` | Authentication key                                   | (none)                  |
+| `--debug`         | Enable debug logging (shows HTTP requests/responses) | off                     |
+| `--plain`         | Plain text output mode (no colors)                   | off                     |
+| `--proxy [port]`  | Start in proxy mode for interactive guides           | `9300`                  |
+| `--version`       | Display CLI version and exit                         |                         |
+
+### Examples
+
+```bash
+# Connect to local server
+actionbase
+
+# Connect to remote server
+actionbase --host https://actionbase.example.com
+
+# Enable debug mode to see HTTP traffic
+actionbase --debug
+
+# Start with proxy mode for guides
+actionbase --proxy
+```
+
+## Context Management
+
+The CLI maintains session context for database and table selection. The prompt displays the current context:
+
+```
+actionbase>                    # No context
+actionbase(mydb)>              # Database selected
+actionbase(mydb:mytable)>      # Database and table selected
+```
+
+### context
+
+Display current session state.
+
+```
+context
+```
+
+**Output includes:**
+
+- Current host URL
+- Current database
+- Current table or alias
+- Proxy mode status (on/off with port)
+- Debug mode status (on/off)
+
+**Example:**
+
+```
+actionbase> context
+  │ |----------|--------------------------------|
+  │ | KEY      | VALUE                          |
+  │ |----------|--------------------------------|
+  │ | host     | http://localhost:8080          |
+  │ | database | likes                          |
+  │ | table    | likes                          |
+  │ | alias    |                                |
+  │ | proxy    | off (port -)                   |
+  │ | debug    | off                            |
+  │ |----------|--------------------------------|
+```
+
+### use
+
+Switch the current database, table, or alias context.
+
+```
+use <database|table|alias> <name>
+```
+
+| Subcommand            | Description                                               |
+| --------------------- | --------------------------------------------------------- |
+| `use database <name>` | Switch to specified database (clears table/alias context) |
+| `use table <name>`    | Switch to specified table (requires database context)     |
+| `use alias <name>`    | Switch to specified alias (requires database context)     |
+
+**Examples:**
+
+```
+actionbase> use database likes
+  │ Current database: likes
+
+actionbase(likes)> use table likes
+  │ Current table: likes
+
+actionbase(likes:likes)>
+```
+
+### debug
+
+Enable or disable debug mode. When enabled, HTTP requests and responses are logged.
+
+```
+debug <on|off>
+```
+
+**Example:**
+
+```
+actionbase> debug on
+  │ Debugging is on
+
+actionbase> get --source Alice --target Phone
+  │ → GET /graph/v3/databases/likes/tables/likes/edges/get?source=Alice&target=Phone
+  │ ← 200 OK {"edges":[...]}
+```
+
+## Metadata Operations
+
+### create
+
+Create databases, storages, tables, or aliases.
+
+#### create database
+
+```
+create database --name <name> --comment <comment>
+```
+
+| Flag        | Required | Description          |
+| ----------- | -------- | -------------------- |
+| `--name`    | Yes      | Database name        |
+| `--comment` | Yes      | Database description |
+
+**Example:**
+
+```
+actionbase> create database --name social --comment "Social interactions"
+  │ Database created: social
+```
+
+#### create storage
+
+```
+create storage --name <name> --comment <comment> --storageType <type> --hbaseNamespace <ns> --hbaseTable <table>
+```
+
+| Flag               | Required | Description         |
+| ------------------ | -------- | ------------------- |
+| `--name`           | Yes      | Storage name        |
+| `--comment`        | Yes      | Storage description |
+| `--storageType`    | Yes      | Storage type        |
+| `--hbaseNamespace` | Yes      | HBase namespace     |
+| `--hbaseTable`     | Yes      | HBase table name    |
+
+#### create table
+
+```
+create table --database <db> --storage <storage> --name <name> --comment <comment> --type <type> --direction <direction> --schema <schema> [--indices <indices>] [--groups <groups>]
+```
+
+| Flag          | Required | Description                     |
+| ------------- | -------- | ------------------------------- |
+| `--database`  | Yes      | Database name                   |
+| `--storage`   | Yes      | Storage name                    |
+| `--name`      | Yes      | Table name                      |
+| `--comment`   | Yes      | Table description               |
+| `--type`      | Yes      | Table type                      |
+| `--direction` | Yes      | Direction type (IN, OUT, BOTH)  |
+| `--schema`    | Yes      | JSON schema definition          |
+| `--indices`   | No       | JSON array of index definitions |
+| `--groups`    | No       | JSON array of group definitions |
+
+#### create alias
+
+```
+create alias --database <db> --table <table> --name <name> --comment <comment>
+```
+
+| Flag         | Required | Description       |
+| ------------ | -------- | ----------------- |
+| `--database` | Yes      | Database name     |
+| `--table`    | Yes      | Table name        |
+| `--name`     | Yes      | Alias name        |
+| `--comment`  | Yes      | Alias description |
+
+### show
+
+Display databases, storages, tables, aliases, indices, or groups.
+
+```
+show <databases|storages|tables|aliases|indices|groups> [--using <table|alias>]
+```
+
+| Subcommand       | Context Required | Description                                 |
+| ---------------- | ---------------- | ------------------------------------------- |
+| `show databases` | None             | List all databases                          |
+| `show storages`  | None             | List all storages with configuration        |
+| `show tables`    | Database         | List tables in current database             |
+| `show aliases`   | Database         | List aliases in current database            |
+| `show indices`   | Database + Table | Show indices for current or specified table |
+| `show groups`    | Database + Table | Show groups for current or specified table  |
+
+**Examples:**
+
+```
+actionbase> show databases
+  │ |-------|---------|
+  │ | NAME  | DESC    |
+  │ |-------|---------|
+  │ | likes | Likes   |
+  │ | social| Social  |
+  │ |-------|---------|
+
+actionbase(likes)> show tables
+  │ |-------|------|-----------|
+  │ | NAME  | TYPE | DIRECTION |
+  │ |-------|------|-----------|
+  │ | likes | ...  | BOTH      |
+  │ |-------|------|-----------|
+
+actionbase(likes:likes)> show indices
+  │ |------------------|--------|
+  │ | NAME             | FIELDS |
+  │ |------------------|--------|
+  │ | created_at_desc  | ...    |
+  │ |------------------|--------|
+```
+
+### desc
+
+Describe table or alias details including schema, fields, and indices.
+
+```
+desc <table|alias> [<name>]
+```
+
+If `<name>` is omitted, describes the current table or alias.
+
+**Example:**
+
+```
+actionbase(likes)> desc table likes
+  │ Table: likes
+  │ Type: INDEXED
+  │ Direction: BOTH
+  │
+  │ Source: STRING
+  │ Target: STRING
+  │
+  │ Fields:
+  │ |------------|------|----------|
+  │ | NAME       | TYPE | NULLABLE |
+  │ |------------|------|----------|
+  │ | created_at | LONG | false    |
+  │ |------------|------|----------|
+```
+
+## Data Operations
+
+### get
+
+Query a specific edge by source and target.
+
+```
+get [<table>] --source <source> --target <target>
+```
+
+| Flag       | Required | Description                                   |
+| ---------- | -------- | --------------------------------------------- |
+| `[table]`  | No       | Table or alias name (uses current if omitted) |
+| `--source` | Yes      | Source node ID                                |
+| `--target` | Yes      | Target node ID                                |
+
+**Example:**
+
+```
+actionbase(likes:likes)> get --source Alice --target Phone
+  │ The edge is found: [Alice -> Phone]
+  │ |---------------|--------|--------|---------------------------|
+  │ | VERSION       | SOURCE | TARGET | PROPERTIES                |
+  │ |---------------|--------|--------|---------------------------|
+  │ | 1737377177245 | Alice  | Phone  | created_at: 1737377177245 |
+  │ |---------------|--------|--------|---------------------------|
+```
+
+### scan
+
+Scan edges using an index.
+
+```
+scan [<table>] --index <index> --start <start> --direction <direction> [--ranges <ranges>] [--limit <limit>]
+```
+
+| Flag          | Required | Description                                   |
+| ------------- | -------- | --------------------------------------------- |
+| `[table]`     | No       | Table or alias name (uses current if omitted) |
+| `--index`     | Yes      | Index name to scan                            |
+| `--start`     | Yes      | Starting node ID                              |
+| `--direction` | Yes      | Scan direction: IN, OUT, or BOTH              |
+| `--ranges`    | No       | Range specification for filtering             |
+| `--limit`     | No       | Maximum rows to return (default: 25)          |
+
+**Example:**
+
+```
+actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction OUT
+  │ The 2 edges found (offset: -, hasNext: false)
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | # | VERSION       | SOURCE | TARGET | PROPERTIES                |
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | 1 | 1737377177297 | Alice  | Laptop | created_at: 1737377177297 |
+  │ | 2 | 1737377177245 | Alice  | Phone  | created_at: 1737377177245 |
+  │ |---|---------------|--------|--------|---------------------------|
+```
+
+### count
+
+Count edges for a specific node and direction.
+
+```
+count [<table>] --start <start> --direction <direction>
+```
+
+| Flag          | Required | Description                                   |
+| ------------- | -------- | --------------------------------------------- |
+| `[table]`     | No       | Table or alias name (uses current if omitted) |
+| `--start`     | Yes      | Starting node ID                              |
+| `--direction` | Yes      | Direction: IN, OUT, or BOTH                   |
+
+**Example:**
+
+```
+actionbase(likes:likes)> count --start Alice --direction OUT
+  │ |-------|-------|
+  │ | DIR   | COUNT |
+  │ |-------|-------|
+  │ | OUT   | 2     |
+  │ |-------|-------|
+
+actionbase(likes:likes)> count --start Phone --direction IN
+  │ |-------|-------|
+  │ | DIR   | COUNT |
+  │ |-------|-------|
+  │ | IN    | 2     |
+  │ |-------|-------|
+```
+
+### mutate
+
+Insert, update, or delete edges.
+
+```
+mutate [<table>] --type <type> --source <source> --target <target> --version <version> --properties <properties>
+```
+
+| Flag           | Required | Description                                        |
+| -------------- | -------- | -------------------------------------------------- |
+| `[table]`      | No       | Table or alias name (uses current if omitted)      |
+| `--type`       | Yes      | Mutation type: INSERT, UPDATE, or DELETE           |
+| `--source`     | Yes      | Source node ID                                     |
+| `--target`     | Yes      | Target node ID                                     |
+| `--version`    | Yes      | Timestamp/version (supports `$NOW` placeholder)    |
+| `--properties` | Yes      | JSON object with edge properties (supports `$NOW`) |
+
+**Example:**
+
+```
+actionbase(likes:likes)> mutate --type INSERT --source Charlie --target Phone --version $NOW --properties '{"created_at": $NOW}'
+  │ Mutation result: 1 updated, 0 failed
+```
+
+<Aside type="tip">
+  Actionbase requires client-issued timestamps for [event ordering](/design/mutation/#event-ordering). Even if events arrive out of order, Actionbase uses these timestamps to compute the correct final state.
+
+Use `$NOW` as a placeholder for the current Unix timestamp in milliseconds. It works in both `--version` and `--properties` values.
 
 </Aside>
 
-This guide introduces the Actionbase CLI, which is used to interact with Actionbase during local development and hands-on exercises.
+## Utility Commands
 
-The CLI will provide basic commands for initializing projects, running examples, and inspecting activity data.
+### load
 
-More detailed usage instructions and command references will be added as the CLI evolves.
+Load and execute commands from a YAML file or preset.
+
+```
+load <file|preset> <path> [--ref <branch>]
+```
+
+#### load file
+
+Load commands from a local YAML file:
+
+```
+load file <path>
+```
+
+**YAML file format:**
+
+```yaml
+- name: 'Create database'
+  description: 'Optional description'
+  command: "create database --name mydb --comment 'My database'"
+
+- name: 'Use database'
+  command: 'use database mydb'
+```
+
+#### load preset
+
+Download and execute a preset from the Actionbase GitHub repository:
+
+```
+load preset <name> [--ref <branch>]
+```
+
+| Flag     | Required | Description                 |
+| -------- | -------- | --------------------------- |
+| `<name>` | Yes      | Preset name                 |
+| `--ref`  | No       | Git branch or tag reference |
+
+**Available presets:**
+
+| Preset            | Description                                       |
+| ----------------- | ------------------------------------------------- |
+| `likes`           | Sample likes data (Alice/Bob liking Phone/Laptop) |
+| `hands-on-social` | Social media application demo data                |
+
+**Example:**
+
+```
+actionbase> load preset likes
+  │ 3 edges inserted
+  │  - Alice → Phone
+  │  - Alice → Laptop
+  │  - Bob → Phone
+```
+
+### guide
+
+Start an interactive guide. Requires proxy mode (`--proxy` flag at startup).
+
+```
+guide start <name>
+```
+
+**Available guides:**
+
+| Guide             | Description                                   |
+| ----------------- | --------------------------------------------- |
+| `hands-on-social` | Interactive social media application tutorial |
+
+**Example:**
+
+```bash
+# Start CLI with proxy mode
+actionbase --proxy
+
+# Then start the guide
+actionbase> guide start hands-on-social
+```
+
+The guide opens a browser-based interactive tutorial that sends commands to the CLI.
+
+### help
+
+Display all available commands with descriptions and usage.
+
+```
+help
+```
+
+**Example:**
+
+```
+actionbase> help
+  │ Available commands
+  │ |---------|-------------------------------|----------------------------------------|
+  │ | NAME    | DESCRIPTION                   | USAGE                                  |
+  │ |---------|-------------------------------|----------------------------------------|
+  │ | context | Show current status           | `context`                              |
+  │ | create  | Create database/storage/...   | `create <database|storage|table|...>`  |
+  │ | ...     | ...                           | ...                                    |
+  │ |---------|-------------------------------|----------------------------------------|
+```
+
+### exit
+
+Exit the CLI console.
+
+```
+exit
+```
+
+You can also press `Ctrl+C` or `Ctrl+D` to exit.
+
+## Common Workflows
+
+### Quick Start: Create and Query Data
+
+```
+# 1. Load sample data using preset
+actionbase> load preset likes
+
+# 2. Check current context (database and table are set automatically)
+actionbase(likes:likes)> context
+
+# 3. Query a specific edge
+actionbase(likes:likes)> get --source Alice --target Phone
+
+# 4. Scan all edges from Alice
+actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction OUT
+
+# 5. Count edges
+actionbase(likes:likes)> count --start Phone --direction IN
+```
+
+### Data Operations Workflow
+
+```
+# 1. Select database and table
+actionbase> use database social
+actionbase(social)> use table follows
+
+# 2. Insert an edge
+actionbase(social:follows)> mutate --type INSERT --source user1 --target user2 --version $NOW --properties '{"created_at": $NOW}'
+
+# 3. Verify the edge
+actionbase(social:follows)> get --source user1 --target user2
+
+# 4. Delete the edge
+actionbase(social:follows)> mutate --type DELETE --source user1 --target user2 --version $NOW --properties '{}'
+```
+
+### Interactive Learning with Guides
+
+```bash
+# Start CLI with proxy mode enabled
+actionbase --proxy
+
+# Start the interactive guide
+actionbase> guide start hands-on-social
+```
+
+The guide opens in your browser and walks you through building a social media application.
+
+## Reference
+
+### Direction Values
+
+| Value  | Description                      |
+| ------ | -------------------------------- |
+| `OUT`  | Outgoing edges (source → target) |
+| `IN`   | Incoming edges (target ← source) |
+| `BOTH` | Both directions                  |
+
+### Mutation Types
+
+| Type     | Description             |
+| -------- | ----------------------- |
+| `INSERT` | Create a new edge       |
+| `UPDATE` | Update an existing edge |
+| `DELETE` | Delete an edge          |
+
+### Context Requirements
+
+| Command           | Database Required | Table Required    |
+| ----------------- | ----------------- | ----------------- |
+| `create database` | No                | No                |
+| `create storage`  | No                | No                |
+| `create table`    | No                | No                |
+| `create alias`    | No                | No                |
+| `show databases`  | No                | No                |
+| `show storages`   | No                | No                |
+| `show tables`     | Yes               | No                |
+| `show aliases`    | Yes               | No                |
+| `show indices`    | Yes               | Yes (or specify)  |
+| `show groups`     | Yes               | Yes (or specify)  |
+| `desc table`      | Yes               | No (uses current) |
+| `desc alias`      | Yes               | No (uses current) |
+| `get`             | Yes               | Yes (or specify)  |
+| `scan`            | Yes               | Yes (or specify)  |
+| `count`           | Yes               | Yes (or specify)  |
+| `mutate`          | Yes               | Yes (or specify)  |
+
+### Special Features
+
+**Multi-line input**: End a line with `\` to continue on the next line.
+
+```
+actionbase> create table --database mydb --name mytable \
+  --comment "My table" --type INDEXED --direction BOTH \
+  --schema '{"src":{"type":"STRING"},"tgt":{"type":"STRING"}}'
+```
+
+**Quote handling**: Input automatically continues until quotes are balanced.
