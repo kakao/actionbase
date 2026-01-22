@@ -8,8 +8,7 @@ import {getNextNavigation, getPrevNavigation, getStepCommand, getStepConfig, get
 import {getAnalyticsChoice, initAnalytics, loadUmamiScript, setAnalyticsChoice, clearAnalyticsChoice} from "../utils/analytics";
 
 const BUTTON_TEXT = {
-  PREV: "< prev",
-  NEXT: "next >"
+  NEXT: "next ↵"
 }
 
 const TOAST_DURATION = 1700
@@ -422,9 +421,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       if (step.navigation?.next) {
         popover.onNextClick = createNavigationHandler(STEP.NEXT);
       }
-      if (step.navigation?.prev) {
-        popover.onPrevClick = createNavigationHandler(STEP.PREV);
-      }
 
       const driverStep: DriveStep = {popover};
 
@@ -441,11 +437,10 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       driverObj.current = driver({
         disableActiveInteraction: true,
         showProgress: false,
-        showButtons: ['next', 'previous', 'close'],
+        showButtons: ['next', 'close'],
         allowClose: true,
         smoothScroll: false,
         overlayColor: 'rgba(0, 0, 0, 0.4)',
-        prevBtnText: BUTTON_TEXT.PREV,
         nextBtnText: BUTTON_TEXT.NEXT,
         doneBtnText: 'Explore',
         allowKeyboardControl: true,
@@ -453,19 +448,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           window.dispatchEvent(new CustomEvent('close-toast'));
         },
         steps: generateDriverSteps(),
-        onPrevClick: () => {
-          if (driverObj.current) {
-            const index = driverObj.current.getActiveIndex();
-            if (index !== undefined) {
-              // Clear command without adding to history for default prev
-              if (currentCommandRef.current) {
-                clearCurrentCommand(true);
-              }
-              setStepIndex(index - 1);
-              driverObj.current.moveTo(index - 1);
-            }
-          }
-        },
         onNextClick: async () => {
           if (driverObj.current) {
             const index = driverObj.current.getActiveIndex();
