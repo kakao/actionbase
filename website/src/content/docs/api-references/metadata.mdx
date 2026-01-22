@@ -327,7 +327,7 @@ POST /graph/v2/service/{service}/label/{label}
 | Body     | desc          | Required | Label description                               |
 | Body     | type          | Required | Label type (HASH, INDEXED, MULTI_EDGE)          |
 | Body     | schema        | Required | Edge schema definition                          |
-| Body     | dirType       | Required | Direction type (OUT, IN, UNDIRECTED)            |
+| Body     | dirType       | Required | Direction type (OUT, IN, BOTH)                  |
 | Body     | storage       | Required | Storage name                                    |
 | Body     | groups        | Optional | List of groups                                  |
 | Body     | indices       | Optional | List of indexes                                 |
@@ -924,7 +924,7 @@ data class LabelEntity(
   val desc: String,                 // Label description
   val type: LabelType,              // Label type (HASH, INDEXED, MULTI_EDGE)
   val schema: EdgeSchema,           // Edge schema definition
-  val dirType: DirectionType,       // Direction type (OUT, IN, UNDIRECTED)
+  val dirType: DirectionType,       // Direction type (OUT, IN, BOTH)
   val storage: String,               // Storage name
   val indices: List<Index>,          // List of indexes
   val groups: List<Group>,            // List of groups
