@@ -106,7 +106,11 @@ export const stepsConfig: StepConfig[] = [
     title: "Welcome",
     description: `Welcome to the Actionbase hands-on guide!
 
-You'll build social features like <b>follows</b> and <b>likes</b> using a sample dataset. Each step walks you through the commands and shows results in real time.
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Build follows</span></li>
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Build likes</span></li>
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>See your feed</span></li>
+</ul>
 
 <div class="driver-popover-footer analytics-footer">
 <p class="analytics-text">Anonymous analytics (cookie-free). Sharing helps us improve.</p>
@@ -130,7 +134,12 @@ You'll build social features like <b>follows</b> and <b>likes</b> using a sample
     index: 2,
     titleNumber: '2',
     title: "Set Up",
-    description: `First, let's load <b>sample data</b> so you can focus on building features instead of setup.`,
+    description: `First, let's load <b>sample data</b> so you can focus on building.
+
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>Create database & tables</span></li>
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Add sample users & posts</span></li>
+</ul>`,
     navigation: {
       next: {waitFor: ["[id='run-command-btn']"]},
     },
@@ -140,7 +149,12 @@ You'll build social features like <b>follows</b> and <b>likes</b> using a sample
   {
     index: 3,
     title: "Load Sample Data",
-    description: `Click <b>Run</b> to create a database with users, posts, and likes.`,
+    description: `Click <b>Run</b> to create:
+
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>Database with users</span></li>
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>Posts & likes tables</span></li>
+</ul>`,
     element: "[id='run-command-btn']",
     command: {content: `load preset build-your-social-app`, skipIfDone: true},
     navigation: {
@@ -154,7 +168,11 @@ You'll build social features like <b>follows</b> and <b>likes</b> using a sample
   {
     index: 4,
     title: "Select Database",
-    description: `Switch to the <pre>\`social\`</pre> database for the rest of this guide.`,
+    description: `Switch to the <pre>\`social\`</pre> database.
+
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>Use database social</span></li>
+</ul>`,
     element: "[id='run-command-btn']",
     command: {content: 'use database social', context: {database: 'social'}, skipIfDone: true},
     navigation: {
@@ -206,7 +224,11 @@ Browse around before we add new interactions.`,
   {
     index: 7,
     title: "Create Follows Table",
-    description: `Create a <pre>\`user_follows\`</pre> table. Each row stores one follow: who follows whom.`,
+    description: `Create a <pre>\`user_follows\`</pre> table.
+
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg><span>Who follows whom</span></li>
+</ul>`,
     element: "[id='run-command-btn']",
     command: {
       content: `create table \\
@@ -323,7 +345,11 @@ Browse around before we add new interactions.`,
   {
     index: 9,
     title: "Check Follow Status",
-    description: `Verify the follow exists by querying the relationship between two users.`,
+    description: `Verify the follow exists.
+
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>Query relationship</span></li>
+</ul>`,
     element: "[id='run-command-btn']",
     command: {content: 'get user_follows --source zipdoki --target j4rami'},
     navigation: {
@@ -492,7 +518,11 @@ Browse around before we add new interactions.`,
   {
     index: 14,
     title: "Check Like Status",
-    description: `Verify that <b>@zipdoki</b>'s like was recorded.`,
+    description: `Verify that <b>@zipdoki</b>'s like was recorded.
+
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>Query like status</span></li>
+</ul>`,
     element: "[id='run-command-btn']",
     command: {content: 'get user_likes --source zipdoki --target 1'},
     navigation: {
