@@ -360,6 +360,7 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   list-style: none !important;
   padding: 0 !important;
   margin: 0 0 16px 0 !important;
+  white-space: normal !important;
 }
 
 .completion-actions li {
@@ -370,6 +371,7 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   font-size: 14px !important;
   color: #374151 !important;
   border-bottom: 1px solid #f3f4f6 !important;
+  line-height: 1.2 !important;
 }
 
 .completion-actions li:last-child {

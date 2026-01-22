@@ -170,8 +170,7 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
           <div className="mobile-frame-wrapper">
             {isStepCompleted && (
               <div className="completion-bubble">
-                <h3>All Done!</h3>
-                <p>Now try it yourself:</p>
+                <h3>Now try it yourself</h3>
                 <ul>
                   <li>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
