@@ -241,6 +241,36 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     setIsExecuting(true);
 
     try {
+      // Check if step is already completed (verifier passes)
+      const stepVerifier = getStepVerifier(currentCommand.stepIndex!);
+      if (stepVerifier) {
+        try {
+          const alreadyDone = await stepVerifier();
+          if (alreadyDone) {
+            // Skip execution, show "already done" message
+            const result = '<p class="command-result success">✓ Already done</p>';
+            setCommandHistory(prev => [...prev, {...currentCommand, result}]);
+            setCurrentCommand(null);
+            currentCommandRef.current = null;
+
+            if (driverObj.current) {
+              const activeStep = driverObj.current.getActiveStep();
+              if (activeStep?.popover?.onNextClick) {
+                const element = activeStep.element as HTMLElement;
+                activeStep.popover.onNextClick(element || undefined, activeStep, {
+                  config: driverObj.current.getConfig(),
+                  state: driverObj.current.getState(),
+                  driver: driverObj.current
+                });
+              }
+            }
+            return;
+          }
+        } catch {
+          // Verifier failed, proceed with execution
+        }
+      }
+
       const normalizedCommand = currentCommand.content.replaceAll('\\\n', '');
       let result: string;
 
