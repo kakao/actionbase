@@ -7,71 +7,103 @@ const INDEX = {
   CREATED_AT_DESC: 'created_at_desc',
 } as const;
 
-export function getDatabase(
+const EMPTY_DATA_PAYLOAD: DataPayload = { edges: [], count: 0, offset: '', hasNext: false };
+const EMPTY_COUNT_PAYLOAD: DataCountPayload = { counts: [], count: 0 };
+
+export async function getDatabase(
   name: string,
   enableLogging: boolean = true
-) {
-  return apiFetch<DatabaseEntity | undefined>(
-    `/graph/v2/service/${name}`,
-    {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    },
-    enableLogging
-  );
+): Promise<DatabaseEntity | null> {
+  try {
+    return await apiFetch<DatabaseEntity>(
+      `/graph/v2/service/${name}`,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      },
+      enableLogging
+    );
+  } catch {
+    return null;
+  }
 }
 
-export function getTable(
+export async function getTable(
   database: string,
   name: string,
   enableLogging: boolean = true
-) {
-  return apiFetch<TableEntity | undefined>(
-    `/graph/v2/service/${database}/label/${name}`,
-    {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    },
-    enableLogging
-  );
+): Promise<TableEntity | null> {
+  try {
+    return await apiFetch<TableEntity>(
+      `/graph/v2/service/${database}/label/${name}`,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      },
+      enableLogging
+    );
+  } catch {
+    return null;
+  }
 }
 
-export function get(
+async function verifyTableExists(database: string, table: string): Promise<boolean> {
+  const db = await getDatabase(database, false);
+  if (!db) return false;
+  const tbl = await getTable(database, table, false);
+  return tbl !== null;
+}
+
+export async function get(
   database: string,
   table: string,
   source: any,
   target: any,
   enableLogging: boolean = true
-) {
-  return apiFetch<DataPayload>(
-    `/graph/v3/databases/${database}/tables/${table}/edges/get?source=${source}&target=${target}`,
-    {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    },
-    enableLogging
-  );
+): Promise<DataPayload> {
+  if (!await verifyTableExists(database, table)) {
+    return EMPTY_DATA_PAYLOAD;
+  }
+  try {
+    return await apiFetch<DataPayload>(
+      `/graph/v3/databases/${database}/tables/${table}/edges/get?source=${source}&target=${target}`,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      },
+      enableLogging
+    );
+  } catch {
+    return EMPTY_DATA_PAYLOAD;
+  }
 }
 
-export function count(
+export async function count(
   database: string,
   table: string,
   start: any,
   direction: string,
   enableLogging: boolean = true
-) {
-  return apiFetch<DataCountPayload>(
-    `/graph/v3/databases/${database}/tables/${table}/edges/counts?start=${start}&direction=${direction}`,
-    {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    },
-    enableLogging
-  );
+): Promise<DataCountPayload> {
+  if (!await verifyTableExists(database, table)) {
+    return EMPTY_COUNT_PAYLOAD;
+  }
+  try {
+    return await apiFetch<DataCountPayload>(
+      `/graph/v3/databases/${database}/tables/${table}/edges/counts?start=${start}&direction=${direction}`,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      },
+      enableLogging
+    );
+  } catch {
+    return EMPTY_COUNT_PAYLOAD;
+  }
 }
 
 export function mutate(
@@ -91,7 +123,7 @@ export function mutate(
   );
 }
 
-export function scan(
+export async function scan(
   database: string,
   table: string,
   index: string,
@@ -100,23 +132,30 @@ export function scan(
   limit: number | undefined | 25,
   ranges: string | undefined = undefined,
   enableLogging: boolean = true
-) {
-  const urlBuilder: string[] = [];
-  urlBuilder.push(`/graph/v3/databases/${database}/tables/${table}/edges/scan/${index}?start=${start}&direction=${direction}&limit=${limit}`);
-  if (ranges !== undefined) {
-    urlBuilder.push(`&ranges=${ranges}`);
+): Promise<DataPayload> {
+  if (!await verifyTableExists(database, table)) {
+    return EMPTY_DATA_PAYLOAD;
   }
-  const url = urlBuilder.join("")
+  try {
+    const urlBuilder: string[] = [];
+    urlBuilder.push(`/graph/v3/databases/${database}/tables/${table}/edges/scan/${index}?start=${start}&direction=${direction}&limit=${limit}`);
+    if (ranges !== undefined) {
+      urlBuilder.push(`&ranges=${ranges}`);
+    }
+    const url = urlBuilder.join("")
 
-  return apiFetch<DataPayload>(
-    url,
-    {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    },
-    enableLogging
-  );
+    return await apiFetch<DataPayload>(
+      url,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      },
+      enableLogging
+    );
+  } catch {
+    return EMPTY_DATA_PAYLOAD;
+  }
 }
 
 export async function scanUserPosts(postId: string, direction: string = DIRECTION.OUT, enableLogging: boolean = true) {
