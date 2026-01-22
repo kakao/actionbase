@@ -417,8 +417,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       driverObj.current = driver({
         disableActiveInteraction: true,
         showProgress: false,
-        showButtons: ['next', 'close'],
-        allowClose: true,
+        showButtons: ['next'],
+        allowClose: false,
         smoothScroll: false,
         overlayColor: 'rgba(0, 0, 0, 0.4)',
         nextBtnText: BUTTON_TEXT.NEXT,

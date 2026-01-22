@@ -115,7 +115,7 @@ You'll build social features like <b>follows</b> and <b>likes</b> using a sample
 <button id="analytics-share-btn" class="driver-popover-next-btn">share & start</button>
 </div>
 </div>`,
-    popover: {side: 'over', align: 'center', showButtons: ['close']},
+    popover: {side: 'over', align: 'center', showButtons: []},
   },
   // Step 1
   {
