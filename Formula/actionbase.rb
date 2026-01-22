@@ -1,5 +1,5 @@
 class Actionbase < Formula
-  desc "Command-line interface for ActionBase"
+  desc "Command-line interface for Actionbase"
   homepage "https://github.com/kakao/actionbase"
   url "https://github.com/kakao/actionbase/archive/refs/tags/cli/0.0.1.tar.gz"
   sha256 "29dc4cfef2956a2b3bda43d4ad097dfbe8996f83b899ca1a7360e6ac56a14bf4"
