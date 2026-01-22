@@ -134,7 +134,14 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const [commandHistory, setCommandHistory] = useState<CommandHistory[]>(getStoredCommandHistory);
   const [terminalContext, setTerminalContext] = useState<TerminalContext>(getStoredTerminalContext);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [showRestartNotice, setShowRestartNotice] = useState(false);
+  const [showRestartNotice, setShowRestartNotice] = useState(() => {
+    const notice = localStorage.getItem('show-restart-notice');
+    if (notice === 'true') {
+      localStorage.removeItem('show-restart-notice');
+      return true;
+    }
+    return false;
+  });
 
   const driverObj = useRef<Driver | null>(null);
   const showToastRef = useRef(showToast);
@@ -270,6 +277,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
 
       // Clear current command
       setCurrentCommand(null);
+      currentCommandRef.current = null;
 
       if (driverObj.current) {
         const activeStep = driverObj.current.getActiveStep();
@@ -293,8 +301,14 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   ) => {
     if (!driverObj.current) return;
 
-    // Validate for NEXT
+    // For NEXT: if there's a command to execute, click the run button
     if (type === STEP.NEXT) {
+      const runButton = document.getElementById('run-command-btn');
+      if (runButton && currentCommandRef.current?.content) {
+        runButton.click();
+        return;
+      }
+
       if (!await isStepValid(currentIndex)) {
         showToastRef.current("Please complete the current step before proceeding.", 'warning', TOAST_DURATION);
         return;
@@ -369,16 +383,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       localStorage.removeItem(COMMAND_HISTORY_STORAGE_KEY);
       localStorage.removeItem(TERMINAL_CONTEXT_STORAGE_KEY);
       clearAnalyticsChoice();
-      setStepIndex(0);
-      setCurrentCommand(null);
-      setCommandHistory([]);
-      setTerminalContext({});
-      setShowRestartNotice(true);
-
-      if (driverObj.current) {
-        driverObj.current.destroy();
-        driverObj.current = null;
-      }
+      localStorage.setItem('show-restart-notice', 'true');
+      window.location.href = '/';
     } catch (error) {
       console.error('Failed to reset step:', error);
     }
@@ -463,8 +469,15 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
           if (driverObj.current) {
             const index = driverObj.current.getActiveIndex();
             if (index !== undefined) {
+              // If there's a command to execute, click the run button
+              const runButton = document.getElementById('run-command-btn');
+              if (runButton && currentCommandRef.current?.content) {
+                runButton.click();
+                return;
+              }
+
               if (!await isStepValid(index)) {
-                showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION);
+                showToastRef.current("Please complete the current step before proceeding.", 'warning', TOAST_DURATION);
                 return;
               }
 
@@ -524,16 +537,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     }
   }, [generateDriverSteps, isStepValid, setCommandForStep, clearCurrentCommand]);
 
-  useEffect(() => {
-    if (showRestartNotice && driverObj.current) {
-      navigate('/');
-      setTimeout(() => {
-        if (driverObj.current) {
-          driverObj.current.drive(0);
-        }
-      }, 100);
-    }
-  }, [showRestartNotice, navigate]);
 
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
@@ -567,7 +570,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         });
       } else {
         if (!await isStepValid(index)) {
-          showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION);
+          showToastRef.current("Please complete the current step before proceeding.", 'warning', TOAST_DURATION);
           return;
         }
         if (currentCommandRef.current) {
