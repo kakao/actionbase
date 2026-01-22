@@ -9,6 +9,7 @@ import {me, users} from "../../constants/dummy";
 import {useToggleFollowing} from "../../hooks/useToggleMutate";
 import {scanUserFollows} from "../../api/actionbase";
 import {BackArrowIcon, UserPlusIcon} from '../icons';
+import {UserListItem} from '../common';
 
 const Followers: React.FC = () => {
   const {id} = useParams()
@@ -90,26 +91,15 @@ const Followers: React.FC = () => {
               </div>
             ) : (
               <div className="followers-list" id="followers-list">
-                {followings.map((following) => (
-                  <div key={following.id} className="follower-item">
-                    <div className="follower-info" onClick={() => navigate(ROUTES.PROFILE(following.id))}>
-                      <div className="follower-avatar" style={{background: following.gradient}}>
-                        <img src={following.avatar} alt={following.name} />
-                      </div>
-                      <div className="follower-details">
-                        <div className="follower-username">{following.id}</div>
-                        <div className="follower-name">{following.name}</div>
-                      </div>
-                    </div>
-                    {following.id !== me.id && (
-                      <button
-                        className={`follow-action-btn ${followingStates[following.id] ? 'following' : 'follow'}`}
-                        onClick={() => handleFollowToggle(following.id)}
-                      >
-                        {followingStates[following.id] ? 'Following' : 'Follow'}
-                      </button>
-                    )}
-                  </div>
+                {followings.map((user) => (
+                  <UserListItem
+                    key={user.id}
+                    user={user}
+                    isFollowing={followingStates[user.id]}
+                    showFollowButton={user.id !== me.id}
+                    onUserClick={(id) => navigate(ROUTES.PROFILE(id))}
+                    onFollowClick={handleFollowToggle}
+                  />
                 ))}
               </div>
             )}
@@ -120,26 +110,16 @@ const Followers: React.FC = () => {
                     <h3 className="section-title">Suggested for you</h3>
                   </div>
 
-                  {suggestedFollowings.map((suggested) =>
-                    <div key={suggested.id} className="follower-item">
-                      <div className="follower-info" onClick={() => navigate(ROUTES.PROFILE(suggested.id))}>
-                        <div className="follower-avatar" style={{background: suggested.gradient}}>
-                          <img src={suggested.avatar} alt={suggested.name} />
-                        </div>
-                        <div className="follower-details">
-                          <div className="follower-username">{suggested.id}</div>
-                          <div className="follower-name">{suggested.name}</div>
-                          <div className="follower-subtitle">Suggested for you</div>
-                        </div>
-                      </div>
-                      <button
-                        className={`follow-action-btn ${followingStates[suggested.id] ? 'following' : 'follow'}`}
-                        onClick={() => handleFollowToggle(suggested.id)}
-                      >
-                        {followingStates[suggested.id] ? 'Following' : 'Follow'}
-                      </button>
-                    </div>
-                  )}
+                  {suggestedFollowings.map((user) => (
+                    <UserListItem
+                      key={user.id}
+                      user={user}
+                      isFollowing={followingStates[user.id]}
+                      subtitle="Suggested for you"
+                      onUserClick={(id) => navigate(ROUTES.PROFILE(id))}
+                      onFollowClick={handleFollowToggle}
+                    />
+                  ))}
                 </>
               )}
             </div>
