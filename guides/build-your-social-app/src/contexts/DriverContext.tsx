@@ -5,6 +5,7 @@ import {useNavigate} from "react-router-dom";
 import {useToast} from "./ToastContext";
 import {run} from "../api/cli";
 import {getNextNavigation, getPrevNavigation, getStepCommand, getStepConfig, getStepVerifier, STEP, stepsConfig,} from "../constants/stepsConfig";
+import {getAnalyticsChoice, initAnalytics, loadUmamiScript, setAnalyticsChoice, clearAnalyticsChoice} from "../utils/analytics";
 
 const BUTTON_TEXT = {
   PREV: "< prev",
@@ -147,6 +148,25 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       console.error('Failed to save current active step index:', error);
     }
   }, [stepIndex]);
+
+  // Initialize analytics on mount if user already opted in
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
+  // Handle analytics consent and advance from step 0
+  const handleAnalyticsStart = useCallback((enableAnalytics: boolean) => {
+    if (!driverObj.current) return;
+
+    setAnalyticsChoice(enableAnalytics ? 'yes' : 'no');
+    if (enableAnalytics) {
+      loadUmamiScript();
+    }
+
+    // Advance to step 1
+    setStepIndex(1);
+    driverObj.current.drive(1);
+  }, []);
 
   useEffect(() => {
     showToastRef.current = showToast;
@@ -348,6 +368,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       localStorage.removeItem(STEP_INDEX_STORAGE_KEY);
       localStorage.removeItem(COMMAND_HISTORY_STORAGE_KEY);
       localStorage.removeItem(TERMINAL_CONTEXT_STORAGE_KEY);
+      clearAnalyticsChoice();
       setStepIndex(0);
       setCurrentCommand(null);
       setCommandHistory([]);
@@ -374,9 +395,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       if (step.index === 0 && showRestartNotice) {
         description += `
 
-<div style="margin-top: 12px; padding: 10px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; font-size: 13px; display: flex; align-items: center;">
-<span><b>Note:</b> Please restart the Actionbase server before proceeding.</span>
-</div>`;
+<p class="restart-notice"><b>Note:</b> Previous state may remain. If you encounter issues, please restart the server.</p>`;
       }
 
       const popover: DriveStep['popover'] = {
@@ -524,14 +543,19 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       e.preventDefault();
       e.stopPropagation();
 
+      const index = driverObj.current.getActiveIndex();
+      if (index === undefined) return;
+
+      // On step 0, require explicit button click (no Enter)
+      if (index === 0 && getAnalyticsChoice() === null) {
+        return;
+      }
+
       const runButton = document.getElementById('run-command-btn');
       if (runButton && currentCommandRef.current?.content && !isExecuting) {
         runButton.click();
         return;
       }
-
-      const index = driverObj.current.getActiveIndex();
-      if (index === undefined) return;
 
       const activeStep = driverObj.current.getActiveStep();
       if (activeStep?.popover?.onNextClick) {
@@ -556,7 +580,21 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isExecuting, isStepValid, clearCurrentCommand, currentCommand]);
+  }, [isExecuting, isStepValid, clearCurrentCommand, currentCommand, handleAnalyticsStart]);
+
+  // Handle analytics button clicks via event delegation
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.id === 'analytics-start-btn') {
+        handleAnalyticsStart(false);
+      } else if (target.id === 'analytics-share-btn') {
+        handleAnalyticsStart(true);
+      }
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [handleAnalyticsStart]);
 
   const contextValue = useMemo(() => ({
     stepIndex,

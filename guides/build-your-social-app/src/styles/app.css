@@ -297,3 +297,28 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   font-weight: 600;
   margin: 0 0 10px 0;
 }
+
+/* Analytics consent */
+.driver-popover-footer.analytics-footer {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 4px !important;
+}
+
+.analytics-footer .analytics-text {
+  font-size: 12px !important;
+  color: inherit !important;
+  margin: 0 !important;
+}
+
+.restart-notice {
+  margin-top: 12px !important;
+  padding: 10px !important;
+  background-color: #fff3cd !important;
+  border: 1px solid #ffc107 !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+}
+
+

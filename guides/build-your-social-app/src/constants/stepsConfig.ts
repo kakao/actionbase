@@ -107,13 +107,21 @@ export const stepsConfig: StepConfig[] = [
 
 You'll build social features like <b>follows</b> and <b>likes</b> using a sample dataset. Each step walks you through the commands and shows results in real time.
 
-<b>Tip:</b> Press <b>Enter</b> to continue to the next step.`,
-    popover: {side: 'over', align: 'center', nextBtnText: 'start', showButtons: ['next', 'close']},
+<div class="driver-popover-footer analytics-footer">
+<p class="analytics-text">Anonymous analytics (cookie-free). Sharing helps us improve.</p>
+<div class="driver-popover-navigation-btns">
+<button id="analytics-start-btn" class="driver-popover-prev-btn">start</button>
+<button id="analytics-share-btn" class="driver-popover-next-btn">share & start</button>
+</div>
+</div>`,
+    popover: {side: 'over', align: 'center', showButtons: ['close']},
   },
   // Step 1
   {
     index: 1,
-    description: `<img class="profile-image" src="${me.avatar}" /><p class="profile-name">@zipdoki</p>You are <b>@zipdoki</b> for this guide.`,
+    description: `<img class="profile-image" src="${me.avatar}" /><p class="profile-name">@zipdoki</p>You are <b>@zipdoki</b> for this guide.
+
+<b>Tip:</b> Press <b>Enter</b> to proceed.`,
     popover: {side: 'over', align: 'center'},
   },
   // Step 2
