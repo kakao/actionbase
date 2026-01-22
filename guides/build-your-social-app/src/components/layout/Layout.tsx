@@ -212,6 +212,10 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
               <div className={`api-logs-wrapper ${isStepCompleted ? 'step-completed' : ''}`}>
                 <ApiLogs/>
               </div>
+              <div className="browser-help-notice">
+                <span>Stuck? Try restarting the server</span>
+                <a href="https://github.com/kakao/actionbase/discussions/94" target="_blank" rel="noopener noreferrer">Share feedback</a>
+              </div>
             </div>
           </div>
         </div>

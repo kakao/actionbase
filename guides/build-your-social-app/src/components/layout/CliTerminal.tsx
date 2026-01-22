@@ -107,10 +107,6 @@ const CliTerminal: React.FC = () => {
 
   return (
     <div className="terminal-body-container" id="cli-commands">
-      <div className="terminal-help-notice">
-        <span>Stuck? Restart the server.</span>
-        <a href="https://github.com/kakao/actionbase/discussions" target="_blank" rel="noopener noreferrer">Feedback</a>
-      </div>
       <div className="terminal-body" ref={terminalBodyRef}>
         <div className="command-history" ref={commandHistoryRef}>
           {/* Command History */}
