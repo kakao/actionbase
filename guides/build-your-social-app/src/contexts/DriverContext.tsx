@@ -380,7 +380,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       if (step.index === 0 && showRestartNotice) {
         description += `
 
-<p class="restart-notice"><b>Note:</b> Previous state may remain. If you encounter issues, please restart the server.</p>`;
+<p class="restart-notice">Problem? Restart the Actionbase server. Still? <a href="https://github.com/kakao/actionbase/discussions" target="_blank">Feedback</a></p>`;
       }
 
       const popover: DriveStep['popover'] = {
