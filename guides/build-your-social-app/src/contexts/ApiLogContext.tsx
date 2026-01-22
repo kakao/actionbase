@@ -1,4 +1,7 @@
 import React, {createContext, ReactNode, useCallback, useContext, useRef, useState} from 'react';
+import {getCommandCategory, CommandCategory} from '../utils/command';
+
+type ApiType = CommandCategory | 'API';
 
 interface ApiLog {
   id: number;
@@ -9,6 +12,7 @@ interface ApiLog {
   status?: number;
   payload?: any;
   requestBody?: any;
+  apiType: ApiType;
 }
 
 interface ApiLogContextProps {
@@ -23,6 +27,19 @@ export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
   const logIdCounterRef = useRef(0);
 
+  const getApiType = (url: string, requestBody?: any): ApiType => {
+    if (url.includes('/api/command') && requestBody?.command) {
+      return getCommandCategory(requestBody.command);
+    }
+    if (url.includes('/graph/')) {
+      if (url.includes('/mutate')) return 'DML';
+      if (url.includes('/get')) return 'GET';
+      if (url.includes('/scan')) return 'SCAN';
+      if (url.includes('/count')) return 'COUNT';
+    }
+    return 'API';
+  };
+
   const addApiLog = useCallback((method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any) => {
     setApiLogs(prev => [...prev, {
       id: logIdCounterRef.current++,
@@ -33,6 +50,7 @@ export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       status,
       payload,
       requestBody,
+      apiType: getApiType(url, requestBody),
     }]);
   }, []);
 

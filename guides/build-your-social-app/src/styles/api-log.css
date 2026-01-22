@@ -75,6 +75,54 @@
   font-weight: 600;
 }
 
+.api-log-col-type {
+  width: 50px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.api-log-type {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.api-log-type-ddl {
+  background-color: rgba(198, 120, 221, 0.15);
+  color: #c678dd;
+}
+
+.api-log-type-dml {
+  background-color: rgba(229, 192, 123, 0.15);
+  color: #e5c07b;
+}
+
+.api-log-type-get {
+  background-color: rgba(97, 175, 239, 0.15);
+  color: #61afef;
+}
+
+.api-log-type-scan {
+  background-color: rgba(86, 182, 194, 0.15);
+  color: #56b6c2;
+}
+
+.api-log-type-count {
+  background-color: rgba(209, 154, 102, 0.15);
+  color: #d19a66;
+}
+
+.api-log-type-util {
+  background-color: rgba(152, 195, 121, 0.15);
+  color: #98c379;
+}
+
+.api-log-type-api {
+  background-color: rgba(133, 133, 133, 0.15);
+  color: #858585;
+}
+
 .api-log-col-name {
   flex: 1;
   min-width: 0;

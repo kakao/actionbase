@@ -1,12 +1,12 @@
-export type CommandCategory = 'DDL' | 'DML' | 'QUERY' | 'UTIL';
+export type CommandCategory = 'DDL' | 'DML' | 'GET' | 'SCAN' | 'COUNT' | 'UTIL';
 
 const COMMAND_CATEGORIES: Record<string, CommandCategory> = {
   create: 'DDL',
   load: 'DDL',
   mutate: 'DML',
-  get: 'QUERY',
-  scan: 'QUERY',
-  count: 'QUERY',
+  get: 'GET',
+  scan: 'SCAN',
+  count: 'COUNT',
   use: 'UTIL',
   show: 'UTIL',
   desc: 'UTIL',

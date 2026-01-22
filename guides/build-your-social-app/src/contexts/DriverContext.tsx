@@ -6,7 +6,6 @@ import {useToast} from "./ToastContext";
 import {run} from "../api/cli";
 import {getNextNavigation, getPrevNavigation, getStepCommand, getStepConfig, getStepVerifier, STEP, stepsConfig,} from "../constants/stepsConfig";
 import {getAnalyticsChoice, initAnalytics, loadUmamiScript, setAnalyticsChoice, clearAnalyticsChoice} from "../utils/analytics";
-import {getCommandCategory, CommandCategory} from "../utils/command";
 
 const BUTTON_TEXT = {
   NEXT: "next ↵"
@@ -19,7 +18,6 @@ export interface CommandHistory {
   content?: string;
   result?: string;
   stepIndex?: number;
-  category?: CommandCategory;
 }
 
 interface TerminalContext {
@@ -222,7 +220,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         prompt,
         content: stepCommand.content,
         stepIndex: targetIndex,
-        category: getCommandCategory(stepCommand.content),
       });
     } else {
       setCurrentCommand(null);

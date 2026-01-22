@@ -12,6 +12,6 @@ export function run(
         'Content-Type': 'application/json'
       },
     },
-    false
+    true
   );
 }

@@ -63,9 +63,7 @@ const CliTerminal: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentCommand, isExecuting, executeCommand]);
 
-  const renderCommand = useCallback((item: CommandHistory, hideCursor: boolean = true, showCategory: boolean = false) => {
-    const categoryComment = showCategory && item.category ? `/* ${item.category} */ ` : '';
-
+  const renderCommand = useCallback((item: CommandHistory, hideCursor: boolean = true) => {
     if (!item.content) {
       return <div className="command-line-item"><span className="prompt">{item.prompt}{"> "}</span></div>;
     }
@@ -76,7 +74,6 @@ const CliTerminal: React.FC = () => {
     if (lines.length === 1) {
       return (
         <div className="command-line-item command-line-single">
-          {categoryComment && <span className="command-category">{categoryComment}</span>}
           <span className="prompt">{item.prompt}{"> "}</span>
           <span className="command-text" dangerouslySetInnerHTML={{__html: lines[0].trim() + cursor}}></span>
         </div>
@@ -93,7 +90,6 @@ const CliTerminal: React.FC = () => {
         <div key={lineIdx} className="command-line-item">
           {lineIdx === 0 ? (
             <>
-              {categoryComment && <span className="command-category">{categoryComment}</span>}
               <span className="prompt">{item.prompt}{"> "}</span>
               <p className="command-text" dangerouslySetInnerHTML={{__html: lineWithCursor}}></p>
             </>
@@ -124,7 +120,7 @@ const CliTerminal: React.FC = () => {
                   <div className="command-line">
                     <div className="command-line-inner">
                       <div className="command-content-wrapper">
-                        <div className="command-multiline">{renderCommand(item, true, true)}</div>
+                        <div className="command-multiline">{renderCommand(item)}</div>
                         <button className="run-command-btn hidden-step-btn" disabled={true}>
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20"/>
@@ -157,7 +153,7 @@ const CliTerminal: React.FC = () => {
               <div className="command-line">
                 <div className="command-line-inner">
                   <div className="command-content-wrapper">
-                    <div className="command-multiline">{renderCommand(currentCommand, false, true)}</div>
+                    <div className="command-multiline">{renderCommand(currentCommand, false)}</div>
                     <button
                       id="run-command-btn"
                       className="run-command-btn driver-active-el"

@@ -270,10 +270,3 @@
     opacity: 0;
   }
 }
-
-.command-category {
-  color: #6a9955;
-  font-style: italic;
-  white-space: nowrap;
-  margin-right: 4px;
-}

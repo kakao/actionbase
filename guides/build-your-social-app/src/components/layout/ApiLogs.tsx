@@ -70,6 +70,7 @@ const ApiLogs: React.FC = () => {
       </div>
       <div className="api-log-table-header">
         <div className="api-log-col-num">#</div>
+        <div className="api-log-col-type">Type</div>
         <div className="api-log-col-name">URL</div>
         <div className="api-log-col-method">Method</div>
         <div className="api-log-col-status">Status</div>
@@ -93,6 +94,9 @@ const ApiLogs: React.FC = () => {
                 >
                   <div className="api-log-col-num">
                     <span className="api-log-num">{log.id + 1}</span>
+                  </div>
+                  <div className="api-log-col-type">
+                    <span className={`api-log-type api-log-type-${log.apiType.toLowerCase()}`}>{log.apiType}</span>
                   </div>
                   <div className="api-log-col-name">
                     <span className={`api-log-expand-icon ${!hasExpandableContent ? 'hidden' : ''}`}>
