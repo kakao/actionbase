@@ -13,6 +13,7 @@ export interface CommandConfig {
     database?: string;
   };
   reload?: boolean;
+  skipIfDone?: boolean;
 }
 
 export interface PopoverConfig {
@@ -141,7 +142,7 @@ You'll build social features like <b>follows</b> and <b>likes</b> using a sample
     title: "Load Sample Data",
     description: `Click <b>Run</b> to create a database with users, posts, and likes.`,
     element: "[id='run-command-btn']",
-    command: {content: `load preset build-your-social-app`},
+    command: {content: `load preset build-your-social-app`, skipIfDone: true},
     navigation: {
       next: {waitFor: ["[id='run-command-btn']"]},
       prev: {},
@@ -155,7 +156,7 @@ You'll build social features like <b>follows</b> and <b>likes</b> using a sample
     title: "Select Database",
     description: `Switch to the <pre>\`social\`</pre> database for the rest of this guide.`,
     element: "[id='run-command-btn']",
-    command: {content: 'use database social', context: {database: 'social'}},
+    command: {content: 'use database social', context: {database: 'social'}, skipIfDone: true},
     navigation: {
       next: {to: '/search', waitFor: ["[id='search-results-list']"]},
       prev: {waitFor: ["[id='run-command-btn']"]},
@@ -237,7 +238,8 @@ The users are our maintainers as dummy data. Browse around before we add new int
     "desc": "order by createdAt"
     }
 ]'
-`
+`,
+      skipIfDone: true
     },
     navigation: {
       next: {to: '/profile/j4rami', waitFor: ["[id='btn-profile-following']", "[id='run-command-btn']"]},

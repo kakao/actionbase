@@ -241,33 +241,36 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     setIsExecuting(true);
 
     try {
-      // Check if step is already completed (verifier passes)
-      const stepVerifier = getStepVerifier(currentCommand.stepIndex!);
-      if (stepVerifier) {
-        try {
-          const alreadyDone = await stepVerifier();
-          if (alreadyDone) {
-            // Skip execution, show "already done" message
-            const result = '<p class="command-result success">✓ Already done</p>';
-            setCommandHistory(prev => [...prev, {...currentCommand, result}]);
-            setCurrentCommand(null);
-            currentCommandRef.current = null;
+      // Check if mutation step is already completed (verifier passes)
+      const stepConfig = getStepConfig(currentCommand.stepIndex!);
+      if (stepConfig?.command?.skipIfDone) {
+        const stepVerifier = getStepVerifier(currentCommand.stepIndex!);
+        if (stepVerifier) {
+          try {
+            const alreadyDone = await stepVerifier();
+            if (alreadyDone) {
+              // Skip execution, show "already done" message
+              const result = '<p class="command-result success">✓ Already done</p>';
+              setCommandHistory(prev => [...prev, {...currentCommand, result}]);
+              setCurrentCommand(null);
+              currentCommandRef.current = null;
 
-            if (driverObj.current) {
-              const activeStep = driverObj.current.getActiveStep();
-              if (activeStep?.popover?.onNextClick) {
-                const element = activeStep.element as HTMLElement;
-                activeStep.popover.onNextClick(element || undefined, activeStep, {
-                  config: driverObj.current.getConfig(),
-                  state: driverObj.current.getState(),
-                  driver: driverObj.current
-                });
+              if (driverObj.current) {
+                const activeStep = driverObj.current.getActiveStep();
+                if (activeStep?.popover?.onNextClick) {
+                  const element = activeStep.element as HTMLElement;
+                  activeStep.popover.onNextClick(element || undefined, activeStep, {
+                    config: driverObj.current.getConfig(),
+                    state: driverObj.current.getState(),
+                    driver: driverObj.current
+                  });
+                }
               }
+              return;
             }
-            return;
+          } catch {
+            // Verifier failed, proceed with execution
           }
-        } catch {
-          // Verifier failed, proceed with execution
         }
       }
 
@@ -295,7 +298,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       setCommandHistory(prev => [...prev, {...currentCommand, result}]);
 
       // Update terminal context if command changes it
-      const stepConfig = getStepConfig(currentCommand.stepIndex!);
       if (stepConfig?.command?.context?.database) {
         setTerminalContext({database: stepConfig.command.context.database});
       }
