@@ -37,6 +37,10 @@ func main() {
 		isDebugEnabled = true
 	}
 
+	if _, found := parser.GetLenient("plain"); found {
+		util.SetPlainMode(true)
+	}
+
 	authKey, _ := parser.Get(authParamKey)
 	console := runner.NewActionbaseCommandLineRunner(Version, host, &authKey, "", false, isDebugEnabled)
 	console.CheckConnection()

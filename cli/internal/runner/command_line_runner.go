@@ -2,12 +2,12 @@ package runner
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/kakao/actionbase/internal/command"
 	"github.com/kakao/actionbase/internal/command/model"
+	"github.com/kakao/actionbase/internal/util"
 )
 
 const (
@@ -64,13 +64,13 @@ func (r *CommandLineRunner) executeCommand(cmdName string, args []string) *model
 	if ok {
 		defer func() {
 			if rec := recover(); rec != nil {
-				fmt.Printf("Error executing command: %v\n", rec)
+				util.Print("Error executing command: %v\n", rec)
 			}
 		}()
 		return cmd.Execute(args)
 	}
-	fmt.Println("Unknown command: " + cmdName)
-	fmt.Println("Type 'help' for available commands.")
+	util.Println("Unknown command: " + cmdName)
+	util.Println("Type 'help' for available commands.")
 
 	return nil
 }

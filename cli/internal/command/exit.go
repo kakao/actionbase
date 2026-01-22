@@ -1,9 +1,8 @@
 package command
 
 import (
-	"fmt"
-
 	"github.com/kakao/actionbase/internal/command/model"
+	"github.com/kakao/actionbase/internal/util"
 )
 
 type Exit struct {
@@ -19,7 +18,7 @@ func NewExit(runner ExitRunner) *Exit {
 }
 
 func (e *Exit) Execute(_ []string) *model.Response {
-	fmt.Println("Goodbye!")
+	util.Println("Goodbye!")
 	e.runner.SetRunning(false)
 
 	return model.Success()

@@ -97,6 +97,10 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 		return model.Fail("invalid file path")
 	}
 
+	return l.executeYAMLCommands(absPath)
+}
+
+func (l *Load) executeYAMLCommands(absPath string) *model.Response {
 	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return model.Fail(err.Error())
@@ -117,7 +121,7 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 		if cmd.Description != "" {
 			decoratedDescription := fmt.Sprintf("/* %s */", cmd.Description)
 			results = append(results, decoratedDescription)
-			fmt.Printf("\033[90m%s\033[0m\n", decoratedDescription)
+			util.Print("\033[90m%s\033[0m\n", decoratedDescription)
 		}
 
 		chunk := l.normalize(cmd.Command)
@@ -127,12 +131,14 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 
 		result := l.doLoad(chunk)
 		if !result.IsSuccess {
-			resultMessage := fmt.Sprintf("Failed to execute command. Please check your command syntax or system log")
-			fmt.Println(resultMessage)
+			resultMessage := "Failed to execute command. Please check your command syntax or system log"
+			util.Println(resultMessage)
 			results = append(results, resultMessage)
 			return model.FailWithNoOut(strings.Join(results, "\n"))
 		}
-		results = append(results, *result.Result)
+		if result.Result != nil {
+			results = append(results, *result.Result)
+		}
 	}
 
 	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
@@ -140,6 +146,15 @@ func (l *Load) loadYAMLFile(path string) *model.Response {
 
 func (l *Load) doLoad(data string) *model.Response {
 	results := l.parseArgsWithQuotes(data)
+	if len(results) < 2 {
+		return model.Fail(fmt.Sprintf("Usage: %s", l.GetType().GetCommand()))
+	}
+
+	// Handle "use" command for setting database/table context
+	if results[0] == "use" {
+		return l.loadUse(results[1:])
+	}
+
 	resourceType := results[1]
 
 	parser := util.ParseArgs(results)
@@ -262,7 +277,50 @@ func (l *Load) loadEdge(parser *util.Parser, data string) *model.Response {
 		}
 	}
 
-	return model.SuccessWithResult(fmt.Sprintf("%d edges of '%s' are mutated (total: %d, failed: %d)", len(edgeBulkMutations.Mutations), table, updatedCount, failedCount))
+	// Build edge list for display
+	var edgeList strings.Builder
+	for _, mutation := range edgeBulkMutations.Mutations {
+		source := util.ToString(mutation.Edge.Source)
+		target := util.ToString(mutation.Edge.Target)
+		edgeList.WriteString(fmt.Sprintf("\n - %s \u2192 %s", source, target))
+	}
+
+	return model.SuccessWithResult(fmt.Sprintf("%d edges inserted%s", len(edgeBulkMutations.Mutations), edgeList.String()))
+}
+
+func (l *Load) loadUse(args []string) *model.Response {
+	if len(args) < 2 {
+		return model.Fail("Usage: use <database|table> <name>")
+	}
+
+	resourceType := args[0]
+	name := args[1]
+
+	switch resourceType {
+	case "database":
+		response := l.actionbaseClient.GetDatabase(name)
+		if response.IsError() {
+			return model.Fail(fmt.Sprintf("No database '%s' found", name))
+		}
+		l.runner.SetCurrentDatabase(name)
+		l.runner.SetCurrentTable("")
+		return model.SuccessWithResult(fmt.Sprintf("Database changed to '%s'", name))
+
+	case "table":
+		database := l.runner.GetCurrentDatabase()
+		if database == "" {
+			return model.Fail("No database selected. Use 'use database <name>' first")
+		}
+		response := l.actionbaseClient.GetTable(database, name)
+		if response.IsError() {
+			return model.Fail(fmt.Sprintf("No table '%s' found in database '%s'", name, database))
+		}
+		l.runner.SetCurrentTable(name)
+		return model.SuccessWithResult(fmt.Sprintf("Table changed to '%s'", name))
+
+	default:
+		return model.Fail("Usage: use <database|table> <name>")
+	}
 }
 
 func (l *Load) normalize(chunk string) string {
@@ -335,6 +393,12 @@ func (l *Load) loadPreset(filename, refs string) *model.Response {
 	}
 
 	cleanedFilename := filepath.Clean(filename) + ".preset.yaml"
+	downloadPath := filepath.Join(os.TempDir(), "actionbase-presets", cleanedFilename)
+
+	// Ensure temp directory exists
+	if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
+		return model.Fail(fmt.Sprintf("Failed to create temp directory: %s", err.Error()))
+	}
 
 	var url string
 	if refs != "" {
@@ -343,13 +407,14 @@ func (l *Load) loadPreset(filename, refs string) *model.Response {
 		url = "https://github.com/kakao/actionbase/releases/download/examples/" + cleanedFilename
 	}
 
-	ok := util.Download(cleanedFilename, url)
+	ok := util.Download(downloadPath, url)
 	if !ok {
 		return model.Fail("Failed to download preset file")
 	}
 
-	return l.loadFile(cleanedFilename)
+	return l.executeYAMLCommands(downloadPath)
 }
+
 
 func (l *Load) GetDescription() string {
 	return "Load resources"
