@@ -423,7 +423,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         overlayColor: 'rgba(0, 0, 0, 0.4)',
         nextBtnText: BUTTON_TEXT.NEXT,
         doneBtnText: 'Explore',
-        allowKeyboardControl: true,
+        allowKeyboardControl: false,
         overlayClickBehavior: () => {
           window.dispatchEvent(new CustomEvent('close-toast'));
         },
