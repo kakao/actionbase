@@ -443,6 +443,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
         showProgress: false,
         showButtons: ['next', 'previous', 'close'],
         allowClose: true,
+        smoothScroll: false,
         overlayColor: 'rgba(0, 0, 0, 0.4)',
         prevBtnText: BUTTON_TEXT.PREV,
         nextBtnText: BUTTON_TEXT.NEXT,
