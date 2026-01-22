@@ -967,9 +967,9 @@ data class QueryEntity(
 Paginated response payload.
 
 ```kotlin
-data class DdlPage&lt;T&gt;(
+data class DdlPage<T>(
   val count: Long,        // Total count
-  val content: List&lt;T&gt;,   // List of items
+  val content: List<T>,   // List of items
 )
 ```
 
@@ -978,7 +978,7 @@ data class DdlPage&lt;T&gt;(
 DDL operation status payload.
 
 ```kotlin
-data class DdlStatus&lt;T&gt;(
+data class DdlStatus<T>(
   val status: String,     // Operation status (e.g., CREATED, UPDATED, DELETED)
   val result: T?,        // Result entity (optional)
 )
