@@ -171,10 +171,12 @@ You'll build social features like <b>follows</b> and <b>likes</b> using a sample
     title: "Explore the Data",
     description: `In the previous step, we created these tables:
 
-<b>user_posts</b> - who posted what
-<b>user_likes</b> - who liked which post
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>user_posts — who posted what</span></li>
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>user_likes — who liked which post</span></li>
+</ul>
 
-The users are our maintainers as dummy data. Browse around before we add new interactions.`,
+Browse around before we add new interactions.`,
     element: "[id='search-results-list']",
     navigation: {
       prev: {to: '/search', waitFor: ["[id='cli-commands']", "[id='run-command-btn']"]},
@@ -187,7 +189,13 @@ The users are our maintainers as dummy data. Browse around before we add new int
     index: 6,
     titleNumber: '4',
     title: "Follows",
-    description: `Let's build a <b>follow</b> feature. You'll create a table, add a relationship, and query it.`,
+    description: `Let's build a <b>follow</b> feature.
+
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>Create a table</span></li>
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Add a relationship</span></li>
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><span>Query it</span></li>
+</ul>`,
     navigation: {
       next: {waitFor: ["[id='run-command-btn']"]},
     },
@@ -383,7 +391,11 @@ The users are our maintainers as dummy data. Browse around before we add new int
     index: 12,
     titleNumber: '5',
     title: "Likes",
-    description: `Now let's add <b>likes</b>. Same pattern as follows: a user interacts with a post.`,
+    description: `Now let's add <b>likes</b>. Same pattern as follows.
+
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>A user interacts with a post</span></li>
+</ul>`,
     navigation: {
       next: {to: '/post/1', waitFor: ["[id='btn-likes']", "[id='run-command-btn']"]},
       prev: {waitFor: ["[id='run-command-btn']"]},
@@ -494,7 +506,12 @@ The users are our maintainers as dummy data. Browse around before we add new int
   {
     index: 15,
     title: "And More",
-    description: `Just like follows, you can <b>count</b> likes and <b>list</b> who liked a post.
+    description: `Just like follows, you can:
+
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg><span>Count likes</span></li>
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg><span>List who liked a post</span></li>
+</ul>
 
 Same pattern, same simplicity.`,
     navigation: {
@@ -509,9 +526,14 @@ Same pattern, same simplicity.`,
     index: 16,
     titleNumber: '6',
     title: "Feed",
-    description: `Your <b>feed</b> now shows posts from users you follow with real like counts.
+    description: `Your <b>feed</b> now shows:
 
-With just <b>follows</b> and <b>likes</b>, you can build a feed. This is the core pattern behind most social apps.`,
+<ul class="feature-hint">
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Posts from users you follow</span></li>
+  <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Real like counts</span></li>
+</ul>
+
+This is the core pattern behind most social apps.`,
     element: "[class='mobile-frame']",
     navigation: {
       prev: {to: '/post/1'},
