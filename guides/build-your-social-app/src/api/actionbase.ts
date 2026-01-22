@@ -1,5 +1,6 @@
 import {apiFetch} from './client';
 import {DATABASE, DIRECTION, TABLE} from "../constants";
+import {DatabaseEntity, TableEntity, DataPayload, DataCountPayload, EdgeMutation, EdgeMutationResponse} from './model';
 
 const DEFAULT_LIMIT = 25;
 const INDEX = {

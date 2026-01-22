@@ -8,6 +8,7 @@ import Spinner from "../layout/Spinner";
 import {me, users} from "../../constants/dummy";
 import {useToggleFollowing} from "../../hooks/useToggleMutate";
 import {scanUserFollows} from "../../api/actionbase";
+import {BackArrowIcon, UserPlusIcon} from '../icons';
 
 const Followers: React.FC = () => {
   const {id} = useParams()
@@ -70,27 +71,18 @@ const Followers: React.FC = () => {
       {isLoading && <Spinner/>}
       <header className="followers-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
+          <BackArrowIcon />
         </button>
         <h1 className="header-title">Follower</h1>
       </header>
 
       {!isLoading && (
         <div className="mobile-content-inner-scroll">
-        {!isLoading && (
-          <>
-            {followings.length === 0 ? (
+          {followings.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-content">
                   <div className="empty-state-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="14" cy="9" r="3"/>
-                      <path d="M8 19c0-3.314 2.686-6 6-6s6 2.686 6 6"/>
-                      <line x1="3" y1="12" x2="7" y2="12" strokeWidth="1"/>
-                      <line x1="5" y1="10" x2="5" y2="14" strokeWidth="1"/>
-                    </svg>
+                    <UserPlusIcon />
                   </div>
                   <h2 className="empty-state-title">Followers</h2>
                   <p className="empty-state-description">All people who follow you will be displayed here.</p>
@@ -151,8 +143,6 @@ const Followers: React.FC = () => {
                 </>
               )}
             </div>
-          </>
-        )}
         </div>
       )}
     </div>

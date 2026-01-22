@@ -46,8 +46,8 @@ function useToggleBase<T extends string | number>(
           }]
         });
 
-        const status = result.results[0].status;
-        if (status == undefined && !VALID_STATUSES.includes(status)) {
+        const status = result.results[0]?.status;
+        if (status === undefined || !VALID_STATUSES.includes(status)) {
           options?.onError?.(new Error(`Mutation failed with status: ${status}`));
           return;
         }

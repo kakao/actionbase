@@ -6,6 +6,7 @@ import {useToast} from "./ToastContext";
 import {run} from "../api/cli";
 import {getNextNavigation, getPrevNavigation, getStepCommand, getStepConfig, getStepVerifier, STEP, stepsConfig,} from "../constants/stepsConfig";
 import {getAnalyticsChoice, initAnalytics, loadUmamiScript, setAnalyticsChoice, clearAnalyticsChoice} from "../utils/analytics";
+import {getStorageItem, getStorageNumber, removeStorageItem, setStorageItem, setStorageNumber, STORAGE_KEYS} from "../utils/storage";
 
 const BUTTON_TEXT = {
   NEXT: "next ↵"
@@ -79,54 +80,17 @@ export const useDriver = () => {
   return context;
 };
 
-export const STEP_INDEX_STORAGE_KEY = 'active-step-index';
-const COMMAND_HISTORY_STORAGE_KEY = 'command-history';
-const TERMINAL_CONTEXT_STORAGE_KEY = 'terminal-context';
+export const STEP_INDEX_STORAGE_KEY = STORAGE_KEYS.STEP_INDEX;
 
 export {STEP};
+
+const getStoredStepIndex = (): number => getStorageNumber(STORAGE_KEYS.STEP_INDEX, 0);
+const getStoredCommandHistory = (): CommandHistory[] => getStorageItem<CommandHistory[]>(STORAGE_KEYS.COMMAND_HISTORY, []);
+const getStoredTerminalContext = (): TerminalContext => getStorageItem<TerminalContext>(STORAGE_KEYS.TERMINAL_CONTEXT, {});
 
 export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) => {
   const navigate = useNavigate();
   const {showToast} = useToast();
-
-  const getStoredStepIndex = (): number => {
-    try {
-      const activeIndex = localStorage.getItem(STEP_INDEX_STORAGE_KEY);
-      if (activeIndex !== null) {
-        const index = parseInt(activeIndex, 10);
-        if (!isNaN(index) && index >= 0) {
-          return index;
-        }
-      }
-    } catch (error) {
-      console.error('Failed to get current active step index:', error);
-    }
-    return 0;
-  };
-
-  const getStoredCommandHistory = (): CommandHistory[] => {
-    try {
-      const stored = localStorage.getItem(COMMAND_HISTORY_STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('Failed to get command history:', error);
-    }
-    return [];
-  };
-
-  const getStoredTerminalContext = (): TerminalContext => {
-    try {
-      const stored = localStorage.getItem(TERMINAL_CONTEXT_STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('Failed to get terminal context:', error);
-    }
-    return {};
-  };
 
   const [stepIndex, setStepIndex] = useState(getStoredStepIndex);
   const [currentCommand, setCurrentCommand] = useState<CommandHistory | null>(null);
@@ -134,9 +98,9 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const [terminalContext, setTerminalContext] = useState<TerminalContext>(getStoredTerminalContext);
   const [isExecuting, setIsExecuting] = useState(false);
   const [showRestartNotice, setShowRestartNotice] = useState(() => {
-    const notice = localStorage.getItem('show-restart-notice');
+    const notice = getStorageItem<string>(STORAGE_KEYS.RESTART_NOTICE, '');
     if (notice === 'true') {
-      localStorage.removeItem('show-restart-notice');
+      removeStorageItem(STORAGE_KEYS.RESTART_NOTICE);
       return true;
     }
     return false;
@@ -148,11 +112,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   const isInitializedRef = useRef(false);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STEP_INDEX_STORAGE_KEY, stepIndex.toString());
-    } catch (error) {
-      console.error('Failed to save current active step index:', error);
-    }
+    setStorageNumber(STORAGE_KEYS.STEP_INDEX, stepIndex);
   }, [stepIndex]);
 
   // Initialize analytics on mount if user already opted in
@@ -183,19 +143,11 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   }, [currentCommand]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(COMMAND_HISTORY_STORAGE_KEY, JSON.stringify(commandHistory));
-    } catch (error) {
-      console.error('Failed to save command history:', error);
-    }
+    setStorageItem(STORAGE_KEYS.COMMAND_HISTORY, commandHistory);
   }, [commandHistory]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(TERMINAL_CONTEXT_STORAGE_KEY, JSON.stringify(terminalContext));
-    } catch (error) {
-      console.error('Failed to save terminal context:', error);
-    }
+    setStorageItem(STORAGE_KEYS.TERMINAL_CONTEXT, terminalContext);
   }, [terminalContext]);
 
   const isStepValid = useCallback(async (index: number) => {
@@ -409,16 +361,12 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) =>
   );
 
   const resetStep = useCallback(() => {
-    try {
-      localStorage.removeItem(STEP_INDEX_STORAGE_KEY);
-      localStorage.removeItem(COMMAND_HISTORY_STORAGE_KEY);
-      localStorage.removeItem(TERMINAL_CONTEXT_STORAGE_KEY);
-      clearAnalyticsChoice();
-      localStorage.setItem('show-restart-notice', 'true');
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Failed to reset step:', error);
-    }
+    removeStorageItem(STORAGE_KEYS.STEP_INDEX);
+    removeStorageItem(STORAGE_KEYS.COMMAND_HISTORY);
+    removeStorageItem(STORAGE_KEYS.TERMINAL_CONTEXT);
+    clearAnalyticsChoice();
+    setStorageItem(STORAGE_KEYS.RESTART_NOTICE, 'true');
+    window.location.href = '/';
   }, []);
 
   const generateDriverSteps = useCallback((): DriveStep[] => {

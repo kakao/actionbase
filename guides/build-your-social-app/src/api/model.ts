@@ -1,65 +1,65 @@
-interface Edge {
+export interface Edge {
   version: number,
   source: any,
   target: any,
   properties: Record<string, any | null>
 }
 
-interface DatabaseEntity {
+export interface DatabaseEntity {
   active: boolean,
   name: string,
   desc: string
 }
 
-interface TableEntity {
+export interface TableEntity {
   active: boolean,
   name: string,
   desc: string,
 }
 
-interface DataPayload {
+export interface DataPayload {
   edges: Edge[],
   count: number,
   offset: string,
   hasNext: boolean
 }
 
-interface DataCountPayload {
+export interface DataCountPayload {
   counts: EdgeCount[],
   count: number
 }
 
-interface EdgeCount {
+export interface EdgeCount {
   start: any,
   direction: string,
   count: number
 }
 
-interface EdgeMutation {
+export interface EdgeMutation {
   mutations: MutationItem[]
 }
 
-interface MutationItem {
+export interface MutationItem {
   type: string,
   edge: Edge
 }
 
-interface EdgeMutationResponse {
-  results: Item[]
+export interface EdgeMutationResponse {
+  results: MutationResult[]
 }
 
-interface Item {
+export interface MutationResult {
   source: any,
   target: any,
   status: string,
   count: number
 }
 
-interface CommandRequest {
+export interface CommandRequest {
   command: string
 }
 
-interface CommandResponse {
+export interface CommandResponse {
   success: boolean,
   result: string | undefined,
   error: string | undefined
