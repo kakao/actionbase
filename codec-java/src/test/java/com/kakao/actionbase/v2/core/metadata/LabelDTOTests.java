@@ -34,6 +34,7 @@ public class LabelDTOTests {
                 new Index(
                     "created_at",
                     Collections.singletonList(new Index.Field("created_at", Order.DESC)))),
+            Collections.emptyList(),
             false,
             false,
             MutationMode.ASYNC);
@@ -41,7 +42,7 @@ public class LabelDTOTests {
     String jsonString = objectMapper.writeValueAsString(label);
 
     assertEquals(
-        "{\"name\":\"test.test\",\"desc\":\"desc\",\"type\":\"INDEXED\",\"schema\":{\"src\":{\"type\":\"LONG\",\"desc\":\"\"},\"tgt\":{\"type\":\"STRING\",\"desc\":\"\"},\"fields\":[{\"name\":\"created_at\",\"type\":\"LONG\",\"nullable\":false,\"desc\":\"\"}]},\"dirType\":\"BOTH\",\"storage\":\"test_storage\",\"indices\":[{\"name\":\"created_at\",\"fields\":[{\"name\":\"created_at\",\"order\":\"DESC\"}],\"desc\":\"\"}],\"event\":false,\"readOnly\":false,\"mode\":\"ASYNC\"}",
+        "{\"name\":\"test.test\",\"desc\":\"desc\",\"type\":\"INDEXED\",\"schema\":{\"src\":{\"type\":\"LONG\",\"desc\":\"\"},\"tgt\":{\"type\":\"STRING\",\"desc\":\"\"},\"fields\":[{\"name\":\"created_at\",\"type\":\"LONG\",\"nullable\":false,\"desc\":\"\"}]},\"dirType\":\"BOTH\",\"storage\":\"test_storage\",\"indices\":[{\"name\":\"created_at\",\"fields\":[{\"name\":\"created_at\",\"order\":\"DESC\"}],\"desc\":\"\"}],\"groups\":[],\"event\":false,\"readOnly\":false,\"mode\":\"ASYNC\"}",
         jsonString);
   }
 
