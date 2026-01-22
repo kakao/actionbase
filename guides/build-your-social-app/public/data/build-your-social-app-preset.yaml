@@ -1,0 +1,302 @@
+- name: Create database
+  description: Create social database
+  command: |
+    create database
+    --name social
+    --data '{
+     "comment": "social database"
+    }'
+
+- name: Create table
+  description: Create user_posts table with schema
+  command: |
+    create table
+    --database social
+    --name user_posts
+    --data '{
+     "desc": "user posts table",
+     "type": "INDEXED",
+     "schema": {
+       "src": {
+         "type": "STRING",
+         "desc": "userId"
+       },
+       "tgt": {
+         "type": "LONG",
+         "desc": "postId"
+       },
+       "fields": [
+         {
+           "name": "createdAt",
+           "type": "LONG",
+           "desc": "createdAt",
+           "nullable": false
+         }
+       ]
+     },
+     "dirType": "BOTH",
+     "indices": [
+       {
+         "name": "created_at_desc",
+         "fields": [
+           {
+             "name": "createdAt",
+             "order": "DESC"
+           }
+         ],
+         "desc": "order by createdAt"
+       }
+     ],
+     "storage": "datastore://guides/user_posts",
+     "event": false,
+     "readOnly": false,
+     "mode": "SYNC"
+    }'
+
+- name: j4rami creates Post1
+  description: Insert edge j4rami → Post1
+  command: |
+    create edges
+    --database social
+    --table user_posts
+    --data '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": __CURRENT_TIMESTAMP__,
+            "source": "j4rami",
+            "target": 1,
+            "properties": {
+              "createdAt": __CURRENT_TIMESTAMP__
+            }
+          }
+        }
+      ]
+    }'
+
+- name: em3s creates Post2
+  description: Insert edge em3s → Post2
+  command: |
+    create edges
+    --database social
+    --table user_posts
+    --data '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": __CURRENT_TIMESTAMP__,
+            "source": "em3s",
+            "target": 2,
+            "properties": {
+              "createdAt": __CURRENT_TIMESTAMP__
+            }
+          }
+        }
+      ]
+    }'
+
+- name: em3s creates Post3
+  description: Insert edge em3s → Post3
+  command: |
+    create edges
+    --database social
+    --table user_posts
+    --data '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": __CURRENT_TIMESTAMP__,
+            "source": "em3s",
+            "target": 3,
+            "properties": {
+              "createdAt": __CURRENT_TIMESTAMP__
+            }
+          }
+        }
+      ]
+    }'
+
+- name: em3s creates Post4
+  description: Insert edge em3s → Post4
+  command: |
+    create edges
+    --database social
+    --table user_posts
+    --data '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": __CURRENT_TIMESTAMP__,
+            "source": "em3s",
+            "target": 4,
+            "properties": {
+              "createdAt": __CURRENT_TIMESTAMP__
+            }
+          }
+        }
+      ]
+    }'
+
+- name: zipdoki creates Post5
+  description: Insert edge zipdoki → Post5
+  command: |
+    create edges
+    --database social
+    --table user_posts
+    --data '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": __CURRENT_TIMESTAMP__,
+            "source": "zipdoki",
+            "target": 5,
+            "properties": {
+              "createdAt": __CURRENT_TIMESTAMP__
+            }
+          }
+        }
+      ]
+    }'
+
+- name: Create table
+  description: Create user_likes table with schema
+  command: |
+    load table
+    --database social
+    --name user_likes
+    --data '{
+      "desc": "user likes table",
+      "type": "INDEXED",
+      "schema": {
+        "src": {
+          "type": "STRING",
+          "desc": "userId"
+        },
+        "tgt": {
+          "type": "LONG",
+          "desc": "postId"
+        },
+        "fields": [
+          {
+            "name": "createdAt",
+            "type": "LONG",
+            "desc": "createdAt",
+            "nullable": false
+          }
+        ]
+      },
+      "dirType": "BOTH",
+      "indices": [
+        {
+          "name": "created_at_desc",
+          "fields": [
+            {
+              "name": "createdAt",
+              "order": "DESC"
+            }
+          ],
+          "desc": "order by createdAt"
+        }
+      ],
+      "storage": "datastore://guides/user_likes",
+      "event": false,
+      "readOnly": false,
+      "mode": "SYNC"
+    }'
+
+- name: d4v1d likes Post1
+  description: Insert edge d4v1d → Post1
+  command: |
+    load edges
+    --database social
+    --table user_likes
+    --data '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": __CURRENT_TIMESTAMP__,
+            "source": "d4v1d",
+            "target": 1,
+            "properties": {
+              "createdAt": __CURRENT_TIMESTAMP__
+            }
+          }
+        }
+      ]
+    }'
+
+- name: d4v1d likes Post2
+  description: Insert edge d4v1d → Post2
+  command: |
+    load edges
+    --database social
+    --table user_likes
+    --data '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": __CURRENT_TIMESTAMP__,
+            "source": "d4v1d",
+            "target": 2,
+            "properties": {
+              "createdAt": __CURRENT_TIMESTAMP__
+            }
+          }
+        }
+      ]
+    }'
+
+- name: punsoo likes Post2
+  description: Insert edge punsoo → Post2
+  command: |
+    load edges
+    --database social
+    --table user_likes
+    --data '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": __CURRENT_TIMESTAMP__,
+            "source": "punsoo",
+            "target": 2,
+            "properties": {
+              "createdAt": __CURRENT_TIMESTAMP__
+            }
+          }
+        }
+      ]
+    }'
+
+- name: ipoemigmail likes Post2
+  description: Insert edge ipoemigmail → Post2
+  command: |
+    load edges
+    --database social
+    --table user_likes
+    --data '{
+      "mutations": [
+        {
+          "type": "INSERT",
+          "edge": {
+            "version": __CURRENT_TIMESTAMP__,
+            "source": "ipoemigmail",
+            "target": 2,
+            "properties": {
+              "createdAt": __CURRENT_TIMESTAMP__
+            }
+          }
+        }
+      ]
+    }'
+
+- name: Use database
+  description: Switch to social database
+  command: use database social
