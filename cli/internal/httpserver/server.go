@@ -39,7 +39,7 @@ func Start(port string, ready chan<- error, handlerFunc http.HandlerFunc) error 
 		handler.ServeHTTP(w, r)
 	})
 
-	addr := "127.0.0.1:" + port
+	addr := "0.0.0.0:" + port
 
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -80,7 +80,7 @@ func StartGuide(cwd, name, apiHost, serverPort string) error {
 
 	address := "http://localhost:" + serverPort
 	if err := openBrowser(address); err != nil {
-		fmt.Println("failed to open browser automatically; open this URL manually:", address)
+		fmt.Println("Open this URL in your browser:", address)
 	}
 
 	fmt.Println("The guide is now being served")
