@@ -82,6 +82,7 @@ const ApiLogs: React.FC = () => {
         <div className="api-log-col-name">URL</div>
         <div className="api-log-col-method">Method</div>
         <div className="api-log-col-status">Status</div>
+        <div className="api-log-col-latency">Time</div>
       </div>
       <div className="api-log-content" ref={apiLogContentRef}>
         {apiLogs.length === 0 ? (
@@ -131,6 +132,11 @@ const ApiLogs: React.FC = () => {
                   <div className="api-log-col-status">
                     <span className={`api-log-status ${getStatusClass(log.status)}`}>
                       {log.status || '—'}
+                    </span>
+                  </div>
+                  <div className="api-log-col-latency">
+                    <span className={`api-log-latency ${log.latencyMs !== undefined && log.latencyMs < 100 ? 'fast' : ''}`}>
+                      {log.latencyMs !== undefined ? `${log.latencyMs}ms` : '—'}
                     </span>
                   </div>
                 </div>

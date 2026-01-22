@@ -14,11 +14,12 @@ interface ApiLog {
   requestBody?: any;
   apiType: ApiType;
   proxiedTo?: string;
+  latencyMs?: number;
 }
 
 interface ApiLogContextProps {
   apiLogs: ApiLog[];
-  addApiLog: (method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any) => void;
+  addApiLog: (method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any, latencyMs?: number) => void;
   clearApiLogs: () => void;
 }
 
@@ -47,7 +48,7 @@ export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     return 'ETC';
   };
 
-  const addApiLog = useCallback((method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any) => {
+  const addApiLog = useCallback((method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any, latencyMs?: number) => {
     const isCliCommand = url.includes('/api/command') && requestBody?.command;
     const displayUrl = isCliCommand ? `actionbase> ${requestBody.command}` : url;
     const proxiedTo = isCliCommand
@@ -65,6 +66,7 @@ export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({children}) =>
       requestBody,
       apiType: getApiType(method, url, requestBody),
       proxiedTo,
+      latencyMs,
     }]);
   }, []);
 

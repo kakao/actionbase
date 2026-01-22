@@ -109,7 +109,7 @@ body[class*="driver-highlighted-element"] .feed-scroll,
 }
 
 .driver-popover, .driver-popover *, .driver-popover-description, .driver-popover-description * {
-  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
 }
 
 .driver-popover-title {
@@ -131,7 +131,7 @@ body[class*="driver-highlighted-element"] .feed-scroll,
 }
 
 .driver-popover-description {
-  font-size: 14px !important;
+  font-size: 16px !important;
   white-space: pre-line;
   margin-top: 16px !important;
   color: #444 !important;
@@ -319,6 +319,41 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   border: 1px solid #ffc107 !important;
   border-radius: 6px !important;
   font-size: 13px !important;
+}
+
+.precompute-badge,
+.instant-read-badge {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 12px 0 !important;
+  padding: 12px 16px !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.precompute-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.instant-read-badge {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+}
+
+.badge-icon {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+}
+
+.badge-subtitle {
+  display: block !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  opacity: 0.85 !important;
+  margin-top: 4px !important;
 }
 
 

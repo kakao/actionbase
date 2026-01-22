@@ -15,6 +15,7 @@
     "axios": "^1.13.2",
     "dompurify": "^3.3.1",
     "driver.js": "^1.4.0",
+    "lucide-react": "^0.562.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.3",

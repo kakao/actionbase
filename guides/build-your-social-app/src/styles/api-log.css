@@ -143,6 +143,23 @@
   text-align: center;
 }
 
+.api-log-col-latency {
+  width: 60px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 12px;
+}
+
+.api-log-latency {
+  font-size: 11px;
+  color: #858585;
+}
+
+.api-log-latency.fast {
+  color: #38ef7d;
+  font-weight: 500;
+}
+
 .api-log-content {
   flex: 1;
   overflow-y: auto;
