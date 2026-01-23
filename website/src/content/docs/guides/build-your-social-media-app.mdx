@@ -51,42 +51,31 @@ This guide has an interactive component that runs locally.
 
 </Steps>
 
+## Follow the Guide
+
 From here, continue in the **web browser**. You will play as **@zipdoki** throughout this tutorial.
+
+The interactive guide walks you through each step - just click through. The commands below explain what happens behind the scenes.
 
 ![Interactive guide welcome screen](https://placehold.co/800x400/1a1a2e/eee?text=Interactive+Guide+Welcome)
 
-## Set Up Sample Data
+### Set Up Sample Data
 
-First, load sample data so you can focus on building features.
+The guide loads sample data so you can focus on building features.
 
-<Steps>
+```bash
+load preset build-your-social-app
+```
 
-1. **Load the preset**
+This creates:
 
-   This creates a database with sample users and posts:
-
-   ```bash
-   load preset build-your-social-app
-   ```
-
-   The preset creates:
-   - A `social` database
-   - `user_posts` table with sample posts
-   - `user_likes` table for tracking likes
-
-2. **Select the database**
-
-   Switch to the social database:
-
-   ```bash
-   use database social
-   ```
-
-</Steps>
+- A `social` database
+- `user_posts` table with sample posts
+- `user_likes` table for tracking likes
 
 ![CLI terminal with setup commands](https://placehold.co/800x400/1a1a2e/eee?text=CLI+Setup+Commands)
 
-## Explore the Data
+### Explore the Data
 
 Before adding new interactions, explore what the preset created:
 
@@ -99,13 +88,13 @@ Browse these tables in the interactive guide to understand the data model.
 
 ![Search results showing tables](https://placehold.co/800x400/1a1a2e/eee?text=Tables+Overview)
 
-## Build Follows
+### Build Follows
 
-Now let's build a follow feature. This involves three steps: creating a table, adding a relationship, and querying the data.
+The guide walks you through building a follow feature: creating a table, adding a relationship, and querying the data.
 
-### Create the Follows Table
+#### Create the Follows Table
 
-Create a `user_follows` table to track who follows whom:
+The guide creates a `user_follows` table to track who follows whom:
 
 ```bash
 create table \
@@ -155,9 +144,9 @@ Key configuration:
 
 ![Create table command](https://placehold.co/800x400/1a1a2e/eee?text=Create+Table)
 
-### Follow a User
+#### Follow a User
 
-Make **@zipdoki** follow **@j4rami**:
+**@zipdoki** follows **@j4rami**:
 
 ```bash
 mutate user_follows \
@@ -175,49 +164,39 @@ This creates a directed edge from `zipdoki` to `j4rami`. Actionbase precomputes 
 
 ![Profile with Following button](https://placehold.co/800x400/1a1a2e/eee?text=Follow+User)
 
-### Query Follow Data
+#### Query Follow Data
 
-<Steps>
+**Check follow status** - verify the relationship exists:
 
-1. **Check follow status**
+```bash
+get user_follows --source zipdoki --target j4rami
+```
 
-   Verify the relationship exists:
+**Count followers** - get **@j4rami**'s follower count:
 
-   ```bash
-   get user_follows --source zipdoki --target j4rami
-   ```
+```bash
+count user_follows --start j4rami --direction IN
+```
 
-2. **Count followers**
+The `--direction IN` queries incoming edges (followers). No aggregation needed - Actionbase precomputes counts at write time.
 
-   Get **@j4rami**'s follower count:
+**List followers** - get users following **@j4rami**:
 
-   ```bash
-   count user_follows --start j4rami --direction IN
-   ```
+```bash
+scan user_follows --start j4rami --index created_at_desc --direction IN
+```
 
-   The `--direction IN` parameter queries incoming edges (followers). No aggregation is needed - Actionbase precomputes counts at write time.
-
-3. **List followers**
-
-   Get the list of users following **@j4rami**:
-
-   ```bash
-   scan user_follows --start j4rami --index created_at_desc --direction IN
-   ```
-
-   Results are already indexed by `created_at_desc`, making pagination efficient.
-
-</Steps>
+Results are already indexed by `created_at_desc`, making pagination efficient.
 
 ![Followers list](https://placehold.co/800x400/1a1a2e/eee?text=Followers+List)
 
-## Build Likes
+### Build Likes
 
 Likes follow the same pattern as follows. A user interacts with a post instead of another user.
 
-### Like a Post
+#### Like a Post
 
-Make **@zipdoki** like **@j4rami**'s post (post ID: 1):
+**@zipdoki** likes **@j4rami**'s post (post ID: 1):
 
 ```bash
 mutate user_likes \
@@ -233,9 +212,9 @@ mutate user_likes \
 
 ![Post with like button](https://placehold.co/800x400/1a1a2e/eee?text=Like+Post)
 
-### Query Like Status
+#### Query Like Status
 
-Verify the like was recorded:
+The like is recorded:
 
 ```bash
 get user_likes --source zipdoki --target 1
@@ -248,7 +227,7 @@ Just like follows, you can also:
 
 Same pattern, same simplicity.
 
-## See Your Feed
+### See Your Feed
 
 Navigate to the feed page in the interactive guide. Your feed now shows:
 
