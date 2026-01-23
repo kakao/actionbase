@@ -56,7 +56,12 @@ graph LR
     Bob((Bob)) -->|likes| Phone
 ```
 
-At write time, Actionbase precomputes everything for reads—counts, indexes, ordering. No aggregation needed at query time.
+At write time, Actionbase **precomputes everything** for reads—counts, indexes, ordering for **both directions**. This means you can instantly query:
+
+- **OUT**: "What did Alice like?" (user's liked items)
+- **IN**: "Who liked Phone?" (users who liked this product)
+
+No aggregation or JOINs at query time.
 
 <details>
 <summary>REST API equivalent</summary>
@@ -134,7 +139,7 @@ curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/get?sour
 
 ### Scan
 
-List edges from a source, ordered by index:
+**What did Alice like?** (OUT direction)
 
 ```
 actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction OUT
@@ -150,18 +155,42 @@ actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction 
   │ |---|---------------|--------|--------|---------------------------|
 ```
 
+**Who liked Phone?** (IN direction)
+
+```
+actionbase(likes:likes)> scan --index created_at_desc --start Phone --direction IN
+```
+
+```
+  │ The 2 edges found (offset: -, hasNext: false)
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | # | VERSION       | SOURCE | TARGET | PROPERTIES                |
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | 1 | 1737377177350 | Bob    | Phone  | created_at: 1737377177350 |
+  │ | 2 | 1737377177245 | Alice  | Phone  | created_at: 1737377177245 |
+  │ |---|---------------|--------|--------|---------------------------|
+```
+
+<Aside type="tip">
+  Both directions are precomputed at write time. No additional indexing or query overhead.
+</Aside>
+
 <details>
 <summary>REST API equivalent</summary>
 
 ```bash
+# OUT
 curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/created_at_desc?start=Alice&direction=OUT"
+
+# IN
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/created_at_desc?start=Phone&direction=IN"
 ```
 
 </details>
 
 ### Count
 
-Get precomputed edge count:
+**How many items did Alice like?**
 
 ```
 actionbase(likes:likes)> count --start Alice --direction OUT
@@ -175,11 +204,29 @@ actionbase(likes:likes)> count --start Alice --direction OUT
   │ |-------|-----------|-------|
 ```
 
+**How many users liked Phone?**
+
+```
+actionbase(likes:likes)> count --start Phone --direction IN
+```
+
+```
+  │ |-------|-----------|-------|
+  │ | START | DIRECTION | COUNT |
+  │ |-------|-----------|-------|
+  │ | Phone | IN        | 2     |
+  │ |-------|-----------|-------|
+```
+
 <details>
 <summary>REST API equivalent</summary>
 
 ```bash
+# OUT
 curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/count?start=Alice&direction=OUT"
+
+# IN
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/count?start=Phone&direction=IN"
 ```
 
 </details>
