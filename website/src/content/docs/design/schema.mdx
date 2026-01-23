@@ -12,38 +12,38 @@ See [Core Concepts](/design/concepts/) for background.
 ## Schema Hierarchy
 
 ```
-Service
-├── Label (edge schema)
+Database
+├── Table (edge schema)
 │   ├── Schema (source, target, properties)
 │   ├── Indexes (for querying)
 │   └── Storage (physical storage)
-└── Alias (alternative name for Label)
+└── Alias (alternative name for Table)
 ```
 
-- **Service** groups related Labels and Aliases
-- **Label** defines the schema for edges
-- **Alias** provides an alternative name for a Label
-- **Label** references a Storage for physical data
+- **Database** groups related Tables and Aliases
+- **Table** defines the schema for edges
+- **Alias** provides an alternative name for a Table
+- **Table** references a Storage for physical data
 
-## Service
+## Database
 
-A namespace that contains labels and aliases.
+A namespace that contains tables and aliases.
 
-| Property | Description                            |
-| -------- | -------------------------------------- |
-| name     | Service identifier (e.g., `myservice`) |
-| desc     | Description                            |
-| active   | Whether active                         |
+| Property | Description                             |
+| -------- | --------------------------------------- |
+| name     | Database identifier (e.g., `myservice`) |
+| desc     | Description                             |
+| active   | Whether active                          |
 
-Example: an e-commerce service might contain labels for `likes`, `recent_views`, and `purchases`.
+Example: an e-commerce database might contain tables for `likes`, `recent_views`, and `purchases`.
 
-## Label
+## Table
 
 Defines the schema for edges—source, target, properties, and indexes.
 
 | Property | Description                       |
 | -------- | --------------------------------- |
-| name     | Format: `service.label`           |
+| name     | Format: `database.table`          |
 | schema   | Edge structure (src, tgt, fields) |
 | indices  | Indexes for querying              |
 | storage  | Storage name                      |
@@ -91,13 +91,13 @@ Indexes are pre-computed at write time. See [Query](/design/query/).
 
 ## Alias
 
-An alternative name for a label.
+An alternative name for a table.
 
-| Property | Description             |
-| -------- | ----------------------- |
-| name     | Format: `service.alias` |
-| target   | The label it points to  |
-| active   | Whether active          |
+| Property | Description              |
+| -------- | ------------------------ |
+| name     | Format: `database.alias` |
+| target   | The table it points to   |
+| active   | Whether active           |
 
 Useful for gradual migrations or domain-specific naming.
 
@@ -116,23 +116,23 @@ See [Storage Backends](/design/storage-backends/).
 
 ## Naming Conventions
 
-| Type    | Format            | Example             |
-| ------- | ----------------- | ------------------- |
-| Service | Simple identifier | `myservice`         |
-| Label   | `service.label`   | `myservice.likes`   |
-| Alias   | `service.alias`   | `myservice.friends` |
-| Storage | Simple identifier | `hbase-storage-1`   |
+| Type     | Format            | Example             |
+| -------- | ----------------- | ------------------- |
+| Database | Simple identifier | `myservice`         |
+| Table    | `database.table`  | `myservice.likes`   |
+| Alias    | `database.alias`  | `myservice.friends` |
+| Storage  | Simple identifier | `hbase-storage-1`   |
 
 ## API Versions
 
-Schema uses v2 API. Mutation and query use v3.
+Mutation and Query use v3 terminology. Metadata API currently uses v2.
 
-| v2 Term | v3 Term  |
-| ------- | -------- |
-| Service | Database |
-| Label   | Table    |
+| v3 Term  | v2 Term (Metadata API) |
+| -------- | ---------------------- |
+| Database | Service                |
+| Table    | Label                  |
 
-Schema v3 is planned.
+Metadata API v3 is planned.
 
 ## Next Steps
 
