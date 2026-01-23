@@ -426,7 +426,7 @@ actionbase(likes:likes)> mutate --type INSERT --source Charlie --target Phone --
 ```
 
 <Aside type="tip">
-  Actionbase requires client-issued timestamps for [event ordering](/design/mutation/#event-ordering). Even if events arrive out of order, Actionbase uses these timestamps to compute the correct final state.
+  Actionbase requires client-issued timestamps for [state transitions](/design/mutation/#state-transitions). Even if events arrive out of order, Actionbase uses these timestamps to compute the correct final state.
 
 Use `$NOW` as a placeholder for the current Unix timestamp in milliseconds. It works in both `--version` and `--properties` values.
 
