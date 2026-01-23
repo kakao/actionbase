@@ -173,26 +173,6 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
 
         <div className="layout">
           <div className="mobile-frame-wrapper">
-            {isStepCompleted && (
-              <div className="completion-bubble">
-                <h3>Now try it yourself</h3>
-                <ul>
-                  <li>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.search}} />
-                    <span>Follow someone</span>
-                  </li>
-                  <li>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.home}} />
-                    <span>Check your feed</span>
-                  </li>
-                  <li>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.heart}} />
-                    <span>Like a post</span>
-                  </li>
-                </ul>
-                <div className="bubble-arrow"></div>
-              </div>
-            )}
             <div className="mobile-frame">
               <div className="mobile-status-bar">
               <span className="status-time">9:41</span>
@@ -221,6 +201,26 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
             </div>
           </div>
           <div className="browser-frame-wrapper">
+            {isStepCompleted && (
+              <div className="completion-bubble">
+                <h3>Now try it yourself</h3>
+                <ul>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.search}} />
+                    <span>Follow someone</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.home}} />
+                    <span>Check your feed</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.heart}} />
+                    <span>Like a post</span>
+                  </li>
+                </ul>
+                <div className="bubble-arrow"></div>
+              </div>
+            )}
             <div className={`browser-frame ${isStepCompleted ? 'step-completed' : ''}`}>
               <div className="browser-header">
                 <div className="browser-buttons">

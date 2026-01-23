@@ -432,11 +432,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding-top: 0;
+  align-items: stretch;
+  justify-content: flex-end;
   overflow: visible;
   max-width: 1000px;
+  height: 900px;
 }
 
 .browser-frame {
@@ -453,6 +453,11 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
+.browser-frame.step-completed {
+  flex: 1;
+  height: auto;
+}
+
 .browser-content {
   display: flex;
   flex-direction: row;
@@ -460,6 +465,10 @@
   position: relative;
   flex-shrink: 0;
   flex: 1;
+}
+
+.browser-content.step-completed {
+  display: none;
 }
 
 .terminal-wrapper {
@@ -490,9 +499,8 @@
 }
 
 .api-logs-wrapper.step-completed {
-  top: 68px;
   width: 100%;
-  height: 830px;
+  flex: 1;
   overflow: hidden;
   border-radius: 0;
   padding: 0;
@@ -623,16 +631,16 @@
 }
 
 .completion-bubble {
-  position: absolute;
-  bottom: calc(100% + 16px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
   z-index: 500;
   background: white;
   padding: 20px 24px;
   border-radius: 16px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  align-self: flex-start;
   min-width: 280px;
 }
 
@@ -680,13 +688,13 @@
 
 .bubble-arrow {
   position: absolute;
-  bottom: -12px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  left: -12px;
+  transform: translateY(-50%);
   width: 0;
   height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-top: 14px solid white;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.06));
+  border-top: 14px solid transparent;
+  border-bottom: 14px solid transparent;
+  border-right: 14px solid white;
+  filter: drop-shadow(-2px 0 2px rgba(0, 0, 0, 0.06));
 }

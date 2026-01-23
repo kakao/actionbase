@@ -53,190 +53,163 @@ This guide has an interactive component that runs locally.
 
 ## Follow the Guide
 
-From here, continue in the **web browser**. You will play as **@zipdoki** throughout this tutorial.
+From here, continue in the **web browser**. The interactive guide walks you through each step - just click through. The commands below explain what happens behind the scenes.
 
-The interactive guide walks you through each step - just click through. The commands below explain what happens behind the scenes.
+<Steps>
 
-![Interactive guide welcome screen](https://placehold.co/800x400/1a1a2e/eee?text=Interactive+Guide+Welcome)
+1. **Welcome**
 
-### Set Up Sample Data
+   ![Welcome](/images/guides/social-media/01-welcome.png)
 
-The guide loads sample data so you can focus on building features.
+2. **You are @zipdoki**
 
-```bash
-load preset build-your-social-app
-```
+   You will play as **@zipdoki** throughout this tutorial.
 
-This creates:
+   ![Zipdoki intro](/images/guides/social-media/02-zipdoki-intro.png)
 
-- A `social` database
-- `user_posts` table with sample posts
-- `user_likes` table for tracking likes
+3. **Set Up**
 
-![CLI terminal with setup commands](https://placehold.co/800x400/1a1a2e/eee?text=CLI+Setup+Commands)
+   The guide loads sample data so you can focus on building features.
 
-### Explore the Data
+   ![Set Up](/images/guides/social-media/03-set-up.png)
 
-Before adding new interactions, explore what the preset created:
+4. **Load Sample Data**
 
-| Table        | Description          |
-| ------------ | -------------------- |
-| `user_posts` | Who posted what      |
-| `user_likes` | Who liked which post |
+   ```bash
+   load preset build-your-social-app
+   ```
 
-Browse these tables in the interactive guide to understand the data model.
+   This creates a `social` database with `user_posts` and `user_likes` tables.
 
-![Search results showing tables](https://placehold.co/800x400/1a1a2e/eee?text=Tables+Overview)
+   ![Load sample data](/images/guides/social-media/04-load-sample-data.png)
 
-### Build Follows
+5. **Select Database**
 
-The guide walks you through building a follow feature: creating a table, adding a relationship, and querying the data.
+   ```bash
+   use database social
+   ```
 
-#### Create the Follows Table
+   ![Select database](/images/guides/social-media/05-select-database.png)
 
-The guide creates a `user_follows` table to track who follows whom:
+6. **Explore the Data**
 
-```bash
-create table \
---database social \
---storage datastore://guides/user_follows \
---name user_follows \
---comment 'user follows table' \
---type INDEXED \
---direction BOTH \
---schema '{
-    "src": {
-        "type": "STRING",
-        "desc": "userId"
-    },
-    "tgt": {
-        "type": "STRING",
-        "desc": "followee Id"
-    },
-    "fields": [
-        {
-          "name": "createdAt",
-          "type": "LONG",
-          "desc": "created at",
-          "nullable": false
-        }
-    ]
-}' \
---indices '[
-    {
-        "name": "created_at_desc",
-        "fields": [
-        {
-            "name": "createdAt",
-            "order": "DESC"
-        }
-    ],
-    "desc": "order by createdAt"
-    }
-]'
-```
+   Browse the preset tables to understand the data model:
 
-Key configuration:
+   | Table        | Description          |
+   | ------------ | -------------------- |
+   | `user_posts` | Who posted what      |
+   | `user_likes` | Who liked which post |
 
-- `--type INDEXED` enables efficient queries by index
-- `--direction BOTH` allows querying in both directions (who I follow and who follows me)
-- `--indices` creates a secondary index for sorting by creation time
+   ![Explore the Data](/images/guides/social-media/06-explore-the-data.png)
 
-![Create table command](https://placehold.co/800x400/1a1a2e/eee?text=Create+Table)
+7. **Follows**
 
-#### Follow a User
+   The guide walks you through building a follow feature.
 
-**@zipdoki** follows **@j4rami**:
+   ![Follows](/images/guides/social-media/07-follows.png)
 
-```bash
-mutate user_follows \
---type INSERT \
---table user_follows \
---source zipdoki \
---target j4rami \
---version $(date +%s)000 \
---properties '{
-    "createdAt": '$(date +%s)000'
-}'
-```
+8. **Create Follows Table**
 
-This creates a directed edge from `zipdoki` to `j4rami`. Actionbase precomputes counts and indices at write time, so reads are fast.
+   Create a `user_follows` table to track who follows whom:
+   - `--type INDEXED` enables efficient queries by index
+   - `--direction BOTH` allows querying in both directions
+   - `--indices` creates a secondary index for sorting
 
-![Profile with Following button](https://placehold.co/800x400/1a1a2e/eee?text=Follow+User)
+   ![Create Follows Table](/images/guides/social-media/08-create-follows-table.png)
 
-#### Query Follow Data
+9. **Follow a User**
 
-**Check follow status** - verify the relationship exists:
+   **@zipdoki** follows **@j4rami**:
 
-```bash
-get user_follows --source zipdoki --target j4rami
-```
+   ```bash
+   mutate user_follows --type INSERT --source zipdoki --target j4rami ...
+   ```
 
-**Count followers** - get **@j4rami**'s follower count:
+   ![Follow a User](/images/guides/social-media/09-follow-a-user.png)
 
-```bash
-count user_follows --start j4rami --direction IN
-```
+10. **Check Follow Status**
 
-The `--direction IN` queries incoming edges (followers). No aggregation needed - Actionbase precomputes counts at write time.
+    Verify the relationship exists:
 
-**List followers** - get users following **@j4rami**:
+    ```bash
+    get user_follows --source zipdoki --target j4rami
+    ```
 
-```bash
-scan user_follows --start j4rami --index created_at_desc --direction IN
-```
+    ![Check Follow Status](/images/guides/social-media/10-check-follow-status.png)
 
-Results are already indexed by `created_at_desc`, making pagination efficient.
+11. **Count Followers**
 
-![Followers list](https://placehold.co/800x400/1a1a2e/eee?text=Followers+List)
+    Get **@j4rami**'s follower count:
 
-### Build Likes
+    ```bash
+    count user_follows --start j4rami --direction IN
+    ```
 
-Likes follow the same pattern as follows. A user interacts with a post instead of another user.
+    ![Count Followers](/images/guides/social-media/11-count-followers.png)
 
-#### Like a Post
+12. **List Followers**
 
-**@zipdoki** likes **@j4rami**'s post (post ID: 1):
+    Get users following **@j4rami**:
 
-```bash
-mutate user_likes \
---type INSERT \
---table user_likes \
---source zipdoki \
---target 1 \
---version $(date +%s)000 \
---properties '{
-    "createdAt": '$(date +%s)000'
-}'
-```
+    ```bash
+    scan user_follows --start j4rami --index created_at_desc --direction IN
+    ```
 
-![Post with like button](https://placehold.co/800x400/1a1a2e/eee?text=Like+Post)
+    ![List Followers](/images/guides/social-media/12-list-followers.png)
 
-#### Query Like Status
+13. **Likes**
 
-The like is recorded:
+    Likes follow the same pattern as follows.
 
-```bash
-get user_likes --source zipdoki --target 1
-```
+    ![Likes](/images/guides/social-media/13-likes.png)
 
-Just like follows, you can also:
+14. **Like a Post**
 
-- **Count likes**: `count user_likes --start 1 --direction IN`
-- **List who liked**: `scan user_likes --start 1 --direction IN`
+    **@zipdoki** likes **@j4rami**'s post:
 
-Same pattern, same simplicity.
+    ```bash
+    mutate user_likes --type INSERT --source zipdoki --target 1 ...
+    ```
 
-### See Your Feed
+    ![Like a Post](/images/guides/social-media/14-like-a-post.png)
 
-Navigate to the feed page in the interactive guide. Your feed now shows:
+15. **Check Like Status**
 
-- Posts from users you follow
-- Real-time like counts
+    ```bash
+    get user_likes --source zipdoki --target 1
+    ```
 
-![Feed page](https://placehold.co/800x400/1a1a2e/eee?text=Your+Feed)
+    ![Check Like Status](/images/guides/social-media/15-check-like-status.png)
 
-This is the core pattern behind most social applications. When you follow a user, their posts appear in your feed. When you like a post, the count updates immediately.
+16. **And More**
+
+    There's more you can explore with the same patterns.
+
+    ![And More](/images/guides/social-media/16-and-more.png)
+
+17. **Feed**
+
+    Your feed shows posts from users you follow with real-time like counts.
+
+    ![Feed](/images/guides/social-media/17-feed.png)
+
+18. **All Done!**
+
+    You've completed the interactive guide.
+
+    ![All Done](/images/guides/social-media/18-all-done.png)
+
+19. **Try It Yourself**
+
+    Now it's your turn to explore. The guide is complete, but the app is fully functional:
+    - **Follow more users** - Search for users and build your network
+    - **Like posts** - Interact with content in your feed
+    - **Check your feed** - See posts from people you follow
+    - **Explore the CLI** - Try different commands in the terminal
+
+    ![Try it yourself](/images/guides/social-media/19-try-it-yourself.png)
+
+</Steps>
 
 ## Summary
 
@@ -250,14 +223,6 @@ You just built a feed with follows and likes - all powered by Actionbase.
 | **Mutations**      | Insert edges representing user interactions                    |
 | **Queries**        | Get individual edges, count totals, and scan with indices      |
 | **Precomputation** | Counts and indices are computed at write time for fast reads   |
-
-### Next Steps
-
-Now that you understand the basics:
-
-- Follow more users and check your feed
-- Like different posts
-- Explore the CLI commands
 
 ### Share Your Feedback
 
