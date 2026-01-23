@@ -9,11 +9,19 @@ Performance benchmarks for Actionbase.
 
 **Note:** At this initial release, benchmark results are approximate. We plan to provide transparent benchmarks using generalized datasets in future releases.
 
-## Current Configuration
+## Production Infrastructure
 
-- **Ingress**: 9 nodes (6 cores, 12GB RAM)
-- **Worker**: 9 nodes (40 cores, 64GB RAM)
-- **HBase**: 9 region servers (20 cores, 64GB RAM each)
+Actionbase runs as stateless services that can scale horizontally:
+
+- **Ingress** (Actionbase): 9 nodes (6 cores, 12GB RAM) — API gateway, request routing
+- **Worker** (Actionbase): 9 nodes (40 cores, 64GB RAM) — mutation processing, query execution
+- **HBase**: 9 region servers (20 cores, 64GB RAM each) — storage backend
+
+Ingress and Worker are Actionbase deployments. They maintain no local state—all data resides in the storage backend (HBase). This stateless architecture enables:
+
+- **Horizontal scaling**: Add nodes without data migration
+- **Rolling updates**: Deploy without downtime
+- **Failure recovery**: Any node can handle any request
 
 ## Production Traffic
 
