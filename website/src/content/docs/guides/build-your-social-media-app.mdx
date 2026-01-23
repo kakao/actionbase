@@ -5,17 +5,271 @@ sidebar:
   order: 1
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-<Aside>
-🚧 **Work in Progress**
+This guide walks you through building a simple social media application using Actionbase. You will learn how to model and serve activity data for core features such as **follows**, **likes**, and **feeds**.
 
-This guide is currently under active development.
+## What You Will Build
 
-</Aside>
+By the end of this guide, you will have implemented:
 
-This guide walks through building a simple social media application using Actionbase.
+- **Follows** - Users can follow other users
+- **Likes** - Users can like posts
+- **Feed** - Display posts from followed users with real-time like counts
 
-It focuses on modeling and serving activity data for core features such as likes, feeds, and timelines, and demonstrates how Actionbase can be used as the foundation for activity-driven services.
+These features demonstrate the core pattern behind most social applications.
 
-Detailed, step-by-step instructions will be added as the hands-on guide evolves.
+## Prerequisites
+
+- [Actionbase CLI](/operations/cli/) installed
+- A terminal with bash or zsh
+
+## Start the Interactive Guide
+
+This guide has an interactive component that runs locally. Start the Actionbase proxy server and launch the guide:
+
+<Tabs>
+<TabItem label="Terminal 1">
+```bash
+actionbase --proxy
+```
+</TabItem>
+<TabItem label="Terminal 2">
+```bash
+guide start build-your-social-app
+```
+</TabItem>
+</Tabs>
+
+The guide opens in your browser at `http://localhost:3100`. You will play as **@zipdoki** throughout this tutorial.
+
+![Interactive guide welcome screen]()
+
+## Set Up Sample Data
+
+First, load sample data so you can focus on building features.
+
+<Steps>
+
+1. **Load the preset**
+
+   This creates a database with sample users and posts:
+
+   ```bash
+   load preset build-your-social-app
+   ```
+
+   The preset creates:
+   - A `social` database
+   - `user_posts` table with sample posts
+   - `user_likes` table for tracking likes
+
+2. **Select the database**
+
+   Switch to the social database:
+
+   ```bash
+   use database social
+   ```
+
+</Steps>
+
+![CLI terminal with setup commands]()
+
+## Explore the Data
+
+Before adding new interactions, explore what the preset created:
+
+| Table | Description |
+|-------|-------------|
+| `user_posts` | Who posted what |
+| `user_likes` | Who liked which post |
+
+Browse these tables in the interactive guide to understand the data model.
+
+![Search results showing tables]()
+
+## Build Follows
+
+Now let's build a follow feature. This involves three steps: creating a table, adding a relationship, and querying the data.
+
+### Create the Follows Table
+
+Create a `user_follows` table to track who follows whom:
+
+```bash
+create table \
+--database social \
+--storage datastore://guides/user_follows \
+--name user_follows \
+--comment 'user follows table' \
+--type INDEXED \
+--direction BOTH \
+--schema '{
+    "src": {
+        "type": "STRING",
+        "desc": "userId"
+    },
+    "tgt": {
+        "type": "STRING",
+        "desc": "followee Id"
+    },
+    "fields": [
+        {
+          "name": "createdAt",
+          "type": "LONG",
+          "desc": "created at",
+          "nullable": false
+        }
+    ]
+}' \
+--indices '[
+    {
+        "name": "created_at_desc",
+        "fields": [
+        {
+            "name": "createdAt",
+            "order": "DESC"
+        }
+    ],
+    "desc": "order by createdAt"
+    }
+]'
+```
+
+Key configuration:
+- `--type INDEXED` enables efficient queries by index
+- `--direction BOTH` allows querying in both directions (who I follow and who follows me)
+- `--indices` creates a secondary index for sorting by creation time
+
+![Create table command]()
+
+### Follow a User
+
+Make **@zipdoki** follow **@j4rami**:
+
+```bash
+mutate user_follows \
+--type INSERT \
+--table user_follows \
+--source zipdoki \
+--target j4rami \
+--version $(date +%s)000 \
+--properties '{
+    "createdAt": '$(date +%s)000'
+}'
+```
+
+This creates a directed edge from `zipdoki` to `j4rami`. Actionbase precomputes counts and indices at write time, so reads are fast.
+
+![Profile with Following button]()
+
+### Query Follow Data
+
+<Steps>
+
+1. **Check follow status**
+
+   Verify the relationship exists:
+
+   ```bash
+   get user_follows --source zipdoki --target j4rami
+   ```
+
+2. **Count followers**
+
+   Get **@j4rami**'s follower count:
+
+   ```bash
+   count user_follows --start j4rami --direction IN
+   ```
+
+   The `--direction IN` parameter queries incoming edges (followers). No aggregation is needed - Actionbase precomputes counts at write time.
+
+3. **List followers**
+
+   Get the list of users following **@j4rami**:
+
+   ```bash
+   scan user_follows --start j4rami --index created_at_desc --direction IN
+   ```
+
+   Results are already indexed by `created_at_desc`, making pagination efficient.
+
+</Steps>
+
+![Followers list]()
+
+## Build Likes
+
+Likes follow the same pattern as follows. A user interacts with a post instead of another user.
+
+### Like a Post
+
+Make **@zipdoki** like **@j4rami**'s post (post ID: 1):
+
+```bash
+mutate user_likes \
+--type INSERT \
+--table user_likes \
+--source zipdoki \
+--target 1 \
+--version $(date +%s)000 \
+--properties '{
+    "createdAt": '$(date +%s)000'
+}'
+```
+
+![Post with like button]()
+
+### Query Like Status
+
+Verify the like was recorded:
+
+```bash
+get user_likes --source zipdoki --target 1
+```
+
+Just like follows, you can also:
+- **Count likes**: `count user_likes --start 1 --direction IN`
+- **List who liked**: `scan user_likes --start 1 --direction IN`
+
+Same pattern, same simplicity.
+
+## See Your Feed
+
+Navigate to the feed page in the interactive guide. Your feed now shows:
+
+- Posts from users you follow
+- Real-time like counts
+
+![Feed page]()
+
+This is the core pattern behind most social applications. When you follow a user, their posts appear in your feed. When you like a post, the count updates immediately.
+
+## Summary
+
+You just built a feed with follows and likes - all powered by Actionbase.
+
+### What You Learned
+
+| Concept | Description |
+|---------|-------------|
+| **Tables** | Create tables with schemas, indices, and bidirectional queries |
+| **Mutations** | Insert edges representing user interactions |
+| **Queries** | Get individual edges, count totals, and scan with indices |
+| **Precomputation** | Counts and indices are computed at write time for fast reads |
+
+### Next Steps
+
+Now that you understand the basics:
+
+- Follow more users and check your feed
+- Like different posts
+- Explore the CLI commands
+
+### Share Your Feedback
+
+We built this guide to help you get to know Actionbase. We did our best, but it may fall short in places. We appreciate your understanding - and your feedback means a lot.
+
+[Share your thoughts on GitHub Discussions](https://github.com/kakao/actionbase/discussions/94)
