@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 
 This guide walks you through building a simple social media application using Actionbase. You will learn how to model and serve activity data for core features such as **follows**, **likes**, and **feeds**.
 
@@ -21,27 +21,24 @@ These features demonstrate the core pattern behind most social applications.
 
 ## Prerequisites
 
-- [Actionbase CLI](/operations/cli/) installed
+- [Docker](https://www.docker.com/) installed
 - A terminal with bash or zsh
 
 ## Start the Interactive Guide
 
-This guide has an interactive component that runs locally. Start the Actionbase proxy server and launch the guide:
+This guide has an interactive component that runs locally. Start Actionbase with Docker:
 
-<Tabs>
-<TabItem label="Terminal 1">
 ```bash
-actionbase --proxy
+docker run -it -p 9300:9300 --pull always ghcr.io/kakao/actionbase:standalone
 ```
-</TabItem>
-<TabItem label="Terminal 2">
-```bash
-guide start build-your-social-app
-```
-</TabItem>
-</Tabs>
 
-The guide opens in your browser at `http://localhost:3100`. You will play as **@zipdoki** throughout this tutorial.
+Once the CLI prompt appears, start the interactive guide:
+
+```bash
+actionbase> guide start build-your-social-app
+```
+
+The guide opens in your browser at `http://localhost:9300`. You will play as **@zipdoki** throughout this tutorial.
 
 ![Interactive guide welcome screen]()
 
