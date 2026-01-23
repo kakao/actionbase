@@ -149,7 +149,33 @@ export default defineConfig({
           errorOnInconsistentLocale: true,
         }),
         starlightLlmsTxt({
-          exclude: ['404'],
+          exclude: ['404', 'api-references/**'],
+          promote: ['introduction', 'quick-start', 'design/**'],
+          demote: ['api-references/**'],
+          customSets: [
+            {
+              label: 'Core',
+              paths: [
+                'introduction',
+                'quick-start',
+                'faq',
+                'for-rdb-users',
+                'design/**',
+                'internals/**',
+                'provisioning/**',
+                'operations/**',
+                'guides/**',
+                'community/**',
+                'project/**',
+              ],
+              description: 'Core documentation without API reference',
+            },
+            {
+              label: 'API',
+              paths: ['api-references/**'],
+              description: 'API reference documentation',
+            },
+          ],
         }),
         starlightBlog({
           authors: {
