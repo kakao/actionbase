@@ -140,6 +140,7 @@ export default defineConfig({
       ],
       components: {
         Head: './src/components/Head.astro',
+        PageSidebar: './src/components/PageSidebar.astro',
       },
       expressiveCode: { shiki: { langs: [markdocGrammar] } },
       plugins: [
