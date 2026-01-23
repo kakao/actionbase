@@ -15,13 +15,13 @@ See [Core Concepts](/design/concepts/) for background.
 flowchart TD
     Request([Mutation Request<br/>with Event, Operation]) --> WAL[Write WAL]
     WAL --> Lock[Acquire Lock]
-    Lock --> Read[Read State<br/>from datastore]
+    Lock --> Read[Read State<br/>from storage]
     Read --> Modify{State exists?}
     Modify -->|Yes| ApplyEvent[Apply Event]
     Modify -->|No| InitialState[Initial State]
     InitialState --> ApplyEvent
     ApplyEvent --> ComputeAdditionalInfo[Compute Index, Count<br/>based on changed States]
-    ComputeAdditionalInfo --> Write[Write State with AdditionalInfo<br/>to datastore]
+    ComputeAdditionalInfo --> Write[Write State with AdditionalInfo<br/>to storage]
     Write --> Release[Release Lock]
     Release --> CDC[Write CDC]
     CDC --> Response([Response])
@@ -51,7 +51,7 @@ Prevents concurrent modifications:
 
 ### 3. Read State
 
-Read current state from datastore—properties, timestamps, metadata.
+Read current state from storage—properties, timestamps, metadata.
 
 ### 4. Apply Event
 
@@ -113,5 +113,5 @@ Reads use simple GET, COUNT, SCAN without query-time computation.
 ## Next Steps
 
 - [Query](/design/query/): Read pre-computed data
-- [Datastore](/design/datastore/): Storage backends
+- [Storage Backends](/design/storage-backends/): Pluggable storage layer
 - [Mutation API](/api-references/mutation/): API reference

@@ -11,7 +11,7 @@ For high-level concepts, see [Core Concepts](/design/concepts/).
 
 ## Row Types
 
-Actionbase stores edge data using multiple row types in the datastore backend. Each row type serves a specific query purpose.
+Actionbase stores edge data using multiple row types in the storage backend. Each row type serves a specific query purpose.
 
 | Row Type   | Type Code | Purpose            | Query Type |
 | ---------- | --------- | ------------------ | ---------- |
@@ -59,7 +59,7 @@ Stores index entries for Scan queries. Uses **Narrow Row** format for high-cardi
 
 ## Edge Count (Type Code: -2)
 
-Stores counters for Count queries. Uses the datastore backend's `increment` operation.
+Stores counters for Count queries. Uses the storage backend's `increment` operation.
 
 ### Key Structure
 
