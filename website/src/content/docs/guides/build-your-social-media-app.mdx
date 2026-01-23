@@ -77,9 +77,9 @@ First, load sample data so you can focus on building features.
 
 Before adding new interactions, explore what the preset created:
 
-| Table | Description |
-|-------|-------------|
-| `user_posts` | Who posted what |
+| Table        | Description          |
+| ------------ | -------------------- |
+| `user_posts` | Who posted what      |
 | `user_likes` | Who liked which post |
 
 Browse these tables in the interactive guide to understand the data model.
@@ -135,6 +135,7 @@ create table \
 ```
 
 Key configuration:
+
 - `--type INDEXED` enables efficient queries by index
 - `--direction BOTH` allows querying in both directions (who I follow and who follows me)
 - `--indices` creates a secondary index for sorting by creation time
@@ -228,6 +229,7 @@ get user_likes --source zipdoki --target 1
 ```
 
 Just like follows, you can also:
+
 - **Count likes**: `count user_likes --start 1 --direction IN`
 - **List who liked**: `scan user_likes --start 1 --direction IN`
 
@@ -250,12 +252,12 @@ You just built a feed with follows and likes - all powered by Actionbase.
 
 ### What You Learned
 
-| Concept | Description |
-|---------|-------------|
-| **Tables** | Create tables with schemas, indices, and bidirectional queries |
-| **Mutations** | Insert edges representing user interactions |
-| **Queries** | Get individual edges, count totals, and scan with indices |
-| **Precomputation** | Counts and indices are computed at write time for fast reads |
+| Concept            | Description                                                    |
+| ------------------ | -------------------------------------------------------------- |
+| **Tables**         | Create tables with schemas, indices, and bidirectional queries |
+| **Mutations**      | Insert edges representing user interactions                    |
+| **Queries**        | Get individual edges, count totals, and scan with indices      |
+| **Precomputation** | Counts and indices are computed at write time for fast reads   |
 
 ### Next Steps
 
