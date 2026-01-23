@@ -1,0 +1,68 @@
+---
+title: Development Setup
+description: Setting up IntelliJ for Actionbase backend development
+sidebar:
+  order: 3
+---
+
+## Prerequisites
+
+- Java 17+
+- IntelliJ IDEA (Community or Ultimate)
+
+## Setup
+
+```bash
+git clone https://github.com/kakao/actionbase.git
+cd actionbase
+```
+
+Open in IntelliJ: **File > Open** → select project root.
+
+IntelliJ will auto-import Gradle. Wait for indexing to complete.
+
+## Build
+
+```bash
+./gradlew build
+```
+
+Or in IntelliJ: **Gradle panel > actionbase > Tasks > build > build**
+
+## Run
+
+```bash
+./gradlew :server:bootRun
+```
+
+Server starts at `http://localhost:8080`.
+
+## Test
+
+```bash
+# All tests
+./gradlew test
+
+# Specific module
+./gradlew :core:test
+./gradlew :engine:test
+./gradlew :server:test
+```
+
+## PR Workflow
+
+Fork [kakao/actionbase](https://github.com/kakao/actionbase) on GitHub, then set up remotes:
+
+```bash
+git remote rename origin upstream
+git remote add origin https://github.com/YOUR_USERNAME/actionbase.git
+```
+
+1. Create branch: `git checkout -b feature/your-feature`
+2. Make changes
+3. Format: `./gradlew spotlessApply`
+4. Test: `./gradlew test`
+5. Commit: `git commit -m "feat(scope): description"`
+6. Push & create PR
+
+See [Contributing](/community/contributing/) for commit message format and CLA.
