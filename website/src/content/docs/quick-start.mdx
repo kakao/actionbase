@@ -1,9 +1,11 @@
 ---
 title: Quick Start
 description: Run Actionbase and try core operations in minutes.
+hideOverview: true
 ---
 
 import { Aside, Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { User, Package, ArrowRight, ArrowLeft } from '@lucide/astro';
 
 ## Prerequisites
 
@@ -58,8 +60,10 @@ graph LR
 
 At write time, Actionbase **precomputes everything** for reads—counts, indexes, ordering for **both directions**. This means you can instantly query:
 
-- **OUT**: "What did Alice like?" (user's liked items)
-- **IN**: "Who liked Phone?" (users who liked this product)
+<div class="icon-rows">
+  <div class="icon-row">"What did Alice like?" <User size={18} /> <ArrowRight size={18} /> <Package size={18} /> (direction: OUT)</div>
+  <div class="icon-row">"Who liked Phone?" <Package size={18} /> <ArrowLeft size={18} /> <User size={18} /> (direction: IN)</div>
+</div>
 
 No aggregation or JOINs at query time.
 
@@ -139,7 +143,7 @@ curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/get?sour
 
 ### Scan
 
-**What did Alice like?** (OUT direction)
+<div class="icon-row"><strong>What did Alice like?</strong> <User size={18} /> <ArrowRight size={18} /> <Package size={18} /> (direction: OUT)</div>
 
 ```
 actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction OUT
@@ -155,7 +159,7 @@ actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction 
   │ |---|---------------|--------|--------|---------------------------|
 ```
 
-**Who liked Phone?** (IN direction)
+<div class="icon-row"><strong>Who liked Phone?</strong> <Package size={18} /> <ArrowLeft size={18} /> <User size={18} /> (direction: IN)</div>
 
 ```
 actionbase(likes:likes)> scan --index created_at_desc --start Phone --direction IN
@@ -171,7 +175,7 @@ actionbase(likes:likes)> scan --index created_at_desc --start Phone --direction 
   │ |---|---------------|--------|--------|---------------------------|
 ```
 
-<Aside type="tip">
+<Aside type="note">
   Both directions are precomputed at write time. No additional indexing or query overhead.
 </Aside>
 
@@ -190,7 +194,7 @@ curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/cre
 
 ### Count
 
-**How many items did Alice like?**
+<div class="icon-row"><strong>How many items did Alice like?</strong> <User size={18} /> <ArrowRight size={18} /> <Package size={18} /> (direction: OUT)</div>
 
 ```
 actionbase(likes:likes)> count --start Alice --direction OUT
@@ -204,7 +208,7 @@ actionbase(likes:likes)> count --start Alice --direction OUT
   │ |-------|-----------|-------|
 ```
 
-**How many users liked Phone?**
+<div class="icon-row"><strong>How many users liked Phone?</strong> <Package size={18} /> <ArrowLeft size={18} /> <User size={18} /> (direction: IN)</div>
 
 ```
 actionbase(likes:likes)> count --start Phone --direction IN
@@ -217,6 +221,10 @@ actionbase(likes:likes)> count --start Phone --direction IN
   │ | Phone | IN        | 2     |
   │ |-------|-----------|-------|
 ```
+
+<Aside type="note">
+  Counts are precomputed at write time. No aggregation needed.
+</Aside>
 
 <details>
 <summary>REST API equivalent</summary>

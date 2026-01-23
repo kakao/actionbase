@@ -25,3 +25,27 @@
 [data-has-hero] .hero > img {
   filter: drop-shadow(0 0 3rem var(--overlay-blurple));
 }
+
+/* Icon row component */
+.icon-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.icon-row svg {
+  margin: 0;
+}
+
+.icon-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.icon-rows .icon-row {
+  margin-bottom: 0;
+}
+
