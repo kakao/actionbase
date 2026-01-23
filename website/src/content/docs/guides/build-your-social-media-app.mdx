@@ -25,19 +25,33 @@ These features demonstrate the core pattern behind most social applications.
 
 ## Start the Interactive Guide
 
-This guide has an interactive component that runs locally. Start Actionbase with Docker:
+This guide has an interactive component that runs locally.
 
-```bash
-docker run -it -p 9300:9300 --pull always ghcr.io/kakao/actionbase:standalone
-```
+<Steps>
 
-Once the CLI prompt (`actionbase>`) appears, start the interactive guide:
+1. **Start Actionbase with Docker**
 
-```
-guide start hands-on-social
-```
+   ```bash
+   docker run -it -p 9300:9300 --pull always ghcr.io/kakao/actionbase:standalone
+   ```
 
-The guide opens in your browser at `http://localhost:9300`. You will play as **@zipdoki** throughout this tutorial.
+2. **Start the interactive guide**
+
+   Once the CLI prompt (`actionbase>`) appears:
+
+   ```
+   guide start hands-on-social
+   ```
+
+3. **Open in your browser**
+
+   ```
+   http://localhost:9300
+   ```
+
+</Steps>
+
+From here, continue in the **web browser**. You will play as **@zipdoki** throughout this tutorial.
 
 ![Interactive guide welcome screen](https://placehold.co/800x400/1a1a2e/eee?text=Interactive+Guide+Welcome)
 
