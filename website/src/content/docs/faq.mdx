@@ -116,13 +116,9 @@ Even if events arrive out of order, the final state remains consistent.
 
 ### What is write-time optimization?
 
-When an interaction is written, Actionbase pre-computes:
+Actionbase pre-computes State, Index, and Count structures when edges are written. This enables simple GET, COUNT, SCAN reads without query-time computation.
 
-1. **State** — current relationship between source and target
-2. **Index** — ordered structures based on properties (e.g., `created_at DESC`)
-3. **Count** — counters (e.g., number of likes per item)
-
-Reads then use simple GET, COUNT, SCAN operations without computation at query time.
+See [Core Concepts - Write-Time Optimization](/design/concepts/#write-time-optimization) for details.
 
 ### How does Actionbase handle out-of-order events?
 
