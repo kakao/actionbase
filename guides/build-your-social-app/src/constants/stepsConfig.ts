@@ -42,6 +42,7 @@ export interface StepConfig {
 export interface BreadCrumbStep {
   stepIndex: number;
   title?: string;
+  icon?: string;
   isActive?: boolean;
   hasActiveSubStep?: boolean;
   isCompleted?: boolean;
@@ -612,6 +613,16 @@ export const getStepVerifier = (index: number): (() => Promise<boolean>) | undef
   return getStepConfig(index)?.verifier;
 };
 
+const STEP_ICONS: Record<string, string> = {
+  '1': 'rocket',
+  '2': 'package',
+  '3': 'search',
+  '4': 'users',
+  '5': 'heart',
+  '6': 'home',
+  '7': 'check',
+};
+
 export const generateBreadCrumbSteps = (): BreadCrumbStep[] => {
   const result: BreadCrumbStep[] = [];
   let currentParent: BreadCrumbStep | null = null;
@@ -624,6 +635,7 @@ export const generateBreadCrumbSteps = (): BreadCrumbStep[] => {
       currentParent = {
         stepIndex: step.index,
         title: step.title ? `${step.title}` : undefined,
+        icon: STEP_ICONS[step.titleNumber],
         subSteps: [],
       };
     } else if (step.title && currentParent) {
