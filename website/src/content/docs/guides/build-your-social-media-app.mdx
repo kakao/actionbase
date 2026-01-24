@@ -5,7 +5,25 @@ sidebar:
   order: 1
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps, Aside } from '@astrojs/starlight/components';
+import {
+  Users,
+  Heart,
+  Home,
+  Package,
+  Table,
+  Search,
+  Zap,
+  BarChart,
+  List,
+  Check,
+  Rocket,
+  UserPlus,
+} from '@lucide/astro';
+
+<Aside type="tip">
+  New to Actionbase? Start with [Quick Start](/quick-start/) for a concise introduction.
+</Aside>
 
 This guide walks you through building a simple social media application using Actionbase. You will learn how to model and serve activity data for core features such as **follows**, **likes**, and **feeds**.
 
@@ -22,6 +40,7 @@ These features demonstrate the core pattern behind most social applications.
 ## Prerequisites
 
 - Docker
+- Web browser
 
 ## Start the Interactive Guide
 
@@ -32,7 +51,7 @@ This guide has an interactive component that runs locally.
 1. **Start Actionbase with Docker**
 
    ```bash
-   docker run -it -p 9300:9300 --pull always ghcr.io/kakao/actionbase:standalone
+   docker run -it -p 9300:9300 ghcr.io/kakao/actionbase:standalone
    ```
 
 2. **Start the interactive guide**
@@ -49,15 +68,38 @@ This guide has an interactive component that runs locally.
    http://localhost:9300
    ```
 
+   The screen has three panels:
+   - **Left**: Progress sidebar showing guide steps
+   - **Center**: Social app UI
+   - **Right**: CLI terminal and API logs
+
+   A popup will walk you through each step.
+
+   The sections below summarize what you'll see — you can read through without running the guide, or use them as a reference while following along.
+
 </Steps>
 
 ## Follow the Guide
 
-From here, continue in the **web browser**. The interactive guide walks you through each step - just click through. The commands below explain what happens behind the scenes.
+From here, continue in the **web browser**. The interactive guide walks you through each step.
 
 <Steps>
 
 1. **Welcome**
+
+   Welcome to the Actionbase hands-on guide! In this tutorial, you will:
+
+   <ul class="icon-rows">
+     <li class="icon-row">
+       <Users size={18} /> Build follows
+     </li>
+     <li class="icon-row">
+       <Heart size={18} /> Build likes
+     </li>
+     <li class="icon-row">
+       <Home size={18} /> See your feed
+     </li>
+   </ul>
 
    ![Welcome](/images/guides/social-media/01-welcome.png)
 
@@ -65,25 +107,53 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
    You will play as **@zipdoki** throughout this tutorial.
 
+   **Tip:** Press **Enter** to proceed.
+
    ![Zipdoki intro](/images/guides/social-media/02-zipdoki-intro.png)
 
 3. **Set Up**
 
-   The guide loads sample data so you can focus on building features.
+   First, let's load **sample data** so you can focus on building.
+
+   <ul class="icon-rows">
+     <li class="icon-row">
+       <Package size={18} /> Create database & tables
+     </li>
+     <li class="icon-row">
+       <Users size={18} /> Add sample users & posts
+     </li>
+   </ul>
 
    ![Set Up](/images/guides/social-media/03-set-up.png)
 
 4. **Load Sample Data**
 
+   Click **Run** to create:
+
+   <ul class="icon-rows">
+     <li class="icon-row">
+       <Package size={18} /> Database with users
+     </li>
+     <li class="icon-row">
+       <Table size={18} /> Posts & likes tables
+     </li>
+   </ul>
+
    ```bash
    load preset build-your-social-app
    ```
 
-   This creates a `social` database with `user_posts` and `user_likes` tables.
-
    ![Load sample data](/images/guides/social-media/04-load-sample-data.png)
 
 5. **Select Database**
+
+   Switch to the `social` database.
+
+   <ul class="icon-rows">
+     <li class="icon-row">
+       <Package size={18} /> Use database social
+     </li>
+   </ul>
 
    ```bash
    use database social
@@ -93,33 +163,60 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
 6. **Explore the Data**
 
-   Browse the preset tables to understand the data model:
+   In the previous step, we created these tables:
 
-   | Table        | Description          |
-   | ------------ | -------------------- |
-   | `user_posts` | Who posted what      |
-   | `user_likes` | Who liked which post |
+   <ul class="icon-rows">
+     <li class="icon-row">
+       <Table size={18} /> user_posts — who posted what
+     </li>
+     <li class="icon-row">
+       <Heart size={18} /> user_likes — who liked which post
+     </li>
+   </ul>
+
+   Browse around before we add new interactions.
 
    ![Explore the Data](/images/guides/social-media/06-explore-the-data.png)
 
 7. **Follows**
 
-   The guide walks you through building a follow feature.
+   Let's build a **follow** feature.
+
+   <ul class="icon-rows">
+     <li class="icon-row">
+       <Table size={18} /> Create a table
+     </li>
+     <li class="icon-row">
+       <Users size={18} /> Add a relationship
+     </li>
+     <li class="icon-row">
+       <Search size={18} /> Query it
+     </li>
+   </ul>
 
    ![Follows](/images/guides/social-media/07-follows.png)
 
 8. **Create Follows Table**
 
-   Create a `user_follows` table to track who follows whom:
-   - `--type INDEXED` enables efficient queries by index
-   - `--direction BOTH` allows querying in both directions
-   - `--indices` creates a secondary index for sorting
+   Create a `user_follows` table.
+
+   <ul class="icon-rows">
+     <li class="icon-row">
+       <UserPlus size={18} /> Who follows whom
+     </li>
+   </ul>
 
    ![Create Follows Table](/images/guides/social-media/08-create-follows-table.png)
 
 9. **Follow a User**
 
-   **@zipdoki** follows **@j4rami**:
+   Make **@zipdoki** follow **@j4rami**. This creates a connection between two users.
+
+   <ul class="icon-rows">
+     <li class="icon-row">
+       <Zap size={18} /> Precomputing count & index
+     </li>
+   </ul>
 
    ```bash
    mutate user_follows --type INSERT --source zipdoki --target j4rami ...
@@ -129,7 +226,13 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
 10. **Check Follow Status**
 
-    Verify the relationship exists:
+    Verify the follow exists.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Check size={18} /> Query relationship
+      </li>
+    </ul>
 
     ```bash
     get user_follows --source zipdoki --target j4rami
@@ -139,7 +242,13 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
 11. **Count Followers**
 
-    Get **@j4rami**'s follower count:
+    Get **@j4rami**'s follower count.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Rocket size={18} /> No aggregation
+      </li>
+    </ul>
 
     ```bash
     count user_follows --start j4rami --direction IN
@@ -149,7 +258,13 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
 12. **List Followers**
 
-    Get users following **@j4rami**:
+    Get the list of users following **@j4rami**.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Rocket size={18} /> Already indexed
+      </li>
+    </ul>
 
     ```bash
     scan user_follows --start j4rami --index created_at_desc --direction IN
@@ -159,13 +274,25 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
 13. **Likes**
 
-    Likes follow the same pattern as follows.
+    Now let's add **likes**. Same pattern as follows.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Heart size={18} /> A user interacts with a post
+      </li>
+    </ul>
 
     ![Likes](/images/guides/social-media/13-likes.png)
 
 14. **Like a Post**
 
-    **@zipdoki** likes **@j4rami**'s post:
+    Make **@zipdoki** like **@j4rami**'s post.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Zap size={18} /> Precomputing count & index
+      </li>
+    </ul>
 
     ```bash
     mutate user_likes --type INSERT --source zipdoki --target 1 ...
@@ -175,6 +302,14 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
 15. **Check Like Status**
 
+    Verify that **@zipdoki**'s like was recorded.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Check size={18} /> Query like status
+      </li>
+    </ul>
+
     ```bash
     get user_likes --source zipdoki --target 1
     ```
@@ -183,19 +318,55 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
 16. **And More**
 
-    There's more you can explore with the same patterns.
+    Just like follows, you can:
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <BarChart size={18} /> Count likes
+      </li>
+      <li class="icon-row">
+        <List size={18} /> List who liked a post
+      </li>
+    </ul>
+
+    Same pattern, same simplicity.
 
     ![And More](/images/guides/social-media/16-and-more.png)
 
 17. **Feed**
 
-    Your feed shows posts from users you follow with real-time like counts.
+    Your **feed** now shows:
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Users size={18} /> Posts from users you follow
+      </li>
+      <li class="icon-row">
+        <Heart size={18} /> Real like counts
+      </li>
+    </ul>
+
+    This is the core pattern behind most social apps.
 
     ![Feed](/images/guides/social-media/17-feed.png)
 
 18. **All Done!**
 
-    You've completed the interactive guide.
+    You just built a **feed** with **follows** and **likes** — all powered by Actionbase.
+
+    Now try it yourself:
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Search size={18} /> Follow someone
+      </li>
+      <li class="icon-row">
+        <Home size={18} /> Check your feed
+      </li>
+      <li class="icon-row">
+        <Heart size={18} /> Like a post
+      </li>
+    </ul>
 
     ![All Done](/images/guides/social-media/18-all-done.png)
 
@@ -203,9 +374,8 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
     Now it's your turn to explore. The guide is complete, but the app is fully functional:
     - **Follow more users** - Search for users and build your network
-    - **Like posts** - Interact with content in your feed
     - **Check your feed** - See posts from people you follow
-    - **Explore the CLI** - Try different commands in the terminal
+    - **Like posts** - Interact with content in your feed
 
     ![Try it yourself](/images/guides/social-media/19-try-it-yourself.png)
 
@@ -219,13 +389,19 @@ You just built a feed with follows and likes - all powered by Actionbase.
 
 | Concept            | Description                                                    |
 | ------------------ | -------------------------------------------------------------- |
-| **Tables**         | Create tables with schemas, indices, and bidirectional queries |
+| **Tables**         | Create tables with schemas, indexes, and bidirectional queries |
 | **Mutations**      | Insert edges representing user interactions                    |
-| **Queries**        | Get individual edges, count totals, and scan with indices      |
-| **Precomputation** | Counts and indices are computed at write time for fast reads   |
+| **Queries**        | Get individual edges, count totals, and scan with indexes      |
+| **Precomputation** | Counts and indexes are computed at write time for fast reads   |
+
+### Next Steps
+
+- [Quick Start](/quick-start/) — Core operations in minutes
+- [CLI Reference](/operations/cli/) — Full CLI documentation
+- [Core Concepts](/design/concepts/) — How Actionbase works
 
 ### Share Your Feedback
 
-We built this guide to help you get to know Actionbase. We did our best, but it may fall short in places. We appreciate your understanding - and your feedback means a lot.
+Was this guide helpful? Did Actionbase's concepts make sense? We'd love to hear your thoughts — questions, suggestions, or issues are all welcome.
 
-[Share your thoughts on GitHub Discussions](https://github.com/kakao/actionbase/discussions/94)
+[Share feedback on GitHub Discussions](https://github.com/kakao/actionbase/discussions/94)
