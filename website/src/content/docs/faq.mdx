@@ -124,7 +124,7 @@ Actionbase pre-computes State, Index, and Count structures when edges are writte
 2. **Index** — ordered structures based on properties (e.g., `created_at DESC`)
 3. **Count** — counters (e.g., number of likes per item)
 
-Reads then use simple GET, SCAN, COUNT operations without computation at query time.
+See [Core Concepts - Write-Time Optimization](/design/concepts/#write-time-optimization) for details.
 
 ### How does Actionbase handle out-of-order events?
 
