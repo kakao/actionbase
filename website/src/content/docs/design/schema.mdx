@@ -5,25 +5,29 @@ sidebar:
   order: 2
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
 Schema defines the structure of interaction data. Before storing data, define how edges are structured, what properties they have, and how they can be queried.
 
 See [Core Concepts](/design/concepts/) for background.
 
 ## Schema Hierarchy
 
+<Aside type="note">
+  Actionbase was open-sourced during the v3 transition. Schema API is still moving to v3, but examples use working v2, so you can follow along without issues. See the last section for v2/v3 mapping.
+</Aside>
+
 ```
 Database
 ├── Table (edge schema)
 │   ├── Schema (source, target, properties)
-│   ├── Indexes (for querying)
-│   └── Storage (physical storage)
+│   └── Indexes (for querying)
 └── Alias (alternative name for Table)
 ```
 
 - **Database** groups related Tables and Aliases
 - **Table** defines the schema for edges
 - **Alias** provides an alternative name for a Table
-- **Table** references a Storage for physical data
 
 ## Database
 
@@ -31,8 +35,8 @@ A namespace that contains tables and aliases.
 
 | Property | Description                             |
 | -------- | --------------------------------------- |
-| name     | Database identifier (e.g., `myservice`) |
-| desc     | Description                             |
+| database | Database identifier (e.g., `myservice`) |
+| comment  | Description                             |
 | active   | Whether active                          |
 
 Example: an e-commerce database might contain tables for `likes`, `recent_views`, and `purchases`.
@@ -41,20 +45,23 @@ Example: an e-commerce database might contain tables for `likes`, `recent_views`
 
 Defines the schema for edges—source, target, properties, and indexes.
 
-| Property | Description                       |
-| -------- | --------------------------------- |
-| name     | Format: `database.table`          |
-| schema   | Edge structure (src, tgt, fields) |
-| indices  | Indexes for querying              |
-| storage  | Storage name                      |
-| dirType  | Direction type                    |
-| active   | Whether active                    |
+| Property | Description                                           |
+| -------- | ----------------------------------------------------- |
+| database | Parent database                                       |
+| table    | Table identifier                                      |
+| comment  | Description                                           |
+| schema   | Edge structure (source, target, properties, direction, indexes) |
+| mode     | Mutation mode (SYNC, ASYNC)                           |
+| storage  | Storage URI (e.g., `datastore://<namespace>/<table>`) |
+| active   | Whether active                                        |
 
 ### Schema Definition
 
-- **src**: source type (STRING, LONG) — who
-- **tgt**: target type (STRING, LONG) — what
-- **fields**: properties, each with name, type, nullable
+- **source**: source type (STRING, LONG) — who
+- **target**: target type (STRING, LONG) — what
+- **properties**: each with name, type, nullable
+- **direction**: direction type (IN, OUT, BOTH)
+- **indexes**: for querying
 
 **Example: Recent Views**
 
@@ -63,6 +70,7 @@ source: user_id (LONG)
 target: product_id (LONG)
 properties:
   - created_at (LONG)
+direction: BOTH
 ```
 
 **Example: Reactions**
@@ -73,6 +81,7 @@ target: product_id (LONG)
 properties:
   - created_at (LONG)
   - reaction_type (STRING)
+direction: BOTH
 ```
 
 ### Index Definition
@@ -81,9 +90,9 @@ Indexes enable efficient querying. Each index has a name and a list of fields wi
 
 ```
 indexes:
-  - name: by_created_at
+  - index: by_created_at
     fields: [created_at DESC]
-  - name: by_type_and_time
+  - index: by_type_and_time
     fields: [reaction_type ASC, created_at DESC]
 ```
 
@@ -95,24 +104,13 @@ An alternative name for a table.
 
 | Property | Description              |
 | -------- | ------------------------ |
-| name     | Format: `database.alias` |
-| target   | The table it points to   |
+| database | Parent database          |
+| alias    | Alias identifier         |
+| table    | The table it points to   |
+| comment  | Description              |
 | active   | Whether active           |
 
 Useful for gradual migrations or domain-specific naming.
-
-## Storage
-
-Where data is physically stored.
-
-| Property | Description                  |
-| -------- | ---------------------------- |
-| type     | Storage type (e.g., `hbase`) |
-| name     | Storage identifier           |
-| conf     | Configuration map            |
-| active   | Whether active               |
-
-See [Storage Backends](/design/storage-backends/).
 
 ## Naming Conventions
 
@@ -121,18 +119,22 @@ See [Storage Backends](/design/storage-backends/).
 | Database | Simple identifier | `myservice`         |
 | Table    | `database.table`  | `myservice.likes`   |
 | Alias    | `database.alias`  | `myservice.friends` |
-| Storage  | Simple identifier | `hbase-storage-1`   |
 
-## API Versions
+## Schema Versions
 
-This documentation uses v3 terminology. Metadata API currently only provides v2; v3 transition is in progress.
+v2 and v3 map almost 1:1.
 
-| v3 Term (Docs) | v2 Term (Metadata API) |
-| -------------- | ---------------------- |
-| Database       | Service                |
-| Table          | Label                  |
-
-All APIs will be unified to v3.
+| v2 (Current) | v3 (Future)  |
+| ------------ | ------------ |
+| service      | database     |
+| label        | table        |
+| src          | source       |
+| tgt          | target       |
+| ts           | version      |
+| fields       | properties   |
+| dirType      | direction    |
+| indices      | indexes      |
+| desc         | comment      |
 
 ## Next Steps
 
