@@ -7,8 +7,6 @@ Actionbase is a database for serving user interactions.
 It is designed to serve interaction-driven data in real time and is
 production-proven across Kakao services.
 
-## Overview
-
 Actionbase serves interaction-derived data—**likes**, **recent views**, **follows**, **reactions**—in real time.
 
 An interaction is modeled as: **who** did **what** to which **target**.
@@ -27,10 +25,15 @@ When backed by HBase, Actionbase inherits durability and horizontal scalability.
 | WAL/CDC to Kafka (yours or ours)                    | Owning downstream processing         |
 | Pluggable storage (HBase now, others planned)       | Building yet another storage engine  |
 
-## Datastore
+## Storage Backend
 
 Actionbase currently uses HBase as its primary storage backend. Lighter backends are planned for smaller deployments.
 
 ## Production Usage
 
-Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home)—handling over 1M requests/min at peak. Running in stable production for years.
+Used at Kakao across services including [KakaoTalk](https://www.kakaocorp.com/page/service/service/KakaoTalk) and [Kakao Gift](https://gift.kakao.com/home)—handling over a million requests per minute. Running in stable production for years.
+
+## Next Steps
+
+- [Quick Start](/quick-start/): Try Actionbase in minutes
+- [Core Concepts](/design/concepts/): Understand the design

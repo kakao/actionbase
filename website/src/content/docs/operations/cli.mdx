@@ -3,14 +3,13 @@ title: CLI
 description: Command-line interface for interacting with Actionbase
 sidebar:
   order: 1
-  badge:
-    text: Preview
-    variant: caution
 tableOfContents:
   maxHeadingLevel: 2
 ---
 
 import { Aside, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Aside type="note">CLI is in preview. Commands and options may change.</Aside>
 
 The Actionbase CLI provides an interactive console for managing databases, tables, and edges. It connects to an Actionbase server and supports all metadata and data operations.
 
@@ -426,7 +425,7 @@ actionbase(likes:likes)> mutate --type INSERT --source Charlie --target Phone --
 ```
 
 <Aside type="tip">
-  Actionbase requires client-issued timestamps for [event ordering](/design/mutation/#event-ordering). Even if events arrive out of order, Actionbase uses these timestamps to compute the correct final state.
+  Actionbase requires client-issued timestamps for [state transitions](/design/mutation/#state-transitions). Even if events arrive out of order, Actionbase uses these timestamps to compute the correct final state.
 
 Use `$NOW` as a placeholder for the current Unix timestamp in milliseconds. It works in both `--version` and `--properties` values.
 

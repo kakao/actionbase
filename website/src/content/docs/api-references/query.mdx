@@ -7,11 +7,13 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
-This API provides query operations for edges (unique-edge). For the difference between unique-edge and multi-edge, see [FAQ](/faq/#what-is-the-difference-between-unique-edge-and-multi-edge).
+import { Aside } from '@astrojs/starlight/components';
 
-> **Note:** Authentication is not yet implemented. The `Authorization` header is reserved for future use.
+<Aside type="caution">
+  Authentication is not enforced. See [API References](/api-references/#authentication).
+</Aside>
 
-For conceptual understanding, see [Query](/design/query/).
+Edge query API (unique-edge). For unique-edge vs multi-edge, see [FAQ](/faq/#what-is-the-difference-between-unique-edge-and-multi-edge). For conceptual background, see [Query](/design/query/).
 
 ## 1. Count
 

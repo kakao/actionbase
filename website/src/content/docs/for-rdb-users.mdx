@@ -63,17 +63,6 @@ CREATE TABLE user_product_wish (
 );
 ```
 
-```mermaid
-erDiagram
-    user_product_wish {
-        BIGINT id PK
-        VARCHAR user_id
-        VARCHAR product_id
-        TIMESTAMP created_at
-        VARCHAR visibility
-    }
-```
-
 **Actionbase**
 
 ```mermaid
@@ -87,7 +76,9 @@ graph LR
 - **Target**: product_id (STRING)
 - **Properties**: `created_at` (LONG), `visibility` (STRING)
 
-The `id` column is not needed—edges are identified by source and target.
+The `id` column is not needed—unique-edges are identified by source and target.
+
+> **Note:** For multi-edge cases (e.g., multiple gifts from the same user to the same recipient), each edge requires a unique `id`. See [FAQ](/faq/#what-is-the-difference-between-unique-edge-and-multi-edge) for details.
 
 Indexes for efficient queries:
 

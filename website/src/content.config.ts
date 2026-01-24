@@ -14,6 +14,8 @@ export const collections = {
         draft: z.boolean().optional(),
         excerpt: z.string().optional(),
         featured: z.boolean().optional(),
+        // Custom: hide Overview from TOC
+        hideOverview: z.boolean().optional(),
       }),
     }),
   }),

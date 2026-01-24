@@ -5,17 +5,227 @@ sidebar:
   order: 1
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 
-<Aside>
-🚧 **Work in Progress**
+This guide walks you through building a simple social media application using Actionbase. You will learn how to model and serve activity data for core features such as **follows**, **likes**, and **feeds**.
 
-This guide is currently under active development.
+## What You Will Build
 
-</Aside>
+By the end of this guide, you will have implemented:
 
-This guide walks through building a simple social media application using Actionbase.
+- **Follows** - Users can follow other users
+- **Likes** - Users can like posts
+- **Feed** - Display posts from followed users with real-time like counts
 
-It focuses on modeling and serving interaction data for core features such as likes, feeds, and timelines, and demonstrates how Actionbase can be used as the foundation for interaction-driven services.
+These features demonstrate the core pattern behind most social applications.
 
-Detailed, step-by-step instructions will be added as the hands-on guide evolves.
+## Prerequisites
+
+- Docker
+
+## Start the Interactive Guide
+
+This guide has an interactive component that runs locally.
+
+<Steps>
+
+1. **Start Actionbase with Docker**
+
+   ```bash
+   docker run -it -p 9300:9300 --pull always ghcr.io/kakao/actionbase:standalone
+   ```
+
+2. **Start the interactive guide**
+
+   Once the CLI prompt (`actionbase>`) appears:
+
+   ```
+   guide start hands-on-social
+   ```
+
+3. **Open in your browser**
+
+   ```
+   http://localhost:9300
+   ```
+
+</Steps>
+
+## Follow the Guide
+
+From here, continue in the **web browser**. The interactive guide walks you through each step - just click through. The commands below explain what happens behind the scenes.
+
+<Steps>
+
+1. **Welcome**
+
+   ![Welcome](/images/guides/social-media/01-welcome.png)
+
+2. **You are @zipdoki**
+
+   You will play as **@zipdoki** throughout this tutorial.
+
+   ![Zipdoki intro](/images/guides/social-media/02-zipdoki-intro.png)
+
+3. **Set Up**
+
+   The guide loads sample data so you can focus on building features.
+
+   ![Set Up](/images/guides/social-media/03-set-up.png)
+
+4. **Load Sample Data**
+
+   ```bash
+   load preset build-your-social-app
+   ```
+
+   This creates a `social` database with `user_posts` and `user_likes` tables.
+
+   ![Load sample data](/images/guides/social-media/04-load-sample-data.png)
+
+5. **Select Database**
+
+   ```bash
+   use database social
+   ```
+
+   ![Select database](/images/guides/social-media/05-select-database.png)
+
+6. **Explore the Data**
+
+   Browse the preset tables to understand the data model:
+
+   | Table        | Description          |
+   | ------------ | -------------------- |
+   | `user_posts` | Who posted what      |
+   | `user_likes` | Who liked which post |
+
+   ![Explore the Data](/images/guides/social-media/06-explore-the-data.png)
+
+7. **Follows**
+
+   The guide walks you through building a follow feature.
+
+   ![Follows](/images/guides/social-media/07-follows.png)
+
+8. **Create Follows Table**
+
+   Create a `user_follows` table to track who follows whom:
+   - `--type INDEXED` enables efficient queries by index
+   - `--direction BOTH` allows querying in both directions
+   - `--indices` creates a secondary index for sorting
+
+   ![Create Follows Table](/images/guides/social-media/08-create-follows-table.png)
+
+9. **Follow a User**
+
+   **@zipdoki** follows **@j4rami**:
+
+   ```bash
+   mutate user_follows --type INSERT --source zipdoki --target j4rami ...
+   ```
+
+   ![Follow a User](/images/guides/social-media/09-follow-a-user.png)
+
+10. **Check Follow Status**
+
+    Verify the relationship exists:
+
+    ```bash
+    get user_follows --source zipdoki --target j4rami
+    ```
+
+    ![Check Follow Status](/images/guides/social-media/10-check-follow-status.png)
+
+11. **Count Followers**
+
+    Get **@j4rami**'s follower count:
+
+    ```bash
+    count user_follows --start j4rami --direction IN
+    ```
+
+    ![Count Followers](/images/guides/social-media/11-count-followers.png)
+
+12. **List Followers**
+
+    Get users following **@j4rami**:
+
+    ```bash
+    scan user_follows --start j4rami --index created_at_desc --direction IN
+    ```
+
+    ![List Followers](/images/guides/social-media/12-list-followers.png)
+
+13. **Likes**
+
+    Likes follow the same pattern as follows.
+
+    ![Likes](/images/guides/social-media/13-likes.png)
+
+14. **Like a Post**
+
+    **@zipdoki** likes **@j4rami**'s post:
+
+    ```bash
+    mutate user_likes --type INSERT --source zipdoki --target 1 ...
+    ```
+
+    ![Like a Post](/images/guides/social-media/14-like-a-post.png)
+
+15. **Check Like Status**
+
+    ```bash
+    get user_likes --source zipdoki --target 1
+    ```
+
+    ![Check Like Status](/images/guides/social-media/15-check-like-status.png)
+
+16. **And More**
+
+    There's more you can explore with the same patterns.
+
+    ![And More](/images/guides/social-media/16-and-more.png)
+
+17. **Feed**
+
+    Your feed shows posts from users you follow with real-time like counts.
+
+    ![Feed](/images/guides/social-media/17-feed.png)
+
+18. **All Done!**
+
+    You've completed the interactive guide.
+
+    ![All Done](/images/guides/social-media/18-all-done.png)
+
+19. **Try It Yourself**
+
+    Now it's your turn to explore. The guide is complete, but the app is fully functional:
+    - **Follow more users** - Search for users and build your network
+    - **Like posts** - Interact with content in your feed
+    - **Check your feed** - See posts from people you follow
+    - **Explore the CLI** - Try different commands in the terminal
+
+    ![Try it yourself](/images/guides/social-media/19-try-it-yourself.png)
+
+</Steps>
+
+## Summary
+
+You just built a feed with follows and likes - all powered by Actionbase.
+
+### What You Learned
+
+| Concept            | Description                                                    |
+| ------------------ | -------------------------------------------------------------- |
+| **Tables**         | Create tables with schemas, indices, and bidirectional queries |
+| **Mutations**      | Insert edges representing user interactions                    |
+| **Queries**        | Get individual edges, count totals, and scan with indices      |
+| **Precomputation** | Counts and indices are computed at write time for fast reads   |
+
+### Share Your Feedback
+
+We built this guide to help you get to know Actionbase. We did our best, but it may fall short in places. We appreciate your understanding - and your feedback means a lot.
+
+[Share your thoughts on GitHub Discussions](https://github.com/kakao/actionbase/discussions/94)

@@ -9,7 +9,7 @@ description: Frequently asked questions about Actionbase
 
 Actionbase is a database for serving user interactions—likes, recent views, follows, reactions.
 
-It models interactions as **who** did **what** to which **target**, and materializes read-optimized structures at write time. Reads use bounded access patterns (GET, COUNT, SCAN).
+It models interactions as **who** did **what** to which **target**, and materializes read-optimized structures at write time. Reads use bounded access patterns (GET, SCAN, COUNT).
 
 Actionbase is not a general-purpose graph database. It focuses on serving user interactions with predictable read patterns.
 
@@ -21,7 +21,7 @@ The name reflects what it stores: user actions, modeled as interactions.
 
 An interaction captures a user action (like, view, follow) as an explicit **who → what → target** relationship with schema-defined properties.
 
-Internally, interactions are represented as edges in a graph.
+Internally, interactions are represented as edges in a graph. The terms "interaction" and "activity" are used interchangeably.
 
 ### What problems does Actionbase solve?
 
@@ -42,9 +42,9 @@ Documentation for production deployment (Kubernetes, HBase operations) is still 
 
 ### Is Actionbase production-ready?
 
-Actionbase runs in production at Kakao—including KakaoTalk and Kakao Gift—handling over 1M requests/min at peak.
+Actionbase has been running in production at Kakao for years—serving tens of millions of users across KakaoTalk and Kakao Gift—handling over a million requests per minute.
 
-At Kakao's scale, this became necessary. At smaller scale, a well-tuned RDBMS is almost always the better choice.
+However, as an open source project, Actionbase is just getting started. Documentation for production deployment (Kubernetes, HBase operations) is still in progress. Early adopters should expect some rough edges.
 
 ### What is the history of Actionbase?
 
@@ -62,6 +62,8 @@ Actionbase uses a property graph model:
 - **Target**: what (e.g., product, content)
 - **Properties**: schema-defined attributes (e.g., `created_at`, `reaction_type`)
 
+Each interaction type (likes, views, follows) is defined as a separate table with its own schema.
+
 ### What is the difference between unique-edge and multi-edge?
 
 - **Unique-edge**: One edge per (source, target) pair. Identified by source and target.
@@ -75,7 +77,7 @@ Unique-edge fits likes, follows, recent views. Multi-edge fits cases like gift r
 
 Currently, Actionbase focuses on edges (interactions). Entity data like user profiles or product information is typically stored elsewhere (e.g., RDB).
 
-Vertex support is planned for future releases.
+Vertex support is planned for future releases. In the meantime, self-edges (source = target) can be used as a workaround for simple entity storage.
 
 ### Does Actionbase support schemas?
 
@@ -118,17 +120,25 @@ Even if events arrive out of order, the final state remains consistent.
 
 Actionbase pre-computes State, Index, and Count structures when edges are written. This enables simple GET, COUNT, SCAN reads without query-time computation.
 
-See [Core Concepts - Write-Time Optimization](/design/concepts/#write-time-optimization) for details.
+1. **State** — current relationship between source and target
+2. **Index** — ordered structures based on properties (e.g., `created_at DESC`)
+3. **Count** — counters (e.g., number of likes per item)
+
+Reads then use simple GET, SCAN, COUNT operations without computation at query time.
 
 ### How does Actionbase handle out-of-order events?
 
 Clients attach timestamps to events. Actionbase uses these timestamps to compute the correct final state, regardless of arrival order.
 
+See [Mutation](/design/mutation/) for details on state transitions.
+
 ## Storage and Infrastructure
 
 ### What storage backends does Actionbase support?
 
-HBase is the current storage backend. Lighter backends are planned for smaller deployments.
+Storage is abstracted in Actionbase. Any backend that meets the interface requirements can be plugged in. HBase is the current implementation; lighter backends are planned.
+
+See [Storage Backends](/design/storage-backends/) for interface requirements and supported backends.
 
 ### What HBase versions are supported?
 
@@ -136,11 +146,11 @@ Tested with HBase 2.4 and 2.5. No strict version requirements.
 
 ### Why use HBase?
 
-At Kakao, two storage options could handle this scale: HBase and Redicoke (Kakao's distributed KV store with Redis protocol).
+At Kakao, two storage options met the interface requirements at this scale: HBase and Redicoke (Kakao's distributed KV store with Redis protocol).
 
-HBase provides horizontal scalability, durability, and low-latency random reads/writes. We chose HBase—the deciding factor was bulk loading for data migration.
+Both provide horizontal scalability, durability, and low-latency random reads/writes. We chose HBase because it was better suited for large data migrations via bulk loading.
 
-Actionbase builds on this and adds interaction-aware modeling and write-time materialization.
+> **Note:** Bulk loading is part of the pipeline component. The initial open source release focused on Actionbase core; pipeline release is in progress.
 
 ## Streaming and Data Pipelines
 
@@ -157,13 +167,15 @@ WAL and CDC streams can feed analytics systems, async processors, background job
 
 ### Can Actionbase handle high write throughput?
 
-For high-frequency interactions (e.g., recent views):
+For high-frequency interactions (e.g., recent views), Actionbase uses async processing via Spark Streaming:
 
-1. Request logged to WAL
-2. Response returned immediately
-3. State, index, count updates processed asynchronously
+1. Request queued to WAL, response returned immediately
+2. Async processor (Spark Streaming) consumes queued WAL entries and sends mutations back to Actionbase
+3. Mutations are throttled and applied in background
 
-This minimizes latency while sustaining throughput.
+This minimizes latency while sustaining throughput. Data is typically reflected within tens of milliseconds. Designed to remain stable even when traffic exceeds normal capacity.
+
+> **Note:** The pipeline component is currently internal. Open source release is in progress.
 
 ## Comparison
 
@@ -172,7 +184,7 @@ This minimizes latency while sustaining throughput.
 Actionbase is not a general-purpose graph database.
 
 - **Neo4j** — general-purpose graph queries, traversals
-- **Actionbase** — bounded access patterns (GET, COUNT, SCAN) for user interactions
+- **Actionbase** — bounded access patterns (GET, SCAN, COUNT) for user interactions
 
 ### How does Actionbase compare to traditional RDBMS?
 
@@ -207,7 +219,7 @@ When these outgrow your RDBMS—sharding gets painful, caches drift—Actionbase
 
 - Java 17
 - 4 GB+ memory recommended (scales out horizontally)
-- Requires: HBase, Kafka, MySQL (to be removed)
+- Requires: HBase, Kafka, JDBC-compatible database for metadata (to be consolidated)
 
 ### How do I get started?
 

@@ -7,13 +7,18 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
-> **Note:** Currently, metadata APIs use **v2**. Mutation and query operations have transitioned to v3, but metadata v3 support is planned for the future.
+import { Aside } from '@astrojs/starlight/components';
 
-> **Note:** Authentication is not yet implemented. The `Authorization` header is reserved for future use.
+<Aside type="note">
+  Metadata APIs use v2. See [Schema](/design/schema/) for terminology mapping and conceptual
+  background.
+</Aside>
 
-Metadata APIs allow you to manage the structure and configuration of graph data in Actionbase, including services (v3: databases), labels (v3: tables), aliases, and queries.
+<Aside type="caution">
+  Authentication is not enforced. See [API References](/api-references/#authentication).
+</Aside>
 
-For conceptual understanding, see [Schema](/design/schema/).
+Manage services, labels, aliases, and queries.
 
 ## 1. Service
 

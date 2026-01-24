@@ -1,15 +1,15 @@
 ---
-title: Datastore
-description: Understanding datastore backends in Actionbase
+title: Storage Backends
+description: Understanding storage backends in Actionbase
 sidebar:
   order: 5
 ---
 
-Actionbase abstracts storage through a minimal interface. Different backends can be integrated.
+Actionbase abstracts storage through a minimal interface called `Datastore`. Different backends can be integrated.
 
 ## Required Operations
 
-A datastore backend must support:
+A storage backend must support:
 
 | Operation      | Description                                |
 | -------------- | ------------------------------------------ |
@@ -46,16 +46,16 @@ In-memory backend for development and testing.
 
 Ideal for local development and prototyping.
 
-## How Actionbase Uses Datastore
+## How Actionbase Uses Storage
 
-| Actionbase Operation | Datastore Operation | Data Structure        |
-| -------------------- | ------------------- | --------------------- |
-| Get Query            | get                 | EdgeState             |
-| Scan Query           | scan                | EdgeIndex             |
-| Count Query          | get                 | EdgeCounter           |
-| Mutation (lock)      | checkAndMutate      | Lock                  |
-| Mutation (write)     | batch / put         | State, Index, Counter |
-| Mutation (cleanup)   | delete              | Old indexes           |
+| Actionbase Operation | Storage Operation | Data Structure        |
+| -------------------- | ----------------- | --------------------- |
+| Get Query            | get               | EdgeState             |
+| Scan Query           | scan              | EdgeIndex             |
+| Count Query          | get               | EdgeCounter           |
+| Mutation (lock)      | checkAndMutate    | Lock                  |
+| Mutation (write)     | batch / put       | State, Index, Counter |
+| Mutation (cleanup)   | delete            | Old indexes           |
 
 ## Choosing a Backend
 
@@ -70,4 +70,3 @@ Lighter backends are planned for smaller deployments.
 
 - [Data Encoding](/internals/encoding/): How data is encoded
 - [HBase Operations](/operations/hbase/): HBase configuration
-- [Local Provisioning](/provisioning/local/): Get started locally

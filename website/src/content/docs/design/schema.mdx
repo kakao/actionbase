@@ -5,114 +5,112 @@ sidebar:
   order: 2
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
 Schema defines the structure of interaction data. Before storing data, define how edges are structured, what properties they have, and how they can be queried.
 
 See [Core Concepts](/design/concepts/) for background.
 
 ## Schema Hierarchy
 
+<Aside type="note">
+  Actionbase was open-sourced during the v3 transition. Most docs use v3 terms, but this document
+  uses v2 terms (current Schema API). v3 terms are noted in parentheses. See the last section for
+  full mapping.
+</Aside>
+
 ```
-Service
-├── Label (edge schema)
-│   ├── Schema (source, target, properties)
-│   ├── Indexes (for querying)
-│   └── Storage (physical storage)
-└── Alias (alternative name for Label)
+Service (v3: Database)
+├── Label (v3: Table)
+│   ├── Schema (src, tgt, fields)
+│   └── Indices (v3: Indexes)
+└── Alias
 ```
 
 - **Service** groups related Labels and Aliases
 - **Label** defines the schema for edges
 - **Alias** provides an alternative name for a Label
-- **Label** references a Storage for physical data
 
-## Service
+## Service (v3: Database)
 
 A namespace that contains labels and aliases.
 
 | Property | Description                            |
 | -------- | -------------------------------------- |
 | name     | Service identifier (e.g., `myservice`) |
-| desc     | Description                            |
+| desc     | Description (v3: comment)              |
 | active   | Whether active                         |
 
 Example: an e-commerce service might contain labels for `likes`, `recent_views`, and `purchases`.
 
-## Label
+## Label (v3: Table)
 
-Defines the schema for edges—source, target, properties, and indexes.
+Defines the schema for edges—src, tgt, fields, and indices.
 
-| Property | Description                       |
-| -------- | --------------------------------- |
-| name     | Format: `service.label`           |
-| schema   | Edge structure (src, tgt, fields) |
-| indices  | Indexes for querying              |
-| storage  | Storage name                      |
-| dirType  | Direction type                    |
-| active   | Whether active                    |
+| Property | Description                                           |
+| -------- | ----------------------------------------------------- |
+| name     | Format: `service.label`                               |
+| desc     | Description (v3: comment)                             |
+| type     | Label type (INDEXED, HASH, MULTI_EDGE)                |
+| schema   | Edge structure (src, tgt, fields)                     |
+| dirType  | Direction type (v3: direction)                        |
+| storage  | Storage URI (e.g., `datastore://<namespace>/<table>`) |
+| indices  | Indices for querying (v3: indexes)                    |
+| active   | Whether active                                        |
 
 ### Schema Definition
 
-- **src**: source type (STRING, LONG) — who
-- **tgt**: target type (STRING, LONG) — what
-- **fields**: properties, each with name, type, nullable
+- **src** (v3: source): source type (STRING, LONG) — who
+- **tgt** (v3: target): target type (STRING, LONG) — what
+- **fields** (v3: properties): each with name, type, nullable
 
 **Example: Recent Views**
 
 ```
-source: user_id (LONG)
-target: product_id (LONG)
-properties:
+src: user_id (LONG)
+tgt: product_id (LONG)
+fields:
   - created_at (LONG)
+dirType: BOTH
 ```
 
 **Example: Reactions**
 
 ```
-source: user_id (LONG)
-target: product_id (LONG)
-properties:
+src: user_id (LONG)
+tgt: product_id (LONG)
+fields:
   - created_at (LONG)
   - reaction_type (STRING)
+dirType: BOTH
 ```
 
 ### Index Definition
 
-Indexes enable efficient querying. Each index has a name and a list of fields with sort order.
+Indices enable efficient querying. Each index has a name and a list of fields with sort order.
 
 ```
-indexes:
+indices:
   - name: by_created_at
     fields: [created_at DESC]
   - name: by_type_and_time
     fields: [reaction_type ASC, created_at DESC]
 ```
 
-Indexes are pre-computed at write time. See [Query](/design/query/).
+Indices are pre-computed at write time. See [Query](/design/query/).
 
 ## Alias
 
 An alternative name for a label.
 
-| Property | Description             |
-| -------- | ----------------------- |
-| name     | Format: `service.alias` |
-| target   | The label it points to  |
-| active   | Whether active          |
+| Property | Description               |
+| -------- | ------------------------- |
+| name     | Format: `service.alias`   |
+| desc     | Description (v3: comment) |
+| target   | The label it points to    |
+| active   | Whether active            |
 
 Useful for gradual migrations or domain-specific naming.
-
-## Storage
-
-Where data is physically stored.
-
-| Property | Description                  |
-| -------- | ---------------------------- |
-| type     | Storage type (e.g., `hbase`) |
-| name     | Storage identifier           |
-| conf     | Configuration map            |
-| active   | Whether active               |
-
-See [Datastore](/design/datastore/).
 
 ## Naming Conventions
 
@@ -121,13 +119,22 @@ See [Datastore](/design/datastore/).
 | Service | Simple identifier | `myservice`         |
 | Label   | `service.label`   | `myservice.likes`   |
 | Alias   | `service.alias`   | `myservice.friends` |
-| Storage | Simple identifier | `hbase-storage-1`   |
 
-## API Versions
+## Schema Versions
 
-Schema uses v2 API. Mutation and query use v3. Schema v3 is planned.
+v2 and v3 map almost 1:1.
 
-See [Glossary - API Version Mapping](/design/glossary/#api-version-mapping) for v2/v3 term differences.
+| v2 (Current) | v3 (Future) |
+| ------------ | ----------- |
+| service      | database    |
+| label        | table       |
+| src          | source      |
+| tgt          | target      |
+| ts           | version     |
+| fields       | properties  |
+| dirType      | direction   |
+| indices      | indexes     |
+| desc         | comment     |
 
 ## Next Steps
 

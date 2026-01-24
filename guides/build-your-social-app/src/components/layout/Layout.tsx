@@ -106,49 +106,53 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
     <>
       <div className="sidebar">
         <div className="sidebar-header">
-          <div className="sidebar-header-row header-top">
+          <div className="sidebar-header-row">
             <img className="logo" src="/images/logo.svg"/>
             <div
               className="stars-image"
               dangerouslySetInnerHTML={{__html: sanitizedStarsImage}}
             />
           </div>
-          <div className="guide-title-section">
-            <span className="guide-label">Hands-on Guide</span>
-            <h1 className="guide-title">Build Your Social App</h1>
-            <div className="header-links">
-              <a href="https://actionbase.io/guides/build-your-social-media-app/" target="_blank" className="header-link" title="Documentation">
+          <div className="guide-box">
+            <div className="guide-title">
+              <span className="guide-label">Hands-on Guide</span>
+              <span className="guide-name">Build Your Social App</span>
+            </div>
+            <div className="header-actions">
+              <a href="https://actionbase.io/guides/build-your-social-media-app/" target="_blank" className="header-action" title="Documentation">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                 </svg>
                 Docs
               </a>
-              <a href="https://github.com/kakao/actionbase/discussions/94" target="_blank" className="header-link" title="Feedback">
+              <a href="https://github.com/kakao/actionbase/discussions/94" target="_blank" className="header-action" title="Feedback">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
                 Feedback
               </a>
+              <button className="header-action" onClick={resetStep} title="Restart">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                  <path d="M21 3v5h-5"/>
+                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                  <path d="M3 21v-5h5"/>
+                </svg>
+                Restart
+              </button>
             </div>
           </div>
         </div>
 
         <div className="sidebar-content">
-          <button className="reset-step-btn" onClick={resetStep} title="Reset to beginning">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-              <path d="M21 3v5h-5"/>
-              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-              <path d="M3 21v-5h5"/>
-            </svg>
-            Restart hands-on guide
-          </button>
-
           {breadcrumbSteps.map((step, index) => (
             <div key={index} className="breadcrumb-item-wrapper">
               <div className={`breadcrumb-item ${step.isActive ? 'active' : ''} ${step.hasActiveSubStep ? 'has-active-substep' : ''} ${step.isCompleted ? 'completed' : ''}`}>
                 <span className="breadcrumb-number">{index + 1}</span>
+                {step.icon && (
+                  <svg className="breadcrumb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html: ICONS[step.icon as keyof typeof ICONS] || ''}} />
+                )}
                 <span className="breadcrumb-title">{step.title}</span>
               </div>
               {step.subSteps && step.subSteps.length > 0 && (
@@ -169,26 +173,6 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
 
         <div className="layout">
           <div className="mobile-frame-wrapper">
-            {isStepCompleted && (
-              <div className="completion-bubble">
-                <h3>Now try it yourself</h3>
-                <ul>
-                  <li>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.search}} />
-                    <span>Follow someone</span>
-                  </li>
-                  <li>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.home}} />
-                    <span>Check your feed</span>
-                  </li>
-                  <li>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.heart}} />
-                    <span>Like a post</span>
-                  </li>
-                </ul>
-                <div className="bubble-arrow"></div>
-              </div>
-            )}
             <div className="mobile-frame">
               <div className="mobile-status-bar">
               <span className="status-time">9:41</span>
@@ -217,6 +201,26 @@ const Layout: React.FC<SplitLayoutProps> = ({children}) => {
             </div>
           </div>
           <div className="browser-frame-wrapper">
+            {isStepCompleted && (
+              <div className="completion-bubble">
+                <h3>Now try it yourself</h3>
+                <ul>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.search}} />
+                    <span>Follow someone</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.home}} />
+                    <span>Check your feed</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" dangerouslySetInnerHTML={{__html: ICONS.heart}} />
+                    <span>Like a post</span>
+                  </li>
+                </ul>
+                <div className="bubble-arrow"></div>
+              </div>
+            )}
             <div className={`browser-frame ${isStepCompleted ? 'step-completed' : ''}`}>
               <div className="browser-header">
                 <div className="browser-buttons">

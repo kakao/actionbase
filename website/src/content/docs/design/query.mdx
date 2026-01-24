@@ -21,17 +21,6 @@ You specify the query type and index. Each query accesses structures prepared at
 
 ## Query Types
 
-### COUNT
-
-Returns the number of edges for a source node.
-
-**Use case**: "How many products has this user viewed?"
-
-**Processing**:
-
-1. Construct EdgeCounter key from source, table, direction
-2. Return pre-computed counter
-
 ### GET
 
 Retrieves edge state by source and target.
@@ -69,20 +58,31 @@ Scans edges using a pre-computed index with range filtering and pagination.
 - Must specify which index to use
 - Index must be defined in schema
 
+### COUNT
+
+Returns the number of edges for a source node.
+
+**Use case**: "How many products has this user viewed?"
+
+**Processing**:
+
+1. Construct EdgeCounter key from source, table, direction
+2. Return pre-computed counter
+
 ## Query Flow
 
 ```mermaid
 flowchart TD
     Request([Query Request]) --> Route{Query Type}
-    Route -->|COUNT| CountQuery[Count Query]
     Route -->|GET| GetQuery[Get Query]
     Route -->|SCAN| ScanQuery[Scan Query]
-    CountQuery --> EdgeCounter[Read EdgeCounter]
+    Route -->|COUNT| CountQuery[Count Query]
     GetQuery --> EdgeState[Read EdgeState]
     ScanQuery --> EdgeIndex[Read EdgeIndex]
-    EdgeCounter --> Response([Response])
-    EdgeState --> Response
+    CountQuery --> EdgeCounter[Read EdgeCounter]
+    EdgeState --> Response([Response])
     EdgeIndex --> Response
+    EdgeCounter --> Response
 ```
 
 ## Index Ranges
@@ -134,6 +134,5 @@ Client → Server → Engine → Storage → Response
 
 ## Next Steps
 
-- [Schema](/design/schema/): Define indexes
-- [Mutation](/design/mutation/): How structures are created
+- [Guides](/guides/build-your-social-media-app/): Hands-on tutorial
 - [Query API](/api-references/query/): API reference

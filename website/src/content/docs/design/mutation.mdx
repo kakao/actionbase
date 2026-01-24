@@ -15,13 +15,13 @@ See [Core Concepts](/design/concepts/) for background.
 flowchart TD
     Request([Mutation Request<br/>with Event, Operation]) --> WAL[Write WAL]
     WAL --> Lock[Acquire Lock]
-    Lock --> Read[Read State<br/>from datastore]
+    Lock --> Read[Read State<br/>from storage]
     Read --> Modify{State exists?}
     Modify -->|Yes| ApplyEvent[Apply Event]
     Modify -->|No| InitialState[Initial State]
     InitialState --> ApplyEvent
     ApplyEvent --> ComputeAdditionalInfo[Compute Index, Count<br/>based on changed States]
-    ComputeAdditionalInfo --> Write[Write State with AdditionalInfo<br/>to datastore]
+    ComputeAdditionalInfo --> Write[Write State with AdditionalInfo<br/>to storage]
     Write --> Release[Release Lock]
     Release --> CDC[Write CDC]
     CDC --> Response([Response])
@@ -51,17 +51,11 @@ Prevents concurrent modifications:
 
 ### 3. Read State
 
-Read current state from datastore—properties, timestamps, metadata.
+Read current state from storage—properties, timestamps, metadata.
 
 ### 4. Apply Event
 
-Transition state based on operation:
-
-- **INSERT**: Set `createdAt`, set properties. Active when `createdAt > deletedAt`.
-- **UPDATE**: Update properties only.
-- **DELETE**: Set `deletedAt`. Inactive when `deletedAt >= createdAt`.
-
-Newer versions override older ones.
+Transition state based on operation and timestamp. See [State Transitions](#state-transitions) for details.
 
 ### 5. Compute Indexes and Counters
 
@@ -82,11 +76,47 @@ Lock released after write.
 
 Mutation recorded in CDC (Kafka in production). Resulting state available for downstream systems.
 
-## Event Ordering
+## State Transitions
 
-Clients attach timestamps to events. Even if events arrive out of order, Actionbase uses timestamps to compute correct final state.
+Edges transition between states based on operations (INSERT, DELETE). Each event carries a timestamp, and Actionbase uses these timestamps to compute the correct final state—even for toggle scenarios (like/unlike/like) and out-of-order arrivals.
 
-Example: If ON/OFF events arrive as `ON, OFF, ON, OFF` but were originally `ON, ON, OFF, OFF`, final state is computed from timestamps.
+See [`State.transit`](https://github.com/kakao/actionbase/blob/main/core/src/main/kotlin/com/kakao/actionbase/core/state/StateExtensions.kt) for implementation.
+
+### Diagram
+
+```mermaid
+flowchart LR
+    INITIAL[["INITIAL: No Edge"]]
+    ACTIVE(["ACTIVE: Edge Exists"])
+    INACTIVE["INACTIVE: Edge Deleted"]
+
+    INITIAL -->|"INSERT / +1"| ACTIVE
+    INACTIVE -->|"INSERT / +1"| ACTIVE
+    ACTIVE -->|"DELETE / -1"| INACTIVE
+```
+
+<details>
+<summary>Full state transition diagram</summary>
+
+![Full State Transition Diagram](https://www.plantuml.com/plantuml/png/VPAnRiCW48PtdkAaRbLHcvKXYXKOaAoeIjmkYGTgKpKgmPKDxUlNLiw94JQJBOxlkn-uJUTKw_p5aFx7QP0xMSWi1mQgSkTVpS2UnrgsBUIxc9HSw_MDYwgVodIQaEDZ2PIk9-R3q9AGSO4U7pwCroLTtpiqFwm73c9VdAogAWQhanqQ-Ox1TY-oGl2HHtc0lhtoVWkYBtTKybnC-xQwBcEQYrp4zBZE2S7TwU0HZwbuWAlg6_bq-fZ7_4zrurpY6F0CLlz1qmuVZbAw2ayrOrNTrzKwxsnC3GltI-Gkl22Ck71FGK2PUkxGEec8fT1x3Rau0_4Zf8Se8KXDqG9EDjhM_cB-0G00)
+
+[Edit on PlantUML](https://www.plantuml.com/plantuml/uml/VPAnRiCW48PtdkAaRbLHcvKXYXKOaAoeIjmkYGTgKpKgmPKDxUlNLiw94JQJBOxlkn-uJUTKw_p5aFx7QP0xMSWi1mQgSkTVpS2UnrgsBUIxc9HSw_MDYwgVodIQaEDZ2PIk9-R3q9AGSO4U7pwCroLTtpiqFwm73c9VdAogAWQhanqQ-Ox1TY-oGl2HHtc0lhtoVWkYBtTKybnC-xQwBcEQYrp4zBZE2S7TwU0HZwbuWAlg6_bq-fZ7_4zrurpY6F0CLlz1qmuVZbAw2ayrOrNTrzKwxsnC3GltI-Gkl22Ck71FGK2PUkxGEec8fT1x3Rau0_4Zf8Se8KXDqG9EDjhM_cB-0G00)
+
+</details>
+
+### Example: Out-of-Order Events
+
+Alice's actions: like(t=100) → unlike(t=200) → like(t=300)
+
+Events arrive out of order: like(t=100) → like(t=300) → unlike(t=200)
+
+| #   | Event Arrives  | State            | Count Change | Total |
+| --- | -------------- | ---------------- | ------------ | ----- |
+| 1   | like (t=100)   | INITIAL → ACTIVE | +1           | 1     |
+| 2   | like (t=300)   | ACTIVE → ACTIVE  | 0            | 1     |
+| 3   | unlike (t=200) | ACTIVE → ACTIVE  | 0            | 1     |
+
+Final state: **ACTIVE**, count: **1** — same result regardless of arrival order.
 
 ## Write-Time Optimization
 
@@ -102,16 +132,15 @@ Reads use simple GET, COUNT, SCAN without query-time computation.
 
 ## Consistency Guarantees
 
-| Mechanism          | Guarantee                                 |
-| ------------------ | ----------------------------------------- |
-| Locking            | Prevents concurrent modifications         |
-| Atomic Writes      | State and indexes written together        |
-| WAL                | Durability and recovery                   |
-| Read-Modify-Write  | Mutations based on latest state           |
-| Timestamp Ordering | Correct final state despite event arrival |
+| Mechanism         | Guarantee                                 |
+| ----------------- | ----------------------------------------- |
+| Locking           | Prevents concurrent modifications         |
+| Atomic Writes     | State and indexes written together        |
+| WAL               | Durability and recovery                   |
+| Read-Modify-Write | Mutations based on latest state           |
+| State Transitions | Correct final state despite event arrival |
 
 ## Next Steps
 
 - [Query](/design/query/): Read pre-computed data
-- [Datastore](/design/datastore/): Storage backends
 - [Mutation API](/api-references/mutation/): API reference

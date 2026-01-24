@@ -3,13 +3,13 @@ title: Actionbase
 head:
   - tag: title
     content: Actionbase
-description: A real-time database for serving user interactions, production-proven in Kakao services.
+description: A database for serving user interactions at scale.
 template: splash
 editUrl: false
 lastUpdated: false
 hero:
   title: Actionbase
-  tagline: Likes · Recent Views · Follows — simple after the groundwork.
+  tagline: One store for likes, views, and follows — pre-computed, served in real-time
   image:
     file: ~/assets/hero.webp
   actions:
@@ -28,19 +28,19 @@ banner:
 import { CardGrid, Card } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
-  <Card title="Likes·Reactions·Counts" icon="star">
-    Pre-computed at write time. Reads are fast and predictable.
+  <Card title="Pre-computed Reads" icon="star">
+    Writes do the work. Reads return what's already computed.
   </Card>
-  <Card title="Recent Views·History" icon="seti:clock">
-    Sorted by recency, score, or custom order — out of the box.
-  </Card>
-  <Card title="Follows·Feeds" icon="puzzle">
-    Likes, follows, subscriptions, feeds — one consistent model.
+  <Card title="Likes · Views · Follows" icon="heart">
+    One model for common user interactions.
   </Card>
   <Card title="REST API" icon="forward-slash">
-    Metadata, writes, reads — all via REST.
+    Simple writes, fast reads — all via HTTP.
   </Card>
-  <Card title="WAL·CDC" icon="seti:pipeline">
-    Recovery (WAL) and pipeline integration (CDC) built in.
+  <Card title="CDC Built-in" icon="seti:pipeline">
+    Stream changes for downstream pipelines.
+  </Card>
+  <Card title="Battle-tested" icon="rocket">
+    Serving over a million requests per minute at Kakao.
   </Card>
 </CardGrid>
