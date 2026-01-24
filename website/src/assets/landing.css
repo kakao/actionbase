@@ -26,6 +26,13 @@
   filter: drop-shadow(0 0 3rem var(--overlay-blurple));
 }
 
+/* Smaller hero image on mobile */
+@media (max-width: 768px) {
+  [data-has-hero] .hero > img {
+    max-width: 150px;
+  }
+}
+
 /* Icon row component */
 .icon-row {
   display: flex;
