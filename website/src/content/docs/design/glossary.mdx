@@ -7,15 +7,24 @@ sidebar:
 
 Key terms used in Actionbase documentation.
 
-## API Version Mapping
+## Schema Version Mapping
 
-| v2 Term | v3 Term  | Description                   |
-| ------- | -------- | ----------------------------- |
-| Service | Database | Namespace for grouping tables |
-| Label   | Table    | Edge schema definition        |
+v2 and v3 map almost 1:1.
 
-- **Metadata APIs**: v2 (service/label) — migrating to v3
-- **Query/Mutation APIs**: v3 (database/table)
+| v2 (Current) | v3 (Future) | Description                   |
+| ------------ | ----------- | ----------------------------- |
+| service      | database    | Namespace for grouping tables |
+| label        | table       | Edge schema definition        |
+| src          | source      | Who performed the interaction |
+| tgt          | target      | What received the interaction |
+| ts           | version     | Timestamp for ordering        |
+| fields       | properties  | Edge attributes               |
+| dirType      | direction   | Direction type                |
+| indices      | indexes     | Query indexes                 |
+| desc         | comment     | Description                   |
+
+- **Schema API**: v2 — migrating to v3
+- **Query/Mutation APIs**: v3
 
 ## Data Model
 
