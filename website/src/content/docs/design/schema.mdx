@@ -14,127 +14,127 @@ See [Core Concepts](/design/concepts/) for background.
 ## Schema Hierarchy
 
 <Aside type="note">
-  Actionbase was open-sourced during the v3 transition. Schema API is still moving to v3, but examples use working v2, so you can follow along without issues. See the last section for v2/v3 mapping.
+  Actionbase was open-sourced during the v3 transition. Most docs use v3 terms, but this document
+  uses v2 terms (current Schema API). v3 terms are noted in parentheses. See the last section for
+  full mapping.
 </Aside>
 
 ```
-Database
-├── Table (edge schema)
-│   ├── Schema (source, target, properties)
-│   └── Indexes (for querying)
-└── Alias (alternative name for Table)
+Service (v3: Database)
+├── Label (v3: Table)
+│   ├── Schema (src, tgt, fields)
+│   └── Indices (v3: Indexes)
+└── Alias
 ```
 
-- **Database** groups related Tables and Aliases
-- **Table** defines the schema for edges
-- **Alias** provides an alternative name for a Table
+- **Service** groups related Labels and Aliases
+- **Label** defines the schema for edges
+- **Alias** provides an alternative name for a Label
 
-## Database
+## Service (v3: Database)
 
-A namespace that contains tables and aliases.
+A namespace that contains labels and aliases.
 
-| Property | Description                             |
-| -------- | --------------------------------------- |
-| database | Database identifier (e.g., `myservice`) |
-| comment  | Description                             |
-| active   | Whether active                          |
+| Property | Description                            |
+| -------- | -------------------------------------- |
+| name     | Service identifier (e.g., `myservice`) |
+| desc     | Description (v3: comment)              |
+| active   | Whether active                         |
 
-Example: an e-commerce database might contain tables for `likes`, `recent_views`, and `purchases`.
+Example: an e-commerce service might contain labels for `likes`, `recent_views`, and `purchases`.
 
-## Table
+## Label (v3: Table)
 
-Defines the schema for edges—source, target, properties, and indexes.
+Defines the schema for edges—src, tgt, fields, and indices.
 
 | Property | Description                                           |
 | -------- | ----------------------------------------------------- |
-| database | Parent database                                       |
-| table    | Table identifier                                      |
-| comment  | Description                                           |
-| schema   | Edge structure (source, target, properties, direction, indexes) |
-| mode     | Mutation mode (SYNC, ASYNC)                           |
+| name     | Format: `service.label`                               |
+| desc     | Description (v3: comment)                             |
+| type     | Label type (INDEXED, HASH, MULTI_EDGE)                |
+| schema   | Edge structure (src, tgt, fields)                     |
+| dirType  | Direction type (v3: direction)                        |
 | storage  | Storage URI (e.g., `datastore://<namespace>/<table>`) |
+| indices  | Indices for querying (v3: indexes)                    |
 | active   | Whether active                                        |
 
 ### Schema Definition
 
-- **source**: source type (STRING, LONG) — who
-- **target**: target type (STRING, LONG) — what
-- **properties**: each with name, type, nullable
-- **direction**: direction type (IN, OUT, BOTH)
-- **indexes**: for querying
+- **src** (v3: source): source type (STRING, LONG) — who
+- **tgt** (v3: target): target type (STRING, LONG) — what
+- **fields** (v3: properties): each with name, type, nullable
 
 **Example: Recent Views**
 
 ```
-source: user_id (LONG)
-target: product_id (LONG)
-properties:
+src: user_id (LONG)
+tgt: product_id (LONG)
+fields:
   - created_at (LONG)
-direction: BOTH
+dirType: BOTH
 ```
 
 **Example: Reactions**
 
 ```
-source: user_id (LONG)
-target: product_id (LONG)
-properties:
+src: user_id (LONG)
+tgt: product_id (LONG)
+fields:
   - created_at (LONG)
   - reaction_type (STRING)
-direction: BOTH
+dirType: BOTH
 ```
 
 ### Index Definition
 
-Indexes enable efficient querying. Each index has a name and a list of fields with sort order.
+Indices enable efficient querying. Each index has a name and a list of fields with sort order.
 
 ```
-indexes:
-  - index: by_created_at
+indices:
+  - name: by_created_at
     fields: [created_at DESC]
-  - index: by_type_and_time
+  - name: by_type_and_time
     fields: [reaction_type ASC, created_at DESC]
 ```
 
-Indexes are pre-computed at write time. See [Query](/design/query/).
+Indices are pre-computed at write time. See [Query](/design/query/).
 
 ## Alias
 
-An alternative name for a table.
+An alternative name for a label.
 
-| Property | Description              |
-| -------- | ------------------------ |
-| database | Parent database          |
-| alias    | Alias identifier         |
-| table    | The table it points to   |
-| comment  | Description              |
-| active   | Whether active           |
+| Property | Description               |
+| -------- | ------------------------- |
+| name     | Format: `service.alias`   |
+| desc     | Description (v3: comment) |
+| target   | The label it points to    |
+| active   | Whether active            |
 
 Useful for gradual migrations or domain-specific naming.
 
 ## Naming Conventions
 
-| Type     | Format            | Example             |
-| -------- | ----------------- | ------------------- |
-| Database | Simple identifier | `myservice`         |
-| Table    | `database.table`  | `myservice.likes`   |
-| Alias    | `database.alias`  | `myservice.friends` |
+| Type    | Format            | Example             |
+| ------- | ----------------- | ------------------- |
+| Service | Simple identifier | `myservice`         |
+| Label   | `service.label`   | `myservice.likes`   |
+| Alias   | `service.alias`   | `myservice.friends` |
 
 ## Schema Versions
 
 v2 and v3 map almost 1:1.
 
-| v2 (Current) | v3 (Future)  |
-| ------------ | ------------ |
-| service      | database     |
-| label        | table        |
-| src          | source       |
-| tgt          | target       |
-| ts           | version      |
-| fields       | properties   |
-| dirType      | direction    |
-| indices      | indexes      |
-| desc         | comment      |
+| v2 (Current) | v3 (Future) |
+| ------------ | ----------- |
+| service      | database    |
+| label        | table       |
+| src          | source      |
+| tgt          | target      |
+| ts           | version     |
+| fields       | properties  |
+| dirType      | direction   |
+| indices      | indexes     |
+| desc         | comment     |
 
 ## Next Steps
 
