@@ -95,6 +95,11 @@ async function main() {
 
   console.log('=== Automated Screenshot Capture ===\n');
 
+  // Capture full screen layout (first time only, includes sidebar)
+  const fullScreenPath = path.join(OUTPUT_DIR, '00-screen-layout.png');
+  await page.screenshot({ path: fullScreenPath });
+  console.log('[0] Saved: 00-screen-layout.png (full screen)\n');
+
   for (let i = 0; i < STEPS.length; i++) {
     // Wait a bit for animations
     await page.waitForTimeout(500);
