@@ -55,3 +55,8 @@
 .icon-rows .icon-row {
   margin-bottom: 0;
 }
+
+/* WIP items in sidebar */
+.sidebar-wip {
+  opacity: 0.5;
+}
