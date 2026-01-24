@@ -22,13 +22,13 @@ load preset likes
 ```
 Loads metadata and 3 edges:
 ```
-Alice ─── likes ───> ┌────────┐
-                     │ Phone  │
-Bob ───── likes ───> └────────┘
-  │
-  │                  ┌────────┐
-  └───── likes ────> │ Laptop │
-                     └────────┘
+Alice --- likes ----> +--------+
+                      | Phone  |
+Bob ----- likes ----> +--------+
+      |
+      |               +--------+
+      +-- likes ----> | Laptop |
+                      +--------+
 ```
 
 **3. Query** — Precomputed. Just read.
