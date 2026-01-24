@@ -14,32 +14,25 @@ import { User, Package, ArrowRight, ArrowLeft } from '@lucide/astro';
 ## Start Actionbase
 
 ```bash
-docker run -it --pull always ghcr.io/kakao/actionbase:standalone
+docker run -it ghcr.io/kakao/actionbase:standalone
 ```
 
-This runs the server in the background and the CLI in the foreground.
+This runs the server in the background (port 8080) and the CLI in the foreground.
 
 ```
-    _        _   _             _
-   / \   ___| |_(_) ___  _ __ | |__   __ _ ___  ___
-  / _ \ / __| __| |/ _ \| '_ \| '_ \ / _` / __|/ _ \
- / ___ \ (__| |_| | (_) | | | | |_) | (_| \__ \  __/
-/_/   \_\___|\__|_|\___/|_| |_|_.__/ \__,_|___/\___|
-
 actionbase>
 ```
 
 <Aside>
-  The CLI is a thin wrapper around the REST API. Commands show the underlying HTTP requests, so you
-  can see exactly what's happening.
+  The CLI calls REST API internally. Commands show the HTTP requests being made.
 </Aside>
 
 ## Write Data
 
-Load sample data using a preset:
+Load sample data using a preset (at `actionbase>` prompt):
 
 ```
-actionbase> load preset likes
+load preset likes
 ```
 
 This creates a `likes` database/table and inserts 3 edges:
@@ -47,22 +40,25 @@ This creates a `likes` database/table and inserts 3 edges:
 ```
   │ 3 edges inserted
   │  - Alice → Phone
-  │  - Alice → Laptop
   │  - Bob → Phone
+  │  - Bob → Laptop
 ```
 
-```mermaid
-graph LR
-    Alice((Alice)) -->|likes| Phone((Phone))
-    Alice -->|likes| Laptop((Laptop))
-    Bob((Bob)) -->|likes| Phone
+```
+Alice --- likes ----> +--------+
+                      | Phone  |
+Bob ----- likes ----> +--------+
+      |
+      |               +--------+
+      +-- likes ----> | Laptop |
+                      +--------+
 ```
 
 At write time, Actionbase **precomputes everything** for reads—counts, indexes, ordering for **both directions**. This means you can instantly query:
 
 <div class="icon-rows">
   <div class="icon-row">
-    "What did Alice like?" <User size={18} /> <ArrowRight size={18} /> <Package size={18} />{' '}
+    "What did Bob like?" <User size={18} /> <ArrowRight size={18} /> <Package size={18} />{' '}
     (direction: OUT)
   </div>
   <div class="icon-row">
@@ -71,10 +67,15 @@ At write time, Actionbase **precomputes everything** for reads—counts, indexes
   </div>
 </div>
 
-No aggregation or JOINs at query time.
+Counts and indexes ready at write time—no computation at query time.
 
 <details>
 <summary>REST API equivalent</summary>
+
+> To use curl, run with `-p 8080:8080` and use another terminal:
+> ```bash
+> docker run -it -p 8080:8080 ghcr.io/kakao/actionbase:standalone
+> ```
 
 **Create service (database)**
 
@@ -99,7 +100,7 @@ curl -X POST "http://localhost:8080/graph/v2/service/likes/label/likes" \
     },
     "dirType":"BOTH",
     "storage":"datastore://likes/likes",
-    "indices":[{"name":"created_at_desc","fields":[{"name":"created_at","order":"DESC"}]}]
+    "indices":[{"name":"recent","fields":[{"name":"created_at","order":"DESC"}]}]
   }'
 ```
 
@@ -111,8 +112,8 @@ curl -X POST "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges"
   -d '{
     "mutations":[
       {"type":"INSERT","edge":{"version":1737377177245,"source":"Alice","target":"Phone","properties":{"created_at":1737377177245}}},
-      {"type":"INSERT","edge":{"version":1737377177297,"source":"Alice","target":"Laptop","properties":{"created_at":1737377177297}}},
-      {"type":"INSERT","edge":{"version":1737377177350,"source":"Bob","target":"Phone","properties":{"created_at":1737377177350}}}
+      {"type":"INSERT","edge":{"version":1737377177297,"source":"Bob","target":"Phone","properties":{"created_at":1737377177297}}},
+      {"type":"INSERT","edge":{"version":1737377177350,"source":"Bob","target":"Laptop","properties":{"created_at":1737377177350}}}
     ]
   }'
 ```
@@ -126,7 +127,7 @@ curl -X POST "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges"
 Check if a specific edge exists:
 
 ```
-actionbase(likes:likes)> get --source Alice --target Phone
+get --source Alice --target Phone
 ```
 
 ```
@@ -150,12 +151,12 @@ curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/get?sour
 ### Scan
 
 <div class="icon-row">
-  <strong>What did Alice like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
+  <strong>What did Bob like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
   <Package size={18} /> (direction: OUT)
 </div>
 
 ```
-actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction OUT
+scan --index recent --start Bob --direction OUT
 ```
 
 ```
@@ -163,8 +164,8 @@ actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction 
   │ |---|---------------|--------|--------|---------------------------|
   │ | # | VERSION       | SOURCE | TARGET | PROPERTIES                |
   │ |---|---------------|--------|--------|---------------------------|
-  │ | 1 | 1737377177297 | Alice  | Laptop | created_at: 1737377177297 |
-  │ | 2 | 1737377177245 | Alice  | Phone  | created_at: 1737377177245 |
+  │ | 1 | 1737377177350 | Bob    | Laptop | created_at: 1737377177350 |
+  │ | 2 | 1737377177297 | Bob    | Phone  | created_at: 1737377177297 |
   │ |---|---------------|--------|--------|---------------------------|
 ```
 
@@ -174,7 +175,7 @@ actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction 
 </div>
 
 ```
-actionbase(likes:likes)> scan --index created_at_desc --start Phone --direction IN
+scan --index recent --start Phone --direction IN
 ```
 
 ```
@@ -182,7 +183,7 @@ actionbase(likes:likes)> scan --index created_at_desc --start Phone --direction 
   │ |---|---------------|--------|--------|---------------------------|
   │ | # | VERSION       | SOURCE | TARGET | PROPERTIES                |
   │ |---|---------------|--------|--------|---------------------------|
-  │ | 1 | 1737377177350 | Bob    | Phone  | created_at: 1737377177350 |
+  │ | 1 | 1737377177297 | Bob    | Phone  | created_at: 1737377177297 |
   │ | 2 | 1737377177245 | Alice  | Phone  | created_at: 1737377177245 |
   │ |---|---------------|--------|--------|---------------------------|
 ```
@@ -196,10 +197,10 @@ actionbase(likes:likes)> scan --index created_at_desc --start Phone --direction 
 
 ```bash
 # OUT
-curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/created_at_desc?start=Alice&direction=OUT"
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/recent?start=Bob&direction=OUT"
 
 # IN
-curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/created_at_desc?start=Phone&direction=IN"
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/recent?start=Phone&direction=IN"
 ```
 
 </details>
@@ -212,14 +213,14 @@ curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/cre
 </div>
 
 ```
-actionbase(likes:likes)> count --start Alice --direction OUT
+count --start Alice --direction OUT
 ```
 
 ```
   │ |-------|-----------|-------|
   │ | START | DIRECTION | COUNT |
   │ |-------|-----------|-------|
-  │ | Alice | OUT       | 2     |
+  │ | Alice | OUT       | 1     |
   │ |-------|-----------|-------|
 ```
 
@@ -229,7 +230,7 @@ actionbase(likes:likes)> count --start Alice --direction OUT
 </div>
 
 ```
-actionbase(likes:likes)> count --start Phone --direction IN
+count --start Phone --direction IN
 ```
 
 ```
