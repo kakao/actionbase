@@ -1,4 +1,4 @@
-{"version":2,"width":100,"height":30,"timestamp":1769315510,"env":{"SHELL":"/bin/bash","TERM":"xterm-256color"}}
+{"version":2,"width":100,"height":19,"timestamp":1769315510,"env":{"SHELL":"/bin/bash","TERM":"xterm-256color"}}
 [0,"o","\u001b[0;32m~\u001b[0m\r\n"]
 [0.1,"o","$ docker run -it ghcr.io/kakao/actionbase:standalone\r\n"]
 [0.4,"o","\r\n\u001b[0;32m✓ Server running at http://localhost:8080\u001b[0m\r\n"]
