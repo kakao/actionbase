@@ -21,6 +21,7 @@ No timeline commitments. Items may shift based on community feedback.
 
 ## Production
 
+- [ ] 📦 `pub` 1.0.0 release (production-ready for external users)
 - [ ] 📦 `pub` Provisioning guide for Kubernetes
 - [ ] 📦 `pub` Configuration reference
 - [ ] 📦 `pub` Operations and monitoring guide
