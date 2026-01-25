@@ -109,6 +109,7 @@ For questions, ideas, or feedback, join us on [GitHub Discussions](https://githu
 ## Learn More
 
 * [Documentation](https://actionbase.io/)
+* [Roadmap](ROADMAP.md)
 * [Actionbase at if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE) (YouTube, Korean)
 
 ## License
