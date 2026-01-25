@@ -1,11 +1,11 @@
 # Actionbase
 
-[![CI](https://github.com/kakao/actionbase/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/kakao/actionbase/actions/workflows/continuous-integration.yml)
-[![Release](https://img.shields.io/github/v/release/kakao/actionbase)](https://github.com/kakao/actionbase/releases)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Docs](https://img.shields.io/badge/Docs-actionbase.io-green)](https://actionbase.io)
-
 > 🚀 **Open-sourced** — [Learn more](https://actionbase.io/blog/open-source-announcement/)
+
+[![Release](https://img.shields.io/github/v/release/kakao/actionbase?label=)](https://github.com/kakao/actionbase/releases)
+[![License](https://img.shields.io/badge/Apache%202.0-blue)](https://opensource.org/licenses/Apache-2.0)
+[![Docs](https://img.shields.io/badge/Docs-green)](https://actionbase.io)
+[![CI](https://img.shields.io/github/actions/workflow/status/kakao/actionbase/continuous-integration.yml?label=CI)](https://github.com/kakao/actionbase/actions/workflows/continuous-integration.yml)
 
 Likes, recent views, follows—look simple, but get complex as you scale, and end up rebuilt again and again.
 
