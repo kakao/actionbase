@@ -2,10 +2,10 @@
 
 > 🚀 **Open-sourced** — [Learn more](https://actionbase.io/blog/open-source-announcement/)
 
-[![Release](https://img.shields.io/github/v/release/kakao/actionbase?label=release)](https://github.com/kakao/actionbase/releases)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](https://opensource.org/licenses/Apache-2.0)
-[![Docs](https://img.shields.io/badge/docs-actionbase.io-green)](https://actionbase.io)
-[![CI](https://img.shields.io/github/actions/workflow/status/kakao/actionbase/continuous-integration.yml?label=ci)](https://github.com/kakao/actionbase/actions/workflows/continuous-integration.yml)
+[![Release](https://img.shields.io/github/v/release/kakao/actionbase?label=release&style=flat-square)](https://github.com/kakao/actionbase/releases)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://opensource.org/licenses/Apache-2.0)
+[![Docs](https://img.shields.io/badge/docs-actionbase.io-green?style=flat-square)](https://actionbase.io)
+[![CI](https://img.shields.io/github/actions/workflow/status/kakao/actionbase/continuous-integration.yml?label=ci&style=flat-square)](https://github.com/kakao/actionbase/actions/workflows/continuous-integration.yml)
 
 Likes, recent views, follows—look simple, but get complex as you scale, and end up rebuilt again and again.
 
