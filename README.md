@@ -41,6 +41,10 @@ count --start Alice --direction OUT              # 1
 count --start Phone --direction IN               # 2
 ```
 
+<a href="https://actionbase.io/quick-start/">
+  <img src="website/public/images/quick-start/quickstart.svg" alt="Actionbase Quick Start Demo" />
+</a>
+
 See [Quick Start](https://actionbase.io/quick-start/) for more details, or [Build Your Social Media App](https://actionbase.io/guides/build-your-social-media-app/) to go deeper.
 
 ## How It Works
