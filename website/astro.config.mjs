@@ -28,7 +28,7 @@ const getBasePath = () => {
 };
 
 const base = getBasePath();
-const ogUrl = new URL('og.jpg?v=1', site).href;
+const ogUrl = new URL('og.png?v=1', site).href;
 const ogImageAlt =
   'Actionbase is a production-proven OLTP database serving tens of millions of users across Kakao.';
 
