@@ -77,7 +77,7 @@ If a single database can handle your workload, that's the better choice.
 
 ## Architecture
 
-Actionbase writes to HBase for storage and emits a WAL to Kafka for recovery, replay, and downstream pipelines. HBase provides strong durability and horizontal scalability.
+Actionbase writes to HBase for storage and emits WAL/CDC to Kafka for recovery, replay, and downstream pipelines. HBase provides strong durability and horizontal scalability.
 
 ```
 Client
@@ -114,6 +114,7 @@ For questions, ideas, or feedback, join us on [GitHub Discussions](https://githu
 ## Learn More
 
 * [Documentation](https://actionbase.io/)
+* [Why We Built This](https://github.com/kakao/actionbase/discussions/32)
 * [Roadmap](ROADMAP.md)
 * [Actionbase at if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE) (YouTube, Korean)
 
