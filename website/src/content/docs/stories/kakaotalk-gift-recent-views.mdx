@@ -17,9 +17,9 @@ Processing these writes synchronously in the user-facing request path would:
 - Create backpressure during traffic spikes
 - Risk service degradation under load
 
-Actionbase needed a pattern that could absorb high write throughput without affecting user experience.
+Actionbase needed a pattern that could absorb high write throughput without affecting user experience. Actionbase got the chance to prove itself here.
 
-## The Solution
+## Async Strategy
 
 Rather than processing mutations synchronously, we used async processing:
 
@@ -36,11 +36,11 @@ The key insight: separate the acknowledgment from the processing. The user gets 
 
 ### Stage 1: Queue to WAL
 
-When a view event arrives, Actionbase writes it to WAL with `queue=true` and returns immediately. No locking, no state computation—just append to the log.
+First, when a view event arrives, Actionbase writes it to WAL with `queue=true` and returns immediately. No locking, no state computation—just append to the log.
 
 ### Stage 2: Async Processing
 
-A Spark Streaming job consumes the WAL entries and sends mutations back to Actionbase. The processor:
+Next, a Spark Streaming job consumes the WAL entries and sends mutations back to Actionbase. The processor:
 
 - Batches events for efficiency
 - Throttles during traffic spikes
@@ -48,7 +48,7 @@ A Spark Streaming job consumes the WAL entries and sends mutations back to Actio
 
 ### Stage 3: Background Mutation
 
-Actionbase processes the mutations in the background—acquiring locks, updating state, computing indexes and counts. Data is typically reflected within tens of milliseconds.
+Finally, Actionbase processes the mutations in the background—acquiring locks, updating state, computing indexes and counts. Data is typically reflected within tens of milliseconds.
 
 ## What We Learned
 
@@ -56,4 +56,4 @@ Actionbase processes the mutations in the background—acquiring locks, updating
 - **Immediate response improves user experience.** Users don't wait for the full mutation cycle.
 - **Eventual consistency is acceptable for some use cases.** Recent views don't need real-time accuracy—tens of milliseconds delay is fine.
 
-This pattern works well for high-frequency, low-criticality interactions where slight delay is acceptable.
+This pattern became the template for high-frequency interactions at Kakao.
