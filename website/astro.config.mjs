@@ -114,6 +114,10 @@ export default defineConfig({
           autogenerate: { directory: 'design' },
         },
         {
+          label: 'Stories',
+          autogenerate: { directory: 'stories' },
+        },
+        {
           label: 'Internals',
           autogenerate: { directory: 'internals' },
         },
