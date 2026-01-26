@@ -55,7 +55,7 @@ Read current state from storage—properties, timestamps, metadata.
 
 ### 4. Apply Event
 
-Transition state based on operation and timestamp. See [State Transitions](#state-transitions) for details.
+Transition state based on operation and client timestamp. See [State Transitions](#state-transitions) for details.
 
 ### 5. Compute Indexes and Counters
 
@@ -78,7 +78,7 @@ Mutation recorded in CDC (Kafka in production). Resulting state available for do
 
 ## State Transitions
 
-Edges transition between states based on operations (INSERT, DELETE). Each event carries a timestamp, and Actionbase uses these timestamps to compute the correct final state—even for toggle scenarios (like/unlike/like) and out-of-order arrivals.
+Edges transition between states based on operations (INSERT, DELETE). Each event carries a client timestamp, and Actionbase uses these timestamps to compute the correct final state—even for out-of-order arrivals and duplicate requests (idempotent).
 
 See [`State.transit`](https://github.com/kakao/actionbase/blob/main/core/src/main/kotlin/com/kakao/actionbase/core/state/StateExtensions.kt) for implementation.
 
@@ -139,6 +139,7 @@ Reads use simple GET, COUNT, SCAN without query-time computation.
 | WAL               | Durability and recovery                   |
 | Read-Modify-Write | Mutations based on latest state           |
 | State Transitions | Correct final state despite event arrival |
+| Idempotency       | Replay produces same result               |
 
 ## Next Steps
 
