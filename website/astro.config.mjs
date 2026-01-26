@@ -189,6 +189,12 @@ export default defineConfig({
               picture: 'https://avatars.githubusercontent.com/u/1531387?s=200',
               url: 'https://github.com/em3s',
             },
+            zipdoki: {
+              name: 'Dokyung Lee',
+              title: 'Maintainer',
+              picture: 'https://avatars.githubusercontent.com/u/112409928?s=200',
+              url: 'https://github.com/zipdoki',
+            },
           },
           metrics: {
             readingTime: true,
