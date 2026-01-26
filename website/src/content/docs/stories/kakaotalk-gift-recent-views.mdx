@@ -5,6 +5,8 @@ sidebar:
   order: 2
 ---
 
+> **Async**: Decouple writes from processing. Queue high-frequency events to WAL and process them asynchronously.
+
 This is the story of how Actionbase handled high-frequency writes for KakaoTalk Gift's recent views.
 
 ## The Challenge
@@ -46,7 +48,7 @@ Next, a Spark Streaming job consumes the WAL entries and sends mutations back to
 - Throttles during traffic spikes
 - Retries on transient failures
 
-> **Note:** The async processor is currently internal. Open source release is in progress. See [Roadmap](https://github.com/kakao/actionbase/blob/main/ROADMAP.md).
+> **Note:** The async processor is currently internal. Open source release is in progress. See [Roadmap](/community/roadmap/).
 
 ### Stage 3: Background Mutation
 

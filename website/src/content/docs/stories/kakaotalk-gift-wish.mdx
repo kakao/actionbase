@@ -5,6 +5,8 @@ sidebar:
   order: 1
 ---
 
+> **SSOT (Single Source of Truth)**: Actionbase owns the data. Replace your existing storage with Actionbase as the primary system.
+
 This is the story of how KakaoTalk Gift's wish list became Actionbase's first production deployment.
 
 ## The Challenge
@@ -49,6 +51,8 @@ For historical data, we:
 1. Dumped the MySQL table
 2. Bulk-loaded into Actionbase
 3. Replayed the WAL to catch up with writes that happened during the dump
+
+> **Note:** The migration pipeline (bulk loading) is currently internal. Open source release is in progress. See [Roadmap](/community/roadmap/).
 
 This gave us a consistent snapshot without downtime.
 

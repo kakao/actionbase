@@ -38,3 +38,7 @@ No timeline commitments. Items may shift based on community feedback.
 - General-purpose graph queries
 - Unbounded traversal or analytics
 - Building another storage engine
+
+## Feedback
+
+Have feedback on the roadmap? Join the discussion on [GitHub Discussions](https://github.com/kakao/actionbase/discussions).
