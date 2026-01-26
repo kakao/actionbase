@@ -5,6 +5,8 @@ sidebar:
   order: 4
 ---
 
+> This story shares how Kakao uses Actionbase internally. We're preparing to open source these components — see [Roadmap](/community/roadmap/).
+
 This story demonstrates the **Integration Pipeline** pattern: how Actionbase satisfies downstream requirements without building them itself.
 
 ## The Challenge
@@ -54,8 +56,6 @@ Different backends serve different needs:
 ### Snapshots
 
 Originally, Spark Streaming dumped Kafka periodically, and Spark Batch created snapshots. Recently migrating to Iceberg for more efficient storage.
-
-> **Note:** The async processor and migration pipeline are currently internal. Open source release is in progress — see [Roadmap](/community/roadmap/).
 
 ## What This Enables
 
