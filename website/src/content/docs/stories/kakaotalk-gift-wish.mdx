@@ -45,6 +45,7 @@ flowchart LR
 First, we added Actionbase as a write target alongside the existing system (MySQL + Redis). Reads still came from the existing system.
 
 For historical data, we:
+
 1. Dumped the MySQL table
 2. Bulk-loaded into Actionbase
 3. Replayed the WAL to catch up with writes that happened during the dump
@@ -54,6 +55,7 @@ This gave us a consistent snapshot without downtime.
 ### Stage 2: Validation
 
 For one month, we compared:
+
 - MySQL dumps (source of truth)
 - Actionbase CDC-based snapshots
 
