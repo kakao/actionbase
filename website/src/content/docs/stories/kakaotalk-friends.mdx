@@ -5,9 +5,7 @@ sidebar:
   order: 3
 ---
 
-> **CQRS (Command Query Responsibility Segregation)**: Actionbase as a read-optimized view. Keep your existing write path; Actionbase syncs via CDC.
-
-This is the story of how Actionbase became a new view layer for KakaoTalk's friend relationships.
+This story demonstrates the **CQRS (Command Query Responsibility Segregation)** pattern: how Actionbase became a read-optimized view layer for KakaoTalk's friend relationships.
 
 ## The Challenge
 
@@ -56,7 +54,7 @@ For historical data, we:
 2. Bulk-loaded into Actionbase
 3. Replayed the WAL to catch up with changes during the dump
 
-> **Note:** The migration pipeline (bulk loading) is currently internal. Open source release is in progress. See [Roadmap](/community/roadmap/).
+> **Note:** The migration pipeline (bulk loading) is currently internal. Open source release is in progress — see [Roadmap](/community/roadmap/).
 
 This gave us a consistent snapshot without downtime.
 
