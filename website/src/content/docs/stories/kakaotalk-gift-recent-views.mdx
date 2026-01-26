@@ -38,7 +38,7 @@ The key insight: separate the acknowledgment from the processing. The user gets 
 
 First, when a view event arrives, Actionbase writes it to WAL with `queue=true` and returns immediately. No locking, no state computation—just append to the log.
 
-### Stage 2: Async Processing
+### Stage 2: Processing
 
 Next, a Spark Streaming job consumes the WAL entries and sends mutations back to Actionbase. The processor:
 
