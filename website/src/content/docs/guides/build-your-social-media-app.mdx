@@ -97,192 +97,240 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
 <Steps>
 
-1. **Welcome**
+1.  **Welcome**
 
-   Welcome to the Actionbase hands-on guide! In this tutorial, you will:
+    Welcome to the Actionbase hands-on guide! In this tutorial, you will:
 
-   <ul class="icon-rows">
-     <li class="icon-row">
-       <Users size={18} /> Build follows
-     </li>
-     <li class="icon-row">
-       <Heart size={18} /> Build likes
-     </li>
-     <li class="icon-row">
-       <Home size={18} /> See your feed
-     </li>
-   </ul>
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Users size={18} /> Build follows
+      </li>
+      <li class="icon-row">
+        <Heart size={18} /> Build likes
+      </li>
+      <li class="icon-row">
+        <Home size={18} /> See your feed
+      </li>
+    </ul>
 
-   ![Welcome](/images/guides/social-media/01-welcome.png)
+    ![Welcome](/images/guides/social-media/01-welcome.png)
 
-2. **You are @zipdoki**
+2.  **You are @zipdoki**
 
-   You will play as **@zipdoki** throughout this tutorial.
+    You will play as **@zipdoki** throughout this tutorial.
 
-   **Tip:** Press **Enter** to proceed.
+    **Tip:** Press **Enter** to proceed.
 
-   ![Zipdoki intro](/images/guides/social-media/02-zipdoki-intro.png)
+    ![Zipdoki intro](/images/guides/social-media/02-zipdoki-intro.png)
 
-3. **Set Up**
+3.  **Set Up**
 
-   First, let's load **sample data** so you can focus on building.
+    First, let's load **sample data** so you can focus on building.
 
-   <ul class="icon-rows">
-     <li class="icon-row">
-       <Package size={18} /> Create database & tables
-     </li>
-     <li class="icon-row">
-       <Users size={18} /> Add sample users & posts
-     </li>
-   </ul>
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Package size={18} /> Create database & tables
+      </li>
+      <li class="icon-row">
+        <Users size={18} /> Add sample users & posts
+      </li>
+    </ul>
 
-   ![Set Up](/images/guides/social-media/03-set-up.png)
+    ![Set Up](/images/guides/social-media/03-set-up.png)
 
-4. **Load Sample Data**
+4.  **Load Sample Data**
 
-   Click **Run** to create:
+    Click **Run** to create:
 
-   <ul class="icon-rows">
-     <li class="icon-row">
-       <Package size={18} /> Database with users
-     </li>
-     <li class="icon-row">
-       <Table size={18} /> Posts & likes tables
-     </li>
-   </ul>
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Package size={18} /> Database with users
+      </li>
+      <li class="icon-row">
+        <Table size={18} /> Posts & likes tables
+      </li>
+    </ul>
 
-   ```bash
-   load preset build-your-social-app
-   ```
+    ```bash
+    load preset build-your-social-app
+    ```
 
-   ![Load sample data](/images/guides/social-media/04-load-sample-data.png)
+    ![Load sample data](/images/guides/social-media/04-load-sample-data.png)
 
-5. **Select Database**
+5.  **Select Database**
 
-   Switch to the `social` database.
+    Switch to the `social` database.
 
-   <ul class="icon-rows">
-     <li class="icon-row">
-       <Package size={18} /> Use database social
-     </li>
-   </ul>
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Package size={18} /> Use database social
+      </li>
+    </ul>
 
-   ```bash
-   use database social
-   ```
+    ```bash
+    use database social
+    ```
 
-   ![Select database](/images/guides/social-media/05-select-database.png)
+    ![Select database](/images/guides/social-media/05-select-database.png)
 
-6. **Explore the Data**
+6.  **Explore the Data**
 
-   In the previous step, we created these tables:
+    In the previous step, we created these tables:
 
-   <ul class="icon-rows">
-     <li class="icon-row">
-       <Table size={18} /> user_posts — who posted what
-     </li>
-     <li class="icon-row">
-       <Heart size={18} /> user_likes — who liked which post
-     </li>
-   </ul>
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Table size={18} /> user_posts — who posted what
+      </li>
+      <li class="icon-row">
+        <Heart size={18} /> user_likes — who liked which post
+      </li>
+    </ul>
 
-   Browse around before we add new interactions.
+    Browse around before we add new interactions.
 
-   ![Explore the Data](/images/guides/social-media/06-explore-the-data.png)
+    ![Explore the Data](/images/guides/social-media/06-explore-the-data.png)
 
-7. **Follows**
+7.  **Follows**
 
-   Let's build a **follow** feature.
+    Let's build a **follow** feature.
 
-   <ul class="icon-rows">
-     <li class="icon-row">
-       <Table size={18} /> Create a table
-     </li>
-     <li class="icon-row">
-       <Users size={18} /> Add a relationship
-     </li>
-     <li class="icon-row">
-       <Search size={18} /> Query it
-     </li>
-   </ul>
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Table size={18} /> Create a table
+      </li>
+      <li class="icon-row">
+        <Users size={18} /> Add a relationship
+      </li>
+      <li class="icon-row">
+        <Search size={18} /> Query it
+      </li>
+    </ul>
 
-   ![Follows](/images/guides/social-media/07-follows.png)
+    ![Follows](/images/guides/social-media/07-follows.png)
 
-8. **Create Follows Table**
+8.  **Create Follows Table**
 
-   Create a `user_follows` table.
+    Create a `user_follows` table.
 
-   <ul class="icon-rows">
-     <li class="icon-row">
-       <UserPlus size={18} /> Who follows whom
-     </li>
-   </ul>
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <UserPlus size={18} /> Who follows whom
+      </li>
+    </ul>
 
-   ![Create Follows Table](/images/guides/social-media/08-create-follows-table.png)
+    ![Create Follows Table](/images/guides/social-media/08-create-follows-table.png)
 
-9. **Follow a User**
+9.  **Follow a User**
 
-   Make **@zipdoki** follow **@j4rami**. This creates a connection between two users.
+        Make **@zipdoki** follow **@j4rami**. This creates a connection between two users.
 
-   <ul class="icon-rows">
-     <li class="icon-row">
-       <Zap size={18} /> Precomputing count & index
-     </li>
-   </ul>
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Zap size={18} /> Precomputing count & index
+          </li>
+        </ul>
 
-   ```bash
-   mutate user_follows --type INSERT --source zipdoki --target j4rami ...
-   ```
+        ```bash
+        mutate user_follows --type INSERT --source zipdoki --target j4rami ...
+        ```
 
-   ![Follow a User](/images/guides/social-media/09-follow-a-user.png)
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl -X POST "http://localhost:9300/graph/v3/databases/social/tables/user_follows/edges" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "mutations": [{
+                "type": "INSERT",
+                "edge": {
+                  "version": 1737849600000,
+                  "source": "zipdoki",
+                  "target": "j4rami",
+                  "properties": { "createdAt": 1737849600000 }
+                }
+              }]
+            }'
+        ```
+
+        </details>
+
+        ![Follow a User](/images/guides/social-media/09-follow-a-user.png)
 
 10. **Check Follow Status**
 
-    Verify the follow exists.
+        Verify the follow exists.
 
-    <ul class="icon-rows">
-      <li class="icon-row">
-        <Check size={18} /> Query relationship
-      </li>
-    </ul>
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Check size={18} /> Query relationship
+          </li>
+        </ul>
 
-    ```bash
-    get user_follows --source zipdoki --target j4rami
-    ```
+        ```bash
+        get user_follows --source zipdoki --target j4rami
+        ```
 
-    ![Check Follow Status](/images/guides/social-media/10-check-follow-status.png)
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl "http://localhost:9300/graph/v3/databases/social/tables/user_follows/edges/get?source=zipdoki&target=j4rami"
+        ```
+
+        </details>
+
+        ![Check Follow Status](/images/guides/social-media/10-check-follow-status.png)
 
 11. **Count Followers**
 
-    Get **@j4rami**'s follower count.
+        Get **@j4rami**'s follower count.
 
-    <ul class="icon-rows">
-      <li class="icon-row">
-        <Rocket size={18} /> No aggregation
-      </li>
-    </ul>
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Rocket size={18} /> No aggregation
+          </li>
+        </ul>
 
-    ```bash
-    count user_follows --start j4rami --direction IN
-    ```
+        ```bash
+        count user_follows --start j4rami --direction IN
+        ```
 
-    ![Count Followers](/images/guides/social-media/11-count-followers.png)
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl "http://localhost:9300/graph/v3/databases/social/tables/user_follows/edges/count?start=j4rami&direction=IN"
+        ```
+
+        </details>
+
+        ![Count Followers](/images/guides/social-media/11-count-followers.png)
 
 12. **List Followers**
 
-    Get the list of users following **@j4rami**.
+        Get the list of users following **@j4rami**.
 
-    <ul class="icon-rows">
-      <li class="icon-row">
-        <Rocket size={18} /> Already indexed
-      </li>
-    </ul>
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Rocket size={18} /> Already indexed
+          </li>
+        </ul>
 
-    ```bash
-    scan user_follows --start j4rami --index created_at_desc --direction IN
-    ```
+        ```bash
+        scan user_follows --start j4rami --index created_at_desc --direction IN
+        ```
 
-    ![List Followers](/images/guides/social-media/12-list-followers.png)
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl "http://localhost:9300/graph/v3/databases/social/tables/user_follows/edges/scan/created_at_desc?start=j4rami&direction=IN"
+        ```
+
+        </details>
+
+        ![List Followers](/images/guides/social-media/12-list-followers.png)
 
 13. **Likes**
 
@@ -298,35 +346,65 @@ From here, continue in the **web browser**. The interactive guide walks you thro
 
 14. **Like a Post**
 
-    Make **@zipdoki** like **@j4rami**'s post.
+        Make **@zipdoki** like **@j4rami**'s post.
 
-    <ul class="icon-rows">
-      <li class="icon-row">
-        <Zap size={18} /> Precomputing count & index
-      </li>
-    </ul>
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Zap size={18} /> Precomputing count & index
+          </li>
+        </ul>
 
-    ```bash
-    mutate user_likes --type INSERT --source zipdoki --target 1 ...
-    ```
+        ```bash
+        mutate user_likes --type INSERT --source zipdoki --target 1 ...
+        ```
 
-    ![Like a Post](/images/guides/social-media/14-like-a-post.png)
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl -X POST "http://localhost:9300/graph/v3/databases/social/tables/user_likes/edges" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "mutations": [{
+                "type": "INSERT",
+                "edge": {
+                  "version": 1737849600000,
+                  "source": "zipdoki",
+                  "target": 1,
+                  "properties": { "createdAt": 1737849600000 }
+                }
+              }]
+            }'
+        ```
+
+        </details>
+
+        ![Like a Post](/images/guides/social-media/14-like-a-post.png)
 
 15. **Check Like Status**
 
-    Verify that **@zipdoki**'s like was recorded.
+        Verify that **@zipdoki**'s like was recorded.
 
-    <ul class="icon-rows">
-      <li class="icon-row">
-        <Check size={18} /> Query like status
-      </li>
-    </ul>
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Check size={18} /> Query like status
+          </li>
+        </ul>
 
-    ```bash
-    get user_likes --source zipdoki --target 1
-    ```
+        ```bash
+        get user_likes --source zipdoki --target 1
+        ```
 
-    ![Check Like Status](/images/guides/social-media/15-check-like-status.png)
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl "http://localhost:9300/graph/v3/databases/social/tables/user_likes/edges/get?source=zipdoki&target=1"
+        ```
+
+        </details>
+
+        ![Check Like Status](/images/guides/social-media/15-check-like-status.png)
 
 16. **And More**
 
