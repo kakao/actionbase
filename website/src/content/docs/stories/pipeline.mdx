@@ -55,6 +55,8 @@ Different backends serve different needs:
 
 Originally, Spark Streaming dumped Kafka periodically, and Spark Batch created snapshots. Recently migrating to Iceberg for more efficient storage.
 
+> **Note:** The async processor and migration pipeline are currently internal. Open source release is in progress — see [Roadmap](/community/roadmap/).
+
 ## What This Enables
 
 By publishing WAL/CDC, Actionbase doesn't implement these—but makes them possible:
