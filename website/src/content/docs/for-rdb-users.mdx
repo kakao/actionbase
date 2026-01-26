@@ -78,11 +78,14 @@ graph LR
 
 The `id` column is not needed—unique-edges are identified by source and target.
 
-> **Note:** For multi-edge cases (e.g., multiple gifts from the same user to the same recipient), each edge requires a unique `id`. See [FAQ](/faq/#what-is-the-difference-between-unique-edge-and-multi-edge) for details.
+> **Note:** For multi-edge cases (e.g., multiple gifts from the same user to the same recipient), each edge requires a unique `id` — see [FAQ](/faq/#what-is-the-difference-between-unique-edge-and-multi-edge).
 
 Indexes for efficient queries:
 
 - `created_at DESC` — recent wishes
 - `visibility, created_at DESC` — filtered by visibility
 
-See [Schema](/design/schema/) and [Quick Start](/quick-start/).
+## Next Steps
+
+- [Schema](/design/schema/) — Define your edge schema
+- [Quick Start](/quick-start/) — Try Actionbase in minutes
