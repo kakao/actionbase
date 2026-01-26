@@ -46,9 +46,7 @@ However, as an open source project, Actionbase is just getting started. Document
 
 ### What is the history of Actionbase?
 
-Development started at Kakao in 2023. After deployment to KakaoTalk Gift, it was open-sourced in January 2026.
-
-See [Path to Open Source](/project/path-to-open-source/) for details.
+Development started at Kakao in 2023. After deployment to KakaoTalk Gift, it was open-sourced in January 2026 — see [Path to Open Source](/project/path-to-open-source/).
 
 ## Data Model
 
@@ -84,9 +82,7 @@ Yes. Schemas define:
 - Source and target identifier types (int, long, string, etc.)
 - Interaction properties and their types
 
-Schemas determine which read-optimized structures (indexes, counts) are built at write time.
-
-See [Schema](/design/schema/) and [Metadata API](/api-references/metadata/).
+Schemas determine which read-optimized structures (indexes, counts) are built at write time — see [Schema](/design/schema/) and [Metadata API](/api-references/metadata/).
 
 ### What are some example interaction models?
 
@@ -106,7 +102,7 @@ See [Schema](/design/schema/) and [Metadata API](/api-references/metadata/).
 
 ### How does Actionbase handle writes?
 
-Actionbase processes interactions using a state-based mutation model:
+Actionbase processes interactions using a state-based [mutation](/design/mutation/) model:
 
 1. Read current state
 2. Apply incoming interaction as a state transition
@@ -122,21 +118,17 @@ Actionbase pre-computes State, Index, and Count structures when edges are writte
 2. **Index** — ordered structures based on properties (e.g., `created_at DESC`)
 3. **Count** — counters (e.g., number of likes per item)
 
-See [Core Concepts - Write-Time Optimization](/design/concepts/#write-time-optimization) for details.
+See [Core Concepts](/design/concepts/#write-time-optimization).
 
 ### How does Actionbase handle out-of-order events?
 
-Clients attach timestamps to events. Actionbase uses these timestamps to compute the correct final state, regardless of arrival order.
-
-See [Mutation](/design/mutation/) for details on state transitions.
+Clients attach timestamps to events. Actionbase uses these timestamps to compute the correct final state, regardless of arrival order — see [Mutation](/design/mutation/).
 
 ## Storage and Infrastructure
 
 ### What storage backends does Actionbase support?
 
-Storage is abstracted in Actionbase. Any backend that meets the interface requirements can be plugged in. HBase is the current implementation; lighter backends are planned.
-
-See [Storage Backends](/design/storage-backends/) for interface requirements and supported backends.
+Storage is abstracted in Actionbase. Any backend that meets the interface requirements can be plugged in. HBase is the current implementation; lighter backends are planned — see [Storage Backends](/design/storage-backends/).
 
 ### What HBase versions are supported?
 
@@ -165,7 +157,7 @@ WAL and CDC streams can feed analytics systems, async processors, background job
 
 ### Can Actionbase handle high write throughput?
 
-For high-frequency interactions (e.g., recent views), Actionbase uses async processing via Spark Streaming:
+For high-frequency interactions (e.g., [recent views](/stories/kakaotalk-gift-recent-views/)), Actionbase uses async processing via Spark Streaming:
 
 1. Request queued to WAL, response returned immediately
 2. Async processor (Spark Streaming) consumes queued WAL entries and sends mutations back to Actionbase
@@ -208,12 +200,12 @@ When these outgrow your RDBMS—sharding gets painful, caches drift—Actionbase
 
 ### What are the system requirements?
 
-**Local (development)**
+**Local (development)** — see [Quick Start](/quick-start/)
 
 - Java 17
 - In-memory storage, no external dependencies
 
-**Production**
+**Production** — documentation in progress, see [Roadmap](/community/roadmap/)
 
 - Java 17
 - 4 GB+ memory recommended (scales out horizontally)
@@ -221,22 +213,20 @@ When these outgrow your RDBMS—sharding gets painful, caches drift—Actionbase
 
 ### How do I get started?
 
-See [Quick Start](/quick-start/).
+[Quick Start](/quick-start/).
 
 ### Do I need to set up HBase separately?
 
-Yes. See [HBase Setup](/operations/hbase/).
+Yes — documentation in progress, see [Roadmap](/community/roadmap/).
 
 Lighter backends are planned for future releases.
 
 ### What programming languages are supported?
 
-Actionbase provides a REST API. Any language that supports HTTP works.
-
-See [Query API](/api-references/query/) and [Mutation API](/api-references/mutation/).
+Actionbase provides a REST API. Any language that supports HTTP works — see [Query API](/api-references/query/) and [Mutation API](/api-references/mutation/).
 
 ## Contributing
 
 ### How can I contribute?
 
-See [Contributing](/community/contributing/).
+[Contributing](/community/contributing/).
