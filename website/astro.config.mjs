@@ -106,16 +106,16 @@ export default defineConfig({
           items: ['introduction', 'quick-start', 'faq', 'for-rdb-users', 'llms-txt'],
         },
         {
-          label: 'Project',
-          autogenerate: { directory: 'project' },
+          label: 'Stories',
+          autogenerate: { directory: 'stories' },
         },
         {
           label: 'Design',
           autogenerate: { directory: 'design' },
         },
         {
-          label: 'Internals',
-          autogenerate: { directory: 'internals' },
+          label: 'Guides',
+          autogenerate: { directory: 'guides' },
         },
         {
           label: 'Provisioning',
@@ -126,16 +126,16 @@ export default defineConfig({
           autogenerate: { directory: 'operations' },
         },
         {
-          label: 'Stories',
-          autogenerate: { directory: 'stories' },
-        },
-        {
-          label: 'Guides',
-          autogenerate: { directory: 'guides' },
+          label: 'Internals',
+          autogenerate: { directory: 'internals' },
         },
         {
           label: 'API References',
           autogenerate: { directory: 'api-references' },
+        },
+        {
+          label: 'Project',
+          autogenerate: { directory: 'project' },
         },
         {
           label: 'Community',

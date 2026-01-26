@@ -42,6 +42,7 @@ Individual edges accumulate. What was once scattered across databases becomes a 
 ## The Problem
 
 Today, each feature queries its own slice:
+
 - "What did I wish for?"
 - "What did I view recently?"
 - "Who do I follow?"
@@ -91,10 +92,12 @@ With wide rows, all edges for one source fit in a single row as separate columns
 ### Why Both?
 
 Different roles:
+
 - `EdgeIndex` — maintains all edges. Narrow rows scale simply. Add nodes, done.
 - `EdgeCache` — keeps only top N edges for multi-hop efficiency.
 
 But wide rows can grow unbounded. A user with millions of edges creates a massive row. A **Pruner** solves this by:
+
 - Consuming CDC to detect changes
 - Keeping only top N edges per row (by index order)
 - Multi-hop queries only need top N anyway
