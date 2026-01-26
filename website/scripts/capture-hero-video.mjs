@@ -49,26 +49,26 @@ const ALL_STEPS = [
   '19-try-it-yourself',
 ];
 
-// Display times per step (ms)
+// Display times per step (ms) - total ~60 seconds
 const HERO_SCENES = {
-  '01-welcome': 100,
-  '02-zipdoki-intro': 300,
-  '03-set-up': 500,
-  '04-load-sample-data': 500,
-  '05-select-database': 1000,
-  '06-explore-the-data': 1000,
-  '07-follows': 1100,
-  '08-create-follows-table': 800,
-  '09-follow-a-user': 1200,
-  '10-check-follow-status': 900,
-  '11-count-followers': 800,
-  '12-list-followers': 800,
-  '13-likes': 1100,
-  '14-like-a-post': 1200,
-  '15-check-like-status': 1000,
-  '16-and-more': 800,
-  '17-feed': 1300,
-  '18-all-done': 500,
+  '01-welcome': 2500,
+  '02-zipdoki-intro': 2000,
+  '03-set-up': 3000,
+  '04-load-sample-data': 4000,
+  '05-select-database': 2500,
+  '06-explore-the-data': 4000,
+  '07-follows': 3500,
+  '08-create-follows-table': 3000,
+  '09-follow-a-user': 4000,
+  '10-check-follow-status': 3000,
+  '11-count-followers': 3000,
+  '12-list-followers': 3000,
+  '13-likes': 3500,
+  '14-like-a-post': 4000,
+  '15-check-like-status': 3000,
+  '16-and-more': 2500,
+  '17-feed': 5000,
+  '18-all-done': 3000,
 };
 
 // Last step to record (stop here)
