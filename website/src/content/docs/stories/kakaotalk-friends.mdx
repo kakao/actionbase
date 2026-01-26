@@ -49,6 +49,7 @@ First, we set up the data flow. Debezium captured changes from MySQL shards and 
 ### Stage 2: Bulk Load
 
 For historical data, we:
+
 1. Dumped the MySQL tables
 2. Bulk-loaded into Actionbase
 3. Replayed the WAL to catch up with changes during the dump
