@@ -166,7 +166,6 @@ async function main() {
     // Final pause before ending
     await page.waitForTimeout(1000);
     console.log('\n=== Recording complete! ===\n');
-
   } catch (err) {
     console.error('\n=== ERROR ===');
     console.error(err.message);
