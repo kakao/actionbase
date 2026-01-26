@@ -51,13 +51,9 @@ Different backends serve different needs:
 - Elasticsearch: Real-time log search, event-by-event lookup (WAL/CDC)
 - OLAP engines (Presto, Hive, etc.): Ad-hoc queries on large datasets
 
-### Snapshots with Iceberg
+### Snapshots
 
-For historical analysis, Spark Streaming periodically writes snapshots to Iceberg. This provides:
-
-- Time-travel queries
-- Schema evolution
-- Efficient storage with Parquet
+Originally, Spark Streaming dumped Kafka periodically, and Spark Batch created snapshots. Recently migrating to Iceberg for more efficient storage.
 
 ## What This Enables
 
