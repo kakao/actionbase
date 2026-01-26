@@ -46,6 +46,8 @@ Next, a Spark Streaming job consumes the WAL entries and sends mutations back to
 - Throttles during traffic spikes
 - Retries on transient failures
 
+> **Note:** The async processor is currently internal. Open source release is in progress. See [Roadmap](https://github.com/kakao/actionbase/blob/main/ROADMAP.md).
+
 ### Stage 3: Background Mutation
 
 Finally, Actionbase processes the mutations in the background—acquiring locks, updating state, computing indexes and counts. Data is typically reflected within tens of milliseconds.
