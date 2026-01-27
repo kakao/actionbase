@@ -1,0 +1,68 @@
+---
+title: 로드맵
+description: Actionbase를 위한 계획된 기능 및 개선 사항
+sidebar:
+  order: 4
+---
+
+import { LinkCard, Badge } from '@astrojs/starlight/components';
+
+<LinkCard
+  title="GitHub에서 보기"
+  description="ROADMAP.md"
+  href="https://github.com/kakao/actionbase/blob/main/ROADMAP.md"
+/>
+
+> 일정 약속은 없습니다. 항목은 커뮤니티 피드백에 따라 변경될 수 있습니다.
+
+- <Badge text="pub" variant="success" size="small" /> Already built internally, needs open-source
+  릴리스 또는 문서
+- <Badge text="신규" variant="note" size="small" /> New development
+
+## 기능
+
+- [ ] <Badge text="실시간 집계" variant="success" size="small" /> 실시간 집계
+- [ ] <Badge text="제한된 다중 홉 쿼리" variant="note" size="small" /> 제한된 다중 홉 쿼리
+- [ ] <Badge text="실시간 Top-N 쿼리(리더보드)" variant="note" size="small" /> 실시간 Top-N
+      쿼리(리더보드)
+- [ ] <Badge text="메타데이터 v2에서 v3로" variant="note" size="small" /> 메타데이터 v2에서 v3로
+- [ ] <Badge text="메타스토어 통합" variant="note" size="small" /> 메타스토어 통합
+
+## 에코시스템
+
+- [ ] <Badge text="__TRANSLATE_21__" variant="success" size="small" /> 마이그레이션 파이프라인
+      (Spark 기반 HBase 대량 로딩)
+- [ ] <Badge text="__TRANSLATE_24__" variant="success" size="small" /> 비동기 프로세서 (Spark
+      Streaming, WAL 기반)
+- [ ] <Badge text="__TRANSLATE_27__" variant="success" size="small" /> 섀도우 테스트 (테스트
+      클러스터로 트래픽 미러링) 테스트 클러스터)
+
+## 프로덕션
+
+- [ ] <Badge text="__TRANSLATE_31__" variant="success" size="small" /> 1.0.0 릴리스 (외부 사용자를
+      위한 프로덕션 지원) 버전)
+- [ ] <Badge text="__TRANSLATE_34__" variant="success" size="small" /> Kubernetes 프로비저닝 가이드
+- [ ] <Badge text="__TRANSLATE_36__" variant="success" size="small" /> 설정 참조
+- [ ] <Badge text="__TRANSLATE_38__" variant="success" size="small" /> 운영 및 모니터링 가이드
+- [ ] <Badge text="__TRANSLATE_40__" variant="success" size="small" /> 테스트 주도 문서화 (테스트를
+      계약으로) pub
+- new
+  [ ] <Badge text="Exploring" variant="note" size="small" /> 무중단 마이그레이션 (스토리지 백엔드 마이그레이션)
+- new
+  [ ] <Badge text="General-purpose graph queries" variant="note" size="small" /> HBase와 Kafka 없이 경량 배포 (예: [SlateDB](https://github.com/slatedb/slatedb),
+
+## Not Planned
+
+- Unbounded traversal or analytics
+  Building another storage engine
+  [S2](https://github.com/s2-streamstore/s2))
+
+## Feedback
+
+- 로드맵에 대한 피드백이 있으신가요? [GitHub Discussions](https://github.com/kakao/actionbase/discussions)에서 토론에 참여해주세요.
+- Unbounded traversal or analytics
+- Building another storage engine
+
+## Feedback
+
+Have feedback on the roadmap? Join the discussion on [GitHub Discussions](https://github.com/kakao/actionbase/discussions).

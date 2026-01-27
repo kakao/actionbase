@@ -1,0 +1,501 @@
+---
+title: 소셜 미디어 앱을 구축하세요
+description: Actionbase 핵심 기능을 사용하여 소셜 기능을 구축하세요
+sidebar:
+  order: 1
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import {
+  사용자
+  하트
+  홈
+  패키지
+  테이블
+  검색
+  잽
+  막대 그래프
+  목록
+  체크
+  로켓
+  사용자 추가
+  새로고침 반시계 방향
+} from '@lucide/astro';
+
+<Aside type="tip">
+  Actionbase를 처음 사용하시나요? 간결한 소개를 위해 [빠른 시작](/quick-start/)부터 시작하세요.
+</Aside>
+
+이 가이드는 Actionbase를 사용하여 간단한 소셜 미디어 애플리케이션을 구축하는 과정을 안내합니다. **팔로우**, **좋아요**, **피드**와 같은 핵심 기능을 위한 활동 데이터를 모델링하고 제공하는 방법을 배우게 됩니다.
+
+<video autoplay loop muted playsinline style="width: 100%; border-radius: 8px; margin: 1rem 0;">
+  <source
+    src="https://github.com/kakao/actionbase/releases/download/examples/hero.webm"
+    type="video/webm"
+  />
+</video>
+
+## 구축할 내용
+
+이 가이드를 마치면 다음과 같은 기능을 구현하게 됩니다.
+
+- **팔로우** - 사용자가 다른 사용자를 팔로우할 수 있습니다
+- **좋아요** - 사용자가 게시물을 좋아요할 수 있습니다
+- **피드** - 팔로우한 사용자의 게시물을 실시간으로 좋아요 수와 함께 표시합니다
+
+이러한 기능들은 대부분의 소셜 애플리케이션의 핵심 패턴을 보여줍니다.
+
+## 사전 요구사항
+
+- Docker
+- 웹 브라우저
+
+## 인터랙티브 가이드 시작하기
+
+이 가이드에는 로컬에서 실행되는 인터랙티브 구성 요소가 있습니다.
+
+<Steps>
+
+1. **Docker로 Actionbase 시작하기**
+
+   ```bash
+   docker run -it -p 9300:9300 ghcr.io/kakao/actionbase:standalone
+   ```
+
+2. **인터랙티브 가이드 시작하기**
+
+   CLI 프롬프트(`actionbase>`)가 나타나면:
+
+   ```
+   guide start hands-on-social
+   ```
+
+3. **화면 레이아웃**
+
+   세 개의 패널이 있는 화면을 보게 됩니다:
+   - **왼쪽**: 가이드 단계를 보여주는 진행 사이드바
+   - **가운데**: 소셜 앱 UI
+   - **오른쪽**: CLI 터미널 및 API 로그
+
+   팝업에서 각 단계를 안내합니다. 문제가 발생하면 왼쪽 상단의 <span class="icon-row"><RefreshCcw size={14} /> **재시작**</span>을 클릭하세요.
+
+   ![Screen layout](/images/guides/social-media/00-screen-layout.png)
+
+4. **웹 브라우저에서 열기**
+
+   ```
+   http://localhost:9300
+   ```
+
+   아래 섹션에서는 보게 될 내용을 요약합니다. 가이드를 실행하지 않고도 읽어볼 수 있으며, 따라 진행하는 동안 참고 자료로 활용할 수 있습니다.
+
+</Steps>
+
+## 가이드 따라하기
+
+여기서부터는 **웹 브라우저**에서 계속 진행하세요. 인터랙티브 가이드가 각 단계를 안내합니다.
+
+<Steps>
+
+1.  **환영합니다**
+
+    Actionbase 실습 가이드에 오신 것을 환영합니다! 이 튜토리얼에서는 다음을 배우게 됩니다:
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Users size={18} /> Build follows
+      </li>
+      <li class="icon-row">
+        <Heart size={18} /> Build likes
+      </li>
+      <li class="icon-row">
+        <Home size={18} /> See your feed
+      </li>
+    </ul>
+
+    ![Welcome](/images/guides/social-media/01-welcome.png)
+
+2.  **당신은 @zipdoki 입니다**
+
+    이 튜토리얼 전체에서 **@zipdoki** 역할로 진행하게 됩니다.
+
+    **Tip:** Press **Enter** to proceed.
+
+    ![Zipdoki intro](/images/guides/social-media/02-zipdoki-intro.png)
+
+3.  **설정**
+
+    먼저, 샘플 데이터를 로드하여 구축에 집중할 수 있도록 하겠습니다.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Package size={18} /> Create database & tables
+      </li>
+      <li class="icon-row">
+        <Users size={18} /> Add sample users & posts
+      </li>
+    </ul>
+
+    ![Set Up](/images/guides/social-media/03-set-up.png)
+
+4.  **샘플 데이터 로드**
+
+    **실행**을 클릭하여 다음을 생성합니다:
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Package size={18} /> Database with users
+      </li>
+      <li class="icon-row">
+        <Table size={18} /> Posts & likes tables
+      </li>
+    </ul>
+
+    ```bash
+    load preset build-your-social-app
+    ```
+
+    ![Load sample data](/images/guides/social-media/04-load-sample-data.png)
+
+5.  **데이터베이스 선택**
+
+    `social` 데이터베이스로 전환하세요.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Package size={18} /> Use database social
+      </li>
+    </ul>
+
+    ```bash
+    use database social
+    ```
+
+    ![Select database](/images/guides/social-media/05-select-database.png)
+
+6.  **데이터 탐색하기**
+
+    이전 단계에서 이러한 테이블을 생성했습니다:
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Table size={18} /> user_posts — who posted what
+      </li>
+      <li class="icon-row">
+        <Heart size={18} /> user_likes — who liked which post
+      </li>
+    </ul>
+
+    새로운 인터랙션을 추가하기 전에 둘러보세요.
+
+    ![데이터 탐색하기](/images/guides/social-media/06-explore-the-data.png)
+
+7.  **팔로우**
+
+    **팔로우** 기능을 구축해 보겠습니다.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Table size={18} /> Create a table
+      </li>
+      <li class="icon-row">
+        <Users size={18} /> Add a relationship
+      </li>
+      <li class="icon-row">
+        <Search size={18} /> Query it
+      </li>
+    </ul>
+
+    ![팔로우](/images/guides/social-media/07-follows.png)
+
+8.  **팔로우 테이블 생성**
+
+    `user_follows` 테이블을 생성합니다.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <UserPlus size={18} /> Who follows whom
+      </li>
+    </ul>
+
+    ![팔로우 테이블 생성](/images/guides/social-media/08-create-follows-table.png)
+
+9.  **사용자 팔로우**
+
+        **@zipdoki**가 **@j4rami**를 팔로우하도록 하세요. 이렇게 하면 두 사용자 간에 연결이 생성됩니다.
+
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Zap size={18} /> Precomputing count & index
+          </li>
+        </ul>
+
+        ```bash
+        mutate user_follows --type INSERT --source zipdoki --target j4rami ...
+        ```
+
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl -X POST "http://localhost:9300/graph/v3/databases/social/tables/user_follows/edges" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "mutations": [{
+                "type": "INSERT",
+                "edge": {
+                  "version": 1737849600000,
+                  "source": "zipdoki",
+                  "target": "j4rami",
+                  "properties": { "createdAt": 1737849600000 }
+                }
+              }]
+            }'
+        ```
+
+        </details>
+
+        ![사용자 팔로우](/images/guides/social-media/09-follow-a-user.png)
+
+10. **팔로우 상태 확인**
+
+        팔로우가 존재하는지 확인합니다.
+
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Check size={18} /> Query relationship
+          </li>
+        </ul>
+
+        ```bash
+        get user_follows --source zipdoki --target j4rami
+        ```
+
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl "http://localhost:9300/graph/v3/databases/social/tables/user_follows/edges/get?source=zipdoki&target=j4rami"
+        ```
+
+        </details>
+
+        ![팔로우 상태 확인](/images/guides/social-media/10-check-follow-status.png)
+
+11. **팔로워 수 확인**
+
+        **@j4rami**의 팔로워 수를 가져옵니다.
+
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Rocket size={18} /> No aggregation
+          </li>
+        </ul>
+
+        ```bash
+        count user_follows --start j4rami --direction IN
+        ```
+
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl "http://localhost:9300/graph/v3/databases/social/tables/user_follows/edges/count?start=j4rami&direction=IN"
+        ```
+
+        </details>
+
+        ![팔로워 수](/images/guides/social-media/11-count-followers.png)
+
+12. **팔로워 목록**
+
+        **@j4rami**를 팔로우하는 사용자 목록을 가져옵니다.
+
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Rocket size={18} /> Already indexed
+          </li>
+        </ul>
+
+        ```bash
+        scan user_follows --start j4rami --index created_at_desc --direction IN
+        ```
+
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl "http://localhost:9300/graph/v3/databases/social/tables/user_follows/edges/scan/created_at_desc?start=j4rami&direction=IN"
+        ```
+
+        </details>
+
+        ![팔로워 목록](/images/guides/social-media/12-list-followers.png)
+
+13. **좋아요**
+
+    이제 **좋아요**를 추가해 보겠습니다. 팔로우와 동일한 패턴입니다.
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Heart size={18} /> A user interacts with a post
+      </li>
+    </ul>
+
+    ![좋아요](/images/guides/social-media/13-likes.png)
+
+14. **게시물 좋아요**
+
+        **@zipdoki**가 **@j4rami**의 게시물을 좋아요하도록 합니다.
+
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Zap size={18} /> Precomputing count & index
+          </li>
+        </ul>
+
+        ```bash
+        mutate user_likes --type INSERT --source zipdoki --target 1 ...
+        ```
+
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl -X POST "http://localhost:9300/graph/v3/databases/social/tables/user_likes/edges" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "mutations": [{
+                "type": "INSERT",
+                "edge": {
+                  "version": 1737849600000,
+                  "source": "zipdoki",
+                  "target": 1,
+                  "properties": { "createdAt": 1737849600000 }
+                }
+              }]
+            }'
+        ```
+
+        </details>
+
+        ![게시물 좋아요](/images/guides/social-media/14-like-a-post.png)
+
+15. **좋아요 상태 확인**
+
+        **@zipdoki**의 좋아요가 기록되었는지 확인합니다.
+
+        <ul class="icon-rows">
+          <li class="icon-row">
+            <Check size={18} /> Query like status
+          </li>
+        </ul>
+
+        ```bash
+        get user_likes --source zipdoki --target 1
+        ```
+
+        <details>
+        <summary>curl</summary>
+
+        ```bash
+        curl "http://localhost:9300/graph/v3/databases/social/tables/user_likes/edges/get?source=zipdoki&target=1"
+        ```
+
+        </details>
+
+        ![좋아요 상태 확인](/images/guides/social-media/15-check-like-status.png)
+
+16. **기타 기능**
+
+    팔로우와 마찬가지로 다음과 같은 작업도 가능합니다:
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <BarChart size={18} /> Count likes
+      </li>
+      <li class="icon-row">
+        <List size={18} /> List who liked a post
+      </li>
+    </ul>
+
+    동일한 패턴, 동일한 간편함입니다.
+
+    ![And More](/images/guides/social-media/16-and-more.png)
+
+17. **피드**
+
+    이제 **피드**에 다음과 같이 표시됩니다:
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Users size={18} /> Posts from users you follow
+      </li>
+      <li class="icon-row">
+        <Heart size={18} /> Real like counts
+      </li>
+    </ul>
+
+    이것이 대부분의 소셜 앱에서 사용하는 핵심 패턴입니다.
+
+    ![피드](/images/guides/social-media/17-feed.png)
+
+18. **완료!**
+
+    **팔로우**와 **좋아요**로 피드를 구축했습니다 — 모두 Actionbase로 구동됩니다.
+
+    이제 직접 시도해 보세요:
+
+    <ul class="icon-rows">
+      <li class="icon-row">
+        <Search size={18} /> Follow someone
+      </li>
+      <li class="icon-row">
+        <Home size={18} /> Check your feed
+      </li>
+      <li class="icon-row">
+        <Heart size={18} /> Like a post
+      </li>
+    </ul>
+
+    ![완료](/images/guides/social-media/18-all-done.png)
+
+19. **직접 해보기**
+
+    이제 직접 탐색해 볼 차례입니다. 가이드는 끝났지만 앱은 완전히 동작합니다:
+    - **더 많은 사용자 팔로우** - 사용자를 검색하고 네트워크를 구축하세요
+    - **피드 확인** - 팔로우한 사용자의 게시글을 확인하세요
+    - **게시글 좋아요** - 피드 내 콘텐츠와 상호작용하세요
+
+    ![직접 해보기](/images/guides/social-media/19-try-it-yourself.png)
+
+</Steps>
+
+## 요약
+
+팔로우와 좋아요로 피드를 구축했습니다 — 모두 Actionbase로 구동됩니다.
+
+### 학습한 내용
+
+| 개념               | 설명                                                       |
+| ------------------ | ---------------------------------------------------------- |
+| **테이블**         | 스키마, 인덱스, 양방향 쿼리를 사용하여 테이블을 생성합니다 |
+| **뮤테이션**       | 사용자 인터랙션을 나타내는 엣지를 삽입합니다               |
+| **쿼리**           | 개별 엣지를 가져오고, 총 개수를 세며, 인덱스로 스캔합니다  |
+| **프리컴퓨테이션** | 카운트와 인덱스는 읽기 속도를 위해 쓰기 시점에 계산됩니다  |
+
+### 다음 단계
+
+- [빠른 시작](/quick-start/) — 핵심 작업을 몇 분 만에 수행
+- [CLI 참조](/operations/cli/) — 전체 CLI 문서
+- [핵심 개념](/design/concepts/) — Actionbase가 동작하는 방식
+
+### 피드백 공유
+
+이 가이드가 도움이 되었나요? Actionbase의 개념이 이해되셨나요? 여러분의 의견—질문, 제안, 이슈 등—을 듣고 싶습니다.
+
+[GitHub Discussions에서 피드백 공유하기](https://github.com/kakao/actionbase/discussions/94)
+
+### 비하인드 스토리
+
+이 가이드를 왜 만들었는지 궁금하신가요? [이야기를 읽어보세요](/blog/hands-on-guide-story/)

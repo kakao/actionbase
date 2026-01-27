@@ -1,0 +1,1106 @@
+---
+title: 메타데이터 API 참조
+description: 메타데이터 관리 API 참조 (v2)
+sidebar:
+  order: 1
+tableOfContents:
+  maxHeadingLevel: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="note">
+  메타데이터 API는 v2를 사용합니다. 용어 매핑 및 개념적 배경은 [스키마](/design/schema/)를
+  참조하세요. background.
+</Aside>
+
+<Aside type="caution">
+  인증은 강제되지 않습니다. [API 참조](/api-references/#authentication)를 참조하세요.
+</Aside>
+
+서비스, 레이블, 별칭 및 쿼리를 관리합니다.
+
+## 1. 서비스
+
+서비스는 레이블과 별칭을 포함하는 논리적 그룹으로, 관련 그래프 구조에 대한 조직화와 격리를 제공합니다.
+
+### 1.1 서비스 조회
+
+서비스 이름을 기준으로 단일 서비스를 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /graph/v2/service/{service}
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수 | 설명                             |
+| ---- | ------------- | ---- | -------------------------------- |
+| 헤더 | Authorization | 선택 | 인증 키(향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수 | 서비스 이름                      |
+
+#### 응답 형식
+
+[ServiceEntity](#serviceentity) - 서비스 정보
+
+#### 요청 예시
+
+| 파라미터  | 값           |
+| --------- | ------------ |
+| 권한 부여 | YOUR_API_KEY |
+| 서비스    | myservice    |
+
+```bash
+# GET /graph/v2/service/myservice
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+#### 서비스 예시
+
+```json
+{
+  "active": true,
+  "name": "myservice",
+  "desc": "My service description"
+}
+```
+
+### 1.2 모든 서비스 조회
+
+모든 서비스를 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /graph/v2/service
+```
+
+#### 파라미터
+
+| 위치 | 파라미터  | 필수      | 설명                              |
+| ---- | --------- | --------- | --------------------------------- |
+| 헤더 | 권한 부여 | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+
+#### 응답 형식
+
+[DdlPage](#ddlpage) of [ServiceEntity](#serviceentity) - 서비스 목록이 페이지 단위로 제공됨
+
+#### 요청 예시
+
+```bash
+# GET /graph/v2/service
+curl -X GET \
+    "http://ab.example.com/graph/v2/service" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+#### 응답 예시
+
+```json
+{
+  "count": 2,
+  "content": [
+    {
+      "active": true,
+      "name": "myservice",
+      "desc": "My service description"
+    },
+    {
+      "active": true,
+      "name": "anotherservice",
+      "desc": "Another service"
+    }
+  ]
+}
+```
+
+### 1.3 서비스 생성
+
+새 서비스를 생성합니다.
+
+#### 엔드포인트
+
+```
+POST /graph/v2/service/{service}
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수     | 설명                              |
+| ---- | ------------- | -------- | --------------------------------- |
+| 헤더 | Authorization | Optional | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | Required | 서비스 이름                       |
+| 바디 | desc          | Required | 서비스 설명                       |
+
+#### 요청 바디
+
+[ServiceCreateRequest](#servicecreaterequest) - 서비스 생성 페이로드
+
+#### 응답 타입
+
+[DdlStatus](#ddlstatus) of [ServiceEntity](#serviceentity) - 서비스 생성 상태
+
+#### 요청 예시
+
+```bash
+# POST /graph/v2/service/myservice
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "My service description"
+    }'
+```
+
+#### 응답 예시
+
+```json
+{
+  "status": "CREATED",
+  "result": {
+    "active": true,
+    "name": "myservice",
+    "desc": "My service description"
+  }
+}
+```
+
+### 1.4 서비스 업데이트
+
+기존 서비스를 업데이트합니다.
+
+#### 엔드포인트
+
+```
+PUT /graph/v2/service/{service}
+```
+
+#### 파라미터
+
+| 위치 | Parameter     | Required | 설명                              |
+| ---- | ------------- | -------- | --------------------------------- |
+| 헤더 | Authorization | Optional | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | Required | 서비스 이름                       |
+| 바디 | active        | Optional | 서비스가 활성화되었는지 여부      |
+| 바디 | desc          | Optional | 서비스 설명                       |
+
+#### 요청 본문
+
+[ServiceUpdateRequest](#serviceupdaterequest) - 서비스 업데이트 페이로드
+
+#### 응답 타입
+
+[ServiceEntity](#serviceentity)의 [DdlStatus](#ddlstatus) - 서비스 업데이트 상태
+
+#### 요청 예시
+
+```bash
+# PUT /graph/v2/service/myservice
+curl -X PUT \
+    "http://ab.example.com/graph/v2/service/myservice" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "active": true,
+      "desc": "Updated service description"
+    }'
+```
+
+## 2. 레이블
+
+레이블은 그래프 엣지의 스키마를 정의하며, 소스 및 타겟 노드 타입, 엣지 프로퍼티, 인덱스를 포함한 관계 구조를 지정합니다.
+
+### 2.1 레이블 조회
+
+이름으로 단일 레이블을 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /graph/v2/service/{service}/label/{label}
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수 여부 | 설명                             |
+| ---- | ------------- | --------- | -------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키(향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수      | 서비스 이름                      |
+| 경로 | label         | 필수      | 레이블 이름                      |
+
+#### 응답 타입
+
+[LabelEntity](#labelentity) - 레이블 정보
+
+#### 요청 예시
+
+```bash
+# GET /graph/v2/service/myservice/label/follows
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+#### 응답 예시
+
+```json
+{
+  "active": true,
+  "name": "myservice.follows",
+  "desc": "User follows relationship",
+  "type": "HASH",
+  "schema": {
+    "src": {
+      "type": "LONG",
+      "desc": "User ID"
+    },
+    "tgt": {
+      "type": "LONG",
+      "desc": "User ID"
+    },
+    "fields": [
+      {
+        "name": "created_at",
+        "type": "LONG",
+        "nullable": false,
+        "desc": "Creation timestamp"
+      }
+    ]
+  },
+  "dirType": "OUT",
+  "storage": "hbase-storage-1",
+  "indices": [],
+  "groups": [],
+  "event": false,
+  "readOnly": false,
+  "mode": "SYNC"
+}
+```
+
+### 2.2 모든 레이블 조회
+
+서비스 내 모든 레이블을 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /graph/v2/service/{service}/label
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수 여부 | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수      | 서비스 이름                       |
+
+#### 응답 형식
+
+[LabelEntity](#labelentity) - 레이블의 페이지네이션 목록
+
+#### 요청 예시
+
+```bash
+# GET /graph/v2/service/myservice/label
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/label" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 2.3 레이블 생성
+
+새로운 레이블을 생성합니다.
+
+#### 엔드포인트
+
+```
+POST /graph/v2/service/{service}/label/{label}
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수 여부 | 설명                                        |
+| ---- | ------------- | --------- | ------------------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨)           |
+| 경로 | service       | 필수      | 서비스 이름                                 |
+| 경로 | label         | 필수      | 레이블 이름                                 |
+| Body | desc          | 필수      | 레이블 설명                                 |
+| Body | type          | 필수      | 레이블 타입 (HASH, INDEXED, MULTI_EDGE)     |
+| Body | schema        | 필수      | 엣지 스키마 정의                            |
+| Body | dirType       | 필수      | 방향 타입 (OUT, IN, BOTH)                   |
+| Body | storage       | 필수      | 스토리지 이름                               |
+| Body | groups        | 선택      | 그룹 목록                                   |
+| Body | indices       | 선택      | 인덱스 목록                                 |
+| Body | event         | 선택      | 이벤트 활성화 여부 (기본값: false)          |
+| Body | readOnly      | 선택      | 레이블이 읽기 전용인지 여부 (기본값: false) |
+| Body | mode          | 선택      | 뮤테이션 모드 (기본값: SYNC)                |
+
+#### 요청 본문
+
+[LabelCreateRequest](#labelcreaterequest) - 레이블 생성 페이로드
+
+#### 응답 타입
+
+[DdlStatus](#ddlstatus) of [LabelEntity](#labelentity) - 레이블 생성 상태
+
+#### 요청 예시
+
+```bash
+# POST /graph/v2/service/myservice/label/follows
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "User follows relationship",
+      "type": "HASH",
+      "schema": {
+        "src": {
+          "type": "LONG",
+          "desc": "User ID"
+        },
+        "tgt": {
+          "type": "LONG",
+          "desc": "User ID"
+        },
+        "fields": [
+          {
+            "name": "created_at",
+            "type": "LONG",
+            "nullable": false,
+            "desc": "Creation timestamp"
+          }
+        ]
+      },
+      "dirType": "OUT",
+      "storage": "hbase-storage-1",
+      "indices": [],
+      "groups": [],
+      "event": false,
+      "readOnly": false,
+      "mode": "SYNC"
+    }'
+```
+
+### 2.4 레이블 업데이트
+
+기존 레이블을 업데이트합니다.
+
+#### 엔드포인트
+
+```
+PUT /graph/v2/service/{service}/label/{label}
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수     | 설명                              |
+| ---- | ------------- | -------- | --------------------------------- |
+| 헤더 | Authorization | Optional | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | 서비스        | Required | 서비스 이름                       |
+| 경로 | 레이블        | Required | 레이블 이름                       |
+| 본문 | active        | Optional | 레이블이 활성화되어 있는지 여부   |
+| 본문 | desc          | Optional | 레이블 설명                       |
+| 본문 | type          | Optional | 레이블 타입                       |
+| 본문 | schema        | Optional | 엣지 스키마 정의                  |
+| 본문 | groups        | Optional | 그룹 목록                         |
+| 본문 | indices       | Optional | 인덱스 목록                       |
+| 본문 | readOnly      | Optional | 레이블이 읽기 전용인지 여부       |
+| 본문 | mode          | Optional | 뮤테이션 모드                     |
+
+#### 요청 본문
+
+[LabelUpdateRequest](#labelupdaterequest) - 레이블 업데이트 페이로드
+
+#### 응답 타입
+
+[DdlStatus](#ddlstatus) 의 [LabelEntity](#labelentity) - 레이블 업데이트 상태
+
+#### 요청 예시
+
+```bash
+# PUT /graph/v2/service/myservice/label/follows
+curl -X PUT \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "active": true,
+      "desc": "Updated label description"
+    }'
+```
+
+### 2.5 레이블 복사
+
+기존 레이블을 복사하여 새 레이블을 생성합니다.
+
+#### 엔드포인트
+
+```
+POST /graph/v2/service/{service}/label/{label}/copy
+```
+
+#### 매개변수
+
+| 위치 | 파라미터      | 필수 여부 | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수      | 서비스 이름                       |
+| 경로 | label         | 필수      | 소스 레이블 이름                  |
+| 본문 | target        | 필수      | 타겟 레이블 이름                  |
+| 본문 | storage       | 필수      | 새 레이블의 스토리지 이름         |
+
+#### 요청 본문
+
+[LabelCopyRequest](#labelcopyrequest) - 레이블 복사 페이로드
+
+#### 응답 타입
+
+[DdlStatus](#ddlstatus) 의 [LabelEntity](#labelentity) - 레이블 생성 상태
+
+#### 요청 예시
+
+```bash
+# POST /graph/v2/service/myservice/label/follows/copy
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows/copy" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "target": "follows_backup",
+      "storage": "hbase-storage-1"
+    }'
+```
+
+### 2.6 레이블 상태 조회
+
+레이블의 상태를 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /graph/v2/service/{service}/label/{label}/status
+```
+
+#### 매개변수
+
+| 위치 | 파라미터      | 필수 여부 | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| Path | service       | Required  | 서비스 이름                       |
+| Path | label         | Required  | 레이블 이름                       |
+
+#### 응답 형식
+
+문자열 - 레이블 상태 정보
+
+#### 요청 예시
+
+```bash
+# GET /graph/v2/service/myservice/label/follows/status
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/label/follows/status" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+## 3. 별칭
+
+별칭은 동일한 레이블에 대해 대체 이름을 사용할 수 있도록 레이블을 가리키는 참조입니다.
+
+### 3.1 별칭 조회
+
+별칭 이름으로 단일 별칭을 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /graph/v2/service/{service}/alias/{alias}
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수 여부 | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| Path | service       | 필수      | 서비스 이름                       |
+| Path | alias         | 필수      | 별칭 이름                         |
+
+#### 응답 형식
+
+[AliasEntity](#aliasentity) - 별칭 정보
+
+#### 요청 예시
+
+```bash
+# GET /graph/v2/service/myservice/alias/friends
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+#### 응답 예시
+
+```json
+{
+  "active": true,
+  "name": "myservice.friends",
+  "desc": "Alias for follows relationship",
+  "target": "myservice.follows",
+  "label": {
+    "active": true,
+    "name": "myservice.follows",
+    "desc": "User follows relationship",
+    "type": "HASH",
+    "schema": { ... },
+    "dirType": "OUT",
+    "storage": "hbase-storage-1"
+  }
+}
+```
+
+### 3.2 모든 별칭 조회
+
+서비스 내 모든 별칭을 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /graph/v2/service/{service}/alias
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수 여부 | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수      | 서비스 이름                       |
+
+#### 응답 형식
+
+[AliasEntity](#aliasentity) - 페이지네이션된 별칭 목록
+
+#### 요청 예시
+
+```bash
+# GET /graph/v2/service/myservice/alias
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/alias" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 3.3 별칭 생성
+
+새로운 별칭을 생성합니다.
+
+#### 엔드포인트
+
+```
+POST /graph/v2/service/{service}/alias/{alias}
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수 여부 | 설명                                      |
+| ---- | ------------- | --------- | ----------------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨)         |
+| 경로 | service       | 필수      | 서비스 이름                               |
+| 경로 | alias         | 필수      | 별칭 이름                                 |
+| Body | desc          | Required  | Alias description                         |
+| Body | target        | Required  | Target label name (format: service.label) |
+
+#### 요청 본문
+
+[AliasCreateRequest](#aliascreaterequest) - Alias 생성 페이로드
+
+#### 응답 타입
+
+[DdlStatus](#ddlstatus) of [AliasEntity](#aliasentity) - Alias 생성 상태
+
+#### 요청 예시
+
+```bash
+# POST /graph/v2/service/myservice/alias/friends
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "Alias for follows relationship",
+      "target": "myservice.follows"
+    }'
+```
+
+### 3.4 Alias 업데이트
+
+기존 Alias를 업데이트합니다.
+
+#### 엔드포인트
+
+```
+PUT /graph/v2/service/{service}/alias/{alias}
+```
+
+#### 파라미터
+
+| Location | Parameter     | Required | Description                       |
+| -------- | ------------- | -------- | --------------------------------- |
+| Header   | Authorization | Optional | 인증 키 (향후 사용을 위해 예약됨) |
+| Path     | service       | Required | 서비스 이름                       |
+| Path     | alias         | Required | Alias 이름                        |
+| Body     | active        | Optional | Alias가 활성화되었는지 여부       |
+| Body     | desc          | Optional | Alias 설명                        |
+| Body     | target        | Optional | Target label 이름                 |
+
+#### 요청 본문
+
+[AliasUpdateRequest](#aliasupdaterequest) - Alias 업데이트 페이로드
+
+#### 응답 타입
+
+[AliasEntity](#aliasentity)의 [DdlStatus](#ddlstatus) - Alias 업데이트 상태
+
+#### 요청 예시
+
+```bash
+# PUT /graph/v2/service/myservice/alias/friends
+curl -X PUT \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "active": true,
+      "desc": "Updated alias description"
+    }'
+```
+
+### 3.5 Alias 삭제
+
+Alias를 삭제합니다.
+
+#### 엔드포인트
+
+```
+DELETE /graph/v2/service/{service}/alias/{alias}
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수 여부 | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수      | 서비스 이름                       |
+| 경로 | alias         | 필수      | Alias 이름                        |
+
+#### 응답 타입
+
+[AliasEntity](#aliasentity)의 [DdlStatus](#ddlstatus) - Alias 삭제 상태
+
+#### 요청 예시
+
+```bash
+# DELETE /graph/v2/service/myservice/alias/friends
+curl -X DELETE \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 3.6 Alias로 레이블 생성
+
+Alias가 가리키는 레이블을 기반으로 새 레이블을 생성합니다.
+
+#### 엔드포인트
+
+```
+POST /graph/v2/service/{service}/alias/{alias}/new-label
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수 | 설명                              |
+| ---- | ------------- | ---- | --------------------------------- |
+| 헤더 | Authorization | 선택 | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수 | 서비스 이름                       |
+| 경로 | alias         | 필수 | 별칭 이름                         |
+| 본문 | target        | 필수 | 새 레이블의 타겟 레이블 이름      |
+| 본문 | storage       | 필수 | 새 레이블의 스토리지 이름         |
+
+#### 요청 본문
+
+[LabelCopyRequest](#labelcopyrequest) - 레이블 생성 페이로드
+
+#### 응답 타입
+
+[DdlStatus](#ddlstatus) 의 [LabelEntity](#labelentity) - 레이블 생성 상태
+
+#### 요청 예시
+
+```bash
+# POST /graph/v2/service/myservice/alias/friends/new-label
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/alias/friends/new-label" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "target": "follows_new",
+      "storage": "hbase-storage-1"
+    }'
+```
+
+## 4. 쿼리
+
+쿼리는 그래프 연산을 위한 재사용 가능한 쿼리 패턴을 정의합니다.
+
+### 4.1 쿼리 조회
+
+이름으로 단일 쿼리를 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /graph/v2/service/{service}/query/{query}
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수      | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수      | 서비스 이름                       |
+| 경로 | query         | 필수      | 쿼리 이름                         |
+
+#### 응답 형식
+
+[QueryEntity](#queryentity) - 쿼리 정보
+
+#### 요청 예시
+
+```bash
+# GET /graph/v2/service/myservice/query/user-followers
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/query/user-followers" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 4.2 모든 쿼리 가져오기
+
+서비스의 모든 쿼리를 조회합니다.
+
+#### 엔드포인트
+
+```
+GET /graph/v2/service/{service}/query
+```
+
+#### 파라미터
+
+| 위치 | 파라미터      | 필수      | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수      | 서비스 이름                       |
+
+#### 응답 형식
+
+[DdlPage](#ddlpage) of [QueryEntity](#queryentity) - 쿼리 목록 페이지네이션
+
+#### 요청 예시
+
+```bash
+# GET /graph/v2/service/myservice/query
+curl -X GET \
+    "http://ab.example.com/graph/v2/service/myservice/query" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 4.3 쿼리 생성
+
+새 쿼리를 생성합니다.
+
+#### 엔드포인트
+
+```
+POST /graph/v2/service/{service}/query/{query}
+```
+
+#### 매개변수
+
+| 위치 | 매개변수      | 필수      | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수      | 서비스 이름                       |
+| 경로 | query         | 필수      | 쿼리 이름                         |
+| 본문 | desc          | 필수      | 쿼리 설명                         |
+| 본문 | query         | 필수      | 쿼리 정의                         |
+| 본문 | stats         | 선택 사항 | 통계 구성                         |
+
+#### 요청 본문
+
+[QueryCreateRequest](#querycreaterequest) - 쿼리 생성 페이로드
+
+#### 응답 타입
+
+[DdlStatus](#ddlstatus) of [QueryEntity](#queryentity) - 쿼리 생성 상태
+
+#### 요청 예시
+
+```bash
+# POST /graph/v2/service/myservice/query/user-followers
+curl -X POST \
+    "http://ab.example.com/graph/v2/service/myservice/query/user-followers" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "Get user followers",
+      "query": "SELECT * FROM myservice.follows WHERE src = ?",
+      "stats": null
+    }'
+```
+
+### 4.4 쿼리 업데이트
+
+기존 쿼리를 업데이트합니다.
+
+#### 엔드포인트
+
+```
+PUT /graph/v2/service/{service}/query/{query}
+```
+
+#### 매개변수
+
+| 위치 | 매개변수      | 필수      | 설명                              |
+| ---- | ------------- | --------- | --------------------------------- |
+| 헤더 | Authorization | 선택 사항 | 인증 키 (향후 사용을 위해 예약됨) |
+| 경로 | service       | 필수      | 서비스 이름                       |
+| 경로 | query         | 필수      | 쿼리 이름                         |
+| 본문 | active        | 선택 사항 | 쿼리가 활성화되어 있는지 여부     |
+| 본문 | desc          | 선택 사항 | 쿼리 설명                         |
+| 본문 | query         | 선택 사항 | 쿼리 정의                         |
+| 본문 | stats         | 선택 사항 | 통계 구성                         |
+
+#### 요청 본문
+
+[QueryUpdateRequest](#queryupdaterequest) - 쿼리 업데이트 페이로드
+
+#### 응답 타입
+
+[DdlStatus](#ddlstatus) of [QueryEntity](#queryentity) - 쿼리 업데이트 상태
+
+#### 요청 예시
+
+```bash
+# PUT /graph/v2/service/myservice/query/user-followers
+curl -X PUT \
+    "http://ab.example.com/graph/v2/service/myservice/query/user-followers" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "desc": "Updated query description",
+      "query": "SELECT * FROM myservice.follows WHERE src = ? LIMIT 100"
+    }'
+```
+
+## 데이터 모델
+
+### ServiceEntity
+
+서비스 정보 페이로드.
+
+```kotlin
+data class ServiceEntity(
+  val active: Boolean,    // Whether the service is active
+  val name: String,       // Service name
+  val desc: String,       // Service description
+)
+```
+
+### LabelEntity
+
+레이블 정보 페이로드.
+
+```kotlin
+data class LabelEntity(
+  val active: Boolean,              // Whether the label is active
+  val name: String,                 // Label name (format: service.label)
+  val desc: String,                 // Label description
+  val type: LabelType,              // Label type (HASH, INDEXED, MULTI_EDGE)
+  val schema: EdgeSchema,           // Edge schema definition
+  val dirType: DirectionType,       // Direction type (OUT, IN, BOTH)
+  val storage: String,               // Storage name
+  val indices: List<Index>,          // List of indexes
+  val groups: List<Group>,            // List of groups
+  val event: Boolean,                // Whether events are enabled
+  val readOnly: Boolean,             // Whether the label is read-only
+  val mode: MutationMode,            // Mutation mode
+)
+```
+
+### AliasEntity
+
+별칭 정보 페이로드.
+
+```kotlin
+data class AliasEntity(
+  val active: Boolean,        // Whether the alias is active
+  val name: String,           // Alias name (format: service.alias)
+  val desc: String,           // Alias description
+  val target: String,         // Target label name (format: service.label)
+  val label: LabelEntity?,    // Referenced label information (optional)
+)
+```
+
+### QueryEntity
+
+쿼리 정보 페이로드.
+
+```kotlin
+data class QueryEntity(
+  val active: Boolean,    // Whether the query is active
+  val name: String,       // Query name (format: service.query)
+  val desc: String,       // Query description
+  val query: String,      // Query definition
+  val stats: String?,     // Statistics configuration (optional)
+)
+```
+
+### DdlPage
+
+페이지네이션된 응답 페이로드.
+
+```kotlin
+data class DdlPage<T>(
+  val count: Long,        // Total count
+  val content: List<T>,   // List of items
+)
+```
+
+### DdlStatus
+
+DDL 작업 상태 페이로드.
+
+```kotlin
+data class DdlStatus<T>(
+  val status: String,     // Operation status (e.g., CREATED, UPDATED, DELETED)
+  val result: T?,        // Result entity (optional)
+)
+```
+
+### ServiceCreateRequest
+
+서비스 생성 요청 페이로드.
+
+```kotlin
+data class ServiceCreateRequest(
+  val desc: String,       // Service description
+)
+```
+
+### ServiceUpdateRequest
+
+서비스 업데이트 요청 페이로드.
+
+```kotlin
+data class ServiceUpdateRequest(
+  val active: Boolean?,   // Whether the service is active (optional)
+  val desc: String?,      // Service description (optional)
+)
+```
+
+### LabelCreateRequest
+
+레이블 생성 요청 페이로드.
+
+```kotlin
+data class LabelCreateRequest(
+  val desc: String,              // Label description
+  val type: LabelType,           // Label type
+  val schema: EdgeSchema,        // Edge schema definition
+  val dirType: DirectionType,    // Direction type
+  val storage: String,           // Storage name
+  val groups: List<Group>?,       // List of groups (optional)
+  val indices: List<Index>?,      // List of indexes (optional)
+  val event: Boolean?,            // Whether events are enabled (optional, default: false)
+  val readOnly: Boolean?,         // Whether the label is read-only (optional, default: false)
+  val mode: MutationMode?,       // Mutation mode (optional, default: SYNC)
+)
+```
+
+### LabelUpdateRequest
+
+레이블 업데이트 요청 페이로드.
+
+```kotlin
+data class LabelUpdateRequest(
+  val active: Boolean?,           // Whether the label is active (optional)
+  val desc: String?,              // Label description (optional)
+  val type: LabelType?,           // Label type (optional)
+  val schema: EdgeSchema?,        // Edge schema definition (optional)
+  val groups: List<Group>?,       // List of groups (optional)
+  val indices: List<Index>?,      // List of indexes (optional)
+  val readOnly: Boolean?,         // Whether the label is read-only (optional)
+  val mode: MutationMode?,        // Mutation mode (optional)
+)
+```
+
+### LabelCopyRequest
+
+레이블 복사 요청 페이로드.
+
+```kotlin
+data class LabelCopyRequest(
+  val target: String,      // Target label name
+  val storage: String,    // Storage name for the new label
+)
+```
+
+### AliasCreateRequest
+
+별칭 생성 요청 페이로드.
+
+```kotlin
+data class AliasCreateRequest(
+  val desc: String,       // Alias description
+  val target: String,     // Target label name (format: service.label)
+)
+```
+
+### AliasUpdateRequest
+
+별칭 업데이트 요청 페이로드.
+
+```kotlin
+data class AliasUpdateRequest(
+  val active: Boolean?,   // Whether the alias is active (optional)
+  val desc: String?,      // Alias description (optional)
+  val target: String?,    // Target label name (optional)
+)
+```
+
+### QueryCreateRequest
+
+쿼리 생성 요청 페이로드입니다.
+
+```kotlin
+data class QueryCreateRequest(
+  val desc: String,       // Query description
+  val query: String,      // Query definition
+  val stats: String?,     // Statistics configuration (optional)
+)
+```
+
+### QueryUpdateRequest입니다.
+
+쿼리 업데이트 요청 페이로드입니다.
+
+```kotlin
+data class QueryUpdateRequest(
+  val active: Boolean?,   // Whether the query is active (optional)
+  val desc: String?,      // Query description (optional)
+  val query: String?,     // Query definition (optional)
+  val stats: String?,     // Statistics configuration (optional)
+)
+```
