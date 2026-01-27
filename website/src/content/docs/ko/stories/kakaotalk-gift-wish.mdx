@@ -1,16 +1,16 @@
 ---
 title: 선물하기 위시 (SSOT)
-description: 카카오톡 선물하기의 위시리스트를 MySQL에서 Actionbase로 마이그레이션
+description: 카카오톡 선물하기의 위시를 MySQL에서 Actionbase로 마이그레이션
 sidebar:
   order: 1
 translated-by-kanana-2: true
 ---
 
-이 사례는 **SSOT(단일 소스 오브 트루스) 패턴**을 보여줍니다: 카카오톡 선물하기의 위시리스트가 Actionbase의 첫 프로덕션 배포가 된 과정을 설명합니다.
+이 사례는 **SSOT(단일 소스 오브 트루스) 패턴**을 보여줍니다: 카카오톡 선물하기의 위시가 Actionbase의 첫 프로덕션 배포가 된 과정을 설명합니다.
 
 ## 과제 {#the-challenge}
 
-카카오톡 선물하기의 위시리스트 기능은 사용자가 받고 싶은 선물을 저장할 수 있게 했습니다. 기존 아키텍처는 다음과 같았습니다:
+카카오톡 선물하기의 위시는 사용자가 받고 싶은 선물을 저장할 수 있게 했습니다. 기존 아키텍처는 다음과 같았습니다:
 
 ```mermaid
 flowchart LR
