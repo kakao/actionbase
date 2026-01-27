@@ -1,48 +1,18 @@
-import React, {
-  createContext,
-  ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { driver, Driver, DriveStep } from 'driver.js';
-import 'driver.js/dist/driver.css';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from './ToastContext';
-import { run } from '../api/cli';
-import {
-  getNextNavigation,
-  getPrevNavigation,
-  getStepCommand,
-  getStepConfig,
-  getStepVerifier,
-  STEP,
-  stepsConfig,
-} from '../constants/stepsConfig';
-import {
-  getAnalyticsChoice,
-  initAnalytics,
-  loadUmamiScript,
-  setAnalyticsChoice,
-  clearAnalyticsChoice,
-} from '../utils/analytics';
-import {
-  getStorageItem,
-  getStorageNumber,
-  removeStorageItem,
-  setStorageItem,
-  setStorageNumber,
-  STORAGE_KEYS,
-} from '../utils/storage';
+import React, {createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import {driver, Driver, DriveStep} from "driver.js";
+import "driver.js/dist/driver.css";
+import {useNavigate} from "react-router-dom";
+import {useToast} from "./ToastContext";
+import {run} from "../api/cli";
+import {getNextNavigation, getPrevNavigation, getStepCommand, getStepConfig, getStepVerifier, STEP, stepsConfig,} from "../constants/stepsConfig";
+import {getAnalyticsChoice, initAnalytics, loadUmamiScript, setAnalyticsChoice, clearAnalyticsChoice} from "../utils/analytics";
+import {getStorageItem, getStorageNumber, removeStorageItem, setStorageItem, setStorageNumber, STORAGE_KEYS} from "../utils/storage";
 
 const BUTTON_TEXT = {
-  NEXT: 'next ↵',
-};
+  NEXT: "next ↵"
+}
 
-const TOAST_DURATION = 1700;
+const TOAST_DURATION = 1700
 
 export interface CommandHistory {
   prompt: string;
@@ -80,7 +50,7 @@ const waitForElement = (selector: string[], timeout = 3000): Promise<void> => {
     const selectors = Array.isArray(selector) ? selector : [selector];
 
     const checkSelectors = () => {
-      return selectors.some((sel) => document.querySelector(sel) !== null);
+      return selectors.some(sel => document.querySelector(sel) !== null);
     };
 
     if (checkSelectors()) {
@@ -94,7 +64,7 @@ const waitForElement = (selector: string[], timeout = 3000): Promise<void> => {
         resolve();
       }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, {childList: true, subtree: true});
     setTimeout(() => {
       observer.disconnect();
       reject();
@@ -105,24 +75,22 @@ const waitForElement = (selector: string[], timeout = 3000): Promise<void> => {
 export const useDriver = () => {
   const context = useContext(DriverContext);
   if (!context) {
-    throw new Error('useDriver must be used within DriverProvider');
+    throw new Error("useDriver must be used within DriverProvider");
   }
   return context;
 };
 
 export const STEP_INDEX_STORAGE_KEY = STORAGE_KEYS.STEP_INDEX;
 
-export { STEP };
+export {STEP};
 
 const getStoredStepIndex = (): number => getStorageNumber(STORAGE_KEYS.STEP_INDEX, 0);
-const getStoredCommandHistory = (): CommandHistory[] =>
-  getStorageItem<CommandHistory[]>(STORAGE_KEYS.COMMAND_HISTORY, []);
-const getStoredTerminalContext = (): TerminalContext =>
-  getStorageItem<TerminalContext>(STORAGE_KEYS.TERMINAL_CONTEXT, {});
+const getStoredCommandHistory = (): CommandHistory[] => getStorageItem<CommandHistory[]>(STORAGE_KEYS.COMMAND_HISTORY, []);
+const getStoredTerminalContext = (): TerminalContext => getStorageItem<TerminalContext>(STORAGE_KEYS.TERMINAL_CONTEXT, {});
 
-export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) => {
   const navigate = useNavigate();
-  const { showToast } = useToast();
+  const {showToast} = useToast();
 
   const [stepIndex, setStepIndex] = useState(getStoredStepIndex);
   const [currentCommand, setCurrentCommand] = useState<CommandHistory | null>(null);
@@ -195,29 +163,26 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, []);
 
-  const setCommandForStep = useCallback(
-    (targetIndex: number) => {
-      const stepCommand = getStepCommand(targetIndex);
+  const setCommandForStep = useCallback((targetIndex: number) => {
+    const stepCommand = getStepCommand(targetIndex);
 
-      if (stepCommand) {
-        const prompt = formatPrompt(terminalContext.database);
-        setCurrentCommand({
-          prompt,
-          content: stepCommand.content,
-          stepIndex: targetIndex,
-        });
-      } else {
-        setCurrentCommand(null);
-      }
-    },
-    [terminalContext.database]
-  );
+    if (stepCommand) {
+      const prompt = formatPrompt(terminalContext.database);
+      setCurrentCommand({
+        prompt,
+        content: stepCommand.content,
+        stepIndex: targetIndex,
+      });
+    } else {
+      setCurrentCommand(null);
+    }
+  }, [terminalContext.database]);
 
   const clearCurrentCommand = useCallback((addToHistory: boolean = true) => {
     const command = currentCommandRef.current;
     if (command && addToHistory) {
       // Add unexecuted command to history (without result)
-      setCommandHistory((prev) => [...prev, command]);
+      setCommandHistory(prev => [...prev, command]);
     }
     setCurrentCommand(null);
   }, []);
@@ -238,7 +203,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             if (alreadyDone) {
               // Skip execution, show "already done" message
               const result = '<p class="command-result success">✓ Already done</p>';
-              setCommandHistory((prev) => [...prev, { ...currentCommand, result }]);
+              setCommandHistory(prev => [...prev, {...currentCommand, result}]);
               setCurrentCommand(null);
               currentCommandRef.current = null;
 
@@ -249,7 +214,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                   activeStep.popover.onNextClick(element || undefined, activeStep, {
                     config: driverObj.current.getConfig(),
                     state: driverObj.current.getState(),
-                    driver: driverObj.current,
+                    driver: driverObj.current
                   });
                 }
               }
@@ -265,7 +230,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       let result: string;
 
       try {
-        const response = await run({ command: normalizedCommand });
+        const response = await run({command: normalizedCommand});
 
         if (response.error) {
           result = `<p class="command-result error">${response.error}</p>`;
@@ -282,11 +247,11 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }
 
       // Add executed command to history with result
-      setCommandHistory((prev) => [...prev, { ...currentCommand, result }]);
+      setCommandHistory(prev => [...prev, {...currentCommand, result}]);
 
       // Update terminal context if command changes it
       if (stepConfig?.command?.context?.database) {
-        setTerminalContext({ database: stepConfig.command.context.database });
+        setTerminalContext({database: stepConfig.command.context.database});
       }
 
       if (stepConfig?.command?.reload) {
@@ -304,7 +269,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           activeStep.popover.onNextClick(element || undefined, activeStep, {
             config: driverObj.current.getConfig(),
             state: driverObj.current.getState(),
-            driver: driverObj.current,
+            driver: driverObj.current
           });
         }
       }
@@ -313,71 +278,67 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [currentCommand, isExecuting]);
 
-  const navigateToStep = useCallback(
-    async (type: typeof STEP.NEXT | typeof STEP.PREV, currentIndex: number) => {
-      if (!driverObj.current) return;
+  const navigateToStep = useCallback(async (
+    type: typeof STEP.NEXT | typeof STEP.PREV,
+    currentIndex: number
+  ) => {
+    if (!driverObj.current) return;
 
-      // For NEXT: if there's a command to execute, click the run button
-      if (type === STEP.NEXT) {
-        const runButton = document.getElementById('run-command-btn');
-        if (runButton && currentCommandRef.current?.content) {
-          runButton.click();
-          return;
-        }
-
-        if (!(await isStepValid(currentIndex))) {
-          showToastRef.current(
-            'Please complete the current step before proceeding.',
-            'warning',
-            TOAST_DURATION
-          );
-          return;
-        }
-      }
-
-      const getNavConfig = type === STEP.NEXT ? getNextNavigation : getPrevNavigation;
-      const navConfig = getNavConfig(currentIndex);
-
-      if (!navConfig) {
-        console.error('Failed to get navigation config for step', currentIndex);
+    // For NEXT: if there's a command to execute, click the run button
+    if (type === STEP.NEXT) {
+      const runButton = document.getElementById('run-command-btn');
+      if (runButton && currentCommandRef.current?.content) {
+        runButton.click();
         return;
       }
 
-      const targetIndex = type === STEP.NEXT ? currentIndex + 1 : currentIndex - 1;
-
-      if (currentIndex === 0 && type === STEP.NEXT) {
-        setShowRestartNotice(false);
+      if (!await isStepValid(currentIndex)) {
+        showToastRef.current("Please complete the current step before proceeding.", 'warning', TOAST_DURATION);
+        return;
       }
+    }
 
-      if (currentCommand) {
-        clearCurrentCommand(true);
+    const getNavConfig = type === STEP.NEXT ? getNextNavigation : getPrevNavigation;
+    const navConfig = getNavConfig(currentIndex);
+
+    if (!navConfig) {
+      console.error('Failed to get navigation config for step', currentIndex);
+      return;
+    }
+
+    const targetIndex = type === STEP.NEXT ? currentIndex + 1 : currentIndex - 1;
+
+    if (currentIndex === 0 && type === STEP.NEXT) {
+      setShowRestartNotice(false);
+    }
+
+    if (currentCommand) {
+      clearCurrentCommand(true);
+    }
+
+    // Navigate route if needed
+    if (navConfig.to) {
+      navigate(navConfig.to);
+    }
+
+    // Set command for target step
+    setCommandForStep(targetIndex);
+
+    // Wait for elements if needed
+    if (navConfig.waitFor && navConfig.waitFor.length > 0) {
+      try {
+        await waitForElement(navConfig.waitFor);
+        await new Promise(r => setTimeout(r, 100));
+      } catch (error) {
+        console.error('Failed to find target elements');
+        return;
       }
+    }
 
-      // Navigate route if needed
-      if (navConfig.to) {
-        navigate(navConfig.to);
-      }
-
-      // Set command for target step
-      setCommandForStep(targetIndex);
-
-      // Wait for elements if needed
-      if (navConfig.waitFor && navConfig.waitFor.length > 0) {
-        try {
-          await waitForElement(navConfig.waitFor);
-          await new Promise((r) => setTimeout(r, 100));
-        } catch (error) {
-          console.error('Failed to find target elements');
-          return;
-        }
-      }
-
-      // Drive to target step
-      driverObj.current.drive(targetIndex);
-      setStepIndex(targetIndex);
-    },
-    [isStepValid, currentCommand, clearCurrentCommand, setCommandForStep, navigate]
-  );
+    // Drive to target step
+    driverObj.current.drive(targetIndex);
+    setStepIndex(targetIndex);
+  }, [isStepValid, currentCommand, clearCurrentCommand, setCommandForStep, navigate]);
 
   const createNavigationHandler = useCallback(
     (type: typeof STEP.NEXT | typeof STEP.PREV) => {
@@ -409,12 +370,12 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, []);
 
   const generateDriverSteps = useCallback((): DriveStep[] => {
-    return stepsConfig.map((step) => {
+    return stepsConfig.map(step => {
       const title = step.titleNumber
         ? `<span class="driver-popover-title-number">${step.titleNumber}</span> ${step.title || ''}`
         : step.title;
 
-      const description = step.description;
+      let description = step.description;
 
       const popover: DriveStep['popover'] = {
         title,
@@ -435,7 +396,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         popover.onNextClick = createNavigationHandler(STEP.NEXT);
       }
 
-      const driverStep: DriveStep = { popover };
+      const driverStep: DriveStep = {popover};
 
       if (step.element) {
         driverStep.element = step.element;
@@ -472,12 +433,8 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 return;
               }
 
-              if (!(await isStepValid(index))) {
-                showToastRef.current(
-                  'Please complete the current step before proceeding.',
-                  'warning',
-                  TOAST_DURATION
-                );
+              if (!await isStepValid(index)) {
+                showToastRef.current("Please complete the current step before proceeding.", 'warning', TOAST_DURATION);
                 return;
               }
 
@@ -537,6 +494,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [generateDriverSteps, isStepValid, setCommandForStep, clearCurrentCommand]);
 
+
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.key !== 'Enter') return;
@@ -565,15 +523,11 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         activeStep.popover.onNextClick(element || undefined, activeStep, {
           config: driverObj.current.getConfig(),
           state: driverObj.current.getState(),
-          driver: driverObj.current,
+          driver: driverObj.current
         });
       } else {
-        if (!(await isStepValid(index))) {
-          showToastRef.current(
-            'Please complete the current step before proceeding.',
-            'warning',
-            TOAST_DURATION
-          );
+        if (!await isStepValid(index)) {
+          showToastRef.current("Please complete the current step before proceeding.", 'warning', TOAST_DURATION);
           return;
         }
         if (currentCommandRef.current) {
@@ -602,26 +556,27 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return () => document.removeEventListener('click', handleClick);
   }, [handleAnalyticsStart]);
 
-  const contextValue = useMemo(
-    () => ({
-      stepIndex,
-      currentCommand,
-      commandHistory,
-      terminalContext,
-      isExecuting,
-      executeCommand,
-      resetStep,
-    }),
-    [
-      stepIndex,
-      currentCommand,
-      commandHistory,
-      terminalContext,
-      isExecuting,
-      executeCommand,
-      resetStep,
-    ]
-  );
+  const contextValue = useMemo(() => ({
+    stepIndex,
+    currentCommand,
+    commandHistory,
+    terminalContext,
+    isExecuting,
+    executeCommand,
+    resetStep,
+  }), [
+    stepIndex,
+    currentCommand,
+    commandHistory,
+    terminalContext,
+    isExecuting,
+    executeCommand,
+    resetStep,
+  ]);
 
-  return <DriverContext.Provider value={contextValue}>{children}</DriverContext.Provider>;
+  return (
+    <DriverContext.Provider value={contextValue}>
+      {children}
+    </DriverContext.Provider>
+  );
 };

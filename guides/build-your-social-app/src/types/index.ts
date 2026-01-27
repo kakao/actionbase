@@ -27,3 +27,4 @@ export interface TouchPosition {
   start: number | null;
   end: number | null;
 }
+

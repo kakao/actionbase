@@ -12,3 +12,4 @@ const Spinner: React.FC = () => {
 };
 
 export default Spinner;
+

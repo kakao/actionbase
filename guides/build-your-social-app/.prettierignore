@@ -1,8 +1,0 @@
-# Build output
-dist/
-
-# Dependencies
-node_modules/
-
-# Cache
-.cache/

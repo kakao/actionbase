@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import '../../styles/not-found.css';
 
 const NotFound: React.FC = () => {
@@ -21,3 +21,4 @@ const NotFound: React.FC = () => {
 };
 
 export default NotFound;
+

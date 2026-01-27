@@ -1,13 +1,6 @@
-import { apiFetch } from './client';
-import { DATABASE, DIRECTION, TABLE } from '../constants';
-import {
-  DatabaseEntity,
-  TableEntity,
-  DataPayload,
-  DataCountPayload,
-  EdgeMutation,
-  EdgeMutationResponse,
-} from './model';
+import {apiFetch} from './client';
+import {DATABASE, DIRECTION, TABLE} from "../constants";
+import {DatabaseEntity, TableEntity, DataPayload, DataCountPayload, EdgeMutation, EdgeMutationResponse} from './model';
 
 const DEFAULT_LIMIT = 25;
 const INDEX = {
@@ -26,8 +19,8 @@ export async function getDatabase(
       `/graph/v2/service/${name}`,
       {
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json'
+        }
       },
       enableLogging
     );
@@ -46,8 +39,8 @@ export async function getTable(
       `/graph/v2/service/${database}/label/${name}`,
       {
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json'
+        }
       },
       enableLogging
     );
@@ -70,7 +63,7 @@ export async function get(
   target: any,
   enableLogging: boolean = true
 ): Promise<DataPayload> {
-  if (!(await verifyTableExists(database, table))) {
+  if (!await verifyTableExists(database, table)) {
     return EMPTY_DATA_PAYLOAD;
   }
   try {
@@ -78,8 +71,8 @@ export async function get(
       `/graph/v3/databases/${database}/tables/${table}/edges/get?source=${source}&target=${target}`,
       {
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json'
+        }
       },
       enableLogging
     );
@@ -95,7 +88,7 @@ export async function count(
   direction: string,
   enableLogging: boolean = true
 ): Promise<DataCountPayload> {
-  if (!(await verifyTableExists(database, table))) {
+  if (!await verifyTableExists(database, table)) {
     return EMPTY_COUNT_PAYLOAD;
   }
   try {
@@ -103,8 +96,8 @@ export async function count(
       `/graph/v3/databases/${database}/tables/${table}/edges/counts?start=${start}&direction=${direction}`,
       {
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json'
+        }
       },
       enableLogging
     );
@@ -113,14 +106,21 @@ export async function count(
   }
 }
 
-export function mutate(database: string, table: string, request: EdgeMutation) {
-  return apiFetch<EdgeMutationResponse>(`/graph/v3/databases/${database}/tables/${table}/edges`, {
-    body: JSON.stringify(request),
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+export function mutate(
+  database: string,
+  table: string,
+  request: EdgeMutation
+) {
+  return apiFetch<EdgeMutationResponse>(
+    `/graph/v3/databases/${database}/tables/${table}/edges`,
+    {
+      body: JSON.stringify(request),
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+  );
 }
 
 export async function scan(
@@ -133,25 +133,23 @@ export async function scan(
   ranges: string | undefined = undefined,
   enableLogging: boolean = true
 ): Promise<DataPayload> {
-  if (!(await verifyTableExists(database, table))) {
+  if (!await verifyTableExists(database, table)) {
     return EMPTY_DATA_PAYLOAD;
   }
   try {
     const urlBuilder: string[] = [];
-    urlBuilder.push(
-      `/graph/v3/databases/${database}/tables/${table}/edges/scan/${index}?start=${start}&direction=${direction}&limit=${limit}`
-    );
+    urlBuilder.push(`/graph/v3/databases/${database}/tables/${table}/edges/scan/${index}?start=${start}&direction=${direction}&limit=${limit}`);
     if (ranges !== undefined) {
       urlBuilder.push(`&ranges=${ranges}`);
     }
-    const url = urlBuilder.join('');
+    const url = urlBuilder.join("")
 
     return await apiFetch<DataPayload>(
       url,
       {
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json'
+        }
       },
       enableLogging
     );
@@ -160,11 +158,7 @@ export async function scan(
   }
 }
 
-export async function scanUserPosts(
-  postId: string,
-  direction: string = DIRECTION.OUT,
-  enableLogging: boolean = true
-) {
+export async function scanUserPosts(postId: string, direction: string = DIRECTION.OUT, enableLogging: boolean = true) {
   return scan(
     DATABASE.SOCIAL,
     TABLE.USER_POSTS,
@@ -177,11 +171,7 @@ export async function scanUserPosts(
   );
 }
 
-export async function scanUserFollows(
-  userId: string,
-  direction: string = DIRECTION.OUT,
-  enableLogging: boolean = true
-) {
+export async function scanUserFollows(userId: string, direction: string = DIRECTION.OUT, enableLogging: boolean = true) {
   return scan(
     DATABASE.SOCIAL,
     TABLE.USER_FOLLOWS,
@@ -193,3 +183,4 @@ export async function scanUserFollows(
     enableLogging
   );
 }
+
