@@ -109,7 +109,7 @@ curl -X POST "http://localhost:8080/graph/v2/service/likes/label/likes" \
   }'
 ```
 
-엣지 삽입\*\*
+엣지 삽입
 
 ```bash
 curl -X POST "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges" \
@@ -127,9 +127,9 @@ curl -X POST "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges"
 
 ## 데이터 읽기 {#read-data}
 
-### 조회\*\* {#get}
+### 조회 {#get}
 
-특정 엣지가 존재하는지 확인:\*\*
+특정 엣지가 존재하는지 확인:
 
 ```
 get --source Alice --target Phone
@@ -145,7 +145,7 @@ get --source Alice --target Phone
 ```
 
 <details>
-<summary>REST API 대응**</summary>
+<summary>REST API 대응</summary>
 
 ```bash
 curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/get?source=Alice&target=Phone"
@@ -153,7 +153,7 @@ curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/get?sour
 
 </details>
 
-### 스캔\*\* {#scan}
+### 스캔 {#scan}
 
 <div class="icon-row">
   <strong>What did Bob like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
@@ -198,7 +198,7 @@ scan --index recent --start Phone --direction IN
 </Aside>
 
 <details>
-<summary>REST API 대응**</summary>
+<summary>REST API 대응</summary>
 
 ```bash
 # OUT {#out}
@@ -210,7 +210,7 @@ curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/rec
 
 </details>
 
-### 카운트\*\* {#count}
+### 카운트 {#count}
 
 <div class="icon-row">
   <strong>How many items did Alice like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
@@ -246,10 +246,10 @@ count --start Phone --direction IN
   │ |-------|-----------|-------|
 ```
 
-<Aside type="note">카운트는 쓰기 시점에 미리 계산됩니다. 집계가 필요하지 않습니다.**</Aside>
+<Aside type="note">카운트는 쓰기 시점에 미리 계산됩니다. 집계가 필요하지 않습니다.</Aside>
 
 <details>
-<summary>REST API 대응**</summary>
+<summary>REST API 대응</summary>
 
 ```bash
 # OUT {#out}
@@ -261,8 +261,8 @@ curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/count?st
 
 </details>
 
-## 다음 단계\*\* {#next-steps}
+## 다음 단계 {#next-steps}
 
-- [핵심 개념](/ko/design/concepts/) — Actionbase 동작 방식\*\*
-- [소셜 미디어 앱 만들기](/ko/guides/build-your-social-media-app/) — 실습 가이드\*\*
-- [CLI 참조](/ko/operations/cli/) — 전체 CLI 문서\*\*
+- [핵심 개념](/ko/design/concepts/) — Actionbase 동작 방식
+- [소셜 미디어 앱 만들기](/ko/guides/build-your-social-media-app/) — 실습 가이드
+- [CLI 참조](/ko/operations/cli/) — 전체 CLI 문서
