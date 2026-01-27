@@ -6,7 +6,7 @@ Pre-computed reads for likes, views, and follows. 1M+ req/min in production at K
 
 Likes, recent views, follows—look simple, but get complex as you scale, and end up rebuilt again and again. Actionbase solves this by precomputing everything at write time, so reads are just lookups.
 
-[Documentation](https://actionbase.io) · [Why I built this](https://github.com/kakao/actionbase/discussions/32) · [Production stories](https://actionbase.io/stories/kakaotalk-gift-wish/)
+[Documentation](https://actionbase.io) · [Open-sourced](https://actionbase.io/blog/open-source-announcement/) · [Why I built this](https://github.com/kakao/actionbase/discussions/32) · [Production stories](https://actionbase.io/stories/kakaotalk-gift-wish/)
 
 ## Quick Start
 
