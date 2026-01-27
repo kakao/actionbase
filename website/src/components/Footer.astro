@@ -1,10 +1,8 @@
 ---
 import Default from '@astrojs/starlight/components/Footer.astro';
 
-const { locale, slug } = Astro.locals.starlightRoute;
-const isKorean = locale === 'ko';
-const isBlog = slug.includes('blog/') || slug.includes('/blog');
-const showTranslationNotice = isKorean && !isBlog;
+const frontmatter = Astro.locals.starlightRoute.entry.data;
+const showTranslationNotice = frontmatter['translated-by-kanana-2'] === true;
 ---
 
 <Default {...Astro.props}><slot /></Default>
