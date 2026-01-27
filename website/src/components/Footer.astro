@@ -3,7 +3,7 @@ import Default from '@astrojs/starlight/components/Footer.astro';
 
 const { locale, slug } = Astro.locals.starlightRoute;
 const isKorean = locale === 'ko';
-const isBlog = slug.startsWith('blog/');
+const isBlog = slug.includes('blog/') || slug.includes('/blog');
 const showTranslationNotice = isKorean && !isBlog;
 ---
 
