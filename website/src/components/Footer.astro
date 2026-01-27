@@ -8,7 +8,7 @@ const showTranslationNotice = frontmatter['translated-by-kanana-2'] === true;
 <Default {...Astro.props}><slot /></Default>
 
 {showTranslationNotice && (
-  <p class="translation-notice">(이 문서는 <a href="https://huggingface.co/collections/kakaocorp/kanana-2" target="_blank" rel="noopener">Kanana-2</a>로 번역되었습니다.)</p>
+  <p class="translation-notice">(이 문서는 <a href="https://github.com/kakao/kanana-2" target="_blank" rel="noopener">Kanana-2</a>로 번역되었습니다. 번역 기여를 환영합니다!)</p>
 )}
 
 <style>
@@ -16,6 +16,7 @@ const showTranslationNotice = frontmatter['translated-by-kanana-2'] === true;
     margin-top: 1.5rem;
     font-size: var(--sl-text-sm);
     color: var(--sl-color-gray-3);
+    text-align: right;
   }
   .translation-notice a {
     color: var(--sl-color-gray-3);
