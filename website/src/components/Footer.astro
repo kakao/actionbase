@@ -8,26 +8,17 @@ const isKorean = locale === 'ko';
 <Default {...Astro.props}><slot /></Default>
 
 {isKorean && (
-  <div class="translation-notice">
-    <p>이 문서는 <a href="https://huggingface.co/collections/kakaocorp/kanana-2" target="_blank" rel="noopener">Kanana-2</a>로 번역되었습니다.</p>
-  </div>
+  <p class="translation-notice">(이 문서는 <a href="https://huggingface.co/collections/kakaocorp/kanana-2" target="_blank" rel="noopener">Kanana-2</a>로 번역되었습니다.)</p>
 )}
 
 <style>
   .translation-notice {
-    background-color: var(--sl-color-gray-6);
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
     margin-top: 1.5rem;
     font-size: var(--sl-text-sm);
-    text-align: center;
-  }
-  .translation-notice p {
-    margin: 0;
-    color: var(--sl-color-gray-2);
+    color: var(--sl-color-gray-3);
   }
   .translation-notice a {
-    color: var(--sl-color-gray-2);
+    color: var(--sl-color-gray-3);
     text-decoration: underline;
   }
   .translation-notice a:hover {
