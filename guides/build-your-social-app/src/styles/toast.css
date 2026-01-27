@@ -20,7 +20,9 @@
   padding: 16px 20px;
   background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08);
   pointer-events: auto;
   opacity: 1;
   transform: translateY(0);
@@ -42,7 +44,9 @@
 .toast.toast-closing {
   opacity: 0;
   transform: translateY(-10px);
-  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
 }
 
 .toast-icon {

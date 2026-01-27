@@ -180,7 +180,9 @@
   cursor: pointer;
   padding: var(--spacing-md);
   color: var(--color-text-primary);
-  transition: transform var(--transition-fast), color var(--transition-base);
+  transition:
+    transform var(--transition-fast),
+    color var(--transition-base);
 }
 
 .action-icon:active {
@@ -191,7 +193,10 @@
   width: var(--font-size-xl);
   height: var(--font-size-xl);
   display: block;
-  transition: fill var(--transition-base), stroke var(--transition-base), transform var(--transition-fast);
+  transition:
+    fill var(--transition-base),
+    stroke var(--transition-base),
+    transform var(--transition-fast);
 }
 
 .action-icon.liked {

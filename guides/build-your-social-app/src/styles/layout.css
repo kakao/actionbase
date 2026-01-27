@@ -46,7 +46,6 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-
 .guide-box {
   background: linear-gradient(135deg, #f0f4ff 0%, #e8edff 100%);
   border: 1px solid #c7d2fe;
@@ -154,7 +153,6 @@
 .breadcrumb-item-wrapper:last-child {
   margin-bottom: 0;
 }
-
 
 .breadcrumb-item {
   display: flex;
@@ -324,10 +322,15 @@
   overflow: hidden;
   z-index: 99;
   flex-shrink: 0;
-  transition: width 0.2s ease-in-out, height 0.2s ease-in-out;
+  transition:
+    width 0.2s ease-in-out,
+    height 0.2s ease-in-out;
   border: 8px solid #1a1a1a;
   border-radius: 44px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15), 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 0 0 2px #000;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 2px #000;
   background: #000;
   display: flex;
   flex-direction: column;
@@ -450,7 +453,9 @@
   height: 900px;
   border: 1px solid #d1d5db;
   transition: height 0.2s ease-in-out;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .browser-frame.step-completed {
@@ -476,7 +481,9 @@
   height: 100%;
   z-index: 200;
   pointer-events: none;
-  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  transition:
+    opacity 0.2s ease-in-out,
+    visibility 0.2s ease-in-out;
 }
 
 .terminal-wrapper * {
@@ -487,7 +494,11 @@
 .api-logs-wrapper {
   flex: 0 0 auto;
   background-color: #252526;
-  transition: left 0.2s ease-in-out, top 0.2s ease-in-out, width 0.2s ease-in-out, height 0.2s ease-in-out;
+  transition:
+    left 0.2s ease-in-out,
+    top 0.2s ease-in-out,
+    width 0.2s ease-in-out,
+    height 0.2s ease-in-out;
 }
 
 .api-logs-wrapper .api-log-container {
@@ -551,7 +562,6 @@
 .browser-btn.maximize {
   background: #22c55e;
 }
-
 
 /* Width-based responsive */
 @media (max-width: 1800px) {
@@ -636,7 +646,9 @@
   background: white;
   padding: 20px 24px;
   border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
   margin-bottom: 16px;
   flex-shrink: 0;

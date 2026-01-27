@@ -1,24 +1,32 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
-import {TouchPosition, UserPost} from '../../types';
-import {formatDate} from '../../utils/date';
-import {count, get, scanUserPosts} from '../../api/actionbase';
-import {DATABASE, DIRECTION, ROUTES, TABLE, UI} from '../../constants';
-import {calculateImageIndex, shouldTriggerSwipe} from '../../utils/image';
-import NotFound from "./NotFound";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { TouchPosition, UserPost } from '../../types';
+import { formatDate } from '../../utils/date';
+import { count, get, scanUserPosts } from '../../api/actionbase';
+import { DATABASE, DIRECTION, ROUTES, TABLE, UI } from '../../constants';
+import { calculateImageIndex, shouldTriggerSwipe } from '../../utils/image';
+import NotFound from './NotFound';
 import '../../styles/post.css';
-import {useToggleLike} from "../../hooks/useToggleMutate";
-import Spinner from "../layout/Spinner";
-import {me, postDetails, users} from "../../constants/dummy";
-import {useToast} from "../../contexts/ToastContext";
-import {BackArrowIcon, MenuDotsIcon, HeartIcon, CommentIcon, ShareIcon, BookmarkIcon, ChevronRightIcon} from '../icons';
+import { useToggleLike } from '../../hooks/useToggleMutate';
+import Spinner from '../layout/Spinner';
+import { me, postDetails, users } from '../../constants/dummy';
+import { useToast } from '../../contexts/ToastContext';
+import {
+  BackArrowIcon,
+  MenuDotsIcon,
+  HeartIcon,
+  CommentIcon,
+  ShareIcon,
+  BookmarkIcon,
+  ChevronRightIcon,
+} from '../icons';
 
 const Post: React.FC = () => {
-  const {id} = useParams();
-  const post = postDetails.find(p => String(p.id) === id);
-  const {showToast} = useToast();
+  const { id } = useParams();
+  const post = postDetails.find((p) => String(p.id) === id);
+  const { showToast } = useToast();
   if (!post) {
-    return <NotFound/>;
+    return <NotFound />;
   }
 
   const navigate = useNavigate();
@@ -27,18 +35,16 @@ const Post: React.FC = () => {
   const [likesCount, setLikesCount] = useState<number>(0);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const touchRef = useRef<TouchPosition>({start: null, end: null});
+  const touchRef = useRef<TouchPosition>({ start: null, end: null });
   const [hasError, setHasError] = useState<boolean>(false);
 
-  const {toggleLike: toggleLike} = useToggleLike(
-    me.id,
-    {
-      onSuccess: (newIsLiked, newLikes) => {
-        setIsLiked(newIsLiked);
-        setLikesCount(newLikes);
-      },
-      onError: console.error
-    });
+  const { toggleLike: toggleLike } = useToggleLike(me.id, {
+    onSuccess: (newIsLiked, newLikes) => {
+      setIsLiked(newIsLiked);
+      setLikesCount(newLikes);
+    },
+    onError: console.error,
+  });
 
   const handleLikeToggle = useCallback(async () => {
     if (userPost?.id) await toggleLike(userPost.id, isLiked);
@@ -47,13 +53,13 @@ const Post: React.FC = () => {
   const fetchPost = async () => {
     try {
       const userPostPayload = await scanUserPosts(String(post.id), DIRECTION.IN);
-      const posts = userPostPayload.edges.map(edge => ({
-        owner: users.find(u => u.id === edge.source) || users[0],
+      const posts = userPostPayload.edges.map((edge) => ({
+        owner: users.find((u) => u.id === edge.source) || users[0],
         id: edge.target,
         images: post.imageUrls || [],
         content: post.content || '',
         likes: 0,
-        createdAt: formatDate(edge.properties["createdAt"]),
+        createdAt: formatDate(edge.properties['createdAt']),
       }));
 
       if (posts.length > 0) {
@@ -62,7 +68,7 @@ const Post: React.FC = () => {
 
         const [likeCountPayload, userLikePayload] = await Promise.all([
           count(DATABASE.SOCIAL, TABLE.USER_LIKES, postData.id, DIRECTION.IN),
-          get(DATABASE.SOCIAL, TABLE.USER_LIKES, me.id, postData.id)
+          get(DATABASE.SOCIAL, TABLE.USER_LIKES, me.id, postData.id),
         ]);
         const likesCount = likeCountPayload.counts[0]?.count ?? 0;
         const isLiked = userLikePayload.count > 0;
@@ -71,7 +77,7 @@ const Post: React.FC = () => {
         setIsLiked(isLiked);
       }
     } catch (err) {
-      console.error("Failed to fetch post:", err);
+      console.error('Failed to fetch post:', err);
       setHasError(true);
     } finally {
       setIsLoading(false);
@@ -96,12 +102,12 @@ const Post: React.FC = () => {
   }, []);
 
   if (hasError) {
-    return <NotFound/>;
+    return <NotFound />;
   }
 
   return (
-    <div className="app" style={{position: 'relative', height: '100%'}}>
-      {isLoading && <Spinner/>}
+    <div className="app" style={{ position: 'relative', height: '100%' }}>
+      {isLoading && <Spinner />}
       {/* Header */}
       <header className="detail-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
@@ -117,8 +123,11 @@ const Post: React.FC = () => {
       {!isLoading && (
         <div className="post-detail-container">
           <div className="post-detail-header">
-            <div className="author-info" onClick={() => navigate(ROUTES.PROFILE(userPost?.owner.id || ''))}>
-              <div className="author-avatar" style={{background: userPost?.owner.gradient}}>
+            <div
+              className="author-info"
+              onClick={() => navigate(ROUTES.PROFILE(userPost?.owner.id || ''))}
+            >
+              <div className="author-avatar" style={{ background: userPost?.owner.gradient }}>
                 <img src={userPost?.owner.avatar} alt={userPost?.owner.name} />
               </div>
               <span className="author-name">{userPost?.owner.name}</span>
@@ -127,10 +136,10 @@ const Post: React.FC = () => {
           <div className="post-detail-image">
             <div
               className="image-carousel"
-              onTouchStart={(e) => touchRef.current.start = e.targetTouches[0].clientX}
-              onTouchMove={(e) => touchRef.current.end = e.targetTouches[0].clientX}
+              onTouchStart={(e) => (touchRef.current.start = e.targetTouches[0].clientX)}
+              onTouchMove={(e) => (touchRef.current.end = e.targetTouches[0].clientX)}
               onTouchEnd={() => {
-                const {start, end} = touchRef.current;
+                const { start, end } = touchRef.current;
                 if (!start || !end) return;
                 const distance = start - end;
                 const images = userPost?.images || [];
@@ -142,21 +151,28 @@ const Post: React.FC = () => {
                     setCurrentImageIndex(calculateImageIndex(currentImageIndex, -1, maxIndex));
                   }
                 }
-                touchRef.current = {start: null, end: null};
+                touchRef.current = { start: null, end: null };
               }}
             >
               <div
                 className="image-carousel-track"
                 style={{
                   transform: `translateX(-${currentImageIndex * 100}%)`,
-                  transition: touchRef.current.start && touchRef.current.end ? 'none' : `transform ${UI.CAROUSEL_TRANSITION_DURATION}ms ease-out`
+                  transition:
+                    touchRef.current.start && touchRef.current.end
+                      ? 'none'
+                      : `transform ${UI.CAROUSEL_TRANSITION_DURATION}ms ease-out`,
                 }}
               >
                 {(userPost?.images || []).map((image, index) => (
-                  <div key={index} className="image-content" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
-                  <span className="main-icon">
-                    <img src={image}/>
-                  </span>
+                  <div
+                    key={index}
+                    className="image-content"
+                    style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+                  >
+                    <span className="main-icon">
+                      <img src={image} />
+                    </span>
                   </div>
                 ))}
               </div>
@@ -164,18 +180,28 @@ const Post: React.FC = () => {
               {userPost?.images && userPost.images.length > 1 && (
                 <>
                   {currentImageIndex > 0 && (
-                    <button className="carousel-arrow carousel-arrow-left" onClick={() => setCurrentImageIndex(currentImageIndex - 1)}>
-                      <ChevronRightIcon style={{transform: 'rotate(180deg)'}} />
+                    <button
+                      className="carousel-arrow carousel-arrow-left"
+                      onClick={() => setCurrentImageIndex(currentImageIndex - 1)}
+                    >
+                      <ChevronRightIcon style={{ transform: 'rotate(180deg)' }} />
                     </button>
                   )}
                   {currentImageIndex < userPost.images.length - 1 && (
-                    <button className="carousel-arrow carousel-arrow-right" onClick={() => setCurrentImageIndex(currentImageIndex + 1)}>
+                    <button
+                      className="carousel-arrow carousel-arrow-right"
+                      onClick={() => setCurrentImageIndex(currentImageIndex + 1)}
+                    >
                       <ChevronRightIcon />
                     </button>
                   )}
                   <div className="carousel-indicators">
                     {userPost.images.map((_, index) => (
-                      <button key={index} className={`indicator ${index === currentImageIndex ? 'active' : ''}`} onClick={() => setCurrentImageIndex(index)}/>
+                      <button
+                        key={index}
+                        className={`indicator ${index === currentImageIndex ? 'active' : ''}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                      />
                     ))}
                   </div>
                 </>
@@ -185,7 +211,11 @@ const Post: React.FC = () => {
           <div className="post-detail-actions" id="post-detail-actions">
             <div className="action-buttons-wrapper">
               <div className="actions-left">
-                <button id="btn-likes" className={`action-icon ${isLiked ? 'liked' : ''}`} onClick={handleLikeToggle}>
+                <button
+                  id="btn-likes"
+                  className={`action-icon ${isLiked ? 'liked' : ''}`}
+                  onClick={handleLikeToggle}
+                >
                   <HeartIcon filled={isLiked} />
                 </button>
                 <button className="action-icon" onClick={() => showToast('Unsupported')}>
@@ -195,7 +225,10 @@ const Post: React.FC = () => {
                   <ShareIcon />
                 </button>
               </div>
-              <button className="action-icon action-bookmark" onClick={() => showToast('Unsupported')}>
+              <button
+                className="action-icon action-bookmark"
+                onClick={() => showToast('Unsupported')}
+              >
                 <BookmarkIcon />
               </button>
             </div>
@@ -224,4 +257,3 @@ const Post: React.FC = () => {
 };
 
 export default Post;
-

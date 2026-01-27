@@ -1,66 +1,66 @@
 export interface Edge {
-  version: number,
-  source: any,
-  target: any,
-  properties: Record<string, any | null>
+  version: number;
+  source: any;
+  target: any;
+  properties: Record<string, any | null>;
 }
 
 export interface DatabaseEntity {
-  active: boolean,
-  name: string,
-  desc: string
+  active: boolean;
+  name: string;
+  desc: string;
 }
 
 export interface TableEntity {
-  active: boolean,
-  name: string,
-  desc: string,
+  active: boolean;
+  name: string;
+  desc: string;
 }
 
 export interface DataPayload {
-  edges: Edge[],
-  count: number,
-  offset: string,
-  hasNext: boolean
+  edges: Edge[];
+  count: number;
+  offset: string;
+  hasNext: boolean;
 }
 
 export interface DataCountPayload {
-  counts: EdgeCount[],
-  count: number
+  counts: EdgeCount[];
+  count: number;
 }
 
 export interface EdgeCount {
-  start: any,
-  direction: string,
-  count: number
+  start: any;
+  direction: string;
+  count: number;
 }
 
 export interface EdgeMutation {
-  mutations: MutationItem[]
+  mutations: MutationItem[];
 }
 
 export interface MutationItem {
-  type: string,
-  edge: Edge
+  type: string;
+  edge: Edge;
 }
 
 export interface EdgeMutationResponse {
-  results: MutationResult[]
+  results: MutationResult[];
 }
 
 export interface MutationResult {
-  source: any,
-  target: any,
-  status: string,
-  count: number
+  source: any;
+  target: any;
+  status: string;
+  count: number;
 }
 
 export interface CommandRequest {
-  command: string
+  command: string;
 }
 
 export interface CommandResponse {
-  success: boolean,
-  result: string | undefined,
-  error: string | undefined
+  success: boolean;
+  result: string | undefined;
+  error: string | undefined;
 }

@@ -1,6 +1,13 @@
-import React, {createContext, ReactNode, useCallback, useContext, useEffect, useState} from 'react';
-import {flushSync} from 'react-dom';
-import {ToastContainer} from "../components/layout/Toast";
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import { flushSync } from 'react-dom';
+import { ToastContainer } from '../components/layout/Toast';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -25,19 +32,19 @@ interface Toast {
   duration?: number;
 }
 
-export const ToastProvider: React.FC<{ children: ReactNode }> = ({children}) => {
+export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((message: string, type: ToastType = 'info', duration?: number) => {
     const id = Math.random().toString(36).substring(2, 9);
     flushSync(() => {
-      const newToasts = [{id, message, type, duration}];
+      const newToasts = [{ id, message, type, duration }];
       setToasts(newToasts);
     });
   }, []);
 
   const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
   const removeAllToasts = useCallback(() => {
@@ -73,10 +80,9 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({children}) => 
   }, [toasts.length, removeAllToasts]);
 
   return (
-    <ToastContext.Provider value={{showToast}}>
+    <ToastContext.Provider value={{ showToast }}>
       {children}
-      <ToastContainer toasts={toasts} removeToast={removeToast}/>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </ToastContext.Provider>
   );
 };
-

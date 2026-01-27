@@ -1,5 +1,5 @@
-import React, {memo} from 'react';
-import {User} from '../../types';
+import React, { memo } from 'react';
+import { User } from '../../types';
 
 interface UserListItemProps {
   user: User;
@@ -23,9 +23,9 @@ const UserListItem: React.FC<UserListItemProps> = ({
       <div
         className="follower-info"
         onClick={() => onUserClick?.(user.id)}
-        style={{cursor: onUserClick ? 'pointer' : 'default'}}
+        style={{ cursor: onUserClick ? 'pointer' : 'default' }}
       >
-        <div className="follower-avatar" style={{background: user.gradient}}>
+        <div className="follower-avatar" style={{ background: user.gradient }}>
           <img src={user.avatar} alt={user.name} />
         </div>
         <div className="follower-details">
