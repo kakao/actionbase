@@ -10,22 +10,22 @@ tableOfContents:
 import { Aside } from '@astrojs/starlight/components';
 
 <Aside type="caution">
-  인증은 강제되지 않습니다. [API 참조](/api-references/#authentication)를 확인하세요.
+  인증은 강제되지 않습니다. [API 참조](/ko/api-references/#authentication)를 확인하세요.
 </Aside>
 
-엣지 쿼리 API (unique-edge). unique-edge와 multi-edge의 차이는 [FAQ](/faq/#what-is-the-difference-between-unique-edge-and-multi-edge)를 참조하세요. 개념적 배경은 [쿼리](/design/query/)를 참조하세요.
+엣지 쿼리 API (unique-edge). unique-edge와 multi-edge의 차이는 [FAQ](/ko/faq/#what-is-the-difference-between-unique-edge-and-multi-edge)를 참조하세요. 개념적 배경은 [쿼리](/ko/design/query/)를 참조하세요.
 
-## 1. 개수
+## 1. 개수 {#1-count}
 
 특정 노드에서 시작하는 엣지의 개수를 조회합니다.
 
-### 엔드포인트
+### 엔드포인트 {#endpoint}
 
 ```
 GET /graph/v3/databases/{database}/tables/{table}/edges/count
 ```
 
-### 파라미터
+### 파라미터 {#parameters}
 
 | 위치 | 파라미터      | 필수 여부               | 설명                                        |
 | ---- | ------------- | ----------------------- | ------------------------------------------- |
@@ -36,11 +36,11 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/count
 | 쿼리 | direction     | 필수                    | [쿼리 방향](#query-direction) (OUT 또는 IN) |
 | 쿼리 | ranges        | 선택 사항(기본값: null) | [스캔 범위](#index-ranges)                  |
 
-### 응답 형식
+### 응답 형식 {#response-type}
 
 [개수](#count-response) - 엣지 개수 정보가 포함된 페이로드
 
-### 요청 예시
+### 요청 예시 {#request-example}
 
 | 파라미터     | 값            |
 | ------------ | ------------- |
@@ -51,13 +51,13 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/count
 | 방향         | OUT           |
 
 ```bash
-# count?start=source1&direction=OUT
+# count?start=source1&direction=OUT {#countstartsource1directionout}
 curl -X GET \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/count?start=source1&direction=OUT" \
     -H "Authorization: YOUR_API_KEY"
 ```
 
-### 응답 예시
+### 응답 예시 {#response-example}
 
 ```json
 {
@@ -68,17 +68,17 @@ curl -X GET \
 }
 ```
 
-## 2. 가져오기
+## 2. 가져오기 {#2-get}
 
 소스 노드와 타겟 노드 사이의 엣지를 검색합니다.
 
-### 엔드포인트
+### 엔드포인트 {#endpoint}
 
 ```
 GET /graph/v3/databases/{database}/tables/{table}/edges/get
 ```
 
-### 매개변수
+### 매개변수 {#parameters}
 
 | 위치 | 매개변수     | 필수 여부               | 설명                              |
 | ---- | ------------ | ----------------------- | --------------------------------- |
@@ -91,11 +91,11 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/get
 
 여러 소스 또는 타겟 ID가 지정된 경우, 이 작업은 **mget**처럼 동작하여 여러 엣지를 검색합니다. 이 경우, API 요청당 최대 **25개의 엣지**만 검색할 수 있습니다. 더 많은 엣지를 검색하려면 여러 번의 API 요청을 수행해야 합니다.
 
-### 응답 형식
+### 응답 형식 {#response-type}
 
 [EdgeFrame](#edgeframe-response) - 엣지 데이터를 포함하는 페이로드
 
-### 요청 예시 (Get) - 1 소스, 1 타겟
+### 요청 예시 (Get) - 1 소스, 1 타겟 {#request-example-get-1-source-1-target}
 
 (소스, 타겟)에 대한 엣지 데이터를 조회합니다. (최대 1개의 결과)
 
@@ -108,7 +108,7 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/get
 | target        | target1       |
 
 ```bash
-# get?source=source1&target=target1
+# get?source=source1&target=target1 {#getsourcesource1targettarget1}
 curl -X GET \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1&target=target1" \
     -H "Authorization: YOUR_API_KEY"
@@ -138,7 +138,7 @@ curl -X GET \
 }
 ```
 
-### 요청 예시 (MGet) - 1 소스, N 타겟
+### 요청 예시 (MGet) - 1 소스, N 타겟 {#request-example-mget-1-source-n-targets}
 
 (소스, 타겟1) ~ (소스, 타겟N)에 대한 엣지 데이터를 조회합니다. (최대 N개의 결과)
 
@@ -151,7 +151,7 @@ curl -X GET \
 | target        | target1,target2,target3 |
 
 ```bash
-# get?source=source1&target=target1,target2,target3
+# get?source=source1&target=target1,target2,target3 {#getsourcesource1targettarget1target2target3}
 curl -X GET \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1&target=target1,target2,target3" \
     -H "Authorization: YOUR_API_KEY"
@@ -191,7 +191,7 @@ curl -X GET \
 }
 ```
 
-### MGet 요청 예시 - M개의 소스, 1개의 타겟
+### MGet 요청 예시 - M개의 소스, 1개의 타겟 {#request-example-mget-m-sources-1-target}
 
 (source1, target) ~ (sourceM, target)에 대한 엣지 데이터를 조회합니다. (최대 M개의 결과)
 
@@ -204,7 +204,7 @@ curl -X GET \
 | target        | target1                 |
 
 ```bash
-# get?source=source1,source2,source3&target=target1
+# get?source=source1,source2,source3&target=target1 {#getsourcesource1source2source3targettarget1}
 curl -X GET \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1,source2,source3&target=target1" \
     -H "Authorization: YOUR_API_KEY"
@@ -244,7 +244,7 @@ curl -X GET \
 }
 ```
 
-### MGet 요청 예시 - M개의 소스, N개의 타겟 (권장하지 않음)
+### MGet 요청 예시 - M개의 소스, N개의 타겟 (권장하지 않음) {#request-example-mget-m-sources-n-targets-not-recommended}
 
 (source1, target1) ~ (sourceM, targetN)에 대한 엣지 데이터를 조회합니다. (최대 M × N개의 결과)
 
@@ -259,7 +259,7 @@ curl -X GET \
 | target        | target1,target2,target3 |
 
 ```bash
-# get?source=source1,source2,source3&target=target1,target2,target3
+# get?source=source1,source2,source3&target=target1,target2,target3 {#getsourcesource1source2source3targettarget1target2target3}
 curl -X GET \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/get?source=source1,source2,source3&target=target1,target2,target3" \
     -H "Authorization: YOUR_API_KEY"
@@ -309,17 +309,17 @@ curl -X GET \
 }
 ```
 
-## 3. 스캔
+## 3. 스캔 {#3-scan}
 
 인덱스를 사용하여 엣지를 스캔합니다.
 
-### 엔드포인트
+### 엔드포인트 {#endpoint}
 
 ```
 GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
 ```
 
-### 파라미터
+### 파라미터 {#parameters}
 
 | 위치 | 파라미터      | 필수 여부                     | 설명                                                |
 | ---- | ------------- | ----------------------------- | --------------------------------------------------- |
@@ -335,11 +335,11 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
 | 쿼리 | filters       | 선택 사항 (기본값: null)      | [필터링 조건](#filters)                             |
 | 쿼리 | features      | 선택 사항 (기본값: 빈 리스트) | 포함할 피처 목록 (예: `total`을 지정하면 총합 계산) |
 
-### 응답 타입
+### 응답 타입 {#response-type}
 
 [EdgeFrame](#edgeframe-response) - 엣지 데이터를 포함하는 페이로드
 
-### 요청 예시
+### 요청 예시 {#request-example}
 
 | 파라미터     | 값            |
 | ------------ | ------------- |
@@ -351,13 +351,13 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
 | 방향         | OUT           |
 
 ```bash
-# scan/your_index?start=source1&direction=OUT
+# scan/your_index?start=source1&direction=OUT {#scanyour-indexstartsource1directionout}
 curl -X GET \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/your_index?start=source1&direction=OUT" \
     -H "Authorization: YOUR_API_KEY"
 ```
 
-### 응답 예시
+### 응답 예시 {#response-example}
 
 ```json
 {
@@ -383,11 +383,11 @@ curl -X GET \
 
 **Note:** When `total` is -1, the total count is not calculated. If `features=total` is provided, the total is actually calculated.
 
-## 페이지네이션
+## 페이지네이션 {#pagination}
 
 `offset` 매개변수는 다음 페이지의 시작 위치를 나타내며, `hasNext`는 다음 페이지가 있는지 여부를 나타냅니다. offset이 없으면 첫 번째 페이지가 반환됩니다.
 
-### 1. 첫 번째 페이지 요청
+### 1. 첫 번째 페이지 요청 {#1-first-page-request}
 
 offset 없이 첫 번째 페이지를 요청합니다.
 
@@ -404,7 +404,7 @@ offset 없이 첫 번째 페이지를 요청합니다.
 | limit        |               | 25 권장 |
 
 ```bash
-# scan/your_index?start=source1&direction=OUT
+# scan/your_index?start=source1&direction=OUT {#scanyour-indexstartsource1directionout}
 curl -X GET \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/your_index?start=source1&direction=OUT" \
     -H "Authorization: YOUR_API_KEY"
@@ -435,7 +435,7 @@ curl -X GET \
 }
 ```
 
-### 2. 다음 페이지 요청
+### 2. 다음 페이지 요청 {#2-next-page-request}
 
 이전 응답에서 받은 `offset` 값을 사용하여 다음 페이지를 가져옵니다.
 
@@ -453,7 +453,7 @@ curl -X GET \
 | limit         |                | 25 권장               |
 
 ```bash
-# scan/your_index?start=source1&direction=OUT&offset=string_encoded
+# scan/your_index?start=source1&direction=OUT&offset=string_encoded {#scanyour-indexstartsource1directionoutoffsetstring-encoded}
 curl -X GET \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/your_index?start=source1&direction=OUT&offset=string_encoded" \
     -H "Authorization: YOUR_API_KEY"
@@ -484,11 +484,11 @@ curl -X GET \
 }
 ```
 
-## 인덱스 범위
+## 인덱스 범위 {#index-ranges}
 
 `ranges` 매개변수를 사용하면 카운트/스캔 쿼리에서 데이터 스캔 범위를 지정할 수 있습니다.
 
-### 범위와 인덱스의 관계
+### 범위와 인덱스의 관계 {#relationship-between-ranges-and-indexes}
 
 > **중요:** 범위는 인덱스에 포함된 필드에만 사용할 수 있습니다.
 
@@ -498,7 +498,7 @@ curl -X GET \
    - 인덱스가 `ASC`(오름차순)로 설정된 경우: `gt`가 시작점이 되고 `lt`가 끝점이 됩니다.
 3. **복합 범위:** 범위는 인덱스에 정의된 필드 조합의 순서로 사용할 수 있습니다. 범위는 인덱스에 정의된 필드 순서대로 적용해야 합니다.
 
-### 범위 구문
+### 범위 구문 {#range-syntax}
 
 범위는 다음 형식으로 작성됩니다:
 
@@ -525,7 +525,7 @@ field:in:value1,value2,value3
 field:bt:minValue,maxValue
 ```
 
-### 연산자
+### 연산자 {#operators}
 
 | 연산자 | 설명       | 예시                           |
 | ------ | ---------- | ------------------------------ |
@@ -536,7 +536,7 @@ field:bt:minValue,maxValue
 | `lte`  | 이하       | `createdAt:lte:2000000`        |
 | `bt`   | 두 값 사이 | `createdAt:bt:1000000,2000000` |
 
-### 예시
+### 예시 {#examples}
 
 **단순 범위:**
 
@@ -562,27 +562,27 @@ GET .../scan/your_index?start=10&direction=OUT&ranges=createdAt:bt:1000000,20000
 
 이 예시는 `createdAt`이 1000000과 2000000 사이인 엣지만 조회하는 범위를 지정합니다.
 
-## 필터
+## 필터 {#filters}
 
 `filters` 매개변수를 사용하면 get/scan 쿼리에서 데이터(엣지)를 필터링할 수 있습니다. [범위](#index-ranges)와 동일한 형식을 사용합니다.
 
 **범위와의 차이점:** [범위](#index-ranges)는 쿼리 범위를 미리 지정하며 인덱스로 설정된 필드만 사용할 수 있지만, `filters`는 쿼리 결과를 필터링하며 인덱스로 설정되지 않은 필드도 사용할 수 있습니다.
 
-### 필터 예시
+### 필터 예시 {#filter-examples}
 
 ```
 GET .../get?source=1,2,3&target=10&filters=type:eq:0
 GET .../scan/your_index?start=1&direction=OUT&ranges=createdAt:gte:1000000&filters=type:eq:0
 ```
 
-## 데이터 모델
+## 데이터 모델 {#data-model}
 
-### 쿼리 방향
+### 쿼리 방향 {#query-direction}
 
 - **OUT:** 나가는 방향(예: 사용자 [좋아요]→ 상품 관계에서 사용자가 좋아요한 상품 조회)
 - **IN:** 들어오는 방향(예: 위의 관계에서 상품을 좋아요한 사용자 조회)
 
-### 카운트 응답
+### 카운트 응답 {#count-response}
 
 엣지 개수 정보를 포함하는 페이로드입니다.
 
@@ -595,7 +595,7 @@ data class Count(
 )
 ```
 
-### EdgeFrame 응답
+### EdgeFrame 응답 {#edgeframe-response}
 
 get 및 scan 쿼리 응답입니다. 엣지 데이터를 포함하는 페이로드입니다.
 
@@ -610,7 +610,7 @@ data class EdgeFrame(
 )
 ```
 
-### 엣지
+### 엣지 {#edge}
 
 개별 엣지 정보 페이로드입니다.
 

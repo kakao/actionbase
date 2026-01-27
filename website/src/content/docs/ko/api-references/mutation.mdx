@@ -10,22 +10,22 @@ tableOfContents:
 import { Aside } from '@astrojs/starlight/components';
 
 <Aside type="caution">
-  인증은 강제되지 않습니다. [API 레퍼런스](/api-references/#authentication)를 참조하세요.
+  인증은 강제되지 않습니다. [API 레퍼런스](/ko/api-references/#authentication)를 참조하세요.
 </Aside>
 
-엣지 뮤테이션 API입니다. 개념적 배경은 [뮤테이션](/design/mutation/)을 참조하세요.
+엣지 뮤테이션 API입니다. 개념적 배경은 [뮤테이션](/ko/design/mutation/)을 참조하세요.
 
-## 1. 엣지 뮤테이션
+## 1. 엣지 뮤테이션 {#1-edge-mutation}
 
 소스 노드와 타겟 노드 간의 엣지를 변경합니다.
 
-### 엔드포인트
+### 엔드포인트 {#endpoint}
 
 ```
 POST /graph/v3/databases/{database}/tables/{table}/edges
 ```
 
-### 파라미터
+### 파라미터 {#parameters}
 
 | 위치 | 파라미터      | 필수 여부               | 설명                             |
 | ---- | ------------- | ----------------------- | -------------------------------- |
@@ -35,15 +35,15 @@ POST /graph/v3/databases/{database}/tables/{table}/edges
 | 쿼리 | lock          | 선택 사항(기본값: true) | 뮤테이션 중 락을 획득할지 여부   |
 | 바디 | mutations     | 필수                    | 뮤테이션 항목 목록               |
 
-### 요청 바디
+### 요청 바디 {#request-body}
 
 [EdgeBulkMutationRequest](#edgebulkmutationrequest) - 뮤테이션 항목을 포함하는 페이로드
 
-### 응답 타입
+### 응답 타입 {#response-type}
 
 [EdgeMutationResponse](#edgemutationresponse) - 뮤테이션 결과를 포함하는 페이로드
 
-### 요청 예시
+### 요청 예시 {#request-example}
 
 | 파라미터      | 값            |
 | ------------- | ------------- |
@@ -53,7 +53,7 @@ POST /graph/v3/databases/{database}/tables/{table}/edges
 | lock          | true          |
 
 ```bash
-# POST /graph/v3/databases/your_database/tables/your_table/edges
+# POST /graph/v3/databases/your_database/tables/your_table/edges {#post-graphv3databasesyour-databasetablesyour-tableedges}
 curl -X POST \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges?lock=true" \
     -H "Authorization: YOUR_API_KEY" \
@@ -76,7 +76,7 @@ curl -X POST \
     }'
 ```
 
-### 응답 예시
+### 응답 예시 {#response-example}
 
 ```json
 {
@@ -91,17 +91,17 @@ curl -X POST \
 }
 ```
 
-## 2. 엣지 뮤테이션 (동기)
+## 2. 엣지 뮤테이션 (동기) {#2-edge-mutation-sync}
 
 엣지를 동기 방식으로 뮤테이트합니다. 이 엔드포인트는 응답 전에 뮤테이션이 완료될 때까지 대기합니다.
 
-### 엔드포인트
+### 엔드포인트 {#endpoint}
 
 ```
 POST /graph/v3/databases/{database}/tables/{table}/edges/sync
 ```
 
-### 파라미터
+### 파라미터 {#parameters}
 
 | 위치   | 파라미터      | 필수                     | 설명                                |
 | ------ | ------------- | ------------------------ | ----------------------------------- |
@@ -111,15 +111,15 @@ POST /graph/v3/databases/{database}/tables/{table}/edges/sync
 | Query  | lock          | 선택 사항 (기본값: true) | 뮤테이션 수행 시 락을 획득할지 여부 |
 | Body   | mutations     | 필수                     | 뮤테이션 항목 목록                  |
 
-### 요청 본문
+### 요청 본문 {#request-body}
 
 [EdgeBulkMutationRequest](#edgebulkmutationrequest) - 뮤테이션 항목을 포함하는 페이로드
 
-### 응답 형식
+### 응답 형식 {#response-type}
 
 [EdgeMutationResponse](#edgemutationresponse) - 변이 결과를 포함하는 페이로드
 
-### 요청 예시
+### 요청 예시 {#request-example}
 
 | 파라미터      | 값            |
 | ------------- | ------------- |
@@ -129,7 +129,7 @@ POST /graph/v3/databases/{database}/tables/{table}/edges/sync
 | lock          | true          |
 
 ```bash
-# POST /graph/v3/databases/your_database/tables/your_table/edges/sync
+# POST /graph/v3/databases/your_database/tables/your_table/edges/sync {#post-graphv3databasesyour-databasetablesyour-tableedgessync}
 curl -X POST \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/sync?lock=true" \
     -H "Authorization: YOUR_API_KEY" \
@@ -152,7 +152,7 @@ curl -X POST \
     }'
 ```
 
-### 응답 예시
+### 응답 예시 {#response-example}
 
 ```json
 {
@@ -167,17 +167,17 @@ curl -X POST \
 }
 ```
 
-## 3. 다중 엣지 변이
+## 3. 다중 엣지 변이 {#3-multi-edge-mutation}
 
 엣지 ID로 식별되는 다중 엣지를 변이합니다.
 
-### 엔드포인트
+### 엔드포인트 {#endpoint}
 
 ```
 POST /graph/v3/databases/{database}/tables/{table}/multi-edges
 ```
 
-### 파라미터
+### 파라미터 {#parameters}
 
 | 위치 | 파라미터      | 필수 여부                         | 설명                       |
 | ---- | ------------- | --------------------------------- | -------------------------- |
@@ -187,15 +187,15 @@ POST /graph/v3/databases/{database}/tables/{table}/multi-edges
 | 쿼리 | lock          | 선택 사항 (기본값: true)          | 변이 중 락을 획득할지 여부 |
 | Body | mutations     | Required                          | mutation 항목 목록         |
 
-### 요청 본문
+### 요청 본문 {#request-body}
 
 [MultiEdgeBulkMutationRequest](#multiedgebulkmutationrequest) - mutation 항목들을 포함하는 페이로드
 
-### 응답 형식
+### 응답 형식 {#response-type}
 
 [MultiEdgeMutationResponse](#multiedgemutationresponse) - mutation 결과를 포함하는 페이로드
 
-### 요청 예시
+### 요청 예시 {#request-example}
 
 | Parameter     | Value         |
 | ------------- | ------------- |
@@ -205,7 +205,7 @@ POST /graph/v3/databases/{database}/tables/{table}/multi-edges
 | lock          | true          |
 
 ```bash
-# POST /graph/v3/databases/your_database/tables/your_table/multi-edges
+# POST /graph/v3/databases/your_database/tables/your_table/multi-edges {#post-graphv3databasesyour-databasetablesyour-tablemulti-edges}
 curl -X POST \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/multi-edges?lock=true" \
     -H "Authorization: YOUR_API_KEY" \
@@ -229,7 +229,7 @@ curl -X POST \
     }'
 ```
 
-### 응답 예시
+### 응답 예시 {#response-example}
 
 ```json
 {
@@ -243,17 +243,17 @@ curl -X POST \
 }
 ```
 
-## 4. Multi-Edge Mutation (Sync)
+## 4. Multi-Edge Mutation (Sync) {#4-multi-edge-mutation-sync}
 
 여러 엣지를 동기 방식으로 mutate합니다. 이 엔드포인트는 응답 반환 전에 mutation이 완료될 때까지 대기합니다.
 
-### 엔드포인트
+### 엔드포인트 {#endpoint}
 
 ```
 POST /graph/v3/databases/{database}/tables/{table}/multi-edges/sync
 ```
 
-### 파라미터
+### 파라미터 {#parameters}
 
 | 위치   | Parameter     | Required                | 설명                              |
 | ------ | ------------- | ----------------------- | --------------------------------- |
@@ -263,15 +263,15 @@ POST /graph/v3/databases/{database}/tables/{table}/multi-edges/sync
 | 쿼리   | lock          | 선택 사항(기본값: true) | 뮤테이션 수행 시 락 획득 여부     |
 | 바디   | mutations     | 필수                    | 뮤테이션 항목 목록                |
 
-### 요청 바디
+### 요청 바디 {#request-body}
 
 [MultiEdgeBulkMutationRequest](#multiedgebulkmutationrequest) - 뮤테이션 항목을 포함하는 페이로드
 
-### 응답 타입
+### 응답 타입 {#response-type}
 
 [MultiEdgeMutationResponse](#multiedgemutationresponse) - 뮤테이션 결과를 포함하는 페이로드
 
-### 요청 예시
+### 요청 예시 {#request-example}
 
 | 매개변수      | 값            |
 | ------------- | ------------- |
@@ -281,7 +281,7 @@ POST /graph/v3/databases/{database}/tables/{table}/multi-edges/sync
 | lock          | true          |
 
 ```bash
-# POST /graph/v3/databases/your_database/tables/your_table/multi-edges/sync
+# POST /graph/v3/databases/your_database/tables/your_table/multi-edges/sync {#post-graphv3databasesyour-databasetablesyour-tablemulti-edgessync}
 curl -X POST \
     "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/multi-edges/sync?lock=true" \
     -H "Authorization: YOUR_API_KEY" \
@@ -302,7 +302,7 @@ curl -X POST \
     }'
 ```
 
-### 응답 예시
+### 응답 예시 {#response-example}
 
 ```json
 {
@@ -316,7 +316,7 @@ curl -X POST \
 }
 ```
 
-## 이벤트 유형
+## 이벤트 유형 {#event-types}
 
 뮤테이션 항목의 `type` 필드는 수행할 작업을 지정합니다:
 
@@ -326,7 +326,7 @@ curl -X POST \
 | `UPDATE` | 기존 엣지의 프로퍼티를 업데이트합니다.                           |
 | `DELETE` | 엣지를 삭제합니다(삭제 표시).                                    |
 
-## Lock Parameter
+## Lock Parameter {#lock-parameter}
 
 `lock` 파라미터는 변이(mutation) 시 락을 획득할지 제어합니다:
 
@@ -335,9 +335,9 @@ curl -X POST \
 
 **Note:** It is recommended to use `lock=true` in production environments to ensure data consistency.
 
-## 데이터 모델
+## 데이터 모델 {#data-model}
 
-### EdgeBulkMutationRequest
+### EdgeBulkMutationRequest {#edgebulkmutationrequest}
 
 엣지 변이 요청 페이로드입니다.
 
@@ -352,7 +352,7 @@ data class EdgeBulkMutationRequest(
 }
 ```
 
-### MultiEdgeBulkMutationRequest
+### MultiEdgeBulkMutationRequest {#multiedgebulkmutationrequest}
 
 다중 엣지 변이 요청 페이로드입니다.
 
@@ -367,7 +367,7 @@ data class MultiEdgeBulkMutationRequest(
 }
 ```
 
-### EdgeMutationResponse
+### EdgeMutationResponse {#edgemutationresponse}
 
 엣지 변이 응답 페이로드입니다.
 
@@ -384,7 +384,7 @@ data class EdgeMutationResponse(
 }
 ```
 
-### MultiEdgeMutationResponse
+### MultiEdgeMutationResponse {#multiedgemutationresponse}
 
 다중 엣지 변이 응답 페이로드입니다.
 
@@ -400,7 +400,7 @@ data class MultiEdgeMutationResponse(
 }
 ```
 
-### Edge
+### Edge {#edge}
 
 변이를 위한 개별 엣지 정보입니다.
 
@@ -413,7 +413,7 @@ data class Edge(
 )
 ```
 
-### MultiEdge
+### MultiEdge {#multiedge}
 
 변이를 위한 개별 다중 엣지 정보입니다.
 

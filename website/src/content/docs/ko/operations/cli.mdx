@@ -13,7 +13,7 @@ import { Aside, Badge, Tabs, TabItem } from '@astrojs/starlight/components';
 
 Actionbase CLI는 데이터베이스, 테이블, 엣지를 관리하기 위한 대화형 콘솔을 제공합니다. Actionbase 서버에 연결하며 모든 메타데이터 및 데이터 작업을 지원합니다.
 
-## 설치
+## 설치 {#installation}
 
 <Tabs>
   <TabItem label="Docker (권장)">
@@ -44,7 +44,7 @@ Actionbase CLI는 데이터베이스, 테이블, 엣지를 관리하기 위한 �
   </TabItem>
 </Tabs>
 
-## CLI 시작
+## CLI 시작 {#starting-the-cli}
 
 ```bash
 actionbase [options]
@@ -55,7 +55,7 @@ actionbase [options]
   `--debug`와 `--proxy` 옵션이 활성화된 상태로 시작합니다. --proxy` enabled by default.
 </Aside>
 
-### 시작 옵션
+### 시작 옵션 {#startup-options}
 
 | 옵션              | 설명                                     | 기본값                  |
 | ----------------- | ---------------------------------------- | ----------------------- |
@@ -66,23 +66,23 @@ actionbase [options]
 | `--proxy [port]`  | 대화형 가이드용 프록시 모드로 시작       | `9300`                  |
 | `--version`       | CLI 버전 표시 후 종료                    |                         |
 
-### 예시
+### 예시 {#examples}
 
 ```bash
-# Connect to local server
+# Connect to local server {#connect-to-local-server}
 actionbase
 
-# Connect to remote server
+# Connect to remote server {#connect-to-remote-server}
 actionbase --host https://actionbase.example.com
 
-# Enable debug mode to see HTTP traffic
+# Enable debug mode to see HTTP traffic {#enable-debug-mode-to-see-http-traffic}
 actionbase --debug
 
-# Start with proxy mode for guides
+# Start with proxy mode for guides {#start-with-proxy-mode-for-guides}
 actionbase --proxy
 ```
 
-## 컨텍스트 관리
+## 컨텍스트 관리 {#context-management}
 
 CLI는 데이터베이스 및 테이블 선택을 위한 세션 컨텍스트를 유지합니다. 프롬프트에 현재 컨텍스트가 표시됩니다:
 
@@ -92,7 +92,7 @@ actionbase(mydb)>              # Database selected
 actionbase(mydb:mytable)>      # Database and table selected
 ```
 
-### context
+### context {#context}
 
 현재 세션 상태를 표시합니다.
 
@@ -124,7 +124,7 @@ actionbase> context
   │ |----------|--------------------------------|
 ```
 
-### use
+### use {#use}
 
 현재 데이터베이스, 테이블 또는 별칭 컨텍스트를 전환합니다.
 
@@ -150,7 +150,7 @@ actionbase(likes)> use table likes
 actionbase(likes:likes)>
 ```
 
-### debug
+### debug {#debug}
 
 디버그 모드를 활성화하거나 비활성화합니다. 활성화하면 HTTP 요청과 응답이 로그에 기록됩니다.
 
@@ -169,13 +169,13 @@ actionbase> get --source Alice --target Phone
   │ ← 200 OK {"edges":[...]}
 ```
 
-## 메타데이터 작업
+## 메타데이터 작업 {#metadata-operations}
 
-### create
+### create {#create}
 
 데이터베이스, 스토리지, 테이블 또는 별칭을 생성합니다.
 
-#### create database
+#### create database {#create-database}
 
 ```
 create database --name <name> --comment <comment>
@@ -193,7 +193,7 @@ actionbase> create database --name social --comment "Social interactions"
   │ Database created: social
 ```
 
-#### create storage
+#### create storage {#create-storage}
 
 ```
 create storage --name <name> --comment <comment> --storageType <type> --hbaseNamespace <ns> --hbaseTable <table>
@@ -207,7 +207,7 @@ create storage --name <name> --comment <comment> --storageType <type> --hbaseNam
 | `--hbaseNamespace` | Yes      | HBase 네임스페이스 |
 | `--hbaseTable`     | Yes      | HBase 테이블 이름  |
 
-#### create table
+#### create table {#create-table}
 
 ```
 create table --database <db> --storage <storage> --name <name> --comment <comment> --type <type> --direction <direction> --schema <schema> [--indices <indices>] [--groups <groups>]
@@ -225,7 +225,7 @@ create table --database <db> --storage <storage> --name <name> --comment <commen
 | `--indices`   | 아니오 | JSON 배열 형태의 인덱스 정의 |
 | `--groups`    | 아니오 | JSON 배열 형태의 그룹 정의   |
 
-#### create 별칭
+#### create 별칭 {#create-alias}
 
 ```
 create alias --database <db> --table <table> --name <name> --comment <comment>
@@ -238,7 +238,7 @@ create alias --database <db> --table <table> --name <name> --comment <comment>
 | `--name`     | 예   | 별칭 이름         |
 | `--comment`  | 예   | 별칭 설명         |
 
-### show
+### show {#show}
 
 데이터베이스, 스토리지, 테이블, 별칭, 인덱스 또는 그룹을 표시합니다.
 
@@ -281,7 +281,7 @@ actionbase(likes:likes)> show indices
   │ |------------------|--------|
 ```
 
-### desc
+### desc {#desc}
 
 테이블 또는 별칭의 스키마, 필드 및 인덱스 정보를 설명합니다.
 
@@ -310,9 +310,9 @@ actionbase(likes)> desc table likes
   │ |------------|------|----------|
 ```
 
-## 데이터 조작
+## 데이터 조작 {#data-operations}
 
-### get
+### get {#get}
 
 소스 및 타겟 노드로 특정 엣지를 조회합니다.
 
@@ -338,7 +338,7 @@ actionbase(likes:likes)> get --source Alice --target Phone
   │ |---------------|--------|--------|---------------------------|
 ```
 
-### scan
+### scan {#scan}
 
 인덱스를 사용하여 엣지를 스캔합니다.
 
@@ -368,7 +368,7 @@ actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction 
   │ |---|---------------|--------|--------|---------------------------|
 ```
 
-### count
+### count {#count}
 
 특정 노드 및 방향에 대한 엣지 개수를 셉니다.
 
@@ -400,7 +400,7 @@ actionbase(likes:likes)> count --start Phone --direction IN
   │ |-------|-------|
 ```
 
-### mutate
+### mutate {#mutate}
 
 엣지를 삽입, 수정 또는 삭제합니다.
 
@@ -425,15 +425,15 @@ actionbase(likes:likes)> mutate --type INSERT --source Charlie --target Phone --
 ```
 
 <Aside type="tip">
-  Actionbase는 [상태 전환](/design/mutation/#state-transitions)에 클라이언트 발급 타임스탬프를 요구합니다. 이벤트가 순서가 뒤섞여 도착하더라도 Actionbase는 이 타임스탬프를 사용해 올바른 최종 상태를 계산합니다.
+  Actionbase는 [상태 전환](/ko/design/mutation/#state-transitions)에 클라이언트 발급 타임스탬프를 요구합니다. 이벤트가 순서가 뒤섞여 도착하더라도 Actionbase는 이 타임스탬프를 사용해 올바른 최종 상태를 계산합니다.
 
 `$NOW`를 현재 Unix 타임스탬프(밀리초) 플레이스홀더로 사용하세요. `--version`과 `--properties` 값 모두에서 동작합니다.
 
 </Aside>
 
-## 유틸리티 명령어
+## 유틸리티 명령어 {#utility-commands}
 
-### load
+### load {#load}
 
 YAML 파일 또는 프리셋에서 명령을 로드하여 실행합니다.
 
@@ -441,7 +441,7 @@ YAML 파일 또는 프리셋에서 명령을 로드하여 실행합니다.
 load <file|preset> <path> [--ref <branch>]
 ```
 
-#### load file
+#### load file {#load-file}
 
 로컬 YAML 파일에서 명령을 로드합니다:
 
@@ -460,7 +460,7 @@ load file <path>
   command: 'use database mydb'
 ```
 
-#### load preset
+#### load preset {#load-preset}
 
 Actionbase GitHub 저장소에서 프리셋을 다운로드하여 실행합니다:
 
@@ -490,7 +490,7 @@ actionbase> load preset likes
   │  - Bob → Phone
 ```
 
-### guide
+### guide {#guide}
 
 대화형 가이드를 시작합니다. 프록시 모드(`--proxy` 플래그 사용 시)가 필요합니다.
 
@@ -507,16 +507,16 @@ guide start <name>
 **Example:**
 
 ```bash
-# Start CLI with proxy mode
+# Start CLI with proxy mode {#start-cli-with-proxy-mode}
 actionbase --proxy
 
-# Then start the guide
+# Then start the guide {#then-start-the-guide}
 actionbase> guide start hands-on-social
 ```
 
 이 가이드는 브라우저 기반 대화형 튜토리얼을 열며, 명령을 CLI로 전송합니다.
 
-### help
+### help {#help}
 
 사용 가능한 모든 명령과 설명, 사용법을 표시합니다.
 
@@ -538,7 +538,7 @@ actionbase> help
   │ |---------|-------------------------------|----------------------------------------|
 ```
 
-### exit
+### exit {#exit}
 
 CLI 콘솔을 종료합니다.
 
@@ -548,59 +548,59 @@ exit
 
 `Ctrl+C` 또는 `Ctrl+D`를 눌러 종료할 수도 있습니다.
 
-## 일반 워크플로
+## 일반 워크플로 {#common-workflows}
 
-### 빠른 시작: 데이터 생성 및 쿼리
+### 빠른 시작: 데이터 생성 및 쿼리 {#quick-start-create-and-query-data}
 
 ```
-# 1. Load sample data using preset
+# 1. Load sample data using preset {#1-load-sample-data-using-preset}
 actionbase> load preset likes
 
-# 2. Check current context (database and table are set automatically)
+# 2. Check current context (database and table are set automatically) {#2-check-current-context-database-and-table-are-set-automatically}
 actionbase(likes:likes)> context
 
-# 3. Query a specific edge
+# 3. Query a specific edge {#3-query-a-specific-edge}
 actionbase(likes:likes)> get --source Alice --target Phone
 
-# 4. Scan all edges from Alice
+# 4. Scan all edges from Alice {#4-scan-all-edges-from-alice}
 actionbase(likes:likes)> scan --index created_at_desc --start Alice --direction OUT
 
-# 5. Count edges
+# 5. Count edges {#5-count-edges}
 actionbase(likes:likes)> count --start Phone --direction IN
 ```
 
-### 데이터 작업 워크플로
+### 데이터 작업 워크플로 {#data-operations-workflow}
 
 ```
-# 1. Select database and table
+# 1. Select database and table {#1-select-database-and-table}
 actionbase> use database social
 actionbase(social)> use table follows
 
-# 2. Insert an edge
+# 2. Insert an edge {#2-insert-an-edge}
 actionbase(social:follows)> mutate --type INSERT --source user1 --target user2 --version $NOW --properties '{"created_at": $NOW}'
 
-# 3. Verify the edge
+# 3. Verify the edge {#3-verify-the-edge}
 actionbase(social:follows)> get --source user1 --target user2
 
-# 4. Delete the edge
+# 4. Delete the edge {#4-delete-the-edge}
 actionbase(social:follows)> mutate --type DELETE --source user1 --target user2 --version $NOW --properties '{}'
 ```
 
-### 가이드와 함께하는 인터랙티브 학습
+### 가이드와 함께하는 인터랙티브 학습 {#interactive-learning-with-guides}
 
 ```bash
-# Start CLI with proxy mode enabled
+# Start CLI with proxy mode enabled {#start-cli-with-proxy-mode-enabled}
 actionbase --proxy
 
-# Start the interactive guide
+# Start the interactive guide {#start-the-interactive-guide}
 actionbase> guide start hands-on-social
 ```
 
 가이드는 브라우저에서 열리며, 소셜 미디어 애플리케이션을 구축하는 과정을 안내합니다.
 
-## 참고
+## 참고 {#reference}
 
-### 방향 값
+### 방향 값 {#direction-values}
 
 | 값     | 설명                        |
 | ------ | --------------------------- |
@@ -608,7 +608,7 @@ actionbase> guide start hands-on-social
 | `IN`   | 들어오는 엣지 (타겟 ← 소스) |
 | `BOTH` | 양방향                      |
 
-### 뮤테이션 유형
+### 뮤테이션 유형 {#mutation-types}
 
 | 유형     | 설명             |
 | -------- | ---------------- |
@@ -616,7 +616,7 @@ actionbase> guide start hands-on-social
 | `UPDATE` | 기존 엣지 수정   |
 | `DELETE` | 엣지 삭제        |
 
-### 컨텍스트 요구사항
+### 컨텍스트 요구사항 {#context-requirements}
 
 | 명령어            | 데이터베이스 필요 | 테이블 필요       |
 | ----------------- | ----------------- | ----------------- |
@@ -637,7 +637,7 @@ actionbase> guide start hands-on-social
 | `count`           | Yes               | Yes (or specify)  |
 | `mutate`          | Yes               | Yes (or specify)  |
 
-### Special Features
+### Special Features {#special-features}
 
 **Multi-line input**: End a line with `\` to continue on the next line.
 

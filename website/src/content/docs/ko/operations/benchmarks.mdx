@@ -9,7 +9,7 @@ Actionbase의 성능 벤치마크
 
 **Note:** At this initial release, benchmark results are approximate. We plan to provide transparent benchmarks using generalized datasets in future releases.
 
-## 프로덕션 인프라
+## 프로덕션 인프라 {#production-infrastructure}
 
 Actionbase는 수평 확장이 가능한 무상태 서비스로 동작합니다:
 
@@ -23,16 +23,16 @@ Ingress와 Worker는 Actionbase 배포입니다. 이들은 로컬 상태를 유�
 - **롤링 업데이트**: 다운타임 없이 배포 가능
 - **장애 복구**: 어떤 노드든 모든 요청을 처리할 수 있음
 
-## 프로덕션 트래픽
+## 프로덕션 트래픽 {#production-traffic}
 
 현재 피크: ~33,000 RPS(2,000,000 RPM). 일반적인 워크로드: 쓰기 ~15%, 읽기 ~85%
 
 - **지연 시간**: 읽기 ~5ms, 쓰기 ~20ms
 
-## 용량
+## 용량 {#capacity}
 
 내부 테스트에서 60,000+ RPS 달성
 
-## 확장성
+## 확장성 {#scalability}
 
 테스트 범위 내에서 선형적으로 확장됨.

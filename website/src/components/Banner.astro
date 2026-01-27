@@ -1,0 +1,35 @@
+---
+import Default from '@astrojs/starlight/components/Banner.astro';
+
+const { locale } = Astro.locals.starlightRoute;
+const isKorean = locale === 'ko';
+---
+
+{isKorean && (
+  <div class="sl-banner translation-notice">
+    <p>이 문서는 <a href="https://huggingface.co/collections/kakaocorp/kanana-2" target="_blank" rel="noopener">Kanana-2</a>로 번역되었습니다.</p>
+  </div>
+)}
+<Default {...Astro.props}><slot /></Default>
+
+<style>
+  .translation-notice {
+    background-color: var(--sl-color-blue-low);
+    border: 1px solid var(--sl-color-blue);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: var(--sl-text-sm);
+  }
+  .translation-notice p {
+    margin: 0;
+    color: var(--sl-color-blue-high);
+  }
+  .translation-notice a {
+    color: var(--sl-color-blue-high);
+    text-decoration: underline;
+  }
+  .translation-notice a:hover {
+    color: var(--sl-color-white);
+  }
+</style>

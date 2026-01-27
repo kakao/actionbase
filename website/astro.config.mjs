@@ -6,6 +6,7 @@ import markdocGrammar from './grammars/markdoc.tmLanguage.json';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import mermaid from 'astro-mermaid';
 import starlightBlog from 'starlight-blog';
+import { remarkHeadingId } from 'remark-custom-heading-id';
 
 export const locales = {
   root: { label: 'English', lang: 'en' },
@@ -38,6 +39,9 @@ export default defineConfig({
   site,
   base,
   trailingSlash: 'always',
+  markdown: {
+    remarkPlugins: [remarkHeadingId],
+  },
   integrations: [
     mermaid({
       theme: 'forest',
@@ -145,6 +149,7 @@ export default defineConfig({
       components: {
         Head: './src/components/Head.astro',
         PageSidebar: './src/components/PageSidebar.astro',
+        Banner: './src/components/Banner.astro',
       },
       expressiveCode: { shiki: { langs: [markdocGrammar] } },
       plugins: [

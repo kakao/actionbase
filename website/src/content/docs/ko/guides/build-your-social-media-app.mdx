@@ -7,23 +7,23 @@ sidebar:
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 import {
-  사용자
-  하트
-  홈
-  패키지
-  테이블
-  검색
-  잽
-  막대 그래프
-  목록
-  체크
-  로켓
-  사용자 추가
-  새로고침 반시계 방향
+  Users,
+  Heart,
+  Home,
+  Package,
+  Table,
+  Search,
+  Zap,
+  BarChart,
+  List,
+  Check,
+  Rocket,
+  UserPlus,
+  RefreshCcw,
 } from '@lucide/astro';
 
 <Aside type="tip">
-  Actionbase를 처음 사용하시나요? 간결한 소개를 위해 [빠른 시작](/quick-start/)부터 시작하세요.
+  Actionbase를 처음 사용하시나요? 간결한 소개를 위해 [빠른 시작](/ko/quick-start/)부터 시작하세요.
 </Aside>
 
 이 가이드는 Actionbase를 사용하여 간단한 소셜 미디어 애플리케이션을 구축하는 과정을 안내합니다. **팔로우**, **좋아요**, **피드**와 같은 핵심 기능을 위한 활동 데이터를 모델링하고 제공하는 방법을 배우게 됩니다.
@@ -35,7 +35,7 @@ import {
   />
 </video>
 
-## 구축할 내용
+## 구축할 내용 {#what-you-will-build}
 
 이 가이드를 마치면 다음과 같은 기능을 구현하게 됩니다.
 
@@ -45,12 +45,12 @@ import {
 
 이러한 기능들은 대부분의 소셜 애플리케이션의 핵심 패턴을 보여줍니다.
 
-## 사전 요구사항
+## 사전 요구사항 {#prerequisites}
 
 - Docker
 - 웹 브라우저
 
-## 인터랙티브 가이드 시작하기
+## 인터랙티브 가이드 시작하기 {#start-the-interactive-guide}
 
 이 가이드에는 로컬에서 실행되는 인터랙티브 구성 요소가 있습니다.
 
@@ -79,7 +79,7 @@ import {
 
    팝업에서 각 단계를 안내합니다. 문제가 발생하면 왼쪽 상단의 <span class="icon-row"><RefreshCcw size={14} /> **재시작**</span>을 클릭하세요.
 
-   ![Screen layout](/images/guides/social-media/00-screen-layout.png)
+   ![Screen layout](/ko/images/guides/social-media/00-screen-layout.png)
 
 4. **웹 브라우저에서 열기**
 
@@ -91,7 +91,7 @@ import {
 
 </Steps>
 
-## 가이드 따라하기
+## 가이드 따라하기 {#follow-the-guide}
 
 여기서부터는 **웹 브라우저**에서 계속 진행하세요. 인터랙티브 가이드가 각 단계를 안내합니다.
 
@@ -113,7 +113,7 @@ import {
       </li>
     </ul>
 
-    ![Welcome](/images/guides/social-media/01-welcome.png)
+    ![Welcome](/ko/images/guides/social-media/01-welcome.png)
 
 2.  **당신은 @zipdoki 입니다**
 
@@ -121,7 +121,7 @@ import {
 
     **Tip:** Press **Enter** to proceed.
 
-    ![Zipdoki intro](/images/guides/social-media/02-zipdoki-intro.png)
+    ![Zipdoki intro](/ko/images/guides/social-media/02-zipdoki-intro.png)
 
 3.  **설정**
 
@@ -136,7 +136,7 @@ import {
       </li>
     </ul>
 
-    ![Set Up](/images/guides/social-media/03-set-up.png)
+    ![Set Up](/ko/images/guides/social-media/03-set-up.png)
 
 4.  **샘플 데이터 로드**
 
@@ -155,7 +155,7 @@ import {
     load preset build-your-social-app
     ```
 
-    ![Load sample data](/images/guides/social-media/04-load-sample-data.png)
+    ![Load sample data](/ko/images/guides/social-media/04-load-sample-data.png)
 
 5.  **데이터베이스 선택**
 
@@ -171,7 +171,7 @@ import {
     use database social
     ```
 
-    ![Select database](/images/guides/social-media/05-select-database.png)
+    ![Select database](/ko/images/guides/social-media/05-select-database.png)
 
 6.  **데이터 탐색하기**
 
@@ -188,7 +188,7 @@ import {
 
     새로운 인터랙션을 추가하기 전에 둘러보세요.
 
-    ![데이터 탐색하기](/images/guides/social-media/06-explore-the-data.png)
+    ![데이터 탐색하기](/ko/images/guides/social-media/06-explore-the-data.png)
 
 7.  **팔로우**
 
@@ -206,7 +206,7 @@ import {
       </li>
     </ul>
 
-    ![팔로우](/images/guides/social-media/07-follows.png)
+    ![팔로우](/ko/images/guides/social-media/07-follows.png)
 
 8.  **팔로우 테이블 생성**
 
@@ -218,7 +218,7 @@ import {
       </li>
     </ul>
 
-    ![팔로우 테이블 생성](/images/guides/social-media/08-create-follows-table.png)
+    ![팔로우 테이블 생성](/ko/images/guides/social-media/08-create-follows-table.png)
 
 9.  **사용자 팔로우**
 
@@ -255,7 +255,7 @@ import {
 
         </details>
 
-        ![사용자 팔로우](/images/guides/social-media/09-follow-a-user.png)
+        ![사용자 팔로우](/ko/images/guides/social-media/09-follow-a-user.png)
 
 10. **팔로우 상태 확인**
 
@@ -280,7 +280,7 @@ import {
 
         </details>
 
-        ![팔로우 상태 확인](/images/guides/social-media/10-check-follow-status.png)
+        ![팔로우 상태 확인](/ko/images/guides/social-media/10-check-follow-status.png)
 
 11. **팔로워 수 확인**
 
@@ -305,7 +305,7 @@ import {
 
         </details>
 
-        ![팔로워 수](/images/guides/social-media/11-count-followers.png)
+        ![팔로워 수](/ko/images/guides/social-media/11-count-followers.png)
 
 12. **팔로워 목록**
 
@@ -330,7 +330,7 @@ import {
 
         </details>
 
-        ![팔로워 목록](/images/guides/social-media/12-list-followers.png)
+        ![팔로워 목록](/ko/images/guides/social-media/12-list-followers.png)
 
 13. **좋아요**
 
@@ -342,7 +342,7 @@ import {
       </li>
     </ul>
 
-    ![좋아요](/images/guides/social-media/13-likes.png)
+    ![좋아요](/ko/images/guides/social-media/13-likes.png)
 
 14. **게시물 좋아요**
 
@@ -379,7 +379,7 @@ import {
 
         </details>
 
-        ![게시물 좋아요](/images/guides/social-media/14-like-a-post.png)
+        ![게시물 좋아요](/ko/images/guides/social-media/14-like-a-post.png)
 
 15. **좋아요 상태 확인**
 
@@ -404,7 +404,7 @@ import {
 
         </details>
 
-        ![좋아요 상태 확인](/images/guides/social-media/15-check-like-status.png)
+        ![좋아요 상태 확인](/ko/images/guides/social-media/15-check-like-status.png)
 
 16. **기타 기능**
 
@@ -421,7 +421,7 @@ import {
 
     동일한 패턴, 동일한 간편함입니다.
 
-    ![And More](/images/guides/social-media/16-and-more.png)
+    ![And More](/ko/images/guides/social-media/16-and-more.png)
 
 17. **피드**
 
@@ -438,7 +438,7 @@ import {
 
     이것이 대부분의 소셜 앱에서 사용하는 핵심 패턴입니다.
 
-    ![피드](/images/guides/social-media/17-feed.png)
+    ![피드](/ko/images/guides/social-media/17-feed.png)
 
 18. **완료!**
 
@@ -458,7 +458,7 @@ import {
       </li>
     </ul>
 
-    ![완료](/images/guides/social-media/18-all-done.png)
+    ![완료](/ko/images/guides/social-media/18-all-done.png)
 
 19. **직접 해보기**
 
@@ -467,15 +467,15 @@ import {
     - **피드 확인** - 팔로우한 사용자의 게시글을 확인하세요
     - **게시글 좋아요** - 피드 내 콘텐츠와 상호작용하세요
 
-    ![직접 해보기](/images/guides/social-media/19-try-it-yourself.png)
+    ![직접 해보기](/ko/images/guides/social-media/19-try-it-yourself.png)
 
 </Steps>
 
-## 요약
+## 요약 {#summary}
 
 팔로우와 좋아요로 피드를 구축했습니다 — 모두 Actionbase로 구동됩니다.
 
-### 학습한 내용
+### 학습한 내용 {#what-you-learned}
 
 | 개념               | 설명                                                       |
 | ------------------ | ---------------------------------------------------------- |
@@ -484,18 +484,18 @@ import {
 | **쿼리**           | 개별 엣지를 가져오고, 총 개수를 세며, 인덱스로 스캔합니다  |
 | **프리컴퓨테이션** | 카운트와 인덱스는 읽기 속도를 위해 쓰기 시점에 계산됩니다  |
 
-### 다음 단계
+### 다음 단계 {#next-steps}
 
-- [빠른 시작](/quick-start/) — 핵심 작업을 몇 분 만에 수행
-- [CLI 참조](/operations/cli/) — 전체 CLI 문서
-- [핵심 개념](/design/concepts/) — Actionbase가 동작하는 방식
+- [빠른 시작](/ko/quick-start/) — 핵심 작업을 몇 분 만에 수행
+- [CLI 참조](/ko/operations/cli/) — 전체 CLI 문서
+- [핵심 개념](/ko/design/concepts/) — Actionbase가 동작하는 방식
 
-### 피드백 공유
+### 피드백 공유 {#share-your-feedback}
 
 이 가이드가 도움이 되었나요? Actionbase의 개념이 이해되셨나요? 여러분의 의견—질문, 제안, 이슈 등—을 듣고 싶습니다.
 
 [GitHub Discussions에서 피드백 공유하기](https://github.com/kakao/actionbase/discussions/94)
 
-### 비하인드 스토리
+### 비하인드 스토리 {#behind-the-scenes}
 
-이 가이드를 왜 만들었는지 궁금하신가요? [이야기를 읽어보세요](/blog/hands-on-guide-story/)
+이 가이드를 왜 만들었는지 궁금하신가요? [이야기를 읽어보세요](/ko/blog/hands-on-guide-story/)

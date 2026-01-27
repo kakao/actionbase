@@ -7,11 +7,11 @@ sidebar:
 
 이 문서는 Actionbase가 오픈 소스화되기 전의 개발 역사를 다룹니다. 향후 개발은 공개 저장소에서 추적됩니다.
 
-## MVP 단계
+## MVP 단계 {#mvp-phase}
 
 MVP 단계는 프로젝트 착수부터 오픈 소스 출시까지의 전체 기간을 의미합니다. 이 기간 동안 Actionbase는 다양한 서비스에 적용되며 실제 사용을 통해 진화했습니다.
 
-### 1단계: 기반 구축 (2023년)
+### 1단계: 기반 구축 (2023년) {#phase-1-foundation-building-2023}
 
 **Q: How do we validate technical feasibility and establish a foundation?**
 
@@ -24,7 +24,7 @@ MVP 단계는 프로젝트 착수부터 오픈 소스 출시까지의 전체 기
 
 사용한 AI: GPT-4
 
-### 2단계: 서비스 통합 (2024년 초)
+### 2단계: 서비스 통합 (2024년 초) {#phase-2-service-integration-early-2024}
 
 **Q: How do we validate through real-world service deployment?**
 
@@ -32,11 +32,11 @@ MVP 단계는 프로젝트 착수부터 오픈 소스 출시까지의 전체 기
 
 주요 활동:
 
-- 첫 프로덕션 서비스 쓰기/읽기 마이그레이션: [카카오톡 선물 위시](/stories/kakaotalk-gift-wish/)
+- 첫 프로덕션 서비스 쓰기/읽기 마이그레이션: [카카오톡 선물 위시](/ko/stories/kakaotalk-gift-wish/)
 
 사용한 AI: GPT-4
 
-### 3단계: 안정화 (2024년 말)
+### 3단계: 안정화 (2024년 말) {#phase-3-stabilization-late-2024}
 
 **Q: How do we stabilize the system and expand tenants?**
 
@@ -47,11 +47,11 @@ MVP 단계는 프로젝트 착수부터 오픈 소스 출시까지의 전체 기
 - 시스템 안정화 및 테넌트 확장
 - 독립적인 테넌트 구성을 지원하여 서비스를 격리합니다
 - 운영 자동화 및 모니터링 기능이 향상되었습니다
-- 커머스 도메인 전반에 적용되었습니다 (예: [카카오톡 선물하기 최근 조회](/stories/kakaotalk-gift-recent-views/))
+- 커머스 도메인 전반에 적용되었습니다 (예: [카카오톡 선물하기 최근 조회](/ko/stories/kakaotalk-gift-recent-views/))
 
 AI로 Claude 3.5 Sonnet을 사용했습니다
 
-### 4단계: 지속 가능한 운영 구축 (2025년 초)
+### 4단계: 지속 가능한 운영 구축 (2025년 초) {#phase-4-building-sustainable-operations-early-2025}
 
 **Q: How do we improve operational efficiency and address technical debt?**
 
@@ -59,15 +59,15 @@ AI로 Claude 3.5 Sonnet을 사용했습니다
 
 주요 활동:
 
-- 여러 도메인에 적용되었습니다 (예: [카카오톡 친구](/stories/kakaotalk-friends/))
+- 여러 도메인에 적용되었습니다 (예: [카카오톡 친구](/ko/stories/kakaotalk-friends/))
 
 AI로 GPT-4o, Claude 3.5 Sonnet을 사용했습니다
 
-### 5단계: 오픈 소스 준비 (2025년)
+### 5단계: 오픈 소스 준비 (2025년) {#phase-5-preparing-for-open-source-2025}
 
 **Q: How do we prepare for open-source release while expanding adoption?**
 
-4단계의 기반을 바탕으로 이 단계에서는 Actionbase를 오픈 소스로 공개할 수 있도록 준비했습니다. 리팩터링 과정을 통해 오픈 소스화 결정이 내려졌으며, 기존 코드는 남아 있지만 리팩터링은 더 유지 관리 가능한 코드베이스를 향해 계속 진행되고 있습니다. 이 기간 동안 Actionbase는 [카카오](/project/about-kakao/)의 서비스에 폭넓게 적용되었습니다
+4단계의 기반을 바탕으로 이 단계에서는 Actionbase를 오픈 소스로 공개할 수 있도록 준비했습니다. 리팩터링 과정을 통해 오픈 소스화 결정이 내려졌으며, 기존 코드는 남아 있지만 리팩터링은 더 유지 관리 가능한 코드베이스를 향해 계속 진행되고 있습니다. 이 기간 동안 Actionbase는 [카카오](/ko/project/about-kakao/)의 서비스에 폭넓게 적용되었습니다
 
 주요 변경 사항:
 
@@ -78,13 +78,13 @@ AI로 GPT-4o, Claude 3.5 Sonnet을 사용했습니다
 
 AI로 GPT-4o, Claude 3.5 Sonnet, Cursor를 사용했습니다
 
-## 오픈 소스 공개 (2026년 1월)
+## 오픈 소스 공개 (2026년 1월) {#open-source-release-january-2026}
 
 이 MVP 기간 이후 Actionbase는 2026년 1월에 오픈 소스화되었습니다
 
 공개된 코드베이스는 카카오 내부에서 개발, 운영, 개선된 것과 동일합니다. 보안상 민감하거나 조직 특화 정보는 최소한의 수정으로 제거되었으며, 일부 내부 기능은 검토 후 점진적으로 공개될 예정입니다
 
-### 왜 우리는 Actionbase를 오픈 소스화했는가
+### 왜 우리는 Actionbase를 오픈 소스화했는가 {#why-we-open-sourced-actionbase}
 
 동일한 인터랙션 기능—좋아요, 최근 조회, 팔로우—가 여러 팀에서 각기 다른 스택, 스키마, 장애 양상으로 매번 다시 구축되고 있었다. 트래픽이 증가하면 각 시스템도 유사한 확장 한계에 부딪혔다.
 
@@ -106,7 +106,7 @@ Actionbase는 같은 문제를 열 가지 방식으로 다시 푸는 일을 멈�
 
 [More](https://github.com/kakao/actionbase/discussions/32)
 
-### 감사의 말씀
+### 감사의 말씀 {#acknowledgements}
 
 이 작업은 카카오는 물론, 시스템을 구축하고 운영한 리더들과 엔지니어들의 지원으로 이루어졌다.
 

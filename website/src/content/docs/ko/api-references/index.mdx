@@ -9,19 +9,19 @@ import { Aside } from '@astrojs/starlight/components';
 
 Actionbase는 메타데이터 관리, 뮤테이션 및 쿼리를 위한 REST API를 제공합니다.
 
-## 기본 URL
+## 기본 URL {#base-url}
 
 - 로컬: `http://localhost:8080`
 - 배포: 서버 URL(예: `http://ab.example.com`)
 
-## 인증
+## 인증 {#authentication}
 
 내부적으로 Actionbase는 커스텀 인증 시스템을 사용합니다. 우리는 이를 `CustomTokenFilter` 인터페이스를 통해 추상화했지만, 보안상의 고려로 인해 구현이 공개 릴리스에 준비되었다고 확신하지 못했습니다. 주어진 시간 내에 문서화와 개발자 경험에 집중하면서, 해당 인터페이스는 기본 구현 없이 남겨두었습니다. `Authorization` 헤더는 허용되지만 검증되지 않으며, 어떤 값이든 허용되거나 아예 생략해도 됩니다.
 
 프로덕션 운영을 계속 문서화하면서 인증 지원도 제공할 계획입니다.
 
-## API
+## API {#apis}
 
-- [메타데이터 API](/api-references/metadata/) — 서비스, 레이블, 별칭 및 쿼리 관리(v2)
-- [뮤테이션 API](/api-references/mutation/) — 엣지 생성, 수정 및 삭제(v3)
-- [쿼리 API](/api-references/query/) — 엣지 개수, 스캔 또는 조회 쿼리(v3)
+- [메타데이터 API](/ko/api-references/metadata/) — 서비스, 레이블, 별칭 및 쿼리 관리(v2)
+- [뮤테이션 API](/ko/api-references/mutation/) — 엣지 생성, 수정 및 삭제(v3)
+- [쿼리 API](/ko/api-references/query/) — 엣지 개수, 스캔 또는 조회 쿼리(v3)
