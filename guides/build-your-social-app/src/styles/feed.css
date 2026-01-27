@@ -94,7 +94,14 @@
   height: 66px;
   border-radius: 50%;
   padding: 2px;
-  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  background: linear-gradient(
+    45deg,
+    #f09433 0%,
+    #e6683c 25%,
+    #dc2743 50%,
+    #cc2366 75%,
+    #bc1888 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -332,7 +339,9 @@
   cursor: pointer;
   padding: var(--spacing-md);
   color: var(--color-text-primary);
-  transition: transform var(--transition-fast), color var(--transition-base);
+  transition:
+    transform var(--transition-fast),
+    color var(--transition-base);
 }
 
 .action-btn:active {
@@ -342,7 +351,10 @@
 .action-btn svg {
   width: var(--font-size-xl);
   height: var(--font-size-xl);
-  transition: fill var(--transition-base), stroke var(--transition-base), transform var(--transition-fast);
+  transition:
+    fill var(--transition-base),
+    stroke var(--transition-base),
+    transform var(--transition-fast);
 }
 
 .action-btn.liked {

@@ -51,7 +51,14 @@ body {
 
 * {
   box-sizing: border-box;
-  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-family:
+    'IBM Plex Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Arial,
+    sans-serif;
 }
 
 .mobile-content .app {
@@ -72,7 +79,7 @@ body {
   flex-direction: column;
 }
 
-body[class*="driver-highlighted-element"] .feed-scroll,
+body[class*='driver-highlighted-element'] .feed-scroll,
 .driver-overlay ~ * .feed-scroll {
   pointer-events: auto !important;
   overflow-y: auto !important;
@@ -89,12 +96,24 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   max-width: 420px;
   z-index: 20000 !important;
   border-radius: 12px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08) !important;
   border: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 
-.driver-popover, .driver-popover *, .driver-popover-description, .driver-popover-description * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+.driver-popover,
+.driver-popover *,
+.driver-popover-description,
+.driver-popover-description * {
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Arial,
+    sans-serif !important;
 }
 
 .driver-popover-title {
@@ -265,7 +284,7 @@ body[class*="driver-highlighted-element"] .feed-scroll,
 }
 
 .driver-popover-description > b:only-child,
-.driver-popover-description b[style*="Tip"] {
+.driver-popover-description b[style*='Tip'] {
   display: inline;
 }
 
@@ -400,5 +419,3 @@ body[class*="driver-highlighted-element"] .feed-scroll,
   flex-shrink: 0 !important;
   color: var(--color-blue) !important;
 }
-
-

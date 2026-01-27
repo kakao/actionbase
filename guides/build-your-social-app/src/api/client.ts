@@ -1,18 +1,44 @@
-let apiLogCallback: ((method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any, latencyMs?: number) => void) | null = null;
+let apiLogCallback:
+  | ((
+      method: string,
+      url: string,
+      success: boolean,
+      status?: number,
+      payload?: any,
+      requestBody?: any,
+      latencyMs?: number
+    ) => void)
+  | null = null;
 
-export function setApiLogCallback(callback: (method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any, latencyMs?: number) => void) {
+export function setApiLogCallback(
+  callback: (
+    method: string,
+    url: string,
+    success: boolean,
+    status?: number,
+    payload?: any,
+    requestBody?: any,
+    latencyMs?: number
+  ) => void
+) {
   apiLogCallback = callback;
 }
 
-export async function apiFetch<T>(url: string, options?: RequestInit, enableLogging: boolean = true): Promise<T> {
+export async function apiFetch<T>(
+  url: string,
+  options?: RequestInit,
+  enableLogging: boolean = true
+): Promise<T> {
   const method = options?.method || 'GET';
-  const requestBody = options?.body ? (() => {
-    try {
-      return JSON.parse(options.body as string);
-    } catch {
-      return options.body;
-    }
-  })() : undefined;
+  const requestBody = options?.body
+    ? (() => {
+        try {
+          return JSON.parse(options.body as string);
+        } catch {
+          return options.body;
+        }
+      })()
+    : undefined;
 
   const startTime = performance.now();
   const res = await fetch(url, options);
@@ -31,7 +57,15 @@ export async function apiFetch<T>(url: string, options?: RequestInit, enableLogg
     if (res.ok) {
       apiLogCallback(method, url, res.ok, res.status, responseData, requestBody, latencyMs);
     } else {
-      apiLogCallback(method, url, false, res.status, responseData ? responseData : {"message": res.statusText}, requestBody, latencyMs);
+      apiLogCallback(
+        method,
+        url,
+        false,
+        res.status,
+        responseData ? responseData : { message: res.statusText },
+        requestBody,
+        latencyMs
+      );
     }
   }
 

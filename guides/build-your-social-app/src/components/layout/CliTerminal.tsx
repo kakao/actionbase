@@ -1,14 +1,9 @@
-import React, {useCallback, useEffect, useRef} from 'react';
-import {useDriver, CommandHistory} from "../../contexts/DriverContext";
+import React, { useCallback, useEffect, useRef } from 'react';
+import { useDriver, CommandHistory } from '../../contexts/DriverContext';
 import '../../styles/cli-terminal.css';
 
 const CliTerminal: React.FC = () => {
-  const {
-    currentCommand,
-    commandHistory,
-    isExecuting,
-    executeCommand
-  } = useDriver();
+  const { currentCommand, commandHistory, isExecuting, executeCommand } = useDriver();
 
   const terminalBodyRef = useRef<HTMLDivElement>(null);
   const commandHistoryRef = useRef<HTMLDivElement>(null);
@@ -39,7 +34,8 @@ const CliTerminal: React.FC = () => {
       if (targetElement) {
         const targetRect = targetElement.getBoundingClientRect();
         const containerRect = scrollContainer.getBoundingClientRect();
-        scrollContainer.scrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 20;
+        scrollContainer.scrollTop =
+          scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 20;
       }
     }
   }, [currentCommand, commandHistory.length]);
@@ -65,17 +61,30 @@ const CliTerminal: React.FC = () => {
 
   const renderCommand = useCallback((item: CommandHistory, hideCursor: boolean = true) => {
     if (!item.content) {
-      return <div className="command-line-item"><span className="prompt">{item.prompt}{"> "}</span></div>;
+      return (
+        <div className="command-line-item">
+          <span className="prompt">
+            {item.prompt}
+            {'> '}
+          </span>
+        </div>
+      );
     }
 
-    const lines = item.content.split('\n').filter(line => line.trim() !== '');
+    const lines = item.content.split('\n').filter((line) => line.trim() !== '');
     const cursor = !hideCursor ? '<span class="cursor">_</span>' : '';
 
     if (lines.length === 1) {
       return (
         <div className="command-line-item command-line-single">
-          <span className="prompt">{item.prompt}{"> "}</span>
-          <span className="command-text" dangerouslySetInnerHTML={{__html: lines[0].trim() + cursor}}></span>
+          <span className="prompt">
+            {item.prompt}
+            {'> '}
+          </span>
+          <span
+            className="command-text"
+            dangerouslySetInnerHTML={{ __html: lines[0].trim() + cursor }}
+          ></span>
         </div>
       );
     }
@@ -84,17 +93,26 @@ const CliTerminal: React.FC = () => {
       const hasBackslash = line.endsWith('\\');
       const lineText = hasBackslash ? line.slice(0, -1).trim() : line;
       const isLastLine = lineIdx === lines.length - 1;
-      const lineWithCursor = lineText + (hasBackslash && !isLastLine ? ' \\' : '') + (!hideCursor && isLastLine ? cursor : '');
+      const lineWithCursor =
+        lineText +
+        (hasBackslash && !isLastLine ? ' \\' : '') +
+        (!hideCursor && isLastLine ? cursor : '');
 
       return (
         <div key={lineIdx} className="command-line-item">
           {lineIdx === 0 ? (
             <>
-              <span className="prompt">{item.prompt}{"> "}</span>
-              <p className="command-text" dangerouslySetInnerHTML={{__html: lineWithCursor}}></p>
+              <span className="prompt">
+                {item.prompt}
+                {'> '}
+              </span>
+              <p className="command-text" dangerouslySetInnerHTML={{ __html: lineWithCursor }}></p>
             </>
           ) : (
-            <span className="command-text-indent" dangerouslySetInnerHTML={{__html: lineWithCursor}}></span>
+            <span
+              className="command-text-indent"
+              dangerouslySetInnerHTML={{ __html: lineWithCursor }}
+            ></span>
           )}
         </div>
       );
@@ -122,8 +140,15 @@ const CliTerminal: React.FC = () => {
                       <div className="command-content-wrapper">
                         <div className="command-multiline">{renderCommand(item)}</div>
                         <button className="run-command-btn hidden-step-btn" disabled={true}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20"/>
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20" />
                           </svg>
                         </button>
                       </div>
@@ -135,7 +160,10 @@ const CliTerminal: React.FC = () => {
                         <div className="command-content-wrapper">
                           <div className="command-multiline result">
                             <div className="command-line-item command-line-single">
-                              <span className="command-text" dangerouslySetInnerHTML={{__html: item.result}}></span>
+                              <span
+                                className="command-text"
+                                dangerouslySetInnerHTML={{ __html: item.result }}
+                              ></span>
                             </div>
                           </div>
                         </div>
@@ -149,7 +177,7 @@ const CliTerminal: React.FC = () => {
 
           {/* Current Command */}
           {currentCommand && (
-            <div className="command-block" style={{paddingBottom: "20px"}}>
+            <div className="command-block" style={{ paddingBottom: '20px' }}>
               <div className="command-line">
                 <div className="command-line-inner">
                   <div className="command-content-wrapper">
@@ -160,8 +188,15 @@ const CliTerminal: React.FC = () => {
                       disabled={isExecuting}
                       onClick={executeCommand}
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20"/>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 4V16Q14 16 6 16H4M4 16L8 12M4 16L8 20" />
                       </svg>
                     </button>
                   </div>
@@ -172,11 +207,14 @@ const CliTerminal: React.FC = () => {
 
           {/* Default Prompt */}
           {showDefaultPrompt && (
-            <div className="command-block command-block-prompt" style={{paddingBottom: "22.5px"}}>
+            <div className="command-block command-block-prompt" style={{ paddingBottom: '22.5px' }}>
               <div className="command-line">
                 <div className="command-line-inner">
                   <div className="command-line-item">
-                    <span className="prompt">{formatPrompt()}{"> "}</span>
+                    <span className="prompt">
+                      {formatPrompt()}
+                      {'> '}
+                    </span>
                     <span className="cursor">_</span>
                   </div>
                 </div>

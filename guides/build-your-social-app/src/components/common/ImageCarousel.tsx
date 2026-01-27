@@ -1,7 +1,7 @@
-import React, {memo, useCallback, useRef, useState} from 'react';
-import {UI} from '../../constants';
-import {calculateImageIndex, shouldTriggerSwipe} from '../../utils/image';
-import {ChevronRightIcon} from '../icons';
+import React, { memo, useCallback, useRef, useState } from 'react';
+import { UI } from '../../constants';
+import { calculateImageIndex, shouldTriggerSwipe } from '../../utils/image';
+import { ChevronRightIcon } from '../icons';
 
 interface ImageCarouselProps {
   images: string[];
@@ -19,26 +19,32 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
   imageClassName = 'image-placeholder',
 }) => {
   const [internalIndex, setInternalIndex] = useState(0);
-  const touchRef = useRef<{start: number | null, end: number | null}>({start: null, end: null});
+  const touchRef = useRef<{ start: number | null; end: number | null }>({ start: null, end: null });
 
   const currentIndex = controlledIndex ?? internalIndex;
   const hasMultipleImages = images.length > 1;
   const maxIndex = images.length - 1;
 
-  const setIndex = useCallback((newIndex: number) => {
-    if (onIndexChange) {
-      onIndexChange(newIndex);
-    } else {
-      setInternalIndex(newIndex);
-    }
-  }, [onIndexChange]);
+  const setIndex = useCallback(
+    (newIndex: number) => {
+      if (onIndexChange) {
+        onIndexChange(newIndex);
+      } else {
+        setInternalIndex(newIndex);
+      }
+    },
+    [onIndexChange]
+  );
 
-  const changeIndex = useCallback((delta: number) => {
-    const newIndex = calculateImageIndex(currentIndex, delta, maxIndex);
-    if (newIndex !== currentIndex) {
-      setIndex(newIndex);
-    }
-  }, [currentIndex, maxIndex, setIndex]);
+  const changeIndex = useCallback(
+    (delta: number) => {
+      const newIndex = calculateImageIndex(currentIndex, delta, maxIndex);
+      if (newIndex !== currentIndex) {
+        setIndex(newIndex);
+      }
+    },
+    [currentIndex, maxIndex, setIndex]
+  );
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchRef.current.start = e.targetTouches[0].clientX;
@@ -49,14 +55,14 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
   }, []);
 
   const handleTouchEnd = useCallback(() => {
-    const {start, end} = touchRef.current;
+    const { start, end } = touchRef.current;
     if (start === null || end === null) return;
 
     const distance = start - end;
     if (shouldTriggerSwipe(distance, UI.SWIPE_THRESHOLD)) {
       changeIndex(distance > 0 ? 1 : -1);
     }
-    touchRef.current = {start: null, end: null};
+    touchRef.current = { start: null, end: null };
   }, [changeIndex]);
 
   const isTouching = touchRef.current.start !== null && touchRef.current.end !== null;
@@ -72,12 +78,16 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
         className="image-carousel-track"
         style={{
           transform: `translateX(-${currentIndex * 100}%)`,
-          transition: isTouching ? 'none' : `transform ${UI.CAROUSEL_TRANSITION_DURATION || 300}ms ease-out`
+          transition: isTouching
+            ? 'none'
+            : `transform ${UI.CAROUSEL_TRANSITION_DURATION || 300}ms ease-out`,
         }}
       >
         {images.map((image, idx) => (
           <div key={idx} className={imageClassName}>
-            <span><img src={image} alt="" /></span>
+            <span>
+              <img src={image} alt="" />
+            </span>
           </div>
         ))}
       </div>
@@ -92,7 +102,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
                 changeIndex(-1);
               }}
             >
-              <ChevronRightIcon style={{transform: 'rotate(180deg)'}} />
+              <ChevronRightIcon style={{ transform: 'rotate(180deg)' }} />
             </button>
           )}
           {currentIndex < maxIndex && (

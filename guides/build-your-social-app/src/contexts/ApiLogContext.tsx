@@ -1,5 +1,5 @@
-import React, {createContext, ReactNode, useCallback, useContext, useRef, useState} from 'react';
-import {getCommandCategory, getProxiedApiPattern, CommandCategory} from '../utils/command';
+import React, { createContext, ReactNode, useCallback, useContext, useRef, useState } from 'react';
+import { getCommandCategory, getProxiedApiPattern, CommandCategory } from '../utils/command';
 
 type ApiType = CommandCategory;
 
@@ -19,13 +19,21 @@ interface ApiLog {
 
 interface ApiLogContextProps {
   apiLogs: ApiLog[];
-  addApiLog: (method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any, latencyMs?: number) => void;
+  addApiLog: (
+    method: string,
+    url: string,
+    success: boolean,
+    status?: number,
+    payload?: any,
+    requestBody?: any,
+    latencyMs?: number
+  ) => void;
   clearApiLogs: () => void;
 }
 
 const ApiLogContext = createContext<ApiLogContextProps | undefined>(undefined);
 
-export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({children}) => {
+export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [apiLogs, setApiLogs] = useState<ApiLog[]>([]);
   const logIdCounterRef = useRef(0);
 
@@ -48,34 +56,48 @@ export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({children}) =>
     return 'ETC';
   };
 
-  const addApiLog = useCallback((method: string, url: string, success: boolean, status?: number, payload?: any, requestBody?: any, latencyMs?: number) => {
-    const isCliCommand = url.includes('/api/command') && requestBody?.command;
-    const displayUrl = isCliCommand ? `actionbase> ${requestBody.command}` : url;
-    const proxiedTo = isCliCommand
-      ? getProxiedApiPattern(requestBody.command) ?? undefined
-      : undefined;
+  const addApiLog = useCallback(
+    (
+      method: string,
+      url: string,
+      success: boolean,
+      status?: number,
+      payload?: any,
+      requestBody?: any,
+      latencyMs?: number
+    ) => {
+      const isCliCommand = url.includes('/api/command') && requestBody?.command;
+      const displayUrl = isCliCommand ? `actionbase> ${requestBody.command}` : url;
+      const proxiedTo = isCliCommand
+        ? (getProxiedApiPattern(requestBody.command) ?? undefined)
+        : undefined;
 
-    setApiLogs(prev => [...prev, {
-      id: logIdCounterRef.current++,
-      method,
-      url: displayUrl,
-      timestamp: new Date(),
-      success,
-      status,
-      payload,
-      requestBody,
-      apiType: getApiType(method, url, requestBody),
-      proxiedTo,
-      latencyMs,
-    }]);
-  }, []);
+      setApiLogs((prev) => [
+        ...prev,
+        {
+          id: logIdCounterRef.current++,
+          method,
+          url: displayUrl,
+          timestamp: new Date(),
+          success,
+          status,
+          payload,
+          requestBody,
+          apiType: getApiType(method, url, requestBody),
+          proxiedTo,
+          latencyMs,
+        },
+      ]);
+    },
+    []
+  );
 
   const clearApiLogs = useCallback(() => {
     setApiLogs([]);
   }, []);
 
   return (
-    <ApiLogContext.Provider value={{apiLogs, addApiLog, clearApiLogs}}>
+    <ApiLogContext.Provider value={{ apiLogs, addApiLog, clearApiLogs }}>
       {children}
     </ApiLogContext.Provider>
   );
@@ -86,4 +108,3 @@ export const useApiLog = () => {
   if (!context) throw new Error('useApiLog must be used within ApiLogProvider');
   return context;
 };
-

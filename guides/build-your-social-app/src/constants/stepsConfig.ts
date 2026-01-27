@@ -1,7 +1,7 @@
-import {get, getTable} from "../api/actionbase";
-import {DATABASE, TABLE} from "./index";
-import {me} from "./dummy";
-import {SVG_ICONS} from "./icons";
+import { get, getTable } from '../api/actionbase';
+import { DATABASE, TABLE } from './index';
+import { me } from './dummy';
+import { SVG_ICONS } from './icons';
 
 export interface NavigationConfig {
   to?: string;
@@ -53,7 +53,7 @@ export const STEP = {
   NEXT: 'next',
   PREV: 'prev',
   CLOSE: 'close',
-  RELOAD: 'reload'
+  RELOAD: 'reload',
 } as const;
 
 const verifyPresetLoaded = async () => {
@@ -68,12 +68,15 @@ const verifyFollowsTableCreated = async () => {
   const [userPosts, userLikes, userFollows] = await Promise.all([
     getTable(DATABASE.SOCIAL, TABLE.USER_POSTS, false),
     getTable(DATABASE.SOCIAL, TABLE.USER_LIKES, false),
-    getTable(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, false)
+    getTable(DATABASE.SOCIAL, TABLE.USER_FOLLOWS, false),
   ]);
   return !(
-    !userPosts || userPosts?.active === false ||
-    !userLikes || userLikes?.active === false ||
-    !userFollows || userFollows?.active === false
+    !userPosts ||
+    userPosts?.active === false ||
+    !userLikes ||
+    userLikes?.active === false ||
+    !userFollows ||
+    userFollows?.active === false
   );
 };
 
@@ -94,9 +97,12 @@ const verifyAllTablesExist = async () => {
     getTable(DATABASE.SOCIAL, TABLE.USER_LIKES, false),
   ]);
   return !(
-    !userFollows || userFollows?.active === false ||
-    !userPosts || userPosts?.active === false ||
-    !userLikes || userLikes?.active === false
+    !userFollows ||
+    userFollows?.active === false ||
+    !userPosts ||
+    userPosts?.active === false ||
+    !userLikes ||
+    userLikes?.active === false
   );
 };
 
@@ -105,7 +111,7 @@ export const stepsConfig: StepConfig[] = [
   {
     index: 0,
     titleNumber: '1',
-    title: "Welcome",
+    title: 'Welcome',
     description: `Welcome to the Actionbase hands-on guide!
 
 <ul class="feature-hint">
@@ -121,7 +127,7 @@ export const stepsConfig: StepConfig[] = [
 <button id="analytics-share-btn" class="driver-popover-next-btn">share & start</button>
 </div>
 </div>`,
-    popover: {side: 'over', align: 'center', showButtons: []},
+    popover: { side: 'over', align: 'center', showButtons: [] },
   },
   // Step 1
   {
@@ -129,13 +135,13 @@ export const stepsConfig: StepConfig[] = [
     description: `<img class="profile-image" src="${me.avatar}" /><p class="profile-name">@zipdoki</p>You are <b>@zipdoki</b> for this guide.
 
 <b>Tip:</b> Press <b>Enter</b> to proceed.`,
-    popover: {side: 'over', align: 'center'},
+    popover: { side: 'over', align: 'center' },
   },
   // Step 2
   {
     index: 2,
     titleNumber: '2',
-    title: "Set Up",
+    title: 'Set Up',
     description: `First, let's load <b>sample data</b> so you can focus on building.
 
 <ul class="feature-hint">
@@ -143,14 +149,14 @@ export const stepsConfig: StepConfig[] = [
   <li>${SVG_ICONS.users}<span>Add sample users & posts</span></li>
 </ul>`,
     navigation: {
-      next: {waitFor: ["[id='run-command-btn']"]},
+      next: { waitFor: ["[id='run-command-btn']"] },
     },
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 3
   {
     index: 3,
-    title: "Load Sample Data",
+    title: 'Load Sample Data',
     description: `Click <b>Run</b> to create:
 
 <ul class="feature-hint">
@@ -158,37 +164,37 @@ export const stepsConfig: StepConfig[] = [
   <li>${SVG_ICONS.table}<span>Posts & likes tables</span></li>
 </ul>`,
     element: "[id='run-command-btn']",
-    command: {content: `load preset build-your-social-app`, skipIfDone: true},
+    command: { content: `load preset build-your-social-app`, skipIfDone: true },
     navigation: {
-      next: {waitFor: ["[id='run-command-btn']"]},
+      next: { waitFor: ["[id='run-command-btn']"] },
       prev: {},
     },
     verifier: verifyPresetLoaded,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 4
   {
     index: 4,
-    title: "Select Database",
+    title: 'Select Database',
     description: `Switch to the <pre>\`social\`</pre> database.
 
 <ul class="feature-hint">
   <li>${SVG_ICONS.package}<span>Use database social</span></li>
 </ul>`,
     element: "[id='run-command-btn']",
-    command: {content: 'use database social', context: {database: 'social'}, skipIfDone: true},
+    command: { content: 'use database social', context: { database: 'social' }, skipIfDone: true },
     navigation: {
-      next: {to: '/search', waitFor: ["[id='search-results-list']"]},
-      prev: {waitFor: ["[id='run-command-btn']"]},
+      next: { to: '/search', waitFor: ["[id='search-results-list']"] },
+      prev: { waitFor: ["[id='run-command-btn']"] },
     },
     verifier: verifyPresetLoaded,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 5
   {
     index: 5,
     titleNumber: '3',
-    title: "Explore the Data",
+    title: 'Explore the Data',
     description: `In the previous step, we created these tables:
 
 <ul class="feature-hint">
@@ -199,16 +205,16 @@ export const stepsConfig: StepConfig[] = [
 Browse around before we add new interactions.`,
     element: "[id='search-results-list']",
     navigation: {
-      prev: {to: '/search', waitFor: ["[id='cli-commands']", "[id='run-command-btn']"]},
+      prev: { to: '/search', waitFor: ["[id='cli-commands']", "[id='run-command-btn']"] },
     },
     verifier: verifyPresetLoaded,
-    popover: {side: 'right', align: 'start'},
+    popover: { side: 'right', align: 'start' },
   },
   // Step 6
   {
     index: 6,
     titleNumber: '4',
-    title: "Follows",
+    title: 'Follows',
     description: `Let's build a <b>follow</b> feature.
 
 <ul class="feature-hint">
@@ -217,15 +223,15 @@ Browse around before we add new interactions.`,
   <li>${SVG_ICONS.search}<span>Query it</span></li>
 </ul>`,
     navigation: {
-      next: {waitFor: ["[id='run-command-btn']"]},
+      next: { waitFor: ["[id='run-command-btn']"] },
     },
     verifier: verifyPresetLoaded,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 7
   {
     index: 7,
-    title: "Create Follows Table",
+    title: 'Create Follows Table',
     description: `Create a <pre>\`user_follows\`</pre> table.
 
 <ul class="feature-hint">
@@ -271,19 +277,22 @@ Browse around before we add new interactions.`,
     }
 ]'
 `,
-      skipIfDone: true
+      skipIfDone: true,
     },
     navigation: {
-      next: {to: '/profile/j4rami', waitFor: ["[id='btn-profile-following']", "[id='run-command-btn']"]},
+      next: {
+        to: '/profile/j4rami',
+        waitFor: ["[id='btn-profile-following']", "[id='run-command-btn']"],
+      },
       prev: {},
     },
     verifier: verifyFollowsTableCreated,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 8
   {
     index: 8,
-    title: "Follow a User",
+    title: 'Follow a User',
     description: `Make <b>@zipdoki</b> follow <b>@j4rami</b>. This creates a connection between two users.
 
 <ul class="feature-hint"><li>${SVG_ICONS.lightning}<span>Precomputing count & index</span></li></ul>
@@ -334,53 +343,53 @@ Browse around before we add new interactions.`,
     "createdAt": __CURRENT_TIMESTAMP__
 }'
 `,
-      reload: true
+      reload: true,
     },
     navigation: {
-      next: {waitFor: ["[id='btn-profile-following']", "[id='run-command-btn']"]},
-      prev: {to: '/search', waitFor: ["[id='run-command-btn']"]},
+      next: { waitFor: ["[id='btn-profile-following']", "[id='run-command-btn']"] },
+      prev: { to: '/search', waitFor: ["[id='run-command-btn']"] },
     },
     verifier: verifyFollowCreated,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 9
   {
     index: 9,
-    title: "Check Follow Status",
+    title: 'Check Follow Status',
     description: `Verify the follow exists.
 
 <ul class="feature-hint">
   <li>${SVG_ICONS.check}<span>Query relationship</span></li>
 </ul>`,
     element: "[id='run-command-btn']",
-    command: {content: 'get user_follows --source zipdoki --target j4rami'},
+    command: { content: 'get user_follows --source zipdoki --target j4rami' },
     navigation: {
-      next: {waitFor: ["[id='run-command-btn']"]},
-      prev: {waitFor: ["[id='run-command-btn']"]},
+      next: { waitFor: ["[id='run-command-btn']"] },
+      prev: { waitFor: ["[id='run-command-btn']"] },
     },
     verifier: verifyFollowCreated,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 10
   {
     index: 10,
-    title: "Count Followers",
+    title: 'Count Followers',
     description: `Get <b>@j4rami</b>'s follower count.
 
 <ul class="feature-hint"><li>${SVG_ICONS.rocket}<span>No aggregation</span></li></ul>`,
     element: "[id='run-command-btn']",
-    command: {content: 'count user_follows --start j4rami --direction IN'},
+    command: { content: 'count user_follows --start j4rami --direction IN' },
     navigation: {
-      next: {waitFor: ["[id='run-command-btn']"]},
-      prev: {waitFor: ["[id='run-command-btn']"]},
+      next: { waitFor: ["[id='run-command-btn']"] },
+      prev: { waitFor: ["[id='run-command-btn']"] },
     },
     verifier: verifyFollowCreated,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 11
   {
     index: 11,
-    title: "List Followers",
+    title: 'List Followers',
     description: `Get the list of users following <b>@j4rami</b>.
 
 <ul class="feature-hint"><li>${SVG_ICONS.rocket}<span>Already indexed</span></li></ul>
@@ -406,35 +415,35 @@ Browse around before we add new interactions.`,
 </div>
 `,
     element: "[id='run-command-btn']",
-    command: {content: 'scan user_follows --start j4rami --index created_at_desc --direction IN'},
+    command: { content: 'scan user_follows --start j4rami --index created_at_desc --direction IN' },
     navigation: {
       next: {},
-      prev: {waitFor: ["[id='run-command-btn']"]},
+      prev: { waitFor: ["[id='run-command-btn']"] },
     },
     verifier: verifyFollowCreated,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 12
   {
     index: 12,
     titleNumber: '5',
-    title: "Likes",
+    title: 'Likes',
     description: `Now let's add <b>likes</b>. Same pattern as follows.
 
 <ul class="feature-hint">
   <li>${SVG_ICONS.heart}<span>A user interacts with a post</span></li>
 </ul>`,
     navigation: {
-      next: {to: '/post/1', waitFor: ["[id='btn-likes']", "[id='run-command-btn']"]},
-      prev: {waitFor: ["[id='run-command-btn']"]},
+      next: { to: '/post/1', waitFor: ["[id='btn-likes']", "[id='run-command-btn']"] },
+      prev: { waitFor: ["[id='run-command-btn']"] },
     },
     verifier: verifyFollowCreated,
-    popover: {side: 'over', align: 'start'},
+    popover: { side: 'over', align: 'start' },
   },
   // Step 13
   {
     index: 13,
-    title: "Like a Post",
+    title: 'Like a Post',
     description: `Make <b>@zipdoki</b> like <b>@j4rami</b>'s post.
 
 <ul class="feature-hint"><li>${SVG_ICONS.lightning}<span>Precomputing count & index</span></li></ul>
@@ -507,37 +516,37 @@ Browse around before we add new interactions.`,
 --properties '{
     "createdAt": __CURRENT_TIMESTAMP__
 }'`,
-      reload: true
+      reload: true,
     },
     navigation: {
-      next: {waitFor: ["[id='run-command-btn']"]},
-      prev: {to: '/profile/j4rami'},
+      next: { waitFor: ["[id='run-command-btn']"] },
+      prev: { to: '/profile/j4rami' },
     },
     verifier: verifyLikeCreated,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 14
   {
     index: 14,
-    title: "Check Like Status",
+    title: 'Check Like Status',
     description: `Verify that <b>@zipdoki</b>'s like was recorded.
 
 <ul class="feature-hint">
   <li>${SVG_ICONS.check}<span>Query like status</span></li>
 </ul>`,
     element: "[id='run-command-btn']",
-    command: {content: 'get user_likes --source zipdoki --target 1'},
+    command: { content: 'get user_likes --source zipdoki --target 1' },
     navigation: {
       next: {},
-      prev: {waitFor: ["[id='run-command-btn']"]},
+      prev: { waitFor: ["[id='run-command-btn']"] },
     },
     verifier: verifyLikeCreated,
-    popover: {side: 'bottom', align: 'start'},
+    popover: { side: 'bottom', align: 'start' },
   },
   // Step 15
   {
     index: 15,
-    title: "And More",
+    title: 'And More',
     description: `Just like follows, you can:
 
 <ul class="feature-hint">
@@ -547,17 +556,17 @@ Browse around before we add new interactions.`,
 
 Same pattern, same simplicity.`,
     navigation: {
-      next: {to: '/'},
-      prev: {waitFor: ["[id='run-command-btn']"]},
+      next: { to: '/' },
+      prev: { waitFor: ["[id='run-command-btn']"] },
     },
     verifier: verifyAllTablesExist,
-    popover: {side: 'over', align: 'start'},
+    popover: { side: 'over', align: 'start' },
   },
   // Step 16
   {
     index: 16,
     titleNumber: '6',
-    title: "Feed",
+    title: 'Feed',
     description: `Your <b>feed</b> now shows:
 
 <ul class="feature-hint">
@@ -568,15 +577,15 @@ Same pattern, same simplicity.`,
 This is the core pattern behind most social apps.`,
     element: "[class='mobile-frame']",
     navigation: {
-      prev: {to: '/post/1'},
+      prev: { to: '/post/1' },
     },
-    popover: {side: 'over', align: 'start'},
+    popover: { side: 'over', align: 'start' },
   },
   // Step 17
   {
     index: 17,
     titleNumber: '7',
-    title: "All Done!",
+    title: 'All Done!',
     description: `You just built a <b>feed</b> with <b>follows</b> and <b>likes</b> — all powered by Actionbase.
 
 <p style="margin: 16px 0 0; color: #6b7280; font-size: 14px;">Now try it yourself:</p>
@@ -589,12 +598,12 @@ This is the core pattern behind most social apps.`,
 We built this guide to help you get to know Actionbase. We did our best, but it may fall short in places. We appreciate your understanding — and your feedback means a lot.
 
 <a href="https://github.com/kakao/actionbase/discussions/94" target="_blank">Share your thoughts</a>`,
-    popover: {side: 'over', align: 'center'},
+    popover: { side: 'over', align: 'center' },
   },
 ];
 
 export const getStepConfig = (index: number): StepConfig | undefined => {
-  return stepsConfig.find(step => step.index === index);
+  return stepsConfig.find((step) => step.index === index);
 };
 
 export const getStepCommand = (index: number): CommandConfig | undefined => {

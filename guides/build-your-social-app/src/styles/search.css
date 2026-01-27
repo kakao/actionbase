@@ -163,7 +163,14 @@
   position: absolute;
   inset: -2px;
   border-radius: var(--border-radius-full);
-  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  background: linear-gradient(
+    45deg,
+    #f09433 0%,
+    #e6683c 25%,
+    #dc2743 50%,
+    #cc2366 75%,
+    #bc1888 100%
+  );
   z-index: -1;
 }
 
@@ -288,7 +295,7 @@
 
 .see-all-btn {
   margin: 0;
-  padding:  var(--spacing-xl);
+  padding: var(--spacing-xl);
   background: none;
   border: none;
   border-top: 1px solid var(--color-background-gray);
