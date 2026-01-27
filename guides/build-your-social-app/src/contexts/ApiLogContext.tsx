@@ -26,7 +26,7 @@ interface ApiLogContextProps {
     status?: number,
     payload?: any,
     requestBody?: any,
-    latencyMs?: number,
+    latencyMs?: number
   ) => void;
   clearApiLogs: () => void;
 }
@@ -64,7 +64,7 @@ export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       status?: number,
       payload?: any,
       requestBody?: any,
-      latencyMs?: number,
+      latencyMs?: number
     ) => {
       const isCliCommand = url.includes('/api/command') && requestBody?.command;
       const displayUrl = isCliCommand ? `actionbase> ${requestBody.command}` : url;
@@ -89,7 +89,7 @@ export const ApiLogProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         },
       ]);
     },
-    [],
+    []
   );
 
   const clearApiLogs = useCallback(() => {

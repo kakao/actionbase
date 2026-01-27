@@ -37,13 +37,13 @@ const Followings: React.FC = () => {
 
       const edgesByTarget = new Set(myFollowingsPayload.edges.map((e) => e.target));
       const newFollowingStates = Object.fromEntries(
-        users.filter((u) => edgesByTarget.has(u.id)).map((u) => [u.id, true]),
+        users.filter((u) => edgesByTarget.has(u.id)).map((u) => [u.id, true])
       );
       setFollowingStates(newFollowingStates);
 
       const followingUsersSet = new Set(ownerFollowings.map((u) => u.id));
       const suggested = users.filter(
-        (x) => !followingUsersSet.has(x.id) && !x.isMe && !newFollowingStates[x.id],
+        (x) => !followingUsersSet.has(x.id) && !x.isMe && !newFollowingStates[x.id]
       );
       setSuggestedFollowings(suggested);
     } catch (err) {
@@ -69,7 +69,7 @@ const Followings: React.FC = () => {
     async (userId: string) => {
       await ToggleFollowing(userId, followingStates[userId] ?? false);
     },
-    [followingStates, ToggleFollowing],
+    [followingStates, ToggleFollowing]
   );
 
   useEffect(() => {

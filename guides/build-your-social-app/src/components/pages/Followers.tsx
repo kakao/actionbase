@@ -13,14 +13,13 @@ import { UserListItem } from '../common';
 
 const Followers: React.FC = () => {
   const { id } = useParams();
-  const owner = users.find((x) => x.id === id);
-  if (!owner) return <NotFound />;
-
   const navigate = useNavigate();
   const [followings, setFollowings] = useState<User[]>([]);
   const [suggestedFollowings, setSuggestedFollowings] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
+
+  const owner = users.find((x) => x.id === id);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -37,13 +36,13 @@ const Followers: React.FC = () => {
 
       const edgesByTarget = new Set(myFollowingsPayload.edges.map((e) => e.target));
       const newFollowingStates = Object.fromEntries(
-        users.filter((u) => edgesByTarget.has(u.id)).map((u) => [u.id, true]),
+        users.filter((u) => edgesByTarget.has(u.id)).map((u) => [u.id, true])
       );
       setFollowingStates(newFollowingStates);
 
       const followingUsersSet = new Set(ownerFollowees.map((u) => u.id));
       const suggested = users.filter(
-        (x) => !followingUsersSet.has(x.id) && !x.isMe && !newFollowingStates[x.id],
+        (x) => !followingUsersSet.has(x.id) && !x.isMe && !newFollowingStates[x.id]
       );
       setSuggestedFollowings(suggested);
     } catch (err) {
@@ -65,7 +64,7 @@ const Followers: React.FC = () => {
     async (userId: string) => {
       await ToggleFollowing(userId, followingStates[userId] ?? false);
     },
-    [followingStates, ToggleFollowing],
+    [followingStates, ToggleFollowing]
   );
 
   useEffect(() => {

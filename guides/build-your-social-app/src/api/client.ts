@@ -6,7 +6,7 @@ let apiLogCallback:
       status?: number,
       payload?: any,
       requestBody?: any,
-      latencyMs?: number,
+      latencyMs?: number
     ) => void)
   | null = null;
 
@@ -18,8 +18,8 @@ export function setApiLogCallback(
     status?: number,
     payload?: any,
     requestBody?: any,
-    latencyMs?: number,
-  ) => void,
+    latencyMs?: number
+  ) => void
 ) {
   apiLogCallback = callback;
 }
@@ -27,7 +27,7 @@ export function setApiLogCallback(
 export async function apiFetch<T>(
   url: string,
   options?: RequestInit,
-  enableLogging: boolean = true,
+  enableLogging: boolean = true
 ): Promise<T> {
   const method = options?.method || 'GET';
   const requestBody = options?.body
@@ -64,7 +64,7 @@ export async function apiFetch<T>(
         res.status,
         responseData ? responseData : { message: res.statusText },
         requestBody,
-        latencyMs,
+        latencyMs
       );
     }
   }

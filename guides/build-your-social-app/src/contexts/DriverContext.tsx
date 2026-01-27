@@ -210,7 +210,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setCurrentCommand(null);
       }
     },
-    [terminalContext.database],
+    [terminalContext.database]
   );
 
   const clearCurrentCommand = useCallback((addToHistory: boolean = true) => {
@@ -329,7 +329,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           showToastRef.current(
             'Please complete the current step before proceeding.',
             'warning',
-            TOAST_DURATION,
+            TOAST_DURATION
           );
           return;
         }
@@ -376,7 +376,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       driverObj.current.drive(targetIndex);
       setStepIndex(targetIndex);
     },
-    [isStepValid, currentCommand, clearCurrentCommand, setCommandForStep, navigate],
+    [isStepValid, currentCommand, clearCurrentCommand, setCommandForStep, navigate]
   );
 
   const createNavigationHandler = useCallback(
@@ -396,7 +396,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         await navigateToStep(type, currentIndex);
       };
     },
-    [navigateToStep],
+    [navigateToStep]
   );
 
   const resetStep = useCallback(() => {
@@ -476,7 +476,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 showToastRef.current(
                   'Please complete the current step before proceeding.',
                   'warning',
-                  TOAST_DURATION,
+                  TOAST_DURATION
                 );
                 return;
               }
@@ -572,7 +572,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           showToastRef.current(
             'Please complete the current step before proceeding.',
             'warning',
-            TOAST_DURATION,
+            TOAST_DURATION
           );
           return;
         }
@@ -620,7 +620,7 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       isExecuting,
       executeCommand,
       resetStep,
-    ],
+    ]
   );
 
   return <DriverContext.Provider value={contextValue}>{children}</DriverContext.Provider>;

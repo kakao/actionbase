@@ -32,7 +32,7 @@ export function useToggleLike(source: string, options?: UseToggleLikeOptions) {
 function useToggleBase<T extends string | number>(
   table: string,
   source: string,
-  options?: ToggleOptions<T>,
+  options?: ToggleOptions<T>
 ) {
   const handleToggle = useCallback(
     async (target: T, currentIsActive: boolean) => {
@@ -60,7 +60,7 @@ function useToggleBase<T extends string | number>(
           options?.onSuccess?.(
             mutationType === 'INSERT',
             countResult.counts?.[0]?.count ?? 0,
-            target,
+            target
           );
         } catch (error) {
           options?.onError?.(error as Error);
@@ -69,7 +69,7 @@ function useToggleBase<T extends string | number>(
         options?.onError?.(error as Error);
       }
     },
-    [source, options, table],
+    [source, options, table]
   );
 
   return { handleToggle };

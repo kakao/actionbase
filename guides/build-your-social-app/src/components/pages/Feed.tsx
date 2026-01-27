@@ -36,8 +36,8 @@ const Feed: React.FC = () => {
     onSuccess: (newIsLiked, newLikes, postId) => {
       setUserPosts((prevPosts) =>
         prevPosts.map((post) =>
-          post.id === postId ? { ...post, isLiked: newIsLiked, likes: newLikes } : post,
-        ),
+          post.id === postId ? { ...post, isLiked: newIsLiked, likes: newLikes } : post
+        )
       );
     },
     onError: console.error,
@@ -48,7 +48,7 @@ const Feed: React.FC = () => {
       const currentPost = userPosts.find((p) => p.id === postId);
       if (currentPost) await toggleLike(postId, currentPost.isLiked ?? false);
     },
-    [userPosts, toggleLike],
+    [userPosts, toggleLike]
   );
 
   const changeImageIndex = useCallback(
@@ -61,7 +61,7 @@ const Feed: React.FC = () => {
         return newIndex !== current ? { ...prev, [postId]: newIndex } : prev;
       });
     },
-    [userPosts],
+    [userPosts]
   );
 
   const handleTouchSwipe = useCallback(
@@ -74,7 +74,7 @@ const Feed: React.FC = () => {
       setTouchStart(null);
       setTouchEnd(null);
     },
-    [touchStart, touchEnd, changeImageIndex],
+    [touchStart, touchEnd, changeImageIndex]
   );
 
   useEffect(() => {
@@ -88,7 +88,7 @@ const Feed: React.FC = () => {
         setFollowings(followingUsers);
 
         const userPostsEdges = await Promise.all(
-          myFollowingEdges.map((following) => scanUserPosts(following.target, DIRECTION.OUT)),
+          myFollowingEdges.map((following) => scanUserPosts(following.target, DIRECTION.OUT))
         );
 
         const LikesCountByPostId = Object.fromEntries(
@@ -96,13 +96,13 @@ const Feed: React.FC = () => {
             await Promise.all(
               userPostsEdges.flatMap((p) =>
                 p.edges.map((edge) =>
-                  count(DATABASE.SOCIAL, TABLE.USER_LIKES, edge.target, DIRECTION.IN),
-                ),
-              ),
+                  count(DATABASE.SOCIAL, TABLE.USER_LIKES, edge.target, DIRECTION.IN)
+                )
+              )
             )
           )
             .flatMap((p) => p.counts)
-            .map((p) => [p.start, p.count]),
+            .map((p) => [p.start, p.count])
         );
 
         const userPostDetails = userPostsEdges.flatMap((dataPayload) =>
@@ -117,19 +117,19 @@ const Feed: React.FC = () => {
               createdAt: edge.properties['createdAt'],
               isLiked: false,
             };
-          }),
+          })
         );
 
         const myPostLikeByPostId = Object.fromEntries(
           (
             await Promise.all(
               userPostDetails.map((p) =>
-                get(DATABASE.SOCIAL, TABLE.USER_LIKES, me.id, String(p.id)),
-              ),
+                get(DATABASE.SOCIAL, TABLE.USER_LIKES, me.id, String(p.id))
+              )
             )
           )
             .flatMap((p) => p.edges)
-            .map((t) => [String(t.target), true]),
+            .map((t) => [String(t.target), true])
         );
 
         setUserPosts(
@@ -138,7 +138,7 @@ const Feed: React.FC = () => {
               ...p,
               isLiked: Boolean(myPostLikeByPostId[String(p.id)]),
             }))
-            .sort((a, b) => a.createdAt - b.createdAt),
+            .sort((a, b) => a.createdAt - b.createdAt)
         );
       } catch (err) {
         console.error('Failed to fetch feed data:', err);

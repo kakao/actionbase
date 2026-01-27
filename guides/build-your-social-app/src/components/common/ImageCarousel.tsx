@@ -33,7 +33,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
         setInternalIndex(newIndex);
       }
     },
-    [onIndexChange],
+    [onIndexChange]
   );
 
   const changeIndex = useCallback(
@@ -43,7 +43,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
         setIndex(newIndex);
       }
     },
-    [currentIndex, maxIndex, setIndex],
+    [currentIndex, maxIndex, setIndex]
   );
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {

@@ -19,7 +19,7 @@ const EMPTY_COUNT_PAYLOAD: DataCountPayload = { counts: [], count: 0 };
 
 export async function getDatabase(
   name: string,
-  enableLogging: boolean = true,
+  enableLogging: boolean = true
 ): Promise<DatabaseEntity | null> {
   try {
     return await apiFetch<DatabaseEntity>(
@@ -29,7 +29,7 @@ export async function getDatabase(
           'Content-Type': 'application/json',
         },
       },
-      enableLogging,
+      enableLogging
     );
   } catch {
     return null;
@@ -39,7 +39,7 @@ export async function getDatabase(
 export async function getTable(
   database: string,
   name: string,
-  enableLogging: boolean = true,
+  enableLogging: boolean = true
 ): Promise<TableEntity | null> {
   try {
     return await apiFetch<TableEntity>(
@@ -49,7 +49,7 @@ export async function getTable(
           'Content-Type': 'application/json',
         },
       },
-      enableLogging,
+      enableLogging
     );
   } catch {
     return null;
@@ -68,7 +68,7 @@ export async function get(
   table: string,
   source: any,
   target: any,
-  enableLogging: boolean = true,
+  enableLogging: boolean = true
 ): Promise<DataPayload> {
   if (!(await verifyTableExists(database, table))) {
     return EMPTY_DATA_PAYLOAD;
@@ -81,7 +81,7 @@ export async function get(
           'Content-Type': 'application/json',
         },
       },
-      enableLogging,
+      enableLogging
     );
   } catch {
     return EMPTY_DATA_PAYLOAD;
@@ -93,7 +93,7 @@ export async function count(
   table: string,
   start: any,
   direction: string,
-  enableLogging: boolean = true,
+  enableLogging: boolean = true
 ): Promise<DataCountPayload> {
   if (!(await verifyTableExists(database, table))) {
     return EMPTY_COUNT_PAYLOAD;
@@ -106,7 +106,7 @@ export async function count(
           'Content-Type': 'application/json',
         },
       },
-      enableLogging,
+      enableLogging
     );
   } catch {
     return EMPTY_COUNT_PAYLOAD;
@@ -131,7 +131,7 @@ export async function scan(
   direction: string,
   limit: number | undefined | 25,
   ranges: string | undefined = undefined,
-  enableLogging: boolean = true,
+  enableLogging: boolean = true
 ): Promise<DataPayload> {
   if (!(await verifyTableExists(database, table))) {
     return EMPTY_DATA_PAYLOAD;
@@ -139,7 +139,7 @@ export async function scan(
   try {
     const urlBuilder: string[] = [];
     urlBuilder.push(
-      `/graph/v3/databases/${database}/tables/${table}/edges/scan/${index}?start=${start}&direction=${direction}&limit=${limit}`,
+      `/graph/v3/databases/${database}/tables/${table}/edges/scan/${index}?start=${start}&direction=${direction}&limit=${limit}`
     );
     if (ranges !== undefined) {
       urlBuilder.push(`&ranges=${ranges}`);
@@ -153,7 +153,7 @@ export async function scan(
           'Content-Type': 'application/json',
         },
       },
-      enableLogging,
+      enableLogging
     );
   } catch {
     return EMPTY_DATA_PAYLOAD;
@@ -163,7 +163,7 @@ export async function scan(
 export async function scanUserPosts(
   postId: string,
   direction: string = DIRECTION.OUT,
-  enableLogging: boolean = true,
+  enableLogging: boolean = true
 ) {
   return scan(
     DATABASE.SOCIAL,
@@ -173,14 +173,14 @@ export async function scanUserPosts(
     direction,
     DEFAULT_LIMIT,
     undefined,
-    enableLogging,
+    enableLogging
   );
 }
 
 export async function scanUserFollows(
   userId: string,
   direction: string = DIRECTION.OUT,
-  enableLogging: boolean = true,
+  enableLogging: boolean = true
 ) {
   return scan(
     DATABASE.SOCIAL,
@@ -190,6 +190,6 @@ export async function scanUserFollows(
     direction,
     DEFAULT_LIMIT,
     undefined,
-    enableLogging,
+    enableLogging
   );
 }

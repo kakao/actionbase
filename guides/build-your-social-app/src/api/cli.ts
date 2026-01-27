@@ -11,6 +11,6 @@ export function run(request: CommandRequest) {
         'Content-Type': 'application/json',
       },
     },
-    true,
+    true
   );
 }

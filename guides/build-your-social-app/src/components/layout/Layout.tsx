@@ -35,7 +35,7 @@ const Layout: React.FC<SplitLayoutProps> = ({ children }) => {
         ALLOWED_URI_REGEXP:
           /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
       }),
-    [starsImage],
+    [starsImage]
   );
 
   useEffect(() => {
