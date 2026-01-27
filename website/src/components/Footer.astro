@@ -1,13 +1,15 @@
 ---
 import Default from '@astrojs/starlight/components/Footer.astro';
 
-const { locale } = Astro.locals.starlightRoute;
+const { locale, slug } = Astro.locals.starlightRoute;
 const isKorean = locale === 'ko';
+const isBlog = slug.startsWith('blog/');
+const showTranslationNotice = isKorean && !isBlog;
 ---
 
 <Default {...Astro.props}><slot /></Default>
 
-{isKorean && (
+{showTranslationNotice && (
   <p class="translation-notice">(이 문서는 <a href="https://huggingface.co/collections/kakaocorp/kanana-2" target="_blank" rel="noopener">Kanana-2</a>로 번역되었습니다.)</p>
 )}
 
