@@ -25,7 +25,12 @@
     "Kakao": "카카오",
     "KakaoTalk": "카카오톡",
     "Kakao Shopping": "카카오쇼핑",
-    "Kakao Gift": "카카오 선물하기"
+    "Kakao Gift": "카카오 선물하기",
+    "Wish": "위시",
+    "Wishlist": "위시",
+    "Recent Views": "최근 본",
+    "Friends": "친구관계",
+    "SSOT": "SSOT(단일 소스 오브 트루스)"
   },
   "preserve": [
     "Actionbase",
