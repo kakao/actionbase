@@ -24,7 +24,7 @@ This worked for the original use case. But as requirements evolved, limitations 
 - The HBase view was designed for a specific access pattern
 - Limited flexibility for new query types and schema changes
 
-Actionbase got the chance to prove itself here—not as a replacement, but as an additional view layer.
+We added Actionbase—not as a replacement, but as an additional view layer.
 
 ## Integration Strategy
 
@@ -65,7 +65,7 @@ With Actionbase in place, new systems used it for all query types—get, scan, c
 ## What We Learned
 
 - **Actionbase works as a CQRS view.** It doesn't have to own the data to add value.
-- **CDC enables non-invasive integration.** No changes to the write path required.
+- **Source DB CDC enables non-invasive integration.** No changes to the write path required.
 - **Schema flexibility unlocks new use cases.** Get, scan, count, reverse—all from a single schema definition.
 
 This pattern opened the door to adding Actionbase alongside existing systems without migration risk.

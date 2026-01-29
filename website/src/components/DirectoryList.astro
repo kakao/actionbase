@@ -1,0 +1,36 @@
+---
+import { getCollection } from 'astro:content';
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+interface Props {
+  dir: string;
+}
+
+const { dir } = Astro.props;
+
+const allPages = await getCollection('docs');
+
+const childPages = allPages
+  .filter((p) => {
+    const slug = p.slug ?? p.id?.replace(/\.(mdx?|md)$/, '');
+    if (!slug) return false;
+    if (!slug.startsWith(dir + '/')) return false;
+    const rest = slug.slice(dir.length + 1);
+    return rest && !rest.includes('/');
+  })
+  .sort((a, b) => {
+    const orderA = a.data.sidebar?.order ?? 999;
+    const orderB = b.data.sidebar?.order ?? 999;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.data.title.localeCompare(b.data.title);
+  });
+---
+
+<CardGrid>
+  {childPages.map((p) => {
+    const slug = p.slug ?? p.id?.replace(/\.(mdx?|md)$/, '');
+    return (
+      <LinkCard href={'/' + slug + '/'} title={p.data.title} description={p.data.description} />
+    );
+  })}
+</CardGrid>
