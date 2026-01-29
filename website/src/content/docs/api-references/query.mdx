@@ -309,7 +309,116 @@ curl -X GET \
 }
 ```
 
-## 3. Scan
+## 3. Get (Multi-Edge)
+
+Retrieve multiple multi-edges by their IDs. For unique-edge vs multi-edge, see [FAQ](/faq/#what-is-the-difference-between-unique-edge-and-multi-edge).
+
+### Endpoint
+
+```
+GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids
+```
+
+### Parameters
+
+| Location | Parameter     | Required                       | Description                                                              |
+| -------- | ------------- | ------------------------------ | ------------------------------------------------------------------------ |
+| Header   | Authorization | Optional                       | Authentication key (reserved for future use)                             |
+| Path     | database      | Required                       | Target database name                                                     |
+| Path     | table         | Required                       | Target table name (must be a multi-edge table)                           |
+| Query    | ids           | Required                       | Edge ID list (comma-separated)                                           |
+| Query    | filters       | Optional (default: null)       | [Filtering conditions](#filters)                                         |
+| Query    | features      | Optional (default: empty list) | List of features to include                                              |
+
+A maximum of **25 edges** can be retrieved per API request. To retrieve more edges, make multiple API requests.
+
+### Response Type
+
+[EdgeFrame](#edgeframe-response) - Payload containing edge data
+
+### Request Example (GET)
+
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| ids           | id1,id2,id3   |
+
+```bash
+# multi-edges/ids?ids=id1,id2,id3
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/multi-edges/ids?ids=id1,id2,id3" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "edges": [
+    {
+      "version": 1,
+      "source": "id1",
+      "target": "id1",
+      "properties": {
+        "amount": 1000,
+        "paidAt": 1609459200000
+      },
+      "context": {}
+    },
+    {
+      "version": 1,
+      "source": "id3",
+      "target": "id3",
+      "properties": {
+        "amount": 3000,
+        "paidAt": 1609545600000
+      },
+      "context": {}
+    }
+  ],
+  "count": 2,
+  "total": 2,
+  "offset": null,
+  "hasNext": false,
+  "context": {}
+}
+```
+
+### Request Example (POST)
+
+For requests with many IDs, use the POST endpoint with a JSON body.
+
+```
+POST /graph/v3/databases/{database}/tables/{table}/multi-edges/ids
+```
+
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+
+**Request Body:**
+
+```json
+{
+  "ids": ["id1", "id2", "id3"],
+  "filters": "amount:gte:1000",
+  "features": []
+}
+```
+
+```bash
+curl -X POST \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/multi-edges/ids" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"ids": ["id1", "id2", "id3"], "filters": "amount:gte:1000"}'
+```
+
+## 4. Scan
 
 Scan edges using an index.
 
