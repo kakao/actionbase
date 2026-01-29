@@ -8,6 +8,15 @@ import (
 
 const OutputPrefix = "  \u2502 "
 
+// ANSI color codes
+const (
+	ColorReset  = "\033[0m"
+	ColorYellow = "\033[33m"
+	ColorBlue   = "\033[34m"
+	ColorGray   = "\033[90m"
+	ColorRed    = "\033[31m"
+)
+
 var plainMode atomic.Bool
 
 // SetPlainMode enables or disables plain output mode.
