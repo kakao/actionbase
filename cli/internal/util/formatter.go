@@ -3,9 +3,15 @@ package util
 import "strconv"
 
 func Int64WithCommas(n int64) string {
-	s := strconv.FormatInt(n, 10)
+	sign := ""
+	abs := uint64(n)
+	if n < 0 {
+		sign = "-"
+		abs = uint64(-n)
+	}
+	s := strconv.FormatUint(abs, 10)
 	if len(s) <= 3 {
-		return s
+		return sign + s
 	}
 
 	commaCount := (len(s) - 1) / 3
@@ -20,5 +26,5 @@ func Int64WithCommas(n int64) string {
 			resultIdx--
 		}
 	}
-	return string(result)
+	return sign + string(result)
 }
