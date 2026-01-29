@@ -27,14 +27,14 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/count
 
 ### 파라미터
 
-| 위치   | 파라미터      | 필수 여부                | 설명                                                    |
-| ------ | ------------- | ------------------------ | ------------------------------------------------------- |
-| Header | Authorization | 선택                     | 인증 키 (향후 사용을 위해 예약됨)                       |
-| Path   | database      | 필수                     | 타겟 데이터베이스 이름                                  |
-| Path   | table         | 필수                     | 타겟 테이블 이름                                        |
-| Query  | start         | 필수                     | 시작 노드 ID                                            |
-| Query  | direction     | 필수                     | [쿼리 방향](#쿼리-방향) (OUT 또는 IN)                   |
-| Query  | ranges        | 선택 (기본값: null)      | [스캔 범위](#인덱스-범위)                               |
+| 위치   | 파라미터      | 필수 여부           | 설명                                  |
+| ------ | ------------- | ------------------- | ------------------------------------- |
+| Header | Authorization | 선택                | 인증 키 (향후 사용을 위해 예약됨)     |
+| Path   | database      | 필수                | 타겟 데이터베이스 이름                |
+| Path   | table         | 필수                | 타겟 테이블 이름                      |
+| Query  | start         | 필수                | 시작 노드 ID                          |
+| Query  | direction     | 필수                | [쿼리 방향](#쿼리-방향) (OUT 또는 IN) |
+| Query  | ranges        | 선택 (기본값: null) | [스캔 범위](#인덱스-범위)             |
 
 ### 응답 타입
 
@@ -80,14 +80,14 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/get
 
 ### 파라미터
 
-| 위치   | 파라미터      | 필수 여부                | 설명                                         |
-| ------ | ------------- | ------------------------ | -------------------------------------------- |
-| Header | Authorization | 선택                     | 인증 키 (향후 사용을 위해 예약됨)            |
-| Path   | database      | 필수                     | 타겟 데이터베이스 이름                       |
-| Path   | table         | 필수                     | 타겟 테이블 이름                             |
-| Query  | source        | 필수                     | 소스 노드 ID 목록 (쉼표로 구분)             |
-| Query  | target        | 필수                     | 타겟 노드 ID 목록 (쉼표로 구분)             |
-| Query  | filters       | 선택 (기본값: null)      | [필터링 조건](#필터)                         |
+| 위치   | 파라미터      | 필수 여부           | 설명                              |
+| ------ | ------------- | ------------------- | --------------------------------- |
+| Header | Authorization | 선택                | 인증 키 (향후 사용을 위해 예약됨) |
+| Path   | database      | 필수                | 타겟 데이터베이스 이름            |
+| Path   | table         | 필수                | 타겟 테이블 이름                  |
+| Query  | source        | 필수                | 소스 노드 ID 목록 (쉼표로 구분)   |
+| Query  | target        | 필수                | 타겟 노드 ID 목록 (쉼표로 구분)   |
+| Query  | filters       | 선택 (기본값: null) | [필터링 조건](#필터)              |
 
 여러 소스 또는 타겟 ID를 지정하면 **mget**으로 동작하여 여러 엣지를 조회합니다. 이 경우 API 요청당 최대 **25개의 엣지**를 조회할 수 있습니다. 더 많은 엣지를 조회하려면 여러 API 요청을 보내세요.
 
@@ -321,19 +321,19 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
 
 ### 파라미터
 
-| 위치   | 파라미터      | 필수 여부                      | 설명                                                                     |
-| ------ | ------------- | ------------------------------ | ------------------------------------------------------------------------ |
-| Header | Authorization | 선택                           | 인증 키 (향후 사용을 위해 예약됨)                                        |
-| Path   | database      | 필수                           | 타겟 데이터베이스 이름                                                   |
-| Path   | table         | 필수                           | 타겟 테이블 이름                                                         |
-| Path   | index         | 필수                           | 사용할 인덱스 이름                                                       |
-| Query  | start         | 필수                           | 시작 노드 ID                                                             |
-| Query  | direction     | 필수                           | [쿼리 방향](#쿼리-방향) (OUT 또는 IN)                                    |
-| Query  | limit         | 선택                           | 반환할 최대 결과 수; 프로덕션에서는 25 권장                              |
-| Query  | offset        | 선택 (기본값: null)            | [페이지네이션](#페이지네이션) 오프셋                                     |
-| Query  | ranges        | 선택 (기본값: null)            | [스캔 범위](#인덱스-범위)                                                |
-| Query  | filters       | 선택 (기본값: null)            | [필터링 조건](#필터)                                                     |
-| Query  | features      | 선택 (기본값: 빈 리스트)       | 포함할 기능 목록 (예: `total`로 전체 값 계산)                            |
+| 위치   | 파라미터      | 필수 여부                | 설명                                          |
+| ------ | ------------- | ------------------------ | --------------------------------------------- |
+| Header | Authorization | 선택                     | 인증 키 (향후 사용을 위해 예약됨)             |
+| Path   | database      | 필수                     | 타겟 데이터베이스 이름                        |
+| Path   | table         | 필수                     | 타겟 테이블 이름                              |
+| Path   | index         | 필수                     | 사용할 인덱스 이름                            |
+| Query  | start         | 필수                     | 시작 노드 ID                                  |
+| Query  | direction     | 필수                     | [쿼리 방향](#쿼리-방향) (OUT 또는 IN)         |
+| Query  | limit         | 선택                     | 반환할 최대 결과 수; 프로덕션에서는 25 권장   |
+| Query  | offset        | 선택 (기본값: null)      | [페이지네이션](#페이지네이션) 오프셋          |
+| Query  | ranges        | 선택 (기본값: null)      | [스캔 범위](#인덱스-범위)                     |
+| Query  | filters       | 선택 (기본값: null)      | [필터링 조건](#필터)                          |
+| Query  | features      | 선택 (기본값: 빈 리스트) | 포함할 기능 목록 (예: `total`로 전체 값 계산) |
 
 ### 응답 타입
 
@@ -393,15 +393,15 @@ curl -X GET \
 
 **요청 예시**
 
-| 파라미터      | 값            | 설명         |
-| ------------- | ------------- | ------------ |
-| Authorization | YOUR_API_KEY  |              |
-| database      | your_database |              |
-| table         | your_table    |              |
-| index         | your_index    |              |
-| start         | source1       |              |
-| direction     | OUT           |              |
-| limit         |               | 25 권장      |
+| 파라미터      | 값            | 설명    |
+| ------------- | ------------- | ------- |
+| Authorization | YOUR_API_KEY  |         |
+| database      | your_database |         |
+| table         | your_table    |         |
+| index         | your_index    |         |
+| start         | source1       |         |
+| direction     | OUT           |         |
+| limit         |               | 25 권장 |
 
 ```bash
 # scan/your_index?start=source1&direction=OUT
@@ -441,16 +441,16 @@ curl -X GET \
 
 **요청 예시**
 
-| 파라미터      | 값             | 설명                              |
-| ------------- | -------------- | --------------------------------- |
-| Authorization | YOUR_API_KEY   |                                   |
-| database      | your_database  |                                   |
-| table         | your_table     |                                   |
-| index         | your_index     |                                   |
-| start         | source1        |                                   |
-| direction     | OUT            |                                   |
-| offset        | string_encoded | 이전 응답에서 받은 값             |
-| limit         |                | 25 권장                           |
+| 파라미터      | 값             | 설명                  |
+| ------------- | -------------- | --------------------- |
+| Authorization | YOUR_API_KEY   |                       |
+| database      | your_database  |                       |
+| table         | your_table     |                       |
+| index         | your_index     |                       |
+| start         | source1        |                       |
+| direction     | OUT            |                       |
+| offset        | string_encoded | 이전 응답에서 받은 값 |
+| limit         |                | 25 권장               |
 
 ```bash
 # scan/your_index?start=source1&direction=OUT&offset=string_encoded
@@ -527,14 +527,14 @@ field:bt:minValue,maxValue
 
 ### 연산자
 
-| 연산자   | 설명                  | 예시                           |
-| -------- | --------------------- | ------------------------------ |
-| `eq`     | 같음                  | `type:eq:0`                    |
-| `gt`     | 초과                  | `createdAt:gt:1000000`         |
-| `gte`    | 이상                  | `createdAt:gte:1000000`        |
-| `lt`     | 미만                  | `createdAt:lt:2000000`         |
-| `lte`    | 이하                  | `createdAt:lte:2000000`        |
-| `bt`     | 두 값 사이            | `createdAt:bt:1000000,2000000` |
+| 연산자 | 설명       | 예시                           |
+| ------ | ---------- | ------------------------------ |
+| `eq`   | 같음       | `type:eq:0`                    |
+| `gt`   | 초과       | `createdAt:gt:1000000`         |
+| `gte`  | 이상       | `createdAt:gte:1000000`        |
+| `lt`   | 미만       | `createdAt:lt:2000000`         |
+| `lte`  | 이하       | `createdAt:lte:2000000`        |
+| `bt`   | 두 값 사이 | `createdAt:bt:1000000,2000000` |
 
 ### 예시
 
