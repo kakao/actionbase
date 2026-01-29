@@ -14,6 +14,7 @@ import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.storage.HBaseRecord
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
@@ -29,7 +30,8 @@ import reactor.core.publisher.Mono
 class V3QueryService(
     private val graph: Graph,
 ) {
-    private val byteArrayBufferPool = ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
+    private val byteArrayBufferPool =
+        ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
 
     private val groupRecordMapper = EdgeGroupRecordMapper.create(byteArrayBufferPool)
 
@@ -99,6 +101,48 @@ class V3QueryService(
         filters: String? = null,
         features: List<String> = emptyList(),
     ): Mono<DataFrameEdgePayload> {
+        require(ranges == null) { "`ranges` is not supported in get query." }
+
+        val keys =
+            source.distinct().flatMap { s ->
+                target.distinct().map { t -> s to t }
+            }
+
+        return getsByKeys(database, table, keys, filters, features)
+    }
+
+    /**
+     * Overloaded gets for multi-edge tables using ids.
+     * Multi-edge stores edge state with source=id, target=id, so this method
+     * provides an optimized lookup by ids instead of source×target combinations.
+     */
+    @Suppress("UnusedParameter")
+    fun gets(
+        database: String,
+        table: String,
+        ids: List<Any>,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+    ): Mono<DataFrameEdgePayload> {
+        val name = EntityName(database, table)
+        val label = graph.getLabel(name)
+
+        require(label.entity.type == LabelType.MULTI_EDGE) {
+            "get query with ids is only supported for multi-edge tables."
+        }
+
+        val keys = ids.distinct().map { id -> id to id }
+
+        return getsByKeys(database, table, keys, filters, features)
+    }
+
+    private fun getsByKeys(
+        database: String,
+        table: String,
+        keys: List<Pair<Any, Any>>,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+    ): Mono<DataFrameEdgePayload> {
         val name = EntityName(database, table)
         val label = graph.getLabel(name)
 
@@ -106,22 +150,19 @@ class V3QueryService(
             "get query is only supported for HBaseHashLabel, but got ${label::class.java.simpleName}."
         }
 
-        require(ranges == null) { "`ranges` is not supported in get query." }
         require(features.isEmpty()) { "`features` ${features.joinToString(", ")} are not supported in get query." }
         val postPredicates = filters?.let { WherePredicate.parse(it, label.entity.schema) }?.toSet() ?: emptySet()
 
-        val combinations =
-            source.distinct().flatMap { s ->
-                target.distinct().map { t ->
-                    val edge = Edge(0L, s, t).ensureType(label.entity.schema)
-                    val key = label.coder.encodeHashEdgeKey(edge, label.entity.id)
-                    Get(key.key)
-                        .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
-                }
+        val gets =
+            keys.map { (s, t) ->
+                val edge = Edge(0L, s, t).ensureType(label.entity.schema)
+                val key = label.coder.encodeHashEdgeKey(edge, label.entity.id)
+                Get(key.key)
+                    .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
             }
 
         return label
-            .getActiveStates(combinations)
+            .getActiveStates(gets)
             .map {
                 it.applyPredicates(postPredicates).toDataFrameEdgePayload(flip = false)
             }.switchIfEmpty(emptyDataFrameEdgePayload)
@@ -339,11 +380,13 @@ class V3QueryService(
                 val parsed = lastField.bucketOrGet(lastPredicate.value, ceil = false)
                 encode(parsed).let { it to it }
             }
+
             is WherePredicate.Between -> {
                 val from = encode(lastField.bucketOrGet(lastPredicate.from, ceil = false))
                 val to = encode(lastField.bucketOrGet(lastPredicate.to, ceil = true))
                 from to to
             }
+
             else -> throw IllegalArgumentException(
                 "only `Eq` or `Between` predicate is allowed for group query, but got $lastPredicate.",
             )
@@ -464,7 +507,8 @@ class V3QueryService(
                 ),
             )
 
-        val emptyDataFrameCountPayload: Mono<DataFrameEdgeCountPayload> = Mono.just(DataFrameEdgeCountPayload(emptyList(), 0, emptyMap()))
+        val emptyDataFrameCountPayload: Mono<DataFrameEdgeCountPayload> =
+            Mono.just(DataFrameEdgeCountPayload(emptyList(), 0, emptyMap()))
 
         fun empty(direction: Direction): EdgeCountPayload =
             if (direction == Direction.OUT) {
