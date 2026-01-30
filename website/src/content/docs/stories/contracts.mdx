@@ -31,9 +31,9 @@ flowchart TB
         Review -->|No| Test
         Review -->|Yes| Locked[Contract Locked]
     end
-    
+
     Locked -.->|adds to| Contracts
-    
+
     subgraph Protection ["2. Protection"]
         direction LR
         Change[Code Change] --> PR[PR]

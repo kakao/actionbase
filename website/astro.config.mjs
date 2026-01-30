@@ -5,7 +5,6 @@ import starlightLinksValidator from 'starlight-links-validator';
 import markdocGrammar from './grammars/markdoc.tmLanguage.json';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import mermaid from 'astro-mermaid';
-import d2 from 'astro-d2';
 import starlightBlog from 'starlight-blog';
 import { remarkHeadingId } from 'remark-custom-heading-id';
 
@@ -44,7 +43,6 @@ export default defineConfig({
     remarkPlugins: [remarkHeadingId],
   },
   integrations: [
-    d2(),
     mermaid({
       theme: 'forest',
       autoTheme: true,

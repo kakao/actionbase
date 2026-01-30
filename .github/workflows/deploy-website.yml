@@ -29,20 +29,9 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
           cache-dependency-path: website/package-lock.json
-
-      - name: Cache D2
-        id: cache-d2
-        uses: actions/cache@v4
-        with:
-          path: /usr/local/bin/d2
-          key: d2-${{ runner.os }}-0.7.1
-
-      - name: Install D2
-        if: steps.cache-d2.outputs.cache-hit != 'true'
-        run: curl -fsSL https://d2lang.com/install.sh | sh -s --
 
       - name: Install dependencies
         working-directory: ./website
@@ -76,3 +65,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+

@@ -26,7 +26,6 @@
     "@lunariajs/core": "^0.1.1",
     "@types/culori": "^2.1.1",
     "astro": "^5.6.1",
-    "astro-d2": "^0.8.1",
     "astro-mermaid": "^1.1.0",
     "culori": "^4.0.1",
     "mermaid": "^11.12.2",
