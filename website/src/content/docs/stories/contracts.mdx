@@ -19,13 +19,16 @@ But Actionbase isn't an API server. It's a database. We applied the same idea—
 flowchart TB
     subgraph Integration ["1. Integration"]
         direction TB
-        Request[Integration Request] --> Decision{New Table?}
-        Decision -->|Yes| NewTable["Table Test<br/>schema.md, operation.md, integration.md"]
-        Decision -->|No| Compose["Composition Test<br/>integration.md"]
-        NewTable --> Deploy[Website Deploy]
-        Compose --> Deploy
+        Request[Integration Request] --> Test
+        subgraph Test ["Write Test"]
+            direction TB
+            Decision{New Table?}
+            Decision -->|Yes| NewTable["Table Test<br/>schema.md, operation.md, integration.md"]
+            Decision -->|No| Compose["Composition Test<br/>integration.md"]
+        end
+        Test --> Deploy[Website Deploy]
         Deploy --> Review{Requirements OK?}
-        Review -->|No| Request
+        Review -->|No| Test
         Review -->|Yes| Locked[Contract Locked]
     end
     
