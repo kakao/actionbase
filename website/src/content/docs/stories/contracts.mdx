@@ -15,54 +15,29 @@ But Actionbase isn't an API server. It's a database. We applied the same idea—
 
 ## How It Works
 
-```d2
-direction: right
-
-1. Integration: {
-  Request: Integration Request
-
-  Write Test: {
-    Decision: New Table? {shape: diamond}
-
-    Table Test: |md
-      - schema.md
-      - operation.md
-      - integration.md
-    |
-
-    Composition Test: |md
-      - integration.md
-    |
-
-    Decision -> Table Test: Yes
-    Decision -> Composition Test: No
-  }
-
-  Deploy: Website Deploy
-  Review: Requirements OK? {shape: diamond}
-  Locked: Contract Locked
-
-  Request -> Write Test
-  Write Test -> Deploy
-  Deploy -> Review
-  Review -> Write Test: No
-  Review -> Locked: Yes
-}
-
-2. Protection: {
-  Change: Code Change
-  PR: PR
-  Contracts: All Contracts {shape: diamond}
-  Merge: Merge
-  Block: Blocked
-
-  Change -> PR
-  PR -> Contracts
-  Contracts -> Merge: Pass
-  Contracts -> Block: Fail
-}
-
-1. Integration.Locked -> 2. Protection.Contracts: adds to
+```mermaid
+flowchart TB
+    subgraph Integration ["1. Integration"]
+        direction TB
+        Request[Integration Request] --> Decision{New Table?}
+        Decision -->|Yes| NewTable["Table Test<br/>schema.md, operation.md, integration.md"]
+        Decision -->|No| Compose["Composition Test<br/>integration.md"]
+        NewTable --> Deploy[Website Deploy]
+        Compose --> Deploy
+        Deploy --> Review{Requirements OK?}
+        Review -->|No| Request
+        Review -->|Yes| Locked[Contract Locked]
+    end
+    
+    Locked -.->|adds to| Contracts
+    
+    subgraph Protection ["2. Protection"]
+        direction LR
+        Change[Code Change] --> PR[PR]
+        PR --> Contracts{All Contracts}
+        Contracts -->|Pass| Merge[Merge]
+        Contracts -->|Fail| Block[Blocked]
+    end
 ```
 
 ### 1. Integration
@@ -75,7 +50,7 @@ When a service team requests integration:
    - **Table Test** (new table) — Generates schema.md, operation.md, integration.md
    - **Composition Test** (existing tables) — Generates integration.md only
 
-3. **Website Deploy** — The test generates MDX files. The website deploys with the new docs.
+3. **Website Deploy** — The test generates MDX files. The website deploys with the new docs. (Currently Docusaurus internally; migrating to Astro Starlight as part of this open source release.)
 
 4. **Requirements OK?** — Service team reviews the docs. If not right, we iterate—back to Write Test. If good, we finalize.
 
@@ -101,7 +76,7 @@ Once locked, contracts guard production:
 
 **Tests replace docs.** The test generates the documentation. Schema, operations, API examples—all from the same test code. Documentation never goes stale because it's generated from the test that must pass.
 
-**100% contract coverage.** Not 100% code coverage. We only test what we promise. And what we promise, we guarantee.
+**100% contract coverage.** We have unit tests. We have API-level integration tests (E2E). We do our best—but even 99.9999% isn't 100%. There's always that 0.0001%. Contract tests cover exactly that gap. What we promise, we test. What we test, we guarantee. 100%.
 
 ## What We Learned
 
