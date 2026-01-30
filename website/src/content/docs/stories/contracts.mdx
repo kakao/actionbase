@@ -15,33 +15,54 @@ But Actionbase isn't an API server. It's a database. We applied the same idea—
 
 ## How It Works
 
-```mermaid
-flowchart LR
-    subgraph Integration ["1. Integration"]
-        Request[Integration Request] --> Test
-        subgraph Test ["Write Test"]
-            Decision{New Table?}
-            Decision -->|Yes| NewTable["Table Test
-            - schema.md
-            - operation.md
-            - integration.md"]
-            Decision -->|No| Compose["Composition Test
-            - integration.md"]
-        end
-        Test --> Deploy[Website Deploy]
-        Deploy --> Review{Requirements OK?}
-        Review -->|No| Test
-        Review -->|Yes| Locked[Contract Locked]
-    end
+```d2
+direction: right
 
-    subgraph Protection ["2. Protection"]
-        Change[Code Change] --> PR[PR]
-        PR --> Contracts{All Contracts}
-        Contracts -->|Pass| Merge[Merge]
-        Contracts -->|Fail| Block[Blocked]
-    end
+1. Integration: {
+  Request: Integration Request
 
-    Locked -->|adds to| Contracts
+  Write Test: {
+    Decision: New Table? {shape: diamond}
+
+    Table Test: |md
+      - schema.md
+      - operation.md
+      - integration.md
+    |
+
+    Composition Test: |md
+      - integration.md
+    |
+
+    Decision -> Table Test: Yes
+    Decision -> Composition Test: No
+  }
+
+  Deploy: Website Deploy
+  Review: Requirements OK? {shape: diamond}
+  Locked: Contract Locked
+
+  Request -> Write Test
+  Write Test -> Deploy
+  Deploy -> Review
+  Review -> Write Test: No
+  Review -> Locked: Yes
+}
+
+2. Protection: {
+  Change: Code Change
+  PR: PR
+  Contracts: All Contracts {shape: diamond}
+  Merge: Merge
+  Block: Blocked
+
+  Change -> PR
+  PR -> Contracts
+  Contracts -> Merge: Pass
+  Contracts -> Block: Fail
+}
+
+1. Integration.Locked -> 2. Protection.Contracts: adds to
 ```
 
 ### 1. Integration
