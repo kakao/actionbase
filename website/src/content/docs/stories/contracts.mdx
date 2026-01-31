@@ -53,9 +53,11 @@ Instead of writing documentation, we write a scenario test together. That test d
 
 This test is not an example. It is the contract.
 
-From that test, documentation is generated automatically—schema definitions, API examples, query semantics. CI deploys the docs to our website. The service team reviews them. We iterate. We adjust the test. Writing the test is manual. Everything after that is automated.
+From that test, documentation is generated automatically. CI extracts schema definitions, API examples, and query semantics from the test, then deploys them to our documentation site. The service team reviews. We iterate. We adjust the test. Writing the test is manual. Everything after that is automated.
 
 Once everyone agrees, the contract is locked. At that moment, the test stops being just a test. It becomes a promise.
+
+We write the tests ourselves. Not because we want to, but because we have to. If a contract breaks, we're the ones who get paged. Owning the tests means owning the risk. This worked for survival. But as we open-source Actionbase, we're exploring a new model—one where anyone can contribute contracts. What that looks like is still evolving.
 
 ### 2. Protection: Locked Contracts Guard Production
 
@@ -82,7 +84,7 @@ Locked contracts never disappear. Every pull request runs unit tests, E2E tests,
 - **E2E tests** — verify the system works (written by us)
 - **Contract tests** — verify promises to each service (written together)
 
-If everything passes → the change ships. If even one contract fails → the change is blocked. We don't ask: "Is this change reasonable?" We ask: "Does this break anything we promised?"
+If everything passes, the change ships. If even one contract fails, the PR cannot be merged. No exceptions. We don't ask: "Is this change reasonable?" We ask: "Does this break anything we promised?"
 
 ## Living with Contracts
 
@@ -112,3 +114,58 @@ To modify a contract safely: create a new contract, migrate the service, then re
 - **Contracts are promises, not documents.** Every integration is a promise. Tests enforce that promise on every PR.
 - **Evolving systems need guardrails.** Actionbase was never finished—new features, new optimizations, new storage backends. But every change was safe because every promise was tested.
 - **Trust comes from guarantees, not goodwill.** Service teams stopped asking "will this break us?" They knew: if the contract passes, they're safe.
+
+## Appendix: Contract Test Structure
+
+The following is a simplified pseudo-code example showing how contract tests are structured. The actual implementation differs in details, but the core concept remains the same.
+
+```kotlin
+@Contract(
+    service = "gift",
+    feature = "wish",
+    outputDir = "services/gift/wish",  // generated docs go here
+)
+class WishContract {
+    val context = Context.from(WishTable)
+
+    // inner class -> .mdx file
+    // test method -> section in the file
+
+    inner class Schema : SchemaSpec(context) {      // -> schema.mdx
+        @Spec fun schema() = defineSchema()         //    ## Schema
+        @Spec fun sampleData() = createSampleData() //    ## Sample Data
+    }
+
+    inner class Operations : OperationSpec(context) { // -> operations.mdx
+        @Spec fun createDatabase() = ddl.createDatabase()
+        @Spec fun createTable() = ddl.createTable()
+    }
+
+    inner class Integration : IntegrationSpec(context) { // -> integration.mdx
+        @Spec(title = "Insert edge")  // ## Insert edge
+        fun insert() {
+            mutate(edge, INSERT)
+        }
+
+        @Spec(title = "Get edge")     // ## Get edge
+        fun get() {
+            val result = get(source = "user-123", target = "product-456")
+            assertEquals(1, result.count)
+        }
+
+        @Spec(title = "Scan edges")   // ## Scan edges
+        fun scan() {
+            val result = scan(source = "user-123", direction = OUT, limit = 10)
+            assertSortedByTimestampDesc(result)
+        }
+
+        @Spec(title = "Count edges")  // ## Count edges
+        fun count() {
+            val result = count(source = "user-123", direction = OUT)
+            assertEquals(5, result.value)
+        }
+    }
+}
+```
+
+The test framework is built on JUnit extensions. Each inner class generates an `.mdx` file, and each test method becomes a section within that file. The tooling used internally is planned for open-source release. See the [Roadmap](/community/roadmap/) for details.
