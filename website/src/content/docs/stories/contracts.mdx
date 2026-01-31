@@ -57,7 +57,7 @@ From that test, documentation is generated automatically. When tests run, they g
 
 Once everyone agrees, the contract is locked. At that moment, the test stops being just a test. It becomes a promise.
 
-We also write the tests on our side. It's more work, but it's a choice we made—for trust. This worked for survival. But as we open-source Actionbase, we're exploring a new model—one where anyone can contribute contracts. What that looks like is still evolving.
+We also write the tests on our side. It's more work, but it's a choice we made—for trust. As we open-source Actionbase, we're exploring a new model—one where anyone can contribute contracts. What that looks like is still evolving.
 
 ### 2. Protection: Locked Contracts Guard Production
 
@@ -82,7 +82,7 @@ Locked contracts stay until both sides agree—whether to evolve or retire. Ever
 
 - **Unit tests** — verify internal correctness
 - **E2E tests** — verify the system works (written by us)
-- **Contract tests** — verify promises to each service (written together)
+- **Contract tests** — verify promises to each service (co-owned)
 
 If everything passes, the change ships. If even one contract fails, the PR cannot be merged. No exceptions. We don't ask: "Is this change reasonable?" We ask: "Does this break anything we promised?"
 
@@ -104,7 +104,7 @@ Contracts evolve with service requirements. Each update increments the version.
 | ------------------ | ---------------------------- | ------------------------------------ |
 | **Contract Scope** | API shape (request/response) | Usage patterns                       |
 | **Documentation**  | Separate, can drift          | Generated from tests, always current |
-| **Evolution**      | Version negotiation          | Cumulative, forever                  |
+| **Evolution**      | Version negotiation          | Cumulative, versioned                |
 | **Failure**        | Consumer incompatibility     | Broken promise → blocked             |
 
 ## What We Learned
