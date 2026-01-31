@@ -7,36 +7,37 @@ sidebar:
 
 This story demonstrates the **Tests as Contracts** pattern: how Actionbase evolved continuously without ever breaking existing integrations.
 
-## The Challenge
+## What Is Tests as Contracts?
 
-Contract Testing is a powerful idea: two systems should agree on how they communicate—and that agreement should be tested continuously.
+**Test = Spec = Doc = Guard.** One source of truth.
 
-In the microservice world, tools like [Pact](https://docs.pact.io/) apply this idea to APIs. A consumer defines what it expects. The provider verifies that it still satisfies those expectations. As long as the contract holds, teams can evolve independently without fear.
+When a service team integrates with Actionbase, we don't write documentation. We write a scenario test together. That test:
+
+- Defines the contract (schema, mutations, queries)
+- Generates documentation automatically
+- Runs on every PR to guard production
+
+If the test passes, the promise holds. If it fails, the change is blocked. What we promise, we guarantee—100%.
+
+## Why We Needed This
+
+Contract Testing is a powerful idea: two systems should agree on how they communicate—and that agreement should be tested continuously. In the microservice world, tools like [Pact](https://docs.pact.io/) apply this to APIs.
 
 But Actionbase isn't an API server—it's a database with a REST interface. And databases introduce a very different kind of contract.
 
 When a service integrates with a database, it doesn't just rely on data. It relies on behavior:
 
-- "Give me the 10 most recent edges, sorted descending."
-- "This query must be fast with this index."
-- "Batch reads of 500 items must be stable."
-- "This mutation pattern must never break."
+- "Give me 100 items at once" vs "give me 10 at a time, paginated"
+- "Scan the full index" vs "scan with a specific filter"
+- "Find who I follow" vs "find who follows me"
+- "Write one item" vs "write 10 items in a batch" vs "write items that might conflict"
+- "I need strong consistency" vs "eventual consistency is fine"
 
-These expectations are not captured by schemas alone.
-
-We tried documenting them with Swagger. But as Actionbase evolved, the testing burden grew exponentially. Every new query capability multiplied the number of combinations to cover.
+We tried documenting these with Swagger. But as Actionbase evolved, the testing burden grew exponentially. Every new query capability multiplied the number of combinations to cover.
 
 Testing everything wasn't realistic. Testing nothing wasn't acceptable. Traditional tests didn't help either—unit tests verify correctness in isolation, E2E tests verify happy paths, but neither guarantees: "This exact usage pattern will keep working forever."
 
-That gap is where we applied the Contract Testing idea—with a twist.
-
-## Contract Strategy
-
-We kept the core insight: a contract is something you test continuously, not something you document once.
-
-Then we asked a different question: what does a contract look like for a database?
-
-Our answer: a real usage scenario. Not a schema file. Not an API definition. A scenario test that reflects how the system is actually used.
+That gap is where we applied the Contract Testing idea—with a twist. Instead of testing every possible combination, we test what's actually promised.
 
 ## How It Works
 
@@ -92,37 +93,20 @@ Locked contracts never disappear. Every pull request to Actionbase runs all lock
 
 We don't ask: "Is this change reasonable?" We ask: "Does this break anything we promised?" If it does, it doesn't ship.
 
-## Same Table, Different Contracts
+### Same Table, Different Contracts
 
-One table can have many contracts—because the same data is used in different ways.
+One table can have many contracts—because the same data is used in different ways. One service needs 100 items at once. Another paginates 10 at a time. One needs strong consistency. Another is fine with eventual consistency.
 
-- One service reads the newest 10 items.
-- Another scans the oldest 100.
-- One fetches single edges.
-- Another batch-fetches hundreds.
-
-Each usage pattern is a separate contract. Each is protected independently. This is difficult to express with API-level contract testing, but for databases, it's essential.
+Each usage pattern is a separate contract. Each is protected independently.
 
 ## The Actionbase Approach
 
-| Aspect               | Traditional (API Contract Testing) | Actionbase (Tests as Contracts) |
-| -------------------- | ---------------------------------- | ------------------------------- |
-| **Target System**    | API server ↔ API consumer          | Database ↔ service teams        |
-| **Contract Scope**   | Request/response shape             | Usage patterns                  |
-| **Contract Format**  | Pact files (JSON)                  | Scenario test code              |
-| **Documentation**    | Separate                           | Generated from tests (MDX)      |
-| **Doc Freshness**    | Can drift                          | Always current                  |
-| **Contract Storage** | Pact Broker                        | Test suite                      |
-| **Evolution Model**  | Version negotiation                | Cumulative, forever             |
-| **Failure Meaning**  | Consumer incompatibility           | Broken promise                  |
-
-### What Makes This Different
-
-**Contracts describe usage, not interfaces.** The promise isn't "this API returns JSON." It's "this access pattern will always work."
-
-**Test = Spec = Doc = Guard.** This is the key insight. One source of truth. Nothing drifts. Nothing is assumed.
-
-**What we promise, we guarantee.** If it's not a contract, it's not guaranteed. If it is a contract, it is guaranteed—100%.
+| Aspect             | Traditional                  | Actionbase                           |
+| ------------------ | ---------------------------- | ------------------------------------ |
+| **Contract Scope** | API shape (request/response) | Usage patterns                       |
+| **Documentation**  | Separate, can drift          | Generated from tests, always current |
+| **Evolution**      | Version negotiation          | Cumulative, forever                  |
+| **Failure**        | Consumer incompatibility     | Broken promise → blocked             |
 
 ## What We Learned
 
