@@ -23,7 +23,7 @@ If the test passes, the promise holds. If it fails, the change is blocked. What 
 
 Services rely on specific behaviors: pagination size, index filters, query direction, batch semantics, consistency guarantees. Combine these, and the number of possible usage patterns explodes.
 
-We have unit tests. We have E2E tests. We do our best. But even with all that, we couldn't be 100% certain that every promised usage pattern would keep working. Contract tests fill that gap—they guarantee exactly what we promise.
+We have unit tests. We have E2E tests. We do our best. But even with all that, we couldn't be 100% certain that every promised usage pattern would keep working. We needed a way to evolve continuously without breaking existing integrations. Contract tests fill that gap—they guarantee exactly what we promise.
 
 ## How It Works
 
