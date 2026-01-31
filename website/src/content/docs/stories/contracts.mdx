@@ -1,11 +1,11 @@
 ---
 title: Tests as Contracts
-description: How Actionbase evolved continuously while never breaking existing integrations
+description: How Actionbase evolved continuously while preserving promised behaviors
 sidebar:
   order: 5
 ---
 
-This story demonstrates the **Tests as Contracts** pattern: how Actionbase evolved continuously without ever breaking existing integrations.
+This story demonstrates the **Tests as Contracts** pattern: how Actionbase evolved continuously while preserving promised behaviors.
 
 ## What Is Tests as Contracts?
 
@@ -15,7 +15,7 @@ When a service team integrates with Actionbase, we avoid manual documentation. I
 
 - Defines the contract (schema, mutations, queries)
 - Generates documentation automatically
-- Runs on every PR to guard production
+- Runs on every PR to gate changes before production
 
 If the test passes, the promise holds. If it fails, the change is blocked.
 
@@ -55,7 +55,7 @@ This test is not an example. It is the contract.
 
 From that test, documentation is generated automatically. When tests run, they generate schema definitions, API examples, and query semantics as `.mdx` files—then CI deploys them to our documentation site. The service team reviews. We iterate. We adjust the test. Writing the test is manual. Everything after that is automated.
 
-Once everyone agrees, the contract is locked. At that moment, the test stops being just a test. It becomes a promise.
+Once everyone agrees, the contract is locked—both sides must approve any changes or retirement. At that moment, the test stops being just a test. It becomes a promise.
 
 The contracts we write cover the usage patterns that services depend on. Writing these contracts takes more work, but it's a choice we made—for trust.
 
@@ -82,7 +82,7 @@ Locked contracts stay until both sides agree—whether to evolve or retire. Ever
 - **Unit + E2E tests** — when adding new features
 - **Contract tests** — when adding new integrations
 
-If everything passes, the change ships. If even one contract fails, the PR cannot be merged. No exceptions. We don't ask: "Is this change reasonable?" We ask: "Does this break anything we promised?"
+If everything passes, the change ships. If even one contract fails, the PR cannot be merged—for everything we explicitly promised. We don't ask: "Is this change reasonable?" We ask: "Does this break anything we promised?"
 
 ## Living with Contracts
 
