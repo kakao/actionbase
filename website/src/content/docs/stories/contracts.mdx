@@ -80,9 +80,8 @@ flowchart LR
 
 Locked contracts stay until both sides agree—whether to evolve or retire. Every pull request runs unit tests, E2E tests, and all locked contracts.
 
-- **Unit tests** — verify internal correctness
-- **E2E tests** — verify the system works (written by us)
-- **Contract tests** — verify promises to each service (co-owned)
+- **Unit + E2E tests** — added per feature
+- **Contract tests** — added per integration
 
 If everything passes, the change ships. If even one contract fails, the PR cannot be merged. No exceptions. We don't ask: "Is this change reasonable?" We ask: "Does this break anything we promised?"
 
