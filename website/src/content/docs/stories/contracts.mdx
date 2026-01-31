@@ -53,11 +53,11 @@ Instead of writing documentation, we write a scenario test together. That test d
 
 This test is not an example. It is the contract.
 
-From that test, documentation is generated automatically. CI extracts schema definitions, API examples, and query semantics from the test, then deploys them to our documentation site. The service team reviews. We iterate. We adjust the test. Writing the test is manual. Everything after that is automated.
+From that test, documentation is generated automatically. When tests run, they generate schema definitions, API examples, and query semantics as `.mdx` files—then CI deploys them to our documentation site. The service team reviews. We iterate. We adjust the test. Writing the test is manual. Everything after that is automated.
 
 Once everyone agrees, the contract is locked. At that moment, the test stops being just a test. It becomes a promise.
 
-We write the tests ourselves. Not because we want to, but because we have to. If a contract breaks, we're the ones who get paged. Owning the tests means owning the risk. This worked for survival. But as we open-source Actionbase, we're exploring a new model—one where anyone can contribute contracts. What that looks like is still evolving.
+We write the tests ourselves. It's more work, but it's a choice we made—for trust. This worked for survival. But as we open-source Actionbase, we're exploring a new model—one where anyone can contribute contracts. What that looks like is still evolving.
 
 ### 2. Protection: Locked Contracts Guard Production
 
