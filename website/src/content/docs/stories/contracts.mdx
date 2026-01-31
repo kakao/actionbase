@@ -168,4 +168,6 @@ class WishContract {
 }
 ```
 
-The test framework is built on JUnit extensions. Each inner class generates an `.mdx` file, and each test method becomes a section within that file. The tooling used internally is planned for open-source release. See the [Roadmap](/community/roadmap/) for details.
+The test framework is built on JUnit extensions. Each inner class generates an `.mdx` file, and each test method becomes a section within that file.
+
+The contract testing framework was a blocking issue for open-sourcing Actionbase—it contained too much internal information. We decided to remove it for now. Our plan is to incrementally open-source this framework, sanitizing internal details as we go. In the meantime, we'll share what we can through talks and presentations. See the [Roadmap](/community/roadmap/) for updates.
