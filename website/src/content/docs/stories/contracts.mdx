@@ -1,17 +1,42 @@
 ---
 title: Tests as Contracts
-description: How tests become integration documents that never go stale
+description: How Actionbase evolved continuously while never breaking existing integrations
 sidebar:
   order: 5
 ---
 
-This story demonstrates the **Contract Testing** pattern: how Actionbase guarantees 100% contract coverage instead of 100% code coverage.
+This story demonstrates the **Tests as Contracts** pattern: how Actionbase evolved continuously without ever breaking existing integrations.
 
-## What is Contract Testing?
+## The Challenge
 
-Contract testing verifies that two systems agree on how they communicate. Traditionally, it checks API shape between services—request format, response structure, error codes. Tools like [Pact](https://docs.pact.io/) automate this between microservices.
+Contract Testing is a powerful idea: two systems should agree on how they communicate—and that agreement should be tested continuously.
 
-But Actionbase isn't an API server. It's a database. We applied the same idea—with some adaptations.
+In the microservice world, tools like [Pact](https://docs.pact.io/) apply this idea to APIs. A consumer defines what it expects. The provider verifies that it still satisfies those expectations. As long as the contract holds, teams can evolve independently without fear.
+
+But Actionbase isn't an API server—it's a database with a REST interface. And databases introduce a very different kind of contract.
+
+When a service integrates with a database, it doesn't just rely on data. It relies on behavior:
+
+- "Give me the 10 most recent edges, sorted descending."
+- "This query must be fast with this index."
+- "Batch reads of 500 items must be stable."
+- "This mutation pattern must never break."
+
+These expectations are not captured by schemas alone.
+
+We tried documenting them with Swagger. But as Actionbase evolved, the testing burden grew exponentially. Every new query capability multiplied the number of combinations to cover.
+
+Testing everything wasn't realistic. Testing nothing wasn't acceptable. Traditional tests didn't help either—unit tests verify correctness in isolation, E2E tests verify happy paths, but neither guarantees: "This exact usage pattern will keep working forever."
+
+That gap is where we applied the Contract Testing idea—with a twist.
+
+## Contract Strategy
+
+We kept the core insight: a contract is something you test continuously, not something you document once.
+
+Then we asked a different question: what does a contract look like for a database?
+
+Our answer: a real usage scenario. Not a schema file. Not an API definition. A scenario test that reflects how the system is actually used.
 
 ## How It Works
 
@@ -19,17 +44,13 @@ But Actionbase isn't an API server. It's a database. We applied the same idea—
 flowchart TB
     subgraph Integration ["1. Integration"]
         direction TB
-        Request[Integration Request] --> Test
-        subgraph Test ["Write Test"]
-            direction TB
-            Decision{New Table?}
-            Decision -->|Yes| NewTable["Table Test<br/>schema.md, operation.md, integration.md"]
-            Decision -->|No| Compose["Composition Test<br/>integration.md"]
-        end
-        Test --> Deploy[Website Deploy]
-        Deploy --> Review{Requirements OK?}
-        Review -->|No| Test
-        Review -->|Yes| Locked[Contract Locked]
+        Request[Integration Request] --> Test["Write Scenario Test"]
+        Test --> Contract["Test = Contract
+        (generates MDX docs)"]
+        Contract --> Deploy["Deploy to Website"]
+        Deploy --> Review{Discuss with Service Team}
+        Review -->|Iterate| Test
+        Review -->|Finalize| Locked["Contract Locked"]
     end
 
     Locked -.->|adds to| Contracts
@@ -37,52 +58,74 @@ flowchart TB
     subgraph Protection ["2. Protection"]
         direction LR
         Change[Code Change] --> PR[PR]
-        PR --> Contracts{All Contracts}
+        PR --> Contracts{"Run All Contracts
+        (as tests)"}
         Contracts -->|Pass| Merge[Merge]
         Contracts -->|Fail| Block[Blocked]
     end
 ```
 
-### 1. Integration
+### 1. Integration: Tests Become Contracts
 
-When a service team requests integration:
+When a service team wants to integrate with Actionbase, the process starts with a concrete request:
 
-1. **Integration Request** — They describe what they need. "We need the 10 most recent wishes for a user, sorted by timestamp descending."
+"We need the 10 most recent wishes for a user, sorted by timestamp descending."
 
-2. **Write Test** — We write a scenario test together. Two types:
-   - **Table Test** (new table) — Generates schema.md, operation.md, integration.md
-   - **Composition Test** (existing tables) — Generates integration.md only
+Instead of writing documentation, we write a scenario test together. That test defines:
 
-3. **Website Deploy** — The test generates MDX files. The website deploys with the new docs. (Currently Docusaurus internally; migrating to Astro Starlight as part of this open source release.)
+- The schema (edges, properties, indexes)
+- The mutations (create, update, delete)
+- The queries (exact access patterns, limits, ordering)
 
-4. **Requirements OK?** — Service team reviews the docs. If not right, we iterate—back to Write Test. If good, we finalize.
+This test is not an example. It is the contract.
 
-5. **Contract Locked** — The contract is finalized. It joins All Contracts.
+From that test, documentation is generated automatically—schema definitions, API examples, query semantics. CI deploys the docs to our website. The service team reviews them. We iterate. We adjust the test. Writing the test is manual. Everything after that is automated.
 
-### 2. Protection
+Once everyone agrees, the contract is locked. At that moment, the test stops being just a test. It becomes a promise.
 
-Once locked, contracts guard production:
+### 2. Protection: Locked Contracts Guard Production
 
-1. **Code Change** — Someone changes Actionbase code.
+Locked contracts never disappear. Every pull request to Actionbase runs all locked contracts.
 
-2. **PR** — They open a pull request.
+- If every contract passes → the change ships.
+- If even one fails → the change is blocked.
 
-3. **All Contracts** — Every locked contract runs as a test.
+We don't ask: "Is this change reasonable?" We ask: "Does this break anything we promised?" If it does, it doesn't ship.
 
-4. **Pass → Merge** — All contracts pass, PR merges.
+## Same Table, Different Contracts
 
-5. **Fail → Blocked** — Any contract fails, merge is blocked. Broken contracts don't ship.
+One table can have many contracts—because the same data is used in different ways.
 
-## Why This Works
+- One service reads the newest 10 items.
+- Another scans the oldest 100.
+- One fetches single edges.
+- Another batch-fetches hundreds.
 
-**Same table, different expectations.** One service expects the 10 most recent items. Another expects the 100 oldest. Some fetch a single edge, others batch-fetch hundreds. Each combination of index, direction, and limit is a separate contract.
+Each usage pattern is a separate contract. Each is protected independently. This is difficult to express with API-level contract testing, but for databases, it's essential.
 
-**Tests replace docs.** The test generates the documentation. Schema, operations, API examples—all from the same test code. Documentation never goes stale because it's generated from the test that must pass.
+## The Actionbase Approach
 
-**100% contract coverage.** We have unit tests. We have API-level integration tests (E2E). We do our best—but even 99.9999% isn't 100%. There's always that 0.0001%. Contract tests cover exactly that gap. What we promise, we test. What we test, we guarantee. 100%.
+| Aspect               | Traditional (API Contract Testing) | Actionbase (Tests as Contracts) |
+| -------------------- | ---------------------------------- | ------------------------------- |
+| **Target System**    | API server ↔ API consumer          | Database ↔ service teams        |
+| **Contract Scope**   | Request/response shape             | Usage patterns                  |
+| **Contract Format**  | Pact files (JSON)                  | Scenario test code              |
+| **Documentation**    | Separate                           | Generated from tests (MDX)      |
+| **Doc Freshness**    | Can drift                          | Always current                  |
+| **Contract Storage** | Pact Broker                        | Test suite                      |
+| **Evolution Model**  | Version negotiation                | Cumulative, forever             |
+| **Failure Meaning**  | Consumer incompatibility           | Broken promise                  |
+
+### What Makes This Different
+
+**Contracts describe usage, not interfaces.** The promise isn't "this API returns JSON." It's "this access pattern will always work."
+
+**Test = Spec = Doc = Guard.** This is the key insight. One source of truth. Nothing drifts. Nothing is assumed.
+
+**What we promise, we guarantee.** If it's not a contract, it's not guaranteed. If it is a contract, it is guaranteed—100%.
 
 ## What We Learned
 
-- **Tests become integration documents.** No separate docs to maintain. The test is the spec.
-- **Iteration before lock.** Requirements change during integration. The loop handles that.
-- **Once locked, always protected.** Every PR runs every contract. Broken contracts don't ship.
+- **Contracts are promises, not documents.** Every integration is a promise. Tests enforce that promise on every PR.
+- **Evolving systems need guardrails.** Actionbase was never finished—new features, new optimizations, new storage backends. But every change was safe because every promise was tested.
+- **Tests as Contracts enables fearless evolution.** That's how we built a system that grows without breaking.
