@@ -89,22 +89,20 @@ If everything passes, the change ships. If even one contract fails, the PR canno
 
 ### Same Table, Different Contracts
 
-One table can have many contracts—because the same data is used in different ways. One service needs 100 items at once. Another paginates 10 at a time. One needs strong consistency. Another is fine with eventual consistency.
+One table can have many contracts. One service needs 100 items at once, another paginates 10 at a time. One requires strong consistency, another is fine with eventual. Each usage pattern is a separate contract, protected independently.
 
-Each usage pattern is a separate contract. Each is protected independently.
+### Evolving Contracts
 
-### Changing Contracts
+Contracts evolve with service requirements. Each change increments the version—old versions remain until services migrate.
 
-Contracts evolve with service requirements. Each update increments the version.
+## How We Differ from Traditional Contract Testing
 
-## Comparison
+Traditional contract testing (like Pact) focuses on API shape—request and response formats. Our contracts go deeper: they capture usage patterns, not just interfaces.
 
-| Aspect             | Pact-style                   | Actionbase                           |
-| ------------------ | ---------------------------- | ------------------------------------ |
-| **Contract Scope** | API shape (request/response) | Usage patterns                       |
-| **Documentation**  | Separate, can drift          | Generated from tests, always current |
-| **Evolution**      | Version negotiation          | Cumulative, versioned                |
-| **Failure**        | Consumer incompatibility     | Broken promise → blocked             |
+|                    | Traditional          | Actionbase                 |
+| ------------------ | -------------------- | -------------------------- |
+| **Scope**          | API shape            | Usage patterns             |
+| **Docs**           | Separate             | Generated from tests       |
 
 ## What We Learned
 
@@ -166,5 +164,14 @@ class WishContract {
 ```
 
 The test framework is built on JUnit extensions. Each inner class generates an `.mdx` file, and each test method becomes a section within that file.
+
+### Detailed Comparison
+
+| Aspect             | Traditional (Pact-style)     | Actionbase                           |
+| ------------------ | ---------------------------- | ------------------------------------ |
+| **Contract Scope** | API shape (request/response) | Usage patterns                       |
+| **Documentation**  | Separate, can drift          | Generated from tests, always current |
+| **Evolution**      | Version negotiation          | Cumulative, versioned                |
+| **Failure**        | Consumer incompatibility     | Broken promise → blocked             |
 
 The contract testing framework was a blocking issue for open-sourcing Actionbase—it contained too much internal information. We decided to remove it for now. Our plan is to incrementally open-source this framework, sanitizing internal details as we go. We're also exploring a new model—one where anyone can contribute contracts. What that looks like is still evolving. In the meantime, we'll share what we can through talks and presentations. See the [Roadmap](/community/roadmap/) for updates.
