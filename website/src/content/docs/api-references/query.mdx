@@ -321,14 +321,14 @@ GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids
 
 ### Parameters
 
-| Location | Parameter     | Required                       | Description                                                              |
-| -------- | ------------- | ------------------------------ | ------------------------------------------------------------------------ |
-| Header   | Authorization | Optional                       | Authentication key (reserved for future use)                             |
-| Path     | database      | Required                       | Target database name                                                     |
-| Path     | table         | Required                       | Target table name (must be a multi-edge table)                           |
-| Query    | ids           | Required                       | Edge ID list (comma-separated)                                           |
-| Query    | filters       | Optional (default: null)       | [Filtering conditions](#filters)                                         |
-| Query    | features      | Optional (default: empty list) | List of features to include                                              |
+| Location | Parameter     | Required                       | Description                                    |
+| -------- | ------------- | ------------------------------ | ---------------------------------------------- |
+| Header   | Authorization | Optional                       | Authentication key (reserved for future use)   |
+| Path     | database      | Required                       | Target database name                           |
+| Path     | table         | Required                       | Target table name (must be a multi-edge table) |
+| Query    | ids           | Required                       | Edge ID list (comma-separated)                 |
+| Query    | filters       | Optional (default: null)       | [Filtering conditions](#filters)               |
+| Query    | features      | Optional (default: empty list) | List of features to include                    |
 
 A maximum of **25 edges** can be retrieved per API request. To retrieve more edges, make multiple API requests.
 
