@@ -1,0 +1,64 @@
+---
+title: 릴리스 정책
+description: Actionbase의 버전 관리 체계와 지원 정책
+sidebar:
+  order: 3
+---
+
+Actionbase는 변경 사항을 명확하게 전달하기 위해 [유의적 버전](https://semver.org/) (SemVer)을 따릅니다.
+
+## 버전 체계
+
+버전은 `MAJOR.MINOR.PATCH` 형식을 따릅니다:
+
+- **MAJOR**: 호환되지 않는 API 변경
+- **MINOR**: 하위 호환되는 새로운 기능
+- **PATCH**: 하위 호환되는 버그 수정
+
+예시: `1.2.3` → Major 1, Minor 2, Patch 3
+
+## 현재 단계 (0.x.x)
+
+Actionbase는 카카오 내부에서 프로덕션 환경으로 운영되고 있습니다. 오픈소스 릴리스를 준비 중입니다. `0.x.x` 단계에서는:
+
+- 릴리스 간 API가 변경될 수 있습니다
+- 설치 및 운영 가이드가 준비 중입니다
+- 피드백과 실험을 환영합니다
+
+`1.0.0` 릴리스는 외부 사용자가 프로덕션 환경에서 Actionbase를 배포할 수 있는 시점을 의미합니다.
+
+## 호환성 약속
+
+다음은 **1.0.0 이후**에 적용됩니다:
+
+- **PATCH** 릴리스는 항상 안전하게 업그레이드할 수 있습니다
+- **MINOR** 릴리스는 기존 기능을 깨뜨리지 않고 기능을 추가합니다
+- **MAJOR** 릴리스는 호환되지 않는 변경을 포함할 수 있으며, 마이그레이션 가이드가 제공됩니다
+
+## 릴리스 후보
+
+릴리스 전에 커뮤니티 테스트와 피드백을 위해 하나 이상의 릴리스 후보 (`-rc.N`)가 게시될 수 있습니다.
+
+참여하려면:
+
+- 비프로덕션 환경에서 RC 버전을 테스트하세요
+- [GitHub Issues](https://github.com/kakao/actionbase/issues)에 이슈를 보고하세요
+- [GitHub Discussions](https://github.com/kakao/actionbase/discussions)에서 피드백을 공유하세요
+
+## 지원 정책
+
+현재 **최신 릴리스**만 버그 수정 및 보안 패치로 적극 지원됩니다.
+
+프로젝트가 성숙해지면 유지보수 기간이 연장된 장기 지원(LTS) 릴리스를 도입할 수 있습니다.
+
+## 릴리스 산출물
+
+모든 모듈은 동일한 버전을 공유하며 함께 릴리스됩니다.
+
+| 모듈       | 산출물          | 배포                                       |
+| ---------- | --------------- | ------------------------------------------ |
+| **core**   | Java 라이브러리 | GitHub Packages (1.0.0 이후 Maven Central) |
+| **server** | Docker 이미지   | `ghcr.io/kakao/actionbase`                 |
+| **cli**    | 바이너리        | GitHub Releases                            |
+
+릴리스 공지는 [GitHub Releases](https://github.com/kakao/actionbase/releases)에 게시됩니다.
