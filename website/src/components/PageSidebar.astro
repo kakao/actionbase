@@ -1,7 +1,7 @@
 ---
 import MobileTableOfContents from '@astrojs/starlight/components/MobileTableOfContents.astro';
 import TableOfContents from '@astrojs/starlight/components/TableOfContents.astro';
-import LanguageSelector from './LanguageSelector.astro';
+import LanguageSelect from './LanguageSelect.astro';
 
 const { toc } = Astro.locals.starlightRoute;
 const { hideOverview } = Astro.locals.starlightRoute.entry.data;
@@ -17,7 +17,7 @@ if (toc && hideOverview) {
 		<div class="lg:sl-hidden">
 			<MobileTableOfContents />
 			<div class="mobile-lang">
-				<LanguageSelector />
+				<LanguageSelect />
 			</div>
 		</div>
 		<div class="sidebar-panel sl-hidden lg:sl-block">
@@ -39,7 +39,7 @@ if (toc && hideOverview) {
 			display: flex;
 			align-items: center;
 		}
-		@media (min-width: 60rem) {
+		@media (min-width: 50rem) {
 			.mobile-lang {
 				display: none;
 			}
