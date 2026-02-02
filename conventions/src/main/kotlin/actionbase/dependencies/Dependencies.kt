@@ -32,7 +32,7 @@ object Versions {
     const val HIKARICP = "5.0.1"
     const val EXPOSED = "0.42.1"
     const val H2 = "2.2.220"
-    const val KOTEST = "5.5.5"
+    const val KOTEST = "5.9.1"
     const val BLOCKHOUND = "1.0.8.RELEASE"
     const val RELOAD4J = "1.2.25"
     const val JACKSON_SPARK = "2.12.3"
