@@ -138,4 +138,4 @@ License for the specific language governing permissions and limitations under
 the License.
 
 [contributors]: https://github.com/kakao/actionbase/graphs/contributors
-[contributors_img]: https://contrib.rocks/image?repo=kakao/actionbase
+[contributors_img]: https://contrib.rocks/image?repo=kakao/actionbase&v=2
