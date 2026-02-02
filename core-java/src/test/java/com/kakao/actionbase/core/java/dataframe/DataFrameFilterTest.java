@@ -23,14 +23,13 @@ class DataFrameFilterTest {
   @BeforeEach
   void setUp() {
     // Define schema
-    StructType schema =
-        StructType.builder()
-            .addField("id", DataType.LONG)
-            .addField("name", DataType.STRING)
-            .addField("age", DataType.LONG)
-            .addField("score", DataType.DOUBLE)
-            .addField("category", DataType.STRING)
-            .build();
+    StructType schema = StructType.builder()
+        .addField("id", DataType.LONG)
+        .addField("name", DataType.STRING)
+        .addField("age", DataType.LONG)
+        .addField("score", DataType.DOUBLE)
+        .addField("category", DataType.STRING)
+        .build();
 
     // Create test data
     List<Row> data = new ArrayList<>();

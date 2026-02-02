@@ -15,8 +15,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = ImmutableQueryVertexConstant.class, name = QueryVertex.CONSTANT_TYPE),
-  @JsonSubTypes.Type(value = ImmutableQueryVertexRef.class, name = QueryVertex.REF_TYPE),
+    @JsonSubTypes.Type(value = ImmutableQueryVertexConstant.class, name = QueryVertex.CONSTANT_TYPE),
+    @JsonSubTypes.Type(value = ImmutableQueryVertexRef.class, name = QueryVertex.REF_TYPE),
 })
 public interface QueryVertex {
 

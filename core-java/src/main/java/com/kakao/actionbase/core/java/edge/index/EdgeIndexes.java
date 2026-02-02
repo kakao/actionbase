@@ -27,15 +27,14 @@ public class EdgeIndexes {
     List<EncodableEdgeIndex> edgeIndexes = new ArrayList<>();
     for (Index index : edgeSchema.indexes()) {
       for (Direction direction : directions) {
-        ImmutableEncodableEdgeIndex.Builder builder =
-            ImmutableEncodableEdgeIndex.builder()
-                .version(state.version())
-                .source(state.source())
-                .target(state.target())
-                .properties(properties)
-                .direction(direction)
-                .indexCode(index.code())
-                .tableCode(table.code());
+        ImmutableEncodableEdgeIndex.Builder builder = ImmutableEncodableEdgeIndex.builder()
+            .version(state.version())
+            .source(state.source())
+            .target(state.target())
+            .properties(properties)
+            .direction(direction)
+            .indexCode(index.code())
+            .tableCode(table.code());
 
         for (IndexField field : index.fields()) {
           SystemProperties systemProperty = SystemProperties.getOrNull(field.field());
@@ -49,15 +48,15 @@ public class EdgeIndexes {
             }
           } else {
             switch (systemProperty) {
-              case VERSION:
+              case VERSION :
                 builder.addIndexValues(
                     ImmutableEncodableIndexValue.of(state.version(), field.order()));
                 break;
-              case SOURCE:
+              case SOURCE :
                 builder.addIndexValues(
                     ImmutableEncodableIndexValue.of(state.source(), field.order()));
                 break;
-              case TARGET:
+              case TARGET :
                 builder.addIndexValues(
                     ImmutableEncodableIndexValue.of(state.target(), field.order()));
                 break;

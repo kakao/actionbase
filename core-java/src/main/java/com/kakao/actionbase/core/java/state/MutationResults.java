@@ -28,28 +28,27 @@ public interface MutationResults {
    *  | false        | false       | IDLE     |
    *  | true         | false       | DELETED  |
    *  | true         | true        | UPDATED  |
-   *  </pre>
+   * </pre>
    */
   static MutationResults from(CDCListPayload<?, ?> cdcList) {
-    List<String> results =
-        cdcList.items().stream()
-            .map(
-                cdc -> {
-                  boolean beforeActive = cdc.before().active();
-                  boolean afterActive = cdc.after().active();
+    List<String> results = cdcList.items().stream()
+        .map(
+            cdc -> {
+              boolean beforeActive = cdc.before().active();
+              boolean afterActive = cdc.after().active();
 
-                  // Calculate state
-                  if (!beforeActive && afterActive) {
-                    return "CREATED";
-                  } else if (!beforeActive) {
-                    return "IDLE";
-                  } else if (!afterActive) {
-                    return "DELETED";
-                  } else {
-                    return "UPDATED";
-                  }
-                })
-            .collect(Collectors.toList()); // Can collect results into list, etc. and return
+              // Calculate state
+              if (!beforeActive && afterActive) {
+                return "CREATED";
+              } else if (!beforeActive) {
+                return "IDLE";
+              } else if (!afterActive) {
+                return "DELETED";
+              } else {
+                return "UPDATED";
+              }
+            })
+        .collect(Collectors.toList()); // Can collect results into list, etc. and return
 
     return ImmutableMutationResults.of(results);
   }

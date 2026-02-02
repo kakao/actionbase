@@ -19,5 +19,6 @@ public interface StorageCDC extends MetadataCDC<StorageDescriptor> {
   @Nullable
   StorageDescriptor after();
 
-  interface Builder extends MetadataCDC.Builder<StorageDescriptor> {}
+  interface Builder extends MetadataCDC.Builder<StorageDescriptor> {
+  }
 }

@@ -36,8 +36,8 @@ public class Constant {
     public static final String NIL_NAME = "nil";
     public static final String NIL_COMMENT = "nil datastore";
 
-    public static final List<String> ALL_SYSTEM_DATASTORE =
-        Arrays.asList(DEFAULT_NAME, METADATA_NAME, NIL_NAME);
+    public static final List<String> ALL_SYSTEM_DATASTORE = Arrays.asList(DEFAULT_NAME,
+        METADATA_NAME, NIL_NAME);
   }
 
   public static class Storage {
@@ -52,8 +52,8 @@ public class Constant {
     public static final String NIL_NAME = "nil";
     public static final String NIL_COMMENT = "nil storage";
 
-    public static final List<String> ALL_SYSTEM_STORAGES =
-        Arrays.asList(DEFAULT_NAME, METADATA_NAME, NIL_NAME);
+    public static final List<String> ALL_SYSTEM_STORAGES = Arrays.asList(DEFAULT_NAME,
+        METADATA_NAME, NIL_NAME);
   }
 
   public static class Table {
@@ -76,9 +76,8 @@ public class Constant {
     public static final String ALIAS_NAME = "alias";
     public static final String ALIAS_COMMENT = "sys.alias table";
 
-    public static final List<String> ALL_SYSTEM_TABLES =
-        Arrays.asList(
-            TENANT_NAME, DATASTORE_NAME, DATABASE_NAME, TABLE_NAME, STORAGE_NAME, ALIAS_NAME);
+    public static final List<String> ALL_SYSTEM_TABLES = Arrays.asList(
+        TENANT_NAME, DATASTORE_NAME, DATABASE_NAME, TABLE_NAME, STORAGE_NAME, ALIAS_NAME);
   }
 
   public static class Codec {

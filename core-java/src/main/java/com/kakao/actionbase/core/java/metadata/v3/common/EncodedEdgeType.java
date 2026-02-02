@@ -3,10 +3,7 @@ package com.kakao.actionbase.core.java.metadata.v3.common;
 import java.util.HashMap;
 
 public enum EncodedEdgeType {
-  EDGE_LOCK((byte) -1),
-  EDGE_COUNT((byte) -2),
-  EDGE_STATE((byte) -3),
-  EDGE_INDEX((byte) -4),
+  EDGE_LOCK((byte) -1), EDGE_COUNT((byte) -2), EDGE_STATE((byte) -3), EDGE_INDEX((byte) -4),
   ;
 
   private static final HashMap<Byte, EncodedEdgeType> CODE_TO_VALUE_MAP = new HashMap<>();

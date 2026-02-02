@@ -61,81 +61,73 @@ class StorageDescriptorTest extends AbstractUnitTest<StorageDescriptor> {
     }
 
     @ParameterizedTest(name = "Different field case: {0}")
-    @ValueSource(
-        strings = {
-          "active",
-          "tenant",
-          "type",
-          "database",
-          "storage",
-          "comment",
-          "datastore",
-          "configuration"
-        })
+    @ValueSource(strings = {
+        "active",
+        "tenant",
+        "type",
+        "database",
+        "storage",
+        "comment",
+        "datastore",
+        "configuration"
+    })
     @DisplayName("Objects with different fields should not be equal")
     void testDataInequality(String field) {
       StorageDescriptor differentData;
 
       switch (field) {
-        case "active":
-          differentData =
-              ImmutableStorageDescriptor.builder().from(testTarget).active(!TEST_ACTIVE).build();
+        case "active" :
+          differentData = ImmutableStorageDescriptor.builder().from(testTarget).active(!TEST_ACTIVE)
+              .build();
           break;
-        case "tenant":
-          differentData =
-              ImmutableStorageDescriptor.builder()
-                  .from(testTarget)
-                  .tenant(TEST_TENANT + "-different")
-                  .build();
+        case "tenant" :
+          differentData = ImmutableStorageDescriptor.builder()
+              .from(testTarget)
+              .tenant(TEST_TENANT + "-different")
+              .build();
           break;
-        case "type":
-          differentData =
-              ImmutableStorageDescriptor.builder()
-                  .from(testTarget)
-                  .type(
-                      TEST_TYPE == DatastoreType.MEMORY
-                          ? DatastoreType.HBASE
-                          : DatastoreType.MEMORY)
-                  .build();
+        case "type" :
+          differentData = ImmutableStorageDescriptor.builder()
+              .from(testTarget)
+              .type(
+                  TEST_TYPE == DatastoreType.MEMORY
+                      ? DatastoreType.HBASE
+                      : DatastoreType.MEMORY)
+              .build();
           break;
-        case "database":
-          differentData =
-              ImmutableStorageDescriptor.builder()
-                  .from(testTarget)
-                  .database(TEST_DATABASE + "-different")
-                  .build();
+        case "database" :
+          differentData = ImmutableStorageDescriptor.builder()
+              .from(testTarget)
+              .database(TEST_DATABASE + "-different")
+              .build();
           break;
-        case "storage":
-          differentData =
-              ImmutableStorageDescriptor.builder()
-                  .from(testTarget)
-                  .storage(TEST_STORAGE + "-different")
-                  .build();
+        case "storage" :
+          differentData = ImmutableStorageDescriptor.builder()
+              .from(testTarget)
+              .storage(TEST_STORAGE + "-different")
+              .build();
           break;
-        case "datastore":
-          differentData =
-              ImmutableStorageDescriptor.builder()
-                  .from(testTarget)
-                  .datastore(TEST_DATASTORE + "-different")
-                  .build();
+        case "datastore" :
+          differentData = ImmutableStorageDescriptor.builder()
+              .from(testTarget)
+              .datastore(TEST_DATASTORE + "-different")
+              .build();
           break;
-        case "comment":
-          differentData =
-              ImmutableStorageDescriptor.builder()
-                  .from(testTarget)
-                  .comment(TEST_COMMENT + "-different")
-                  .build();
+        case "comment" :
+          differentData = ImmutableStorageDescriptor.builder()
+              .from(testTarget)
+              .comment(TEST_COMMENT + "-different")
+              .build();
           break;
-        case "configuration":
+        case "configuration" :
           Map<String, Object> differentConfig = new HashMap<>(baseConfiguration);
           differentConfig.put("key1", "differentValue");
-          differentData =
-              ImmutableStorageDescriptor.builder()
-                  .from(testTarget)
-                  .configuration(differentConfig)
-                  .build();
+          differentData = ImmutableStorageDescriptor.builder()
+              .from(testTarget)
+              .configuration(differentConfig)
+              .build();
           break;
-        default:
+        default :
           throw new IllegalArgumentException("Unexpected field: " + field);
       }
 
@@ -152,8 +144,8 @@ class StorageDescriptorTest extends AbstractUnitTest<StorageDescriptor> {
     @ValueSource(strings = {"type", "tenant", "database", "storage"})
     @DisplayName("Exception should be thrown when required field is missing")
     void testMissingRequiredField(String excludedField) {
-      ImmutableStorageDescriptor.Builder builder =
-          ImmutableStorageDescriptor.builder().active(TEST_ACTIVE).comment(TEST_COMMENT);
+      ImmutableStorageDescriptor.Builder builder = ImmutableStorageDescriptor.builder()
+          .active(TEST_ACTIVE).comment(TEST_COMMENT);
 
       assertThrows(
           IllegalStateException.class,
@@ -164,17 +156,15 @@ class StorageDescriptorTest extends AbstractUnitTest<StorageDescriptor> {
     }
 
     @Test
-    @DisplayName(
-        "Default state should be active=true, comment=V3Metadata.DEFAULT_COMMENT, configuration={}")
+    @DisplayName("Default state should be active=true, comment=V3Metadata.DEFAULT_COMMENT, configuration={}")
     void testDefaultState() {
-      StorageDescriptor defaultStorage =
-          ImmutableStorageDescriptor.builder()
-              .tenant(TEST_TENANT)
-              .type(TEST_TYPE)
-              .database(TEST_DATABASE)
-              .storage(TEST_STORAGE)
-              .datastore(TEST_DATASTORE)
-              .build();
+      StorageDescriptor defaultStorage = ImmutableStorageDescriptor.builder()
+          .tenant(TEST_TENANT)
+          .type(TEST_TYPE)
+          .database(TEST_DATABASE)
+          .storage(TEST_STORAGE)
+          .datastore(TEST_DATASTORE)
+          .build();
 
       assertTrue(defaultStorage.active());
       assertEquals(Constant.DEFAULT_COMMENT, defaultStorage.comment());

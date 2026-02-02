@@ -91,17 +91,28 @@ public class ActionbaseLogo {
   /**
    * Generates Actionbase logo SVG with custom parameters
    *
-   * @param width Logo width
-   * @param height Logo height
-   * @param borderColor Border color
-   * @param borderSize Border size
-   * @param edgeColor Edge color
-   * @param smallNodeColor Small node color
-   * @param largeNodeColor Large node color
-   * @param strokeWidth Stroke width
-   * @param smallNodeRadius Small node radius
-   * @param largeNodeRadius Large node radius
-   * @param background Whether to include background
+   * @param width
+   *          Logo width
+   * @param height
+   *          Logo height
+   * @param borderColor
+   *          Border color
+   * @param borderSize
+   *          Border size
+   * @param edgeColor
+   *          Edge color
+   * @param smallNodeColor
+   *          Small node color
+   * @param largeNodeColor
+   *          Large node color
+   * @param strokeWidth
+   *          Stroke width
+   * @param smallNodeRadius
+   *          Small node radius
+   * @param largeNodeRadius
+   *          Large node radius
+   * @param background
+   *          Whether to include background
    * @return Logo string in SVG format
    */
   public String createLogo(
@@ -325,10 +336,14 @@ public class ActionbaseLogo {
   /**
    * Creates logo with Actionbase text
    *
-   * @param width Width
-   * @param height Height
-   * @param backgroundColor Background color
-   * @param isLarge Whether text is large
+   * @param width
+   *          Width
+   * @param height
+   *          Height
+   * @param backgroundColor
+   *          Background color
+   * @param isLarge
+   *          Whether text is large
    * @return Logo string in SVG format
    */
   private static String createLogoWithText(
@@ -337,9 +352,8 @@ public class ActionbaseLogo {
 
     // Create base logo
     String baseColor = "#00C2A0";
-    String baseSvg =
-        logoCreator.createLogo(
-            220, 250, "white", 1.5, baseColor, baseColor, baseColor, 7, 7, 17, false);
+    String baseSvg = logoCreator.createLogo(
+        220, 250, "white", 1.5, baseColor, baseColor, baseColor, 7, 7, 17, false);
 
     // Add background and text
     StringBuilder svg = new StringBuilder();
@@ -414,19 +428,21 @@ public class ActionbaseLogo {
   }
 
   /**
-   * Searches for project resources directory location. Checks multiple possible paths and returns
-   * appropriate resources directory.
+   * Searches for project resources directory location. Checks multiple possible
+   * paths and returns appropriate resources directory.
    *
    * @return Resources directory path
-   * @throws IOException If resources directory cannot be found
+   * @throws IOException
+   *           If resources directory cannot be found
    */
   private static String findResourcesDirectory() throws IOException {
     // 1. Find resources directory based on current class location
-    URL classResource =
-        ActionbaseLogo.class.getResource(ActionbaseLogo.class.getSimpleName() + ".class");
+    URL classResource = ActionbaseLogo.class
+        .getResource(ActionbaseLogo.class.getSimpleName() + ".class");
     if (classResource != null) {
       String classPath = classResource.getPath();
-      // Find target/classes or build/classes in classpath and change to src/main/resources
+      // Find target/classes or build/classes in classpath and change to
+      // src/main/resources
       if (classPath.contains("/target/classes/") || classPath.contains("\\target\\classes\\")) {
         return classPath.replaceFirst(
             "([/\\\\])target([/\\\\])classes([/\\\\]).*", "$1src$2main$3resources");
@@ -440,10 +456,10 @@ public class ActionbaseLogo {
     // 2. Find based on current working directory
     String currentDir = System.getProperty("user.dir");
     String[] possiblePaths = {
-      currentDir + "/src/main/resources",
-      currentDir + "\\src\\main\\resources",
-      currentDir + "/resources",
-      currentDir + "\\resources"
+        currentDir + "/src/main/resources",
+        currentDir + "\\src\\main\\resources",
+        currentDir + "/resources",
+        currentDir + "\\resources"
     };
 
     for (String path : possiblePaths) {
@@ -452,7 +468,8 @@ public class ActionbaseLogo {
       }
     }
 
-    // 3. If resources directory cannot be found, create resources folder in current directory
+    // 3. If resources directory cannot be found, create resources folder in current
+    // directory
     Path resourcesDir = Paths.get(currentDir, "resources");
     Files.createDirectories(resourcesDir);
     return resourcesDir.toString();

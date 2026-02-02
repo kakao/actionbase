@@ -47,44 +47,40 @@ class TenantDescriptorTest extends AbstractUnitTest<TenantDescriptor> {
     }
 
     @ParameterizedTest(name = "Different field case: {0}")
-    @ValueSource(
-        strings = {
-          "active",
-          "tenant",
-          "apiVersion",
-          "comment",
-        })
+    @ValueSource(strings = {
+        "active",
+        "tenant",
+        "apiVersion",
+        "comment",
+    })
     @DisplayName("Objects with different fields should not be equal")
     void testDataInequality(String field) {
       TenantDescriptor differentData;
 
       switch (field) {
-        case "active":
-          differentData =
-              ImmutableTenantDescriptor.builder().from(testTarget).active(!TEST_ACTIVE).build();
+        case "active" :
+          differentData = ImmutableTenantDescriptor.builder().from(testTarget).active(!TEST_ACTIVE)
+              .build();
           break;
-        case "tenant":
-          differentData =
-              ImmutableTenantDescriptor.builder()
-                  .from(testTarget)
-                  .tenant(TEST_TENANT + "-different")
-                  .build();
+        case "tenant" :
+          differentData = ImmutableTenantDescriptor.builder()
+              .from(testTarget)
+              .tenant(TEST_TENANT + "-different")
+              .build();
           break;
-        case "apiVersion":
-          differentData =
-              ImmutableTenantDescriptor.builder()
-                  .from(testTarget)
-                  .apiVersion(TEST_API_VERSION == ApiVersion.V3 ? ApiVersion.V2 : ApiVersion.V3)
-                  .build();
+        case "apiVersion" :
+          differentData = ImmutableTenantDescriptor.builder()
+              .from(testTarget)
+              .apiVersion(TEST_API_VERSION == ApiVersion.V3 ? ApiVersion.V2 : ApiVersion.V3)
+              .build();
           break;
-        case "comment":
-          differentData =
-              ImmutableTenantDescriptor.builder()
-                  .from(testTarget)
-                  .comment(TEST_COMMENT + "-different")
-                  .build();
+        case "comment" :
+          differentData = ImmutableTenantDescriptor.builder()
+              .from(testTarget)
+              .comment(TEST_COMMENT + "-different")
+              .build();
           break;
-        default:
+        default :
           throw new IllegalArgumentException("Unexpected field: " + field);
       }
 
@@ -101,8 +97,8 @@ class TenantDescriptorTest extends AbstractUnitTest<TenantDescriptor> {
     @ValueSource(strings = {"tenant", "apiVersion"})
     @DisplayName("Exception should be thrown when required field is missing")
     void testMissingRequiredField(String excludedField) {
-      ImmutableTenantDescriptor.Builder builder =
-          ImmutableTenantDescriptor.builder().active(TEST_ACTIVE).comment(TEST_COMMENT);
+      ImmutableTenantDescriptor.Builder builder = ImmutableTenantDescriptor.builder()
+          .active(TEST_ACTIVE).comment(TEST_COMMENT);
 
       assertThrows(
           IllegalStateException.class,
@@ -115,11 +111,10 @@ class TenantDescriptorTest extends AbstractUnitTest<TenantDescriptor> {
     @Test
     @DisplayName("Default state should be active=true, comment=V3Metadata.DEFAULT_COMMENT")
     void testDefaultState() {
-      TenantDescriptor defaultTenant =
-          ImmutableTenantDescriptor.builder()
-              .tenant(TEST_TENANT)
-              .apiVersion(TEST_API_VERSION)
-              .build();
+      TenantDescriptor defaultTenant = ImmutableTenantDescriptor.builder()
+          .tenant(TEST_TENANT)
+          .apiVersion(TEST_API_VERSION)
+          .build();
 
       assertTrue(defaultTenant.active());
       assertEquals(TenantDescriptor.DEFAULT_SOURCE, defaultTenant.origin());

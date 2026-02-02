@@ -70,14 +70,13 @@ public final class IndexCompanion {
 
   public static class Schemas {
 
-    public static final StructType SCHEMA =
-        ImmutableStructType.builder()
-            .addField(INDEX_FIELD, DataType.STRING)
-            .addField(COMMENT_FIELD, DataType.STRING)
-            .addField(FIELDS_FIELD, IndexFields.Schemas.ARRAY_SCHEMA)
-            .build();
+    public static final StructType SCHEMA = ImmutableStructType.builder()
+        .addField(INDEX_FIELD, DataType.STRING)
+        .addField(COMMENT_FIELD, DataType.STRING)
+        .addField(FIELDS_FIELD, IndexFields.Schemas.ARRAY_SCHEMA)
+        .build();
 
-    public static final ArrayType ARRAY_SCHEMA =
-        ImmutableArrayType.builder().elementType(SCHEMA).build();
+    public static final ArrayType ARRAY_SCHEMA = ImmutableArrayType.builder().elementType(SCHEMA)
+        .build();
   }
 }

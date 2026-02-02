@@ -13,8 +13,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = ImmutableVertexSchema.class, name = SchemaType.VERTEX_TYPE),
-  @JsonSubTypes.Type(value = ImmutableEdgeSchema.class, name = SchemaType.EDGE_TYPE),
+    @JsonSubTypes.Type(value = ImmutableVertexSchema.class, name = SchemaType.VERTEX_TYPE),
+    @JsonSubTypes.Type(value = ImmutableEdgeSchema.class, name = SchemaType.EDGE_TYPE),
 })
 public interface Schema {
 

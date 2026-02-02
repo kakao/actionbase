@@ -59,7 +59,8 @@ public class StateCodecBuffer {
   }
 
   public void encodeMap(Map<String, Object> value) {
-    if (value == null) return;
+    if (value == null)
+      return;
     for (Map.Entry<String, Object> e : value.entrySet()) {
       encodeString(e.getKey());
       encodeAny(e.getValue());
@@ -74,13 +75,13 @@ public class StateCodecBuffer {
         encodeAny(properties.get(indexField.field()), indexField.order());
       } else {
         switch (systemProperty) {
-          case VERSION:
+          case VERSION :
             encodeAny(ts, indexField.order());
             break;
-          case SOURCE:
+          case SOURCE :
             encodeAny(src, indexField.order());
             break;
-          case TARGET:
+          case TARGET :
             encodeAny(tgt, indexField.order());
             break;
         }

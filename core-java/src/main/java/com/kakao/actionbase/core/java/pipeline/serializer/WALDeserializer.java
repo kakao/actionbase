@@ -28,22 +28,22 @@ public class WALDeserializer extends JsonDeserializer<WAL> {
 
     String version = node.get(MessageConstants.VERSION_FIELD).asText();
     switch (version) {
-      case MessageConstants.VERSION_V2:
+      case MessageConstants.VERSION_V2 :
         return mapper.treeToValue(node, WALV2.class);
-      case MessageConstants.VERSION_V3:
+      case MessageConstants.VERSION_V3 :
         if (!node.has(MessageConstants.TYPE_FIELD)) {
           throw new InvalidFormatException(p, "`type` is missing in V3 WAL", node, WAL.class);
         }
         String type = node.get(MessageConstants.TYPE_FIELD).asText();
         switch (type) {
-          case MessageConstants.EDGE_TYPE:
+          case MessageConstants.EDGE_TYPE :
             return mapper.treeToValue(node, WALV3Edge.class);
-          case MessageConstants.VERTEX_TYPE:
+          case MessageConstants.VERTEX_TYPE :
             return mapper.treeToValue(node, WALV3Vertex.class);
-          default:
+          default :
             throw new IllegalArgumentException("Unknown V3 type: " + type);
         }
-      default:
+      default :
         throw new IllegalArgumentException("Unknown version: " + version);
     }
   }

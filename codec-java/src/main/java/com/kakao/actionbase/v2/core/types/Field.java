@@ -8,11 +8,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Field implements Serializable {
 
-  @JsonProperty final String name;
+  @JsonProperty
+  final String name;
 
-  @JsonProperty final DataType type;
+  @JsonProperty
+  final DataType type;
 
-  @JsonProperty final boolean nullable;
+  @JsonProperty
+  final boolean nullable;
 
   final String desc;
 

@@ -75,35 +75,35 @@ public class JvmInfo {
 
   public static String classVersionToJava(int major) {
     switch (major) {
-      case 52:
+      case 52 :
         return "Java 8";
-      case 53:
+      case 53 :
         return "Java 9";
-      case 54:
+      case 54 :
         return "Java 10";
-      case 55:
+      case 55 :
         return "Java 11";
-      case 56:
+      case 56 :
         return "Java 12";
-      case 57:
+      case 57 :
         return "Java 13";
-      case 58:
+      case 58 :
         return "Java 14";
-      case 59:
+      case 59 :
         return "Java 15";
-      case 60:
+      case 60 :
         return "Java 16";
-      case 61:
+      case 61 :
         return "Java 17";
-      case 62:
+      case 62 :
         return "Java 18";
-      case 63:
+      case 63 :
         return "Java 19";
-      case 64:
+      case 64 :
         return "Java 20";
-      case 65:
+      case 65 :
         return "Java 21";
-      default:
+      default :
         return "Unknown";
     }
   }

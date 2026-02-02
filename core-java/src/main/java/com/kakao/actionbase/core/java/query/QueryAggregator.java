@@ -16,13 +16,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(
-      value = ImmutableQueryAggregatorFlatten.class,
-      name = QueryAggregator.FLATTEN_TYPE),
-  @JsonSubTypes.Type(
-      value = ImmutableQueryAggregatorCount.class,
-      name = QueryAggregator.COUNT_TYPE),
-  @JsonSubTypes.Type(value = ImmutableQueryAggregatorSum.class, name = QueryAggregator.SUM_TYPE)
+    @JsonSubTypes.Type(value = ImmutableQueryAggregatorFlatten.class, name = QueryAggregator.FLATTEN_TYPE),
+    @JsonSubTypes.Type(value = ImmutableQueryAggregatorCount.class, name = QueryAggregator.COUNT_TYPE),
+    @JsonSubTypes.Type(value = ImmutableQueryAggregatorSum.class, name = QueryAggregator.SUM_TYPE)
 })
 public interface QueryAggregator {
 

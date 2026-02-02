@@ -50,8 +50,8 @@ class QueryAggregatorTest {
     @DisplayName("Should be able to create Sum type QueryAggregator using sum() method")
     void shouldCreateSumAggregator() {
       // When
-      QueryAggregator.Sum aggregator =
-          QueryAggregator.sum("value", Arrays.asList("key1", "key2"), Order.DESC, 5);
+      QueryAggregator.Sum aggregator = QueryAggregator.sum("value", Arrays.asList("key1", "key2"),
+          Order.DESC, 5);
 
       // Then
       assertInstanceOf(QueryAggregator.Sum.class, aggregator);
@@ -68,8 +68,7 @@ class QueryAggregatorTest {
   class QueryAggregatorSerializationTest {
 
     @Test
-    @DisplayName(
-        "Flatten type QueryAggregator JSON serialization/deserialization should maintain identity")
+    @DisplayName("Flatten type QueryAggregator JSON serialization/deserialization should maintain identity")
     void shouldSerializeAndDeserializeFlatten() throws JsonProcessingException {
       // Given
       QueryAggregator given = QueryAggregator.flatten();
@@ -85,8 +84,7 @@ class QueryAggregatorTest {
     }
 
     @Test
-    @DisplayName(
-        "Count type QueryAggregator JSON serialization/deserialization should maintain identity")
+    @DisplayName("Count type QueryAggregator JSON serialization/deserialization should maintain identity")
     void shouldSerializeAndDeserializeCount() throws JsonProcessingException {
       // Given
       QueryAggregator given = QueryAggregator.count("fieldName", Order.ASC, 10);
@@ -105,12 +103,11 @@ class QueryAggregatorTest {
     }
 
     @Test
-    @DisplayName(
-        "Sum type QueryAggregator JSON serialization/deserialization should maintain identity")
+    @DisplayName("Sum type QueryAggregator JSON serialization/deserialization should maintain identity")
     void shouldSerializeAndDeserializeSum() throws JsonProcessingException {
       // Given
-      QueryAggregator given =
-          QueryAggregator.sum("value", Arrays.asList("key1", "key2"), Order.DESC, 5);
+      QueryAggregator given = QueryAggregator.sum("value", Arrays.asList("key1", "key2"),
+          Order.DESC, 5);
 
       // When
       String serialized = given.toJson();

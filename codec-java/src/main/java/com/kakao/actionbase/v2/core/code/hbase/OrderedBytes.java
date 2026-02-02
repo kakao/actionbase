@@ -59,7 +59,8 @@ public class OrderedBytes {
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
-  public OrderedBytes() {}
+  public OrderedBytes() {
+  }
 
   public static int encodeNull(PositionedByteRange dst, Order ord) {
     dst.put(ord.apply(NULL_HEADER));
@@ -98,7 +99,8 @@ public class OrderedBytes {
       int rawStartPos = offset + start;
 
       int rawTermPos;
-      for (rawTermPos = rawStartPos; a[rawTermPos] != terminator; ++rawTermPos) {}
+      for (rawTermPos = rawStartPos; a[rawTermPos] != terminator; ++rawTermPos) {
+      }
 
       src.setPosition(rawTermPos - offset + 1);
       if (Order.DESC == ord) {
@@ -315,7 +317,8 @@ public class OrderedBytes {
       int rawStartPos = offset + start;
 
       int rawTermPos;
-      for (rawTermPos = rawStartPos; a[rawTermPos] != terminator; ++rawTermPos) {}
+      for (rawTermPos = rawStartPos; a[rawTermPos] != terminator; ++rawTermPos) {
+      }
 
       src.setPosition(rawTermPos - offset + 1);
       try {

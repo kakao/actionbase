@@ -33,15 +33,17 @@ public class EncodedKey<T> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
     EncodedKey<?> that = (EncodedKey<?>) o;
     return Objects.deepEquals(key, that.key) && Objects.deepEquals(field, that.field);
   }
 
   @Override
   public int hashCode() {
-    return Arrays.deepHashCode(new Object[] {key, field != null ? field : 0});
+    return Arrays.deepHashCode(new Object[]{key, field != null ? field : 0});
   }
 
   private String formatValue(T value) {

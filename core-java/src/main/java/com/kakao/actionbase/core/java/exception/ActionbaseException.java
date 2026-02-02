@@ -1,8 +1,9 @@
 package com.kakao.actionbase.core.java.exception;
 
 /**
- * Base class for all exceptions in the Actionbase project. This class is at the top of the
- * exception hierarchy within the project, and all custom exceptions must extend this class.
+ * Base class for all exceptions in the Actionbase project. This class is at the
+ * top of the exception hierarchy within the project, and all custom exceptions
+ * must extend this class.
  */
 public class ActionbaseException extends RuntimeException {
 
@@ -19,7 +20,8 @@ public class ActionbaseException extends RuntimeException {
   /**
    * Creates an exception with a message.
    *
-   * @param message Exception message
+   * @param message
+   *          Exception message
    */
   public ActionbaseException(String message) {
     this(message, "ERR_UNKNOWN", "");
@@ -28,8 +30,10 @@ public class ActionbaseException extends RuntimeException {
   /**
    * Creates an exception with a message and cause exception.
    *
-   * @param message Exception message
-   * @param cause Cause exception
+   * @param message
+   *          Exception message
+   * @param cause
+   *          Cause exception
    */
   public ActionbaseException(String message, Throwable cause) {
     this(message, "ERR_UNKNOWN", "", cause);
@@ -38,8 +42,10 @@ public class ActionbaseException extends RuntimeException {
   /**
    * Creates an exception with a message and error code.
    *
-   * @param message Exception message
-   * @param errorCode Error code
+   * @param message
+   *          Exception message
+   * @param errorCode
+   *          Error code
    */
   public ActionbaseException(String message, String errorCode) {
     this(message, errorCode, "");
@@ -48,9 +54,12 @@ public class ActionbaseException extends RuntimeException {
   /**
    * Creates an exception with a message, error code, and service context.
    *
-   * @param message Exception message
-   * @param errorCode Error code
-   * @param databaseContext Service context information
+   * @param message
+   *          Exception message
+   * @param errorCode
+   *          Error code
+   * @param databaseContext
+   *          Service context information
    */
   public ActionbaseException(String message, String errorCode, String databaseContext) {
     super(message);
@@ -59,12 +68,17 @@ public class ActionbaseException extends RuntimeException {
   }
 
   /**
-   * Creates an exception with a message, error code, service context, and cause exception.
+   * Creates an exception with a message, error code, service context, and cause
+   * exception.
    *
-   * @param message Exception message
-   * @param errorCode Error code
-   * @param databaseContext Service context information
-   * @param cause Cause exception
+   * @param message
+   *          Exception message
+   * @param errorCode
+   *          Error code
+   * @param databaseContext
+   *          Service context information
+   * @param cause
+   *          Cause exception
    */
   public ActionbaseException(
       String message, String errorCode, String databaseContext, Throwable cause) {

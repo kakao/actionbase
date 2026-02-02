@@ -5,9 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public enum DirectionType {
-  BOTH(Direction.OUT, Direction.IN),
-  OUT(Direction.OUT),
-  IN(Direction.IN),
+  BOTH(Direction.OUT, Direction.IN), OUT(Direction.OUT), IN(Direction.IN),
   ;
 
   private final List<Direction> directions;

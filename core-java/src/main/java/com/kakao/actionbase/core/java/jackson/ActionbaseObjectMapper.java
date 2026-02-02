@@ -85,6 +85,7 @@ public class ActionbaseObjectMapper extends ObjectMapper {
   }
 
   public static Map<String, @Nullable Object> toMap(Object value) {
-    return INSTANCE.convertValue(value, new TypeReference<Map<String, @Nullable Object>>() {});
+    return INSTANCE.convertValue(value, new TypeReference<Map<String, @Nullable Object>>() {
+    });
   }
 }

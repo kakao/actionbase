@@ -33,10 +33,9 @@ public final class Fields {
 
   public static class Schemas {
 
-    public static final StructType SCHEMA =
-        ImmutableStructType.builder()
-            .addField(TYPE_FIELD, DataType.STRING)
-            .addField(COMMENT_FIELD, DataType.STRING)
-            .build();
+    public static final StructType SCHEMA = ImmutableStructType.builder()
+        .addField(TYPE_FIELD, DataType.STRING)
+        .addField(COMMENT_FIELD, DataType.STRING)
+        .build();
   }
 }

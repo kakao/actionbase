@@ -12,8 +12,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = VertexTablePayload.class, name = SchemaType.VERTEX_TYPE),
-  @JsonSubTypes.Type(value = EdgeTablePayload.class, name = SchemaType.EDGE_TYPE),
+    @JsonSubTypes.Type(value = VertexTablePayload.class, name = SchemaType.VERTEX_TYPE),
+    @JsonSubTypes.Type(value = EdgeTablePayload.class, name = SchemaType.EDGE_TYPE),
 })
 public interface TablePayload<T extends Schema> {
 

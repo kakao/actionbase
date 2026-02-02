@@ -24,16 +24,15 @@ class QueryStepTest {
     @DisplayName("Should be able to create Get type QueryStep with get() method")
     void shouldCreateGetStep() {
       // When
-      QueryStep.Get step =
-          QueryStep.get()
-              .name("getUser")
-              .database("userDatabase")
-              .table("user")
-              .source(QueryVertex.constant("user123"))
-              .target(QueryVertex.constant("profile"))
-              .include(true)
-              .cache(true)
-              .build();
+      QueryStep.Get step = QueryStep.get()
+          .name("getUser")
+          .database("userDatabase")
+          .table("user")
+          .source(QueryVertex.constant("user123"))
+          .target(QueryVertex.constant("profile"))
+          .include(true)
+          .cache(true)
+          .build();
 
       // Then
       assertInstanceOf(QueryStep.Get.class, step);
@@ -51,18 +50,17 @@ class QueryStepTest {
     @DisplayName("Should be able to create Scan type QueryStep with scan() method")
     void shouldCreateScanStep() {
       // When
-      QueryStep.Scan step =
-          QueryStep.scan()
-              .name("scanPurchases")
-              .database("userDatabase")
-              .table("purchase")
-              .start(QueryVertex.constant("user123"))
-              .direction(Direction.OUT)
-              .index("timestamp")
-              .limit(10)
-              .offset("2024-01-01")
-              .addPredicates(WherePredicate.eq("status", "active"))
-              .build();
+      QueryStep.Scan step = QueryStep.scan()
+          .name("scanPurchases")
+          .database("userDatabase")
+          .table("purchase")
+          .start(QueryVertex.constant("user123"))
+          .direction(Direction.OUT)
+          .index("timestamp")
+          .limit(10)
+          .offset("2024-01-01")
+          .addPredicates(WherePredicate.eq("status", "active"))
+          .build();
 
       // Then
       assertInstanceOf(QueryStep.Scan.class, step);
@@ -83,14 +81,13 @@ class QueryStepTest {
     @DisplayName("Should be able to create Count type QueryStep with count() method")
     void shouldCreateCountStep() {
       // When
-      QueryStep.Count step =
-          QueryStep.count()
-              .name("countPurchases")
-              .database("userDatabase")
-              .table("purchase")
-              .start(QueryVertex.constant("user123"))
-              .direction(Direction.OUT)
-              .build();
+      QueryStep.Count step = QueryStep.count()
+          .name("countPurchases")
+          .database("userDatabase")
+          .table("purchase")
+          .start(QueryVertex.constant("user123"))
+          .direction(Direction.OUT)
+          .build();
 
       // Then
       assertInstanceOf(QueryStep.Count.class, step);
@@ -111,16 +108,15 @@ class QueryStepTest {
     @DisplayName("Get type QueryStep JSON serialization/deserialization should maintain identity")
     void shouldSerializeAndDeserializeGetStep() {
       // Given
-      QueryStep given =
-          QueryStep.get()
-              .name("getUser")
-              .database("userDatabase")
-              .table("user")
-              .source(QueryVertex.constant("user123"))
-              .target(QueryVertex.constant("profile"))
-              .include(true)
-              .cache(true)
-              .build();
+      QueryStep given = QueryStep.get()
+          .name("getUser")
+          .database("userDatabase")
+          .table("user")
+          .source(QueryVertex.constant("user123"))
+          .target(QueryVertex.constant("profile"))
+          .include(true)
+          .cache(true)
+          .build();
 
       // When
       String serialized = given.toJson();
@@ -143,18 +139,17 @@ class QueryStepTest {
     @DisplayName("Scan type QueryStep JSON serialization/deserialization should maintain identity")
     void shouldSerializeAndDeserializeScanStep() {
       // Given
-      QueryStep given =
-          QueryStep.scan()
-              .name("scanPurchases")
-              .database("userDatabase")
-              .table("purchase")
-              .start(QueryVertex.constant("user123"))
-              .direction(Direction.OUT)
-              .index("timestamp")
-              .limit(10)
-              .offset("2024-01-01")
-              .addPredicates(WherePredicate.eq("status", "active"))
-              .build();
+      QueryStep given = QueryStep.scan()
+          .name("scanPurchases")
+          .database("userDatabase")
+          .table("purchase")
+          .start(QueryVertex.constant("user123"))
+          .direction(Direction.OUT)
+          .index("timestamp")
+          .limit(10)
+          .offset("2024-01-01")
+          .addPredicates(WherePredicate.eq("status", "active"))
+          .build();
 
       // When
       String serialized = given.toJson();
@@ -180,14 +175,13 @@ class QueryStepTest {
     @DisplayName("Count type QueryStep JSON serialization/deserialization should maintain identity")
     void shouldSerializeAndDeserializeCountStep() {
       // Given
-      QueryStep given =
-          QueryStep.count()
-              .name("countPurchases")
-              .database("userDatabase")
-              .table("purchase")
-              .start(QueryVertex.constant("user123"))
-              .direction(Direction.OUT)
-              .build();
+      QueryStep given = QueryStep.count()
+          .name("countPurchases")
+          .database("userDatabase")
+          .table("purchase")
+          .start(QueryVertex.constant("user123"))
+          .direction(Direction.OUT)
+          .build();
 
       // When
       String serialized = given.toJson();

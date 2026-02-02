@@ -3,7 +3,7 @@ package com.kakao.actionbase.core.java.util;
 public class CryptoUtils {
 
   private static final byte[] KEY_BYTES = {
-    90, 69, -31, -121, -53, -24, -34, -4, 55, 54, 1, -31, -43, -64, 116, -11
+      90, 69, -31, -121, -53, -24, -34, -4, 55, 54, 1, -31, -43, -64, 116, -11
   };
 
   private static byte[] xorOperation(byte[] data, byte[] result) {

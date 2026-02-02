@@ -75,10 +75,8 @@ public class StateCodec implements EdgeIdCodec {
   }
 
   public KeyValue<byte[]> encodeEdgeLock(EdgeKey edgeKey, int labelId, long lockAt) {
-    byte[] key =
-        useAsByteArray(
-            buffer ->
-                encodeEdgeLockKeyToBuffer(edgeKey.source(), edgeKey.target(), labelId, buffer));
+    byte[] key = useAsByteArray(
+        buffer -> encodeEdgeLockKeyToBuffer(edgeKey.source(), edgeKey.target(), labelId, buffer));
     byte[] value = encodeEdgeLockValue(lockAt);
     return ImmutableKeyValue.of(key, value);
   }
@@ -96,20 +94,18 @@ public class StateCodec implements EdgeIdCodec {
   }
 
   public KeyValue<byte[]> encodeEdgeIndex(EncodableEdgeIndex edgeIndex, int code) {
-    byte[] key =
-        useAsByteArray(
-            buffer -> {
-              encodeEdgeIndexKeyPrefix(
-                  edgeIndex.directedSource(),
-                  edgeIndex.direction(),
-                  code,
-                  edgeIndex.indexCode(),
-                  buffer);
-              encodeEdgeIndexKeySuffix(edgeIndex.indexValues(), edgeIndex.directedTarget(), buffer);
-            });
-    byte[] value =
-        useAsByteArray(
-            buffer -> encodeEdgeIndexValue(edgeIndex.version(), edgeIndex.properties(), buffer));
+    byte[] key = useAsByteArray(
+        buffer -> {
+          encodeEdgeIndexKeyPrefix(
+              edgeIndex.directedSource(),
+              edgeIndex.direction(),
+              code,
+              edgeIndex.indexCode(),
+              buffer);
+          encodeEdgeIndexKeySuffix(edgeIndex.indexValues(), edgeIndex.directedTarget(), buffer);
+        });
+    byte[] value = useAsByteArray(
+        buffer -> encodeEdgeIndexValue(edgeIndex.version(), edgeIndex.properties(), buffer));
     return ImmutableKeyValue.of(key, value);
   }
 
@@ -157,12 +153,11 @@ public class StateCodec implements EdgeIdCodec {
   // --- IdEdgeEncoder
 
   public String encode(Object src, Object tgt) {
-    byte[] encodedEdgeId =
-        useAsByteArray(
-            buffer -> {
-              buffer.encodeAny(src);
-              buffer.encodeAny(tgt);
-            });
+    byte[] encodedEdgeId = useAsByteArray(
+        buffer -> {
+          buffer.encodeAny(src);
+          buffer.encodeAny(tgt);
+        });
     return CryptoUtils.encryptAndEncodeUrlSafe(encodedEdgeId);
   }
 
@@ -336,8 +331,8 @@ public class StateCodec implements EdgeIdCodec {
 
   public static String decodeAny(byte[] key, int keyOffset, int keyLength, byte[] value) {
     try {
-      SimplePositionedMutableByteRange keyBuffer =
-          new SimplePositionedMutableByteRange(key, keyOffset, keyLength);
+      SimplePositionedMutableByteRange keyBuffer = new SimplePositionedMutableByteRange(key,
+          keyOffset, keyLength);
       keyBuffer.skip(4); // skip salt
       Object source = ValueUtils.deserialize(keyBuffer);
       // skip labelId
@@ -405,16 +400,16 @@ public class StateCodec implements EdgeIdCodec {
     EncodedEdgeType encodedEdgeType = EncodedEdgeType.of(encodedEdgeTypeCode);
 
     if (encodedEdgeType == EncodedEdgeType.EDGE_STATE) {
-      byte[] offset =
-          useAsByteArray(buffer -> buffer.put(k.getBytes(), k.getPosition(), k.getRemaining()));
+      byte[] offset = useAsByteArray(
+          buffer -> buffer.put(k.getBytes(), k.getPosition(), k.getRemaining()));
       return CryptoUtils.encryptAndEncodeUrlSafe(offset);
     } else if (encodedEdgeType == EncodedEdgeType.EDGE_INDEX) {
       // direction
       OrderedBytes.decodeInt8(k);
       // indexId
       OrderedBytes.decodeInt32(k);
-      byte[] offset =
-          useAsByteArray(buffer -> buffer.put(k.getBytes(), k.getPosition(), k.getRemaining()));
+      byte[] offset = useAsByteArray(
+          buffer -> buffer.put(k.getBytes(), k.getPosition(), k.getRemaining()));
       return CryptoUtils.encryptAndEncodeUrlSafe(offset);
     } else {
       throw new IllegalArgumentException("Invalid encodedEdgeType: " + encodedEdgeType);

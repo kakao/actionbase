@@ -17,12 +17,12 @@ public class CDCDeserializerTest extends AbstractDeserializerTest<CDC> {
   private static final Set<String> V3_NULLABLE_FIELDS = createV3NullableFields();
 
   private static Set<String> createV2NullableFields() {
-    return Arrays.stream(new String[] {"alias", "before", "after", "message", "audit", "requestId"})
+    return Arrays.stream(new String[]{"alias", "before", "after", "message", "audit", "requestId"})
         .collect(Collectors.toSet());
   }
 
   private static Set<String> createV3NullableFields() {
-    return Arrays.stream(new String[] {"alias", "before", "after", "message"})
+    return Arrays.stream(new String[]{"alias", "before", "after", "message"})
         .collect(Collectors.toSet());
   }
 

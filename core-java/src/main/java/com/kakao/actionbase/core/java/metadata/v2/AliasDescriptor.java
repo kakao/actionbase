@@ -12,7 +12,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(as = ImmutableAliasDescriptor.class)
 @JsonDeserialize(as = ImmutableAliasDescriptor.class)
 public interface AliasDescriptor
-    extends Descriptor<com.kakao.actionbase.core.java.metadata.v3.AliasDescriptor> {
+    extends
+      Descriptor<com.kakao.actionbase.core.java.metadata.v3.AliasDescriptor> {
 
   boolean active();
 

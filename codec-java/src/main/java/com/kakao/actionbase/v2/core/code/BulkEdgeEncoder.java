@@ -42,7 +42,8 @@ public class BulkEdgeEncoder {
     List<KeyFieldValue<T>> edges = new ArrayList<>();
 
     // Special handling for MultiEdge
-    // - Keep existing HASH, INDEXED as is, and for MultiEdge, create separate edges based on ID and
+    // - Keep existing HASH, INDEXED as is, and for MultiEdge, create separate edges
+    // based on ID and
     // reuse existing encoder
     Edge edgeForEdgeState = castedEdge;
     Map<String, Object> multiEdgeProps = castedEdge.getProps();
@@ -73,14 +74,13 @@ public class BulkEdgeEncoder {
       } else {
         deleteTs = edgeForEdgeState.getTs();
       }
-      T value =
-          encoder.encodeHashEdgeValue(
-              HashEdgeValue.from(
-                  active,
-                  edgeForEdgeState.getTs(),
-                  edgeForEdgeState.getProps(),
-                  insertTs,
-                  deleteTs));
+      T value = encoder.encodeHashEdgeValue(
+          HashEdgeValue.from(
+              active,
+              edgeForEdgeState.getTs(),
+              edgeForEdgeState.getProps(),
+              insertTs,
+              deleteTs));
       edges.add(new KeyFieldValue<>(key.key, key.field, value));
     }
 
@@ -92,7 +92,8 @@ public class BulkEdgeEncoder {
             encoder.encodeAllIndexedEdges(
                 castedEdge, label.getDirType(), labelId, label.getIndices()));
       } else if (labelType == LabelType.MULTI_EDGE) {
-        // For MultiEdge, create separate OUT/IN edges based on direction and reuse existing encoder
+        // For MultiEdge, create separate OUT/IN edges based on direction and reuse
+        // existing encoder
         // BOTH: Split into two edges: src->edgeId (OUT), edgeId->tgt (IN)
         multiEdgeProps.put(SOURCE_FIELD_ON_STATE, castedEdge.getSrc());
         multiEdgeProps.put(TARGET_FIELD_ON_STATE, castedEdge.getTgt());

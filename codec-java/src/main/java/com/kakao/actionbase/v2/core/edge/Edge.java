@@ -15,7 +15,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Edge {
 
-  @JsonIgnore static final Map<String, Object> empty = Collections.emptyMap();
+  @JsonIgnore
+  static final Map<String, Object> empty = Collections.emptyMap();
 
   @JsonProperty(required = true)
   final long ts;
@@ -26,7 +27,8 @@ public class Edge {
   @JsonProperty(required = true)
   final Object tgt;
 
-  @JsonProperty final Map<String, Object> props;
+  @JsonProperty
+  final Map<String, Object> props;
 
   @JsonCreator
   public Edge(
@@ -87,8 +89,10 @@ public class Edge {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof Edge)) return false;
+    if (this == o)
+      return true;
+    if (!(o instanceof Edge))
+      return false;
     Edge edge = (Edge) o;
     return ts == edge.ts
         && src.equals(edge.src)

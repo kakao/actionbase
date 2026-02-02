@@ -34,8 +34,7 @@ public class EdgeSerDerTest {
 
   @Test
   void testEdgeDeserialization() throws JsonProcessingException {
-    String jsonString =
-        "{\"ts\":123,\"src\":\"src\",\"tgt\":\"tgt\",\"props\":{\"key\":\"value\"}}";
+    String jsonString = "{\"ts\":123,\"src\":\"src\",\"tgt\":\"tgt\",\"props\":{\"key\":\"value\"}}";
     Edge edge = objectMapper.readValue(jsonString, Edge.class);
 
     assertEquals(123, edge.getTs());

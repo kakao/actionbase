@@ -59,9 +59,8 @@ public final class Datastores {
     }
 
     public static Map<String, String> configuration(Edge edge) {
-      return (Map<String, String>)
-          ActionbaseObjectMapper.INSTANCE.convertValue(
-              edge.properties().get(CONFIGURATION_FIELD), Map.class);
+      return (Map<String, String>) ActionbaseObjectMapper.INSTANCE.convertValue(
+          edge.properties().get(CONFIGURATION_FIELD), Map.class);
     }
   }
 
@@ -150,23 +149,21 @@ public final class Datastores {
 
   public static class Schemas {
 
-    public static final StructType SCHEMA =
-        ImmutableStructType.builder()
-            .addField(ACTIVE_FIELD, DataType.BOOLEAN)
-            .addField(TENANT_FIELD, DataType.STRING)
-            .addField(DATASTORE_FIELD, DataType.STRING)
-            .addField(COMMENT_FIELD, DataType.STRING)
-            .build();
+    public static final StructType SCHEMA = ImmutableStructType.builder()
+        .addField(ACTIVE_FIELD, DataType.BOOLEAN)
+        .addField(TENANT_FIELD, DataType.STRING)
+        .addField(DATASTORE_FIELD, DataType.STRING)
+        .addField(COMMENT_FIELD, DataType.STRING)
+        .build();
 
-    public static final EdgeSchema EDGE_SCHEMA =
-        EdgeSchema.builder()
-            .source(DataType.STRING, TENANT_FIELD)
-            .target(DataType.STRING, DATASTORE_FIELD)
-            .addProperties(TYPE_FIELD, DataType.STRING)
-            .addProperties(COMMENT_FIELD, DataType.STRING)
-            .addProperties(CONFIGURATION_FIELD, DataType.OBJECT)
-            .direction(DirectionType.OUT)
-            .addDefaultMetadataIndex()
-            .build();
+    public static final EdgeSchema EDGE_SCHEMA = EdgeSchema.builder()
+        .source(DataType.STRING, TENANT_FIELD)
+        .target(DataType.STRING, DATASTORE_FIELD)
+        .addProperties(TYPE_FIELD, DataType.STRING)
+        .addProperties(COMMENT_FIELD, DataType.STRING)
+        .addProperties(CONFIGURATION_FIELD, DataType.OBJECT)
+        .direction(DirectionType.OUT)
+        .addDefaultMetadataIndex()
+        .build();
   }
 }

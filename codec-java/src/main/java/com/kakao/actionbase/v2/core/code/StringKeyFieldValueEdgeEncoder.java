@@ -25,8 +25,8 @@ public class StringKeyFieldValueEdgeEncoder extends AbstractEdgeEncoder<String> 
 
   @Override
   public EncodedKey<String> encodeHashEdgeKey(Edge edge, int labelId) {
-    String key =
-        useAsBase64String(buffer -> encodeHashKeyPrefixToBuffer(edge.getSrc(), labelId, buffer));
+    String key = useAsBase64String(
+        buffer -> encodeHashKeyPrefixToBuffer(edge.getSrc(), labelId, buffer));
 
     String field = useAsHexString(buffer -> buffer.encodeAny(edge.getTgt()));
 
@@ -53,12 +53,10 @@ public class StringKeyFieldValueEdgeEncoder extends AbstractEdgeEncoder<String> 
 
   @Override
   public KeyValue<String> encodeLockEdge(Edge edge, int labelId) {
-    String key =
-        useAsBase64String(
-            buffer -> encodeLockEdgeKeyToBuffer(edge.getSrc(), edge.getTgt(), labelId, buffer));
-    String value =
-        useAsBase64String(
-            buffer -> encodeLockEdgeValueToBuffer(System.currentTimeMillis(), buffer));
+    String key = useAsBase64String(
+        buffer -> encodeLockEdgeKeyToBuffer(edge.getSrc(), edge.getTgt(), labelId, buffer));
+    String value = useAsBase64String(
+        buffer -> encodeLockEdgeValueToBuffer(System.currentTimeMillis(), buffer));
     return new KeyValue<>(key, value);
   }
 
@@ -97,14 +95,11 @@ public class StringKeyFieldValueEdgeEncoder extends AbstractEdgeEncoder<String> 
       directedSrc = tgt;
       directedTgt = src;
     }
-    String key =
-        useAsBase64String(
-            buffer -> encodeIndexedEdgeKeyPrefixToBuffer(directedSrc, dir, labelId, index, buffer));
-    String field =
-        useAsHexString(
-            buffer ->
-                encodeIndexedEdgeKeySuffixToBuffer(
-                    index, ts, directedSrc, directedTgt, props, buffer));
+    String key = useAsBase64String(
+        buffer -> encodeIndexedEdgeKeyPrefixToBuffer(directedSrc, dir, labelId, index, buffer));
+    String field = useAsHexString(
+        buffer -> encodeIndexedEdgeKeySuffixToBuffer(
+            index, ts, directedSrc, directedTgt, props, buffer));
     String value = useAsBase64String(buffer -> encodeIndexedEdgeValueToBuffer(ts, props, buffer));
 
     return new KeyFieldValue<>(key, field, value);
@@ -113,12 +108,11 @@ public class StringKeyFieldValueEdgeEncoder extends AbstractEdgeEncoder<String> 
   @Override
   public EncodedKey<String> encodeIndexedEdgeKeyPrefix(
       Object directedSrc, Direction dir, int labelId, Index index, Consumer<EdgeBuffer> block) {
-    String key =
-        useAsBase64String(
-            buffer -> {
-              encodeIndexedEdgeKeyPrefixToBuffer(directedSrc, dir, labelId, index, buffer);
-              block.accept(buffer);
-            });
+    String key = useAsBase64String(
+        buffer -> {
+          encodeIndexedEdgeKeyPrefixToBuffer(directedSrc, dir, labelId, index, buffer);
+          block.accept(buffer);
+        });
     return new EncodedKey<>(key);
   }
 

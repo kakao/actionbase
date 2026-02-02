@@ -37,14 +37,13 @@ class StateCompanionTest {
 
   @BeforeEach
   void setUp() {
-    schema =
-        ImmutableStructType.builder()
-            .addField(NAME_FIELD, DataType.STRING, false)
-            .addField(AGE_FIELD, DataType.STRING, false)
-            .addField(ADDRESS_FIELD, DataType.STRING, true)
-            .addField(EMAIL_FIELD, DataType.STRING, true)
-            .addField(PHONE_FIELD, DataType.STRING, true)
-            .build();
+    schema = ImmutableStructType.builder()
+        .addField(NAME_FIELD, DataType.STRING, false)
+        .addField(AGE_FIELD, DataType.STRING, false)
+        .addField(ADDRESS_FIELD, DataType.STRING, true)
+        .addField(EMAIL_FIELD, DataType.STRING, true)
+        .addField(PHONE_FIELD, DataType.STRING, true)
+        .build();
 
     initialState = StateCompanion.initialOf(schema);
   }
@@ -78,13 +77,12 @@ class StateCompanionTest {
       @SuppressWarnings("ConstantConditions")
       State currentState = storedState != null ? storedState : initialState;
 
-      BaseEvent event =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "Alice")
-              .putProperties(AGE_FIELD, "30")
-              .version(1000L)
-              .build();
+      BaseEvent event = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "Alice")
+          .putProperties(AGE_FIELD, "30")
+          .version(1000L)
+          .build();
 
       // when
       State nextState = StateCompanion.transit(currentState, event, schema);
@@ -137,26 +135,24 @@ class StateCompanionTest {
       values.put(AGE_FIELD, stateValue2);
 
       // active should be true because createdAt > deletedAt
-      State state =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(500L) // deletedAt is less than createdAt
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(500L) // deletedAt is less than createdAt
+          .checkAndBuild(schema);
 
       // INSERT event must include required fields
       Map<String, Object> eventValues = new HashMap<>();
       eventValues.put(NAME_FIELD, "Bob");
       eventValues.put(AGE_FIELD, 40);
 
-      BaseEvent event =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "Bob")
-              .putProperties(AGE_FIELD, 40)
-              .version(2000L)
-              .build();
+      BaseEvent event = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "Bob")
+          .putProperties(AGE_FIELD, 40)
+          .version(2000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(state, event, schema);
@@ -186,26 +182,24 @@ class StateCompanionTest {
       values.put(AGE_FIELD, stateValue2);
 
       // active should be false because createdAt < deletedAt
-      State state =
-          ImmutableBaseState.builder()
-              .active(false)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(3000L) // deletedAt is greater than createdAt
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(false)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(3000L) // deletedAt is greater than createdAt
+          .checkAndBuild(schema);
 
       // INSERT event must include required fields
       Map<String, Object> eventValues = new HashMap<>();
       eventValues.put(NAME_FIELD, "Carol");
       eventValues.put(AGE_FIELD, 50);
 
-      BaseEvent event =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "Carol")
-              .putProperties(AGE_FIELD, 50)
-              .version(2000L)
-              .build();
+      BaseEvent event = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "Carol")
+          .putProperties(AGE_FIELD, 50)
+          .version(2000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(state, event, schema);
@@ -234,13 +228,12 @@ class StateCompanionTest {
       values.put(NAME_FIELD, stateValue1);
       values.put(AGE_FIELD, stateValue2);
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       BaseEvent event = ImmutableBaseEvent.builder().type(EventType.UPDATE).version(2000L).build();
 
@@ -270,13 +263,12 @@ class StateCompanionTest {
       values.put(NAME_FIELD, stateValue1);
       values.put(AGE_FIELD, stateValue2);
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       BaseEvent event = ImmutableBaseEvent.builder().type(EventType.DELETE).version(2000L).build();
 
@@ -306,13 +298,12 @@ class StateCompanionTest {
       values.put(NAME_FIELD, nameEntry);
       values.put(AGE_FIELD, ageEntry);
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(true) // active should be true because createdAt > deletedAt
-              .properties(values)
-              .createdAt(2000L)
-              .deletedAt(1000L)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true) // active should be true because createdAt > deletedAt
+          .properties(values)
+          .createdAt(2000L)
+          .deletedAt(1000L)
+          .checkAndBuild(schema);
 
       BaseEvent event = ImmutableBaseEvent.builder().type(EventType.UPDATE).version(3000L).build();
 
@@ -337,13 +328,12 @@ class StateCompanionTest {
       values.put(NAME_FIELD, nameEntry);
       values.put(AGE_FIELD, ageEntry);
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(false) // active should be false because createdAt < deletedAt
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(2000L)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(false) // active should be false because createdAt < deletedAt
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(2000L)
+          .checkAndBuild(schema);
 
       BaseEvent event = ImmutableBaseEvent.builder().type(EventType.UPDATE).version(3000L).build();
 
@@ -362,8 +352,7 @@ class StateCompanionTest {
   class EventTimeTests {
 
     @Test
-    @DisplayName(
-        "Event time order: INSERT -> DELETE -> INSERT, Processing order: INSERT -> INSERT -> DELETE, active is false")
+    @DisplayName("Event time order: INSERT -> DELETE -> INSERT, Processing order: INSERT -> INSERT -> DELETE, active is false")
     void testEventTimeVsProcessingTime1() {
       // given
 
@@ -375,13 +364,12 @@ class StateCompanionTest {
       values.put(NAME_FIELD, stateValue1);
       values.put(AGE_FIELD, stateValue2);
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       // Event time order: INSERT(1000) -> DELETE(3000) -> INSERT(2000)
       // Processing order: INSERT(1000) -> INSERT(2000) -> DELETE(3000)
@@ -391,19 +379,18 @@ class StateCompanionTest {
       insertValues.put(NAME_FIELD, "Bob");
       insertValues.put(AGE_FIELD, 25);
 
-      BaseEvent insertEvent =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "Bob")
-              .putProperties(AGE_FIELD, 25)
-              .version(2000L)
-              .build();
+      BaseEvent insertEvent = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "Bob")
+          .putProperties(AGE_FIELD, 25)
+          .version(2000L)
+          .build();
 
       State afterInsert = StateCompanion.transit(state, insertEvent, schema);
 
       // 2. Process DELETE(3000)
-      BaseEvent deleteEvent =
-          ImmutableBaseEvent.builder().type(EventType.DELETE).version(3000L).build();
+      BaseEvent deleteEvent = ImmutableBaseEvent.builder().type(EventType.DELETE).version(3000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(afterInsert, deleteEvent, schema);
@@ -421,27 +408,25 @@ class StateCompanionTest {
     }
 
     @Test
-    @DisplayName(
-        "Event time order: INSERT -> DELETE -> INSERT, Processing order: DELETE -> INSERT -> INSERT, active is true")
+    @DisplayName("Event time order: INSERT -> DELETE -> INSERT, Processing order: DELETE -> INSERT -> INSERT, active is true")
     void testEventTimeVsProcessingTime2() {
       // given
 
       // Initial state (empty state)
       Map<String, StateValue> values = new HashMap<>();
-      State state =
-          ImmutableBaseState.builder()
-              .active(false)
-              .properties(values)
-              .createdAt(null)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(false)
+          .properties(values)
+          .createdAt(null)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       // Event time order: INSERT(1000) -> DELETE(2000) -> INSERT(3000)
       // Processing order: DELETE(2000) -> INSERT(1000) -> INSERT(3000)
 
       // 1. Process DELETE(2000)
-      BaseEvent deleteEvent =
-          ImmutableBaseEvent.builder().type(EventType.DELETE).version(2000L).build();
+      BaseEvent deleteEvent = ImmutableBaseEvent.builder().type(EventType.DELETE).version(2000L)
+          .build();
 
       State afterDelete = StateCompanion.transit(state, deleteEvent, schema);
 
@@ -450,13 +435,12 @@ class StateCompanionTest {
       insertValues1.put(NAME_FIELD, "Alice");
       insertValues1.put(AGE_FIELD, 30);
 
-      BaseEvent insertEvent1 =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "Alice")
-              .putProperties(AGE_FIELD, 30)
-              .version(1000L)
-              .build();
+      BaseEvent insertEvent1 = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "Alice")
+          .putProperties(AGE_FIELD, 30)
+          .version(1000L)
+          .build();
 
       State afterInsert1 = StateCompanion.transit(afterDelete, insertEvent1, schema);
 
@@ -465,13 +449,12 @@ class StateCompanionTest {
       insertValues2.put(NAME_FIELD, "Bob");
       insertValues2.put(AGE_FIELD, 25);
 
-      BaseEvent insertEvent2 =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "Bob")
-              .putProperties(AGE_FIELD, 25)
-              .version(3000L)
-              .build();
+      BaseEvent insertEvent2 = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "Bob")
+          .putProperties(AGE_FIELD, 25)
+          .version(3000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(afterInsert1, insertEvent2, schema);
@@ -500,26 +483,24 @@ class StateCompanionTest {
       values.put(NAME_FIELD, stateValue1);
       values.put(AGE_FIELD, stateValue2);
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       // UPDATE event time is earlier than entry
       Map<String, Object> updateValues = new HashMap<>();
       updateValues.put(NAME_FIELD, "Bob");
       updateValues.put(AGE_FIELD, 25);
 
-      BaseEvent updateEvent =
-          ImmutableBaseEvent.builder()
-              .type(EventType.UPDATE)
-              .putProperties(NAME_FIELD, "Bob")
-              .putProperties(AGE_FIELD, 25)
-              .version(1500L) // Less than version of stateValue1 and stateValue2
-              .build();
+      BaseEvent updateEvent = ImmutableBaseEvent.builder()
+          .type(EventType.UPDATE)
+          .putProperties(NAME_FIELD, "Bob")
+          .putProperties(AGE_FIELD, 25)
+          .version(1500L) // Less than version of stateValue1 and stateValue2
+          .build();
 
       // when
       State result = StateCompanion.transit(state, updateEvent, schema);
@@ -545,26 +526,24 @@ class StateCompanionTest {
       values.put(NAME_FIELD, stateValue1);
       values.put(AGE_FIELD, stateValue2);
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       // UPDATE event time is later than entry
       Map<String, Object> updateValues = new HashMap<>();
       updateValues.put(NAME_FIELD, "Bob");
       updateValues.put(AGE_FIELD, 25);
 
-      BaseEvent updateEvent =
-          ImmutableBaseEvent.builder()
-              .type(EventType.UPDATE)
-              .putProperties(NAME_FIELD, "Bob")
-              .putProperties(AGE_FIELD, 25)
-              .version(3000L) // Greater than version of stateValue1 and stateValue2
-              .build();
+      BaseEvent updateEvent = ImmutableBaseEvent.builder()
+          .type(EventType.UPDATE)
+          .putProperties(NAME_FIELD, "Bob")
+          .putProperties(AGE_FIELD, 25)
+          .version(3000L) // Greater than version of stateValue1 and stateValue2
+          .build();
 
       // when
       State result = StateCompanion.transit(state, updateEvent, schema);
@@ -579,26 +558,24 @@ class StateCompanionTest {
     }
 
     @Test
-    @DisplayName(
-        "When multiple operations are processed together, final state is determined based on event time")
+    @DisplayName("When multiple operations are processed together, final state is determined based on event time")
     void testComplexEventSequence() {
       // given
 
       // Initial state (empty state)
       Map<String, StateValue> values = new HashMap<>();
-      State state =
-          ImmutableBaseState.builder()
-              .active(false)
-              .properties(values)
-              .createdAt(null)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(false)
+          .properties(values)
+          .createdAt(null)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       // Event sequence (event time order differs from processing order)
 
       // 1. [Process] DELETE at 5000
-      BaseEvent deleteEvent =
-          ImmutableBaseEvent.builder().type(EventType.DELETE).version(5000L).build();
+      BaseEvent deleteEvent = ImmutableBaseEvent.builder().type(EventType.DELETE).version(5000L)
+          .build();
 
       State state1 = StateCompanion.transit(state, deleteEvent, schema);
 
@@ -607,13 +584,12 @@ class StateCompanionTest {
       insertValues1.put(NAME_FIELD, "Alice");
       insertValues1.put(AGE_FIELD, 30);
 
-      BaseEvent insertEvent1 =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "Alice")
-              .putProperties(AGE_FIELD, 30)
-              .version(1000L)
-              .build();
+      BaseEvent insertEvent1 = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "Alice")
+          .putProperties(AGE_FIELD, 30)
+          .version(1000L)
+          .build();
 
       State state2 = StateCompanion.transit(state1, insertEvent1, schema);
 
@@ -622,13 +598,12 @@ class StateCompanionTest {
       updateValues.put(NAME_FIELD, "Alice Smith");
       updateValues.put(AGE_FIELD, 31);
 
-      BaseEvent updateEvent =
-          ImmutableBaseEvent.builder()
-              .type(EventType.UPDATE)
-              .putProperties(NAME_FIELD, "Alice Smith")
-              .putProperties(AGE_FIELD, 31)
-              .version(3000L)
-              .build();
+      BaseEvent updateEvent = ImmutableBaseEvent.builder()
+          .type(EventType.UPDATE)
+          .putProperties(NAME_FIELD, "Alice Smith")
+          .putProperties(AGE_FIELD, 31)
+          .version(3000L)
+          .build();
 
       State state3 = StateCompanion.transit(state2, updateEvent, schema);
 
@@ -637,13 +612,12 @@ class StateCompanionTest {
       insertValues2.put(NAME_FIELD, "Bob");
       insertValues2.put(AGE_FIELD, 25);
 
-      BaseEvent insertEvent2 =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "Bob")
-              .putProperties(AGE_FIELD, 25)
-              .version(7000L)
-              .build();
+      BaseEvent insertEvent2 = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "Bob")
+          .putProperties(AGE_FIELD, 25)
+          .version(7000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(state3, insertEvent2, schema);
@@ -651,7 +625,8 @@ class StateCompanionTest {
       // then
       // Final state - sorted by event time:
       // INSERT(1000) -> UPDATE(3000) -> DELETE(5000) -> INSERT(7000)
-      // Final state: createdAt=7000, deletedAt=5000, active=true (most recent event is INSERT)
+      // Final state: createdAt=7000, deletedAt=5000, active=true (most recent event
+      // is INSERT)
       assertEquals(5, result.properties().size());
       assertEquals("Bob", result.properties().get(NAME_FIELD).value());
       assertEquals(25, result.properties().get(AGE_FIELD).value());
@@ -677,13 +652,12 @@ class StateCompanionTest {
           NAME_FIELD, ImmutableStateValue.builder().value("InitialName").version(1000L).build());
       initialValues.put(AGE_FIELD, ImmutableStateValue.builder().value(25).version(1000L).build());
 
-      State initialState =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(initialValues)
-              .createdAt(1000L)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State initialState = ImmutableBaseState.builder()
+          .active(true)
+          .properties(initialValues)
+          .createdAt(1000L)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       // New INSERT event (overwrites existing data)
       Map<String, Object> newValues = new HashMap<>();
@@ -691,14 +665,13 @@ class StateCompanionTest {
       newValues.put(AGE_FIELD, 30);
       newValues.put(ADDRESS_FIELD, "NewAddress");
 
-      BaseEvent insertEvent =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "UpdatedName")
-              .putProperties(AGE_FIELD, 30)
-              .putProperties(ADDRESS_FIELD, "NewAddress")
-              .version(2000L)
-              .build();
+      BaseEvent insertEvent = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "UpdatedName")
+          .putProperties(AGE_FIELD, 30)
+          .putProperties(ADDRESS_FIELD, "NewAddress")
+          .version(2000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(initialState, insertEvent, schema);
@@ -724,17 +697,16 @@ class StateCompanionTest {
       // NAME_FIELD is intentionally omitted (nullable=false)
 
       // active=true, NAME_FIELD omitted -> should throw exception
-      Exception exception1 =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> {
-                ImmutableBaseState.builder()
-                    .active(true)
-                    .properties(values1)
-                    .createdAt(1000L)
-                    .deletedAt(null)
-                    .checkAndBuild(schema);
-              });
+      Exception exception1 = assertThrows(
+          IllegalArgumentException.class,
+          () -> {
+            ImmutableBaseState.builder()
+                .active(true)
+                .properties(values1)
+                .createdAt(1000L)
+                .deletedAt(null)
+                .checkAndBuild(schema);
+          });
       assertTrue(exception1.getMessage().contains(NAME_FIELD + " must be provided"));
 
       // Case 2: UNSET value
@@ -748,17 +720,16 @@ class StateCompanionTest {
       values2.put(AGE_FIELD, ImmutableStateValue.builder().value(30).version(1000L).build());
 
       // active=true, NAME_FIELD=UNSET -> should throw exception
-      Exception exception2 =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> {
-                ImmutableBaseState.builder()
-                    .active(true)
-                    .properties(values2)
-                    .createdAt(1000L)
-                    .deletedAt(null)
-                    .checkAndBuild(schema);
-              });
+      Exception exception2 = assertThrows(
+          IllegalArgumentException.class,
+          () -> {
+            ImmutableBaseState.builder()
+                .active(true)
+                .properties(values2)
+                .createdAt(1000L)
+                .deletedAt(null)
+                .checkAndBuild(schema);
+          });
       assertTrue(exception2.getMessage().contains(NAME_FIELD + " must be provided"));
 
       // Case 3: DELETED value
@@ -772,17 +743,16 @@ class StateCompanionTest {
       values3.put(AGE_FIELD, ImmutableStateValue.builder().value(30).version(1000L).build());
 
       // active=true, NAME_FIELD=DELETED -> should throw exception
-      Exception exception3 =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> {
-                ImmutableBaseState.builder()
-                    .active(true)
-                    .properties(values3)
-                    .createdAt(1000L)
-                    .deletedAt(null)
-                    .checkAndBuild(schema);
-              });
+      Exception exception3 = assertThrows(
+          IllegalArgumentException.class,
+          () -> {
+            ImmutableBaseState.builder()
+                .active(true)
+                .properties(values3)
+                .createdAt(1000L)
+                .deletedAt(null)
+                .checkAndBuild(schema);
+          });
       assertTrue(exception3.getMessage().contains(NAME_FIELD + " must be provided"));
     }
   }
@@ -803,13 +773,12 @@ class StateCompanionTest {
       eventValues.put(AGE_FIELD, "30");
       // ADDRESS_FIELD, EMAIL_FIELD, PHONE_FIELD are omitted because nullable=true
 
-      BaseEvent event =
-          ImmutableBaseEvent.builder()
-              .type(EventType.INSERT)
-              .putProperties(NAME_FIELD, "User1")
-              .putProperties(AGE_FIELD, "30")
-              .version(1000L)
-              .build();
+      BaseEvent event = ImmutableBaseEvent.builder()
+          .type(EventType.INSERT)
+          .putProperties(NAME_FIELD, "User1")
+          .putProperties(AGE_FIELD, "30")
+          .version(1000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(initialState, event, schema);
@@ -871,25 +840,23 @@ class StateCompanionTest {
       values.put(
           PHONE_FIELD, ImmutableStateValue.builder().value("010-1234-5678").version(1000L).build());
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       // UPDATE event that only updates name
       Map<String, Object> updateValues = new HashMap<>();
       updateValues.put(NAME_FIELD, "UpdatedName");
       // AGE_FIELD, ADDRESS_FIELD, EMAIL_FIELD, PHONE_FIELD are not mentioned
 
-      BaseEvent updateEvent =
-          ImmutableBaseEvent.builder()
-              .type(EventType.UPDATE)
-              .putProperties(NAME_FIELD, "UpdatedName")
-              .version(2000L)
-              .build();
+      BaseEvent updateEvent = ImmutableBaseEvent.builder()
+          .type(EventType.UPDATE)
+          .putProperties(NAME_FIELD, "UpdatedName")
+          .version(2000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(state, updateEvent, schema);
@@ -952,18 +919,18 @@ class StateCompanionTest {
       values.put(
           EMAIL_FIELD,
           ImmutableStateValue.builder().value("user1@example.com").version(1000L).build());
-      // ADDRESS_FIELD and PHONE_FIELD are intentionally omitted (possible because nullable)
+      // ADDRESS_FIELD and PHONE_FIELD are intentionally omitted (possible because
+      // nullable)
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
-      BaseEvent deleteEvent =
-          ImmutableBaseEvent.builder().type(EventType.DELETE).version(2000L).build();
+      BaseEvent deleteEvent = ImmutableBaseEvent.builder().type(EventType.DELETE).version(2000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(state, deleteEvent, schema);
@@ -1039,13 +1006,12 @@ class StateCompanionTest {
       values.put(
           PHONE_FIELD, ImmutableStateValue.builder().value("010-1234-5678").version(1000L).build());
 
-      State state =
-          ImmutableBaseState.builder()
-              .active(true)
-              .properties(values)
-              .createdAt(1000L)
-              .deletedAt(null)
-              .checkAndBuild(schema);
+      State state = ImmutableBaseState.builder()
+          .active(true)
+          .properties(values)
+          .createdAt(1000L)
+          .deletedAt(null)
+          .checkAndBuild(schema);
 
       // UPDATE event that explicitly sets all nullable fields to null
       Map<String, Object> updateValues = new HashMap<>();
@@ -1055,16 +1021,15 @@ class StateCompanionTest {
       updateValues.put(EMAIL_FIELD, null); // Explicitly set to null
       updateValues.put(PHONE_FIELD, null); // Explicitly set to null
 
-      BaseEvent updateEvent =
-          ImmutableBaseEvent.builder()
-              .type(EventType.UPDATE)
-              .putProperties(NAME_FIELD, "UpdatedUser")
-              .putProperties(AGE_FIELD, "35")
-              .putProperties(ADDRESS_FIELD, null) // Explicitly set to null
-              .putProperties(EMAIL_FIELD, null) // Explicitly set to null
-              .putProperties(PHONE_FIELD, null) // Explicitly set to null
-              .version(2000L)
-              .build();
+      BaseEvent updateEvent = ImmutableBaseEvent.builder()
+          .type(EventType.UPDATE)
+          .putProperties(NAME_FIELD, "UpdatedUser")
+          .putProperties(AGE_FIELD, "35")
+          .putProperties(ADDRESS_FIELD, null) // Explicitly set to null
+          .putProperties(EMAIL_FIELD, null) // Explicitly set to null
+          .putProperties(PHONE_FIELD, null) // Explicitly set to null
+          .version(2000L)
+          .build();
 
       // when
       State result = StateCompanion.transit(state, updateEvent, schema);
@@ -1116,19 +1081,17 @@ class StateCompanionTest {
     // NAME_FIELD omitted (required)
     eventValues.put(AGE_FIELD, "30");
 
-    BaseEvent event =
-        ImmutableBaseEvent.builder()
-            .type(EventType.INSERT)
-            .version(1000L)
-            .properties(eventValues)
-            .build();
+    BaseEvent event = ImmutableBaseEvent.builder()
+        .type(EventType.INSERT)
+        .version(1000L)
+        .properties(eventValues)
+        .build();
 
     // when, then
-    Exception exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> StateCompanion.transit(initialState, event, schema),
-            "Exception should occur when required fields are missing in INSERT event");
+    Exception exception = assertThrows(
+        IllegalArgumentException.class,
+        () -> StateCompanion.transit(initialState, event, schema),
+        "Exception should occur when required fields are missing in INSERT event");
 
     assertTrue(
         exception.getMessage().contains(NAME_FIELD + " must be provided"),

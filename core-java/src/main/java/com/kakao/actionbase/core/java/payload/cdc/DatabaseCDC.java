@@ -19,5 +19,6 @@ public interface DatabaseCDC extends MetadataCDC<DatabaseDescriptor> {
   @Nullable
   DatabaseDescriptor after();
 
-  interface Builder extends MetadataCDC.Builder<DatabaseDescriptor> {}
+  interface Builder extends MetadataCDC.Builder<DatabaseDescriptor> {
+  }
 }

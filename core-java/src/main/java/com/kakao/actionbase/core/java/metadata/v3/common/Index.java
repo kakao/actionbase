@@ -29,14 +29,18 @@ public interface Index {
   /**
    * Primary index configuration.
    *
-   * <p>Stores all index entries in the rowkey for precise 1-hop traversal using forward scan. Not
-   * optimized for batch multi-key queries (e.g., mget).
+   * <p>
+   * Stores all index entries in the rowkey for precise 1-hop traversal using
+   * forward scan. Not optimized for batch multi-key queries (e.g., mget).
    *
-   * <p>- Storage layout: rowkey = key + (optional) index value - Allows prefix scan - Typically
-   * used in the first hop of graph traversal
+   * <p>
+   * - Storage layout: rowkey = key + (optional) index value - Allows prefix scan
+   * - Typically used in the first hop of graph traversal
    *
-   * <p>Value semantics: - `-1`: No limit (Long.MAX_VALUE); always store - `0`: Disabled; no primary
-   * index will be written - `>0`: Always store; size limit is managed by downstream pipeline
+   * <p>
+   * Value semantics: - `-1`: No limit (Long.MAX_VALUE); always store - `0`:
+   * Disabled; no primary index will be written - `>0`: Always store; size limit
+   * is managed by downstream pipeline
    */
   @Value.Default
   default Long primary() {
@@ -46,15 +50,19 @@ public interface Index {
   /**
    * Batch-optimized index configuration.
    *
-   * <p>Stores index entries in qualifiers for fast multi-key (mget) queries, especially useful in
-   * multi-hop graph traversal. This index is typically flipped or compacted periodically to avoid
-   * unbounded growth.
+   * <p>
+   * Stores index entries in qualifiers for fast multi-key (mget) queries,
+   * especially useful in multi-hop graph traversal. This index is typically
+   * flipped or compacted periodically to avoid unbounded growth.
    *
-   * <p>- Storage layout: rowkey = key, qualifier = index value - Supports batch scan (multi-scan) -
-   * Required for 2-hop or deeper traversal performance
+   * <p>
+   * - Storage layout: rowkey = key, qualifier = index value - Supports batch scan
+   * (multi-scan) - Required for 2-hop or deeper traversal performance
    *
-   * <p>Value semantics: - `-1`: No limit (Long.MAX_VALUE); always store - `0`: Disabled; no batch
-   * index will be written - `>0`: Always store; size limit is managed by downstream pipeline
+   * <p>
+   * Value semantics: - `-1`: No limit (Long.MAX_VALUE); always store - `0`:
+   * Disabled; no batch index will be written - `>0`: Always store; size limit is
+   * managed by downstream pipeline
    */
   @Value.Default
   default Long batch() {

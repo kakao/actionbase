@@ -43,13 +43,12 @@ public final class IndexFields {
 
   public static class Schemas {
 
-    public static final StructType SCHEMA =
-        ImmutableStructType.builder()
-            .addField(FIELD_FIELD, DataType.STRING)
-            .addField(ORDER_FIELD, DataType.STRING)
-            .build();
+    public static final StructType SCHEMA = ImmutableStructType.builder()
+        .addField(FIELD_FIELD, DataType.STRING)
+        .addField(ORDER_FIELD, DataType.STRING)
+        .build();
 
-    public static final ArrayType ARRAY_SCHEMA =
-        ImmutableArrayType.builder().elementType(SCHEMA).build();
+    public static final ArrayType ARRAY_SCHEMA = ImmutableArrayType.builder().elementType(SCHEMA)
+        .build();
   }
 }

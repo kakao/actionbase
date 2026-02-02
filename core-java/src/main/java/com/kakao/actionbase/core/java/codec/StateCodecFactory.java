@@ -6,7 +6,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class StateCodecFactory {
 
-  public StateCodecFactory() {}
+  public StateCodecFactory() {
+  }
 
   public StateCodec create() {
     return create(Constant.Codec.DEFAULT_POOL_SIZE, Constant.Codec.DEFAULT_BUFFER_SIZE);

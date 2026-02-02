@@ -44,12 +44,11 @@ class EdgeSchemaTest extends AbstractUnitTest<EdgeSchema> {
 
   @BeforeEach
   protected void setUp() {
-    baseProperties =
-        Collections.singletonList(ImmutableStructField.of(TEST_PROPERTY_KEY, DataType.LONG));
-    Index baseIndex =
-        ImmutableIndex.of(
-            TEST_INDEX,
-            Collections.singletonList(ImmutableIndexField.of(TEST_PROPERTY_KEY, Order.DESC)));
+    baseProperties = Collections
+        .singletonList(ImmutableStructField.of(TEST_PROPERTY_KEY, DataType.LONG));
+    Index baseIndex = ImmutableIndex.of(
+        TEST_INDEX,
+        Collections.singletonList(ImmutableIndexField.of(TEST_PROPERTY_KEY, Order.DESC)));
     baseIndexes = Collections.singletonList(baseIndex);
 
     testTarget = createTarget();
@@ -73,16 +72,16 @@ class EdgeSchemaTest extends AbstractUnitTest<EdgeSchema> {
       ImmutableEdgeSchema.Builder builder = ImmutableEdgeSchema.builder().from(testTarget);
 
       switch (field) {
-        case "source":
+        case "source" :
           builder.source(TEST_SOURCE_FIELD_NEW).build();
           break;
-        case "target":
+        case "target" :
           builder.target(TEST_TARGET_FIELD_NEW).build();
           break;
-        case "properties":
+        case "properties" :
           builder.addProperties(TEST_PROPERTY_KEY + "-different", DataType.STRING).build();
           break;
-        case "direction":
+        case "direction" :
           builder
               .direction(
                   TEST_DIRECTION_TYPE == DirectionType.BOTH
@@ -90,7 +89,7 @@ class EdgeSchemaTest extends AbstractUnitTest<EdgeSchema> {
                       : DirectionType.BOTH)
               .build();
           break;
-        case "indexes":
+        case "indexes" :
           builder
               .addIndex(
                   TEST_INDEX + "-different", ImmutableIndexField.of(TEST_PROPERTY_KEY, Order.ASC))

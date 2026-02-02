@@ -7,7 +7,8 @@ import java.util.stream.Collectors;
 
 public class WherePredicates {
 
-  private WherePredicates() {}
+  private WherePredicates() {
+  }
 
   public static List<WherePredicate> parse(String filterString) {
     return Arrays.stream(filterString.split(";"))
@@ -19,25 +20,25 @@ public class WherePredicates {
               String value = parts[2];
 
               switch (op) {
-                case WherePredicate.IN:
+                case WherePredicate.IN :
                   List<Object> values = new ArrayList<>(Arrays.asList(value.split(",")));
                   return WherePredicate.in(key, values);
-                case WherePredicate.EQ:
+                case WherePredicate.EQ :
                   return WherePredicate.eq(key, value);
-                case WherePredicate.GT:
+                case WherePredicate.GT :
                   return WherePredicate.gt(key, value);
-                case WherePredicate.GTE:
+                case WherePredicate.GTE :
                   return WherePredicate.gte(key, value);
-                case WherePredicate.LT:
+                case WherePredicate.LT :
                   return WherePredicate.lt(key, value);
-                case WherePredicate.LTE:
+                case WherePredicate.LTE :
                   return WherePredicate.lte(key, value);
-                case WherePredicate.BETWEEN:
+                case WherePredicate.BETWEEN :
                   String[] fromTo = value.split(",");
                   return WherePredicate.between(key, fromTo[0], fromTo[1]);
-                case WherePredicate.IS_NULL:
+                case WherePredicate.IS_NULL :
                   return WherePredicate.isNull(key);
-                default:
+                default :
                   throw new IllegalArgumentException("Unsupported operator: " + op);
               }
             })
@@ -51,10 +52,9 @@ public class WherePredicates {
               String key = predicate.key();
               if (predicate instanceof WherePredicate.In) {
                 WherePredicate.In inPredicate = (WherePredicate.In) predicate;
-                String values =
-                    inPredicate.values().stream()
-                        .map(Object::toString)
-                        .collect(Collectors.joining(","));
+                String values = inPredicate.values().stream()
+                    .map(Object::toString)
+                    .collect(Collectors.joining(","));
                 return key + ":" + WherePredicate.IN + ":" + values;
               } else if (predicate instanceof WherePredicate.Eq) {
                 WherePredicate.Eq eqPredicate = (WherePredicate.Eq) predicate;

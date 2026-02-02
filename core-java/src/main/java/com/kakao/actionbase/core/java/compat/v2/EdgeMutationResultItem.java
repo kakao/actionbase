@@ -27,12 +27,11 @@ public interface EdgeMutationResultItem {
       com.kakao.actionbase.core.java.state.Event event,
       com.kakao.actionbase.core.java.edge.EdgeState state,
       String status) {
-    ImmutableEdgeState.Builder builder =
-        ImmutableEdgeState.builder()
-            .active(state.active())
-            .ts(state.version())
-            .src(state.source())
-            .tgt(state.target());
+    ImmutableEdgeState.Builder builder = ImmutableEdgeState.builder()
+        .active(state.active())
+        .ts(state.version())
+        .src(state.source())
+        .tgt(state.target());
 
     for (Map.Entry<String, StateValue> entry : state.properties().entrySet()) {
       Object value = entry.getValue().value();

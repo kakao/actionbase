@@ -47,12 +47,11 @@ class IndexTest {
     @DisplayName("Can create Index with all fields")
     void testFullConstruction() {
       // Create using builder with all fields
-      Index index =
-          ImmutableIndex.builder()
-              .index(TEST_INDEX)
-              .comment(TEST_COMMENT)
-              .fields(TEST_FIELDS)
-              .build();
+      Index index = ImmutableIndex.builder()
+          .index(TEST_INDEX)
+          .comment(TEST_COMMENT)
+          .fields(TEST_FIELDS)
+          .build();
 
       // Verify field values
       assertEquals(TEST_INDEX, index.index());

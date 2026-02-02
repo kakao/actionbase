@@ -10,4 +10,5 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @ExtendWith(IntelliJRunClickOnlyCondition.class)
-public @interface IntellijRunClickOnlyTest {}
+public @interface IntellijRunClickOnlyTest {
+}

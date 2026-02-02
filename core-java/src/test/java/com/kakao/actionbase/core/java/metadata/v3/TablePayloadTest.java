@@ -14,8 +14,7 @@ class TablePayloadTest {
 
     System.out.println(ActionbaseObjectMapper.toJson(table));
 
-    String jsonString =
-        "{\"table\":\"database\",\"storage\":\"metadata\",\"comment\":\"sys.database table\",\"schema\":{\"type\":\"EDGE\",\"source\":{\"type\":{\"type\":\"string\"},\"comment\":\"tenant\"},\"target\":{\"type\":{\"type\":\"string\"},\"comment\":\"database\"},\"properties\":[{\"name\":\"comment\",\"type\":{\"type\":\"string\"},\"comment\":\"\",\"nullable\":false}],\"direction\":\"OUT\",\"indexes\":[{\"index\":\"default\",\"fields\":[{\"field\":\"target\",\"order\":\"ASC\"}],\"comment\":\"\"}],\"indexMap\":{\"default\":{\"index\":\"default\",\"fields\":[{\"field\":\"target\",\"order\":\"ASC\"}],\"comment\":\"\"}},\"propertyNames\":[\"comment\"]},\"mode\":\"SYNC\",\"type\":\"EDGE\"}";
+    String jsonString = "{\"table\":\"database\",\"storage\":\"metadata\",\"comment\":\"sys.database table\",\"schema\":{\"type\":\"EDGE\",\"source\":{\"type\":{\"type\":\"string\"},\"comment\":\"tenant\"},\"target\":{\"type\":{\"type\":\"string\"},\"comment\":\"database\"},\"properties\":[{\"name\":\"comment\",\"type\":{\"type\":\"string\"},\"comment\":\"\",\"nullable\":false}],\"direction\":\"OUT\",\"indexes\":[{\"index\":\"default\",\"fields\":[{\"field\":\"target\",\"order\":\"ASC\"}],\"comment\":\"\"}],\"indexMap\":{\"default\":{\"index\":\"default\",\"fields\":[{\"field\":\"target\",\"order\":\"ASC\"}],\"comment\":\"\"}},\"propertyNames\":[\"comment\"]},\"mode\":\"SYNC\",\"type\":\"EDGE\"}";
 
     TablePayload<?> payload = ActionbaseObjectMapper.fromJson(jsonString, TablePayload.class);
 

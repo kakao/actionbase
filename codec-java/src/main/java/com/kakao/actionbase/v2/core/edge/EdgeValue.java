@@ -9,12 +9,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class EdgeValue {
 
-  @JsonIgnore static final Map<String, Object> empty = Collections.emptyMap();
+  @JsonIgnore
+  static final Map<String, Object> empty = Collections.emptyMap();
 
   @JsonProperty(required = true)
   final long ts;
 
-  @JsonProperty final Map<String, Object> props;
+  @JsonProperty
+  final Map<String, Object> props;
 
   @JsonCreator
   public EdgeValue(

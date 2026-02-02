@@ -1,8 +1,9 @@
 package com.kakao.actionbase.core.java.exception;
 
 /**
- * Base class for all exceptions in the Actionbase project. This class is at the top of the
- * exception hierarchy within the project, and all custom exceptions must extend this class.
+ * Base class for all exceptions in the Actionbase project. This class is at the
+ * top of the exception hierarchy within the project, and all custom exceptions
+ * must extend this class.
  */
 public class ActionbaseUnsupportedTypeException extends ActionbaseException {
 
@@ -19,7 +20,8 @@ public class ActionbaseUnsupportedTypeException extends ActionbaseException {
   /**
    * Creates an exception with a message.
    *
-   * @param message Exception message
+   * @param message
+   *          Exception message
    */
   public ActionbaseUnsupportedTypeException(String message) {
     this(message, "ERR_UNKNOWN", "");
@@ -28,8 +30,10 @@ public class ActionbaseUnsupportedTypeException extends ActionbaseException {
   /**
    * Creates an exception with a message and cause exception.
    *
-   * @param message Exception message
-   * @param cause Cause exception
+   * @param message
+   *          Exception message
+   * @param cause
+   *          Cause exception
    */
   public ActionbaseUnsupportedTypeException(String message, Throwable cause) {
     this(message, "ERR_UNKNOWN", "", cause);
@@ -38,8 +42,10 @@ public class ActionbaseUnsupportedTypeException extends ActionbaseException {
   /**
    * Creates an exception with a message and error code.
    *
-   * @param message Exception message
-   * @param errorCode Error code
+   * @param message
+   *          Exception message
+   * @param errorCode
+   *          Error code
    */
   public ActionbaseUnsupportedTypeException(String message, String errorCode) {
     this(message, errorCode, "");
@@ -48,9 +54,12 @@ public class ActionbaseUnsupportedTypeException extends ActionbaseException {
   /**
    * Creates an exception with a message, error code, and service context.
    *
-   * @param message Exception message
-   * @param errorCode Error code
-   * @param databaseContext Service context information
+   * @param message
+   *          Exception message
+   * @param errorCode
+   *          Error code
+   * @param databaseContext
+   *          Service context information
    */
   public ActionbaseUnsupportedTypeException(
       String message, String errorCode, String databaseContext) {
@@ -60,12 +69,17 @@ public class ActionbaseUnsupportedTypeException extends ActionbaseException {
   }
 
   /**
-   * Creates an exception with a message, error code, service context, and cause exception.
+   * Creates an exception with a message, error code, service context, and cause
+   * exception.
    *
-   * @param message Exception message
-   * @param errorCode Error code
-   * @param databaseContext Service context information
-   * @param cause Cause exception
+   * @param message
+   *          Exception message
+   * @param errorCode
+   *          Error code
+   * @param databaseContext
+   *          Service context information
+   * @param cause
+   *          Cause exception
    */
   public ActionbaseUnsupportedTypeException(
       String message, String errorCode, String databaseContext, Throwable cause) {

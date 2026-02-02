@@ -4,9 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum SystemProperties {
-  TS("ts", -1),
-  SRC("src", -2),
-  TGT("tgt", -3);
+  TS("ts", -1), SRC("src", -2), TGT("tgt", -3);
 
   private static final Map<String, SystemProperties> caseSensitiveMap = new HashMap<>();
   private static final Map<Integer, SystemProperties> indexMap = new HashMap<>();

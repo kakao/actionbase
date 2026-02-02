@@ -12,8 +12,8 @@ public class JvmRuntimeInspector {
     int classMajorVersion = -1;
 
     String className = clazz.getName().replace('.', '/') + ".class";
-    try (InputStream in =
-        JvmRuntimeInspector.class.getClassLoader().getResourceAsStream(className)) {
+    try (InputStream in = JvmRuntimeInspector.class.getClassLoader()
+        .getResourceAsStream(className)) {
       if (in != null) {
         byte[] header = new byte[8]; // Enough for magic + minor + major
         if (in.read(header) == 8) {

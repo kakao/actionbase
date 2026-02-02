@@ -1,42 +1,27 @@
 package com.kakao.actionbase.v2.core.code.hbase;
 
 public enum ValueType {
-  NULL(1),
-  BOOLEAN(2),
-  STRING(3),
-  BYTE(4),
-  SHORT(5),
-  INT(6),
-  LONG(7),
-  FLOAT(8),
-  DOUBLE(9),
-  DECIMAL(10),
+  NULL(1), BOOLEAN(2), STRING(3), BYTE(4), SHORT(5), INT(6), LONG(7), FLOAT(8), DOUBLE(9), DECIMAL(
+      10),
   /**
-   * 32-bit integer representing the number of DAYS since Unix epoch, i.e. January 1, 1970 00:00:00
-   * UTC. The value is absolute and is time-zone independent. Negative values represents dates
-   * before epoch.
+   * 32-bit integer representing the number of DAYS since Unix epoch, i.e. January
+   * 1, 1970 00:00:00 UTC. The value is absolute and is time-zone independent.
+   * Negative values represents dates before epoch.
    */
   DATE(11),
   /**
-   * 32-bit integer representing time of the day in milliseconds. The value is absolute and is
-   * time-zone independent.
+   * 32-bit integer representing time of the day in milliseconds. The value is
+   * absolute and is time-zone independent.
    */
   TIME(12),
   /**
-   * 64-bit integer representing the number of milliseconds since epoch, i.e. January 1, 1970
-   * 00:00:00 UTC. Negative values represent dates before epoch.
+   * 64-bit integer representing the number of milliseconds since epoch, i.e.
+   * January 1, 1970 00:00:00 UTC. Negative values represent dates before epoch.
    */
   TIMESTAMP(13),
   /** A value representing a period of time between two instants. */
-  INTERVAL(14),
-  BINARY(15),
-  ENUM(16),
-  KRYO_SERIALIZABLE(17),
-  SERIALIZABLE(18),
-  UUID(19),
-  ANY(20),
-  COUNTER(21),
-  JSON(22);
+  INTERVAL(14), BINARY(15), ENUM(16), KRYO_SERIALIZABLE(17), SERIALIZABLE(18), UUID(19), ANY(
+      20), COUNTER(21), JSON(22);
 
   private final byte code;
 
@@ -46,51 +31,51 @@ public enum ValueType {
 
   public static ValueType valueOf(int typeCode) {
     switch (typeCode) {
-      case 1:
+      case 1 :
         return NULL;
-      case 2:
+      case 2 :
         return BOOLEAN;
-      case 3:
+      case 3 :
         return STRING;
-      case 4:
+      case 4 :
         return BYTE;
-      case 5:
+      case 5 :
         return SHORT;
-      case 6:
+      case 6 :
         return INT;
-      case 7:
+      case 7 :
         return LONG;
-      case 8:
+      case 8 :
         return FLOAT;
-      case 9:
+      case 9 :
         return DOUBLE;
-      case 10:
+      case 10 :
         return DECIMAL;
-      case 11:
+      case 11 :
         return DATE;
-      case 12:
+      case 12 :
         return TIME;
-      case 13:
+      case 13 :
         return TIMESTAMP;
-      case 14:
+      case 14 :
         return INTERVAL;
-      case 15:
+      case 15 :
         return BINARY;
-      case 16:
+      case 16 :
         return ENUM;
-      case 17:
+      case 17 :
         return KRYO_SERIALIZABLE;
-      case 18:
+      case 18 :
         return SERIALIZABLE;
-      case 19:
+      case 19 :
         return UUID;
-      case 20:
+      case 20 :
         return ANY;
-      case 21:
+      case 21 :
         return COUNTER;
-      case 22:
+      case 22 :
         return JSON;
-      default:
+      default :
         return null;
     }
   }

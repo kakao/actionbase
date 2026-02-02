@@ -86,9 +86,8 @@ public final class Storages {
   }
 
   public static Map<String, Object> configuration(Edge edge) {
-    return (Map<String, Object>)
-        ActionbaseObjectMapper.INSTANCE.convertValue(
-            edge.properties().get(CONFIGURATION_FIELD), Map.class);
+    return (Map<String, Object>) ActionbaseObjectMapper.INSTANCE.convertValue(
+        edge.properties().get(CONFIGURATION_FIELD), Map.class);
   }
 
   public static boolean active(StorageDescriptor instance) {
@@ -197,27 +196,25 @@ public final class Storages {
 
     public static final String NIL_STORAGE_COMMENT = "nil storage";
 
-    public static final StructType SCHEMA =
-        ImmutableStructType.builder()
-            .addField(ACTIVE_FIELD, DataType.BOOLEAN)
-            .addField(TENANT_FIELD, DataType.STRING)
-            .addField(DATABASE_FIELD, DataType.STRING)
-            .addField(STORAGE_FIELD, DataType.STRING)
-            .addField(COMMENT_FIELD, DataType.STRING)
-            .build();
+    public static final StructType SCHEMA = ImmutableStructType.builder()
+        .addField(ACTIVE_FIELD, DataType.BOOLEAN)
+        .addField(TENANT_FIELD, DataType.STRING)
+        .addField(DATABASE_FIELD, DataType.STRING)
+        .addField(STORAGE_FIELD, DataType.STRING)
+        .addField(COMMENT_FIELD, DataType.STRING)
+        .build();
 
-    public static final EdgeSchema EDGE_SCHEMA =
-        EdgeSchema.builder()
-            .source(DataType.STRING, DATABASE_FIELD)
-            .target(DataType.STRING, STORAGE_FIELD)
-            .addProperties(TYPE_FIELD, DataType.STRING)
-            .addProperties(CONFIGURATION_FIELD, DataType.OBJECT)
-            .addProperties(DATASTORE_FIELD, DataType.STRING)
-            .addProperties(TENANT_FIELD, DataType.STRING)
-            .addProperties(COMMENT_FIELD, DataType.STRING)
-            .direction(DirectionType.OUT)
-            .addDefaultMetadataIndex()
-            .build();
+    public static final EdgeSchema EDGE_SCHEMA = EdgeSchema.builder()
+        .source(DataType.STRING, DATABASE_FIELD)
+        .target(DataType.STRING, STORAGE_FIELD)
+        .addProperties(TYPE_FIELD, DataType.STRING)
+        .addProperties(CONFIGURATION_FIELD, DataType.OBJECT)
+        .addProperties(DATASTORE_FIELD, DataType.STRING)
+        .addProperties(TENANT_FIELD, DataType.STRING)
+        .addProperties(COMMENT_FIELD, DataType.STRING)
+        .direction(DirectionType.OUT)
+        .addDefaultMetadataIndex()
+        .build();
 
     public static TableId getTableId(TenantId tenantId) {
       return ImmutableTableId.of(

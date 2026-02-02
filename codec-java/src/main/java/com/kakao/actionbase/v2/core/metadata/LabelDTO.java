@@ -45,7 +45,8 @@ public class LabelDTO implements Serializable {
   @JsonProperty("mode")
   final MutationMode mode;
 
-  @JsonIgnore final int id;
+  @JsonIgnore
+  final int id;
 
   @JsonCreator
   public LabelDTO(

@@ -11,13 +11,12 @@ class EdgeTest {
 
   @Test
   void testEdgeSerialization() {
-    EdgePayload edge =
-        ImmutableEdgePayload.builder()
-            .version(1)
-            .source("source")
-            .target("target")
-            .putProperties("key", "value")
-            .build();
+    EdgePayload edge = ImmutableEdgePayload.builder()
+        .version(1)
+        .source("source")
+        .target("target")
+        .putProperties("key", "value")
+        .build();
     String jsonString = ActionbaseObjectMapper.toJson(edge);
 
     assertEquals(
@@ -27,8 +26,8 @@ class EdgeTest {
 
   @Test
   void testEdgeSerializationEmptyProps() {
-    EdgePayload edge =
-        ImmutableEdgePayload.builder().version(1).source("source").target("target").build();
+    EdgePayload edge = ImmutableEdgePayload.builder().version(1).source("source").target("target")
+        .build();
     String jsonString = ActionbaseObjectMapper.toJson(edge);
 
     assertEquals(
@@ -38,8 +37,7 @@ class EdgeTest {
 
   @Test
   void testEdgeDeserialization() {
-    String jsonString =
-        "{\"version\":1,\"source\":\"source\",\"target\":\"target\",\"properties\":{\"key\":\"value\"}}";
+    String jsonString = "{\"version\":1,\"source\":\"source\",\"target\":\"target\",\"properties\":{\"key\":\"value\"}}";
     EdgePayload edge = ActionbaseObjectMapper.fromJson(jsonString, EdgePayload.class);
 
     assertEquals(1L, edge.version());
@@ -50,8 +48,7 @@ class EdgeTest {
 
   @Test
   void testEdgeDeserializationEmptyProps() {
-    String jsonString =
-        "{\"active\":true,\"version\":123,\"source\":\"source\",\"target\":\"target\",\"properties\":{}}";
+    String jsonString = "{\"active\":true,\"version\":123,\"source\":\"source\",\"target\":\"target\",\"properties\":{}}";
     EdgePayload edge = ActionbaseObjectMapper.fromJson(jsonString, EdgePayload.class);
 
     assertEquals("source", edge.source());
@@ -61,13 +58,12 @@ class EdgeTest {
 
   @Test
   void testTraceEdgeSerialization() {
-    EdgeEvent edge =
-        ImmutableEdgePayload.builder()
-            .version(123)
-            .source("source")
-            .target("target")
-            .build()
-            .toEvent(EventType.INSERT);
+    EdgeEvent edge = ImmutableEdgePayload.builder()
+        .version(123)
+        .source("source")
+        .target("target")
+        .build()
+        .toEvent(EventType.INSERT);
     String jsonString = ActionbaseObjectMapper.toJson(edge);
 
     assertEquals(

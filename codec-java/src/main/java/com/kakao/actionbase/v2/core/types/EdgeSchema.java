@@ -26,13 +26,20 @@ public class EdgeSchema implements Serializable {
   @JsonProperty("fields")
   final List<Field> fields;
 
-  @JsonIgnore final Map<String, Field> nameToField;
-  @JsonIgnore private final Map<Integer, String> hashToFieldNameMap;
-  @JsonIgnore private final StructType allStructType;
-  @JsonIgnore private final StructType structType;
-  @JsonIgnore private final StructType edgeIdStructType;
-  @JsonIgnore private final StructType offsetStructType;
-  @JsonIgnore private final Map<String, Integer> fieldIndices;
+  @JsonIgnore
+  final Map<String, Field> nameToField;
+  @JsonIgnore
+  private final Map<Integer, String> hashToFieldNameMap;
+  @JsonIgnore
+  private final StructType allStructType;
+  @JsonIgnore
+  private final StructType structType;
+  @JsonIgnore
+  private final StructType edgeIdStructType;
+  @JsonIgnore
+  private final StructType offsetStructType;
+  @JsonIgnore
+  private final Map<String, Integer> fieldIndices;
   @JsonIgnore
   private final int edgeIdIndex, activeIndex, dirIndex, tsIndex, srcIndex, tgtIndex, offsetIndex;
 
@@ -43,18 +50,17 @@ public class EdgeSchema implements Serializable {
       @JsonProperty("fields") List<Field> fields) {
     this.src = src;
     this.tgt = tgt;
-    this.fields =
-        Collections.unmodifiableList(new ArrayList<>(fields)); // Make fields list immutable
+    this.fields = Collections.unmodifiableList(new ArrayList<>(fields)); // Make fields list
+                                                                         // immutable
 
-    this.nameToField =
-        fields.stream().collect(Collectors.toMap(Field::getName, Function.identity()));
+    this.nameToField = fields.stream()
+        .collect(Collectors.toMap(Field::getName, Function.identity()));
 
-    this.hashToFieldNameMap =
-        Collections.unmodifiableMap(
-            fields.stream()
-                .collect(
-                    Collectors.toMap(
-                        field -> ValueUtils.stringHash(field.getName()), Field::getName)));
+    this.hashToFieldNameMap = Collections.unmodifiableMap(
+        fields.stream()
+            .collect(
+                Collectors.toMap(
+                    field -> ValueUtils.stringHash(field.getName()), Field::getName)));
 
     List<Field> fieldList = new ArrayList<>();
     fieldList.add(new Field(Fields.DIR, DataType.STRING, false, "direction"));
@@ -74,12 +80,11 @@ public class EdgeSchema implements Serializable {
     Field[] fieldsArray = fieldList.toArray(new Field[0]);
     this.allStructType = new StructType(fieldsArray);
 
-    this.fieldIndices =
-        Collections.unmodifiableMap(
-            fields.stream()
-                .collect(
-                    Collectors.toMap(
-                        Field::getName, field -> allStructType.fieldIndex(field.getName()))));
+    this.fieldIndices = Collections.unmodifiableMap(
+        fields.stream()
+            .collect(
+                Collectors.toMap(
+                    Field::getName, field -> allStructType.fieldIndex(field.getName()))));
 
     this.edgeIdIndex = allStructType.fieldIndex(Fields.EDGE_ID);
 
@@ -181,8 +186,10 @@ public class EdgeSchema implements Serializable {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof EdgeSchema)) return false;
+    if (this == o)
+      return true;
+    if (!(o instanceof EdgeSchema))
+      return false;
     EdgeSchema that = (EdgeSchema) o;
     return src.equals(that.src) && tgt.equals(that.tgt) && fields.equals(that.fields);
   }

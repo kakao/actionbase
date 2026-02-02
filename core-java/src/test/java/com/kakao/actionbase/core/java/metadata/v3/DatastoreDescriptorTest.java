@@ -67,51 +67,46 @@ class DatastoreDescriptorTest extends AbstractUnitTest<DatastoreDescriptor> {
       DatastoreDescriptor differentData;
 
       switch (field) {
-        case "active":
-          differentData =
-              ImmutableDatastoreDescriptor.builder().from(testTarget).active(!TEST_ACTIVE).build();
+        case "active" :
+          differentData = ImmutableDatastoreDescriptor.builder().from(testTarget)
+              .active(!TEST_ACTIVE).build();
           break;
-        case "tenant":
-          differentData =
-              ImmutableDatastoreDescriptor.builder()
-                  .from(testTarget)
-                  .tenant(TEST_TENANT + "-different")
-                  .build();
+        case "tenant" :
+          differentData = ImmutableDatastoreDescriptor.builder()
+              .from(testTarget)
+              .tenant(TEST_TENANT + "-different")
+              .build();
           break;
-        case "type":
-          differentData =
-              ImmutableDatastoreDescriptor.builder()
-                  .from(testTarget)
-                  .type(
-                      TEST_TYPE == DatastoreType.MEMORY
-                          ? DatastoreType.HBASE
-                          : DatastoreType.MEMORY)
-                  .build();
+        case "type" :
+          differentData = ImmutableDatastoreDescriptor.builder()
+              .from(testTarget)
+              .type(
+                  TEST_TYPE == DatastoreType.MEMORY
+                      ? DatastoreType.HBASE
+                      : DatastoreType.MEMORY)
+              .build();
           break;
-        case "datastore":
-          differentData =
-              ImmutableDatastoreDescriptor.builder()
-                  .from(testTarget)
-                  .datastore(TEST_DATASTORE + "-different")
-                  .build();
+        case "datastore" :
+          differentData = ImmutableDatastoreDescriptor.builder()
+              .from(testTarget)
+              .datastore(TEST_DATASTORE + "-different")
+              .build();
           break;
-        case "comment":
-          differentData =
-              ImmutableDatastoreDescriptor.builder()
-                  .from(testTarget)
-                  .comment(TEST_COMMENT + "-different")
-                  .build();
+        case "comment" :
+          differentData = ImmutableDatastoreDescriptor.builder()
+              .from(testTarget)
+              .comment(TEST_COMMENT + "-different")
+              .build();
           break;
-        case "configuration":
+        case "configuration" :
           Map<String, String> differentConfig = new HashMap<>(baseConfiguration);
           differentConfig.put("key1", "differentValue");
-          differentData =
-              ImmutableDatastoreDescriptor.builder()
-                  .from(testTarget)
-                  .configuration(differentConfig)
-                  .build();
+          differentData = ImmutableDatastoreDescriptor.builder()
+              .from(testTarget)
+              .configuration(differentConfig)
+              .build();
           break;
-        default:
+        default :
           throw new IllegalArgumentException("Unexpected field: " + field);
       }
 
@@ -128,8 +123,8 @@ class DatastoreDescriptorTest extends AbstractUnitTest<DatastoreDescriptor> {
     @ValueSource(strings = {"tenant", "type", "datastore"})
     @DisplayName("Exception should be thrown when required field is missing")
     void testMissingRequiredField(String excludedField) {
-      ImmutableDatastoreDescriptor.Builder builder =
-          ImmutableDatastoreDescriptor.builder().active(TEST_ACTIVE).comment(TEST_COMMENT);
+      ImmutableDatastoreDescriptor.Builder builder = ImmutableDatastoreDescriptor.builder()
+          .active(TEST_ACTIVE).comment(TEST_COMMENT);
 
       assertThrows(
           IllegalStateException.class,
@@ -140,15 +135,13 @@ class DatastoreDescriptorTest extends AbstractUnitTest<DatastoreDescriptor> {
     }
 
     @Test
-    @DisplayName(
-        "Default state should be active=true, comment=V3Metadata.DEFAULT_COMMENT, configuration={}")
+    @DisplayName("Default state should be active=true, comment=V3Metadata.DEFAULT_COMMENT, configuration={}")
     void testDefaultState() {
-      DatastoreDescriptor defaultStorage =
-          ImmutableDatastoreDescriptor.builder()
-              .tenant(TEST_TENANT)
-              .datastore(TEST_DATASTORE)
-              .type(TEST_TYPE)
-              .build();
+      DatastoreDescriptor defaultStorage = ImmutableDatastoreDescriptor.builder()
+          .tenant(TEST_TENANT)
+          .datastore(TEST_DATASTORE)
+          .type(TEST_TYPE)
+          .build();
 
       assertTrue(defaultStorage.active());
       assertEquals(Constant.DEFAULT_COMMENT, defaultStorage.comment());

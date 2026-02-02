@@ -22,8 +22,8 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
   public static final byte COUNTER_EDGE_TYPE = EncodedEdgeType.COUNTER_EDGE_TYPE.getCode();
 
   public static final byte INDEXED_EDGE_TYPE = EncodedEdgeType.INDEXED_EDGE_TYPE.getCode();
-  public static final byte IMMUTABLE_INDEXED_EDGE_TYPE =
-      EncodedEdgeType.IMMUTABLE_INDEXED_EDGE_TYPE.getCode();
+  public static final byte IMMUTABLE_INDEXED_EDGE_TYPE = EncodedEdgeType.IMMUTABLE_INDEXED_EDGE_TYPE
+      .getCode();
 
   public static final String INSERT_TS_KEY = "__InsertTs__";
   public static final String DELETE_TS_KEY = "__DeleteTs__";
@@ -181,9 +181,8 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
       List<Index> indices) {
     return indices.stream()
         .flatMap(
-            index ->
-                dirType.getDirs().stream()
-                    .map(dir -> encodeIndexedEdge(ts, src, tgt, props, dir, labelId, index)))
+            index -> dirType.getDirs().stream()
+                .map(dir -> encodeIndexedEdge(ts, src, tgt, props, dir, labelId, index)))
         .collect(Collectors.toList());
   }
 

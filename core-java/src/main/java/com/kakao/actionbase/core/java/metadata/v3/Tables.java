@@ -219,31 +219,29 @@ public final class Tables {
 
   public static class Schemas {
 
-    public static final StructType SCHEMA =
-        ImmutableStructType.builder()
-            .addField(ACTIVE_FIELD, DataType.BOOLEAN)
-            .addField(TENANT_FIELD, DataType.STRING)
-            .addField(DATABASE_FIELD, DataType.STRING)
-            .addField(TABLE_FIELD, DataType.STRING)
-            .addField(STORAGE_FIELD, DataType.STRING)
-            .addField(COMMENT_FIELD, DataType.STRING)
-            .addField(SCHEMA_FIELD, EdgeSchemas.Schemas.SCHEMA)
-            .addField(MODE_FIELD, DataType.STRING)
-            .build();
+    public static final StructType SCHEMA = ImmutableStructType.builder()
+        .addField(ACTIVE_FIELD, DataType.BOOLEAN)
+        .addField(TENANT_FIELD, DataType.STRING)
+        .addField(DATABASE_FIELD, DataType.STRING)
+        .addField(TABLE_FIELD, DataType.STRING)
+        .addField(STORAGE_FIELD, DataType.STRING)
+        .addField(COMMENT_FIELD, DataType.STRING)
+        .addField(SCHEMA_FIELD, EdgeSchemas.Schemas.SCHEMA)
+        .addField(MODE_FIELD, DataType.STRING)
+        .build();
 
-    public static final EdgeSchema EDGE_SCHEMA =
-        EdgeSchema.builder()
-            .source(DataType.STRING, DATABASE_FIELD)
-            .target(DataType.STRING, TABLE_FIELD)
-            .addProperties(TYPE_FIELD, DataType.STRING)
-            .addProperties(TENANT_FIELD, DataType.STRING)
-            .addProperties(STORAGE_FIELD, DataType.STRING)
-            .addProperties(COMMENT_FIELD, DataType.STRING)
-            .addProperties(SCHEMA_FIELD, EdgeSchemas.Schemas.SCHEMA)
-            .addProperties(MODE_FIELD, DataType.STRING)
-            .direction(DirectionType.OUT)
-            .addDefaultMetadataIndex()
-            .build();
+    public static final EdgeSchema EDGE_SCHEMA = EdgeSchema.builder()
+        .source(DataType.STRING, DATABASE_FIELD)
+        .target(DataType.STRING, TABLE_FIELD)
+        .addProperties(TYPE_FIELD, DataType.STRING)
+        .addProperties(TENANT_FIELD, DataType.STRING)
+        .addProperties(STORAGE_FIELD, DataType.STRING)
+        .addProperties(COMMENT_FIELD, DataType.STRING)
+        .addProperties(SCHEMA_FIELD, EdgeSchemas.Schemas.SCHEMA)
+        .addProperties(MODE_FIELD, DataType.STRING)
+        .direction(DirectionType.OUT)
+        .addDefaultMetadataIndex()
+        .build();
 
     public static TableId getTableId(TenantId tenantId) {
       return ImmutableTableId.of(

@@ -8,4 +8,5 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableHBaseTableDeletePayload.class)
 @JsonDeserialize(as = ImmutableHBaseTableDeletePayload.class)
-public interface HBaseTableDeletePayload {}
+public interface HBaseTableDeletePayload {
+}

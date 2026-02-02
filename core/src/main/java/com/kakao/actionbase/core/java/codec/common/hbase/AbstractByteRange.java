@@ -7,7 +7,8 @@ public abstract class AbstractByteRange implements ByteRange {
   protected int length;
   protected int hash = -1;
 
-  public AbstractByteRange() {}
+  public AbstractByteRange() {
+  }
 
   public static boolean isEmpty(ByteRange range) {
     return range == null || range.getLength() == 0;

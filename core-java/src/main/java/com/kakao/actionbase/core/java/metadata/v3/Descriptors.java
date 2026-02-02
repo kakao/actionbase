@@ -19,19 +19,18 @@ public class Descriptors {
 
   public static class Schema {
 
-    public static final EdgeSchema DATABASE =
-        ImmutableEdgeSchema.builder()
-            .source(ImmutableField.of(DataType.STRING, TENANT_FIELD))
-            .target(ImmutableField.of(DataType.STRING, DATABASE_FIELD))
-            .addProperties(ImmutableStructField.of(COMMENT_FIELD, DataType.STRING))
-            .direction(DirectionType.OUT)
-            .addIndexes(
-                ImmutableIndex.builder()
-                    .index(Edges.DEFAULT_INDEX_NAME)
-                    .fields(
-                        Collections.singletonList(
-                            ImmutableIndexField.of(Edges.TARGET_FIELD, Order.ASC)))
-                    .build())
-            .build();
+    public static final EdgeSchema DATABASE = ImmutableEdgeSchema.builder()
+        .source(ImmutableField.of(DataType.STRING, TENANT_FIELD))
+        .target(ImmutableField.of(DataType.STRING, DATABASE_FIELD))
+        .addProperties(ImmutableStructField.of(COMMENT_FIELD, DataType.STRING))
+        .direction(DirectionType.OUT)
+        .addIndexes(
+            ImmutableIndex.builder()
+                .index(Edges.DEFAULT_INDEX_NAME)
+                .fields(
+                    Collections.singletonList(
+                        ImmutableIndexField.of(Edges.TARGET_FIELD, Order.ASC)))
+                .build())
+        .build();
   }
 }

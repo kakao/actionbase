@@ -52,32 +52,29 @@ class DatabaseDescriptorDescriptorTest extends AbstractUnitTest<DatabaseDescript
       DatabaseDescriptor differentData;
 
       switch (field) {
-        case "active":
-          differentData =
-              ImmutableDatabaseDescriptor.builder().from(testTarget).active(!TEST_ACTIVE).build();
+        case "active" :
+          differentData = ImmutableDatabaseDescriptor.builder().from(testTarget)
+              .active(!TEST_ACTIVE).build();
           break;
-        case "tenant":
-          differentData =
-              ImmutableDatabaseDescriptor.builder()
-                  .from(testTarget)
-                  .tenant(TEST_TENANT + "-different")
-                  .build();
+        case "tenant" :
+          differentData = ImmutableDatabaseDescriptor.builder()
+              .from(testTarget)
+              .tenant(TEST_TENANT + "-different")
+              .build();
           break;
-        case "database":
-          differentData =
-              ImmutableDatabaseDescriptor.builder()
-                  .from(testTarget)
-                  .database(TEST_DATABASE + "-different")
-                  .build();
+        case "database" :
+          differentData = ImmutableDatabaseDescriptor.builder()
+              .from(testTarget)
+              .database(TEST_DATABASE + "-different")
+              .build();
           break;
-        case "comment":
-          differentData =
-              ImmutableDatabaseDescriptor.builder()
-                  .from(testTarget)
-                  .comment(TEST_COMMENT + "-different")
-                  .build();
+        case "comment" :
+          differentData = ImmutableDatabaseDescriptor.builder()
+              .from(testTarget)
+              .comment(TEST_COMMENT + "-different")
+              .build();
           break;
-        default:
+        default :
           throw new IllegalArgumentException("Unexpected field: " + field);
       }
 
@@ -94,8 +91,8 @@ class DatabaseDescriptorDescriptorTest extends AbstractUnitTest<DatabaseDescript
     @ValueSource(strings = {"tenant", "database"})
     @DisplayName("Exception should be thrown when required field is missing")
     void testMissingRequiredField(String excludedField) {
-      ImmutableDatabaseDescriptor.Builder builder =
-          ImmutableDatabaseDescriptor.builder().active(TEST_ACTIVE).comment(TEST_COMMENT);
+      ImmutableDatabaseDescriptor.Builder builder = ImmutableDatabaseDescriptor.builder()
+          .active(TEST_ACTIVE).comment(TEST_COMMENT);
 
       assertThrows(
           IllegalStateException.class,
@@ -108,8 +105,8 @@ class DatabaseDescriptorDescriptorTest extends AbstractUnitTest<DatabaseDescript
     @Test
     @DisplayName("Default state should be active=true, comment=V3Metadata.DEFAULT_COMMENT")
     void testDefaultState() {
-      DatabaseDescriptor defaultDatabase =
-          ImmutableDatabaseDescriptor.builder().tenant(TEST_TENANT).database(TEST_DATABASE).build();
+      DatabaseDescriptor defaultDatabase = ImmutableDatabaseDescriptor.builder().tenant(TEST_TENANT)
+          .database(TEST_DATABASE).build();
 
       assertTrue(defaultDatabase.active());
       assertEquals(Constant.DEFAULT_COMMENT, defaultDatabase.comment());

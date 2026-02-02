@@ -12,12 +12,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-/** Page metadata model. A container that holds ActionbaseModel, used for pagination processing. */
+/**
+ * Page metadata model. A container that holds ActionbaseModel, used for
+ * pagination processing.
+ */
 @Value.Immutable
 @JsonSerialize(as = ImmutablePage.class)
 @JsonDeserialize(as = ImmutablePage.class)
-public interface Page<
-    V3 extends com.kakao.actionbase.core.java.metadata.v3.Descriptor<?>, T extends Descriptor<V3>> {
+public interface Page<V3 extends com.kakao.actionbase.core.java.metadata.v3.Descriptor<?>, T extends Descriptor<V3>> {
 
   int count();
 

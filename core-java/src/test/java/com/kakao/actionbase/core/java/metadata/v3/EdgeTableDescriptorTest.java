@@ -46,14 +46,13 @@ class EdgeTableDescriptorTest extends AbstractUnitTest<EdgeTableDescriptor> {
 
   @BeforeEach
   void setUp() {
-    baseEdgeSchema =
-        ImmutableEdgeSchema.builder()
-            .source(ImmutableField.builder().type(DataType.LONG).build())
-            .target(ImmutableField.builder().type(DataType.STRING).build())
-            .addProperties(TEST_FIELD, DataType.LONG)
-            .direction(TEST_DIRECTION_TYPE)
-            .addIndex(TEST_INDEX, ImmutableIndexField.of(TEST_FIELD, Order.DESC))
-            .build();
+    baseEdgeSchema = ImmutableEdgeSchema.builder()
+        .source(ImmutableField.builder().type(DataType.LONG).build())
+        .target(ImmutableField.builder().type(DataType.STRING).build())
+        .addProperties(TEST_FIELD, DataType.LONG)
+        .direction(TEST_DIRECTION_TYPE)
+        .addIndex(TEST_INDEX, ImmutableIndexField.of(TEST_FIELD, Order.DESC))
+        .build();
     testTarget = createTarget();
   }
 
@@ -70,75 +69,67 @@ class EdgeTableDescriptorTest extends AbstractUnitTest<EdgeTableDescriptor> {
     }
 
     @ParameterizedTest(name = "Different field case: {0}")
-    @ValueSource(
-        strings = {"active", "tenant", "database", "table", "storage", "comment", "schema", "mode"})
+    @ValueSource(strings = {"active", "tenant", "database", "table", "storage", "comment", "schema",
+        "mode"})
     @DisplayName("Objects with different fields should not be equal")
     void testDataInequality(String field) {
       EdgeTableDescriptor differentData;
 
       switch (field) {
-        case "active":
-          differentData =
-              ImmutableEdgeTableDescriptor.builder().from(testTarget).active(!TEST_ACTIVE).build();
+        case "active" :
+          differentData = ImmutableEdgeTableDescriptor.builder().from(testTarget)
+              .active(!TEST_ACTIVE).build();
           break;
-        case "tenant":
-          differentData =
-              ImmutableEdgeTableDescriptor.builder()
-                  .from(testTarget)
-                  .tenant(TEST_TENANT + "-different")
-                  .build();
+        case "tenant" :
+          differentData = ImmutableEdgeTableDescriptor.builder()
+              .from(testTarget)
+              .tenant(TEST_TENANT + "-different")
+              .build();
           break;
-        case "database":
-          differentData =
-              ImmutableEdgeTableDescriptor.builder()
-                  .from(testTarget)
-                  .database(TEST_DATABASE + "-different")
-                  .build();
+        case "database" :
+          differentData = ImmutableEdgeTableDescriptor.builder()
+              .from(testTarget)
+              .database(TEST_DATABASE + "-different")
+              .build();
           break;
-        case "table":
-          differentData =
-              ImmutableEdgeTableDescriptor.builder()
-                  .from(testTarget)
-                  .table(TEST_TABLE + "-different")
-                  .build();
+        case "table" :
+          differentData = ImmutableEdgeTableDescriptor.builder()
+              .from(testTarget)
+              .table(TEST_TABLE + "-different")
+              .build();
           break;
-        case "storage":
-          differentData =
-              ImmutableEdgeTableDescriptor.builder()
-                  .from(testTarget)
-                  .storage(TEST_STORAGE + "-different")
-                  .build();
+        case "storage" :
+          differentData = ImmutableEdgeTableDescriptor.builder()
+              .from(testTarget)
+              .storage(TEST_STORAGE + "-different")
+              .build();
           break;
-        case "comment":
-          differentData =
-              ImmutableEdgeTableDescriptor.builder()
-                  .from(testTarget)
-                  .comment(TEST_COMMENT + "-different")
-                  .build();
+        case "comment" :
+          differentData = ImmutableEdgeTableDescriptor.builder()
+              .from(testTarget)
+              .comment(TEST_COMMENT + "-different")
+              .build();
           break;
-        case "schema":
-          EdgeSchema differentSchema =
-              ImmutableEdgeSchema.builder()
-                  .from(testTarget.schema())
-                  .direction(
-                      TEST_DIRECTION_TYPE == DirectionType.BOTH
-                          ? DirectionType.OUT
-                          : DirectionType.BOTH)
-                  .build();
-          differentData =
-              ImmutableEdgeTableDescriptor.builder()
-                  .from(testTarget)
-                  .schema(differentSchema)
-                  .build();
+        case "schema" :
+          EdgeSchema differentSchema = ImmutableEdgeSchema.builder()
+              .from(testTarget.schema())
+              .direction(
+                  TEST_DIRECTION_TYPE == DirectionType.BOTH
+                      ? DirectionType.OUT
+                      : DirectionType.BOTH)
+              .build();
+          differentData = ImmutableEdgeTableDescriptor.builder()
+              .from(testTarget)
+              .schema(differentSchema)
+              .build();
           break;
-        case "mode":
-          differentData =
-              ImmutableEdgeTableDescriptor.builder()
-                  .from(testTarget)
-                  .mode(TEST_MODE == MutationMode.SYNC ? MutationMode.ASYNC : MutationMode.SYNC)
-                  .build();
+        case "mode" :
+          differentData = ImmutableEdgeTableDescriptor.builder()
+              .from(testTarget)
+              .mode(TEST_MODE == MutationMode.SYNC ? MutationMode.ASYNC : MutationMode.SYNC)
+              .build();
           break;
-        default:
+        default :
           throw new IllegalArgumentException("Unexpected field: " + field);
       }
 
@@ -155,8 +146,8 @@ class EdgeTableDescriptorTest extends AbstractUnitTest<EdgeTableDescriptor> {
     @ValueSource(strings = {"tenant", "database", "table", "storage", "schema", "mode"})
     @DisplayName("Exception should be thrown when required field is missing")
     void testMissingRequiredField(String excludedField) {
-      ImmutableEdgeTableDescriptor.Builder builder =
-          ImmutableEdgeTableDescriptor.builder().active(TEST_ACTIVE).comment(TEST_COMMENT);
+      ImmutableEdgeTableDescriptor.Builder builder = ImmutableEdgeTableDescriptor.builder()
+          .active(TEST_ACTIVE).comment(TEST_COMMENT);
 
       assertThrows(
           IllegalStateException.class,
@@ -169,15 +160,14 @@ class EdgeTableDescriptorTest extends AbstractUnitTest<EdgeTableDescriptor> {
     @Test
     @DisplayName("Default state should be active=true, comment=V3Metadata.DEFAULT_COMMENT")
     void testDefaultState() {
-      EdgeTableDescriptor defaultAlias =
-          ImmutableEdgeTableDescriptor.builder()
-              .tenant(TEST_TENANT)
-              .database(TEST_DATABASE)
-              .table(TEST_TABLE)
-              .storage(TEST_STORAGE)
-              .schema(baseEdgeSchema)
-              .mode(TEST_MODE)
-              .build();
+      EdgeTableDescriptor defaultAlias = ImmutableEdgeTableDescriptor.builder()
+          .tenant(TEST_TENANT)
+          .database(TEST_DATABASE)
+          .table(TEST_TABLE)
+          .storage(TEST_STORAGE)
+          .schema(baseEdgeSchema)
+          .mode(TEST_MODE)
+          .build();
 
       assertTrue(defaultAlias.active());
       assertEquals(Constant.DEFAULT_COMMENT, defaultAlias.comment());

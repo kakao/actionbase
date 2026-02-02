@@ -94,7 +94,8 @@ public class EdgeBuffer {
   }
 
   public void encodeMap(Map<String, Object> value) {
-    if (value == null) return;
+    if (value == null)
+      return;
     for (Map.Entry<String, Object> e : value.entrySet()) {
       encodeString(e.getKey());
       encodeAny(e.getValue());
@@ -109,13 +110,13 @@ public class EdgeBuffer {
         encodeAny(properties.get(field.name), field.order);
       } else {
         switch (systemProperty) {
-          case TS:
+          case TS :
             encodeAny(ts, field.order);
             break;
-          case SRC:
+          case SRC :
             encodeAny(src, field.order);
             break;
-          case TGT:
+          case TGT :
             encodeAny(tgt, field.order);
             break;
         }

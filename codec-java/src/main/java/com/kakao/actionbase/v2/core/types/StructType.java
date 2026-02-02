@@ -22,13 +22,12 @@ public class StructType implements Collection<Field>, Serializable {
   public StructType(Field[] fields) {
     this.fields = fields;
     this.fieldNames = Arrays.stream(fields).map(Field::getName).toArray(String[]::new);
-    this.nameToField =
-        Collections.unmodifiableMap(
-            Arrays.stream(fields).collect(Collectors.toMap(Field::getName, Function.identity())));
+    this.nameToField = Collections.unmodifiableMap(
+        Arrays.stream(fields).collect(Collectors.toMap(Field::getName, Function.identity())));
   }
 
   public StructType() {
-    this(new Field[] {});
+    this(new Field[]{});
   }
 
   public Field[] getFields() {
@@ -90,7 +89,8 @@ public class StructType implements Collection<Field>, Serializable {
   }
 
   @Override
-  public void clear() {}
+  public void clear() {
+  }
 
   @Override
   public boolean contains(Object element) {
@@ -99,8 +99,10 @@ public class StructType implements Collection<Field>, Serializable {
 
   @Override
   public boolean equals(Object other) {
-    if (this == other) return true;
-    if (!(other instanceof StructType)) return false;
+    if (this == other)
+      return true;
+    if (!(other instanceof StructType))
+      return false;
     StructType that = (StructType) other;
     return Arrays.equals(this.fields, that.fields);
   }

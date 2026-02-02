@@ -21,99 +21,94 @@ class DescriptorPageTest {
 
   private static final String TEST_TENANT = "test-tenant";
 
-  private static final List<ImmutableDatabaseDescriptor> TEST_DATABASES =
-      Arrays.asList(
-          ImmutableDatabaseDescriptor.builder()
-              .active(true)
-              .tenant(TEST_TENANT)
-              .database("test-database1")
-              .comment("Test database 1")
-              .build(),
-          ImmutableDatabaseDescriptor.builder()
-              .active(true)
-              .tenant(TEST_TENANT)
-              .database("test-database2")
-              .comment("Test database 2")
-              .build());
+  private static final List<ImmutableDatabaseDescriptor> TEST_DATABASES = Arrays.asList(
+      ImmutableDatabaseDescriptor.builder()
+          .active(true)
+          .tenant(TEST_TENANT)
+          .database("test-database1")
+          .comment("Test database 1")
+          .build(),
+      ImmutableDatabaseDescriptor.builder()
+          .active(true)
+          .tenant(TEST_TENANT)
+          .database("test-database2")
+          .comment("Test database 2")
+          .build());
 
-  private static final List<StorageDescriptor> TEST_STORAGES =
-      Arrays.asList(
-          ImmutableStorageDescriptor.builder()
-              .active(true)
-              .tenant(TEST_TENANT)
-              .type(DatastoreType.MEMORY)
-              .database("test-database")
-              .storage("test-storage1")
-              .datastore(Datastores.DEFAULT_DATASTORE_NAME)
-              .comment("Test storage 1")
-              .build(),
-          ImmutableStorageDescriptor.builder()
-              .active(true)
-              .tenant(TEST_TENANT)
-              .type(DatastoreType.MEMORY)
-              .database("test-database")
-              .database("test-database")
-              .storage("test-storage2")
-              .datastore(Datastores.DEFAULT_DATASTORE_NAME)
-              .comment("Test storage 2")
-              .build());
+  private static final List<StorageDescriptor> TEST_STORAGES = Arrays.asList(
+      ImmutableStorageDescriptor.builder()
+          .active(true)
+          .tenant(TEST_TENANT)
+          .type(DatastoreType.MEMORY)
+          .database("test-database")
+          .storage("test-storage1")
+          .datastore(Datastores.DEFAULT_DATASTORE_NAME)
+          .comment("Test storage 1")
+          .build(),
+      ImmutableStorageDescriptor.builder()
+          .active(true)
+          .tenant(TEST_TENANT)
+          .type(DatastoreType.MEMORY)
+          .database("test-database")
+          .database("test-database")
+          .storage("test-storage2")
+          .datastore(Datastores.DEFAULT_DATASTORE_NAME)
+          .comment("Test storage 2")
+          .build());
 
-  private static final List<TenantDescriptor> TEST_TENANTS =
-      Arrays.asList(
-          ImmutableTenantDescriptor.builder()
-              .active(true)
-              .tenant("test-tenant1")
-              .apiVersion(ApiVersion.V3)
-              .comment("Test tenant 1")
-              .build(),
-          ImmutableTenantDescriptor.builder()
-              .active(true)
-              .tenant("test-tenant2")
-              .apiVersion(ApiVersion.V3)
-              .comment("Test tenant 2")
-              .build());
+  private static final List<TenantDescriptor> TEST_TENANTS = Arrays.asList(
+      ImmutableTenantDescriptor.builder()
+          .active(true)
+          .tenant("test-tenant1")
+          .apiVersion(ApiVersion.V3)
+          .comment("Test tenant 1")
+          .build(),
+      ImmutableTenantDescriptor.builder()
+          .active(true)
+          .tenant("test-tenant2")
+          .apiVersion(ApiVersion.V3)
+          .comment("Test tenant 2")
+          .build());
 
-  private static final List<TableDescriptor<?>> TEST_TABLES =
-      Arrays.asList(
-          ImmutableEdgeTableDescriptor.builder()
-              .active(true)
-              .tenant(TEST_TENANT)
-              .database("test-database")
-              .table("test-table1")
-              .storage("test-storage")
-              .comment("Test table 1")
-              .schema(Schemas.EMPTY_EDGE)
-              .mode(MutationMode.ASYNC)
-              .build(),
-          ImmutableEdgeTableDescriptor.builder()
-              .active(true)
-              .tenant(TEST_TENANT)
-              .database("test-database")
-              .table("test-table2")
-              .storage("test-storage")
-              .comment("Test table 2")
-              .schema(Schemas.EMPTY_EDGE)
-              .mode(MutationMode.DENY)
-              .build());
+  private static final List<TableDescriptor<?>> TEST_TABLES = Arrays.asList(
+      ImmutableEdgeTableDescriptor.builder()
+          .active(true)
+          .tenant(TEST_TENANT)
+          .database("test-database")
+          .table("test-table1")
+          .storage("test-storage")
+          .comment("Test table 1")
+          .schema(Schemas.EMPTY_EDGE)
+          .mode(MutationMode.ASYNC)
+          .build(),
+      ImmutableEdgeTableDescriptor.builder()
+          .active(true)
+          .tenant(TEST_TENANT)
+          .database("test-database")
+          .table("test-table2")
+          .storage("test-storage")
+          .comment("Test table 2")
+          .schema(Schemas.EMPTY_EDGE)
+          .mode(MutationMode.DENY)
+          .build());
 
-  private static final List<AliasDescriptor> TEST_ALIASES =
-      Arrays.asList(
-          ImmutableAliasDescriptor.builder()
-              .active(true)
-              .tenant(TEST_TENANT)
-              .database("test-database")
-              .alias("test-alias1")
-              .table("test-table")
-              .comment("Test alias 1")
-              .build(),
-          ImmutableAliasDescriptor.builder()
-              .active(true)
-              .tenant(TEST_TENANT)
-              .database("test-database")
-              .alias("test-alias2")
-              .table("test-table")
-              .comment("Test alias 2")
-              .build());
+  private static final List<AliasDescriptor> TEST_ALIASES = Arrays.asList(
+      ImmutableAliasDescriptor.builder()
+          .active(true)
+          .tenant(TEST_TENANT)
+          .database("test-database")
+          .alias("test-alias1")
+          .table("test-table")
+          .comment("Test alias 1")
+          .build(),
+      ImmutableAliasDescriptor.builder()
+          .active(true)
+          .tenant(TEST_TENANT)
+          .database("test-database")
+          .alias("test-alias2")
+          .table("test-table")
+          .comment("Test alias 2")
+          .build());
 
   private Page<ImmutableDatabaseDescriptor> databasePage;
   private Page<StorageDescriptor> storagePage;
@@ -162,8 +157,8 @@ class DescriptorPageTest {
     @DisplayName("Can create empty Page")
     void testEmptyPage() {
       // Database
-      Page<ImmutableDatabaseDescriptor> emptyDatabasePage =
-          ImmutablePage.of(Collections.emptyList());
+      Page<ImmutableDatabaseDescriptor> emptyDatabasePage = ImmutablePage
+          .of(Collections.emptyList());
       assertTrue(emptyDatabasePage.isEmpty());
       assertFalse(databasePage.isEmpty());
 

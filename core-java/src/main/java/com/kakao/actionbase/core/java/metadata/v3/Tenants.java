@@ -135,20 +135,20 @@ public final class Tenants {
   }
 
   static class MM {
-    //    default String origin() {
-    //      return "origin";
-    //    }
-    //    String name();
+    // default String origin() {
+    // return "origin";
+    // }
+    // String name();
     //
-    //    String url();
+    // String url();
     //
-    //    String apiKey();
-    //    Network network();
-    //    Phase phase();
-    //    default String comment() {
-    //      return "";
-    //    }
-    //    String table();
+    // String apiKey();
+    // Network network();
+    // Phase phase();
+    // default String comment() {
+    // return "";
+    // }
+    // String table();
 
     public static Object tenant(TenantDescriptor instance) {
       return instance.tenant();
@@ -178,30 +178,27 @@ public final class Tenants {
 
     public static final String TENANT_NOT_SPECIFIED = "NOT_SPECIFIED";
 
-    public static final StructType SCHEMA =
-        ImmutableStructType.builder()
-            .addField(ACTIVE_FIELD, DataType.BOOLEAN)
-            .addField(ORIGIN_FIELD, DataType.STRING)
-            .addField(TENANT_FIELD, DataType.STRING)
-            .addField(COMMENT_FIELD, DataType.STRING)
-            .build();
+    public static final StructType SCHEMA = ImmutableStructType.builder()
+        .addField(ACTIVE_FIELD, DataType.BOOLEAN)
+        .addField(ORIGIN_FIELD, DataType.STRING)
+        .addField(TENANT_FIELD, DataType.STRING)
+        .addField(COMMENT_FIELD, DataType.STRING)
+        .build();
 
-    public static final StructType SCHEMA_SIMPLE =
-        ImmutableStructType.builder()
-            .addField(ACTIVE_FIELD, DataType.BOOLEAN)
-            .addField(ORIGIN_FIELD, DataType.STRING)
-            .addField(TENANT_FIELD, DataType.STRING)
-            .addField(API_VERSION_FIELD, DataType.STRING)
-            .addField(COMMENT_FIELD, DataType.STRING)
-            .build();
+    public static final StructType SCHEMA_SIMPLE = ImmutableStructType.builder()
+        .addField(ACTIVE_FIELD, DataType.BOOLEAN)
+        .addField(ORIGIN_FIELD, DataType.STRING)
+        .addField(TENANT_FIELD, DataType.STRING)
+        .addField(API_VERSION_FIELD, DataType.STRING)
+        .addField(COMMENT_FIELD, DataType.STRING)
+        .build();
 
-    public static final EdgeSchema EDGE_SCHEMA =
-        EdgeSchema.builder()
-            .source(DataType.STRING, ORIGIN_FIELD)
-            .target(DataType.STRING, TENANT_FIELD)
-            .addProperties(COMMENT_FIELD, DataType.STRING)
-            .direction(DirectionType.OUT)
-            .addDefaultMetadataIndex()
-            .build();
+    public static final EdgeSchema EDGE_SCHEMA = EdgeSchema.builder()
+        .source(DataType.STRING, ORIGIN_FIELD)
+        .target(DataType.STRING, TENANT_FIELD)
+        .addProperties(COMMENT_FIELD, DataType.STRING)
+        .direction(DirectionType.OUT)
+        .addDefaultMetadataIndex()
+        .build();
   }
 }

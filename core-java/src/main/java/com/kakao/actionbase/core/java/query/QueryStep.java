@@ -21,9 +21,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = ImmutableQueryStepGet.class, name = QueryStep.GET_TYPE),
-  @JsonSubTypes.Type(value = ImmutableQueryStepScan.class, name = QueryStep.SCAN_TYPE),
-  @JsonSubTypes.Type(value = ImmutableQueryStepCount.class, name = QueryStep.COUNT_TYPE)
+    @JsonSubTypes.Type(value = ImmutableQueryStepGet.class, name = QueryStep.GET_TYPE),
+    @JsonSubTypes.Type(value = ImmutableQueryStepScan.class, name = QueryStep.SCAN_TYPE),
+    @JsonSubTypes.Type(value = ImmutableQueryStepCount.class, name = QueryStep.COUNT_TYPE)
 })
 public interface QueryStep {
 

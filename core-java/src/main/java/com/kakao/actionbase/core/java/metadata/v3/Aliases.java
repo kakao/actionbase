@@ -210,26 +210,24 @@ public final class Aliases {
 
   public static class Schemas {
 
-    public static final StructType SCHEMA =
-        ImmutableStructType.builder()
-            .addField(ACTIVE_FIELD, DataType.BOOLEAN)
-            .addField(TENANT_FIELD, DataType.STRING)
-            .addField(DATABASE_FIELD, DataType.STRING)
-            .addField(ALIAS_FIELD, DataType.STRING)
-            .addField(TABLE_FIELD, DataType.STRING)
-            .addField(COMMENT_FIELD, DataType.STRING)
-            .build();
+    public static final StructType SCHEMA = ImmutableStructType.builder()
+        .addField(ACTIVE_FIELD, DataType.BOOLEAN)
+        .addField(TENANT_FIELD, DataType.STRING)
+        .addField(DATABASE_FIELD, DataType.STRING)
+        .addField(ALIAS_FIELD, DataType.STRING)
+        .addField(TABLE_FIELD, DataType.STRING)
+        .addField(COMMENT_FIELD, DataType.STRING)
+        .build();
 
-    public static final EdgeSchema EDGE_SCHEMA =
-        EdgeSchema.builder()
-            .source(DataType.STRING, TENANT_FIELD)
-            .target(DataType.STRING, DATABASE_FIELD)
-            .addProperties(TENANT_FIELD, DataType.STRING)
-            .addProperties(TABLE_FIELD, DataType.STRING)
-            .addProperties(COMMENT_FIELD, DataType.STRING)
-            .direction(DirectionType.OUT)
-            .addDefaultMetadataIndex()
-            .build();
+    public static final EdgeSchema EDGE_SCHEMA = EdgeSchema.builder()
+        .source(DataType.STRING, TENANT_FIELD)
+        .target(DataType.STRING, DATABASE_FIELD)
+        .addProperties(TENANT_FIELD, DataType.STRING)
+        .addProperties(TABLE_FIELD, DataType.STRING)
+        .addProperties(COMMENT_FIELD, DataType.STRING)
+        .direction(DirectionType.OUT)
+        .addDefaultMetadataIndex()
+        .build();
 
     public static TableId getTableId(TenantId tenantId) {
       return ImmutableTableId.of(

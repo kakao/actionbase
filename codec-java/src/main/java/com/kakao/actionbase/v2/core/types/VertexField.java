@@ -9,9 +9,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class VertexField implements Serializable {
 
-  @JsonProperty private final VertexType type;
+  @JsonProperty
+  private final VertexType type;
 
-  @JsonProperty private final String desc;
+  @JsonProperty
+  private final String desc;
 
   @JsonCreator
   public VertexField(

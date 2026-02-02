@@ -22,27 +22,25 @@ public class DataFrameTransformerTest {
   @DisplayName("flatten method should flatten nested array structures")
   public void testFlatten() {
     // Create nested schema
-    StructType nestedType =
-        ImmutableStructType.builder()
-            .addField("field1", DataType.STRING, "First field")
-            .addField("field2", DataType.LONG, "Second field")
-            .build();
+    StructType nestedType = ImmutableStructType.builder()
+        .addField("field1", DataType.STRING, "First field")
+        .addField("field2", DataType.LONG, "Second field")
+        .build();
 
     // Create root schema
-    StructType schema =
-        ImmutableStructType.builder()
-            .addField("id", DataType.STRING, "ID")
-            .addField("nested", nestedType, "Nested field")
-            .addField("value", DataType.LONG, "Value")
-            .build();
+    StructType schema = ImmutableStructType.builder()
+        .addField("id", DataType.STRING, "ID")
+        .addField("nested", nestedType, "Nested field")
+        .addField("value", DataType.LONG, "Value")
+        .build();
 
     // Create test data
     List<Object[]> data = new ArrayList<>();
-    Object[] nestedData1 = new Object[] {"nested1", 10L};
-    Object[] row1 = new Object[] {"id1", nestedData1, 100L};
+    Object[] nestedData1 = new Object[]{"nested1", 10L};
+    Object[] row1 = new Object[]{"id1", nestedData1, 100L};
 
-    Object[] nestedData2 = new Object[] {"nested2", 20L};
-    Object[] row2 = new Object[] {"id2", nestedData2, 200L};
+    Object[] nestedData2 = new Object[]{"nested2", 20L};
+    Object[] row2 = new Object[]{"id2", nestedData2, 200L};
 
     data.add(row1);
     data.add(row2);
@@ -71,44 +69,42 @@ public class DataFrameTransformerTest {
 
     // Verify data
     List<Row> flattenedData = flattened.data();
-    //    assertEquals("id1", flattenedData.get(0).get(0));
-    //    assertEquals("nested1", flattenedData.get(0).get(1));
-    //    assertEquals(10L, flattenedData.get(0).get(2));
-    //    assertEquals(100L, flattenedData.get(0).get(3));
+    // assertEquals("id1", flattenedData.get(0).get(0));
+    // assertEquals("nested1", flattenedData.get(0).get(1));
+    // assertEquals(10L, flattenedData.get(0).get(2));
+    // assertEquals(100L, flattenedData.get(0).get(3));
     //
-    //    assertEquals("id2", flattenedData.get(1).get(0));
-    //    assertEquals("nested2", flattenedData.get(1).get(1));
-    //    assertEquals(20L, flattenedData.get(1).get(2));
-    //    assertEquals(200L, flattenedData.get(1).get(3));
+    // assertEquals("id2", flattenedData.get(1).get(0));
+    // assertEquals("nested2", flattenedData.get(1).get(1));
+    // assertEquals(20L, flattenedData.get(1).get(2));
+    // assertEquals(200L, flattenedData.get(1).get(3));
   }
 
   @Test
   @DisplayName("flatten method should handle different array lengths correctly")
   public void testFlattenWithDifferentArrayLengths() {
     // Create nested schema
-    StructType nestedType =
-        ImmutableStructType.builder()
-            .addField("field1", DataType.STRING, "First field")
-            .addField("field2", DataType.LONG, "Second field")
-            .addField("field3", DataType.BOOLEAN, "Third field")
-            .build();
+    StructType nestedType = ImmutableStructType.builder()
+        .addField("field1", DataType.STRING, "First field")
+        .addField("field2", DataType.LONG, "Second field")
+        .addField("field3", DataType.BOOLEAN, "Third field")
+        .build();
 
     // Create root schema
-    StructType schema =
-        ImmutableStructType.builder()
-            .addField("id", DataType.STRING, "ID")
-            .addField("nested", nestedType, "Nested field")
-            .build();
+    StructType schema = ImmutableStructType.builder()
+        .addField("id", DataType.STRING, "ID")
+        .addField("nested", nestedType, "Nested field")
+        .build();
 
     // Create test data - different array lengths
     List<Object[]> data = new ArrayList<>();
     // First row includes all fields
-    Object[] nestedData1 = new Object[] {"nested1", 10L, true};
-    Object[] row1 = new Object[] {"id1", nestedData1};
+    Object[] nestedData1 = new Object[]{"nested1", 10L, true};
+    Object[] row1 = new Object[]{"id1", nestedData1};
 
     // Second row has shorter array length
-    Object[] nestedData2 = new Object[] {"nested2", 20L}; // field3 missing
-    Object[] row2 = new Object[] {"id2", nestedData2};
+    Object[] nestedData2 = new Object[]{"nested2", 20L}; // field3 missing
+    Object[] row2 = new Object[]{"id2", nestedData2};
 
     data.add(row1);
     data.add(row2);
@@ -137,14 +133,15 @@ public class DataFrameTransformerTest {
 
     // Verify data
     List<Row> flattenedData = flattened.data();
-    //    assertEquals("id1", flattenedData.get(0).get(0));
-    //    assertEquals("nested1", flattenedData.get(0).get(1));
-    //    assertEquals(10L, flattenedData.get(0).get(2));
-    //    assertEquals(true, flattenedData.get(0).get(3));
+    // assertEquals("id1", flattenedData.get(0).get(0));
+    // assertEquals("nested1", flattenedData.get(0).get(1));
+    // assertEquals(10L, flattenedData.get(0).get(2));
+    // assertEquals(true, flattenedData.get(0).get(3));
     //
-    //    assertEquals("id2", flattenedData.get(1).get(0));
-    //    assertEquals("nested2", flattenedData.get(1).get(1));
-    //    assertEquals(20L, flattenedData.get(1).get(2));
-    //    assertEquals(null, flattenedData.get(1).get(3), "Missing field should be null");
+    // assertEquals("id2", flattenedData.get(1).get(0));
+    // assertEquals("nested2", flattenedData.get(1).get(1));
+    // assertEquals(20L, flattenedData.get(1).get(2));
+    // assertEquals(null, flattenedData.get(1).get(3), "Missing field should be
+    // null");
   }
 }

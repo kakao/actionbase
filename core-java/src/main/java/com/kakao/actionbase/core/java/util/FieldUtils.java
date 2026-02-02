@@ -9,7 +9,8 @@ import java.util.function.Function;
 
 public class FieldUtils {
 
-  private FieldUtils() {}
+  private FieldUtils() {
+  }
 
   public static <T> Object[] toFieldArray(
       List<T> items, java.util.function.Function<T, Object> mapper) {

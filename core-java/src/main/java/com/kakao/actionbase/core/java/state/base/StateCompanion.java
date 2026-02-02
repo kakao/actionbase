@@ -12,12 +12,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The Merge class provides functionality to merge VersionObjects. It ensures consistent results in
- * situations where event time order and processing order may differ.
+ * The Merge class provides functionality to merge VersionObjects. It ensures
+ * consistent results in situations where event time order and processing order
+ * may differ.
  */
 public class StateCompanion {
 
-  private StateCompanion() {}
+  private StateCompanion() {
+  }
 
   public static State initialOf(StructType schema) {
     return ImmutableBaseState.builder().active(false).checkAndBuild(schema);
@@ -52,10 +54,11 @@ public class StateCompanion {
     }
 
     // Calculate active state (based on event time)
-    // active=true only when createdAt is greater than deletedAt (when the most recent event is
+    // active=true only when createdAt is greater than deletedAt (when the most
+    // recent event is
     // INSERT)
-    boolean nextActive =
-        (nextCreatedAt != null) && (nextDeletedAt == null || nextCreatedAt > nextDeletedAt);
+    boolean nextActive = (nextCreatedAt != null)
+        && (nextDeletedAt == null || nextCreatedAt > nextDeletedAt);
 
     return ImmutableBaseState.builder()
         .active(nextActive)
@@ -82,8 +85,8 @@ public class StateCompanion {
   }
 
   /**
-   * Processes INSERT operation. INSERT creates a new entry or updates an existing entry based on
-   * event time.
+   * Processes INSERT operation. INSERT creates a new entry or updates an existing
+   * entry based on event time.
    */
   private static Map<String, StateValue> processInsertOperation(
       Map<String, StateValue> currentProperties, Event event, StructType schema) {
@@ -134,7 +137,10 @@ public class StateCompanion {
     return nextProperties;
   }
 
-  /** Processes UPDATE operation. UPDATE updates an existing entry based on event time. */
+  /**
+   * Processes UPDATE operation. UPDATE updates an existing entry based on event
+   * time.
+   */
   private static Map<String, StateValue> processUpdateOperation(
       Map<String, StateValue> currentProperties, Event event, StructType schema) {
     Map<String, StateValue> nextProperties = new HashMap<>();
@@ -193,7 +199,10 @@ public class StateCompanion {
     return nextProperties;
   }
 
-  /** Processes DELETE operation. DELETE marks an existing entry as DELETED based on event time. */
+  /**
+   * Processes DELETE operation. DELETE marks an existing entry as DELETED based
+   * on event time.
+   */
   private static Map<String, StateValue> processDeleteOperation(
       Map<String, StateValue> currentProperties, Event event, StructType schema) {
     Map<String, StateValue> nextProperties = new HashMap<>();

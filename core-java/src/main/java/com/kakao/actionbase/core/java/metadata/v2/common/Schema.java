@@ -31,11 +31,11 @@ public interface Schema {
   /** V2 supports only Edge Labels. */
   default com.kakao.actionbase.core.java.metadata.v3.common.EdgeSchema toSchema(
       LabelType type, DirectionType dir, List<Index> indices) {
-    List<StructField> newFields =
-        fields().stream().map(Field::toStructField).collect(Collectors.toList());
+    List<StructField> newFields = fields().stream().map(Field::toStructField)
+        .collect(Collectors.toList());
 
-    List<com.kakao.actionbase.core.java.metadata.v3.common.Index> newIndices =
-        indices.stream().map(Index::toV3).collect(Collectors.toList());
+    List<com.kakao.actionbase.core.java.metadata.v3.common.Index> newIndices = indices.stream()
+        .map(Index::toV3).collect(Collectors.toList());
 
     if (type == LabelType.NIL) {
       return Schemas.EMPTY_EDGE;

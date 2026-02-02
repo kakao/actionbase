@@ -13,7 +13,10 @@ import java.util.stream.Collectors;
 
 public class DataFrameAggregator {
 
-  /** Base aggregation function. Serves as the foundation for other aggregation functions. */
+  /**
+   * Base aggregation function. Serves as the foundation for other aggregation
+   * functions.
+   */
   private static DataFrame aggregate(
       DataFrame df,
       List<String> keyFields,
@@ -40,17 +43,19 @@ public class DataFrameAggregator {
 
       resultSchemaBuilder.addField(field.name(), field.type(), field.comment());
 
-      // keyFieldSchemas.add(ImmutableStructField.of(field.name(), field.type(), field.comment()));
+      // keyFieldSchemas.add(ImmutableStructField.of(field.name(), field.type(),
+      // field.comment()));
     }
 
-    StructType resultSchema =
-        resultSchemaBuilder.addField(aggregateName, aggregateType, "Aggregated value").build();
+    StructType resultSchema = resultSchemaBuilder
+        .addField(aggregateName, aggregateType, "Aggregated value").build();
 
     // Add aggregation result field
-    // keyFieldSchemas.add(ImmutableStructField.of(aggregateName, aggregateType, "Aggregated
+    // keyFieldSchemas.add(ImmutableStructField.of(aggregateName, aggregateType,
+    // "Aggregated
     // value"));
     // StructType resultSchema =
-    //    ImmutableStructType.of(false, keyFieldSchemas.toArray(new StructField[0]));
+    // ImmutableStructType.of(false, keyFieldSchemas.toArray(new StructField[0]));
 
     // Group and aggregate data
     Map<List<Object>, List<Row>> groups = new HashMap<>();
@@ -90,7 +95,10 @@ public class DataFrameAggregator {
         df, Arrays.asList(keyFields), rows -> (long) rows.size(), "COUNT(*)", DataType.LONG);
   }
 
-  /** Groups by specified key fields and calculates the sum of value field for each group. */
+  /**
+   * Groups by specified key fields and calculates the sum of value field for each
+   * group.
+   */
   public static DataFrame groupBySum(DataFrame df, String valueField, String... keyFields) {
     if (keyFields.length == 0) {
       throw new IllegalArgumentException("At least one key field is required.");
@@ -104,18 +112,18 @@ public class DataFrameAggregator {
     return aggregate(
         df,
         Arrays.asList(keyFields),
-        rows ->
-            rows.stream()
-                .map(row -> row.get(valueIndex))
-                .filter(value -> value instanceof Number)
-                .mapToDouble(value -> ((Number) value).doubleValue())
-                .sum(),
+        rows -> rows.stream()
+            .map(row -> row.get(valueIndex))
+            .filter(value -> value instanceof Number)
+            .mapToDouble(value -> ((Number) value).doubleValue())
+            .sum(),
         "SUM(" + valueField + ")",
         DataType.DOUBLE);
   }
 
   /**
-   * Groups by specified key fields and calculates the number of distinct values in the value field.
+   * Groups by specified key fields and calculates the number of distinct values
+   * in the value field.
    */
   public static DataFrame groupByCountDistinct(
       DataFrame df, String valueField, String... keyFields) {
@@ -137,8 +145,8 @@ public class DataFrameAggregator {
   }
 
   /**
-   * Groups by specified key fields, calculates the count for each group, sorts by count in
-   * descending order, and returns the top n.
+   * Groups by specified key fields, calculates the count for each group, sorts by
+   * count in descending order, and returns the top n.
    */
   public static DataFrame orderByCount(DataFrame df, int n, Order order, String... keyFields) {
     if (keyFields.length == 0) {
@@ -149,23 +157,21 @@ public class DataFrameAggregator {
     }
 
     DataFrame grouped = groupByCount(df, keyFields);
-    List<Row> sortedData =
-        grouped.data().stream()
-            .sorted(
-                (a, b) ->
-                    order == Order.ASC
-                        ? Long.compare((Long) a.get(a.size() - 1), (Long) b.get(b.size() - 1))
-                        : Long.compare((Long) b.get(b.size() - 1), (Long) a.get(a.size() - 1)))
-            .limit(n)
-            .collect(Collectors.toList());
+    List<Row> sortedData = grouped.data().stream()
+        .sorted(
+            (a, b) -> order == Order.ASC
+                ? Long.compare((Long) a.get(a.size() - 1), (Long) b.get(b.size() - 1))
+                : Long.compare((Long) b.get(b.size() - 1), (Long) a.get(a.size() - 1)))
+        .limit(n)
+        .collect(Collectors.toList());
 
     return ImmutableDataFrame.of(
         sortedData, grouped.schema(), sortedData.size(), sortedData.size(), null, false);
   }
 
   /**
-   * Groups by specified key fields, calculates the sum of value field for each group, sorts by sum
-   * in descending order, and returns the top n.
+   * Groups by specified key fields, calculates the sum of value field for each
+   * group, sorts by sum in descending order, and returns the top n.
    */
   public static DataFrame orderBySum(
       DataFrame df, String valueField, int n, Order order, String... keyFields) {
@@ -177,16 +183,14 @@ public class DataFrameAggregator {
     }
 
     DataFrame grouped = groupBySum(df, valueField, keyFields);
-    List<Row> sortedData =
-        grouped.data().stream()
-            .sorted(
-                (a, b) ->
-                    order == Order.ASC
-                        ? Double.compare((Double) a.get(a.size() - 1), (Double) b.get(b.size() - 1))
-                        : Double.compare(
-                            (Double) b.get(b.size() - 1), (Double) a.get(a.size() - 1)))
-            .limit(n)
-            .collect(Collectors.toList());
+    List<Row> sortedData = grouped.data().stream()
+        .sorted(
+            (a, b) -> order == Order.ASC
+                ? Double.compare((Double) a.get(a.size() - 1), (Double) b.get(b.size() - 1))
+                : Double.compare(
+                    (Double) b.get(b.size() - 1), (Double) a.get(a.size() - 1)))
+        .limit(n)
+        .collect(Collectors.toList());
 
     return ImmutableDataFrame.of(
         sortedData, grouped.schema(), sortedData.size(), sortedData.size(), null, false);

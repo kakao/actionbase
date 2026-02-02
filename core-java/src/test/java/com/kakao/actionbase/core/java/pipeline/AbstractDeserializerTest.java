@@ -18,7 +18,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 /**
  * Abstract base class for deserializer tests with common test methods.
  *
- * @param <T> The type of message being tested (CDC or WAL)
+ * @param <T>
+ *          The type of message being tested (CDC or WAL)
  */
 public abstract class AbstractDeserializerTest<T> {
 
@@ -118,11 +119,10 @@ public abstract class AbstractDeserializerTest<T> {
   public void testDeserializeUnknownVersion() {
     String json = createUnknownVersionJson();
 
-    IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> objectMapper.readValue(json, getMessageClass()),
-            "Exception should occur for unknown version");
+    IllegalArgumentException exception = assertThrows(
+        IllegalArgumentException.class,
+        () -> objectMapper.readValue(json, getMessageClass()),
+        "Exception should occur for unknown version");
 
     assertEquals(
         "Unknown version: unknown", exception.getMessage(), "Exception message does not match");

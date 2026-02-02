@@ -13,7 +13,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Index implements Serializable {
 
-  @JsonIgnore final int id;
+  @JsonIgnore
+  final int id;
 
   @JsonProperty("name")
   final String name;

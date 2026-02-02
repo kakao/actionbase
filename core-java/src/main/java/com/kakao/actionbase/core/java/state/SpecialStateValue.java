@@ -1,8 +1,7 @@
 package com.kakao.actionbase.core.java.state;
 
 public enum SpecialStateValue {
-  DELETED("__DELETED__"),
-  UNSET("__UNSET__");
+  DELETED("__DELETED__"), UNSET("__UNSET__");
 
   final String stateValue;
 

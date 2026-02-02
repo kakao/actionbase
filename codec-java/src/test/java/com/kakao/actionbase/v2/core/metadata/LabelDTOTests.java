@@ -19,24 +19,23 @@ public class LabelDTOTests {
 
   @Test
   void testLabelSerialization() throws JsonProcessingException {
-    LabelDTO label =
-        new LabelDTO(
-            "test.test",
-            "desc",
-            LabelType.INDEXED,
-            new EdgeSchema(
-                new VertexField(VertexType.LONG),
-                new VertexField(VertexType.STRING),
-                Collections.singletonList(new Field("created_at", DataType.LONG, false))),
-            DirectionType.BOTH,
-            "test_storage",
-            Collections.singletonList(
-                new Index(
-                    "created_at",
-                    Collections.singletonList(new Index.Field("created_at", Order.DESC)))),
-            false,
-            false,
-            MutationMode.ASYNC);
+    LabelDTO label = new LabelDTO(
+        "test.test",
+        "desc",
+        LabelType.INDEXED,
+        new EdgeSchema(
+            new VertexField(VertexType.LONG),
+            new VertexField(VertexType.STRING),
+            Collections.singletonList(new Field("created_at", DataType.LONG, false))),
+        DirectionType.BOTH,
+        "test_storage",
+        Collections.singletonList(
+            new Index(
+                "created_at",
+                Collections.singletonList(new Index.Field("created_at", Order.DESC)))),
+        false,
+        false,
+        MutationMode.ASYNC);
 
     String jsonString = objectMapper.writeValueAsString(label);
 
@@ -47,9 +46,9 @@ public class LabelDTOTests {
 
   @Test
   void testGraphResponseDeserialization() throws JsonProcessingException {
-    // topNCompositeKeys is removed, but the existing JSON should still be deserializable.
-    String jsonString =
-        "{\"name\":\"gift.like_product_v1\",\"desc\":\"Gift wish\",\"type\":\"INDEXED\",\"schema\":{\"src\":{\"type\":\"LONG\"},\"tgt\":{\"type\":\"STRING\"},\"fields\":[{\"name\":\"created_at\",\"type\":\"LONG\",\"nullable\":false},{\"name\":\"permission\",\"type\":\"STRING\",\"nullable\":true},{\"name\":\"memo\",\"type\":\"STRING\",\"nullable\":true}]},\"dirType\":\"BOTH\",\"storage\":\"hbase_sandbox\",\"indices\":[{\"id\":0,\"name\":\"created_at_desc\",\"fields\":[{\"name\":\"created_at\",\"order\":\"DESC\"}]}],\"topNCompositeKeys\":[{\"fields\":[\"tgt\"]}],\"event\":false,\"readOnly\":false,\"mode\":\"ASYNC\"}";
+    // topNCompositeKeys is removed, but the existing JSON should still be
+    // deserializable.
+    String jsonString = "{\"name\":\"gift.like_product_v1\",\"desc\":\"Gift wish\",\"type\":\"INDEXED\",\"schema\":{\"src\":{\"type\":\"LONG\"},\"tgt\":{\"type\":\"STRING\"},\"fields\":[{\"name\":\"created_at\",\"type\":\"LONG\",\"nullable\":false},{\"name\":\"permission\",\"type\":\"STRING\",\"nullable\":true},{\"name\":\"memo\",\"type\":\"STRING\",\"nullable\":true}]},\"dirType\":\"BOTH\",\"storage\":\"hbase_sandbox\",\"indices\":[{\"id\":0,\"name\":\"created_at_desc\",\"fields\":[{\"name\":\"created_at\",\"order\":\"DESC\"}]}],\"topNCompositeKeys\":[{\"fields\":[\"tgt\"]}],\"event\":false,\"readOnly\":false,\"mode\":\"ASYNC\"}";
 
     LabelDTO label = objectMapper.readValue(jsonString, LabelDTO.class);
 
