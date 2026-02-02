@@ -6,6 +6,10 @@ Thank you for your interest in Actionbase. Any form of participation—using the
 
 New to open source? Look for issues labeled **[good first issue](https://github.com/kakao/actionbase/labels/good%20first%20issue)**.
 
+## Translations
+
+We welcome documentation translations. When submitting translation PRs, please submit **one section (folder) per PR** rather than translating all pages at once. This makes reviews manageable and allows incremental progress.
+
 ## How we collaborate
 
 We collaborate through [GitHub](https://github.com/kakao/actionbase):
