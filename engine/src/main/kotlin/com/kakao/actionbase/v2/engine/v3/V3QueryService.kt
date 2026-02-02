@@ -30,8 +30,7 @@ import reactor.core.publisher.Mono
 class V3QueryService(
     private val graph: Graph,
 ) {
-    private val byteArrayBufferPool =
-        ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
+    private val byteArrayBufferPool = ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
 
     private val groupRecordMapper = EdgeGroupRecordMapper.create(byteArrayBufferPool)
 
@@ -380,13 +379,11 @@ class V3QueryService(
                 val parsed = lastField.bucketOrGet(lastPredicate.value, ceil = false)
                 encode(parsed).let { it to it }
             }
-
             is WherePredicate.Between -> {
                 val from = encode(lastField.bucketOrGet(lastPredicate.from, ceil = false))
                 val to = encode(lastField.bucketOrGet(lastPredicate.to, ceil = true))
                 from to to
             }
-
             else -> throw IllegalArgumentException(
                 "only `Eq` or `Between` predicate is allowed for group query, but got $lastPredicate.",
             )
@@ -507,8 +504,7 @@ class V3QueryService(
                 ),
             )
 
-        val emptyDataFrameCountPayload: Mono<DataFrameEdgeCountPayload> =
-            Mono.just(DataFrameEdgeCountPayload(emptyList(), 0, emptyMap()))
+        val emptyDataFrameCountPayload: Mono<DataFrameEdgeCountPayload> = Mono.just(DataFrameEdgeCountPayload(emptyList(), 0, emptyMap()))
 
         fun empty(direction: Direction): EdgeCountPayload =
             if (direction == Direction.OUT) {

@@ -257,10 +257,7 @@ class MultiEdgeSpec :
                               "context": {}
                             }
                             """.trimIndent()
-                        val expected =
-                            mapper
-                                .writerWithDefaultPrettyPrinter()
-                                .writeValueAsString(mapper.readTree(expectedAsString))
+                        val expected = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(expectedAsString))
                         val actual = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result)
                         actual shouldBe expected
                         result.edges.size shouldBe 3
