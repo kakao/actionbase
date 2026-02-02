@@ -1,0 +1,78 @@
+---
+import { locales } from '../../astro.config.mjs';
+import { getCollection } from 'astro:content';
+
+const { slug, lang } = Astro.locals.starlightRoute;
+
+// Get current page path without locale prefix
+const currentPath = lang === 'en' ? slug : slug.replace(`${lang}/`, '');
+
+// Get all docs to check which translations exist
+const allDocs = await getCollection('docs');
+const existingSlugs = new Set(allDocs.map((doc) => doc.id));
+
+// Build links only for locales that have this page translated
+const localeLinks = Object.entries(locales)
+  .map(([key, locale]) => {
+    const isRoot = key === 'root';
+    const localeCode = isRoot ? 'en' : key;
+    const docPath = isRoot ? currentPath : `${key}/${currentPath}`;
+    const localePath = isRoot ? `/${currentPath}/` : `/${key}/${currentPath}/`;
+    const isCurrent = (isRoot && lang === 'en') || (!isRoot && lang === key);
+
+    // Check if translation exists (match with or without extension)
+    const hasTranslation = existingSlugs.has(docPath) ||
+      existingSlugs.has(`${docPath}.mdx`) ||
+      existingSlugs.has(`${docPath}.md`) ||
+      [...existingSlugs].some((s) => s.startsWith(docPath + '/') || s.startsWith(docPath + '.'));
+
+    return {
+      code: localeCode,
+      label: locale.label,
+      href: localePath,
+      isCurrent,
+      hasTranslation,
+    };
+  })
+  .filter((locale) => locale.hasTranslation && !locale.isCurrent);
+
+// Only show if there are other translations available
+const showSelector = localeLinks.length > 0;
+---
+
+{showSelector && (
+  <nav class="language-selector" aria-label="Available translations">
+    <span class="label">Also in:</span>
+    {localeLinks.map((locale) => (
+      <a href={locale.href} class="language-link" hreflang={locale.code}>{locale.label}</a>
+    ))}
+  </nav>
+)}
+
+<style>
+  .language-selector {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+    font-size: var(--sl-text-xs);
+  }
+
+  .label {
+    color: var(--sl-color-gray-4);
+  }
+
+  .language-link {
+    color: var(--sl-color-gray-3);
+    text-decoration: none;
+    padding: 0.125rem 0.375rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.25rem;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .language-link:hover {
+    color: var(--sl-color-text-accent);
+    border-color: var(--sl-color-text-accent);
+  }
+</style>
