@@ -97,7 +97,7 @@ class BaseConventionsPlugin : Plugin<Project> {
     private fun configureSpotless(project: Project) {
         project.extensions.configure(SpotlessExtension::class.java) {
             java {
-                googleJavaFormat()
+                eclipse().configFile(project.rootProject.file("eclipse-formatter.xml"))
                 importOrder(*GenerateCodeStyleTask.getJavaImportsOrder())
                 removeUnusedImports()
                 target("**/*.java")
