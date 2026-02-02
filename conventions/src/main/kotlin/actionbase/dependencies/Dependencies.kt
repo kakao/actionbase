@@ -11,7 +11,7 @@ object Versions {
     const val JACKSON = "2.15.3"
     const val IMMUTABLES = "2.9.3"
     const val LZ4 = "1.7.1"
-    const val KOTLIN = "1.9.0"
+    const val KOTLIN = "2.3.0"
     const val REACTOR = "3.6.2"
     const val REACTIVE_STREAMS = "1.0.4"
     const val FEIGN = "12.4"

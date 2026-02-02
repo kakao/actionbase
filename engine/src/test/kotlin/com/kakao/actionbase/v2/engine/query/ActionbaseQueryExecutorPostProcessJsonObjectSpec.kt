@@ -53,8 +53,8 @@ class ActionbaseQueryExecutorPostProcessJsonObjectSpec :
                 .expectNextMatches { result ->
                     result.schema.fields.map { it.name } shouldBe listOf("id", "json_data", "extracted_name", "extracted_age")
                     result.rows.size shouldBe 3
-                    result.rows[0].array shouldBe arrayOf("1", """{"name": "John", "age": 30, "city": "New York"}""", "John", 30)
-                    result.rows[1].array shouldBe arrayOf("2", """{"name": "Jane", "age": 25, "city": "London"}""", "Jane", 25)
+                    result.rows[0].array shouldBe arrayOf<Any?>("1", """{"name": "John", "age": 30, "city": "New York"}""", "John", 30)
+                    result.rows[1].array shouldBe arrayOf<Any?>("2", """{"name": "Jane", "age": 25, "city": "London"}""", "Jane", 25)
                     result.rows[2].array shouldBe arrayOf("3", null, null, null)
                     true
                 }.verifyComplete()
@@ -127,8 +127,8 @@ class ActionbaseQueryExecutorPostProcessJsonObjectSpec :
                 .expectNextMatches { result ->
                     result.schema.fields.map { it.name } shouldBe listOf("id", "json_data", "extracted_name", "extracted_age")
                     result.rows.size shouldBe 2
-                    result.rows[0].array shouldBe arrayOf("1", """{"name": "John", "age": 30}""", "John", 30)
-                    result.rows[1].array shouldBe arrayOf("2", """{"name": "Jane"}""", "Jane", null)
+                    result.rows[0].array shouldBe arrayOf<Any?>("1", """{"name": "John", "age": 30}""", "John", 30)
+                    result.rows[1].array shouldBe arrayOf<Any?>("2", """{"name": "Jane"}""", "Jane", null)
                     true
                 }.verifyComplete()
         }
@@ -176,8 +176,8 @@ class ActionbaseQueryExecutorPostProcessJsonObjectSpec :
                         it.name
                     } shouldBe listOf("id", "extracted_string", "extracted_integer", "extracted_float", "extracted_boolean", "extracted_null")
                     result.rows.size shouldBe 2
-                    result.rows[0].array shouldBe arrayOf("1", "text", 42, 3.14, true, null)
-                    result.rows[1].array shouldBe arrayOf("2", "another", 100, 2.718, false, null)
+                    result.rows[0].array shouldBe arrayOf<Any?>("1", "text", 42, 3.14, true, null)
+                    result.rows[1].array shouldBe arrayOf<Any?>("2", "another", 100, 2.718, false, null)
                     true
                 }.verifyComplete()
         }
@@ -213,8 +213,8 @@ class ActionbaseQueryExecutorPostProcessJsonObjectSpec :
                 .expectNextMatches { result ->
                     result.schema.fields.map { it.name } shouldBe listOf("id", "json_data", "extracted_name", "extracted_age")
                     result.rows.size shouldBe 2
-                    result.rows[0].array shouldBe arrayOf("1", """{"user": {"name": "John", "details": {"age": 30}}}""", "John", 30)
-                    result.rows[1].array shouldBe arrayOf("2", """{"user": {"name": "Jane", "details": {"age": 25}}}""", "Jane", 25)
+                    result.rows[0].array shouldBe arrayOf<Any?>("1", """{"user": {"name": "John", "details": {"age": 30}}}""", "John", 30)
+                    result.rows[1].array shouldBe arrayOf<Any?>("2", """{"user": {"name": "Jane", "details": {"age": 25}}}""", "Jane", 25)
                     true
                 }.verifyComplete()
         }

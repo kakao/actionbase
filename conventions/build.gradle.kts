@@ -52,8 +52,8 @@ gradlePlugin {
 
 dependencies {
     implementation("com.diffplug.spotless:spotless-plugin-gradle:7.0.2")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0")
-    implementation("org.jetbrains.kotlin:kotlin-allopen:1.9.0")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")
+    implementation("org.jetbrains.kotlin:kotlin-allopen:2.3.0")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.5.3")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.google.cloud.tools:jib-gradle-plugin:3.4.0")
