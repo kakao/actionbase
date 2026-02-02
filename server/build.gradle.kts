@@ -1,5 +1,6 @@
 import actionbase.BuildParameter
 import actionbase.dependencies.Dependencies
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     id("actionbase.kotlin-conventions")
@@ -9,6 +10,13 @@ plugins {
     `java-test-fixtures`
 
     id("com.gorylenko.gradle-git-properties") version "2.5.4"
+}
+
+// Override to Java 25 for FFI support
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
 }
 
 dependencyManagement {
@@ -79,6 +87,10 @@ val ghcrPassword =
 
 springBoot {
     buildInfo()
+}
+
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 jib {

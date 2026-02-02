@@ -80,3 +80,7 @@ CLAUDE.md
 !**/.cursor/rules/
 !**/.cursor/rules/**
 engine/target/
+
+# Native library build artifacts
+native/src/c/*.dylib
+native/src/c/*.so
