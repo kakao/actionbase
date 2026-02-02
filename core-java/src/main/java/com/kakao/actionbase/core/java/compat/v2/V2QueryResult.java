@@ -82,42 +82,43 @@ public class V2QueryResult {
   }
 
   public DataFrameMapPayload toV3() {
-    List<Map<String, Object>> transformedData = data.stream()
-        .map(
-            originalMap -> {
-              Map<String, Object> newMap = new HashMap<>();
-              String dir = (String) originalMap.get("dir");
-              Object source = originalMap.get("src");
-              Object target = originalMap.get("tgt");
-              if ("IN".equals(dir)) {
-                newMap.put("source", target);
-                newMap.put("target", source);
-              } else {
-                newMap.put("source", source);
-                newMap.put("target", target);
-              }
-              newMap.remove("ts");
-              newMap.remove("dir");
+    List<Map<String, Object>> transformedData =
+        data.stream()
+            .map(
+                originalMap -> {
+                  Map<String, Object> newMap = new HashMap<>();
+                  String dir = (String) originalMap.get("dir");
+                  Object source = originalMap.get("src");
+                  Object target = originalMap.get("tgt");
+                  if ("IN".equals(dir)) {
+                    newMap.put("source", target);
+                    newMap.put("target", source);
+                  } else {
+                    newMap.put("source", source);
+                    newMap.put("target", target);
+                  }
+                  newMap.remove("ts");
+                  newMap.remove("dir");
 
-              // Move remaining fields to nested map
-              Map<String, Object> nestedMap = new HashMap<>();
-              originalMap.forEach(
-                  (key, value) -> {
-                    if (!key.equals("ts")
-                        && !key.equals("src")
-                        && !key.equals("tgt")
-                        && !key.equals("dir")) {
-                      nestedMap.put(key, value);
-                    }
-                  });
+                  // Move remaining fields to nested map
+                  Map<String, Object> nestedMap = new HashMap<>();
+                  originalMap.forEach(
+                      (key, value) -> {
+                        if (!key.equals("ts")
+                            && !key.equals("src")
+                            && !key.equals("tgt")
+                            && !key.equals("dir")) {
+                          nestedMap.put(key, value);
+                        }
+                      });
 
-              if (!nestedMap.isEmpty()) {
-                newMap.put("properties", nestedMap);
-              }
+                  if (!nestedMap.isEmpty()) {
+                    newMap.put("properties", nestedMap);
+                  }
 
-              return newMap;
-            })
-        .collect(Collectors.toList());
+                  return newMap;
+                })
+            .collect(Collectors.toList());
 
     return ImmutableDataFrameMapPayload.builder().data(transformedData).build();
   }

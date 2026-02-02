@@ -11,8 +11,7 @@ import java.util.Map;
 
 public class VerticeCompanion {
 
-  private VerticeCompanion() {
-  }
+  private VerticeCompanion() {}
 
   public static final String VERSION = "version";
 

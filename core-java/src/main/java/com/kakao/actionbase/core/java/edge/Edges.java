@@ -12,8 +12,7 @@ import java.util.Map;
 
 public class Edges {
 
-  private Edges() {
-  }
+  private Edges() {}
 
   public static final String DEFAULT_INDEX_NAME = "default";
 
@@ -28,10 +27,11 @@ public class Edges {
   public static final Map<String, Object> EMPTY_PROPS = Collections.emptyMap();
 
   static EdgePayload toPayload(EdgeState state) {
-    ImmutableEdgePayload.Builder builder = ImmutableEdgePayload.builder()
-        .version(state.version())
-        .source(state.source())
-        .target(state.target());
+    ImmutableEdgePayload.Builder builder =
+        ImmutableEdgePayload.builder()
+            .version(state.version())
+            .source(state.source())
+            .target(state.target());
 
     for (Map.Entry<String, StateValue> entry : state.properties().entrySet()) {
       builder.putProperties(entry.getKey(), entry.getValue().value());

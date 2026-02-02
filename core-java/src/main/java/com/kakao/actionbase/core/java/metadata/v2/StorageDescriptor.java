@@ -16,8 +16,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(as = ImmutableStorageDescriptor.class)
 @JsonDeserialize(as = ImmutableStorageDescriptor.class)
 public interface StorageDescriptor
-    extends
-      Descriptor<com.kakao.actionbase.core.java.metadata.v3.StorageDescriptor> {
+    extends Descriptor<com.kakao.actionbase.core.java.metadata.v3.StorageDescriptor> {
 
   boolean active();
 
@@ -57,8 +56,7 @@ public interface StorageDescriptor
     }
   }
 
-  // FIXME v2 metadata does not have service information. Temporary code for v3
-  // compatibility
+  // FIXME v2 metadata does not have service information. Temporary code for v3 compatibility
   @Value.Auxiliary
   default String getDefaultStorageName() {
     return "default." + name();

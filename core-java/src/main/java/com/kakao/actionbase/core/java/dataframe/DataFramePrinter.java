@@ -9,10 +9,7 @@ import java.util.List;
 // package-private
 class DataFramePrinter {
 
-  /**
-   * Prints DataFrame as ASCII table with default settings (maxRows=20,
-   * truncate=20).
-   */
+  /** Prints DataFrame as ASCII table with default settings (maxRows=20, truncate=20). */
   static void show(DataFrame df) {
     System.out.println(showString(df));
   }
@@ -20,19 +17,14 @@ class DataFramePrinter {
   /**
    * Prints DataFrame content as ASCII table to console.
    *
-   * @param maxRows
-   *          Maximum number of rows to output (e.g., 20)
-   * @param truncate
-   *          Maximum number of characters per cell (e.g., 20, -1 for no limit)
+   * @param maxRows Maximum number of rows to output (e.g., 20)
+   * @param truncate Maximum number of characters per cell (e.g., 20, -1 for no limit)
    */
   static void show(DataFrame df, int maxRows, int truncate) {
     System.out.println(showString(df, maxRows, truncate));
   }
 
-  /**
-   * Returns DataFrame as ASCII table string with default settings (maxRows=20,
-   * truncate=20).
-   */
+  /** Returns DataFrame as ASCII table string with default settings (maxRows=20, truncate=20). */
   static String showString(DataFrame df) {
     return showString(df, 20, 20);
   }
@@ -40,10 +32,8 @@ class DataFramePrinter {
   /**
    * Returns DataFrame content as ASCII table string.
    *
-   * @param maxRows
-   *          Maximum number of rows to output (e.g., 20)
-   * @param truncate
-   *          Maximum number of characters per cell (e.g., 20, -1 for no limit)
+   * @param maxRows Maximum number of rows to output (e.g., 20)
+   * @param truncate Maximum number of characters per cell (e.g., 20, -1 for no limit)
    */
   static String showString(DataFrame df, int maxRows, int truncate) {
     if (df.data().isEmpty()) {
@@ -63,8 +53,7 @@ class DataFramePrinter {
     List<String[]> stringData = new ArrayList<>();
     stringData.add(headers);
 
-    // Determine maximum number of rows to output (choose smaller value between
-    // actual data row
+    // Determine maximum number of rows to output (choose smaller value between actual data row
     // count and maxRows)
     int rowsToShow = Math.min(maxRows, df.data().size());
     for (int i = 0; i < rowsToShow; i++) {
@@ -80,8 +69,7 @@ class DataFramePrinter {
       stringData.add(stringRow);
     }
 
-    // 3. Calculate maximum width for each column (add 2 spaces padding on left and
-    // right)
+    // 3. Calculate maximum width for each column (add 2 spaces padding on left and right)
     int[] colWidths = new int[fields.size()];
     for (int j = 0; j < fields.size(); j++) {
       int maxWidth = 0;

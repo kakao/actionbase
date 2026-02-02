@@ -56,41 +56,46 @@ class AliasDescriptorTest extends AbstractUnitTest<AliasDescriptor> {
       AliasDescriptor differentData;
 
       switch (field) {
-        case "active" :
-          differentData = ImmutableAliasDescriptor.builder().from(testTarget).active(!TEST_ACTIVE)
-              .build();
+        case "active":
+          differentData =
+              ImmutableAliasDescriptor.builder().from(testTarget).active(!TEST_ACTIVE).build();
           break;
-        case "tenant" :
-          differentData = ImmutableAliasDescriptor.builder()
-              .from(testTarget)
-              .tenant(TEST_TENANT + "-different")
-              .build();
+        case "tenant":
+          differentData =
+              ImmutableAliasDescriptor.builder()
+                  .from(testTarget)
+                  .tenant(TEST_TENANT + "-different")
+                  .build();
           break;
-        case "database" :
-          differentData = ImmutableAliasDescriptor.builder()
-              .from(testTarget)
-              .database(TEST_DATABASE + "-different")
-              .build();
+        case "database":
+          differentData =
+              ImmutableAliasDescriptor.builder()
+                  .from(testTarget)
+                  .database(TEST_DATABASE + "-different")
+                  .build();
           break;
-        case "alias" :
-          differentData = ImmutableAliasDescriptor.builder()
-              .from(testTarget)
-              .alias(TEST_ALIAS + "-different")
-              .build();
+        case "alias":
+          differentData =
+              ImmutableAliasDescriptor.builder()
+                  .from(testTarget)
+                  .alias(TEST_ALIAS + "-different")
+                  .build();
           break;
-        case "table" :
-          differentData = ImmutableAliasDescriptor.builder()
-              .from(testTarget)
-              .table(TEST_TABLE + "-different")
-              .build();
+        case "table":
+          differentData =
+              ImmutableAliasDescriptor.builder()
+                  .from(testTarget)
+                  .table(TEST_TABLE + "-different")
+                  .build();
           break;
-        case "comment" :
-          differentData = ImmutableAliasDescriptor.builder()
-              .from(testTarget)
-              .comment(TEST_COMMENT + "-different")
-              .build();
+        case "comment":
+          differentData =
+              ImmutableAliasDescriptor.builder()
+                  .from(testTarget)
+                  .comment(TEST_COMMENT + "-different")
+                  .build();
           break;
-        default :
+        default:
           throw new IllegalArgumentException("Unexpected field: " + field);
       }
 
@@ -107,8 +112,8 @@ class AliasDescriptorTest extends AbstractUnitTest<AliasDescriptor> {
     @ValueSource(strings = {"tenant", "database", "alias", "table"})
     @DisplayName("Exception should be thrown when required field is missing")
     void testMissingRequiredField(String excludedField) {
-      ImmutableAliasDescriptor.Builder builder = ImmutableAliasDescriptor.builder()
-          .active(TEST_ACTIVE).comment(TEST_COMMENT);
+      ImmutableAliasDescriptor.Builder builder =
+          ImmutableAliasDescriptor.builder().active(TEST_ACTIVE).comment(TEST_COMMENT);
 
       assertThrows(
           IllegalStateException.class,
@@ -121,12 +126,13 @@ class AliasDescriptorTest extends AbstractUnitTest<AliasDescriptor> {
     @Test
     @DisplayName("Default state should be active=true, comment=V3Metadata.DEFAULT_COMMENT")
     void testDefaultState() {
-      AliasDescriptor defaultAlias = ImmutableAliasDescriptor.builder()
-          .tenant(TEST_TENANT)
-          .database(TEST_DATABASE)
-          .alias(TEST_ALIAS)
-          .table(TEST_TABLE)
-          .build();
+      AliasDescriptor defaultAlias =
+          ImmutableAliasDescriptor.builder()
+              .tenant(TEST_TENANT)
+              .database(TEST_DATABASE)
+              .alias(TEST_ALIAS)
+              .table(TEST_TABLE)
+              .build();
 
       assertTrue(defaultAlias.active());
       assertEquals(Constant.DEFAULT_COMMENT, defaultAlias.comment());

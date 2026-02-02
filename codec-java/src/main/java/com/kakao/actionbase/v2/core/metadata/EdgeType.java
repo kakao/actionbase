@@ -4,7 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum EdgeType {
-  NIL, INDEXED, HASH, HASH_V0, MULTI_EDGE,
+  NIL,
+  INDEXED,
+  HASH,
+  HASH_V0,
+  MULTI_EDGE,
   ;
 
   private static final Map<String, EdgeType> NAME_TO_VALUE_MAP = new HashMap<>();

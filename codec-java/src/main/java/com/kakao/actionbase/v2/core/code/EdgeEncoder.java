@@ -56,8 +56,7 @@ public interface EdgeEncoder<T> {
   /**
    * Encode the offset to a string. It contains the offset oft the index.
    *
-   * @param value
-   *          the encoded key field value
+   * @param value the encoded key field value
    * @return the encoded offset
    */
   String encodeOffset(KeyFieldValue<T> value);
@@ -65,8 +64,7 @@ public interface EdgeEncoder<T> {
   /**
    * Decode the offset from a string. It contains the offset oft the index.
    *
-   * @param offset
-   *          the encoded offset
+   * @param offset the encoded offset
    * @return the offset
    */
   default byte[] decodeOffset(String offset) {

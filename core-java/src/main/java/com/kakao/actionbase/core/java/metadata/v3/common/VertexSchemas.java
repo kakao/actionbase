@@ -61,10 +61,11 @@ public final class VertexSchemas {
 
   public static class Schemas {
 
-    public static final StructType SCHEMA = ImmutableStructType.builder()
-        .addField(TYPE_FIELD, DataType.STRING)
-        .addField(KEY_FIELD, Fields.Schemas.SCHEMA)
-        .addField(FIELDS_FIELD, StructFields.Schemas.ARRAY_SCHEMA)
-        .build();
+    public static final StructType SCHEMA =
+        ImmutableStructType.builder()
+            .addField(TYPE_FIELD, DataType.STRING)
+            .addField(KEY_FIELD, Fields.Schemas.SCHEMA)
+            .addField(FIELDS_FIELD, StructFields.Schemas.ARRAY_SCHEMA)
+            .build();
   }
 }

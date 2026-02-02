@@ -62,45 +62,51 @@ class ProcessingTimeTest {
 
   @BeforeEach
   void setUp() {
-    schema = ImmutableStructType.builder()
-        .addField(NAME_KEY, DataType.STRING, false)
-        .addField(AGE_KEY, DataType.INT, false)
-        .addField(EMAIL_KEY, DataType.STRING, true)
-        .addField(COMMENT_KEY, DataType.STRING, true)
-        .build();
+    schema =
+        ImmutableStructType.builder()
+            .addField(NAME_KEY, DataType.STRING, false)
+            .addField(AGE_KEY, DataType.INT, false)
+            .addField(EMAIL_KEY, DataType.STRING, true)
+            .addField(COMMENT_KEY, DataType.STRING, true)
+            .build();
 
     initialState = StateCompanion.initialOf(schema);
 
-    insertEvent = ImmutableBaseEvent.builder()
-        .type(EventType.INSERT)
-        .putProperties(NAME_KEY, INSERT_NAME_VALUE)
-        .putProperties(AGE_KEY, INSERT_AGE_VALUE)
-        .version(VERSION)
-        .build();
+    insertEvent =
+        ImmutableBaseEvent.builder()
+            .type(EventType.INSERT)
+            .putProperties(NAME_KEY, INSERT_NAME_VALUE)
+            .putProperties(AGE_KEY, INSERT_AGE_VALUE)
+            .version(VERSION)
+            .build();
 
-    updateAgeEvent = ImmutableBaseEvent.builder()
-        .type(EventType.UPDATE)
-        .putProperties(AGE_KEY, UPDATE_AGE_VALUE)
-        .version(VERSION)
-        .build();
+    updateAgeEvent =
+        ImmutableBaseEvent.builder()
+            .type(EventType.UPDATE)
+            .putProperties(AGE_KEY, UPDATE_AGE_VALUE)
+            .version(VERSION)
+            .build();
 
-    updateEmailEvent = ImmutableBaseEvent.builder()
-        .type(EventType.UPDATE)
-        .putProperties(EMAIL_KEY, UPDATE_EMAIL_VALUE)
-        .version(VERSION)
-        .build();
+    updateEmailEvent =
+        ImmutableBaseEvent.builder()
+            .type(EventType.UPDATE)
+            .putProperties(EMAIL_KEY, UPDATE_EMAIL_VALUE)
+            .version(VERSION)
+            .build();
 
-    updateCommentEvent = ImmutableBaseEvent.builder()
-        .type(EventType.UPDATE)
-        .putProperties(COMMENT_KEY, UPDATE_COMMENT_VALUE)
-        .version(VERSION)
-        .build();
+    updateCommentEvent =
+        ImmutableBaseEvent.builder()
+            .type(EventType.UPDATE)
+            .putProperties(COMMENT_KEY, UPDATE_COMMENT_VALUE)
+            .version(VERSION)
+            .build();
 
-    updateCommentNullEvent = ImmutableBaseEvent.builder()
-        .type(EventType.UPDATE)
-        .putProperties(COMMENT_KEY, null)
-        .version(VERSION)
-        .build();
+    updateCommentNullEvent =
+        ImmutableBaseEvent.builder()
+            .type(EventType.UPDATE)
+            .putProperties(COMMENT_KEY, null)
+            .version(VERSION)
+            .build();
 
     deleteEvent = ImmutableBaseEvent.builder().type(EventType.DELETE).version(VERSION).build();
   }
@@ -249,76 +255,78 @@ class ProcessingTimeTest {
    * </pre>
    */
   @ParameterizedTest(name = "Processing - {0}")
-  @CsvSource(value = {
-      // v, n, a, e, c, c, d, a, n, a, e, c
-      "I1                     , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, U",
-      "A1                     , 1, #, 1, #, #,    #, #, F,    #, 8, #, #",
-      "E1                     , 1, #, #, 1, #,    #, #, F,    #, #, e, #",
-      "C1                     , 1, #, #, #, 1,    #, #, F,    #, #, #, c",
-      "D1                     , 1, 1, 1, 1, 1,    #, 1, F,    D, D, D, D",
+  @CsvSource(
+      value = {
+        //                        v, n, a, e, c,    c, d, a,    n, a, e, c
+        "I1                     , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, U",
+        "A1                     , 1, #, 1, #, #,    #, #, F,    #, 8, #, #",
+        "E1                     , 1, #, #, 1, #,    #, #, F,    #, #, e, #",
+        "C1                     , 1, #, #, #, 1,    #, #, F,    #, #, #, c",
+        "D1                     , 1, 1, 1, 1, 1,    #, 1, F,    D, D, D, D",
 
-      // overwrite by insert
-      "I1; A1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 8, U, U", // UPDATE wins
-      "A1; I1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, U", // INSERT wins
-      "I1; A1; E1; C1         , 1, 1, 1, 1, 1,    1, #, T,    n, 8, e, c", // UPDATE wins
-      "A1; I1; E1; C1         , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, c", // INSERT wins
-      "A1; E1; I1; C1         , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, c", // INSERT wins
-      "A1; E1; C1; I1         , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, c", // INSERT wins
+        // overwrite by insert
+        "I1; A1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 8, U, U", // UPDATE wins
+        "A1; I1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, U", // INSERT wins
+        "I1; A1; E1; C1         , 1, 1, 1, 1, 1,    1, #, T,    n, 8, e, c", // UPDATE wins
+        "A1; I1; E1; C1         , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, c", // INSERT wins
+        "A1; E1; I1; C1         , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, c", // INSERT wins
+        "A1; E1; C1; I1         , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, c", // INSERT wins
 
-      // normal case (all values are updated)
-      "I1; A2; E2; C2         , 2, 1, 2, 2, 2,    1, #, T,    n, 8, e, c",
-      "A2; I1; E2; C2         , 2, 1, 2, 2, 2,    1, #, T,    n, 8, e, c",
-      "A2; E2; I1; C2         , 2, 1, 2, 2, 2,    1, #, T,    n, 8, e, c",
-      "A2; E2; C2; I1         , 2, 1, 2, 2, 2,    1, #, T,    n, 8, e, c",
+        // normal case (all values are updated)
+        "I1; A2; E2; C2         , 2, 1, 2, 2, 2,    1, #, T,    n, 8, e, c",
+        "A2; I1; E2; C2         , 2, 1, 2, 2, 2,    1, #, T,    n, 8, e, c",
+        "A2; E2; I1; C2         , 2, 1, 2, 2, 2,    1, #, T,    n, 8, e, c",
+        "A2; E2; C2; I1         , 2, 1, 2, 2, 2,    1, #, T,    n, 8, e, c",
 
-      // normal case (latest insert wins)
-      "I2; A1; E1; C1         , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
-      "A1; I2; E1; C1         , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
-      "A1; E1; I2; C1         , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
-      "A1; E1; C1; I2         , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
+        // normal case (latest insert wins)
+        "I2; A1; E1; C1         , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
+        "A1; I2; E1; C1         , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
+        "A1; E1; I2; C1         , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
+        "A1; E1; C1; I2         , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
 
-      // overwrite by delete
-      "D1; I1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, U", // INSERT wins
-      "I1; D1                 , 1, 1, 1, 1, 1,    #, 1, F,    D, D, D, D", // DELETE wins
-      "D1; I1; A1; E1; C1     , 1, 1, 1, 1, 1,    1, #, T,    n, 8, e, c", // INSERT wins
-      "I1; D1; A1; E1; C1     , 1, 1, 1, 1, 1,    #, 1, F,    D, 8, e, c", // DELETE wins
-      "I1; A1; D1; E1; C1     , 1, 1, 1, 1, 1,    #, 1, F,    D, D, e, c", // DELETE wins
-      "I1; A1; E1; D1; C1     , 1, 1, 1, 1, 1,    #, 1, F,    D, D, D, c", // DELETE wins
-      "I1; A1; E1; C1; D1     , 1, 1, 1, 1, 1,    #, 1, F,    D, D, D, D", // DELETE wins
+        // overwrite by delete
+        "D1; I1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, U", // INSERT wins
+        "I1; D1                 , 1, 1, 1, 1, 1,    #, 1, F,    D, D, D, D", // DELETE wins
+        "D1; I1; A1; E1; C1     , 1, 1, 1, 1, 1,    1, #, T,    n, 8, e, c", // INSERT wins
+        "I1; D1; A1; E1; C1     , 1, 1, 1, 1, 1,    #, 1, F,    D, 8, e, c", // DELETE wins
+        "I1; A1; D1; E1; C1     , 1, 1, 1, 1, 1,    #, 1, F,    D, D, e, c", // DELETE wins
+        "I1; A1; E1; D1; C1     , 1, 1, 1, 1, 1,    #, 1, F,    D, D, D, c", // DELETE wins
+        "I1; A1; E1; C1; D1     , 1, 1, 1, 1, 1,    #, 1, F,    D, D, D, D", // DELETE wins
 
-      // paris
-      "I1; E1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, U",
-      "E1; I1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, U",
-      "I1; C1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, c",
-      "C1; I1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, c",
+        // paris
+        "I1; E1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, U",
+        "E1; I1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, e, U",
+        "I1; C1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, c",
+        "C1; I1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, c",
 
-      // update comment to null
-      "I1; C1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, c",
-      "I1; C1; N1             , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, U",
-      "I1; N1; C1             , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, c",
+        // update comment to null
+        "I1; C1                 , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, c",
+        "I1; C1; N1             , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, U",
+        "I1; N1; C1             , 1, 1, 1, 1, 1,    1, #, T,    n, 7, U, c",
 
-      // normal case (set comment to null)
-      "I1; C2; N3             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
-      "I1; N3; C2             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
-      "C2; I1; N3             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
-      "C2; N3; I1             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
-      "N3; I1; C2             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
-      "N3; C2; I1             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
+        // normal case (set comment to null)
+        "I1; C2; N3             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
+        "I1; N3; C2             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
+        "C2; I1; N3             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
+        "C2; N3; I1             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
+        "N3; I1; C2             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
+        "N3; C2; I1             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, U",
 
-      // normal case (set comment to c)
-      "I1; N2; C3             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, c",
+        // normal case (set comment to c)
+        "I1; N2; C3             , 3, 1, 1, 1, 3,    1, #, T,    n, 7, U, c",
 
-      // eventual consistency (these cases are covered by StateCompanionTest)
-      "I1; A2                 , 2, 1, 2, 1, 1,    1, #, T,    n, 8, U, U",
-      "A2; I1                 , 2, 1, 2, 1, 1,    1, #, T,    n, 8, U, U",
+        // eventual consistency (these cases are covered by StateCompanionTest)
+        "I1; A2                 , 2, 1, 2, 1, 1,    1, #, T,    n, 8, U, U",
+        "A2; I1                 , 2, 1, 2, 1, 1,    1, #, T,    n, 8, U, U",
 
-      // ISSUE-3233 see [com.kakao.actionbase.v2.engine.IssueSpec]
-      // in the v2 engine, can not invalidate "c"
-      // I2; C1 , 2, 2, 2, 2, 2, 2, #, T, n, 7, U, U
-      // C1; I2 , 2, 2, 2, 2, 2, 2, #, T, n, 7, U, **c**
-      "I2; C1                 , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
-      "C1; I2                 , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
-  }, nullValues = "#")
+        // ISSUE-3233 see [com.kakao.actionbase.v2.engine.IssueSpec]
+        // in the v2 engine, can not invalidate "c"
+        // I2; C1               , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U
+        // C1; I2               , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, **c**
+        "I2; C1                 , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
+        "C1; I2                 , 2, 2, 2, 2, 2,    2, #, T,    n, 7, U, U",
+      },
+      nullValues = "#")
   @DisplayName("Processing Time Test")
   void testAndCheckVersion(
       String events,

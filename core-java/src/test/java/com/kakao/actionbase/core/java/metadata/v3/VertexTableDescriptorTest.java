@@ -43,10 +43,11 @@ class VertexTableDescriptorTest extends AbstractUnitTest<VertexTableDescriptor> 
 
   @BeforeEach
   void setUp() {
-    baseEdgeSchema = ImmutableVertexSchema.builder()
-        .key(ImmutableField.builder().type(DataType.LONG).build())
-        .addProperties(TEST_FIELD, DataType.LONG)
-        .build();
+    baseEdgeSchema =
+        ImmutableVertexSchema.builder()
+            .key(ImmutableField.builder().type(DataType.LONG).build())
+            .addProperties(TEST_FIELD, DataType.LONG)
+            .build();
     testTarget = createTarget();
   }
 
@@ -63,66 +64,75 @@ class VertexTableDescriptorTest extends AbstractUnitTest<VertexTableDescriptor> 
     }
 
     @ParameterizedTest(name = "Different field case: {0}")
-    @ValueSource(strings = {"active", "tenant", "database", "table", "storage", "comment", "schema",
-        "mode"})
+    @ValueSource(
+        strings = {"active", "tenant", "database", "table", "storage", "comment", "schema", "mode"})
     @DisplayName("Objects with different fields should not be equal")
     void testDataInequality(String field) {
       VertexTableDescriptor differentData;
 
       switch (field) {
-        case "active" :
-          differentData = ImmutableVertexTableDescriptor.builder()
-              .from(testTarget)
-              .active(!TEST_ACTIVE)
-              .build();
+        case "active":
+          differentData =
+              ImmutableVertexTableDescriptor.builder()
+                  .from(testTarget)
+                  .active(!TEST_ACTIVE)
+                  .build();
           break;
-        case "tenant" :
-          differentData = ImmutableVertexTableDescriptor.builder()
-              .from(testTarget)
-              .tenant(TEST_TENANT + "-different")
-              .build();
+        case "tenant":
+          differentData =
+              ImmutableVertexTableDescriptor.builder()
+                  .from(testTarget)
+                  .tenant(TEST_TENANT + "-different")
+                  .build();
           break;
-        case "database" :
-          differentData = ImmutableVertexTableDescriptor.builder()
-              .from(testTarget)
-              .database(TEST_DATABASE + "-different")
-              .build();
+        case "database":
+          differentData =
+              ImmutableVertexTableDescriptor.builder()
+                  .from(testTarget)
+                  .database(TEST_DATABASE + "-different")
+                  .build();
           break;
-        case "table" :
-          differentData = ImmutableVertexTableDescriptor.builder()
-              .from(testTarget)
-              .table(TEST_TABLE + "-different")
-              .build();
+        case "table":
+          differentData =
+              ImmutableVertexTableDescriptor.builder()
+                  .from(testTarget)
+                  .table(TEST_TABLE + "-different")
+                  .build();
           break;
-        case "storage" :
-          differentData = ImmutableVertexTableDescriptor.builder()
-              .from(testTarget)
-              .storage(TEST_STORAGE + "-different")
-              .build();
+        case "storage":
+          differentData =
+              ImmutableVertexTableDescriptor.builder()
+                  .from(testTarget)
+                  .storage(TEST_STORAGE + "-different")
+                  .build();
           break;
-        case "comment" :
-          differentData = ImmutableVertexTableDescriptor.builder()
-              .from(testTarget)
-              .comment(TEST_COMMENT + "-different")
-              .build();
+        case "comment":
+          differentData =
+              ImmutableVertexTableDescriptor.builder()
+                  .from(testTarget)
+                  .comment(TEST_COMMENT + "-different")
+                  .build();
           break;
-        case "schema" :
-          VertexSchema differentSchema = ImmutableVertexSchema.builder()
-              .from(testTarget.schema())
-              .addProperties(TEST_FIELD + "-different", DataType.LONG)
-              .build();
-          differentData = ImmutableVertexTableDescriptor.builder()
-              .from(testTarget)
-              .schema(differentSchema)
-              .build();
+        case "schema":
+          VertexSchema differentSchema =
+              ImmutableVertexSchema.builder()
+                  .from(testTarget.schema())
+                  .addProperties(TEST_FIELD + "-different", DataType.LONG)
+                  .build();
+          differentData =
+              ImmutableVertexTableDescriptor.builder()
+                  .from(testTarget)
+                  .schema(differentSchema)
+                  .build();
           break;
-        case "mode" :
-          differentData = ImmutableVertexTableDescriptor.builder()
-              .from(testTarget)
-              .mode(TEST_MODE == MutationMode.SYNC ? MutationMode.ASYNC : MutationMode.SYNC)
-              .build();
+        case "mode":
+          differentData =
+              ImmutableVertexTableDescriptor.builder()
+                  .from(testTarget)
+                  .mode(TEST_MODE == MutationMode.SYNC ? MutationMode.ASYNC : MutationMode.SYNC)
+                  .build();
           break;
-        default :
+        default:
           throw new IllegalArgumentException("Unexpected field: " + field);
       }
 
@@ -139,8 +149,8 @@ class VertexTableDescriptorTest extends AbstractUnitTest<VertexTableDescriptor> 
     @ValueSource(strings = {"tenant", "database", "table", "storage", "schema", "mode"})
     @DisplayName("Exception should be thrown when required field is missing")
     void testMissingRequiredField(String excludedField) {
-      ImmutableVertexTableDescriptor.Builder builder = ImmutableVertexTableDescriptor.builder()
-          .active(TEST_ACTIVE).comment(TEST_COMMENT);
+      ImmutableVertexTableDescriptor.Builder builder =
+          ImmutableVertexTableDescriptor.builder().active(TEST_ACTIVE).comment(TEST_COMMENT);
 
       assertThrows(
           IllegalStateException.class,
@@ -153,14 +163,15 @@ class VertexTableDescriptorTest extends AbstractUnitTest<VertexTableDescriptor> 
     @Test
     @DisplayName("Default state should be active=true, comment=V3Metadata.DEFAULT_COMMENT")
     void testDefaultState() {
-      VertexTableDescriptor defaultAlias = ImmutableVertexTableDescriptor.builder()
-          .tenant(TEST_TENANT)
-          .database(TEST_DATABASE)
-          .table(TEST_TABLE)
-          .storage(TEST_STORAGE)
-          .schema(baseEdgeSchema)
-          .mode(TEST_MODE)
-          .build();
+      VertexTableDescriptor defaultAlias =
+          ImmutableVertexTableDescriptor.builder()
+              .tenant(TEST_TENANT)
+              .database(TEST_DATABASE)
+              .table(TEST_TABLE)
+              .storage(TEST_STORAGE)
+              .schema(baseEdgeSchema)
+              .mode(TEST_MODE)
+              .build();
 
       assertTrue(defaultAlias.active());
       assertEquals(Constant.DEFAULT_COMMENT, defaultAlias.comment());

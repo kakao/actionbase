@@ -21,8 +21,8 @@ class WherePredicateTest {
     @DisplayName("In condition serialization/deserialization should maintain identity")
     void shouldSerializeAndDeserializeIn() throws JsonProcessingException {
       // Given
-      WherePredicate.In predicate = WherePredicate.in("category",
-          Arrays.asList("food", "beverage", "snack"));
+      WherePredicate.In predicate =
+          WherePredicate.in("category", Arrays.asList("food", "beverage", "snack"));
 
       // When
       String serialized = predicate.toJson();

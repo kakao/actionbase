@@ -43,12 +43,12 @@ public interface StructType extends DataType<ObjectNode> {
   @Value.Derived
   @JsonIgnore
   default Map<String, Integer> fieldIndexMap() {
-    // StructField[] fields = fields();
-    // Map<String, Integer> indexMap = new HashMap<>(fields.length);
-    // for (int i = 0; i < fields.length; i++) {
-    // indexMap.put(fields[i].name(), i);
-    // }
-    // return indexMap;
+    //    StructField[] fields = fields();
+    //    Map<String, Integer> indexMap = new HashMap<>(fields.length);
+    //    for (int i = 0; i < fields.length; i++) {
+    //      indexMap.put(fields[i].name(), i);
+    //    }
+    //    return indexMap;
     // convert it to a stream and then collect it to a map
     return fields().stream()
         .collect(HashMap::new, (map, field) -> map.put(field.name(), map.size()), HashMap::putAll);
@@ -88,8 +88,7 @@ public interface StructType extends DataType<ObjectNode> {
   /**
    * Checks if a field with the specified name exists.
    *
-   * @param name
-   *          Field name to check
+   * @param name Field name to check
    * @return true if field exists, false otherwise
    */
   default boolean hasField(String name) {

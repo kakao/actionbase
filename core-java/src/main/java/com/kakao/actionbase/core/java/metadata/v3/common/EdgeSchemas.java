@@ -124,13 +124,14 @@ public final class EdgeSchemas {
 
   public static class Schemas {
 
-    public static final StructType SCHEMA = ImmutableStructType.builder()
-        .addField(TYPE_FIELD, DataType.STRING)
-        .addField(SRC_FIELD, Fields.Schemas.SCHEMA)
-        .addField(TGT_FIELD, Fields.Schemas.SCHEMA)
-        .addField(FIELDS_FIELD, StructFields.Schemas.ARRAY_SCHEMA)
-        .addField(DIR_FIELD, DataType.STRING)
-        .addField(INDICES_FIELD, IndexCompanion.Schemas.ARRAY_SCHEMA)
-        .build();
+    public static final StructType SCHEMA =
+        ImmutableStructType.builder()
+            .addField(TYPE_FIELD, DataType.STRING)
+            .addField(SRC_FIELD, Fields.Schemas.SCHEMA)
+            .addField(TGT_FIELD, Fields.Schemas.SCHEMA)
+            .addField(FIELDS_FIELD, StructFields.Schemas.ARRAY_SCHEMA)
+            .addField(DIR_FIELD, DataType.STRING)
+            .addField(INDICES_FIELD, IndexCompanion.Schemas.ARRAY_SCHEMA)
+            .build();
   }
 }

@@ -4,8 +4,7 @@ public class EmptyEdgeIdEncoder implements IdEdgeEncoder {
 
   public static final EmptyEdgeIdEncoder INSTANCE = new EmptyEdgeIdEncoder();
 
-  private EmptyEdgeIdEncoder() {
-  }
+  private EmptyEdgeIdEncoder() {}
 
   @Override
   public String encode(Object src, Object tgt) {

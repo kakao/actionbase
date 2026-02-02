@@ -57,8 +57,7 @@ public class OrderedBytes {
 
   public static final byte JSON_HEADER_DESC = -51;
 
-  public OrderedBytes() {
-  }
+  public OrderedBytes() {}
 
   private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -99,8 +98,7 @@ public class OrderedBytes {
       int rawStartPos = offset + start;
 
       int rawTermPos;
-      for (rawTermPos = rawStartPos; a[rawTermPos] != terminator; ++rawTermPos) {
-      }
+      for (rawTermPos = rawStartPos; a[rawTermPos] != terminator; ++rawTermPos) {}
 
       src.setPosition(rawTermPos - offset + 1);
       if (Order.DESC == ord) {
@@ -317,8 +315,7 @@ public class OrderedBytes {
       int rawStartPos = offset + start;
 
       int rawTermPos;
-      for (rawTermPos = rawStartPos; a[rawTermPos] != terminator; ++rawTermPos) {
-      }
+      for (rawTermPos = rawStartPos; a[rawTermPos] != terminator; ++rawTermPos) {}
 
       src.setPosition(rawTermPos - offset + 1);
       try {

@@ -25,10 +25,9 @@ package com.kakao.actionbase.core.java.util;
 import java.util.Random;
 
 /**
- * ULID string generator and parser class, using Crockford Base32 encoding. Only
- * upper case letters are used for generation. Parsing allows upper and lower
- * case letters, and i and l will be treated as 1 and o will be treated as 0.
- * <br>
+ * ULID string generator and parser class, using Crockford Base32 encoding. Only upper case letters
+ * are used for generation. Parsing allows upper and lower case letters, and i and l will be treated
+ * as 1 and o will be treated as 0. <br>
  * <br>
  * ULID generation examples:<br>
  *
@@ -36,12 +35,11 @@ import java.util.Random;
  * String ulid1 = ULID.random();
  * String ulid2 = ULID.random(ThreadLocalRandom.current());
  * String ulid3 = ULID.random(SecureRandom.newInstance("SHA1PRNG"));
- * byte[] entropy = new byte[]{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9};
+ * byte[] entropy = new byte[] {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9};
  * String ulid4 = ULID.generate(System.currentTimeMillis(), entropy);
  * </pre>
  *
- * <p>
- * ULID parsing examples:<br>
+ * <p>ULID parsing examples:<br>
  *
  * <pre>
  * String ulid = "003JZ9J6G80123456789abcdef";
@@ -70,87 +68,88 @@ public class ULID {
   public static final long MIN_TIME = 0x0L;
 
   /**
-   * Maximum allowed timestamp value. Encoded value can encode up to
-   * 0x0003ffffffffffffL but ULID binary/byte representation states that timestamp
-   * will only be 48-bits.
+   * Maximum allowed timestamp value. Encoded value can encode up to 0x0003ffffffffffffL but ULID
+   * binary/byte representation states that timestamp will only be 48-bits.
    */
   public static final long MAX_TIME = 0x0000ffffffffffffL;
 
   /** Base32 characters mapping */
-  private static final char[] C = new char[]{ //
-      0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, //
-      0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, //
-      0x47, 0x48, 0x4a, 0x4b, 0x4d, 0x4e, 0x50, 0x51, //
-      0x52, 0x53, 0x54, 0x56, 0x57, 0x58, 0x59, 0x5a //
-  };
+  private static final char[] C =
+      new char[] { //
+        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, //
+        0x38, 0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, //
+        0x47, 0x48, 0x4a, 0x4b, 0x4d, 0x4e, 0x50, 0x51, //
+        0x52, 0x53, 0x54, 0x56, 0x57, 0x58, 0x59, 0x5a //
+      };
 
   /** {@code char} to {@code byte} O(1) mapping with alternative chars mapping */
-  private static final byte[] V = new byte[]{ //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03, //
-      (byte) 0x04, (byte) 0x05, (byte) 0x06, (byte) 0x07, //
-      (byte) 0x08, (byte) 0x09, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0x0a, (byte) 0x0b, (byte) 0x0c, //
-      (byte) 0x0d, (byte) 0x0e, (byte) 0x0f, (byte) 0x10, //
-      (byte) 0x11, (byte) 0xff, (byte) 0x12, (byte) 0x13, //
-      (byte) 0xff, (byte) 0x14, (byte) 0x15, (byte) 0xff, //
-      (byte) 0x16, (byte) 0x17, (byte) 0x18, (byte) 0x19, //
-      (byte) 0x1a, (byte) 0xff, (byte) 0x1b, (byte) 0x1c, //
-      (byte) 0x1d, (byte) 0x1e, (byte) 0x1f, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0x0a, (byte) 0x0b, (byte) 0x0c, //
-      (byte) 0x0d, (byte) 0x0e, (byte) 0x0f, (byte) 0x10, //
-      (byte) 0x11, (byte) 0xff, (byte) 0x12, (byte) 0x13, //
-      (byte) 0xff, (byte) 0x14, (byte) 0x15, (byte) 0xff, //
-      (byte) 0x16, (byte) 0x17, (byte) 0x18, (byte) 0x19, //
-      (byte) 0x1a, (byte) 0xff, (byte) 0x1b, (byte) 0x1c, //
-      (byte) 0x1d, (byte) 0x1e, (byte) 0x1f, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
-      (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff //
-  };
+  private static final byte[] V =
+      new byte[] { //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0x00, (byte) 0x01, (byte) 0x02, (byte) 0x03, //
+        (byte) 0x04, (byte) 0x05, (byte) 0x06, (byte) 0x07, //
+        (byte) 0x08, (byte) 0x09, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0x0a, (byte) 0x0b, (byte) 0x0c, //
+        (byte) 0x0d, (byte) 0x0e, (byte) 0x0f, (byte) 0x10, //
+        (byte) 0x11, (byte) 0xff, (byte) 0x12, (byte) 0x13, //
+        (byte) 0xff, (byte) 0x14, (byte) 0x15, (byte) 0xff, //
+        (byte) 0x16, (byte) 0x17, (byte) 0x18, (byte) 0x19, //
+        (byte) 0x1a, (byte) 0xff, (byte) 0x1b, (byte) 0x1c, //
+        (byte) 0x1d, (byte) 0x1e, (byte) 0x1f, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0x0a, (byte) 0x0b, (byte) 0x0c, //
+        (byte) 0x0d, (byte) 0x0e, (byte) 0x0f, (byte) 0x10, //
+        (byte) 0x11, (byte) 0xff, (byte) 0x12, (byte) 0x13, //
+        (byte) 0xff, (byte) 0x14, (byte) 0x15, (byte) 0xff, //
+        (byte) 0x16, (byte) 0x17, (byte) 0x18, (byte) 0x19, //
+        (byte) 0x1a, (byte) 0xff, (byte) 0x1b, (byte) 0x1c, //
+        (byte) 0x1d, (byte) 0x1e, (byte) 0x1f, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, //
+        (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff //
+      };
 
   /**
    * Generate random ULID string using {@link Random} instance.
@@ -179,8 +178,7 @@ public class ULID {
   /**
    * Generate random ULID string using provided {@link Random} instance.
    *
-   * @param random
-   *          {@link Random} instance
+   * @param random {@link Random} instance
    * @return ULID string
    */
   public static String random(Random random) {
@@ -192,8 +190,7 @@ public class ULID {
   /**
    * Generate random ULID binary using provided {@link Random} instance.
    *
-   * @param random
-   *          {@link Random} instance
+   * @param random {@link Random} instance
    * @return ULID string
    */
   public static byte[] randomBinary(Random random) {
@@ -203,15 +200,12 @@ public class ULID {
   }
 
   /**
-   * Generate ULID string from Unix epoch timestamp in millisecond and entropy
-   * bytes. Throws {@link IllegalArgumentException} if timestamp is less than
-   * {@value #MIN_TIME}, is more than {@value #MAX_TIME}, or entropy bytes is null
-   * or less than 10 bytes.
+   * Generate ULID string from Unix epoch timestamp in millisecond and entropy bytes. Throws {@link
+   * IllegalArgumentException} if timestamp is less than {@value #MIN_TIME}, is more than {@value
+   * #MAX_TIME}, or entropy bytes is null or less than 10 bytes.
    *
-   * @param time
-   *          Unix epoch timestamp in millisecond
-   * @param entropy
-   *          Entropy bytes
+   * @param time Unix epoch timestamp in millisecond
+   * @param entropy Entropy bytes
    * @return ULID string
    */
   public static String generate(long time, byte[] entropy) {
@@ -256,15 +250,12 @@ public class ULID {
   }
 
   /**
-   * Generate ULID binary from Unix epoch timestamp in millisecond and entropy
-   * bytes. Throws {@link IllegalArgumentException} if timestamp is less than
-   * {@value #MIN_TIME}, is more than {@value #MAX_TIME}, or entropy bytes is null
-   * or less than 10 bytes.
+   * Generate ULID binary from Unix epoch timestamp in millisecond and entropy bytes. Throws {@link
+   * IllegalArgumentException} if timestamp is less than {@value #MIN_TIME}, is more than {@value
+   * #MAX_TIME}, or entropy bytes is null or less than 10 bytes.
    *
-   * @param time
-   *          Unix epoch timestamp in millisecond
-   * @param entropy
-   *          Entropy bytes
+   * @param time Unix epoch timestamp in millisecond
+   * @param entropy Entropy bytes
    * @return ULID string
    */
   public static byte[] generateBinary(long time, byte[] entropy) {
@@ -291,8 +282,7 @@ public class ULID {
   /**
    * Checks ULID string validity.
    *
-   * @param ulid
-   *          ULID string
+   * @param ulid ULID string
    * @return true if ULID string is valid
    */
   public static boolean isValid(CharSequence ulid) {
@@ -312,8 +302,7 @@ public class ULID {
   /**
    * Checks ULID binary validity.
    *
-   * @param ulid
-   *          ULID binary
+   * @param ulid ULID binary
    * @return true if ULID binary is valid
    */
   public static boolean isValidBinary(byte[] ulid) {
@@ -321,13 +310,11 @@ public class ULID {
   }
 
   /**
-   * Extract and return the timestamp part from ULID string. Expects a valid ULID
-   * string. Call {@link io.azam.ulidj.ULID#isValid(CharSequence)} and check
-   * validity before calling this method if you do not trust the origin of the
-   * ULID string.
+   * Extract and return the timestamp part from ULID string. Expects a valid ULID string. Call
+   * {@link io.azam.ulidj.ULID#isValid(CharSequence)} and check validity before calling this method
+   * if you do not trust the origin of the ULID string.
    *
-   * @param ulid
-   *          ULID string
+   * @param ulid ULID string
    * @return Unix epoch timestamp in millisecond
    */
   public static long getTimestamp(CharSequence ulid) {
@@ -344,13 +331,11 @@ public class ULID {
   }
 
   /**
-   * Extract and return the timestamp part from ULID binary. Expects a valid ULID
-   * binary. Call {@link io.azam.ulidj.ULID#isValidBinary(byte[])} and check
-   * validity before calling this method if you do not trust the origin of the
-   * ULID string.
+   * Extract and return the timestamp part from ULID binary. Expects a valid ULID binary. Call
+   * {@link io.azam.ulidj.ULID#isValidBinary(byte[])} and check validity before calling this method
+   * if you do not trust the origin of the ULID string.
    *
-   * @param ulid
-   *          ULID string
+   * @param ulid ULID string
    * @return Unix epoch timestamp in millisecond
    */
   public static long getTimestampBinary(byte[] ulid) {
@@ -364,52 +349,68 @@ public class ULID {
   }
 
   /**
-   * Extract and return the entropy part from ULID string. Expects a valid ULID
-   * string. Call {@link io.azam.ulidj.ULID#isValid(CharSequence)} and check
-   * validity before calling this method if you do not trust the origin of the
-   * ULID string.
+   * Extract and return the entropy part from ULID string. Expects a valid ULID string. Call {@link
+   * io.azam.ulidj.ULID#isValid(CharSequence)} and check validity before calling this method if you
+   * do not trust the origin of the ULID string.
    *
-   * @param ulid
-   *          ULID string
+   * @param ulid ULID string
    * @return Entropy bytes
    */
   public static byte[] getEntropy(CharSequence ulid) {
     byte[] bytes = new byte[ENTROPY_LENGTH];
-    bytes[0] = (byte) ((V[ulid.charAt(10)] << 3) //
-        | (V[ulid.charAt(11)] & 0xff) >>> 2);
-    bytes[1] = (byte) ((V[ulid.charAt(11)] << 6) //
-        | V[ulid.charAt(12)] << 1 //
-        | (V[ulid.charAt(13)] & 0xff) >>> 4);
-    bytes[2] = (byte) ((V[ulid.charAt(13)] << 4) //
-        | (V[ulid.charAt(14)] & 0xff) >>> 1);
-    bytes[3] = (byte) ((V[ulid.charAt(14)] << 7) //
-        | V[ulid.charAt(15)] << 2 //
-        | (V[ulid.charAt(16)] & 0xff) >>> 3);
-    bytes[4] = (byte) ((V[ulid.charAt(16)] << 5) //
-        | V[ulid.charAt(17)]);
-    bytes[5] = (byte) ((V[ulid.charAt(18)] << 3) //
-        | (V[ulid.charAt(19)] & 0xff) >>> 2);
-    bytes[6] = (byte) ((V[ulid.charAt(19)] << 6) //
-        | V[ulid.charAt(20)] << 1 //
-        | (V[ulid.charAt(21)] & 0xff) >>> 4);
-    bytes[7] = (byte) ((V[ulid.charAt(21)] << 4) //
-        | (V[ulid.charAt(22)] & 0xff) >>> 1);
-    bytes[8] = (byte) ((V[ulid.charAt(22)] << 7) //
-        | V[ulid.charAt(23)] << 2 //
-        | (V[ulid.charAt(24)] & 0xff) >>> 3);
-    bytes[9] = (byte) ((V[ulid.charAt(24)] << 5) //
-        | V[ulid.charAt(25)]);
+    bytes[0] =
+        (byte)
+            ((V[ulid.charAt(10)] << 3) //
+                | (V[ulid.charAt(11)] & 0xff) >>> 2);
+    bytes[1] =
+        (byte)
+            ((V[ulid.charAt(11)] << 6) //
+                | V[ulid.charAt(12)] << 1 //
+                | (V[ulid.charAt(13)] & 0xff) >>> 4);
+    bytes[2] =
+        (byte)
+            ((V[ulid.charAt(13)] << 4) //
+                | (V[ulid.charAt(14)] & 0xff) >>> 1);
+    bytes[3] =
+        (byte)
+            ((V[ulid.charAt(14)] << 7) //
+                | V[ulid.charAt(15)] << 2 //
+                | (V[ulid.charAt(16)] & 0xff) >>> 3);
+    bytes[4] =
+        (byte)
+            ((V[ulid.charAt(16)] << 5) //
+                | V[ulid.charAt(17)]);
+    bytes[5] =
+        (byte)
+            ((V[ulid.charAt(18)] << 3) //
+                | (V[ulid.charAt(19)] & 0xff) >>> 2);
+    bytes[6] =
+        (byte)
+            ((V[ulid.charAt(19)] << 6) //
+                | V[ulid.charAt(20)] << 1 //
+                | (V[ulid.charAt(21)] & 0xff) >>> 4);
+    bytes[7] =
+        (byte)
+            ((V[ulid.charAt(21)] << 4) //
+                | (V[ulid.charAt(22)] & 0xff) >>> 1);
+    bytes[8] =
+        (byte)
+            ((V[ulid.charAt(22)] << 7) //
+                | V[ulid.charAt(23)] << 2 //
+                | (V[ulid.charAt(24)] & 0xff) >>> 3);
+    bytes[9] =
+        (byte)
+            ((V[ulid.charAt(24)] << 5) //
+                | V[ulid.charAt(25)]);
     return bytes;
   }
 
   /**
-   * Extract and return the entropy part from ULID binary. Expects a valid ULID
-   * binary. Call {@link io.azam.ulidj.ULID#isValidBinary(byte[])} and check
-   * validity before calling this method if you do not trust the origin of the
-   * ULID string.
+   * Extract and return the entropy part from ULID binary. Expects a valid ULID binary. Call {@link
+   * io.azam.ulidj.ULID#isValidBinary(byte[])} and check validity before calling this method if you
+   * do not trust the origin of the ULID string.
    *
-   * @param ulid
-   *          ULID binary
+   * @param ulid ULID binary
    * @return Entropy bytes
    */
   public static byte[] getEntropyBinary(byte[] ulid) {
@@ -419,9 +420,9 @@ public class ULID {
   }
 
   /**
-   * Convert a valid ULID string to it's binary representation. Call
-   * {@link io.azam.ulidj.ULID#isValid(CharSequence)} and check validity before
-   * calling this method if you do not trust the origin of the ULID string.<br>
+   * Convert a valid ULID string to it's binary representation. Call {@link
+   * io.azam.ulidj.ULID#isValid(CharSequence)} and check validity before calling this method if you
+   * do not trust the origin of the ULID string.<br>
    * <br>
    * Binary layout:
    *
@@ -439,60 +440,90 @@ public class ULID {
    * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    * </pre>
    *
-   * @param ulid
-   *          ULID string
+   * @param ulid ULID string
    * @return ULID binary
    */
   public static byte[] toBinary(CharSequence ulid) {
     byte[] bytes = new byte[ULID_BINARY_LENGTH];
     // Timestamp
-    bytes[0] = (byte) ((V[ulid.charAt(0)] << 5) //
-        | V[ulid.charAt(1)]);
-    bytes[1] = (byte) ((V[ulid.charAt(2)] << 3) //
-        | (V[ulid.charAt(3)] & 0xff) >>> 2);
-    bytes[2] = (byte) ((V[ulid.charAt(3)] << 6) //
-        | V[ulid.charAt(4)] << 1 //
-        | (V[ulid.charAt(5)] & 0xff) >>> 4);
-    bytes[3] = (byte) ((V[ulid.charAt(5)] << 4) //
-        | (V[ulid.charAt(6)] & 0xff) >>> 1);
-    bytes[4] = (byte) ((V[ulid.charAt(6)] << 7) //
-        | V[ulid.charAt(7)] << 2 //
-        | (V[ulid.charAt(8)] & 0xff) >>> 3);
-    bytes[5] = (byte) ((V[ulid.charAt(8)] << 5) //
-        | V[ulid.charAt(9)]);
+    bytes[0] =
+        (byte)
+            ((V[ulid.charAt(0)] << 5) //
+                | V[ulid.charAt(1)]);
+    bytes[1] =
+        (byte)
+            ((V[ulid.charAt(2)] << 3) //
+                | (V[ulid.charAt(3)] & 0xff) >>> 2);
+    bytes[2] =
+        (byte)
+            ((V[ulid.charAt(3)] << 6) //
+                | V[ulid.charAt(4)] << 1 //
+                | (V[ulid.charAt(5)] & 0xff) >>> 4);
+    bytes[3] =
+        (byte)
+            ((V[ulid.charAt(5)] << 4) //
+                | (V[ulid.charAt(6)] & 0xff) >>> 1);
+    bytes[4] =
+        (byte)
+            ((V[ulid.charAt(6)] << 7) //
+                | V[ulid.charAt(7)] << 2 //
+                | (V[ulid.charAt(8)] & 0xff) >>> 3);
+    bytes[5] =
+        (byte)
+            ((V[ulid.charAt(8)] << 5) //
+                | V[ulid.charAt(9)]);
     // Entropy
-    bytes[6] = (byte) ((V[ulid.charAt(10)] << 3) //
-        | (V[ulid.charAt(11)] & 0xff) >>> 2);
-    bytes[7] = (byte) ((V[ulid.charAt(11)] << 6) //
-        | V[ulid.charAt(12)] << 1 //
-        | (V[ulid.charAt(13)] & 0xff) >>> 4);
-    bytes[8] = (byte) ((V[ulid.charAt(13)] << 4) //
-        | (V[ulid.charAt(14)] & 0xff) >>> 1);
-    bytes[9] = (byte) ((V[ulid.charAt(14)] << 7) //
-        | V[ulid.charAt(15)] << 2 //
-        | (V[ulid.charAt(16)] & 0xff) >>> 3);
-    bytes[10] = (byte) ((V[ulid.charAt(16)] << 5) //
-        | V[ulid.charAt(17)]);
-    bytes[11] = (byte) ((V[ulid.charAt(18)] << 3) //
-        | (V[ulid.charAt(19)] & 0xff) >>> 2);
-    bytes[12] = (byte) ((V[ulid.charAt(19)] << 6) //
-        | V[ulid.charAt(20)] << 1 //
-        | (V[ulid.charAt(21)] & 0xff) >>> 4);
-    bytes[13] = (byte) ((V[ulid.charAt(21)] << 4) //
-        | (V[ulid.charAt(22)] & 0xff) >>> 1);
-    bytes[14] = (byte) ((V[ulid.charAt(22)] << 7) //
-        | V[ulid.charAt(23)] << 2 //
-        | (V[ulid.charAt(24)] & 0xff) >>> 3);
-    bytes[15] = (byte) ((V[ulid.charAt(24)] << 5) //
-        | V[ulid.charAt(25)]);
+    bytes[6] =
+        (byte)
+            ((V[ulid.charAt(10)] << 3) //
+                | (V[ulid.charAt(11)] & 0xff) >>> 2);
+    bytes[7] =
+        (byte)
+            ((V[ulid.charAt(11)] << 6) //
+                | V[ulid.charAt(12)] << 1 //
+                | (V[ulid.charAt(13)] & 0xff) >>> 4);
+    bytes[8] =
+        (byte)
+            ((V[ulid.charAt(13)] << 4) //
+                | (V[ulid.charAt(14)] & 0xff) >>> 1);
+    bytes[9] =
+        (byte)
+            ((V[ulid.charAt(14)] << 7) //
+                | V[ulid.charAt(15)] << 2 //
+                | (V[ulid.charAt(16)] & 0xff) >>> 3);
+    bytes[10] =
+        (byte)
+            ((V[ulid.charAt(16)] << 5) //
+                | V[ulid.charAt(17)]);
+    bytes[11] =
+        (byte)
+            ((V[ulid.charAt(18)] << 3) //
+                | (V[ulid.charAt(19)] & 0xff) >>> 2);
+    bytes[12] =
+        (byte)
+            ((V[ulid.charAt(19)] << 6) //
+                | V[ulid.charAt(20)] << 1 //
+                | (V[ulid.charAt(21)] & 0xff) >>> 4);
+    bytes[13] =
+        (byte)
+            ((V[ulid.charAt(21)] << 4) //
+                | (V[ulid.charAt(22)] & 0xff) >>> 1);
+    bytes[14] =
+        (byte)
+            ((V[ulid.charAt(22)] << 7) //
+                | V[ulid.charAt(23)] << 2 //
+                | (V[ulid.charAt(24)] & 0xff) >>> 3);
+    bytes[15] =
+        (byte)
+            ((V[ulid.charAt(24)] << 5) //
+                | V[ulid.charAt(25)]);
     return bytes;
   }
 
   /**
-   * Convert a valid ULID binary representation to it's string representation.
-   * Call {@link io.azam.ulidj.ULID#isValidBinary(byte[])} and check validity
-   * before calling this method if you do not trust the origin of the ULID
-   * string.<br>
+   * Convert a valid ULID binary representation to it's string representation. Call {@link
+   * io.azam.ulidj.ULID#isValidBinary(byte[])} and check validity before calling this method if you
+   * do not trust the origin of the ULID string.<br>
    * <br>
    * Binary layout:
    *
@@ -510,8 +541,7 @@ public class ULID {
    * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    * </pre>
    *
-   * @param binary
-   *          ULID binary
+   * @param binary ULID binary
    * @return ULID string
    */
   public static String fromBinary(byte[] binary) {

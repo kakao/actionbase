@@ -31,10 +31,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-/**
- * Represents a collection of rows with a schema. DataFrame is immutable and
- * thread-safe.
- */
+/** Represents a collection of rows with a schema. DataFrame is immutable and thread-safe. */
 @Value.Immutable
 @Value.Style(allParameters = true)
 @JsonSerialize(as = ImmutableDataFrame.class)
@@ -63,7 +60,7 @@ public abstract class DataFrame {
   public DataFramePayload toPayload() {
     RowType type = data().isEmpty() ? RowType.ARRAY : data().get(0).type();
     switch (type) {
-      case ARRAY :
+      case ARRAY:
         List<Object[]> arrayData = new ArrayList<>(count());
         for (Row row : data()) {
           arrayData.add(((ArrayRow) row).data());
@@ -74,7 +71,7 @@ public abstract class DataFrame {
             .offset(offset())
             .hasNext(hasNext())
             .build();
-      case LIST :
+      case LIST:
         List<List<Object>> listData = new ArrayList<>(count());
         for (Row row : data()) {
           listData.add(((ListRow) row).data());
@@ -85,7 +82,7 @@ public abstract class DataFrame {
             .offset(offset())
             .hasNext(hasNext())
             .build();
-      case MAP :
+      case MAP:
         List<Map<String, Object>> mapData = new ArrayList<>(count());
         for (Row row : data()) {
           mapData.add(((MapRow) row).data());
@@ -96,7 +93,7 @@ public abstract class DataFrame {
             .offset(offset())
             .hasNext(hasNext())
             .build();
-      case EDGE :
+      case EDGE:
         List<EdgePayload> edgeData = new ArrayList<>(count());
         for (Row row : data()) {
           edgeData.add(((EdgeRow) row).data());
@@ -124,25 +121,23 @@ public abstract class DataFrame {
     return ImmutableDataFrame.of(data, schema, count, -1, null, false);
   }
 
-  // public static <T extends Rowable> DataFrame fromActionbaseModel(T model) {
-  // return fromActionbaseModel(Collections.singletonList(model));
-  // }
+  //  public static <T extends Rowable> DataFrame fromActionbaseModel(T model) {
+  //    return fromActionbaseModel(Collections.singletonList(model));
+  //  }
 
-  // public static <T extends Rowable> DataFrame fromActionbaseModel(List<T>
-  // models) {
-  // if (models.isEmpty()) {
-  // return DataFrame.empty();
-  // }
+  //  public static <T extends Rowable> DataFrame fromActionbaseModel(List<T> models) {
+  //    if (models.isEmpty()) {
+  //      return DataFrame.empty();
+  //    }
   //
-  // List<Row> rows =
-  // models.stream().map(Rowable::toRow).collect(Collectors.toList());
+  //    List<Row> rows = models.stream().map(Rowable::toRow).collect(Collectors.toList());
 
-  // Row firstRow = rows.get(0);
+  //    Row firstRow = rows.get(0);
   //
   // List<Object[]> data = rows.stream().map().collect(Collectors.toList());
 
-  // return DataFrame.of(rows, firstRow.schema(), models.size());
-  // }
+  //    return DataFrame.of(rows, firstRow.schema(), models.size());
+  //  }
 
   static ImmutableDataFrame.Builder builder() {
     return ImmutableDataFrame.builder();
@@ -153,14 +148,15 @@ public abstract class DataFrame {
     static final StructType EMPTY_SCHEMA = ImmutableStructType.builder().build();
 
     // Empty DataFrame constant
-    static final DataFrame EMPTY = ImmutableDataFrame.builder()
-        .data(Collections.emptyList())
-        .schema(EMPTY_SCHEMA)
-        .count(0)
-        .total(0)
-        .offset(null)
-        .hasNext(false)
-        .build();
+    static final DataFrame EMPTY =
+        ImmutableDataFrame.builder()
+            .data(Collections.emptyList())
+            .schema(EMPTY_SCHEMA)
+            .count(0)
+            .total(0)
+            .offset(null)
+            .hasNext(false)
+            .build();
   }
 
   public static DataFrame empty() {

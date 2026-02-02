@@ -1,9 +1,9 @@
 package com.kakao.actionbase.core.java.metadata.v2.common;
 
 public enum MutationMode {
-  SYNC(com.kakao.actionbase.core.java.metadata.v3.common.MutationMode.SYNC), ASYNC(
-      com.kakao.actionbase.core.java.metadata.v3.common.MutationMode.ASYNC), IGNORE(
-          com.kakao.actionbase.core.java.metadata.v3.common.MutationMode.DROP);
+  SYNC(com.kakao.actionbase.core.java.metadata.v3.common.MutationMode.SYNC),
+  ASYNC(com.kakao.actionbase.core.java.metadata.v3.common.MutationMode.ASYNC),
+  IGNORE(com.kakao.actionbase.core.java.metadata.v3.common.MutationMode.DROP);
 
   private final com.kakao.actionbase.core.java.metadata.v3.common.MutationMode mutationMode;
 

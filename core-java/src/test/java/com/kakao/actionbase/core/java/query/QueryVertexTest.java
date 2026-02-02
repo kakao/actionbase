@@ -48,13 +48,14 @@ class QueryVertexTest {
     @DisplayName("Should be able to create Step type QueryVertex using step() method")
     void shouldCreateStepVertex() {
       // Given
-      QueryStep step = QueryStep.get()
-          .name("stepName")
-          .database("database")
-          .table("table")
-          .source(QueryVertex.constant("src"))
-          .target(QueryVertex.constant("tgt"))
-          .build();
+      QueryStep step =
+          QueryStep.get()
+              .name("stepName")
+              .database("database")
+              .table("table")
+              .source(QueryVertex.constant("src"))
+              .target(QueryVertex.constant("tgt"))
+              .build();
 
       // When
       QueryVertex.Step vertex = QueryVertex.step(step, "fieldName");
@@ -72,7 +73,8 @@ class QueryVertexTest {
   class QueryVertexSerializationTest {
 
     @Test
-    @DisplayName("Constant type QueryVertex JSON serialization/deserialization should maintain identity")
+    @DisplayName(
+        "Constant type QueryVertex JSON serialization/deserialization should maintain identity")
     void shouldSerializeAndDeserializeConstant() throws JsonProcessingException {
       // Given
       QueryVertex given = QueryVertex.constant("value1", "value2");

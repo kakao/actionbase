@@ -12,6 +12,5 @@ public interface DatabaseUpdatePayload {
 
   String comment();
 
-  default void check() {
-  }
+  default void check() {}
 }

@@ -11,7 +11,9 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@JsonIgnoreProperties(value = {"version"}, allowGetters = true)
+@JsonIgnoreProperties(
+    value = {"version"},
+    allowGetters = true)
 public interface MessageV2 extends Message {
 
   @Override

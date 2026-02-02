@@ -7,8 +7,7 @@ import net.jpountz.xxhash.XXHashFactory;
 
 public class HashUtils {
 
-  private HashUtils() {
-  }
+  private HashUtils() {}
 
   private static final int seed = 0;
 

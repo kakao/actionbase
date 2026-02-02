@@ -8,8 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class TraceEdge extends Edge {
 
-  @JsonProperty
-  final String traceId;
+  @JsonProperty final String traceId;
 
   TraceEdge(long ts, Object src, Object tgt, Map<String, Object> props, String traceId) {
     super(ts, src, tgt, props);

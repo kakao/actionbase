@@ -10,18 +10,18 @@ import java.util.Collections;
 
 public final class Schemas {
 
-  private Schemas() {
-  }
+  private Schemas() {}
 
-  public static EdgeSchema EMPTY_EDGE = ImmutableEdgeSchema.builder()
-      .source(Field.LONG_FIELD)
-      .target(Field.STRING_FIELD)
-      .properties(
-          Collections.singletonList(
-              StructField.builder().name("created_at").type(DataType.LONG).build()))
-      .direction(DirectionType.BOTH)
-      .indexes(Collections.emptyList())
-      .build();
+  public static EdgeSchema EMPTY_EDGE =
+      ImmutableEdgeSchema.builder()
+          .source(Field.LONG_FIELD)
+          .target(Field.STRING_FIELD)
+          .properties(
+              Collections.singletonList(
+                  StructField.builder().name("created_at").type(DataType.LONG).build()))
+          .direction(DirectionType.BOTH)
+          .indexes(Collections.emptyList())
+          .build();
 
   public static Schema fromRow(ArrayRow row) {
     row.schema().fields().forEach(field -> System.out.println(field.name()));

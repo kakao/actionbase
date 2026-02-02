@@ -35,19 +35,20 @@ public class DataFrameSerializationTest {
   @BeforeEach
   public void setup() {
     objectMapper = new ObjectMapper();
-    testSchema = ImmutableStructType.builder()
-        .addField("name", DataType.STRING)
-        .addField("age", DataType.LONG)
-        .addField("active", DataType.BOOLEAN)
-        .build();
+    testSchema =
+        ImmutableStructType.builder()
+            .addField("name", DataType.STRING)
+            .addField("age", DataType.LONG)
+            .addField("active", DataType.BOOLEAN)
+            .build();
   }
 
   @Nested
   class ArrayRowSerializationTest {
     @Test
     public void testPayloadSerialization() throws IOException {
-      ArrayRow row = ImmutableArrayRow.builder().data("Alice", 31L, true).schema(testSchema)
-          .build();
+      ArrayRow row =
+          ImmutableArrayRow.builder().data("Alice", 31L, true).schema(testSchema).build();
       DataFramePayload payload = DataFrame.single(row).toPayload();
 
       // Execute
@@ -64,12 +65,13 @@ public class DataFrameSerializationTest {
   class ListRowSerializationTest {
     @Test
     public void testPayloadSerialization() throws IOException {
-      ListRow row = ImmutableListRow.builder()
-          .addData("Alice")
-          .addData(31L)
-          .addData(true)
-          .schema(testSchema)
-          .build();
+      ListRow row =
+          ImmutableListRow.builder()
+              .addData("Alice")
+              .addData(31L)
+              .addData(true)
+              .schema(testSchema)
+              .build();
       DataFramePayload payload = DataFrame.single(row).toPayload();
 
       // Execute
@@ -89,12 +91,13 @@ public class DataFrameSerializationTest {
   class MapRowSerializationTest {
     @Test
     public void testPayloadSerialization() throws IOException {
-      MapRow row = ImmutableMapRow.builder()
-          .putData("name", "Alice")
-          .putData("age", 31L)
-          .putData("active", true)
-          .schema(testSchema)
-          .build();
+      MapRow row =
+          ImmutableMapRow.builder()
+              .putData("name", "Alice")
+              .putData("age", 31L)
+              .putData("active", true)
+              .schema(testSchema)
+              .build();
       DataFramePayload payload = DataFrame.single(row).toPayload();
 
       // Execute
@@ -115,12 +118,13 @@ public class DataFrameSerializationTest {
   class EdgeRowSerializationTest {
     @Test
     public void testPayloadSerialization() throws IOException {
-      EdgePayload edge = ImmutableEdgePayload.builder()
-          .version(1)
-          .source("Alice")
-          .target("Bob")
-          .putProperties("followAt", 456L)
-          .build();
+      EdgePayload edge =
+          ImmutableEdgePayload.builder()
+              .version(1)
+              .source("Alice")
+              .target("Bob")
+              .putProperties("followAt", 456L)
+              .build();
       EdgeRow row = ImmutableEdgeRow.builder().data(edge).schema(testSchema).build();
       DataFramePayload payload = DataFrame.single(row).toPayload();
 

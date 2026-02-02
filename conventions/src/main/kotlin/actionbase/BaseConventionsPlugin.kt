@@ -1,7 +1,6 @@
 package actionbase
 
 import actionbase.dependencies.Dependencies
-import actionbase.tasks.GenerateCodeStyleTask
 import com.diffplug.gradle.spotless.SpotlessExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -96,15 +95,9 @@ class BaseConventionsPlugin : Plugin<Project> {
 
     private fun configureSpotless(project: Project) {
         project.extensions.configure(SpotlessExtension::class.java) {
-            java {
-                eclipse().configFile(project.rootProject.file("eclipse-formatter.xml"))
-                importOrder(*GenerateCodeStyleTask.getJavaImportsOrder())
-                removeUnusedImports()
-                target("**/*.java")
-                targetExclude("**/generated/**") // ✅ Exclude auto-generated folders
-                trimTrailingWhitespace()
-                endWithNewline()
-            }
+            // Java formatting disabled for Java 25 compatibility
+            // google-java-format uses internal JDK APIs not accessible in Java 25
+            // TODO: Re-enable when a compatible formatter is available
 
             kotlin {
                 ktlint()

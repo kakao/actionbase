@@ -10,11 +10,9 @@ public enum Order {
       return val;
     }
 
-    public void apply(byte[] val) {
-    }
+    public void apply(byte[] val) {}
 
-    public void apply(byte[] val, int offset, int length) {
-    }
+    public void apply(byte[] val, int offset, int length) {}
   },
   DESC {
     private static final byte MASK = -1;
@@ -40,8 +38,7 @@ public enum Order {
     }
   };
 
-  Order() {
-  }
+  Order() {}
 
   public abstract int cmp(int var1);
 

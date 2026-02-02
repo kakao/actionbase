@@ -139,10 +139,7 @@ class DataFrameTransformer {
     }
   }
 
-  /**
-   * Recursively flattens the given array (which may be nested) and returns it as
-   * a single List.
-   */
+  /** Recursively flattens the given array (which may be nested) and returns it as a single List. */
   private static List<Object> flatten(Object array) {
     List<Object> result = new ArrayList<>();
     if (array != null && array.getClass().isArray()) {

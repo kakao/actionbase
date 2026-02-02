@@ -53,14 +53,15 @@ public final class StructFields {
 
   public static class Schemas {
 
-    public static final StructType SCHEMA = ImmutableStructType.builder()
-        .addField(NAME_FIELD, DataType.STRING)
-        .addField(TYPE_FIELD, DataType.STRING)
-        .addField(COMMENT_FIELD, DataType.STRING)
-        .addField(NULLABLE_FIELD, DataType.BOOLEAN)
-        .build();
+    public static final StructType SCHEMA =
+        ImmutableStructType.builder()
+            .addField(NAME_FIELD, DataType.STRING)
+            .addField(TYPE_FIELD, DataType.STRING)
+            .addField(COMMENT_FIELD, DataType.STRING)
+            .addField(NULLABLE_FIELD, DataType.BOOLEAN)
+            .build();
 
-    public static final ArrayType ARRAY_SCHEMA = ImmutableArrayType.builder().elementType(SCHEMA)
-        .build();
+    public static final ArrayType ARRAY_SCHEMA =
+        ImmutableArrayType.builder().elementType(SCHEMA).build();
   }
 }

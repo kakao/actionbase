@@ -6,8 +6,7 @@ import java.nio.file.Paths;
 
 public final class TestResourceUtil {
 
-  private TestResourceUtil() {
-  }
+  private TestResourceUtil() {}
 
   public static String load(String resourcePath) {
     try {

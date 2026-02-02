@@ -19,6 +19,5 @@ public interface TableCDC extends MetadataCDC<TableDescriptor<?>> {
   @Nullable
   TableDescriptor<?> after();
 
-  interface Builder extends MetadataCDC.Builder<TableDescriptor<?>> {
-  }
+  interface Builder extends MetadataCDC.Builder<TableDescriptor<?>> {}
 }

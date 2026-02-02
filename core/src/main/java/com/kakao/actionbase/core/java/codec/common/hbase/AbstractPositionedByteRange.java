@@ -1,13 +1,11 @@
 package com.kakao.actionbase.core.java.codec.common.hbase;
 
 public abstract class AbstractPositionedByteRange extends AbstractByteRange
-    implements
-      PositionedByteRange {
+    implements PositionedByteRange {
   protected int position = 0;
   protected int limit = 0;
 
-  public AbstractPositionedByteRange() {
-  }
+  public AbstractPositionedByteRange() {}
 
   public abstract PositionedByteRange unset();
 

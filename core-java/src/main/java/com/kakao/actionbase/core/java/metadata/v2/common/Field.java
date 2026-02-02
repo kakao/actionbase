@@ -25,8 +25,8 @@ public interface Field {
   String desc();
 
   default StructField toStructField() {
-    ImmutableStructField.Builder builder = StructField.builder().name(name())
-        .type(type().getType(nullable())).nullable(nullable());
+    ImmutableStructField.Builder builder =
+        StructField.builder().name(name()).type(type().getType(nullable())).nullable(nullable());
 
     if (desc() != null) {
       builder.comment(desc());

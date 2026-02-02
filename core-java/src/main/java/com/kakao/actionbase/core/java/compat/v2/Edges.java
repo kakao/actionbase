@@ -7,8 +7,7 @@ import java.util.Map;
 
 public class Edges {
 
-  private Edges() {
-  }
+  private Edges() {}
 
   public static Edge fromMap(Map<String, Object> originalMap) {
     long ts = DataType.LONG.cast(originalMap.get("ts"));

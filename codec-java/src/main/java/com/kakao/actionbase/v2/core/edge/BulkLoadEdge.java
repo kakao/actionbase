@@ -28,10 +28,8 @@ public class BulkLoadEdge extends Edge {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (!(o instanceof BulkLoadEdge))
-      return false;
+    if (this == o) return true;
+    if (!(o instanceof BulkLoadEdge)) return false;
     BulkLoadEdge edge = (BulkLoadEdge) o;
     return active == edge.active
         && ts == edge.ts

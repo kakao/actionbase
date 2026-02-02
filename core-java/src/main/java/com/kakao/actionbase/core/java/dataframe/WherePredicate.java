@@ -15,14 +15,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = ImmutableWherePredicateIn.class, name = WherePredicate.IN),
-    @JsonSubTypes.Type(value = ImmutableWherePredicateEq.class, name = WherePredicate.EQ),
-    @JsonSubTypes.Type(value = ImmutableWherePredicateGt.class, name = WherePredicate.GT),
-    @JsonSubTypes.Type(value = ImmutableWherePredicateGte.class, name = WherePredicate.GTE),
-    @JsonSubTypes.Type(value = ImmutableWherePredicateLt.class, name = WherePredicate.LT),
-    @JsonSubTypes.Type(value = ImmutableWherePredicateLte.class, name = WherePredicate.LTE),
-    @JsonSubTypes.Type(value = ImmutableWherePredicateBetween.class, name = WherePredicate.BETWEEN),
-    @JsonSubTypes.Type(value = ImmutableWherePredicateIsNull.class, name = WherePredicate.IS_NULL)
+  @JsonSubTypes.Type(value = ImmutableWherePredicateIn.class, name = WherePredicate.IN),
+  @JsonSubTypes.Type(value = ImmutableWherePredicateEq.class, name = WherePredicate.EQ),
+  @JsonSubTypes.Type(value = ImmutableWherePredicateGt.class, name = WherePredicate.GT),
+  @JsonSubTypes.Type(value = ImmutableWherePredicateGte.class, name = WherePredicate.GTE),
+  @JsonSubTypes.Type(value = ImmutableWherePredicateLt.class, name = WherePredicate.LT),
+  @JsonSubTypes.Type(value = ImmutableWherePredicateLte.class, name = WherePredicate.LTE),
+  @JsonSubTypes.Type(value = ImmutableWherePredicateBetween.class, name = WherePredicate.BETWEEN),
+  @JsonSubTypes.Type(value = ImmutableWherePredicateIsNull.class, name = WherePredicate.IS_NULL)
 })
 public interface WherePredicate {
 

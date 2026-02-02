@@ -4,9 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum LabelType {
-  NIL(EdgeType.NIL, false), HASH(EdgeType.HASH, true), INDEXED(EdgeType.INDEXED,
-      true), IMMUTABLE_INDEXED(EdgeType.INDEXED, true), MULTI_EDGE(EdgeType.MULTI_EDGE, true),
-      ;
+  NIL(EdgeType.NIL, false),
+  HASH(EdgeType.HASH, true),
+  INDEXED(EdgeType.INDEXED, true),
+  IMMUTABLE_INDEXED(EdgeType.INDEXED, true),
+  MULTI_EDGE(EdgeType.MULTI_EDGE, true),
+  ;
 
   private static final Map<String, LabelType> NAME_TO_VALUE_MAP = new HashMap<>();
 

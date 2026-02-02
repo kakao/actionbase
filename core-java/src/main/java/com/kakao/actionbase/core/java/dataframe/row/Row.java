@@ -6,10 +6,7 @@ import com.kakao.actionbase.core.java.types.StructType;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Row interface. Each implementation defines its own
- * serialization/deserialization method.
- */
+/** Row interface. Each implementation defines its own serialization/deserialization method. */
 public abstract class Row {
 
   public abstract RowType type();

@@ -18,18 +18,18 @@ public interface SizeMetric {
   default SizeMetric add(SizeMetric other) {
     long sum = longValueInBytes() + other.longValueInBytes();
     switch (unit()) {
-      case BYTE :
+      case BYTE:
         return ImmutableSizeMetric.builder().unit(unit()).longValue(sum).build();
-      case KILOBYTE :
+      case KILOBYTE:
         return ImmutableSizeMetric.builder().unit(unit()).longValue(sum / 1024L).build();
-      case MEGABYTE :
+      case MEGABYTE:
         return ImmutableSizeMetric.builder().unit(unit()).longValue(sum / (1024L * 1024L)).build();
-      case GIGABYTE :
+      case GIGABYTE:
         return ImmutableSizeMetric.builder()
             .unit(unit())
             .longValue(sum / (1024L * 1024L * 1024L))
             .build();
-      default :
+      default:
         throw new IllegalArgumentException("Unknown unit: " + unit());
     }
   }
@@ -38,19 +38,19 @@ public interface SizeMetric {
   default long longValueInBytes() {
     long bytes;
     switch (unit()) {
-      case BYTE :
+      case BYTE:
         bytes = longValue();
         break;
-      case KILOBYTE :
+      case KILOBYTE:
         bytes = longValue() * 1024L;
         break;
-      case MEGABYTE :
+      case MEGABYTE:
         bytes = longValue() * 1024L * 1024L;
         break;
-      case GIGABYTE :
+      case GIGABYTE:
         bytes = longValue() * 1024L * 1024L * 1024L;
         break;
-      default :
+      default:
         throw new IllegalArgumentException("Unknown unit: " + unit());
     }
     return bytes;

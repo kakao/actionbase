@@ -28,21 +28,23 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
 
   @Override
   public EncodedKey<byte[]> encodeHashEdgeKey(Edge edge, int labelId) {
-    byte[] key = useAsByteArray(
-        buffer -> {
-          encodeHashKeyPrefixToBuffer(edge.getSrc(), labelId, buffer);
-          encodeHashKeySuffixToBuffer(edge.getTgt(), buffer);
-        });
+    byte[] key =
+        useAsByteArray(
+            buffer -> {
+              encodeHashKeyPrefixToBuffer(edge.getSrc(), labelId, buffer);
+              encodeHashKeySuffixToBuffer(edge.getTgt(), buffer);
+            });
 
     return new EncodedKey<>(key);
   }
 
   @Override
   public EncodedKey<byte[]> encodeHashEdgeKeyPrefix(Object src, int labelId) {
-    byte[] key = useAsByteArray(
-        buffer -> {
-          encodeHashKeyPrefixToBuffer(src, labelId, buffer);
-        });
+    byte[] key =
+        useAsByteArray(
+            buffer -> {
+              encodeHashKeyPrefixToBuffer(src, labelId, buffer);
+            });
 
     return new EncodedKey<>(key);
   }
@@ -59,10 +61,11 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
 
   @Override
   public KeyValue<byte[]> encodeLockEdge(Edge edge, int labelId) {
-    byte[] key = useAsByteArray(
-        buffer -> encodeLockEdgeKeyToBuffer(edge.getSrc(), edge.getTgt(), labelId, buffer));
-    byte[] value = useAsByteArray(
-        buffer -> encodeLockEdgeValueToBuffer(System.currentTimeMillis(), buffer));
+    byte[] key =
+        useAsByteArray(
+            buffer -> encodeLockEdgeKeyToBuffer(edge.getSrc(), edge.getTgt(), labelId, buffer));
+    byte[] value =
+        useAsByteArray(buffer -> encodeLockEdgeValueToBuffer(System.currentTimeMillis(), buffer));
     return new KeyValue<>(key, value);
   }
 
@@ -101,12 +104,13 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
       directedTgt = src;
     }
 
-    byte[] key = useAsByteArray(
-        buffer -> {
-          encodeIndexedEdgeKeyPrefixToBuffer(directedSrc, dir, labelId, index, buffer);
-          encodeIndexedEdgeKeySuffixToBuffer(
-              index, ts, directedSrc, directedTgt, props, buffer);
-        });
+    byte[] key =
+        useAsByteArray(
+            buffer -> {
+              encodeIndexedEdgeKeyPrefixToBuffer(directedSrc, dir, labelId, index, buffer);
+              encodeIndexedEdgeKeySuffixToBuffer(
+                  index, ts, directedSrc, directedTgt, props, buffer);
+            });
     byte[] value = useAsByteArray(buffer -> encodeIndexedEdgeValueToBuffer(ts, props, buffer));
     return new KeyFieldValue<>(key, value);
   }
@@ -114,11 +118,12 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
   @Override
   public EncodedKey<byte[]> encodeIndexedEdgeKeyPrefix(
       Object directedSrc, Direction dir, int labelId, Index index, Consumer<EdgeBuffer> block) {
-    byte[] key = useAsByteArray(
-        buffer -> {
-          encodeIndexedEdgeKeyPrefixToBuffer(directedSrc, dir, labelId, index, buffer);
-          block.accept(buffer);
-        });
+    byte[] key =
+        useAsByteArray(
+            buffer -> {
+              encodeIndexedEdgeKeyPrefixToBuffer(directedSrc, dir, labelId, index, buffer);
+              block.accept(buffer);
+            });
     return new EncodedKey<>(key);
   }
 
@@ -139,16 +144,16 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
     EncodedEdgeType encodedEdgeType = EncodedEdgeType.of(encodedEdgeTypeCode);
 
     if (encodedEdgeType == EncodedEdgeType.HASH_EDGE_TYPE) {
-      byte[] offset = useAsByteArray(
-          buffer -> buffer.put(k.getBytes(), k.getPosition(), k.getRemaining()));
+      byte[] offset =
+          useAsByteArray(buffer -> buffer.put(k.getBytes(), k.getPosition(), k.getRemaining()));
       return CryptoUtils.encryptAndEncodeUrlSafe(offset);
     } else if (encodedEdgeType == EncodedEdgeType.INDEXED_EDGE_TYPE) {
       // direction
       OrderedBytes.decodeInt8(k);
       // indexId
       OrderedBytes.decodeInt32(k);
-      byte[] offset = useAsByteArray(
-          buffer -> buffer.put(k.getBytes(), k.getPosition(), k.getRemaining()));
+      byte[] offset =
+          useAsByteArray(buffer -> buffer.put(k.getBytes(), k.getPosition(), k.getRemaining()));
       return CryptoUtils.encryptAndEncodeUrlSafe(offset);
     } else {
       throw new IllegalArgumentException("Invalid encodedEdgeType: " + encodedEdgeType);
@@ -159,11 +164,12 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
 
   @Override
   public String encode(Object src, Object tgt) {
-    byte[] encodedEdgeId = useAsByteArray(
-        buffer -> {
-          buffer.encodeAny(src);
-          buffer.encodeAny(tgt);
-        });
+    byte[] encodedEdgeId =
+        useAsByteArray(
+            buffer -> {
+              buffer.encodeAny(src);
+              buffer.encodeAny(tgt);
+            });
     return CryptoUtils.encryptAndEncodeUrlSafe(encodedEdgeId);
   }
 

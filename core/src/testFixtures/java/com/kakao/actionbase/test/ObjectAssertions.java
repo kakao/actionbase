@@ -26,8 +26,7 @@ public class ObjectAssertions {
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final YAMLMapper YAML_MAPPER = createYamlMapper();
 
-  private ObjectAssertions() {
-  }
+  private ObjectAssertions() {}
 
   private static YAMLMapper createYamlMapper() {
     YAMLFactory factory = new YAMLFactory();
@@ -95,10 +94,8 @@ public class ObjectAssertions {
   /**
    * Verifies that a value exists and is not empty at the specified path.
    *
-   * @param input
-   *          Map object to validate
-   * @param path
-   *          Path to validate (e.g., "users[].name", "data.items[].status")
+   * @param input Map object to validate
+   * @param path Path to validate (e.g., "users[].name", "data.items[].status")
    */
   public static void assertNotEmpty(Object input, String path) throws Exception {
     Map<String, Object> inputMap = createMap(input);
@@ -108,10 +105,8 @@ public class ObjectAssertions {
   /**
    * Verifies that a value exists and is not empty at the specified path.
    *
-   * @param inputMap
-   *          Map object to validate
-   * @param path
-   *          Path to validate (e.g., "users[].name", "data.items[].status")
+   * @param inputMap Map object to validate
+   * @param path Path to validate (e.g., "users[].name", "data.items[].status")
    */
   public static void assertNotEmpty(Map<String, Object> inputMap, String path) {
     List<Object> actualValues = extractAllValues(inputMap, path);
@@ -129,9 +124,10 @@ public class ObjectAssertions {
     }
 
     if (!mismatches.isEmpty()) {
-      String errorMessage = String.format(
-          "Some values at path '%s' are empty or null:\n%s",
-          path, String.join("\n", mismatches));
+      String errorMessage =
+          String.format(
+              "Some values at path '%s' are empty or null:\n%s",
+              path, String.join("\n", mismatches));
       Assertions.fail(errorMessage);
     }
   }
@@ -139,8 +135,7 @@ public class ObjectAssertions {
   /**
    * Checks if a value is empty.
    *
-   * @param value
-   *          Value to check
+   * @param value Value to check
    * @return true if value is null or empty
    */
   private static boolean isEmpty(Object value) {
@@ -165,10 +160,8 @@ public class ObjectAssertions {
   /**
    * Extracts all values from the specified path.
    *
-   * @param map
-   *          Target Map
-   * @param path
-   *          Path (e.g., "users[].name", "data.items[].status")
+   * @param map Target Map
+   * @param path Path (e.g., "users[].name", "data.items[].status")
    * @return All values at the specified path
    */
   private static List<Object> extractAllValues(Map<String, Object> map, String path) {
@@ -182,14 +175,10 @@ public class ObjectAssertions {
   /**
    * Recursively extracts values.
    *
-   * @param currentObjects
-   *          Objects currently being processed
-   * @param pathParts
-   *          Path parts
-   * @param partIndex
-   *          Index of the path part currently being processed
-   * @param result
-   *          List to store results
+   * @param currentObjects Objects currently being processed
+   * @param pathParts Path parts
+   * @param partIndex Index of the path part currently being processed
+   * @param result List to store results
    */
   @SuppressWarnings("unchecked")
   private static void extractValuesRecursive(

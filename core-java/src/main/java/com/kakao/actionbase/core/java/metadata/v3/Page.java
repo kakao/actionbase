@@ -11,10 +11,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-/**
- * Page metadata model. A container that holds ActionbaseModel, used for
- * pagination processing.
- */
+/** Page metadata model. A container that holds ActionbaseModel, used for pagination processing. */
 @Value.Immutable
 @Value.Style(allParameters = true)
 @JsonSerialize(as = ImmutablePage.class)
@@ -38,16 +35,11 @@ public interface Page<T extends Descriptor<?>> {
     private static final Map<Class<?>, TypeReference<?>> MAP = new HashMap<>();
 
     static {
-      MAP.put(DatabaseDescriptor.class, new TypeReference<Page<DatabaseDescriptor>>() {
-      });
-      MAP.put(TenantDescriptor.class, new TypeReference<Page<TenantDescriptor>>() {
-      });
-      MAP.put(StorageDescriptor.class, new TypeReference<Page<StorageDescriptor>>() {
-      });
-      MAP.put(AliasDescriptor.class, new TypeReference<Page<AliasDescriptor>>() {
-      });
-      MAP.put(TableDescriptor.class, new TypeReference<Page<TableDescriptor<?>>>() {
-      });
+      MAP.put(DatabaseDescriptor.class, new TypeReference<Page<DatabaseDescriptor>>() {});
+      MAP.put(TenantDescriptor.class, new TypeReference<Page<TenantDescriptor>>() {});
+      MAP.put(StorageDescriptor.class, new TypeReference<Page<StorageDescriptor>>() {});
+      MAP.put(AliasDescriptor.class, new TypeReference<Page<AliasDescriptor>>() {});
+      MAP.put(TableDescriptor.class, new TypeReference<Page<TableDescriptor<?>>>() {});
     }
 
     @SuppressWarnings("unchecked")

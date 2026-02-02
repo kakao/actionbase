@@ -13,13 +13,10 @@ public class DataFrameAccessor {
   /**
    * Extracts the Column corresponding to the specified field from DataFrame.
    *
-   * @param df
-   *          DataFrame instance
-   * @param fieldName
-   *          Field name to extract
+   * @param df DataFrame instance
+   * @param fieldName Field name to extract
    * @return Column object for the field
-   * @throws IllegalArgumentException
-   *           If field name does not exist
+   * @throws IllegalArgumentException If field name does not exist
    */
   public static Column getColumn(DataFrame df, String fieldName) {
     // Get field information from schema

@@ -197,8 +197,7 @@ public class BenchmarkTest {
   /**
    * Runs Jackson-based serialization benchmark.
    *
-   * @param useHashKey
-   *          true: use hash key, false: use regular key
+   * @param useHashKey true: use hash key, false: use regular key
    */
   private void runJacksonBenchmark(
       String name, EdgeState state, StructType schema, ObjectMapper mapper, boolean useHashKey)
@@ -222,8 +221,8 @@ public class BenchmarkTest {
       // Measure deserialization time
       start = System.nanoTime();
       if (useHashKey) {
-        EncodedEdgeStateValue deserializedCompactEdgeState = mapper.readValue(serialized,
-            EncodedEdgeStateValue.class);
+        EncodedEdgeStateValue deserializedCompactEdgeState =
+            mapper.readValue(serialized, EncodedEdgeStateValue.class);
         deserializedCompactEdgeState.toEdgeState(schema, state.source(), state.target());
       } else {
         mapper.readValue(serialized, EdgeStateNoSchema.class).toEdgeState(schema);
@@ -312,8 +311,7 @@ public class BenchmarkTest {
 
   /** Creates a bar with specified length and character. */
   private String getBar(int length, char c) {
-    if (length <= 0)
-      return "";
+    if (length <= 0) return "";
     char[] bar = new char[length];
     Arrays.fill(bar, c);
     return new String(bar);
@@ -376,9 +374,10 @@ public class BenchmarkTest {
     Map<String, Double> averages = new HashMap<>();
 
     // Calculate Baseline (Custom) statistics
-    LongSummaryStatistics baselineStats = timings.get("Custom").stream()
-        .mapToLong(t -> t / 1000) // Convert nanoseconds to microseconds
-        .summaryStatistics();
+    LongSummaryStatistics baselineStats =
+        timings.get("Custom").stream()
+            .mapToLong(t -> t / 1000) // Convert nanoseconds to microseconds
+            .summaryStatistics();
     double baselineAvg = baselineStats.getAverage();
     averages.put("Custom", baselineAvg);
 
@@ -396,9 +395,10 @@ public class BenchmarkTest {
               String format = entry.getKey();
               List<Long> times = entry.getValue();
 
-              LongSummaryStatistics stats = times.stream()
-                  .mapToLong(t -> t / 1000) // Convert nanoseconds to microseconds
-                  .summaryStatistics();
+              LongSummaryStatistics stats =
+                  times.stream()
+                      .mapToLong(t -> t / 1000) // Convert nanoseconds to microseconds
+                      .summaryStatistics();
 
               double avgTime = stats.getAverage();
               averages.put(format, avgTime);

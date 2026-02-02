@@ -19,6 +19,5 @@ public interface AliasCDC extends MetadataCDC<AliasDescriptor> {
   @Nullable
   AliasDescriptor after();
 
-  interface Builder extends MetadataCDC.Builder<AliasDescriptor> {
-  }
+  interface Builder extends MetadataCDC.Builder<AliasDescriptor> {}
 }

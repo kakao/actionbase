@@ -70,43 +70,43 @@ public final class ValueUtils {
   public static <T> T deserialize(PositionedByteRange buffer) {
     byte type = buffer.peek();
     switch (type) {
-      case NULL_HEADER :
-      case NULL_HEADER_DESC :
+      case NULL_HEADER:
+      case NULL_HEADER_DESC:
         buffer.get();
         return null;
-      case STRING_HEADER :
-      case STRING_HEADER_DESC :
+      case STRING_HEADER:
+      case STRING_HEADER_DESC:
         return (T) OrderedBytes.decodeString(buffer);
-      case TRUE_HEADER :
-      case TRUE_HEADER_DESC :
+      case TRUE_HEADER:
+      case TRUE_HEADER_DESC:
         buffer.get();
         return (T) Boolean.TRUE;
-      case FALSE_HEADER :
-      case FALSE_HEADER_DESC :
+      case FALSE_HEADER:
+      case FALSE_HEADER_DESC:
         buffer.get();
         return (T) Boolean.FALSE;
-      case INT8_HEADER :
-      case INT8_HEADER_DESC :
+      case INT8_HEADER:
+      case INT8_HEADER_DESC:
         return (T) Byte.valueOf(OrderedBytes.decodeInt8(buffer));
-      case INT16_HEADER :
-      case INT16_HEADER_DESC :
+      case INT16_HEADER:
+      case INT16_HEADER_DESC:
         return (T) Short.valueOf(OrderedBytes.decodeInt16(buffer));
-      case INT32_HEADER :
-      case INT32_HEADER_DESC :
+      case INT32_HEADER:
+      case INT32_HEADER_DESC:
         return (T) Integer.valueOf(OrderedBytes.decodeInt32(buffer));
-      case INT64_HEADER :
-      case INT64_HEADER_DESC :
+      case INT64_HEADER:
+      case INT64_HEADER_DESC:
         return (T) Long.valueOf(OrderedBytes.decodeInt64(buffer));
-      case FLOAT32_HEADER :
-      case FLOAT32_HEADER_DESC :
+      case FLOAT32_HEADER:
+      case FLOAT32_HEADER_DESC:
         return (T) Float.valueOf(OrderedBytes.decodeFloat32(buffer));
-      case FLOAT64_HEADER :
-      case FLOAT64_HEADER_DESC :
+      case FLOAT64_HEADER:
+      case FLOAT64_HEADER_DESC:
         return (T) Double.valueOf(OrderedBytes.decodeFloat64(buffer));
-      case JSON_HEADER :
-      case JSON_HEADER_DESC :
+      case JSON_HEADER:
+      case JSON_HEADER_DESC:
         return (T) OrderedBytes.decodeJsonNode(buffer);
-      default :
+      default:
         throw new IllegalArgumentException("Unexpected data type: " + type);
     }
   }
@@ -118,37 +118,37 @@ public final class ValueUtils {
   public static void serialize(PositionedByteRange buffer, Object o, Order order) {
     ValueType type = getValueType(o);
     switch (type) {
-      case NULL :
+      case NULL:
         OrderedBytes.encodeNull(buffer, order);
         break;
-      case STRING :
+      case STRING:
         OrderedBytes.encodeString(buffer, (String) o, order);
         break;
-      case BOOLEAN :
+      case BOOLEAN:
         OrderedBytes.encodeBoolean(buffer, (Boolean) o, order);
         break;
-      case BYTE :
+      case BYTE:
         OrderedBytes.encodeInt8(buffer, (Byte) o, order);
         break;
-      case SHORT :
+      case SHORT:
         OrderedBytes.encodeInt16(buffer, (Short) o, order);
         break;
-      case INT :
+      case INT:
         OrderedBytes.encodeInt32(buffer, (Integer) o, order);
         break;
-      case LONG :
+      case LONG:
         OrderedBytes.encodeInt64(buffer, (Long) o, order);
         break;
-      case FLOAT :
+      case FLOAT:
         OrderedBytes.encodeFloat32(buffer, (Float) o, order);
         break;
-      case DOUBLE :
+      case DOUBLE:
         OrderedBytes.encodeFloat64(buffer, (Double) o, order);
         break;
-      case JSON :
+      case JSON:
         OrderedBytes.encodeJsonNode(buffer, (JsonNode) o, order);
         break;
-      default :
+      default:
         throw new IllegalArgumentException("Unexpected data of type : " + o.getClass().getName());
     }
   }
@@ -185,8 +185,7 @@ public final class ValueUtils {
   /**
    * Returns the salt for a given value.
    *
-   * @param value
-   *          the value
+   * @param value the value
    * @return the salt to prepend to {@code value}
    */
   public static byte getSaltingByte(byte[] value, int offset, int length) {
@@ -195,8 +194,7 @@ public final class ValueUtils {
   }
 
   private static int calculateHashCode(byte[] a, int offset, int length) {
-    if (a == null)
-      return 0;
+    if (a == null) return 0;
     int result = 1;
     for (int i = offset; i < offset + length; ++i) {
       result = 31 * result + a[i];

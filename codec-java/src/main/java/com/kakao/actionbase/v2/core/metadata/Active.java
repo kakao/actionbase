@@ -12,12 +12,12 @@ public enum Active {
 
   public static Active of(byte code) {
     switch (code) {
-      case 0 :
-      case 2 : // backward compatibility (it was PENDING status)
+      case 0:
+      case 2: // backward compatibility (it was PENDING status)
         return INACTIVE;
-      case 1 :
+      case 1:
         return ACTIVE;
-      default :
+      default:
         throw new IllegalArgumentException("Unknown code: " + code);
     }
   }

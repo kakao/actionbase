@@ -4,8 +4,7 @@ import com.kakao.actionbase.core.java.codec.common.hbase.SimplePositionedMutable
 
 public class ByteRangeFunctions {
 
-  private ByteRangeFunctions() {
-  }
+  private ByteRangeFunctions() {}
 
   public static void plusOne(SimplePositionedMutableByteRange buffer) {
     int position = buffer.getPosition();

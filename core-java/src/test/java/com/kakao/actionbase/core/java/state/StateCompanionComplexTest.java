@@ -24,8 +24,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Final consistency test. This test verifies that if event time order is the
- * same, the final state is identical even if event processing order differs.
+ * Final consistency test. This test verifies that if event time order is the same, the final state
+ * is identical even if event processing order differs.
  */
 @DisplayName("Merge Final Consistency Test")
 class StateCompanionComplexTest {
@@ -40,17 +40,19 @@ class StateCompanionComplexTest {
 
   @BeforeEach
   void setUp() {
-    schema = ImmutableStructType.builder()
-        .addField(NAME_FIELD, DataType.STRING, false)
-        .addField(AGE_FIELD, DataType.STRING, false)
-        .addField(ADDRESS_FIELD, DataType.STRING, true)
-        .addField(EMAIL_FIELD, DataType.STRING, true)
-        .addField(PHONE_FIELD, DataType.STRING, true)
-        .build();
+    schema =
+        ImmutableStructType.builder()
+            .addField(NAME_FIELD, DataType.STRING, false)
+            .addField(AGE_FIELD, DataType.STRING, false)
+            .addField(ADDRESS_FIELD, DataType.STRING, true)
+            .addField(EMAIL_FIELD, DataType.STRING, true)
+            .addField(PHONE_FIELD, DataType.STRING, true)
+            .build();
   }
 
   @Test
-  @DisplayName("Final state should be identical for all combinations regardless of event processing order")
+  @DisplayName(
+      "Final state should be identical for all combinations regardless of event processing order")
   void testEventualConsistency() {
     // Limit number of events
     int n = 2;
@@ -165,43 +167,43 @@ class StateCompanionComplexTest {
   }
 
   /**
-   * Returns a pre-generated list of valid event sequences based on Python/Kotlin
-   * code. These sequences follow these rules: 1. After DELETE, only INSERT is
-   * allowed (UPDATE or DELETE are not allowed) 2. Must always start with INSERT
+   * Returns a pre-generated list of valid event sequences based on Python/Kotlin code. These
+   * sequences follow these rules: 1. After DELETE, only INSERT is allowed (UPDATE or DELETE are not
+   * allowed) 2. Must always start with INSERT
    */
   private List<List<EventData>> generateAllValidEventSequences(int n) {
     // Pre-defined valid operation sequence strings (use only first n)
     String[] allValidRawOpSequences = {
-        "IIIIIII", "IIIIIIU", "IIIIIID", "IIIIIUI", "IIIIIUU", "IIIIIUD", "IIIIIDI", "IIIIUII",
-        "IIIIUIU", "IIIIUID", "IIIIUUI", "IIIIUUU", "IIIIUUD", "IIIIUDI", "IIIIDII", "IIIIDIU",
-        "IIIIDID", "IIIUIII", "IIIUIIU", "IIIUIID", "IIIUIUI", "IIIUIUU", "IIIUIUD", "IIIUIDI",
-        "IIIUUII", "IIIUUIU", "IIIUUID", "IIIUUUI", "IIIUUUU", "IIIUUUD", "IIIUUDI", "IIIUDII",
-        "IIIUDIU", "IIIUDID", "IIIDIII", "IIIDIIU", "IIIDIID", "IIIDIUI", "IIIDIUU", "IIIDIUD",
-        "IIIDIDI", "IIUIIII", "IIUIIIU", "IIUIIID", "IIUIIUI", "IIUIIUU", "IIUIIUD", "IIUIIDI",
-        "IIUIUII", "IIUIUIU", "IIUIUID", "IIUIUUI", "IIUIUUU", "IIUIUUD", "IIUIUDI", "IIUIDII",
-        "IIUIDIU", "IIUIDID", "IIUUIII", "IIUUIIU", "IIUUIID", "IIUUIUI", "IIUUIUU", "IIUUIUD",
-        "IIUUIDI", "IIUUUII", "IIUUUIU", "IIUUUID", "IIUUUUI", "IIUUUUU", "IIUUUUD", "IIUUUDI",
-        "IIUUDII", "IIUUDIU", "IIUUDID", "IIUDIII", "IIUDIIU", "IIUDIID", "IIUDIUI", "IIUDIUU",
-        "IIUDIUD", "IIUDIDI", "IIDIIII", "IIDIIIU", "IIDIIID", "IIDIIUI", "IIDIIUU", "IIDIIUD",
-        "IIDIIDI", "IIDIUII", "IIDIUIU", "IIDIUID", "IIDIUUI", "IIDIUUU", "IIDIUUD", "IIDIUDI",
-        "IIDIDII", "IIDIDIU", "IIDIDID", "IUIIIII", "IUIIIIU", "IUIIIID", "IUIIIUI", "IUIIIUU",
-        "IUIIIUD", "IUIIIDI", "IUIIUII", "IUIIUIU", "IUIIUID", "IUIIUUI", "IUIIUUU", "IUIIUUD",
-        "IUIIUDI", "IUIIDII", "IUIIDIU", "IUIIDID", "IUIUIII", "IUIUIIU", "IUIUIID", "IUIUIUI",
-        "IUIUIUU", "IUIUIUD", "IUIUIDI", "IUIUUII", "IUIUUIU", "IUIUUID", "IUIUUUI", "IUIUUUU",
-        "IUIUUUD", "IUIUUDI", "IUIUDII", "IUIUDIU", "IUIUDID", "IUIDIII", "IUIDIIU", "IUIDIID",
-        "IUIDIUI", "IUIDIUU", "IUIDIUD", "IUIDIDI", "IUUIIII", "IUUIIIU", "IUUIIID", "IUUIIUI",
-        "IUUIIUU", "IUUIIUD", "IUUIIDI", "IUUIUII", "IUUIUIU", "IUUIUID", "IUUIUUI", "IUUIUUU",
-        "IUUIUUD", "IUUIUDI", "IUUIDII", "IUUIDIU", "IUUIDID", "IUUUIII", "IUUUIIU", "IUUUIID",
-        "IUUUIUI", "IUUUIUU", "IUUUIUD", "IUUUIDI", "IUUUUII", "IUUUUIU", "IUUUUID", "IUUUUUI",
-        "IUUUUUU", "IUUUUUD", "IUUUUDI", "IUUUDII", "IUUUDIU", "IUUUDID", "IUUDIII", "IUUDIIU",
-        "IUUDIID", "IUUDIUI", "IUUDIUU", "IUUDIUD", "IUUDIDI", "IUDIIII", "IUDIIIU", "IUDIIID",
-        "IUDIIUI", "IUDIIUU", "IUDIIUD", "IUDIIDI", "IUDIUII", "IUDIUIU", "IUDIUID", "IUDIUUI",
-        "IUDIUUU", "IUDIUUD", "IUDIUDI", "IUDIDII", "IUDIDIU", "IUDIDID", "IDIIIII", "IDIIIIU",
-        "IDIIIID", "IDIIIUI", "IDIIIUU", "IDIIIUD", "IDIIIDI", "IDIIUII", "IDIIUIU", "IDIIUID",
-        "IDIIUUI", "IDIIUUU", "IDIIUUD", "IDIIUDI", "IDIIDII", "IDIIDIU", "IDIIDID", "IDIUIII",
-        "IDIUIIU", "IDIUIID", "IDIUIUI", "IDIUIUU", "IDIUIUD", "IDIUIDI", "IDIUUII", "IDIUUIU",
-        "IDIUUID", "IDIUUUI", "IDIUUUU", "IDIUUUD", "IDIUUDI", "IDIUDII", "IDIUDIU", "IDIUDID",
-        "IDIDIII", "IDIDIIU", "IDIDIID", "IDIDIUI", "IDIDIUU", "IDIDIUD", "IDIDIDI"
+      "IIIIIII", "IIIIIIU", "IIIIIID", "IIIIIUI", "IIIIIUU", "IIIIIUD", "IIIIIDI", "IIIIUII",
+      "IIIIUIU", "IIIIUID", "IIIIUUI", "IIIIUUU", "IIIIUUD", "IIIIUDI", "IIIIDII", "IIIIDIU",
+      "IIIIDID", "IIIUIII", "IIIUIIU", "IIIUIID", "IIIUIUI", "IIIUIUU", "IIIUIUD", "IIIUIDI",
+      "IIIUUII", "IIIUUIU", "IIIUUID", "IIIUUUI", "IIIUUUU", "IIIUUUD", "IIIUUDI", "IIIUDII",
+      "IIIUDIU", "IIIUDID", "IIIDIII", "IIIDIIU", "IIIDIID", "IIIDIUI", "IIIDIUU", "IIIDIUD",
+      "IIIDIDI", "IIUIIII", "IIUIIIU", "IIUIIID", "IIUIIUI", "IIUIIUU", "IIUIIUD", "IIUIIDI",
+      "IIUIUII", "IIUIUIU", "IIUIUID", "IIUIUUI", "IIUIUUU", "IIUIUUD", "IIUIUDI", "IIUIDII",
+      "IIUIDIU", "IIUIDID", "IIUUIII", "IIUUIIU", "IIUUIID", "IIUUIUI", "IIUUIUU", "IIUUIUD",
+      "IIUUIDI", "IIUUUII", "IIUUUIU", "IIUUUID", "IIUUUUI", "IIUUUUU", "IIUUUUD", "IIUUUDI",
+      "IIUUDII", "IIUUDIU", "IIUUDID", "IIUDIII", "IIUDIIU", "IIUDIID", "IIUDIUI", "IIUDIUU",
+      "IIUDIUD", "IIUDIDI", "IIDIIII", "IIDIIIU", "IIDIIID", "IIDIIUI", "IIDIIUU", "IIDIIUD",
+      "IIDIIDI", "IIDIUII", "IIDIUIU", "IIDIUID", "IIDIUUI", "IIDIUUU", "IIDIUUD", "IIDIUDI",
+      "IIDIDII", "IIDIDIU", "IIDIDID", "IUIIIII", "IUIIIIU", "IUIIIID", "IUIIIUI", "IUIIIUU",
+      "IUIIIUD", "IUIIIDI", "IUIIUII", "IUIIUIU", "IUIIUID", "IUIIUUI", "IUIIUUU", "IUIIUUD",
+      "IUIIUDI", "IUIIDII", "IUIIDIU", "IUIIDID", "IUIUIII", "IUIUIIU", "IUIUIID", "IUIUIUI",
+      "IUIUIUU", "IUIUIUD", "IUIUIDI", "IUIUUII", "IUIUUIU", "IUIUUID", "IUIUUUI", "IUIUUUU",
+      "IUIUUUD", "IUIUUDI", "IUIUDII", "IUIUDIU", "IUIUDID", "IUIDIII", "IUIDIIU", "IUIDIID",
+      "IUIDIUI", "IUIDIUU", "IUIDIUD", "IUIDIDI", "IUUIIII", "IUUIIIU", "IUUIIID", "IUUIIUI",
+      "IUUIIUU", "IUUIIUD", "IUUIIDI", "IUUIUII", "IUUIUIU", "IUUIUID", "IUUIUUI", "IUUIUUU",
+      "IUUIUUD", "IUUIUDI", "IUUIDII", "IUUIDIU", "IUUIDID", "IUUUIII", "IUUUIIU", "IUUUIID",
+      "IUUUIUI", "IUUUIUU", "IUUUIUD", "IUUUIDI", "IUUUUII", "IUUUUIU", "IUUUUID", "IUUUUUI",
+      "IUUUUUU", "IUUUUUD", "IUUUUDI", "IUUUDII", "IUUUDIU", "IUUUDID", "IUUDIII", "IUUDIIU",
+      "IUUDIID", "IUUDIUI", "IUUDIUU", "IUUDIUD", "IUUDIDI", "IUDIIII", "IUDIIIU", "IUDIIID",
+      "IUDIIUI", "IUDIIUU", "IUDIIUD", "IUDIIDI", "IUDIUII", "IUDIUIU", "IUDIUID", "IUDIUUI",
+      "IUDIUUU", "IUDIUUD", "IUDIUDI", "IUDIDII", "IUDIDIU", "IUDIDID", "IDIIIII", "IDIIIIU",
+      "IDIIIID", "IDIIIUI", "IDIIIUU", "IDIIIUD", "IDIIIDI", "IDIIUII", "IDIIUIU", "IDIIUID",
+      "IDIIUUI", "IDIIUUU", "IDIIUUD", "IDIIUDI", "IDIIDII", "IDIIDIU", "IDIIDID", "IDIUIII",
+      "IDIUIIU", "IDIUIID", "IDIUIUI", "IDIUIUU", "IDIUIUD", "IDIUIDI", "IDIUUII", "IDIUUIU",
+      "IDIUUID", "IDIUUUI", "IDIUUUU", "IDIUUUD", "IDIUUDI", "IDIUDII", "IDIUDIU", "IDIUDID",
+      "IDIDIII", "IDIDIIU", "IDIDIID", "IDIDIUI", "IDIDIUU", "IDIDIUD", "IDIDIDI"
     };
 
     List<String> rawOpSequences = new ArrayList<>();
@@ -228,16 +230,16 @@ class StateCompanionComplexTest {
 
         EventType eventType;
         switch (op) {
-          case 'I' :
+          case 'I':
             eventType = EventType.INSERT;
             break;
-          case 'U' :
+          case 'U':
             eventType = EventType.UPDATE;
             break;
-          case 'D' :
+          case 'D':
             eventType = EventType.DELETE;
             break;
-          default :
+          default:
             throw new IllegalArgumentException("Invalid operation: " + op);
         }
 
@@ -283,27 +285,28 @@ class StateCompanionComplexTest {
   }
 
   /**
-   * Applies events in the given processing order and returns the final state.
-   * (Ensures test consistency with fixed data)
+   * Applies events in the given processing order and returns the final state. (Ensures test
+   * consistency with fixed data)
    */
   private State processEventsWithFixedData(List<EventData> processingOrder) {
     // Create initial state
     Map<String, StateValue> entries = new HashMap<>();
 
     // Process each event in order
-    State current = ImmutableBaseState.builder()
-        .active(false)
-        .properties(entries)
-        .createdAt(null)
-        .deletedAt(null)
-        .checkAndBuild(schema);
+    State current =
+        ImmutableBaseState.builder()
+            .active(false)
+            .properties(entries)
+            .createdAt(null)
+            .deletedAt(null)
+            .checkAndBuild(schema);
 
     for (EventData eventData : processingOrder) {
       BaseEvent event;
 
       if (eventData.type != EventType.DELETE) {
-        ImmutableBaseEvent.Builder eventBuilder = ImmutableBaseEvent.builder().type(eventData.type)
-            .version(eventData.version);
+        ImmutableBaseEvent.Builder eventBuilder =
+            ImmutableBaseEvent.builder().type(eventData.type).version(eventData.version);
 
         // Add fixed data according to event type
         eventBuilder.putProperties(NAME_FIELD, "User-" + eventData.version);
@@ -328,8 +331,7 @@ class StateCompanionComplexTest {
         } else if (eventData.type == EventType.UPDATE) {
           // Test nullable field setting in UPDATE operation under specific conditions
 
-          // Set address to null when UPDATE at versions that are multiples of 3 (field
-          // removal
+          // Set address to null when UPDATE at versions that are multiples of 3 (field removal
           // test)
           if (eventData.version % 3000 == 0) {
             eventBuilder.putProperties(ADDRESS_FIELD, null);
@@ -341,8 +343,7 @@ class StateCompanionComplexTest {
                 EMAIL_FIELD, "updated-email-" + eventData.version + "@example.com");
           }
 
-          // Set phone to null when UPDATE at versions that are multiples of 7 (field
-          // removal test)
+          // Set phone to null when UPDATE at versions that are multiples of 7 (field removal test)
           if (eventData.version % 7000 == 0) {
             eventBuilder.putProperties(PHONE_FIELD, null);
           }
@@ -351,8 +352,8 @@ class StateCompanionComplexTest {
         event = eventBuilder.build();
       } else {
         // For DELETE events, do not set values
-        event = ImmutableBaseEvent.builder().type(eventData.type).version(eventData.version)
-            .build();
+        event =
+            ImmutableBaseEvent.builder().type(eventData.type).version(eventData.version).build();
       }
 
       current = StateCompanion.transit(current, event, schema);
@@ -362,8 +363,8 @@ class StateCompanionComplexTest {
   }
 
   /**
-   * Inner class representing mergeable event data. Implements Comparable to
-   * enable sorting by event time.
+   * Inner class representing mergeable event data. Implements Comparable to enable sorting by event
+   * time.
    */
   private static class EventData implements Comparable<EventData> {
     final EventType type;
@@ -530,8 +531,7 @@ class StateCompanionComplexTest {
     }
 
     // Verify that all results are identical
-    // For same event time, processing order matters, so consistency may not be
-    // guaranteed
+    // For same event time, processing order matters, so consistency may not be guaranteed
     // However, should have consistent results based on last event processed
 
     // Aggregate results by processing order
@@ -540,8 +540,7 @@ class StateCompanionComplexTest {
       activeStateCount.put(result.active(), activeStateCount.getOrDefault(result.active(), 0) + 1);
     }
 
-    // For same event time, should be false if last processed is DELETE, true if
-    // INSERT
+    // For same event time, should be false if last processed is DELETE, true if INSERT
     System.out.println("Active State Distribution: " + activeStateCount);
   }
 
@@ -696,13 +695,13 @@ class StateCompanionComplexTest {
   /** Returns event type in short form (I, U, D). */
   private String getShortEventType(EventType type) {
     switch (type) {
-      case INSERT :
+      case INSERT:
         return "I";
-      case UPDATE :
+      case UPDATE:
         return "U";
-      case DELETE :
+      case DELETE:
         return "D";
-      default :
+      default:
         return type.toString();
     }
   }

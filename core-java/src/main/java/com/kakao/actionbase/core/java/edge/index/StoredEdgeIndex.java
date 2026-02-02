@@ -76,8 +76,8 @@ public interface StoredEdgeIndex {
       }
     }
 
-    ImmutableEdgePayload.Builder builder = ImmutableEdgePayload.builder().version(version())
-        .properties(properties);
+    ImmutableEdgePayload.Builder builder =
+        ImmutableEdgePayload.builder().version(version()).properties(properties);
 
     builder.source(source());
     builder.target(target());

@@ -32,15 +32,15 @@ public interface Index {
   default com.kakao.actionbase.core.java.metadata.v3.common.Index toV3() {
     // v2 allows empty index fields, but v3 does not.
     // fill with default timestamp index field for compatibility
-    List<com.kakao.actionbase.core.java.metadata.v3.common.IndexField> newFields = fields()
-        .isEmpty()
+    List<com.kakao.actionbase.core.java.metadata.v3.common.IndexField> newFields =
+        fields().isEmpty()
             ? Collections.singletonList(DEFAULT_TIMESTAMP_INDEX_FIELD.toV3())
             : fields().stream().map(IndexField::toV3).collect(Collectors.toList());
 
-    com.kakao.actionbase.core.java.metadata.v3.common.ImmutableIndex.Builder builder = com.kakao.actionbase.core.java.metadata.v3.common.ImmutableIndex
-        .builder()
-        .index(name())
-        .fields(newFields);
+    com.kakao.actionbase.core.java.metadata.v3.common.ImmutableIndex.Builder builder =
+        com.kakao.actionbase.core.java.metadata.v3.common.ImmutableIndex.builder()
+            .index(name())
+            .fields(newFields);
 
     if (desc() != null) {
       builder.comment(desc());

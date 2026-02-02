@@ -131,8 +131,8 @@ public class DecodedEdge {
 
     Map<String, VersionValue> propertyAsMap = new HashMap<>();
     if (encodedEdgeType == EncodedEdgeType.HASH_EDGE_TYPE) {
-      HashEdgeValue hashEdgeValue = AbstractEdgeEncoder
-          .decodeHashEdgeValueFromBytes(encodedValue.value, hashToFieldNameMap);
+      HashEdgeValue hashEdgeValue =
+          AbstractEdgeEncoder.decodeHashEdgeValueFromBytes(encodedValue.value, hashToFieldNameMap);
       propertyAsMap = hashEdgeValue.getMap();
       long ts = hashEdgeValue.getTs();
       return new DecodedEdge(

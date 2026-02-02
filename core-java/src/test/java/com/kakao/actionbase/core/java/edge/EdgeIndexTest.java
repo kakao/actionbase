@@ -31,32 +31,35 @@ class EdgeIndexTest extends AbstractUnitTest<EdgeState> {
   EdgeTableDescriptor table;
 
   protected EdgeState createTarget() {
-    StructType schema = ImmutableStructType.builder()
-        .addField("prop1", DataType.STRING)
-        .addField("prop2", DataType.LONG)
-        .build();
+    StructType schema =
+        ImmutableStructType.builder()
+            .addField("prop1", DataType.STRING)
+            .addField("prop2", DataType.LONG)
+            .build();
 
-    EdgeSchema edgeSchema = ImmutableEdgeSchema.builder()
-        .source(ImmutableField.builder().type(DataType.STRING).build())
-        .target(ImmutableField.builder().type(DataType.STRING).build())
-        .properties(schema.fields())
-        .addIndex("index1", ImmutableIndexField.of("prop1", Order.DESC))
-        .addIndex(
-            "index2",
-            ImmutableIndexField.of("prop2", Order.DESC),
-            ImmutableIndexField.of("version", Order.DESC))
-        .direction(DirectionType.BOTH)
-        .build();
+    EdgeSchema edgeSchema =
+        ImmutableEdgeSchema.builder()
+            .source(ImmutableField.builder().type(DataType.STRING).build())
+            .target(ImmutableField.builder().type(DataType.STRING).build())
+            .properties(schema.fields())
+            .addIndex("index1", ImmutableIndexField.of("prop1", Order.DESC))
+            .addIndex(
+                "index2",
+                ImmutableIndexField.of("prop2", Order.DESC),
+                ImmutableIndexField.of("version", Order.DESC))
+            .direction(DirectionType.BOTH)
+            .build();
 
-    table = ImmutableEdgeTableDescriptor.builder()
-        .active(true)
-        .tenant("test-tenant")
-        .database("test-database")
-        .table("test-table")
-        .storage("test-storage")
-        .schema(edgeSchema)
-        .mode(MutationMode.SYNC)
-        .build();
+    table =
+        ImmutableEdgeTableDescriptor.builder()
+            .active(true)
+            .tenant("test-tenant")
+            .database("test-database")
+            .table("test-table")
+            .storage("test-storage")
+            .schema(edgeSchema)
+            .mode(MutationMode.SYNC)
+            .build();
 
     return ImmutableEdgePayload.builder()
         .version(123)

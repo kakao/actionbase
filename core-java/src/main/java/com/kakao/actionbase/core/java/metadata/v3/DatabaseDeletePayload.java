@@ -10,6 +10,5 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(as = ImmutableDatabaseDeletePayload.class)
 public interface DatabaseDeletePayload {
 
-  default void check() {
-  }
+  default void check() {}
 }

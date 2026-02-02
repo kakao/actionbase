@@ -8,5 +8,4 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableStorageDeletePayload.class)
 @JsonDeserialize(as = ImmutableStorageDeletePayload.class)
-public interface StorageDeletePayload {
-}
+public interface StorageDeletePayload {}

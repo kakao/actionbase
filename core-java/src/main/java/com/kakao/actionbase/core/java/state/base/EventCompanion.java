@@ -6,8 +6,7 @@ import java.util.Random;
 
 public class EventCompanion {
 
-  private EventCompanion() {
-  }
+  private EventCompanion() {}
 
   private static final Random random = new Random();
 

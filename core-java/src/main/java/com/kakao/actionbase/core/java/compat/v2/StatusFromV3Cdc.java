@@ -12,8 +12,7 @@ public class StatusFromV3Cdc {
   private static final String UPDATED = "UPDATED";
   private static final String IDLE = "IDLE";
 
-  private StatusFromV3Cdc() {
-  }
+  private StatusFromV3Cdc() {}
 
   public static String deriveStatus(CDCPayload<EdgeEvent, EdgeState> cdc) {
     EdgeState cdcBefore = cdc.before();

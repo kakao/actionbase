@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum RowType {
-  ARRAY, MAP, EDGE, LIST;
+  ARRAY,
+  MAP,
+  EDGE,
+  LIST;
 
   private final String type;
 

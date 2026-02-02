@@ -49,8 +49,7 @@ class DataFrameFilter {
     } else if (predicate instanceof WherePredicate.Gt) {
       WherePredicate.Gt gtPredicate = (WherePredicate.Gt) predicate;
       Object rowValue = getNestedValue(row, schema, key);
-      if (rowValue == null)
-        return false;
+      if (rowValue == null) return false;
 
       double rowDouble = Double.parseDouble(rowValue.toString());
       double predicateDouble = Double.parseDouble(gtPredicate.value().toString());
@@ -58,8 +57,7 @@ class DataFrameFilter {
     } else if (predicate instanceof WherePredicate.Gte) {
       WherePredicate.Gte gtePredicate = (WherePredicate.Gte) predicate;
       Object rowValue = getNestedValue(row, schema, key);
-      if (rowValue == null)
-        return false;
+      if (rowValue == null) return false;
 
       double rowDouble = Double.parseDouble(rowValue.toString());
       double predicateDouble = Double.parseDouble(gtePredicate.value().toString());
@@ -67,8 +65,7 @@ class DataFrameFilter {
     } else if (predicate instanceof WherePredicate.Lt) {
       WherePredicate.Lt ltPredicate = (WherePredicate.Lt) predicate;
       Object rowValue = getNestedValue(row, schema, key);
-      if (rowValue == null)
-        return false;
+      if (rowValue == null) return false;
 
       double rowDouble = Double.parseDouble(rowValue.toString());
       double predicateDouble = Double.parseDouble(ltPredicate.value().toString());
@@ -76,8 +73,7 @@ class DataFrameFilter {
     } else if (predicate instanceof WherePredicate.Lte) {
       WherePredicate.Lte ltePredicate = (WherePredicate.Lte) predicate;
       Object rowValue = getNestedValue(row, schema, key);
-      if (rowValue == null)
-        return false;
+      if (rowValue == null) return false;
 
       double rowDouble = Double.parseDouble(rowValue.toString());
       double predicateDouble = Double.parseDouble(ltePredicate.value().toString());
@@ -85,8 +81,7 @@ class DataFrameFilter {
     } else if (predicate instanceof WherePredicate.Between) {
       WherePredicate.Between betweenPredicate = (WherePredicate.Between) predicate;
       Object rowValue = getNestedValue(row, schema, key);
-      if (rowValue == null)
-        return false;
+      if (rowValue == null) return false;
 
       double rowDouble = Double.parseDouble(rowValue.toString());
       double fromDouble = Double.parseDouble(betweenPredicate.fromValue().toString());

@@ -2,8 +2,7 @@ package com.kakao.actionbase.v2.core.code.hbase;
 
 public class SimplePositionedMutableByteRange extends AbstractPositionedByteRange {
 
-  public SimplePositionedMutableByteRange() {
-  }
+  public SimplePositionedMutableByteRange() {}
 
   public SimplePositionedMutableByteRange(int capacity) {
     this(new byte[capacity]);

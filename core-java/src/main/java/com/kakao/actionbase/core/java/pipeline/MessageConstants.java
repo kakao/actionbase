@@ -15,6 +15,5 @@ public class MessageConstants {
 
   public static final ObjectMapper objectMapper = new ObjectMapper();
 
-  private MessageConstants() {
-  } // Prevent instantiation
+  private MessageConstants() {} // Prevent instantiation
 }
