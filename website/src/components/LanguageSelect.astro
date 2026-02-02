@@ -8,8 +8,8 @@ const currentPath = lang === 'en' ? slug : slug.replace(`${lang}/`, '');
 const allDocs = await getCollection('docs');
 const existingSlugs = new Set(allDocs.map((doc) => doc.id));
 
-const localeLinks = Object.entries(locales)
-  .map(([key]) => {
+const availableLocales = Object.entries(locales)
+  .map(([key, locale]) => {
     const isRoot = key === 'root';
     const code = isRoot ? 'en' : key;
     const docPath = isRoot ? currentPath : `${key}/${currentPath}`;
@@ -21,21 +21,16 @@ const localeLinks = Object.entries(locales)
       existingSlugs.has(`${docPath}.mdx`) ||
       existingSlugs.has(`${docPath}.md`);
 
-    return { code, label: code.toUpperCase(), href, isCurrent, hasTranslation };
+    return { code, label: locale.label, href, isCurrent, hasTranslation };
   })
   .filter((l) => l.hasTranslation);
 
-const show = localeLinks.length > 1;
+const show = availableLocales.length > 1;
 ---
 
 {show && (
-  <nav class="language-selector" aria-label="Available translations">
-    <svg class="globe-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M2 12h20" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
-    {localeLinks.map((l, i) => (
+  <nav class="lang-links" aria-label="Available translations">
+    {availableLocales.map((l, i) => (
       <>
         {i > 0 && <span class="sep">/</span>}
         {l.isCurrent ? (
@@ -49,15 +44,18 @@ const show = localeLinks.length > 1;
 )}
 
 <style>
-  .language-selector {
-    display: inline-flex;
+  .lang-links {
+    display: none;
     align-items: center;
-    gap: 0.25rem;
-    font-size: var(--sl-text-xs);
+    gap: 0.375rem;
+    font-size: var(--sl-text-sm);
+    white-space: nowrap;
     flex-shrink: 0;
   }
-  .globe-icon {
-    color: var(--sl-color-gray-4);
+  @media (min-width: 60rem) {
+    .lang-links {
+      display: flex;
+    }
   }
   .sep {
     color: var(--sl-color-gray-5);
