@@ -150,7 +150,6 @@ export default defineConfig({
         Head: './src/components/Head.astro',
         PageSidebar: './src/components/PageSidebar.astro',
         Footer: './src/components/Footer.astro',
-        LanguageSelect: './src/components/LanguageSelect.astro',
       },
       expressiveCode: { shiki: { langs: [markdocGrammar] } },
       plugins: [
