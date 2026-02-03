@@ -21,23 +21,25 @@ These are conditions you can't create in test environments.
 
 ## How It Works {#how-it-works}
 
-Nginx Ingress in front of production Actionbase logs all requests and responses as Access Logs. We mirror these logs and replay them against the new version. Since it's log-based, there's no impact on live service traffic.
+Nginx Ingress in front of production Actionbase logs all requests and responses as Access Logs. These logs go to Kafka, and the same requests are replayed to the test environment. Since it's log-based, there's no impact on live service traffic.
 
 ```mermaid
 flowchart LR
-    Prod[Production Actionbase] --> Nginx[Nginx Ingress]
-    Nginx -->|"Access Logs (request + response)"| Kafka[Kafka + Spark Streaming]
-    Kafka -->|Mirror| Test[Test Actionbase]
-    Test -->|Test Response| Kafka
-    Kafka --> Verify{Match?}
-    Verify -->|Yes| Deploy[Deploy]
-    Verify -->|No| Block[Blocked]
+    Client[Client] --> Nginx[Nginx Ingress]
+    Nginx --> Prod[Production Actionbase]
+    Nginx -->|Access Log| Kafka[Kafka]
+    Kafka -->|Replay| Test[Test Actionbase]
+
+    Prod -.->|Prod Response| Compare{Match?}
+    Test -.->|Test Response| Compare
+    Compare -->|Yes| Deploy[Deploy]
+    Compare -->|No| Block[Blocked]
 ```
 
-1. **Capture**: Kubernetes Nginx Ingress logs all requests and responses to Kafka
-2. **Mirror**: Mirrored to test environment running the new version
-3. **Compare**: Compare with production responses
-4. **Verify**: Deploy if match, block if mismatch
+1. **Capture**: Nginx Ingress logs requests and responses to Kafka as Access Logs
+2. **Replay**: Same requests replayed to test environment
+3. **Compare**: Compare production response with test response
+4. **Gate**: Block deployment on mismatch
 
 ## Deployment Process {#deployment-process}
 

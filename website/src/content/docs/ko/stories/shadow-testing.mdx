@@ -21,23 +21,25 @@ sidebar:
 
 ## 동작 방식 {#how-it-works}
 
-프로덕션 Actionbase 앞단의 Nginx Ingress가 모든 요청과 응답을 Access Log로 기록합니다. 이 로그를 미러링해서 새 버전에 재생합니다. 로그 기반이라 실제 서비스 트래픽에는 영향이 없습니다.
+프로덕션 Actionbase 앞단의 Nginx Ingress가 모든 요청과 응답을 Access Log로 기록합니다. 이 로그를 Kafka로 보내고, 같은 요청을 테스트 환경에 재생합니다. 로그 기반이라 실제 서비스 트래픽에는 영향이 없습니다.
 
 ```mermaid
 flowchart LR
-    Prod[Production Actionbase] --> Nginx[Nginx Ingress]
-    Nginx -->|"Access Logs (request + response)"| Kafka[Kafka + Spark Streaming]
-    Kafka -->|Mirror| Test[Test Actionbase]
-    Test -->|Test Response| Kafka
-    Kafka --> Verify{Match?}
-    Verify -->|Yes| Deploy[Deploy]
-    Verify -->|No| Block[Blocked]
+    Client[Client] --> Nginx[Nginx Ingress]
+    Nginx --> Prod[Production Actionbase]
+    Nginx -->|Access Log| Kafka[Kafka]
+    Kafka -->|Replay| Test[Test Actionbase]
+
+    Prod -.->|Prod Response| Compare{Match?}
+    Test -.->|Test Response| Compare
+    Compare -->|Yes| Deploy[Deploy]
+    Compare -->|No| Block[Blocked]
 ```
 
-1. **Capture**: Kubernetes Nginx Ingress가 모든 요청과 응답을 Kafka로 기록
-2. **Mirror**: 새 버전이 실행 중인 테스트 환경에 미러링
-3. **Compare**: 프로덕션 응답과 비교
-4. **Verify**: 일치하면 배포, 불일치하면 차단
+1. **Capture**: Nginx Ingress가 요청과 응답을 Access Log로 Kafka에 기록
+2. **Replay**: 같은 요청을 테스트 환경에 재생
+3. **Compare**: 프로덕션 응답과 테스트 응답 비교
+4. **Gate**: 불일치 시 배포 차단
 
 ## 배포 프로세스 {#deployment-process}
 

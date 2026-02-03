@@ -83,7 +83,19 @@
 }
 
 .sidebar-label-link:hover {
-  border-left-width: 3px;
+  color: var(--sl-color-text-accent);
+}
+
+:root[data-theme='light'] .sidebar-label-link:hover {
+  color: hsl(255, 85%, 50%);
+}
+
+.sidebar-label-link[aria-current='page'] {
+  color: hsl(224, 10%, 10%);
+}
+
+:root[data-theme='light'] .sidebar-label-link[aria-current='page'] {
+  color: white;
 }
 
 :root[data-theme='light'] .sidebar-label,
