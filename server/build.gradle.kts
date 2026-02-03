@@ -1,6 +1,5 @@
 import actionbase.BuildParameter
 import actionbase.dependencies.Dependencies
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     id("actionbase.kotlin-conventions")
