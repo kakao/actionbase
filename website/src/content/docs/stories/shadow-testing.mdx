@@ -21,7 +21,7 @@ These are conditions you can't create in test environments.
 
 ## How It Works {#how-it-works}
 
-Verify new versions with production traffic. No impact on actual service.
+Nginx Ingress in front of production Actionbase logs all requests and responses as Access Logs. We mirror these logs and replay them against the new version. Since it's log-based, there's no impact on live service traffic.
 
 ```mermaid
 flowchart LR

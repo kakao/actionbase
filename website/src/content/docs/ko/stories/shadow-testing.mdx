@@ -21,7 +21,7 @@ sidebar:
 
 ## 동작 방식 {#how-it-works}
 
-프로덕션 트래픽으로 새 버전을 검증합니다. 실제 서비스에는 영향을 주지 않습니다.
+프로덕션 Actionbase 앞단의 Nginx Ingress가 모든 요청과 응답을 Access Log로 기록합니다. 이 로그를 미러링해서 새 버전에 재생합니다. 로그 기반이라 실제 서비스 트래픽에는 영향이 없습니다.
 
 ```mermaid
 flowchart LR
