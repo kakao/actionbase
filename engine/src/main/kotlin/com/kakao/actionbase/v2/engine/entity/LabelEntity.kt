@@ -21,6 +21,7 @@ import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.metastore.LocalBackedJdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.nil.NilLabel
+import com.kakao.actionbase.v2.engine.label.slatedb.SlateDbHashLabel
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.sql.RowWithSchema
 import com.kakao.actionbase.v2.engine.storage.DatastoreStorage
@@ -80,14 +81,7 @@ data class LabelEntity(
                         is JdbcStorage -> JdbcHashLabel.create(this, graph, storage, block)
                         is HBaseStorage -> HBaseHashLabel.create(this, graph, storage)
                         is DatastoreStorage -> DatastoreHashLabel.create(this, graph, block)
-                        is SlateDbStorage -> {
-                            // TODO: Implement SlateDbHashLabel
-                            logger.warn(
-                                "SlateDbStorage is not yet fully supported for {}. Fallback to NilLabel",
-                                type,
-                            )
-                            NilLabel(this.copy(type = LabelType.NIL))
-                        }
+                        is SlateDbStorage -> SlateDbHashLabel.create(this, graph, storage)
                         else -> {
                             logger.error(
                                 "{} supports only Local, Jdbc, HBase storage types. {} is not supported. Fallback to NilLabel",
