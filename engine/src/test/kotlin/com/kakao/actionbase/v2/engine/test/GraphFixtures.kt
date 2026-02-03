@@ -48,7 +48,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
-import reactor.blockhound.BlockHound
 import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toFlux
 import reactor.kotlin.test.test
@@ -221,11 +220,6 @@ object GraphFixtures {
     }
 
     fun create(withTestData: Boolean = true): Graph {
-        BlockHound
-            .builder()
-            .allowBlockingCallsInside("org.apache.hadoop.hbase.client.mock.MockHTable", "mutateRow")
-            .install()
-
         val config =
             GraphConfig
                 .Builder()
