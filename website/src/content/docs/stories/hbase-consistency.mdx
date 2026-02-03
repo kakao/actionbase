@@ -1,0 +1,56 @@
+---
+title: HBase Consistency
+description: Periodically verifying and correcting consistency between State, Index, and Count
+category: How We Survived
+sidebar:
+  order: 35
+---
+
+How we detect and correct data inconsistencies that can occur during Actionbase operations.
+
+## Data Structure
+
+Actionbase stores three types of data in HBase:
+
+- **State**: The source of truth—the actual edge records
+- **Index**: Derived data enabling efficient queries
+- **Count**: Derived aggregations
+
+```mermaid
+flowchart LR
+    Mutation[Mutation] --> Batch[Batch Operation]
+    Batch --> State[State]
+    Batch --> Index[Index]
+    Batch --> Count[Count]
+```
+
+## The Consistency Challenge
+
+HBase mutations execute State, Index, and Count together in a single batch operation. But what happens when a region server fails mid-batch? Or network issues cause partial writes?
+
+The result: Some may update while others don't. When consistency between State, Index, and Count breaks, queries return incorrect results.
+
+## Periodic Verification
+
+We don't trust that batches always succeed atomically. Instead, we verify:
+
+```mermaid
+flowchart LR
+    HBase[(HBase)] -->|Snapshot Export| Export[Export Data]
+    Export --> Spark[Verification Job]
+    Spark --> Check1{State = Index?}
+    Spark --> Check2{State = Count?}
+    Check1 -->|Mismatch| Repair[Repair Queue]
+    Check2 -->|Mismatch| Repair
+```
+
+Using HBase's snapshot export, we periodically extract all data and run verification jobs:
+
+- **State vs Index**: Every state record should have corresponding index entries
+- **State vs Count**: Aggregated counts should match actual record counts
+
+## Periodic Correction
+
+Mismatches are detected and periodically corrected according to service SLA requirements.
+
+State is the source of truth. Index and Count can be regenerated from State.

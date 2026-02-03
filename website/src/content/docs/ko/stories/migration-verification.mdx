@@ -1,0 +1,50 @@
+---
+title: 마이그레이션 검증
+description: Source DB에서 Actionbase로 데이터 이관 시 정합성 검증
+category: How We Survived
+sidebar:
+  order: 34
+---
+
+기존 시스템에서 Actionbase로 데이터를 마이그레이션할 때, 모든 단계에서 검증합니다.
+
+## 단계별 마이그레이션
+
+[카카오톡 선물하기 위시](/ko/stories/kakaotalk-gift-wish/) 기능의 경우, 마이그레이션은 5개의 단계를 거쳤습니다. 각 단계는 다음 단계로 진행하기 전에 정합성 체크를 포함했습니다.
+
+한 번에 모든 데이터를 이관하지 않습니다. 단계별로 검증하면서 진행합니다.
+
+## 비교 검증
+
+```mermaid
+flowchart LR
+    subgraph Source [Source DB]
+        SourceDump[Dump]
+    end
+    subgraph AB [Actionbase]
+        ABCDC[CDC] -->|Accumulate| ABSnapshot[Snapshot]
+    end
+
+    SourceDump --> Compare{Compare}
+    ABSnapshot --> Compare
+
+    Compare -->|Match| Verified[Verified]
+    Compare -->|Mismatch| Investigate[Investigate]
+```
+
+두 개의 데이터 소스를 비교합니다:
+
+1. **Source DB Dump**: 원본 데이터베이스(MySQL 등)에서 직접 익스포트
+2. **Actionbase CDC Snapshot**: Actionbase CDC의 "after" 값을 누적
+
+둘이 일치하면 마이그레이션이 검증됩니다. 불일치가 발생하면 진행 전에 조사합니다.
+
+## 왜 CDC Snapshot인가
+
+Actionbase는 CDC(Change Data Capture)를 통해 모든 변경을 기록합니다. CDC의 "after" 값을 누적하면 현재 상태의 스냅샷을 만들 수 있습니다.
+
+이 방식의 장점:
+
+- 독립적인 소스로 검증 가능
+- Source DB와 직접 비교 가능
+- 마이그레이션 과정의 정확성 증명

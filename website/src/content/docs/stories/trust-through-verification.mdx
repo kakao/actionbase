@@ -1,0 +1,44 @@
+---
+title: Trust through Verification
+description: How we built multi-layered verification so engineers could trust the system
+category: How We Survived
+sidebar:
+  order: 31
+---
+
+Actionbase was deployed to production before it was "complete." It had to keep evolving while maintaining production contracts.
+
+It works, and we could say it works well for the scenarios we tested. But when asked "is there really no problem?" — we couldn't be sure either.
+
+A lot of these conversations happened while walking along [streams in Pangyo](https://github.com/kakao/actionbase/discussions/9) (Tancheon and Unjungcheon). "Does this really work?"
+
+So we tried various verification approaches. At every layer.
+
+## Verification Layers
+
+| Stage          | Method                                                      | Purpose                                          |
+| -------------- | ----------------------------------------------------------- | ------------------------------------------------ |
+| Development    | [Tests as Contracts](/stories/contracts/)                   | Define and protect promised behaviors            |
+| Pre-Deployment | [Shadow Testing](/stories/shadow-testing/)                  | Verify new versions with production traffic      |
+| Migration      | [Comparison Verification](/stories/migration-verification/) | Confirm Source DB and Actionbase data match      |
+| Runtime        | [HBase Consistency](/stories/hbase-consistency/)            | Maintain consistency between State, Index, Count |
+
+## Building Trust
+
+In the CQRS pattern, we know the correct answer. The original data exists. [Gift Wish](/stories/kakaotalk-gift-wish/)'s shadow read fits this context. We could verify whether the data Actionbase created matched the source of truth.
+
+Through verification, confidence grew: **issues could be detected and corrected**.
+
+Based on this confidence, we could trust Actionbase even when it was the ledger itself. New features started being built directly on Actionbase, without a separate "real" database.
+
+This wasn't a design decision made upfront. It was trust earned through verification.
+
+## What We Learned
+
+- **Verification at every layer**. Development, deployment, migration, runtime—each has its own verification strategy. One layer isn't enough.
+
+- **Trust is earned, not declared**. We didn't announce "Actionbase is now the source of truth." We proved over years that issues could be detected and corrected.
+
+- **Assume failures happen**. Design for verification, not perfection.
+
+The goal isn't to prevent all failures—it's to detect them before they matter.

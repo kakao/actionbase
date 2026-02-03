@@ -1,0 +1,51 @@
+---
+title: Shadow Testing
+description: Pre-deployment verification by mirroring production traffic
+category: How We Survived
+sidebar:
+  order: 33
+---
+
+Before any deployment, we run shadow tests. This is the final safety net.
+
+## How It Works
+
+```mermaid
+flowchart LR
+    Prod[Production Actionbase] --> Nginx[Nginx Ingress]
+    Nginx -->|"Access Logs (request + response)"| Kafka[Kafka + Spark Streaming]
+    Kafka -->|Mirror| Test[Test Actionbase]
+    Test -->|Test Response| Kafka
+    Kafka --> Verify{Match?}
+    Verify -->|Yes| Deploy[Deploy]
+    Verify -->|No| Block[Blocked]
+```
+
+1. **Capture**: Kubernetes Nginx Ingress logs all requests (including body and response) to Kafka
+2. **Mirror**: These logs are mirrored to the test environment running the new version
+3. **Compare**: Results are compared against production responses
+4. **Verify**: Only if data integrity and system stability are confirmed does deployment proceed
+
+## Why It's Needed
+
+Shadow testing catches issues that unit tests and integration tests miss—the edge cases that only appear in real traffic patterns.
+
+Problems that are hard to find in test environments:
+
+- Bugs that only occur with specific data combinations
+- Performance issues dependent on traffic patterns
+- Issues that only surface at production data scale
+
+## Position in Deployment Process
+
+```mermaid
+flowchart LR
+    Dev[Development] --> Contract[Contract Tests]
+    Contract --> Shadow[Shadow Testing]
+    Shadow --> Deploy[Deploy]
+```
+
+- **Contract Tests**: Verify promised behaviors are preserved
+- **Shadow Testing**: Final verification with real traffic
+
+Deployment proceeds only after passing both stages.
