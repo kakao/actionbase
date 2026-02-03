@@ -72,6 +72,13 @@
   margin-top: 0.25rem;
 }
 
-:root[data-theme='light'] .sidebar-label {
+.sidebar-label-link {
+  font-weight: 700;
+  color: var(--sl-color-gray-1);
+  margin-top: 0.25rem;
+}
+
+:root[data-theme='light'] .sidebar-label,
+:root[data-theme='light'] .sidebar-label-link {
   color: hsl(224, 10%, 10%);
 }
