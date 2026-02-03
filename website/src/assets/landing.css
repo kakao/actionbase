@@ -76,6 +76,14 @@
   font-weight: 700;
   color: var(--sl-color-gray-1);
   margin-top: 0.25rem;
+  border-left: 2px solid var(--sl-color-accent);
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+  border-radius: 0;
+}
+
+.sidebar-label-link:hover {
+  border-left-width: 3px;
 }
 
 :root[data-theme='light'] .sidebar-label,
