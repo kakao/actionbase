@@ -1,10 +1,28 @@
 package com.kakao.actionbase.v2.engine.storage.slatedb
 
+import java.nio.file.Path
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+
+import reactor.core.publisher.Mono
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SlateDbOptions(
     val path: String = "data",
     val url: String = "",
     val libraryPath: String = "",
-)
+) {
+    fun checkConnection(): Mono<Boolean> =
+        if (url.isBlank() || libraryPath.isBlank()) {
+            Mono.just(false)
+        } else {
+            Mono.just(true)
+        }
+
+    fun getTable(): Mono<SlateDbTable> =
+        SlateDbConnections.getConnection(
+            dbPath = path,
+            url = url,
+            libraryPath = Path.of(libraryPath),
+        )
+}
