@@ -63,3 +63,15 @@
 .sidebar-wip {
   opacity: 0.5;
 }
+
+/* Category labels in sidebar */
+.sidebar-label {
+  pointer-events: none;
+  font-weight: 700;
+  color: var(--sl-color-gray-1);
+  margin-top: 0.25rem;
+}
+
+:root[data-theme='light'] .sidebar-label {
+  color: hsl(224, 10%, 10%);
+}

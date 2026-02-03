@@ -7,8 +7,23 @@ sidebar:
 tableOfContents: false
 ---
 
-import DirectoryList from '../../../components/DirectoryList.astro';
+import CategoryDirectoryList from '../../../components/CategoryDirectoryList.astro';
 
 Actionbase powers tens of millions of user interactions across Kakao services. Here are the patterns we've applied in production—and the vision we're building toward.
 
-<DirectoryList dir="stories" />
+<CategoryDirectoryList
+  dir="stories"
+  categories={[
+    {
+      name: 'Use Cases',
+      description: 'How Actionbase powers production—from wish lists to friend graphs.',
+    },
+    { name: 'Engineering', description: 'Inside Actionbase: how it works and how we operate it.' },
+    {
+      name: 'How We Survived',
+      description:
+        'Earning trust as a database: tests as contracts, data consistency, and hard lessons learned.',
+    },
+    { name: 'Vision', description: 'Where we are heading and what we dream of building.' },
+  ]}
+/>
