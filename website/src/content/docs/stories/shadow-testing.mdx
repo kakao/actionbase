@@ -6,9 +6,23 @@ sidebar:
   order: 33
 ---
 
-Before any deployment, we run shadow tests. This is the final safety net.
+This story demonstrates the **Shadow Testing** pattern: how to perform final verification before deployment by mirroring production traffic.
 
-## How It Works
+## The Challenge {#the-challenge}
+
+[Tests as Contracts](/stories/contracts/) passed. Still anxious. Will it really be okay with actual production traffic?
+
+Unit tests, integration tests, contract tests. All passed. Yet problems still occur in production. Some things only surface in real traffic:
+
+- Bugs that only occur with specific data combinations
+- Performance issues dependent on traffic patterns
+- Issues that only surface at production data scale
+
+Services might also be relying on behaviors not covered by contracts. These are conditions that are hard to create in test environments.
+
+## How It Works {#how-it-works}
+
+Before deployment, we run Shadow Testing. It has no impact on production traffic.
 
 ```mermaid
 flowchart LR
@@ -26,26 +40,21 @@ flowchart LR
 3. **Compare**: Results are compared against production responses
 4. **Verify**: Only if data integrity and system stability are confirmed does deployment proceed
 
-## Why It's Needed
-
-Shadow testing catches issues that unit tests and integration tests miss—the edge cases that only appear in real traffic patterns.
-
-Problems that are hard to find in test environments:
-
-- Bugs that only occur with specific data combinations
-- Performance issues dependent on traffic patterns
-- Issues that only surface at production data scale
-
-## Position in Deployment Process
+## Position in Deployment Process {#deployment-process}
 
 ```mermaid
 flowchart LR
-    Dev[Development] --> Contract[Contract Tests]
+    Dev[Development] --> Contract[Tests as Contracts]
     Contract --> Shadow[Shadow Testing]
     Shadow --> Deploy[Deploy]
 ```
 
-- **Contract Tests**: Verify promised behaviors are preserved
+- **Tests as Contracts**: Verify promised behaviors are preserved
 - **Shadow Testing**: Final verification with real traffic
 
 Deployment proceeds only after passing both stages.
+
+## What We Learned {#what-we-learned}
+
+- **Real traffic is irreplaceable**. No matter how sophisticated test scenarios are, they cannot perfectly reproduce actual production traffic patterns.
+- **Final safety net before deployment**. Passing both Tests as Contracts and Shadow Testing gives confidence to deploy.

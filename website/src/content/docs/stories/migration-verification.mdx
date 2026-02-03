@@ -6,15 +6,19 @@ sidebar:
   order: 34
 ---
 
-When migrating data from existing systems to Actionbase, we verify at every step.
+This story demonstrates the **Comparison Verification** pattern: how to verify data integrity when migrating data from existing systems to Actionbase.
 
-## Staged Migration
+## The Challenge {#the-challenge}
 
-For the [KakaoTalk Gift Wish](/stories/kakaotalk-gift-wish/) feature, migration proceeded through 5 distinct stages. Each stage included integrity checks before proceeding to the next.
+Migrating data from existing systems to Actionbase. How can we be confident the data was transferred correctly?
 
 We don't migrate all data at once. We verify at each stage as we proceed.
 
-## Comparison Verification
+## Staged Migration {#staged-migration}
+
+For [KakaoTalk Gift Wish](/stories/kakaotalk-gift-wish/), migration proceeded through 5 distinct stages. Each stage included integrity checks before proceeding to the next.
+
+## Comparison Verification {#comparison-verification}
 
 ```mermaid
 flowchart LR
@@ -39,12 +43,13 @@ We compare two data sources:
 
 If both match, migration is verified. Any mismatch triggers investigation before proceeding.
 
-## Why CDC Snapshot
+## Why CDC Snapshot {#why-cdc-snapshot}
 
 Actionbase records all changes through CDC (Change Data Capture). By accumulating the "after" values from CDC, we can create a snapshot of the current state.
 
-Benefits of this approach:
+We could also read HBase directly and compare. But CDC Snapshot is data created through an independent path. Source DB → Actionbase → HBase → CDC → Snapshot. Only if this entire pipeline works correctly will they match.
 
-- Can verify with an independent source
-- Can compare directly with Source DB
-- Proves accuracy of the migration process
+## What We Learned {#what-we-learned}
+
+- **Verify with independent sources**. Create the same data through different paths and compare. If they match, the entire pipeline is working correctly.
+- **Progress in stages**. Don't migrate all data at once. Verify at each stage before proceeding to the next.

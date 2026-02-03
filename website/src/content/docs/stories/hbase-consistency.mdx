@@ -6,9 +6,15 @@ sidebar:
   order: 35
 ---
 
-How we detect and correct data inconsistencies that can occur during Actionbase operations.
+This story demonstrates the **Periodic Verification** pattern: how to detect and correct data inconsistencies that can occur during operations.
 
-## Data Structure
+## The Challenge {#the-challenge}
+
+Deployed. Migration verified. Now just operate?
+
+No. Data inconsistencies can still occur during operations.
+
+## Data Structure {#data-structure}
 
 Actionbase stores three types of data in HBase:
 
@@ -24,15 +30,15 @@ flowchart LR
     Batch --> Count[Count]
 ```
 
-## The Consistency Challenge
+## The Consistency Problem {#consistency-problem}
 
 HBase mutations execute State, Index, and Count together in a single batch operation. But what happens when a region server fails mid-batch? Or network issues cause partial writes?
 
-The result: Some may update while others don't. When consistency between State, Index, and Count breaks, queries return incorrect results.
+Some may update while others don't. When consistency between State, Index, and Count breaks, queries return incorrect results.
 
-## Periodic Verification
+## Periodic Verification {#periodic-verification}
 
-We don't trust that batches always succeed atomically. Instead, we verify:
+We don't trust that batches always succeed atomically. Instead, we verify.
 
 ```mermaid
 flowchart LR
@@ -49,8 +55,13 @@ Using HBase's snapshot export, we periodically extract all data and run verifica
 - **State vs Index**: Every state record should have corresponding index entries
 - **State vs Count**: Aggregated counts should match actual record counts
 
-## Periodic Correction
+## Periodic Correction {#periodic-correction}
 
-Mismatches are detected and periodically corrected according to service SLA requirements.
+Mismatches are detected and corrected. State is the source of truth. Index and Count can be regenerated from State.
 
-State is the source of truth. Index and Count can be regenerated from State.
+Correction frequency is determined by service SLA requirements.
+
+## What We Learned {#what-we-learned}
+
+- **Don't expect perfect atomicity**. Partial failures happen in distributed systems. Mechanisms to detect and correct them are necessary.
+- **State is the source of truth**. Design derived data (Index, Count) so it can always be regenerated from State.
