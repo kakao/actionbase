@@ -15,6 +15,11 @@ interface SlateDbTable : AutoCloseable {
 
     fun flush(): Mono<Void>
 
+    fun scanPrefix(
+        prefix: ByteArray,
+        limit: Int,
+    ): Mono<List<Pair<ByteArray, ByteArray>>>
+
     companion object {
         fun create(native: SlateDbNative): SlateDbTable = SlateDbTableImpl(native)
     }
@@ -49,6 +54,17 @@ internal class SlateDbTableImpl(
             .fromCallable { native.flush() }
             .subscribeOn(Schedulers.boundedElastic())
             .then()
+
+    override fun scanPrefix(
+        prefix: ByteArray,
+        limit: Int,
+    ): Mono<List<Pair<ByteArray, ByteArray>>> =
+        Mono
+            .fromCallable {
+                native.scanPrefix(prefix, limit).map { entry ->
+                    entry.key to entry.value
+                }
+            }.subscribeOn(Schedulers.boundedElastic())
 
     override fun close() {
         native.close()

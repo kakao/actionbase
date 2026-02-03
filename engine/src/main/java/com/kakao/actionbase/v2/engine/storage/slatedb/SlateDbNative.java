@@ -10,6 +10,10 @@ import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Path;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Minimal FFI wrapper for SlateDB C bindings.
@@ -43,6 +47,20 @@ public class SlateDbNative implements AutoCloseable {
             C_SDB_RESULT_LAYOUT.withName("result")
     );
 
+    // CSdbKeyValue: { key: CSdbValue, value: CSdbValue }
+    private static final MemoryLayout C_SDB_KEY_VALUE_LAYOUT = MemoryLayout.structLayout(
+            C_SDB_VALUE_LAYOUT.withName("key"),
+            C_SDB_VALUE_LAYOUT.withName("value")
+    );
+
+    // CSdbIteratorNextResult: { kv: CSdbKeyValue, has_value: bool(u8), padding, result: CSdbResult }
+    private static final MemoryLayout C_SDB_ITERATOR_NEXT_RESULT_LAYOUT = MemoryLayout.structLayout(
+            C_SDB_KEY_VALUE_LAYOUT.withName("kv"),
+            ValueLayout.JAVA_BYTE.withName("has_value"),
+            MemoryLayout.paddingLayout(7),
+            C_SDB_RESULT_LAYOUT.withName("result")
+    );
+
     private final Arena arena;
     private final MemorySegment dbHandle;
     private final MethodHandle getHandle;
@@ -51,6 +69,9 @@ public class SlateDbNative implements AutoCloseable {
     private final MethodHandle flushHandle;
     private final MethodHandle closeHandle;
     private final MethodHandle freeValueHandle;
+    private final MethodHandle scanPrefixHandle;
+    private final MethodHandle iteratorNextHandle;
+    private final MethodHandle iteratorCloseHandle;
 
     private SlateDbNative(
             Arena arena,
@@ -60,7 +81,10 @@ public class SlateDbNative implements AutoCloseable {
             MethodHandle deleteHandle,
             MethodHandle flushHandle,
             MethodHandle closeHandle,
-            MethodHandle freeValueHandle
+            MethodHandle freeValueHandle,
+            MethodHandle scanPrefixHandle,
+            MethodHandle iteratorNextHandle,
+            MethodHandle iteratorCloseHandle
     ) {
         this.arena = arena;
         this.dbHandle = dbHandle;
@@ -70,6 +94,9 @@ public class SlateDbNative implements AutoCloseable {
         this.flushHandle = flushHandle;
         this.closeHandle = closeHandle;
         this.freeValueHandle = freeValueHandle;
+        this.scanPrefixHandle = scanPrefixHandle;
+        this.iteratorNextHandle = iteratorNextHandle;
+        this.iteratorCloseHandle = iteratorCloseHandle;
     }
 
     private static final int ERROR_NOT_FOUND = 2;
@@ -150,6 +177,83 @@ public class SlateDbNative implements AutoCloseable {
                 dbHandle
         );
         checkResult(resultSegment);
+    }
+
+    /**
+     * Scan keys with given prefix and return up to limit key-value pairs.
+     */
+    public List<Map.Entry<byte[], byte[]>> scanPrefix(byte[] prefix, int limit) throws Throwable {
+        List<Map.Entry<byte[], byte[]>> results = new ArrayList<>();
+
+        // Create iterator
+        MemorySegment prefixSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, prefix);
+        MemorySegment iteratorPtrOut = arena.allocate(ValueLayout.ADDRESS);
+
+        MemorySegment resultSegment = (MemorySegment) scanPrefixHandle.invokeExact(
+                (SegmentAllocator) arena,
+                dbHandle,
+                prefixSegment,
+                (long) prefix.length,
+                MemorySegment.NULL,  // scan_options
+                iteratorPtrOut
+        );
+        checkResult(resultSegment);
+
+        MemorySegment iteratorPtr = iteratorPtrOut.get(ValueLayout.ADDRESS, 0);
+        if (iteratorPtr.equals(MemorySegment.NULL)) {
+            return results;
+        }
+
+        try {
+            // Iterate up to limit
+            for (int i = 0; i < limit; i++) {
+                MemorySegment nextResult = (MemorySegment) iteratorNextHandle.invokeExact(
+                        (SegmentAllocator) arena,
+                        iteratorPtr
+                );
+
+                // Check if there's a value (has_value at offset 32: 2 CSdbValue = 32 bytes)
+                byte hasValue = nextResult.get(ValueLayout.JAVA_BYTE, 32);
+                if (hasValue == 0) {
+                    break;  // No more values
+                }
+
+                // Check for errors (result at offset 40: 32 + 1 + 7 padding = 40)
+                int errorCode = nextResult.get(ValueLayout.JAVA_INT, 40);
+                if (errorCode != 0) {
+                    break;  // Error or end of iteration
+                }
+
+                // Extract key (CSdbValue at offset 0)
+                MemorySegment keyDataPtr = nextResult.get(ValueLayout.ADDRESS, 0);
+                int keyLen = (int) nextResult.get(ValueLayout.JAVA_LONG, 8);
+
+                // Extract value (CSdbValue at offset 16)
+                MemorySegment valueDataPtr = nextResult.get(ValueLayout.ADDRESS, 16);
+                int valueLen = (int) nextResult.get(ValueLayout.JAVA_LONG, 24);
+
+                if (!keyDataPtr.equals(MemorySegment.NULL) && keyLen > 0) {
+                    byte[] keyBytes = new byte[keyLen];
+                    keyDataPtr.reinterpret(keyLen).asByteBuffer().get(keyBytes);
+
+                    byte[] valueBytes = new byte[valueLen];
+                    if (!valueDataPtr.equals(MemorySegment.NULL) && valueLen > 0) {
+                        valueDataPtr.reinterpret(valueLen).asByteBuffer().get(valueBytes);
+                    }
+
+                    results.add(new AbstractMap.SimpleEntry<>(keyBytes, valueBytes));
+                }
+            }
+        } finally {
+            // Close iterator
+            MemorySegment closeResult = (MemorySegment) iteratorCloseHandle.invokeExact(
+                    (SegmentAllocator) arena,
+                    iteratorPtr
+            );
+            // Ignore close errors
+        }
+
+        return results;
     }
 
     @Override
@@ -292,6 +396,37 @@ public class SlateDbNative implements AutoCloseable {
                 FunctionDescriptor.ofVoid(C_SDB_VALUE_LAYOUT)
         );
 
-        return new SlateDbNative(arena, dbHandle, getHandle, putHandle, deleteHandle, flushHandle, closeHandle, freeValueHandle);
+        // slatedb_scan_prefix_with_options(handle, prefix, prefix_len, scan_options, iterator_ptr) -> CSdbResult
+        MethodHandle scanPrefixHandle = linker.downcallHandle(
+                lookup.find("slatedb_scan_prefix_with_options").orElseThrow(() -> new IllegalStateException("Function 'slatedb_scan_prefix_with_options' not found")),
+                FunctionDescriptor.of(
+                        C_SDB_RESULT_LAYOUT,
+                        C_SDB_HANDLE_LAYOUT,
+                        ValueLayout.ADDRESS,
+                        ValueLayout.JAVA_LONG,
+                        ValueLayout.ADDRESS,
+                        ValueLayout.ADDRESS
+                )
+        );
+
+        // slatedb_iterator_next(iter) -> CSdbIteratorNextResult
+        MethodHandle iteratorNextHandle = linker.downcallHandle(
+                lookup.find("slatedb_iterator_next").orElseThrow(() -> new IllegalStateException("Function 'slatedb_iterator_next' not found")),
+                FunctionDescriptor.of(
+                        C_SDB_ITERATOR_NEXT_RESULT_LAYOUT,
+                        ValueLayout.ADDRESS
+                )
+        );
+
+        // slatedb_iterator_close(iter) -> CSdbResult
+        MethodHandle iteratorCloseHandle = linker.downcallHandle(
+                lookup.find("slatedb_iterator_close").orElseThrow(() -> new IllegalStateException("Function 'slatedb_iterator_close' not found")),
+                FunctionDescriptor.of(
+                        C_SDB_RESULT_LAYOUT,
+                        ValueLayout.ADDRESS
+                )
+        );
+
+        return new SlateDbNative(arena, dbHandle, getHandle, putHandle, deleteHandle, flushHandle, closeHandle, freeValueHandle, scanPrefixHandle, iteratorNextHandle, iteratorCloseHandle);
     }
 }

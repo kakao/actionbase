@@ -119,12 +119,22 @@ open class SlateDbHashLabel(
         limit: Int,
         start: EncodedKey<ByteArray>?,
         end: EncodedKey<ByteArray>?,
-    ): Mono<List<KeyFieldValue<ByteArray>>> {
-        // SlateDB scan not yet implemented in FFI
-        // For now, return empty - full scan support requires slatedb_scan_prefix_with_options
-        log.warn("SlateDB scan not yet fully implemented, returning empty result")
-        return Mono.just(emptyList())
-    }
+    ): Mono<List<KeyFieldValue<ByteArray>>> =
+        table
+            .flatMap { it.scanPrefix(prefix.key, limit + 1) }
+            .map { results ->
+                results
+                    // Filter by start key (exclusive)
+                    .dropWhile { (key, _) ->
+                        start?.key?.let { startKey -> Arrays.compareUnsigned(startKey, key) >= 0 } ?: false
+                    }
+                    // Filter by end key (exclusive)
+                    .dropLastWhile { (key, _) ->
+                        end?.key?.let { endKey -> Arrays.compareUnsigned(endKey, key) < 0 } ?: false
+                    }
+                    .take(limit)
+                    .map { (key, value) -> KeyFieldValue(key, value) }
+            }
 
     override fun encodedEdgeToSchemaEdge(keyFieldValue: KeyFieldValue<ByteArray>): SchemaEdge = entity.schema.decodeByteArray(keyFieldValue)
 
