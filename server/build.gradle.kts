@@ -1,5 +1,6 @@
 import actionbase.BuildParameter
 import actionbase.dependencies.Dependencies
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     id("actionbase.kotlin-conventions")
@@ -79,6 +80,10 @@ val ghcrPassword =
 
 springBoot {
     buildInfo()
+}
+
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 jib {

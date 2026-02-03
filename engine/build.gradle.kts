@@ -1,9 +1,17 @@
 import actionbase.dependencies.Dependencies
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     id("actionbase.kotlin-conventions")
     id("actionbase.reactor-conventions")
     `java-test-fixtures`
+}
+
+// Override to Java 25 for FFI support
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
 }
 
 ext["jvmArgs"] = listOf("--add-opens=java.base/java.nio=ALL-UNNAMED")
@@ -90,6 +98,7 @@ tasks.withType<Test>().all {
             "--add-opens=java.base/java.lang=ALL-UNNAMED",
             "--add-opens=java.base/java.util=ALL-UNNAMED",
             "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+            "--enable-native-access=ALL-UNNAMED",
         )
 
     if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {
