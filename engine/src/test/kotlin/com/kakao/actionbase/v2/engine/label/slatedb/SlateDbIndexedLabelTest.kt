@@ -1,5 +1,7 @@
 package com.kakao.actionbase.v2.engine.label.slatedb
 
+import com.kakao.actionbase.v2.core.code.Index
+import com.kakao.actionbase.v2.core.code.hbase.Order
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
 import com.kakao.actionbase.v2.core.metadata.LabelType
@@ -36,14 +38,14 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.matchers.shouldBe
 import reactor.kotlin.test.test
 
-class SlateDbHashLabelTest {
+class SlateDbIndexedLabelTest {
     @TempDir
     lateinit var tempDir: Path
 
     private lateinit var graph: Graph
-    private val serviceName = "slatedb_test_service"
-    private val storageName = "slatedb_storage"
-    private val labelName = "slatedb_label"
+    private val serviceName = "slatedb_indexed_test_service"
+    private val storageName = "slatedb_indexed_storage"
+    private val labelName = "slatedb_indexed_label"
 
     private fun findLibraryPath(): Path {
         var dir = Path.of(System.getProperty("user.dir"))
@@ -86,18 +88,18 @@ class SlateDbHashLabelTest {
             }
 
         graph.storageDdl
-            .create(EntityName.fromOrigin(storageName), StorageCreateRequest(desc = "slatedb storage", type = StorageType.SLATEDB, conf = conf))
+            .create(EntityName.fromOrigin(storageName), StorageCreateRequest(desc = "slatedb indexed storage", type = StorageType.SLATEDB, conf = conf))
             .test()
             .assertNext { it.status shouldBe DdlStatus.Status.CREATED }
             .verifyComplete()
 
-        // Create label with SlateDB storage
+        // Create INDEXED label with SlateDB storage
         val labelEntity =
             LabelEntity(
                 active = true,
                 name = EntityName(serviceName, labelName),
-                desc = "test slatedb label",
-                type = LabelType.HASH,
+                desc = "test slatedb indexed label",
+                type = LabelType.INDEXED,
                 schema =
                     EdgeSchema(
                         VertexField(VertexType.LONG),
@@ -109,6 +111,14 @@ class SlateDbHashLabelTest {
                     ),
                 dirType = DirectionType.OUT,
                 storage = storageName,
+                indices =
+                    listOf(
+                        Index(
+                            "score_desc",
+                            listOf(Index.Field("score", Order.DESC)),
+                            "Score descending index",
+                        ),
+                    ),
             )
 
         graph.labelDdl
@@ -126,7 +136,7 @@ class SlateDbHashLabelTest {
     }
 
     @Test
-    fun `insert and get edge`() {
+    fun `insert and get edge with index`() {
         val label = graph.getLabel(EntityName(serviceName, labelName))
         val edge =
             com.kakao.actionbase.v2.core.edge.Edge(
@@ -153,14 +163,45 @@ class SlateDbHashLabelTest {
             ).test()
             .assertNext { df ->
                 df.rows.size shouldBe 1
-                // tgt is at index 1 in the schema (src, tgt, ts, ...)
                 val row = df.toRowWithSchema().first()
                 row.getLong("tgt") shouldBe 200L
+                row.getLong("score") shouldBe 42L
             }.verifyComplete()
     }
 
     @Test
-    fun `delete edge`() {
+    fun `insert multiple edges and verify index order`() {
+        val label = graph.getLabel(EntityName(serviceName, labelName))
+        val ts = System.currentTimeMillis()
+
+        // Insert edges with different scores
+        val edges =
+            listOf(
+                com.kakao.actionbase.v2.core.edge.Edge(ts, 100L, 201L, mapOf("score" to 10L, "memo" to "low")),
+                com.kakao.actionbase.v2.core.edge.Edge(ts + 1, 100L, 202L, mapOf("score" to 50L, "memo" to "medium")),
+                com.kakao.actionbase.v2.core.edge.Edge(ts + 2, 100L, 203L, mapOf("score" to 100L, "memo" to "high")),
+            )
+
+        edges.forEach { edge ->
+            label.mutate(edge.toTraceEdge(), EdgeOperation.INSERT).block()
+        }
+
+        // Verify all edges exist
+        edges.forEach { edge ->
+            graph
+                .queryGet(
+                    EntityName(serviceName, labelName),
+                    edge.src,
+                    edge.tgt,
+                ).test()
+                .assertNext { df ->
+                    df.rows.size shouldBe 1
+                }.verifyComplete()
+        }
+    }
+
+    @Test
+    fun `delete edge removes from index`() {
         val label = graph.getLabel(EntityName(serviceName, labelName))
         val edge =
             com.kakao.actionbase.v2.core.edge.Edge(
@@ -173,6 +214,17 @@ class SlateDbHashLabelTest {
         // Insert
         label.mutate(edge.toTraceEdge(), EdgeOperation.INSERT).block()
 
+        // Verify exists
+        graph
+            .queryGet(
+                EntityName(serviceName, labelName),
+                101L,
+                201L,
+            ).test()
+            .assertNext { df ->
+                df.rows.size shouldBe 1
+            }.verifyComplete()
+
         // Delete
         label
             .mutate(edge.toTraceEdge(), EdgeOperation.DELETE)
@@ -181,7 +233,7 @@ class SlateDbHashLabelTest {
                 context.status shouldBe EdgeOperationStatus.DELETED
             }.verifyComplete()
 
-        // Verify deleted (should return empty)
+        // Verify deleted
         graph
             .queryGet(
                 EntityName(serviceName, labelName),
@@ -194,7 +246,7 @@ class SlateDbHashLabelTest {
     }
 
     @Test
-    fun `update edge`() {
+    fun `update edge updates index`() {
         val label = graph.getLabel(EntityName(serviceName, labelName))
         val ts = System.currentTimeMillis()
 
@@ -235,6 +287,7 @@ class SlateDbHashLabelTest {
             .assertNext { df ->
                 df.rows.size shouldBe 1
                 val row = df.toRowWithSchema().first()
+                row.getLong("score") shouldBe 100L
                 row.getString("memo") shouldBe "updated"
             }.verifyComplete()
     }

@@ -25,7 +25,7 @@ import java.util.Arrays
 
 import reactor.core.publisher.Mono
 
-class SlateDbHashLabel(
+open class SlateDbHashLabel(
     entity: LabelEntity,
     coder: EdgeEncoder<ByteArray>,
     private val table: Mono<SlateDbTable>,
