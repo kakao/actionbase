@@ -114,7 +114,9 @@ async function main() {
         // Wait for transition
         await page.waitForTimeout(300);
       } catch (err) {
-        console.log(`  Note: Could not click next at step ${i + 1}, trying Enter key...`);
+        console.log(
+          `  Note: Could not click next at step ${i + 1} (${err.message}), trying Enter key...`
+        );
         await page.keyboard.press('Enter');
         await page.waitForTimeout(300);
       }

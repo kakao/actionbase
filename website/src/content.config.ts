@@ -18,6 +18,8 @@ export const collections = {
         hideOverview: z.boolean().optional(),
         // Custom: mark document as translated by Kanana-2
         'translated-by-kanana-2': z.boolean().optional(),
+        // Custom: category for grouping stories
+        category: z.string().optional(),
       }),
     }),
   }),

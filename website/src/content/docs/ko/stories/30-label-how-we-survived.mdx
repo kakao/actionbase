@@ -1,0 +1,33 @@
+---
+title: How We Survived
+description: 프로덕션에서 신뢰를 얻기까지
+sidebar:
+  order: 30
+  attrs:
+    class: sidebar-label-link
+---
+
+Actionbase는 "완성"되기 전에 프로덕션에 배포되었습니다. 프로덕션 계약을 지키면서 계속 발전해야 하는 상황이었습니다.
+
+테스트는 통과했습니다. 하지만 "문제 없어?"라는 질문에 자신 있게 대답할 수 없었습니다. [판교 탄천과 운중천](https://github.com/kakao/actionbase/discussions/9)을 걸으며 이 고민을 많이 했습니다. 어떻게 하면 우리 스스로도 믿을 수 있는 상태를 만들 수 있을까.
+
+그래서 검증 계층을 쌓았습니다.
+
+## 검증 계층 {#verification-layers}
+
+| 단계         | 검증 방법                                           | 목적                                    |
+| ------------ | --------------------------------------------------- | --------------------------------------- |
+| 개발         | [Tests as Contracts](/ko/stories/contracts/)        | 약속된 동작 정의 및 보호                |
+| 배포 전      | [Shadow Testing](/ko/stories/shadow-testing/)       | 프로덕션 트래픽으로 신규 버전 검증      |
+| 마이그레이션 | [비교 검증](/ko/stories/migration-verification/)    | Source DB와 Actionbase 데이터 일치 확인 |
+| 운영 중      | [HBase 정합성 검증](/ko/stories/hbase-consistency/) | State, Index, Count 간 정합성 유지      |
+
+각 계층은 다른 종류의 문제를 잡습니다. 한 계층으로는 충분하지 않습니다.
+
+## 결국 얻은 것 {#what-we-gained}
+
+검증을 통해 확신이 생겼습니다: **문제가 발생해도 감지하고 보정할 수 있다**.
+
+이 확신이 쌓이면서 Actionbase 자체가 원장인 경우에도 신뢰할 수 있게 되었습니다. 처음부터 내린 설계 결정이 아니었습니다. 검증을 쌓아서 얻은 신뢰였습니다.
+
+목표는 모든 실패를 방지하는 것이 아닙니다. 문제가 되기 전에 감지하고 고치는 것입니다.

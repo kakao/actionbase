@@ -12,13 +12,6 @@ plugins {
     id("com.gorylenko.gradle-git-properties") version "2.5.4"
 }
 
-// Override to Java 25 for FFI support
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
-    }
-}
-
 dependencyManagement {
     dependencies {
         imports {

@@ -1,0 +1,63 @@
+---
+import { getCollection } from 'astro:content';
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+interface CategoryConfig {
+  name: string;
+  description?: string;
+}
+
+interface Props {
+  dir: string;
+  categories: (string | CategoryConfig)[];
+}
+
+const { dir, categories } = Astro.props;
+
+const getSlug = (p: { slug?: string; id?: string }) =>
+  p.slug ?? p.id?.replace(/\.(mdx?|md)$/, '') ?? '';
+
+const normalizedCategories = categories.map((c) =>
+  typeof c === 'string' ? { name: c } : c
+);
+const categoryNames = normalizedCategories.map((c) => c.name);
+
+const allPages = await getCollection('docs');
+
+const childPages = allPages.filter((p) => {
+  const slug = getSlug(p);
+  if (!slug.startsWith(dir + '/')) return false;
+  const rest = slug.slice(dir.length + 1);
+  return rest && !rest.includes('/');
+});
+
+// Group by category
+const grouped = new Map<string, typeof childPages>();
+
+for (const page of childPages) {
+  const slug = getSlug(page);
+  if (slug.endsWith('/index') || slug.includes('-label-')) continue;
+
+  const category = page.data.category as string | undefined;
+  if (category && categoryNames.includes(category)) {
+    if (!grouped.has(category)) grouped.set(category, []);
+    grouped.get(category)!.push(page);
+  }
+}
+---
+
+{normalizedCategories.map((category) => {
+  const pages = grouped.get(category.name);
+  if (!pages || pages.length === 0) return null;
+  return (
+    <div style="margin-bottom: 2rem;">
+      <h2>{category.name}</h2>
+      {category.description && <p style="color: var(--sl-color-gray-2); margin-bottom: 1rem;">{category.description}</p>}
+      <CardGrid>
+        {pages.map((p) => (
+          <LinkCard href={'/' + getSlug(p) + '/'} title={p.data.title} description={p.data.description} />
+        ))}
+      </CardGrid>
+    </div>
+  );
+})}
