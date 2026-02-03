@@ -8,21 +8,20 @@ sidebar:
 
 This story demonstrates the **Shadow Testing** pattern: how to perform final verification before deployment by mirroring production traffic.
 
-## The Challenge {#the-challenge}
+## Why We Needed This {#why-we-needed-this}
 
-[Tests as Contracts](/stories/contracts/) passed. Still anxious. Will it really be okay with actual production traffic?
-
-Unit tests, integration tests, contract tests. All passed. Yet problems still occur in production. Some things only surface in real traffic:
+[Tests as Contracts](/stories/contracts/) passed. But there are areas tests can't cover:
 
 - Bugs that only occur with specific data combinations
 - Performance issues dependent on traffic patterns
 - Issues that only surface at production data scale
+- Clients using behaviors not specified in contracts
 
-Services might also be relying on behaviors not covered by contracts. These are conditions that are hard to create in test environments.
+These are conditions you can't create in test environments.
 
 ## How It Works {#how-it-works}
 
-Before deployment, we run Shadow Testing. It has no impact on production traffic.
+Verify new versions with production traffic. No impact on actual service.
 
 ```mermaid
 flowchart LR
@@ -35,12 +34,12 @@ flowchart LR
     Verify -->|No| Block[Blocked]
 ```
 
-1. **Capture**: Kubernetes Nginx Ingress logs all requests (including body and response) to Kafka
-2. **Mirror**: These logs are mirrored to the test environment running the new version
-3. **Compare**: Results are compared against production responses
-4. **Verify**: Only if data integrity and system stability are confirmed does deployment proceed
+1. **Capture**: Kubernetes Nginx Ingress logs all requests and responses to Kafka
+2. **Mirror**: Mirrored to test environment running the new version
+3. **Compare**: Compare with production responses
+4. **Verify**: Deploy if match, block if mismatch
 
-## Position in Deployment Process {#deployment-process}
+## Deployment Process {#deployment-process}
 
 ```mermaid
 flowchart LR
@@ -49,12 +48,9 @@ flowchart LR
     Shadow --> Deploy[Deploy]
 ```
 
-- **Tests as Contracts**: Verify promised behaviors are preserved
-- **Shadow Testing**: Final verification with real traffic
-
-Deployment proceeds only after passing both stages.
+Both stages must pass before deployment proceeds.
 
 ## What We Learned {#what-we-learned}
 
-- **Real traffic is irreplaceable**. No matter how sophisticated test scenarios are, they cannot perfectly reproduce actual production traffic patterns.
-- **Final safety net before deployment**. Passing both Tests as Contracts and Shadow Testing gives confidence to deploy.
+- **Real traffic is irreplaceable.** No matter how sophisticated test scenarios are, they can't perfectly reproduce production traffic patterns.
+- **Final gate before deployment.** Both Tests as Contracts and Shadow Testing must pass before deployment.

@@ -8,17 +8,13 @@ sidebar:
 
 This story demonstrates the **Comparison Verification** pattern: how to verify data integrity when migrating data from existing systems to Actionbase.
 
-## The Challenge {#the-challenge}
+## Why We Needed This {#why-we-needed-this}
 
 Migrating data from existing systems to Actionbase. How can we be confident the data was transferred correctly?
 
-We don't migrate all data at once. We verify at each stage as we proceed.
+We didn't migrate all data at once. For [KakaoTalk Gift Wish](/stories/kakaotalk-gift-wish/), we went through 5 stages. Verify at each stage, then proceed to the next.
 
-## Staged Migration {#staged-migration}
-
-For [KakaoTalk Gift Wish](/stories/kakaotalk-gift-wish/), migration proceeded through 5 distinct stages. Each stage included integrity checks before proceeding to the next.
-
-## Comparison Verification {#comparison-verification}
+## How It Works {#how-it-works}
 
 ```mermaid
 flowchart LR
@@ -38,24 +34,28 @@ flowchart LR
 
 We compare two data sources:
 
-1. **Source DB Dump**: Direct export from source database (MySQL, etc.)
+1. **Source DB Dump**: Direct export from source database
 2. **Actionbase CDC Snapshot**: Accumulated "after" values from Actionbase CDC
 
-If both match, migration is verified. Any mismatch triggers investigation before proceeding.
+If they match, proceed to the next stage. If mismatch, stop and investigate.
 
 ## Boundary Handling {#boundary-handling}
 
-Boundary data exists at verification time. The timestamps of Source DB Dump and CDC Snapshot don't align exactly.
+Source DB Dump and CDC Snapshot timestamps don't align exactly. Boundary data exists.
 
-Boundary data is excluded from the current verification window. If the verification window is `T-1` day 00:00 ~ 23:59, boundary data is included in the next window `T`. As the window slides, all data eventually gets verified.
+Boundary data is excluded from the current verification window. If the verification window is `T-1` day 00:00 ~ 23:59, boundary data is verified in the next window `T`. As the window slides, all data gets verified.
 
 ## Why CDC Snapshot {#why-cdc-snapshot}
 
-Actionbase records all changes through CDC (Change Data Capture). By accumulating the "after" values from CDC, we can create a snapshot of the current state.
+We could read HBase directly and compare. But CDC Snapshot is data created through an independent path.
 
-We could also read HBase directly and compare. But CDC Snapshot is data created through an independent path. Source DB → Actionbase → HBase → CDC → Snapshot. Only if this entire pipeline works correctly will they match.
+```
+Source DB → Actionbase → HBase → CDC → Snapshot
+```
+
+This entire pipeline must work correctly for them to match. If something goes wrong anywhere in the pipeline, mismatch occurs.
 
 ## What We Learned {#what-we-learned}
 
-- **Verify with independent sources**. Create the same data through different paths and compare. If they match, the entire pipeline is working correctly.
-- **Progress in stages**. Don't migrate all data at once. Verify at each stage before proceeding to the next.
+- **Verify with independent sources.** Create the same data through different paths and compare. If they match, the entire pipeline is working.
+- **Progress in stages.** Don't migrate all data at once. Verify at each stage before proceeding.

@@ -8,17 +8,17 @@ sidebar:
 
 This story demonstrates the **Periodic Verification** pattern: how to detect and correct data inconsistencies that can occur during operations.
 
-## The Challenge {#the-challenge}
+## Why We Needed This {#why-we-needed-this}
 
-Deployed. Migration verified. But data inconsistencies can still occur during operations.
+Deployed. Migration verified. But data inconsistencies can still occur during operations. There's no perfect atomicity in distributed systems.
 
 ## Data Structure {#data-structure}
 
 Actionbase stores three types of data in HBase:
 
-- **State**: The source of truth—the actual edge records
-- **Index**: Derived data enabling efficient queries
-- **Count**: Derived aggregations
+- **State**: Source of truth - actual edge records
+- **Index**: Derived data for queries
+- **Count**: Aggregated data
 
 ```mermaid
 flowchart LR
@@ -28,13 +28,17 @@ flowchart LR
     Batch --> Count[Count]
 ```
 
-## The Consistency Problem {#consistency-problem}
+A single mutation updates State, Index, and Count together.
 
-HBase mutations execute State, Index, and Count together in a single batch operation. But if a region server fails mid-batch or network issues cause partial writes, some may update while others don't. When consistency between State, Index, and Count breaks, queries return incorrect results.
+## Consistency Problem {#consistency-problem}
 
-## Periodic Verification {#periodic-verification}
+HBase batch operations are not atomic. If a region server fails mid-operation or network issues cause partial writes, only some may update.
 
-We don't trust that batches always succeed atomically. Instead, we verify.
+If State updated but Index didn't? Queries return wrong results.
+
+## How It Works {#how-it-works}
+
+Verify periodically.
 
 ```mermaid
 flowchart LR
@@ -46,18 +50,18 @@ flowchart LR
     Check2 -->|Mismatch| Repair
 ```
 
-Using HBase's snapshot export, we periodically extract all data and run verification jobs:
+Export HBase snapshots and run verification jobs:
 
-- **State vs Index**: Every state record should have corresponding index entries
-- **State vs Count**: Aggregated counts should match actual record counts
+- **State vs Index**: Does every state have a corresponding index?
+- **State vs Count**: Does the aggregation match actual record count?
 
-## Periodic Correction {#periodic-correction}
+## Correction {#correction}
 
-Mismatches are detected and corrected. State is the source of truth. Index and Count can be regenerated from State.
+When mismatch is detected, we correct it. State is the truth. Index and Count can be regenerated from State.
 
-Correction frequency is determined by service SLA requirements.
+Correction frequency is determined by service SLA.
 
 ## What We Learned {#what-we-learned}
 
-- **Don't expect perfect atomicity**. Partial failures happen in distributed systems. Mechanisms to detect and correct them are necessary.
-- **State is the source of truth**. Design derived data (Index, Count) so it can always be regenerated from State.
+- **Don't expect perfect atomicity.** Partial failures happen in distributed systems. Mechanisms to detect and correct them are necessary.
+- **State is the truth.** Design derived data (Index, Count) so it can always be regenerated from State.

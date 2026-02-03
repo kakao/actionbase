@@ -1,6 +1,6 @@
 ---
 title: How We Survived
-description: How we built multi-layered verification so engineers could trust the system
+description: How we earned trust in production
 sidebar:
   order: 30
   attrs:
@@ -9,25 +9,25 @@ sidebar:
 
 Actionbase was deployed to production before it was "complete." It had to keep evolving while maintaining production contracts.
 
-A lot of these conversations happened while walking along [streams in Pangyo](https://github.com/kakao/actionbase/discussions/9) (Tancheon and Unjungcheon). How could we build a state where even we could trust the system?
+Tests passed. But we couldn't confidently answer "is there really no problem?" We walked along [streams in Pangyo](https://github.com/kakao/actionbase/discussions/9) (Tancheon and Unjungcheon) discussing this concern. How could we build a state where even we could trust the system?
+
+So we built verification layers.
 
 ## Verification Layers {#verification-layers}
 
-| Stage          | Method                                                      | Purpose                                          |
-| -------------- | ----------------------------------------------------------- | ------------------------------------------------ |
-| Development    | [Tests as Contracts](/stories/contracts/)                   | Define and protect promised behaviors            |
-| Pre-Deployment | [Shadow Testing](/stories/shadow-testing/)                  | Verify new versions with production traffic      |
-| Migration      | [Comparison Verification](/stories/migration-verification/) | Confirm Source DB and Actionbase data match      |
-| Runtime        | [HBase Consistency](/stories/hbase-consistency/)            | Maintain consistency between State, Index, Count |
+| Stage      | Method                                                      | Purpose                                          |
+| ---------- | ----------------------------------------------------------- | ------------------------------------------------ |
+| Dev        | [Tests as Contracts](/stories/contracts/)                   | Define and protect promised behaviors            |
+| Pre-Deploy | [Shadow Testing](/stories/shadow-testing/)                  | Verify new versions with production traffic      |
+| Migration  | [Comparison Verification](/stories/migration-verification/) | Confirm Source DB and Actionbase data match      |
+| Runtime    | [HBase Consistency](/stories/hbase-consistency/)            | Maintain consistency between State, Index, Count |
 
 Each layer catches different types of problems. One layer isn't enough.
 
-## Building Trust {#building-trust}
+## What We Gained {#what-we-gained}
 
-In the CQRS pattern, we know the correct answer. The original data exists. [Gift Wish](/stories/kakaotalk-gift-wish/)'s shadow read fits this context. We could verify whether the data Actionbase created matched the source of truth.
+Through verification, we gained confidence: **even if issues occur, we can detect and correct them**.
 
-Through verification, confidence grew: **issues could be detected and corrected**.
+As this confidence accumulated, we could trust Actionbase even when it was the ledger itself. This wasn't a design decision made upfront. It was trust earned by building verification.
 
-As this confidence accumulated, we could trust Actionbase even when it was the ledger itself. This wasn't a design decision made upfront. It was trust earned through verification.
-
-The goal isn't to prevent all failures—it's to detect and fix them before they matter.
+The goal isn't to prevent all failures. It's to detect and fix them before they matter.
