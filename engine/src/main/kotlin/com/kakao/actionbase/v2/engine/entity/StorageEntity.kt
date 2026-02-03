@@ -11,6 +11,7 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
 import com.kakao.actionbase.v2.engine.storage.jdbc.JdbcStorage
 import com.kakao.actionbase.v2.engine.storage.local.LocalStorage
 import com.kakao.actionbase.v2.engine.storage.nil.NilStorage
+import com.kakao.actionbase.v2.engine.storage.slatedb.SlateDbStorage
 import com.kakao.actionbase.v2.engine.util.getLogger
 
 import org.slf4j.Logger
@@ -40,6 +41,9 @@ data class StorageEntity(
             }
             StorageType.HBASE -> {
                 HBaseStorage(this)
+            }
+            StorageType.SLATEDB -> {
+                SlateDbStorage(this)
             }
             StorageType.DATASTORE -> {
                 DatastoreStorage

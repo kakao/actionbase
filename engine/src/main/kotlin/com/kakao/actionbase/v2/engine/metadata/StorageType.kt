@@ -5,6 +5,7 @@ enum class StorageType {
     LOCAL,
     JDBC,
     HBASE,
+    SLATEDB,
 
     DATASTORE,
     ;

@@ -1,13 +1,16 @@
 package com.kakao.actionbase.server.ffi
 
 import com.kakao.actionbase.v2.engine.ffi.MathOps
-import jakarta.annotation.PreDestroy
+
+import java.nio.file.Path
+
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.nio.file.Path
+
+import jakarta.annotation.PreDestroy
 
 @RestController
 @ConditionalOnProperty(name = ["ffi.enabled"], havingValue = "true", matchIfMissing = false)
@@ -20,9 +23,7 @@ class FfiController(
     fun add(
         @RequestParam a: Int,
         @RequestParam b: Int,
-    ): Int {
-        return mathOps.add(a, b)
-    }
+    ): Int = mathOps.add(a, b)
 
     @PreDestroy
     fun cleanup() {

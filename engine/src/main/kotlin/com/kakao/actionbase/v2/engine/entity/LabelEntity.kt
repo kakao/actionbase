@@ -21,12 +21,15 @@ import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.metastore.LocalBackedJdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.nil.NilLabel
+import com.kakao.actionbase.v2.engine.label.slatedb.SlateDbHashLabel
+import com.kakao.actionbase.v2.engine.label.slatedb.SlateDbIndexedLabel
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.sql.RowWithSchema
 import com.kakao.actionbase.v2.engine.storage.DatastoreStorage
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
 import com.kakao.actionbase.v2.engine.storage.jdbc.JdbcStorage
 import com.kakao.actionbase.v2.engine.storage.local.LocalStorage
+import com.kakao.actionbase.v2.engine.storage.slatedb.SlateDbStorage
 import com.kakao.actionbase.v2.engine.util.getLogger
 
 import org.slf4j.Logger
@@ -79,6 +82,7 @@ data class LabelEntity(
                         is JdbcStorage -> JdbcHashLabel.create(this, graph, storage, block)
                         is HBaseStorage -> HBaseHashLabel.create(this, graph, storage)
                         is DatastoreStorage -> DatastoreHashLabel.create(this, graph, block)
+                        is SlateDbStorage -> SlateDbHashLabel.create(this, graph, storage)
                         else -> {
                             logger.error(
                                 "{} supports only Local, Jdbc, HBase storage types. {} is not supported. Fallback to NilLabel",
@@ -99,9 +103,10 @@ data class LabelEntity(
                     when (storage) {
                         is HBaseStorage -> HBaseIndexedLabel.create(this, graph, storage)
                         is DatastoreStorage -> DatastoreIndexedLabel.create(this, graph, block)
+                        is SlateDbStorage -> SlateDbIndexedLabel.create(this, graph, storage)
                         else -> {
                             logger.error(
-                                "{} supports only Jdbc, HBase storage types. {} is not supported. Fallback to NilLabel",
+                                "{} supports only Jdbc, HBase, SlateDb storage types. {} is not supported. Fallback to NilLabel",
                                 type,
                                 storage,
                             )

@@ -62,6 +62,8 @@ import com.kakao.actionbase.v2.engine.sql.toRowFlux
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseOptions
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
+import com.kakao.actionbase.v2.engine.storage.slatedb.SlateDbConnections
+import com.kakao.actionbase.v2.engine.storage.slatedb.SlateDbOptions
 import com.kakao.actionbase.v2.engine.util.getLogger
 import com.kakao.actionbase.v2.engine.wal.Wal
 import com.kakao.actionbase.v2.engine.wal.WalFactory
@@ -616,6 +618,10 @@ class Graph(
                     val options = storage.materialize().options as HBaseOptions
                     options.checkConnection()
                 }
+                StorageType.SLATEDB -> {
+                    val options = storage.materialize().options as SlateDbOptions
+                    options.checkConnection()
+                }
                 else -> Mono.just(false)
             }
 
@@ -892,6 +898,7 @@ class Graph(
         intervalDisposable?.dispose()
         log.info("Disposed Flux.interval for reloading metastore - {}", intervalDisposable)
         HBaseConnections.closeConnections().block()
+        SlateDbConnections.closeConnections().block()
         DefaultHBaseCluster.INSTANCE.close()
     }
 

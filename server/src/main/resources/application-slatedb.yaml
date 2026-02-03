@@ -1,0 +1,18 @@
+# SlateDB storage profile
+# Usage: --spring.profiles.active=slatedb
+#
+# Prerequisites:
+# 1. Build slatedb-c: ./native/build-slatedb.sh
+# 2. Set library path via environment variable or update libraryPath below
+
+actionbase:
+  tenant: ab-slatedb
+
+kc:
+  graph:
+    defaultStorage:
+      type: SLATEDB
+      conf:
+        path: data
+        url: file://${SLATEDB_STORAGE_PATH:/tmp/actionbase-slatedb}
+        libraryPath: ${SLATEDB_LIBRARY_PATH:native/lib/libslatedb_c.dylib}

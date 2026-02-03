@@ -1,5 +1,6 @@
-import actionbase.dependencies.Dependencies
 import org.gradle.jvm.toolchain.JavaLanguageVersion
+
+import actionbase.dependencies.Dependencies
 
 plugins {
     id("actionbase.kotlin-conventions")

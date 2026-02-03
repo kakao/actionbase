@@ -17,10 +17,10 @@ class MathOps private constructor(
     private val arena: Arena,
     private val addHandle: MethodHandle,
 ) : AutoCloseable {
-
-    fun add(a: Int, b: Int): Int {
-        return addHandle.invokeExact(a, b) as Int
-    }
+    fun add(
+        a: Int,
+        b: Int,
+    ): Int = addHandle.invokeExact(a, b) as Int
 
     override fun close() {
         arena.close()
@@ -32,16 +32,18 @@ class MathOps private constructor(
             val lookup = SymbolLookup.libraryLookup(libraryPath, arena)
             val linker = Linker.nativeLinker()
 
-            val descriptor = FunctionDescriptor.of(
-                ValueLayout.JAVA_INT,
-                ValueLayout.JAVA_INT,
-                ValueLayout.JAVA_INT,
-            )
+            val descriptor =
+                FunctionDescriptor.of(
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT,
+                )
 
-            val addHandle = linker.downcallHandle(
-                lookup.find("add").orElseThrow { IllegalStateException("Function 'add' not found") },
-                descriptor,
-            )
+            val addHandle =
+                linker.downcallHandle(
+                    lookup.find("add").orElseThrow { IllegalStateException("Function 'add' not found") },
+                    descriptor,
+                )
 
             return MathOps(arena, addHandle)
         }
