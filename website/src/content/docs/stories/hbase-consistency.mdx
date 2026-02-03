@@ -10,9 +10,7 @@ This story demonstrates the **Periodic Verification** pattern: how to detect and
 
 ## The Challenge {#the-challenge}
 
-Deployed. Migration verified. Now just operate?
-
-No. Data inconsistencies can still occur during operations.
+Deployed. Migration verified. But data inconsistencies can still occur during operations.
 
 ## Data Structure {#data-structure}
 
@@ -32,9 +30,7 @@ flowchart LR
 
 ## The Consistency Problem {#consistency-problem}
 
-HBase mutations execute State, Index, and Count together in a single batch operation. But what happens when a region server fails mid-batch? Or network issues cause partial writes?
-
-Some may update while others don't. When consistency between State, Index, and Count breaks, queries return incorrect results.
+HBase mutations execute State, Index, and Count together in a single batch operation. But if a region server fails mid-batch or network issues cause partial writes, some may update while others don't. When consistency between State, Index, and Count breaks, queries return incorrect results.
 
 ## Periodic Verification {#periodic-verification}
 

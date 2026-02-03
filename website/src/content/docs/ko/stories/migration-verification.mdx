@@ -43,6 +43,12 @@ flowchart LR
 
 둘이 일치하면 마이그레이션이 검증됩니다. 불일치가 발생하면 진행 전에 조사합니다.
 
+## 경계 조건 처리 {#boundary-handling}
+
+검증 시점에 경계 데이터가 존재합니다. Source DB Dump와 CDC Snapshot의 시점이 정확히 일치하지 않기 때문입니다.
+
+경계 데이터는 현재 검증 윈도우에서 제외합니다. 검증 윈도우가 `T-1`일 00:00 ~ 23:59라면, 경계에 해당하는 데이터는 다음 윈도우 `T`일 검증에 포함됩니다. 윈도우가 슬라이딩하면서 모든 데이터가 검증됩니다.
+
 ## 왜 CDC Snapshot인가 {#why-cdc-snapshot}
 
 Actionbase는 CDC(Change Data Capture)를 통해 모든 변경을 기록합니다. CDC의 "after" 값을 누적하면 현재 상태의 스냅샷을 만들 수 있습니다.

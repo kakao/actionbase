@@ -43,6 +43,12 @@ We compare two data sources:
 
 If both match, migration is verified. Any mismatch triggers investigation before proceeding.
 
+## Boundary Handling {#boundary-handling}
+
+Boundary data exists at verification time. The timestamps of Source DB Dump and CDC Snapshot don't align exactly.
+
+Boundary data is excluded from the current verification window. If the verification window is `T-1` day 00:00 ~ 23:59, boundary data is included in the next window `T`. As the window slides, all data eventually gets verified.
+
 ## Why CDC Snapshot {#why-cdc-snapshot}
 
 Actionbase records all changes through CDC (Change Data Capture). By accumulating the "after" values from CDC, we can create a snapshot of the current state.
