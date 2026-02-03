@@ -5,6 +5,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 import actionbase.dependencies.Dependencies
@@ -40,9 +41,9 @@ class KotlinConventionsPlugin : Plugin<Project> {
 //
     private fun configureKotlinCompiler(project: Project) {
         project.tasks.withType(KotlinCompile::class.java).configureEach {
-            kotlinOptions {
-                jvmTarget = "17"
-                freeCompilerArgs = listOf("-Xjsr305=strict")
+            compilerOptions {
+                jvmTarget.set(JvmTarget.JVM_17)
+                freeCompilerArgs.add("-Xjsr305=strict")
             }
         }
     }

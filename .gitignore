@@ -79,3 +79,4 @@ CLAUDE.md
 !**/.cursor/
 !**/.cursor/rules/
 !**/.cursor/rules/**
+engine/target/
