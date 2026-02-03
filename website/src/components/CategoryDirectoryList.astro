@@ -36,7 +36,7 @@ const grouped = new Map<string, typeof childPages>();
 
 for (const page of childPages) {
   const slug = getSlug(page);
-  if (slug.endsWith('/index') || slug.includes('-label')) continue;
+  if (slug.endsWith('/index') || slug.includes('-label-')) continue;
 
   const category = page.data.category as string | undefined;
   if (category && categoryNames.includes(category)) {
