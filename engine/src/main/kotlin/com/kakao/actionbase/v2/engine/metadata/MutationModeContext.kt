@@ -19,6 +19,7 @@ data class MutationModeContext(
          * mode  = internal ?: global ?: request ?: table
          * queue = mode == ASYNC || mode == IGNORE
          *
+         * Constraint: request and internal are mutually exclusive (both non-null -> IllegalArgumentException)
          * Constraint: table=IGNORE && internal=N/A && global=N/A && request=SYNC -> IllegalArgumentException
          *
          * | internal | global | request | table  | mode   | queue   |
@@ -44,6 +45,9 @@ data class MutationModeContext(
             request: MutationMode?,
             internal: MutationMode? = null,
         ): MutationModeContext {
+            require(request == null || internal == null) {
+                "request and internal are mutually exclusive. request=$request, internal=$internal"
+            }
             val mode = internal ?: global ?: request ?: label
             require(!(label == IGNORE && internal == null && global == null && request == SYNC)) {
                 "SYNC is not allowed when table mode is IGNORE."

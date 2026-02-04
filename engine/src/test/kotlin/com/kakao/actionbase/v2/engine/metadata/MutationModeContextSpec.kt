@@ -15,6 +15,7 @@ import io.kotest.matchers.shouldBe
  * mode  = internal ?: global ?: request ?: table
  * queue = mode == ASYNC || mode == IGNORE
  *
+ * Constraint: request and internal are mutually exclusive (both non-null -> IllegalArgumentException)
  * Constraint: table=IGNORE && internal=N/A && global=N/A && request=SYNC -> IllegalArgumentException
  *
  * | internal | global | request | table  | mode   | queue   |
@@ -47,38 +48,33 @@ class MutationModeContextSpec :
             t: MutationMode,
         ) = "i=${i ?: "N/A"}, g=${g ?: "N/A"}, r=${r ?: "N/A"}, t=$t"
 
-        // TC 1: i=SYNC, g=*, r=*, t=* -> mode=SYNC, queue=false
+        // TC 1: i=SYNC, g=*, r=N/A, t=* -> mode=SYNC, queue=false
+        // (request must be null when internal is specified)
         for (g in nullableModes) {
-            for (r in nullableModes) {
-                for (t in modes) {
-                    "${testLabel(SYNC, g, r, t)} -> mode=SYNC, queue=false" {
-                        val ctx = MutationModeContext.of(label = t, global = g, request = r, internal = SYNC)
-                        ctx.queue shouldBe false
-                    }
+            for (t in modes) {
+                "${testLabel(SYNC, g, null, t)} -> mode=SYNC, queue=false" {
+                    val ctx = MutationModeContext.of(label = t, global = g, request = null, internal = SYNC)
+                    ctx.queue shouldBe false
                 }
             }
         }
 
-        // TC 2: i=ASYNC, g=*, r=*, t=* -> mode=ASYNC, queue=true
+        // TC 2: i=ASYNC, g=*, r=N/A, t=* -> mode=ASYNC, queue=true
         for (g in nullableModes) {
-            for (r in nullableModes) {
-                for (t in modes) {
-                    "${testLabel(ASYNC, g, r, t)} -> mode=ASYNC, queue=true" {
-                        val ctx = MutationModeContext.of(label = t, global = g, request = r, internal = ASYNC)
-                        ctx.queue shouldBe true
-                    }
+            for (t in modes) {
+                "${testLabel(ASYNC, g, null, t)} -> mode=ASYNC, queue=true" {
+                    val ctx = MutationModeContext.of(label = t, global = g, request = null, internal = ASYNC)
+                    ctx.queue shouldBe true
                 }
             }
         }
 
-        // TC 3: i=IGNORE, g=*, r=*, t=* -> mode=IGNORE, queue=true
+        // TC 3: i=IGNORE, g=*, r=N/A, t=* -> mode=IGNORE, queue=true
         for (g in nullableModes) {
-            for (r in nullableModes) {
-                for (t in modes) {
-                    "${testLabel(IGNORE, g, r, t)} -> mode=IGNORE, queue=true" {
-                        val ctx = MutationModeContext.of(label = t, global = g, request = r, internal = IGNORE)
-                        ctx.queue shouldBe true
-                    }
+            for (t in modes) {
+                "${testLabel(IGNORE, g, null, t)} -> mode=IGNORE, queue=true" {
+                    val ctx = MutationModeContext.of(label = t, global = g, request = null, internal = IGNORE)
+                    ctx.queue shouldBe true
                 }
             }
         }
@@ -109,6 +105,17 @@ class MutationModeContextSpec :
                 "${testLabel(null, IGNORE, r, t)} -> mode=IGNORE, queue=true" {
                     val ctx = MutationModeContext.of(label = t, global = IGNORE, request = r, internal = null)
                     ctx.queue shouldBe true
+                }
+            }
+        }
+
+        // TC: request and internal are mutually exclusive
+        for (r in modes) {
+            for (i in modes) {
+                "request=$r and internal=$i both non-null -> throws IllegalArgumentException" {
+                    shouldThrow<IllegalArgumentException> {
+                        MutationModeContext.of(label = SYNC, global = null, request = r, internal = i)
+                    }
                 }
             }
         }

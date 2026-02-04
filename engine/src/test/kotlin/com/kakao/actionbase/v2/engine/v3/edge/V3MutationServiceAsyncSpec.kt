@@ -15,6 +15,7 @@ import com.kakao.actionbase.v2.engine.v3.V3QueryService
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -346,23 +347,19 @@ class V3MutationServiceAsyncSpec :
                 .verifyComplete()
         }
 
-        "ASYNC EDGE table with internal=SYNC overrides mode=ASYNC" {
+        "mutateEdge with both mode and internal should throw IllegalArgumentException" {
             val request = mapper.readValue<EdgeBulkMutationRequest>(edgeRequestString)
 
-            v3MutationService
-                .mutateEdge(
-                    edgeTableName.service,
-                    edgeTableName.nameNotNull,
-                    request,
-                    mode = MutationMode.ASYNC,
-                    internal = MutationMode.SYNC,
-                ).test()
-                .assertNext {
-                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"CREATED","count":1},{"source":1,"target":2,"status":"CREATED","count":2}]}"""
-                }.verifyComplete()
-
-            verifyWal(edgeTableName, 3, queue = false, requestMode = MutationMode.ASYNC, internalMode = MutationMode.SYNC)
-            verifyCdc(edgeTableName, 2)
+            shouldThrow<IllegalArgumentException> {
+                v3MutationService
+                    .mutateEdge(
+                        edgeTableName.service,
+                        edgeTableName.nameNotNull,
+                        request,
+                        mode = MutationMode.ASYNC,
+                        internal = MutationMode.SYNC,
+                    ).block()
+            }
         }
     }) {
     companion object {
