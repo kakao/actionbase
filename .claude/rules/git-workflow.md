@@ -25,6 +25,27 @@ refactor/simplify-query-builder
 - Ensure CI passes before merge
 - Keep PRs focused and small
 
+## Multi-Agent Parallel Work
+
+Use **git worktree** to run multiple agents on different branches simultaneously:
+
+```bash
+# Create worktrees for parallel work
+git worktree add ../actionbase-feature-a feature/branch-a
+git worktree add ../actionbase-feature-b feature/branch-b
+
+# List worktrees
+git worktree list
+
+# Remove when done
+git worktree remove ../actionbase-feature-a
+```
+
+Benefits:
+- Same repo, separate directories, separate branches
+- No branch conflicts between agents
+- Shared `.git` saves disk space
+
 ## Templates
 
 See `CLAUDE.md` for template locations:
