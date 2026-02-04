@@ -153,4 +153,33 @@ class SlateDbTableTest {
             .create(table.get(key2))
             .verifyComplete()
     }
+
+    @Test
+    fun `batch increment adds delta to value`() {
+        val key = "counter".toByteArray(StandardCharsets.UTF_8)
+
+        // Increment non-existent key (starts at 0)
+        StepVerifier
+            .create(
+                table
+                    .batch(listOf(BatchOperation.Increment(key, 5)))
+                    .then(table.get(key)),
+            ).expectNextMatches {
+                java.nio.ByteBuffer
+                    .wrap(it)
+                    .long == 5L
+            }.verifyComplete()
+
+        // Increment existing key
+        StepVerifier
+            .create(
+                table
+                    .batch(listOf(BatchOperation.Increment(key, 3)))
+                    .then(table.get(key)),
+            ).expectNextMatches {
+                java.nio.ByteBuffer
+                    .wrap(it)
+                    .long == 8L
+            }.verifyComplete()
+    }
 }

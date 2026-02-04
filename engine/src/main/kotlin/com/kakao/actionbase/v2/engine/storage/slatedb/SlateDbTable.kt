@@ -103,9 +103,26 @@ internal class SlateDbTableImpl(
                         when (op) {
                             is BatchOperation.Put -> batch.put(op.key, op.value)
                             is BatchOperation.Delete -> batch.delete(op.key)
-                            is BatchOperation.Increment -> throw UnsupportedOperationException(
-                                "Increment not yet supported - waiting for merge operator in slatedb-c (slatedb#1250)",
-                            )
+                            is BatchOperation.Increment -> {
+                                // TODO: Replace with batch.merge() once slatedb#1250 is resolved
+                                // WARNING: This is NOT atomic - race condition possible
+                                val current = db.get(op.key)
+                                val currentValue =
+                                    if (current != null) {
+                                        java.nio.ByteBuffer
+                                            .wrap(current)
+                                            .long
+                                    } else {
+                                        0L
+                                    }
+                                val newValue = currentValue + op.delta
+                                val newBytes =
+                                    java.nio.ByteBuffer
+                                        .allocate(8)
+                                        .putLong(newValue)
+                                        .array()
+                                batch.put(op.key, newBytes)
+                            }
                         }
                     }
                     db.write(batch)
