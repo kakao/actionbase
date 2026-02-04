@@ -278,7 +278,13 @@ class Graph(
         internal: MutationMode? = null,
         failOnExist: Boolean = false,
     ): Mono<MutationResult> {
-        val mutationModeContext = MutationModeContext.of(label.entity.mode, globalMutationMode, mode, internal)
+        val mutationModeContext =
+            MutationModeContext.of(
+                table = label.entity.mode,
+                request = mode,
+                global = globalMutationMode,
+                internal = internal,
+            )
 
         return Flux
             .fromIterable(edges)

@@ -53,7 +53,7 @@ class MutationModeContextSpec :
         for (g in nullableModes) {
             for (t in modes) {
                 "${testLabel(SYNC, g, null, t)} -> mode=SYNC, queue=false" {
-                    val ctx = MutationModeContext.of(label = t, global = g, request = null, internal = SYNC)
+                    val ctx = MutationModeContext.of(table = t, global = g, request = null, internal = SYNC)
                     ctx.queue shouldBe false
                 }
             }
@@ -63,7 +63,7 @@ class MutationModeContextSpec :
         for (g in nullableModes) {
             for (t in modes) {
                 "${testLabel(ASYNC, g, null, t)} -> mode=ASYNC, queue=true" {
-                    val ctx = MutationModeContext.of(label = t, global = g, request = null, internal = ASYNC)
+                    val ctx = MutationModeContext.of(table = t, global = g, request = null, internal = ASYNC)
                     ctx.queue shouldBe true
                 }
             }
@@ -73,7 +73,7 @@ class MutationModeContextSpec :
         for (g in nullableModes) {
             for (t in modes) {
                 "${testLabel(IGNORE, g, null, t)} -> mode=IGNORE, queue=true" {
-                    val ctx = MutationModeContext.of(label = t, global = g, request = null, internal = IGNORE)
+                    val ctx = MutationModeContext.of(table = t, global = g, request = null, internal = IGNORE)
                     ctx.queue shouldBe true
                 }
             }
@@ -83,7 +83,7 @@ class MutationModeContextSpec :
         for (r in nullableModes) {
             for (t in modes) {
                 "${testLabel(null, SYNC, r, t)} -> mode=SYNC, queue=false" {
-                    val ctx = MutationModeContext.of(label = t, global = SYNC, request = r, internal = null)
+                    val ctx = MutationModeContext.of(table = t, global = SYNC, request = r, internal = null)
                     ctx.queue shouldBe false
                 }
             }
@@ -93,7 +93,7 @@ class MutationModeContextSpec :
         for (r in nullableModes) {
             for (t in modes) {
                 "${testLabel(null, ASYNC, r, t)} -> mode=ASYNC, queue=true" {
-                    val ctx = MutationModeContext.of(label = t, global = ASYNC, request = r, internal = null)
+                    val ctx = MutationModeContext.of(table = t, global = ASYNC, request = r, internal = null)
                     ctx.queue shouldBe true
                 }
             }
@@ -103,7 +103,7 @@ class MutationModeContextSpec :
         for (r in nullableModes) {
             for (t in modes) {
                 "${testLabel(null, IGNORE, r, t)} -> mode=IGNORE, queue=true" {
-                    val ctx = MutationModeContext.of(label = t, global = IGNORE, request = r, internal = null)
+                    val ctx = MutationModeContext.of(table = t, global = IGNORE, request = r, internal = null)
                     ctx.queue shouldBe true
                 }
             }
@@ -114,7 +114,7 @@ class MutationModeContextSpec :
             for (i in modes) {
                 "request=$r and internal=$i both non-null -> throws IllegalArgumentException" {
                     shouldThrow<IllegalArgumentException> {
-                        MutationModeContext.of(label = SYNC, global = null, request = r, internal = i)
+                        MutationModeContext.of(table = SYNC, global = null, request = r, internal = i)
                     }
                 }
             }
@@ -122,44 +122,44 @@ class MutationModeContextSpec :
 
         // TC 7: i=N/A, g=N/A, r=SYNC, t={SYNC,ASYNC} -> mode=SYNC, queue=false
         "${testLabel(null, null, SYNC, SYNC)} -> mode=SYNC, queue=false" {
-            MutationModeContext.of(label = SYNC, global = null, request = SYNC, internal = null).queue shouldBe false
+            MutationModeContext.of(table = SYNC, global = null, request = SYNC, internal = null).queue shouldBe false
         }
 
         "${testLabel(null, null, SYNC, ASYNC)} -> mode=SYNC, queue=false" {
-            MutationModeContext.of(label = ASYNC, global = null, request = SYNC, internal = null).queue shouldBe false
+            MutationModeContext.of(table = ASYNC, global = null, request = SYNC, internal = null).queue shouldBe false
         }
 
         // TC 7-Invalid: i=N/A, g=N/A, r=SYNC, t=IGNORE -> throws
         "${testLabel(null, null, SYNC, IGNORE)} -> throws IllegalArgumentException" {
             shouldThrow<IllegalArgumentException> {
-                MutationModeContext.of(label = IGNORE, global = null, request = SYNC, internal = null)
+                MutationModeContext.of(table = IGNORE, global = null, request = SYNC, internal = null)
             }
         }
 
         // TC 8: i=N/A, g=N/A, r=ASYNC, t=* -> mode=ASYNC, queue=true
         for (t in modes) {
             "${testLabel(null, null, ASYNC, t)} -> mode=ASYNC, queue=true" {
-                MutationModeContext.of(label = t, global = null, request = ASYNC, internal = null).queue shouldBe true
+                MutationModeContext.of(table = t, global = null, request = ASYNC, internal = null).queue shouldBe true
             }
         }
 
         // TC 9: i=N/A, g=N/A, r=IGNORE, t=* -> mode=IGNORE, queue=true
         for (t in modes) {
             "${testLabel(null, null, IGNORE, t)} -> mode=IGNORE, queue=true" {
-                MutationModeContext.of(label = t, global = null, request = IGNORE, internal = null).queue shouldBe true
+                MutationModeContext.of(table = t, global = null, request = IGNORE, internal = null).queue shouldBe true
             }
         }
 
         // TC 10: i=N/A, g=N/A, r=N/A, t=* -> mode=table, queue depends on table
         "${testLabel(null, null, null, SYNC)} -> mode=SYNC, queue=false" {
-            MutationModeContext.of(label = SYNC, global = null, request = null, internal = null).queue shouldBe false
+            MutationModeContext.of(table = SYNC, global = null, request = null, internal = null).queue shouldBe false
         }
 
         "${testLabel(null, null, null, ASYNC)} -> mode=ASYNC, queue=true" {
-            MutationModeContext.of(label = ASYNC, global = null, request = null, internal = null).queue shouldBe true
+            MutationModeContext.of(table = ASYNC, global = null, request = null, internal = null).queue shouldBe true
         }
 
         "${testLabel(null, null, null, IGNORE)} -> mode=IGNORE, queue=true" {
-            MutationModeContext.of(label = IGNORE, global = null, request = null, internal = null).queue shouldBe true
+            MutationModeContext.of(table = IGNORE, global = null, request = null, internal = null).queue shouldBe true
         }
     })

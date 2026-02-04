@@ -30,7 +30,7 @@ class KafkaProducer(
                     entityName,
                     edge.toTraceEdge(),
                     EdgeOperation.INSERT,
-                    MutationModeContext(MutationMode.IGNORE, null, null, null, false),
+                    MutationModeContext(t = MutationMode.IGNORE, r = null, g = null, i = null, queue = false),
                 )
             }
 

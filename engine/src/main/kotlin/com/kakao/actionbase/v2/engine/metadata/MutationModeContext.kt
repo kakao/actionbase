@@ -6,9 +6,9 @@ import com.kakao.actionbase.v2.core.metadata.MutationMode.IGNORE
 import com.kakao.actionbase.v2.core.metadata.MutationMode.SYNC
 
 data class MutationModeContext(
-    val l: MutationMode, // label (table)
-    val g: MutationMode?, // global
+    val t: MutationMode, // table
     val r: MutationMode?, // request
+    val g: MutationMode?, // global
     val i: MutationMode?, // internal
     val queue: Boolean,
 ) {
@@ -40,20 +40,20 @@ data class MutationModeContext(
          * | N/A      | N/A    | N/A     | IGNORE | IGNORE | true    |
          */
         fun of(
-            label: MutationMode,
-            global: MutationMode?,
+            table: MutationMode,
             request: MutationMode?,
+            global: MutationMode?,
             internal: MutationMode? = null,
         ): MutationModeContext {
             require(request == null || internal == null) {
                 "request and internal are mutually exclusive. request=$request, internal=$internal"
             }
-            val mode = internal ?: global ?: request ?: label
-            require(!(label == IGNORE && internal == null && global == null && request == SYNC)) {
+            val mode = internal ?: global ?: request ?: table
+            require(!(table == IGNORE && internal == null && global == null && request == SYNC)) {
                 "SYNC is not allowed when table mode is IGNORE."
             }
             val queue = mode == ASYNC || mode == IGNORE
-            return MutationModeContext(label, global, request, internal, queue)
+            return MutationModeContext(t = table, r = request, g = global, i = internal, queue = queue)
         }
     }
 }
