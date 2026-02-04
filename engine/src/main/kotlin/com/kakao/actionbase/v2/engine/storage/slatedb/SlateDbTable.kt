@@ -1,5 +1,7 @@
 package com.kakao.actionbase.v2.engine.storage.slatedb
 
+import java.nio.ByteBuffer
+
 import io.slatedb.SlateDb
 import io.slatedb.SlateDbKeyValue
 import reactor.core.publisher.Mono
@@ -106,21 +108,8 @@ internal class SlateDbTableImpl(
                             is BatchOperation.Increment -> {
                                 // TODO: Replace with batch.merge() once slatedb#1250 is resolved
                                 // WARNING: This is NOT atomic - race condition possible
-                                val current = db.get(op.key)
-                                val currentValue =
-                                    if (current != null) {
-                                        java.nio.ByteBuffer
-                                            .wrap(current)
-                                            .long
-                                    } else {
-                                        0L
-                                    }
-                                val newValue = currentValue + op.delta
-                                val newBytes =
-                                    java.nio.ByteBuffer
-                                        .allocate(8)
-                                        .putLong(newValue)
-                                        .array()
+                                val currentValue = db.get(op.key)?.let { ByteBuffer.wrap(it).long } ?: 0L
+                                val newBytes = ByteBuffer.allocate(Long.SIZE_BYTES).putLong(currentValue + op.delta).array()
                                 batch.put(op.key, newBytes)
                             }
                         }

@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.storage.slatedb
 
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
@@ -22,7 +23,13 @@ class SlateDbTableTest {
         while (!dir.resolve("settings.gradle.kts").toFile().exists() && dir.parent != null) {
             dir = dir.parent
         }
-        return dir.resolve("native/lib/libslatedb_c.dylib").toAbsolutePath().toString()
+        val libName =
+            if (System.getProperty("os.name").lowercase().contains("linux")) {
+                "libslatedb_c.so"
+            } else {
+                "libslatedb_c.dylib"
+            }
+        return dir.resolve("native/lib/$libName").toAbsolutePath().toString()
     }
 
     @BeforeEach
@@ -164,11 +171,8 @@ class SlateDbTableTest {
                 table
                     .batch(listOf(BatchOperation.Increment(key, 5)))
                     .then(table.get(key)),
-            ).expectNextMatches {
-                java.nio.ByteBuffer
-                    .wrap(it)
-                    .long == 5L
-            }.verifyComplete()
+            ).expectNextMatches { ByteBuffer.wrap(it).long == 5L }
+            .verifyComplete()
 
         // Increment existing key
         StepVerifier
@@ -176,10 +180,7 @@ class SlateDbTableTest {
                 table
                     .batch(listOf(BatchOperation.Increment(key, 3)))
                     .then(table.get(key)),
-            ).expectNextMatches {
-                java.nio.ByteBuffer
-                    .wrap(it)
-                    .long == 8L
-            }.verifyComplete()
+            ).expectNextMatches { ByteBuffer.wrap(it).long == 8L }
+            .verifyComplete()
     }
 }
