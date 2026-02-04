@@ -5,6 +5,23 @@ import io.slatedb.SlateDbKeyValue
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
+sealed class BatchOperation {
+    data class Put(
+        val key: ByteArray,
+        val value: ByteArray,
+    ) : BatchOperation()
+
+    data class Delete(
+        val key: ByteArray,
+    ) : BatchOperation()
+
+    /** Not yet supported - waiting for merge operator in slatedb-c (#1250) */
+    data class Increment(
+        val key: ByteArray,
+        val delta: Long,
+    ) : BatchOperation()
+}
+
 interface SlateDbTable : AutoCloseable {
     fun get(key: ByteArray): Mono<ByteArray>
 
@@ -21,6 +38,8 @@ interface SlateDbTable : AutoCloseable {
         prefix: ByteArray,
         limit: Int,
     ): Mono<List<Pair<ByteArray, ByteArray>>>
+
+    fun batch(operations: List<BatchOperation>): Mono<Void>
 
     companion object {
         fun create(db: SlateDb): SlateDbTable = SlateDbTableImpl(db)
@@ -75,6 +94,24 @@ internal class SlateDbTableImpl(
                 }
                 results.toList()
             }.subscribeOn(Schedulers.boundedElastic())
+
+    override fun batch(operations: List<BatchOperation>): Mono<Void> =
+        Mono
+            .fromCallable {
+                SlateDb.newWriteBatch().use { batch ->
+                    operations.forEach { op ->
+                        when (op) {
+                            is BatchOperation.Put -> batch.put(op.key, op.value)
+                            is BatchOperation.Delete -> batch.delete(op.key)
+                            is BatchOperation.Increment -> throw UnsupportedOperationException(
+                                "Increment not yet supported - waiting for merge operator in slatedb-c (slatedb#1250)",
+                            )
+                        }
+                    }
+                    db.write(batch)
+                }
+            }.subscribeOn(Schedulers.boundedElastic())
+            .then()
 
     override fun close() {
         db.close()

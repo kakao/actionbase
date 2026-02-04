@@ -90,4 +90,67 @@ class SlateDbTableTest {
             ).expectNextMatches { it != null && String(it, StandardCharsets.UTF_8) == "flush-value" }
             .verifyComplete()
     }
+
+    @Test
+    fun `batch writes multiple keys atomically`() {
+        val key1 = "batch-key-1".toByteArray(StandardCharsets.UTF_8)
+        val value1 = "batch-value-1".toByteArray(StandardCharsets.UTF_8)
+        val key2 = "batch-key-2".toByteArray(StandardCharsets.UTF_8)
+        val value2 = "batch-value-2".toByteArray(StandardCharsets.UTF_8)
+        val key3 = "batch-key-3".toByteArray(StandardCharsets.UTF_8)
+        val value3 = "batch-value-3".toByteArray(StandardCharsets.UTF_8)
+
+        val operations =
+            listOf(
+                BatchOperation.Put(key1, value1),
+                BatchOperation.Put(key2, value2),
+                BatchOperation.Put(key3, value3),
+            )
+
+        StepVerifier
+            .create(
+                table
+                    .batch(operations)
+                    .then(table.get(key1)),
+            ).expectNextMatches { String(it, StandardCharsets.UTF_8) == "batch-value-1" }
+            .verifyComplete()
+
+        StepVerifier
+            .create(table.get(key2))
+            .expectNextMatches { String(it, StandardCharsets.UTF_8) == "batch-value-2" }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `batch with put and delete`() {
+        val key1 = "batch-put".toByteArray(StandardCharsets.UTF_8)
+        val value1 = "value".toByteArray(StandardCharsets.UTF_8)
+        val key2 = "batch-delete".toByteArray(StandardCharsets.UTF_8)
+        val value2 = "to-be-deleted".toByteArray(StandardCharsets.UTF_8)
+
+        // First, put key2
+        StepVerifier
+            .create(table.put(key2, value2))
+            .verifyComplete()
+
+        // Then batch: put key1, delete key2
+        val operations =
+            listOf(
+                BatchOperation.Put(key1, value1),
+                BatchOperation.Delete(key2),
+            )
+
+        StepVerifier
+            .create(
+                table
+                    .batch(operations)
+                    .then(table.get(key1)),
+            ).expectNextMatches { String(it, StandardCharsets.UTF_8) == "value" }
+            .verifyComplete()
+
+        // key2 should be deleted
+        StepVerifier
+            .create(table.get(key2))
+            .verifyComplete()
+    }
 }
