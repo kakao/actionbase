@@ -13,6 +13,7 @@ SLATEDB_REPO="https://github.com/criccomini/slatedb.git"
 # Parse arguments
 BUILD_RUST=true
 BUILD_JAVA=true
+RUN_TESTS=false
 
 for arg in "$@"; do
   case $arg in
@@ -21,6 +22,9 @@ for arg in "$@"; do
       ;;
     --rust-only)
       BUILD_JAVA=false
+      ;;
+    --test)
+      RUN_TESTS=true
       ;;
   esac
 done
@@ -52,7 +56,7 @@ if [ "$BUILD_RUST" = true ]; then
     exit 1
   fi
 
-  # Ensure nightly is installed
+  # Ensure nightly is installed (slatedb uses nightly features)
   if ! rustup run nightly rustc --version &> /dev/null; then
     echo "Installing Rust nightly..."
     rustup install nightly
@@ -67,26 +71,14 @@ fi
 
 mkdir -p "$LIB_DIR"
 
-# Build slatedb-c with nightly
+# Build slatedb-c
 if [ "$BUILD_RUST" = true ]; then
-  echo "Building slatedb-c (nightly)..."
+  echo "Building slatedb-c..."
   cd "$SLATEDB_DIR"
   cargo +nightly build --release -p slatedb-c
 
-  case "$OS" in
-    Darwin)
-      cp target/release/libslatedb_c.dylib "$LIB_DIR/"
-      echo "Built: $LIB_DIR/libslatedb_c.dylib"
-      ;;
-    Linux)
-      cp target/release/libslatedb_c.so "$LIB_DIR/"
-      echo "Built: $LIB_DIR/libslatedb_c.so"
-      ;;
-    *)
-      echo "Unsupported OS: $OS"
-      exit 1
-      ;;
-  esac
+  cp "target/release/$NATIVE_LIB" "$LIB_DIR/"
+  echo "Built: $LIB_DIR/$NATIVE_LIB"
 fi
 
 # Build slatedb-java
@@ -94,7 +86,16 @@ if [ "$BUILD_JAVA" = true ]; then
   if [ -d "$SLATEDB_DIR/slatedb-java" ]; then
     echo "Building slatedb-java..."
     cd "$SLATEDB_DIR/slatedb-java"
-    ./gradlew jar --quiet
+
+    # Set SLATEDB_C_LIB for tests (as per upstream CI)
+    export SLATEDB_C_LIB="$LIB_DIR/$NATIVE_LIB"
+
+    if [ "$RUN_TESTS" = true ]; then
+      echo "Running slatedb-java tests..."
+      ./gradlew check
+    else
+      ./gradlew jar --quiet
+    fi
 
     # Copy JAR to lib directory
     JAR_FILE=$(find build/libs -name "slatedb-*.jar" -not -name "*-sources*" -not -name "*-javadoc*" | head -1)
