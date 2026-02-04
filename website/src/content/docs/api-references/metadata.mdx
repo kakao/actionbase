@@ -122,7 +122,7 @@ POST /graph/v3/databases/{database}/tables/{table}
     "indexes": [],
     "groups": []
   },
-  "storage": { "type": "HBASE", "tableName": "my-hbase-table" },
+  "storage": "datastore://hbase/my-hbase-table",
   "mode": "SYNC",
   "comment": "My table"
 }
@@ -308,11 +308,9 @@ data class StructField(
 
 ### Storage
 
-```kotlin
-sealed class Storage {
-    data class HBase(val tableName: String) : Storage()
-}
-```
+URI format: `datastore://hbase/<tableName>`
+
+Example: `datastore://hbase/my-hbase-table`
 
 ### Enums
 
