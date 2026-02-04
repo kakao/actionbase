@@ -1,7 +1,7 @@
 services:
   hbase:
     build: .
-    image: hbase-actionbase-dev:2.5.12
+    image: hbase-actionbase-dev:2.5.13
     container_name: hbase-actionbase-dev
     hostname: hbase
     ports:
@@ -13,17 +13,39 @@ services:
     volumes:
       - ./data/hbase:/data/hbase
       - ./data/zookeeper:/data/zookeeper
-      - ./logs:/opt/hbase/logs
+      - ./data/logs:/opt/hbase/logs
     deploy:
       resources:
         limits:
           memory: 3g
         reservations:
           memory: 2g
-    restart: unless-stopped
+
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:16010"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test:
+        [
+          "CMD-SHELL",
+          'echo "exists ''ab_local:ab_local_default''" | hbase shell 2>/dev/null | grep -q ''true''',
+        ]
+      interval: 10s
+      timeout: 30s
+      retries: 12
       start_period: 60s
+
+  actionbase:
+    image: ghcr.io/kakao/actionbase:standalone
+    container_name: actionbase
+    depends_on:
+      hbase:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - SPRING_CONFIG_ADDITIONAL-LOCATION=/app/config/
+      - AB_SERVER_HOST=0.0.0.0
+    volumes:
+      - ./conf/application-local.yaml:/app/config/application-local.yaml
+      - ./data/logs:/app/logs
+    ports:
+      - "8080:8080"
+    stdin_open: true
+    tty: true
