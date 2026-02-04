@@ -8,6 +8,7 @@ import java.nio.ByteOrder
 import java.nio.file.Path
 
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.io.TempDir
@@ -17,17 +18,24 @@ import io.slatedb.SlateDb
 /**
  * SlateDB compatibility test.
  *
+ * Disabled by default. Set SLATEDB_TEST=true to run.
  * Requires native library: native/lib/libslatedb_c.dylib (macOS) or libslatedb_c.so (Linux)
+ *
+ * To run:
+ *   SLATEDB_TEST=true ./gradlew :engine:test --tests "*SlateDBDatastoreCompatibilityTest*"
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
-    private lateinit var table: SlateDbTable
+    private var table: SlateDbTable? = null
     private lateinit var tempDir: Path
+
+    private val enabled = System.getenv("SLATEDB_TEST") == "true"
 
     @BeforeAll
     fun setUpSlateDB(
         @TempDir dir: Path,
     ) {
+        assumeTrue(enabled, "SLATEDB_TEST=true not set")
         tempDir = dir
         SlateDb.loadLibrary(findLibraryPath())
         val db = SlateDb.open("data", "file://${tempDir.toAbsolutePath()}", null)
@@ -36,17 +44,18 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
 
     @AfterAll
     fun tearDownSlateDB() {
-        table.close()
+        table?.close()
     }
 
-    override fun createStore(): StorageOperations = SlateDBOps(table)
+    override fun createStore(): StorageOperations = SlateDBOps(table!!)
 
     override fun supportsCheckAndMutate() = false
 
     override fun cleanup() {
-        // Scan with empty prefix to get all keys, then delete them
-        table.scanPrefix(ByteArray(0), Int.MAX_VALUE).block()?.forEach { (key, _) ->
-            table.delete(key).block()
+        table?.let { t ->
+            t.scanPrefix(ByteArray(0), Int.MAX_VALUE).block()?.forEach { (key, _) ->
+                t.delete(key).block()
+            }
         }
     }
 
