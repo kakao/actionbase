@@ -793,3 +793,43 @@ enum class MutationMode { SYNC, ASYNC, DROP }
 enum class DirectionType { OUT, IN, BOTH }
 enum class PrimitiveType { BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, BYTES }
 ```
+
+## V2 Compatibility
+
+V3 API wraps the existing V2 DDL services with a new interface. The table below shows the mapping between V2 and V3 terminology.
+
+### Terminology Mapping
+
+| V2 Term | V3 Term | Description |
+|---------|---------|-------------|
+| Service | Database | Logical database |
+| Label | Table | Table with edge schema |
+| Alias | Alias | Table alias (unchanged) |
+
+### API Endpoint Mapping
+
+| V2 Endpoint | V3 Endpoint |
+|-------------|-------------|
+| `GET /graph/v2/services` | `GET /graph/v3/databases` |
+| `GET /graph/v2/services/{service}` | `GET /graph/v3/databases/{database}` |
+| `POST /graph/v2/services/{service}` | `POST /graph/v3/databases/{database}` |
+| `PUT /graph/v2/services/{service}` | `PUT /graph/v3/databases/{database}` |
+| `DELETE /graph/v2/services/{service}` | `DELETE /graph/v3/databases/{database}` |
+| `GET /graph/v2/services/{service}/labels` | `GET /graph/v3/databases/{database}/tables` |
+| `GET /graph/v2/services/{service}/labels/{label}` | `GET /graph/v3/databases/{database}/tables/{table}` |
+| `POST /graph/v2/services/{service}/labels/{label}` | `POST /graph/v3/databases/{database}/tables/{table}` |
+| `PUT /graph/v2/services/{service}/labels/{label}` | `PUT /graph/v3/databases/{database}/tables/{table}` |
+| `GET /graph/v2/services/{service}/aliases` | `GET /graph/v3/databases/{database}/aliases` |
+| `GET /graph/v2/services/{service}/aliases/{alias}` | `GET /graph/v3/databases/{database}/aliases/{alias}` |
+| `POST /graph/v2/services/{service}/aliases/{alias}` | `POST /graph/v3/databases/{database}/aliases/{alias}` |
+| `PUT /graph/v2/services/{service}/aliases/{alias}` | `PUT /graph/v3/databases/{database}/aliases/{alias}` |
+| `DELETE /graph/v2/services/{service}/aliases/{alias}` | `DELETE /graph/v3/databases/{database}/aliases/{alias}` |
+
+### MutationMode Mapping
+
+| V2 Mode | V3 Mode | Description |
+|---------|---------|-------------|
+| SYNC | SYNC | Synchronous mutation |
+| ASYNC | ASYNC | Asynchronous mutation |
+| IGNORE | DROP | Drop mutations silently |
+| - | DENY | Deny mutations (V3 only, throws error) |
