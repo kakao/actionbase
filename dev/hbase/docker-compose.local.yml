@@ -14,7 +14,7 @@ services:
       - ./data/hbase:/data/hbase
       - ./data/zookeeper:/data/zookeeper
       - ./data/logs:/opt/hbase/logs
-      - ./conf/hbase-site.docker.xml:/opt/hbase/conf/hbase-site.xml:ro
+      - ./conf/hbase-site.local.xml:/opt/hbase/conf/hbase-site.xml:ro
     deploy:
       resources:
         limits:
@@ -32,21 +32,3 @@ services:
       timeout: 30s
       retries: 12
       start_period: 60s
-
-  actionbase:
-    image: ghcr.io/kakao/actionbase:standalone
-    container_name: actionbase
-    depends_on:
-      hbase:
-        condition: service_healthy
-    environment:
-      - SPRING_PROFILES_ACTIVE=local
-      - SPRING_CONFIG_ADDITIONAL-LOCATION=/app/config/
-      - AB_SERVER_HOST=0.0.0.0
-    volumes:
-      - ./conf/application-local.yaml:/app/config/application-local.yaml
-      - ./data/logs:/app/logs
-    ports:
-      - "8080:8080"
-    stdin_open: true
-    tty: true

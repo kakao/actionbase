@@ -14,14 +14,14 @@
     <value>false</value>
   </property>
 
-  <!-- Master/RegionServer Configuration -->
+  <!-- Master/RegionServer Configuration - use hostname for cross-container access -->
   <property>
     <name>hbase.master.hostname</name>
-    <value>localhost</value>
+    <value>hbase</value>
   </property>
   <property>
     <name>hbase.regionserver.hostname</name>
-    <value>localhost</value>
+    <value>hbase</value>
   </property>
   <property>
     <name>hbase.master.ipc.address</name>
@@ -35,7 +35,7 @@
   <!-- ZooKeeper Configuration -->
   <property>
     <name>hbase.zookeeper.quorum</name>
-    <value>localhost</value>
+    <value>hbase</value>
   </property>
   <property>
     <name>hbase.zookeeper.property.dataDir</name>

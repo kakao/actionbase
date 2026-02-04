@@ -44,8 +44,8 @@ RUN apt-get update && \
 # Copy HBase from builder
 COPY --from=builder /opt/hbase /opt/hbase
 
-# Copy hbase-site.xml into image
-COPY conf/hbase-site.xml /opt/hbase/conf/hbase-site.xml
+# Copy local hbase-site.xml into image (localhost access)
+COPY conf/hbase-site.local.xml /opt/hbase/conf/hbase-site.xml
 
 # Create data directories
 RUN mkdir -p /data/hbase /data/zookeeper
