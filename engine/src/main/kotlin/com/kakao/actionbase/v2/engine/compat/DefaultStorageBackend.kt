@@ -2,6 +2,9 @@ package com.kakao.actionbase.v2.engine.compat
 
 import com.kakao.actionbase.v2.engine.storage.memory.MemoryStorageBackend
 
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase.client.AsyncConnection
+
 import org.slf4j.LoggerFactory
 
 object DefaultStorageBackend {
@@ -33,5 +36,14 @@ object DefaultStorageBackend {
                 instance0 = DefaultHBaseCluster.INSTANCE
             }
         }
+    }
+
+    fun initialize(
+        connectionMono: reactor.core.publisher.Mono<AsyncConnection>,
+        namespace: String,
+        configuration: Configuration,
+    ) {
+        DefaultHBaseCluster.initialize(connectionMono, namespace, configuration)
+        instance0 = DefaultHBaseCluster.INSTANCE
     }
 }
