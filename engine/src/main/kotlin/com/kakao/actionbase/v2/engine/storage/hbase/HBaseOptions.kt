@@ -1,6 +1,6 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
-import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
+import com.kakao.actionbase.v2.engine.compat.DefaultStorageBackend
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
 
 import org.apache.hadoop.conf.Configuration
@@ -24,7 +24,7 @@ data class HBaseOptions(
 ) {
     private val logger = LoggerFactory.getLogger(HBaseOptions::class.java)
 
-    private fun useMockConnection(): Boolean = mock || DefaultHBaseCluster.INSTANCE.mock
+    private fun useMockConnection(): Boolean = mock || DefaultStorageBackend.INSTANCE.mock
 
     // Mock or DefaultHBaseCluster connections is always available.
     fun checkConnection(): Mono<Boolean> = Mono.just(true)
@@ -46,14 +46,9 @@ data class HBaseOptions(
             val hbaseTable = HBaseTable.create(table)
             Mono.just(HBaseTables(hbaseTable, hbaseTable))
         } else {
-            val namespace = if (namespace.isBlank()) DefaultHBaseCluster.INSTANCE.namespace else this.namespace
-            logger.info("🚀 Using DefaultHBaseCluster for tableName: {} (using namespace: {})", tableName, namespace)
-            DefaultHBaseCluster.INSTANCE.connectionMono
-                .map { connection ->
-                    val edgeTable = connection.getTable(TableName.valueOf(namespace, tableName))
-                    val hbaseTable = HBaseTable.create(edgeTable)
-                    HBaseTables(hbaseTable, hbaseTable)
-                }.cache()
+            val namespace = if (namespace.isBlank()) DefaultStorageBackend.INSTANCE.namespace else this.namespace
+            logger.info("🚀 Using DefaultStorageBackend for tableName: {} (using namespace: {})", tableName, namespace)
+            DefaultStorageBackend.INSTANCE.getTable(namespace, tableName).cache()
         }
 
     companion object {

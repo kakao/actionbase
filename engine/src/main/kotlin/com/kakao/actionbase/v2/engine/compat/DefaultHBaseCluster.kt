@@ -27,12 +27,12 @@ import reactor.core.scheduler.Schedulers
  * so DedicateHBaseCluster was added to handle this situation.
  */
 class DefaultHBaseCluster private constructor(
-    val mock: Boolean,
+    override val mock: Boolean,
     val connectionMono: Mono<AsyncConnection>,
-    val namespace: String,
+    override val namespace: String,
     val config: org.apache.hadoop.conf.Configuration,
-) : AutoCloseable {
-    fun getTable(
+) : StorageBackend {
+    override fun getTable(
         namespace: String,
         tableName: String,
     ): Mono<HBaseTables> =
@@ -50,7 +50,7 @@ class DefaultHBaseCluster private constructor(
         }
 
     // URI format: datastore://{namespace}/{tableName}
-    fun getTable(uri: String): Mono<HBaseTables> {
+    override fun getTable(uri: String): Mono<HBaseTables> {
         val (namespace, tableName) = parseDatastoreUri(uri)
         return getTable(namespace, tableName)
     }
