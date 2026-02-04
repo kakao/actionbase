@@ -11,6 +11,7 @@ import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.server.test.E2ETestBase
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
@@ -21,20 +22,16 @@ import org.junit.jupiter.api.TestMethodOrder
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TableControllerTest : E2ETestBase() {
-    private val testDatabase = "v3-table-test-db"
-    private val testTable = "v3-test-table"
+    private val db = "v3-table-test-db"
+    private val table = "v3-test-table"
+    private val baseUri = "/graph/v3/databases/$db/tables"
 
     @BeforeAll
-    fun setupDatabase() {
-        val request =
-            DatabaseCreateRequest(
-                database = testDatabase,
-                comment = "test database for table api",
-            )
+    fun setup() {
         client
             .post()
-            .uri("/graph/v3/databases/$testDatabase")
-            .bodyValue(request)
+            .uri("/graph/v3/databases/$db")
+            .bodyValue(DatabaseCreateRequest(db, "test db"))
             .exchange()
             .expectStatus()
             .isOk
@@ -45,7 +42,7 @@ class TableControllerTest : E2ETestBase() {
     fun `list tables - empty`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase/tables")
+            .uri(baseUri)
             .exchange()
             .expectStatus()
             .isOk
@@ -56,37 +53,17 @@ class TableControllerTest : E2ETestBase() {
     @Test
     @Order(2)
     fun `create table`() {
-        val request =
-            TableCreateRequest(
-                schema =
-                    ModelSchema.Edge(
-                        source = Field(PrimitiveType.STRING, "source vertex"),
-                        target = Field(PrimitiveType.STRING, "target vertex"),
-                        properties =
-                            listOf(
-                                StructField("score", PrimitiveType.INT, "score field", true),
-                            ),
-                        direction = DirectionType.OUT,
-                    ),
-                storage = Storage.HBase("test-hbase-table"),
-                mode = MutationMode.SYNC,
-                comment = "test table for v3 api",
-            )
-
         client
             .post()
-            .uri("/graph/v3/databases/$testDatabase/tables/$testTable")
-            .bodyValue(request)
+            .uri("$baseUri/$table")
+            .bodyValue(tableRequest())
             .exchange()
             .expectStatus()
             .isOk
             .expectBody(TableDescriptor.Edge::class.java)
-            .consumeWith { result ->
-                val body = result.responseBody!!
-                assert(body.database == testDatabase)
-                assert(body.table == testTable)
-                assert(body.comment == "test table for v3 api")
-                assert(body.mode == MutationMode.SYNC)
+            .value {
+                assertThat(it.database).isEqualTo(db)
+                assertThat(it.table).isEqualTo(table)
             }
     }
 
@@ -95,16 +72,12 @@ class TableControllerTest : E2ETestBase() {
     fun `get table`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase/tables/$testTable")
+            .uri("$baseUri/$table")
             .exchange()
             .expectStatus()
             .isOk
             .expectBody(TableDescriptor.Edge::class.java)
-            .consumeWith { result ->
-                val body = result.responseBody!!
-                assert(body.database == testDatabase)
-                assert(body.table == testTable)
-            }
+            .value { assertThat(it.table).isEqualTo(table) }
     }
 
     @Test
@@ -112,7 +85,7 @@ class TableControllerTest : E2ETestBase() {
     fun `list tables - has one`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase/tables")
+            .uri(baseUri)
             .exchange()
             .expectStatus()
             .isOk
@@ -125,9 +98,23 @@ class TableControllerTest : E2ETestBase() {
     fun `get non-existent table returns 404`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase/tables/non-existent-table")
+            .uri("$baseUri/non-existent")
             .exchange()
             .expectStatus()
             .isNotFound
     }
+
+    private fun tableRequest() =
+        TableCreateRequest(
+            schema =
+                ModelSchema.Edge(
+                    source = Field(PrimitiveType.STRING, "src"),
+                    target = Field(PrimitiveType.STRING, "tgt"),
+                    properties = listOf(StructField("score", PrimitiveType.INT, "score", true)),
+                    direction = DirectionType.OUT,
+                ),
+            storage = Storage.HBase("test-hbase-table"),
+            mode = MutationMode.SYNC,
+            comment = "test table",
+        )
 }

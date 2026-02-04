@@ -10,6 +10,7 @@ import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.server.test.E2ETestBase
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
@@ -20,44 +21,27 @@ import org.junit.jupiter.api.TestMethodOrder
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AliasControllerTest : E2ETestBase() {
-    private val testDatabase = "v3-alias-test-db"
-    private val testTable = "v3-alias-target-table"
-    private val testAlias = "v3-test-alias"
+    private val db = "v3-alias-test-db"
+    private val table = "v3-alias-target-table"
+    private val alias = "v3-test-alias"
+    private val baseUri = "/graph/v3/databases/$db/aliases"
 
     @BeforeAll
-    fun setupDatabaseAndTable() {
+    fun setup() {
         // Create database
-        val dbRequest =
-            DatabaseCreateRequest(
-                database = testDatabase,
-                comment = "test database for alias api",
-            )
         client
             .post()
-            .uri("/graph/v3/databases/$testDatabase")
-            .bodyValue(dbRequest)
+            .uri("/graph/v3/databases/$db")
+            .bodyValue(DatabaseCreateRequest(db, "test db"))
             .exchange()
             .expectStatus()
             .isOk
 
         // Create table (alias target)
-        val tableRequest =
-            TableCreateRequest(
-                schema =
-                    ModelSchema.Edge(
-                        source = Field(PrimitiveType.STRING, "source vertex"),
-                        target = Field(PrimitiveType.STRING, "target vertex"),
-                        properties = emptyList(),
-                        direction = DirectionType.OUT,
-                    ),
-                storage = Storage.HBase("alias-test-hbase-table"),
-                mode = MutationMode.SYNC,
-                comment = "target table for alias",
-            )
         client
             .post()
-            .uri("/graph/v3/databases/$testDatabase/tables/$testTable")
-            .bodyValue(tableRequest)
+            .uri("/graph/v3/databases/$db/tables/$table")
+            .bodyValue(tableRequest())
             .exchange()
             .expectStatus()
             .isOk
@@ -68,7 +52,7 @@ class AliasControllerTest : E2ETestBase() {
     fun `list aliases - empty`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase/aliases")
+            .uri(baseUri)
             .exchange()
             .expectStatus()
             .isOk
@@ -79,26 +63,17 @@ class AliasControllerTest : E2ETestBase() {
     @Test
     @Order(2)
     fun `create alias`() {
-        val request =
-            AliasCreateRequest(
-                table = testTable,
-                comment = "test alias for v3 api",
-            )
-
         client
             .post()
-            .uri("/graph/v3/databases/$testDatabase/aliases/$testAlias")
-            .bodyValue(request)
+            .uri("$baseUri/$alias")
+            .bodyValue(AliasCreateRequest(table, "test alias"))
             .exchange()
             .expectStatus()
             .isOk
             .expectBody(AliasDescriptor::class.java)
-            .consumeWith { result ->
-                val body = result.responseBody!!
-                assert(body.database == testDatabase)
-                assert(body.alias == testAlias)
-                assert(body.table == testTable)
-                assert(body.comment == "test alias for v3 api")
+            .value {
+                assertThat(it.alias).isEqualTo(alias)
+                assertThat(it.table).isEqualTo(table)
             }
     }
 
@@ -107,17 +82,12 @@ class AliasControllerTest : E2ETestBase() {
     fun `get alias`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase/aliases/$testAlias")
+            .uri("$baseUri/$alias")
             .exchange()
             .expectStatus()
             .isOk
             .expectBody(AliasDescriptor::class.java)
-            .consumeWith { result ->
-                val body = result.responseBody!!
-                assert(body.database == testDatabase)
-                assert(body.alias == testAlias)
-                assert(body.table == testTable)
-            }
+            .value { assertThat(it.alias).isEqualTo(alias) }
     }
 
     @Test
@@ -125,7 +95,7 @@ class AliasControllerTest : E2ETestBase() {
     fun `list aliases - has one`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase/aliases")
+            .uri(baseUri)
             .exchange()
             .expectStatus()
             .isOk
@@ -138,7 +108,7 @@ class AliasControllerTest : E2ETestBase() {
     fun `get non-existent alias returns 404`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase/aliases/non-existent-alias")
+            .uri("$baseUri/non-existent")
             .exchange()
             .expectStatus()
             .isNotFound
@@ -146,37 +116,25 @@ class AliasControllerTest : E2ETestBase() {
 
     @Test
     @Order(6)
-    fun `deactivate alias before delete`() {
-        val request =
-            AliasUpdateRequest(
-                active = false,
-                comment = null,
-                table = null,
-            )
-
+    fun `deactivate alias`() {
         client
             .put()
-            .uri("/graph/v3/databases/$testDatabase/aliases/$testAlias")
-            .bodyValue(request)
+            .uri("$baseUri/$alias")
+            .bodyValue(AliasUpdateRequest(active = false))
             .exchange()
             .expectStatus()
             .isOk
             .expectBody(AliasDescriptor::class.java)
-            .consumeWith { result ->
-                val body = result.responseBody!!
-                assert(body.alias == testAlias)
-                assert(!body.active)
-            }
+            .value { assertThat(it.active).isFalse() }
     }
 
     @Test
     @Order(7)
     fun `delete alias`() {
-        // Delete returns 404 after successful deletion because the entity no longer exists
-        // We verify deletion was successful by checking the list is empty in the next test
+        // Delete returns 404 because entity no longer exists after deletion
         client
             .delete()
-            .uri("/graph/v3/databases/$testDatabase/aliases/$testAlias")
+            .uri("$baseUri/$alias")
             .exchange()
             .expectStatus()
             .isNotFound
@@ -187,11 +145,25 @@ class AliasControllerTest : E2ETestBase() {
     fun `list aliases after delete - empty`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase/aliases")
+            .uri(baseUri)
             .exchange()
             .expectStatus()
             .isOk
             .expectBodyList(AliasDescriptor::class.java)
             .hasSize(0)
     }
+
+    private fun tableRequest() =
+        TableCreateRequest(
+            schema =
+                ModelSchema.Edge(
+                    source = Field(PrimitiveType.STRING, "src"),
+                    target = Field(PrimitiveType.STRING, "tgt"),
+                    properties = emptyList(),
+                    direction = DirectionType.OUT,
+                ),
+            storage = Storage.HBase("alias-test-hbase-table"),
+            mode = MutationMode.SYNC,
+            comment = "target table",
+        )
 }

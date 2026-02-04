@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.metadata.DatabaseDescriptor
 import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
 import com.kakao.actionbase.server.test.E2ETestBase
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -11,7 +12,7 @@ import org.junit.jupiter.api.TestMethodOrder
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class DatabaseControllerTest : E2ETestBase() {
-    private val testDatabase = "v3-test-db"
+    private val db = "v3-test-db"
 
     @Test
     @Order(1)
@@ -28,25 +29,15 @@ class DatabaseControllerTest : E2ETestBase() {
     @Test
     @Order(2)
     fun `create database`() {
-        val request =
-            DatabaseCreateRequest(
-                database = testDatabase,
-                comment = "test database for v3 api",
-            )
-
         client
             .post()
-            .uri("/graph/v3/databases/$testDatabase")
-            .bodyValue(request)
+            .uri("/graph/v3/databases/$db")
+            .bodyValue(DatabaseCreateRequest(db, "test db"))
             .exchange()
             .expectStatus()
             .isOk
             .expectBody(DatabaseDescriptor::class.java)
-            .consumeWith { result ->
-                val body = result.responseBody!!
-                assert(body.database == testDatabase)
-                assert(body.comment == "test database for v3 api")
-            }
+            .value { assertThat(it.database).isEqualTo(db) }
     }
 
     @Test
@@ -54,15 +45,12 @@ class DatabaseControllerTest : E2ETestBase() {
     fun `get database`() {
         client
             .get()
-            .uri("/graph/v3/databases/$testDatabase")
+            .uri("/graph/v3/databases/$db")
             .exchange()
             .expectStatus()
             .isOk
             .expectBody(DatabaseDescriptor::class.java)
-            .consumeWith { result ->
-                val body = result.responseBody!!
-                assert(body.database == testDatabase)
-            }
+            .value { assertThat(it.database).isEqualTo(db) }
     }
 
     @Test
@@ -70,7 +58,7 @@ class DatabaseControllerTest : E2ETestBase() {
     fun `get non-existent database returns 404`() {
         client
             .get()
-            .uri("/graph/v3/databases/non-existent-db")
+            .uri("/graph/v3/databases/non-existent")
             .exchange()
             .expectStatus()
             .isNotFound
