@@ -44,22 +44,16 @@ if [ "$BUILD_RUST" = true ] && [ -f "$LIB_DIR/$NATIVE_LIB" ]; then
   BUILD_RUST=false
 fi
 
-# Check for rustup only if we need to build Rust
+# Check for cargo only if we need to build Rust
 if [ "$BUILD_RUST" = true ]; then
-  if ! command -v rustup &> /dev/null; then
-    echo "Error: rustup is required for building slatedb-c"
+  if ! command -v cargo &> /dev/null; then
+    echo "Error: cargo is required for building slatedb-c"
     echo ""
-    echo "Install rustup:"
+    echo "Install Rust:"
     echo "  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
     echo ""
     echo "Or run with --java-only to skip Rust build (requires native lib to exist)"
     exit 1
-  fi
-
-  # Ensure nightly is installed (slatedb uses nightly features)
-  if ! rustup run nightly rustc --version &> /dev/null; then
-    echo "Installing Rust nightly..."
-    rustup install nightly
   fi
 fi
 
@@ -75,7 +69,7 @@ mkdir -p "$LIB_DIR"
 if [ "$BUILD_RUST" = true ]; then
   echo "Building slatedb-c..."
   cd "$SLATEDB_DIR"
-  cargo +nightly build --release -p slatedb-c
+  cargo build --release -p slatedb-c
 
   cp "target/release/$NATIVE_LIB" "$LIB_DIR/"
   echo "Built: $LIB_DIR/$NATIVE_LIB"
