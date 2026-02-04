@@ -31,6 +31,9 @@ dependencies {
     implementation(Dependencies.Cache.CAFFEINE)
     implementation(Dependencies.Validation.JAKARTA_VALIDATION_API)
 
+    // SlateDB Java bindings (built from native/build-slatedb.sh)
+    implementation(files("${rootProject.projectDir}/native/lib/slatedb.jar"))
+
     // reactor
     implementation(Dependencies.Reactor.CORE)
     implementation(Dependencies.Reactor.KOTLIN_EXTENSIONS)

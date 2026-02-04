@@ -1,7 +1,5 @@
 package com.kakao.actionbase.v2.engine.storage.slatedb
 
-import java.nio.file.Path
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 import reactor.core.publisher.Mono
@@ -23,6 +21,6 @@ data class SlateDbOptions(
         SlateDbConnections.getConnection(
             dbPath = path,
             url = url,
-            libraryPath = Path.of(libraryPath),
+            libraryPath = libraryPath,
         )
 }

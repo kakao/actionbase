@@ -1,7 +1,28 @@
 package com.kakao.actionbase.v2.engine.storage.slatedb
 
+import java.nio.ByteBuffer
+
+import io.slatedb.SlateDb
+import io.slatedb.SlateDbKeyValue
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
+
+sealed class BatchOperation {
+    data class Put(
+        val key: ByteArray,
+        val value: ByteArray,
+    ) : BatchOperation()
+
+    data class Delete(
+        val key: ByteArray,
+    ) : BatchOperation()
+
+    /** Not yet supported - waiting for merge operator in slatedb-c (#1250) */
+    data class Increment(
+        val key: ByteArray,
+        val delta: Long,
+    ) : BatchOperation()
+}
 
 interface SlateDbTable : AutoCloseable {
     fun get(key: ByteArray): Mono<ByteArray>
@@ -20,17 +41,19 @@ interface SlateDbTable : AutoCloseable {
         limit: Int,
     ): Mono<List<Pair<ByteArray, ByteArray>>>
 
+    fun batch(operations: List<BatchOperation>): Mono<Void>
+
     companion object {
-        fun create(native: SlateDbNative): SlateDbTable = SlateDbTableImpl(native)
+        fun create(db: SlateDb): SlateDbTable = SlateDbTableImpl(db)
     }
 }
 
 internal class SlateDbTableImpl(
-    private val native: SlateDbNative,
+    private val db: SlateDb,
 ) : SlateDbTable {
     override fun get(key: ByteArray): Mono<ByteArray> =
         Mono
-            .fromCallable { native.get(key) }
+            .fromCallable { db.get(key) }
             .flatMap { Mono.justOrEmpty(it) }
             .subscribeOn(Schedulers.boundedElastic())
 
@@ -39,19 +62,19 @@ internal class SlateDbTableImpl(
         value: ByteArray,
     ): Mono<Void> =
         Mono
-            .fromCallable { native.put(key, value) }
+            .fromCallable { db.put(key, value) }
             .subscribeOn(Schedulers.boundedElastic())
             .then()
 
     override fun delete(key: ByteArray): Mono<Void> =
         Mono
-            .fromCallable { native.delete(key) }
+            .fromCallable { db.delete(key) }
             .subscribeOn(Schedulers.boundedElastic())
             .then()
 
     override fun flush(): Mono<Void> =
         Mono
-            .fromCallable { native.flush() }
+            .fromCallable { db.flush() }
             .subscribeOn(Schedulers.boundedElastic())
             .then()
 
@@ -61,12 +84,42 @@ internal class SlateDbTableImpl(
     ): Mono<List<Pair<ByteArray, ByteArray>>> =
         Mono
             .fromCallable {
-                native.scanPrefix(prefix, limit).map { entry ->
-                    entry.key to entry.value
+                val results = mutableListOf<Pair<ByteArray, ByteArray>>()
+                db.scanPrefix(prefix).use { iterator ->
+                    var kv: SlateDbKeyValue? = iterator.next()
+                    var count = 0
+                    while (kv != null && count < limit) {
+                        results.add(kv.key() to kv.value())
+                        count++
+                        kv = iterator.next()
+                    }
                 }
+                results.toList()
             }.subscribeOn(Schedulers.boundedElastic())
 
+    override fun batch(operations: List<BatchOperation>): Mono<Void> =
+        Mono
+            .fromCallable {
+                SlateDb.newWriteBatch().use { batch ->
+                    operations.forEach { op ->
+                        when (op) {
+                            is BatchOperation.Put -> batch.put(op.key, op.value)
+                            is BatchOperation.Delete -> batch.delete(op.key)
+                            is BatchOperation.Increment -> {
+                                // TODO: Replace with batch.merge() once slatedb#1250 is resolved
+                                // WARNING: This is NOT atomic - race condition possible
+                                val currentValue = db.get(op.key)?.let { ByteBuffer.wrap(it).long } ?: 0L
+                                val newBytes = ByteBuffer.allocate(Long.SIZE_BYTES).putLong(currentValue + op.delta).array()
+                                batch.put(op.key, newBytes)
+                            }
+                        }
+                    }
+                    db.write(batch)
+                }
+            }.subscribeOn(Schedulers.boundedElastic())
+            .then()
+
     override fun close() {
-        native.close()
+        db.close()
     }
 }

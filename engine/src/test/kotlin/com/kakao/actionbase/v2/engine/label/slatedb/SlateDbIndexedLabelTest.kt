@@ -177,9 +177,12 @@ class SlateDbIndexedLabelTest {
         // Insert edges with different scores
         val edges =
             listOf(
-                com.kakao.actionbase.v2.core.edge.Edge(ts, 100L, 201L, mapOf("score" to 10L, "memo" to "low")),
-                com.kakao.actionbase.v2.core.edge.Edge(ts + 1, 100L, 202L, mapOf("score" to 50L, "memo" to "medium")),
-                com.kakao.actionbase.v2.core.edge.Edge(ts + 2, 100L, 203L, mapOf("score" to 100L, "memo" to "high")),
+                com.kakao.actionbase.v2.core.edge
+                    .Edge(ts, 100L, 201L, mapOf("score" to 10L, "memo" to "low")),
+                com.kakao.actionbase.v2.core.edge
+                    .Edge(ts + 1, 100L, 202L, mapOf("score" to 50L, "memo" to "medium")),
+                com.kakao.actionbase.v2.core.edge
+                    .Edge(ts + 2, 100L, 203L, mapOf("score" to 100L, "memo" to "high")),
             )
 
         edges.forEach { edge ->
