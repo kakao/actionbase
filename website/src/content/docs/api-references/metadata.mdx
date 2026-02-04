@@ -1,321 +1,795 @@
 ---
 title: Metadata API Reference
-description: Metadata management API reference (v3)
+description: Metadata management API reference
 sidebar:
   order: 1
 tableOfContents:
   maxHeadingLevel: 2
 ---
 
-Manage databases, tables, and aliases.
+import { Aside } from '@astrojs/starlight/components';
 
-## 1. Database
+<Aside type="caution">
+  Authentication is not enforced. See [API References](/api-references/#authentication).
+</Aside>
 
-### 1.1 List Databases
+Metadata management API for databases, tables, and aliases.
+
+## 1. List Databases
+
+Retrieve all databases.
+
+### Endpoint
 
 ```
 GET /graph/v3/databases
 ```
 
-**Response**: `List<DatabaseDescriptor>`
+### Parameters
 
-### 1.2 Get Database
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+
+### Response Type
+
+`List<`[DatabaseDescriptor](#databasedescriptor)`>` - List of databases
+
+### Request Example
+
+```bash
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+[
+  {
+    "tenant": "default",
+    "database": "mydb",
+    "active": true,
+    "comment": "My database",
+    "revision": 1,
+    "createdAt": 1700000000000,
+    "createdBy": "admin",
+    "updatedAt": 1700000000000,
+    "updatedBy": "admin"
+  }
+]
+```
+
+## 2. Get Database
+
+Retrieve a single database by name.
+
+### Endpoint
 
 ```
 GET /graph/v3/databases/{database}
 ```
 
-| Parameter | Required | Description   |
-| --------- | -------- | ------------- |
-| database  | Yes      | Database name |
+### Parameters
 
-**Response**: `DatabaseDescriptor`
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+
+### Response Type
+
+[DatabaseDescriptor](#databasedescriptor) - Database information
 
 Returns 404 if not found.
 
-### 1.3 Create Database
+### Request Example
+
+```bash
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/mydb" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "tenant": "default",
+  "database": "mydb",
+  "active": true,
+  "comment": "My database",
+  "revision": 1,
+  "createdAt": 1700000000000,
+  "createdBy": "admin",
+  "updatedAt": 1700000000000,
+  "updatedBy": "admin"
+}
+```
+
+## 3. Create Database
+
+Create a new database.
+
+### Endpoint
 
 ```
 POST /graph/v3/databases/{database}
 ```
 
-| Parameter | Required | Description   |
-| --------- | -------- | ------------- |
-| database  | Yes      | Database name |
+### Parameters
 
-**Request Body**:
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Body     | comment       | Required | Database description                         |
+
+### Request Body
+
+[DatabaseCreateRequest](#databasecreaterequest) - Database creation payload
+
+### Response Type
+
+[DatabaseDescriptor](#databasedescriptor) - Created database information
+
+### Request Example
+
+```bash
+curl -X POST \
+    "http://ab.example.com/graph/v3/databases/mydb" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "database": "mydb",
+      "comment": "My database"
+    }'
+```
+
+### Response Example
 
 ```json
 {
+  "tenant": "default",
   "database": "mydb",
-  "comment": "My database"
+  "active": true,
+  "comment": "My database",
+  "revision": 1,
+  "createdAt": 1700000000000,
+  "createdBy": "admin",
+  "updatedAt": 1700000000000,
+  "updatedBy": "admin"
 }
 ```
 
-**Response**: `DatabaseDescriptor`
+## 4. Update Database
 
-### 1.4 Update Database
+Update an existing database.
+
+### Endpoint
 
 ```
 PUT /graph/v3/databases/{database}
 ```
 
-**Request Body**:
+### Parameters
 
-```json
-{
-  "active": true,
-  "comment": "Updated comment"
-}
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Body     | active        | Optional | Whether the database is active               |
+| Body     | comment       | Optional | Database description                         |
+
+### Request Body
+
+[DatabaseUpdateRequest](#databaseupdaterequest) - Database update payload
+
+### Response Type
+
+[DatabaseDescriptor](#databasedescriptor) - Updated database information
+
+### Request Example
+
+```bash
+curl -X PUT \
+    "http://ab.example.com/graph/v3/databases/mydb" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "active": true,
+      "comment": "Updated description"
+    }'
 ```
 
-**Response**: `DatabaseDescriptor`
+## 5. Delete Database
 
-### 1.5 Delete Database
+Delete an existing database.
+
+### Endpoint
 
 ```
 DELETE /graph/v3/databases/{database}
 ```
 
-**Response**: `DatabaseDescriptor`
+### Parameters
 
----
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
 
-## 2. Table
+### Response Type
 
-### 2.1 List Tables
+[DatabaseDescriptor](#databasedescriptor) - Deleted database information
+
+### Request Example
+
+```bash
+curl -X DELETE \
+    "http://ab.example.com/graph/v3/databases/mydb" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+## 6. List Tables
+
+Retrieve all tables in a database.
+
+### Endpoint
 
 ```
 GET /graph/v3/databases/{database}/tables
 ```
 
-**Response**: `List<TableDescriptor.Edge>`
+### Parameters
 
-### 2.2 Get Table
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+
+### Response Type
+
+`List<`[TableDescriptor](#tabledescriptor)`>` - List of tables
+
+### Request Example
+
+```bash
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/mydb/tables" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+## 7. Get Table
+
+Retrieve a single table by name.
+
+### Endpoint
 
 ```
 GET /graph/v3/databases/{database}/tables/{table}
 ```
 
-**Response**: `TableDescriptor.Edge`
+### Parameters
+
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Path     | table         | Required | Table name                                   |
+
+### Response Type
+
+[TableDescriptor](#tabledescriptor) - Table information
 
 Returns 404 if not found.
 
-### 2.3 Create Table
+### Request Example
+
+```bash
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/mydb/tables/follows" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "type": "edge",
+  "tenant": "default",
+  "database": "mydb",
+  "table": "follows",
+  "schema": {
+    "type": "EDGE",
+    "source": { "type": "STRING", "comment": "user id" },
+    "target": { "type": "STRING", "comment": "user id" },
+    "properties": [],
+    "direction": "OUT",
+    "indexes": [],
+    "groups": []
+  },
+  "storage": "datastore://hbase/follows-table",
+  "mode": "SYNC",
+  "active": true,
+  "comment": "User follows relationship",
+  "revision": 1,
+  "createdAt": 1700000000000,
+  "createdBy": "admin",
+  "updatedAt": 1700000000000,
+  "updatedBy": "admin"
+}
+```
+
+## 8. Create Table
+
+Create a new table.
+
+### Endpoint
 
 ```
 POST /graph/v3/databases/{database}/tables/{table}
 ```
 
-**Request Body**:
+### Parameters
 
-```json
-{
-  "schema": {
-    "type": "EDGE",
-    "source": { "type": "STRING", "comment": "source" },
-    "target": { "type": "STRING", "comment": "target" },
-    "properties": [
-      { "name": "score", "type": "INT", "comment": "score", "nullable": true }
-    ],
-    "direction": "OUT",
-    "indexes": [],
-    "groups": []
-  },
-  "storage": "datastore://hbase/my-hbase-table",
-  "mode": "SYNC",
-  "comment": "My table"
-}
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Path     | table         | Required | Table name                                   |
+| Body     | schema        | Required | Edge schema definition                       |
+| Body     | storage       | Required | Storage URI (datastore://hbase/tableName)    |
+| Body     | mode          | Optional | Mutation mode (default: SYNC)                |
+| Body     | comment       | Optional | Table description                            |
+
+### Request Body
+
+[TableCreateRequest](#tablecreaterequest) - Table creation payload
+
+### Response Type
+
+[TableDescriptor](#tabledescriptor) - Created table information
+
+### Request Example
+
+```bash
+curl -X POST \
+    "http://ab.example.com/graph/v3/databases/mydb/tables/follows" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "schema": {
+        "type": "EDGE",
+        "source": { "type": "STRING", "comment": "user id" },
+        "target": { "type": "STRING", "comment": "user id" },
+        "properties": [],
+        "direction": "OUT",
+        "indexes": [],
+        "groups": []
+      },
+      "storage": "datastore://hbase/follows-table",
+      "mode": "SYNC",
+      "comment": "User follows relationship"
+    }'
 ```
 
-**Response**: `TableDescriptor.Edge`
+## 9. Update Table
 
-### 2.4 Update Table
+Update an existing table.
+
+### Endpoint
 
 ```
 PUT /graph/v3/databases/{database}/tables/{table}
 ```
 
-**Request Body**:
+### Parameters
 
-```json
-{
-  "active": true,
-  "comment": "Updated comment",
-  "mode": "ASYNC"
-}
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Path     | table         | Required | Table name                                   |
+| Body     | active        | Optional | Whether the table is active                  |
+| Body     | schema        | Optional | Edge schema definition                       |
+| Body     | mode          | Optional | Mutation mode                                |
+| Body     | comment       | Optional | Table description                            |
+
+### Request Body
+
+[TableUpdateRequest](#tableupdaterequest) - Table update payload
+
+### Response Type
+
+[TableDescriptor](#tabledescriptor) - Updated table information
+
+### Request Example
+
+```bash
+curl -X PUT \
+    "http://ab.example.com/graph/v3/databases/mydb/tables/follows" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "active": true,
+      "comment": "Updated description"
+    }'
 ```
 
-**Response**: `TableDescriptor.Edge`
+## 10. List Aliases
 
----
+Retrieve all aliases in a database.
 
-## 3. Alias
-
-### 3.1 List Aliases
+### Endpoint
 
 ```
 GET /graph/v3/databases/{database}/aliases
 ```
 
-**Response**: `List<AliasDescriptor>`
+### Parameters
 
-### 3.2 Get Alias
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+
+### Response Type
+
+`List<`[AliasDescriptor](#aliasdescriptor)`>` - List of aliases
+
+### Request Example
+
+```bash
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/mydb/aliases" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+## 11. Get Alias
+
+Retrieve a single alias by name.
+
+### Endpoint
 
 ```
 GET /graph/v3/databases/{database}/aliases/{alias}
 ```
 
-**Response**: `AliasDescriptor`
+### Parameters
+
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Path     | alias         | Required | Alias name                                   |
+
+### Response Type
+
+[AliasDescriptor](#aliasdescriptor) - Alias information
 
 Returns 404 if not found.
 
-### 3.3 Create Alias
+### Request Example
+
+```bash
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/mydb/aliases/friends" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "tenant": "default",
+  "database": "mydb",
+  "alias": "friends",
+  "table": "follows",
+  "active": true,
+  "comment": "Alias for follows",
+  "revision": 1,
+  "createdAt": 1700000000000,
+  "createdBy": "admin",
+  "updatedAt": 1700000000000,
+  "updatedBy": "admin"
+}
+```
+
+## 12. Create Alias
+
+Create a new alias.
+
+### Endpoint
 
 ```
 POST /graph/v3/databases/{database}/aliases/{alias}
 ```
 
-**Request Body**:
+### Parameters
 
-```json
-{
-  "table": "target-table",
-  "comment": "My alias"
-}
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Path     | alias         | Required | Alias name                                   |
+| Body     | table         | Required | Target table name                            |
+| Body     | comment       | Optional | Alias description                            |
+
+### Request Body
+
+[AliasCreateRequest](#aliascreaterequest) - Alias creation payload
+
+### Response Type
+
+[AliasDescriptor](#aliasdescriptor) - Created alias information
+
+### Request Example
+
+```bash
+curl -X POST \
+    "http://ab.example.com/graph/v3/databases/mydb/aliases/friends" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "table": "follows",
+      "comment": "Alias for follows"
+    }'
 ```
 
-**Response**: `AliasDescriptor`
+## 13. Update Alias
 
-### 3.4 Update Alias
+Update an existing alias.
+
+### Endpoint
 
 ```
 PUT /graph/v3/databases/{database}/aliases/{alias}
 ```
 
-**Request Body**:
+### Parameters
 
-```json
-{
-  "active": false,
-  "table": "new-target-table",
-  "comment": "Updated comment"
-}
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Path     | alias         | Required | Alias name                                   |
+| Body     | active        | Optional | Whether the alias is active                  |
+| Body     | table         | Optional | Target table name                            |
+| Body     | comment       | Optional | Alias description                            |
+
+### Request Body
+
+[AliasUpdateRequest](#aliasupdaterequest) - Alias update payload
+
+### Response Type
+
+[AliasDescriptor](#aliasdescriptor) - Updated alias information
+
+### Request Example
+
+```bash
+curl -X PUT \
+    "http://ab.example.com/graph/v3/databases/mydb/aliases/friends" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "active": false,
+      "comment": "Deactivated alias"
+    }'
 ```
 
-**Response**: `AliasDescriptor`
+## 14. Delete Alias
 
-### 3.5 Delete Alias
+Delete an existing alias.
 
-Alias must be deactivated (`active: false`) before deletion.
+<Aside type="note">
+  Alias must be deactivated (`active: false`) before deletion.
+</Aside>
+
+### Endpoint
 
 ```
 DELETE /graph/v3/databases/{database}/aliases/{alias}
 ```
 
-**Response**: `AliasDescriptor`
+### Parameters
 
----
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Path     | alias         | Required | Alias name                                   |
 
-## Data Types
+### Response Type
+
+[AliasDescriptor](#aliasdescriptor) - Deleted alias information
+
+### Request Example
+
+```bash
+curl -X DELETE \
+    "http://ab.example.com/graph/v3/databases/mydb/aliases/friends" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+## Data Model
 
 ### DatabaseDescriptor
 
+Database information payload.
+
 ```kotlin
 data class DatabaseDescriptor(
-    val tenant: String,
-    val database: String,
-    val active: Boolean,
-    val comment: String,
-    val revision: Long,
-    val createdAt: Long,
-    val createdBy: String,
-    val updatedAt: Long,
-    val updatedBy: String,
+    val tenant: String,       // Tenant name
+    val database: String,     // Database name
+    val active: Boolean,      // Whether the database is active
+    val comment: String,      // Database description
+    val revision: Long,       // Revision number
+    val createdAt: Long,      // Creation timestamp
+    val createdBy: String,    // Creator
+    val updatedAt: Long,      // Last update timestamp
+    val updatedBy: String,    // Last updater
 )
 ```
 
-### TableDescriptor.Edge
+### TableDescriptor
+
+Table information payload.
 
 ```kotlin
 data class TableDescriptor.Edge(
-    val tenant: String,
-    val database: String,
-    val table: String,
-    val schema: ModelSchema.Edge,
-    val storage: Storage,
-    val mode: MutationMode,
-    val active: Boolean,
-    val comment: String,
-    val revision: Long,
-    val createdAt: Long,
-    val createdBy: String,
-    val updatedAt: Long,
-    val updatedBy: String,
+    val tenant: String,            // Tenant name
+    val database: String,          // Database name
+    val table: String,             // Table name
+    val schema: ModelSchema.Edge,  // Edge schema definition
+    val storage: String,           // Storage URI (datastore://hbase/tableName)
+    val mode: MutationMode,        // Mutation mode (SYNC, ASYNC, DROP)
+    val active: Boolean,           // Whether the table is active
+    val comment: String,           // Table description
+    val revision: Long,            // Revision number
+    val createdAt: Long,           // Creation timestamp
+    val createdBy: String,         // Creator
+    val updatedAt: Long,           // Last update timestamp
+    val updatedBy: String,         // Last updater
 )
 ```
 
 ### AliasDescriptor
 
+Alias information payload.
+
 ```kotlin
 data class AliasDescriptor(
-    val tenant: String,
-    val database: String,
-    val alias: String,
-    val table: String,
-    val active: Boolean,
-    val comment: String,
-    val revision: Long,
-    val createdAt: Long,
-    val createdBy: String,
-    val updatedAt: Long,
-    val updatedBy: String,
+    val tenant: String,       // Tenant name
+    val database: String,     // Database name
+    val alias: String,        // Alias name
+    val table: String,        // Target table name
+    val active: Boolean,      // Whether the alias is active
+    val comment: String,      // Alias description
+    val revision: Long,       // Revision number
+    val createdAt: Long,      // Creation timestamp
+    val createdBy: String,    // Creator
+    val updatedAt: Long,      // Last update timestamp
+    val updatedBy: String,    // Last updater
 )
 ```
 
 ### ModelSchema.Edge
 
+Edge schema definition.
+
 ```kotlin
 data class ModelSchema.Edge(
-    val source: Field,
-    val target: Field,
-    val properties: List<StructField>,
-    val direction: DirectionType,
-    val indexes: List<Index>,
-    val groups: List<Group>,
+    val source: Field,                  // Source vertex field
+    val target: Field,                  // Target vertex field
+    val properties: List<StructField>,  // Edge properties
+    val direction: DirectionType,       // Direction type (OUT, IN, BOTH)
+    val indexes: List<Index>,           // Index definitions
+    val groups: List<Group>,            // Group definitions
 )
 ```
 
 ### Field
 
+Vertex field definition.
+
 ```kotlin
 data class Field(
-    val type: PrimitiveType,
-    val comment: String,
+    val type: PrimitiveType,  // Data type
+    val comment: String,      // Field description
 )
 ```
 
 ### StructField
 
+Property field definition.
+
 ```kotlin
 data class StructField(
-    val name: String,
-    val type: PrimitiveType,
-    val comment: String,
-    val nullable: Boolean,
+    val name: String,         // Field name
+    val type: PrimitiveType,  // Data type
+    val comment: String,      // Field description
+    val nullable: Boolean,    // Whether the field is nullable
 )
 ```
 
-### Storage
+### DatabaseCreateRequest
 
-URI format: `datastore://hbase/<tableName>`
+Database creation request payload.
 
-Example: `datastore://hbase/my-hbase-table`
+```kotlin
+data class DatabaseCreateRequest(
+    val database: String,     // Database name
+    val comment: String,      // Database description
+)
+```
+
+### DatabaseUpdateRequest
+
+Database update request payload.
+
+```kotlin
+data class DatabaseUpdateRequest(
+    val active: Boolean?,     // Whether the database is active (optional)
+    val comment: String?,     // Database description (optional)
+)
+```
+
+### TableCreateRequest
+
+Table creation request payload.
+
+```kotlin
+data class TableCreateRequest(
+    val schema: ModelSchema.Edge,  // Edge schema definition
+    val storage: String,           // Storage URI (datastore://hbase/tableName)
+    val mode: MutationMode,        // Mutation mode (default: SYNC)
+    val comment: String,           // Table description
+)
+```
+
+### TableUpdateRequest
+
+Table update request payload.
+
+```kotlin
+data class TableUpdateRequest(
+    val active: Boolean?,          // Whether the table is active (optional)
+    val schema: ModelSchema.Edge?, // Edge schema definition (optional)
+    val mode: MutationMode?,       // Mutation mode (optional)
+    val comment: String?,          // Table description (optional)
+)
+```
+
+### AliasCreateRequest
+
+Alias creation request payload.
+
+```kotlin
+data class AliasCreateRequest(
+    val table: String,        // Target table name
+    val comment: String,      // Alias description
+)
+```
+
+### AliasUpdateRequest
+
+Alias update request payload.
+
+```kotlin
+data class AliasUpdateRequest(
+    val active: Boolean?,     // Whether the alias is active (optional)
+    val table: String?,       // Target table name (optional)
+    val comment: String?,     // Alias description (optional)
+)
+```
 
 ### Enums
 
 ```kotlin
-enum class MutationMode { SYNC, ASYNC, DROP, DENY }
+enum class MutationMode { SYNC, ASYNC, DROP }
 enum class DirectionType { OUT, IN, BOTH }
 enum class PrimitiveType { BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, BYTES }
 ```
