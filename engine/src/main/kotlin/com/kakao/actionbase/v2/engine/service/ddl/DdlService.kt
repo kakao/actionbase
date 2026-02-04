@@ -33,7 +33,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
         request: Create,
     ): Mono<MutationResult> {
         val edge = request.toEdge(name)
-        return graph.mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, mode = MutationMode.SYNC)
+        return graph.mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, internal = MutationMode.SYNC)
     }
 
     fun create(
@@ -53,7 +53,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                             listOf(edge),
                             EdgeOperation.INSERT,
                             audit = request.audit,
-                            mode = MutationMode.SYNC,
+                            internal = MutationMode.SYNC,
                             failOnExist = true,
                         ).map {
                             val result = it.result.first()
@@ -69,7 +69,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                         IllegalArgumentException(
                             DdlStatus<Entity>(
                                 DdlStatus.Status.BAD_REQUEST,
-                                message = "ddl create failed...\n${it.joinToString("\n") }",
+                                message = "ddl create failed...\n${it.joinToString("\n")}",
                             ).toString(),
                         ),
                     )
@@ -87,8 +87,14 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                     val edge = request.toEdge(name)
                     // DDL operations must always be synchronous regardless of globalMutationMode
                     graph
-                        .mutate(label.name, label, listOf(edge), EdgeOperation.UPDATE, audit = request.audit, mode = MutationMode.SYNC)
-                        .map {
+                        .mutate(
+                            label.name,
+                            label,
+                            listOf(edge),
+                            EdgeOperation.UPDATE,
+                            audit = request.audit,
+                            internal = MutationMode.SYNC,
+                        ).map {
                             val result = it.result.first()
                             DdlStatus.fromEdgeOperationStatus(
                                 result.status,
@@ -102,7 +108,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                         IllegalArgumentException(
                             DdlStatus<Entity>(
                                 DdlStatus.Status.BAD_REQUEST,
-                                message = "ddl update failed...\n${it.joinToString("\n") }",
+                                message = "ddl update failed...\n${it.joinToString("\n")}",
                             ).toString(),
                         ),
                     )
@@ -120,8 +126,14 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
             if (it.isEmpty()) {
                 // DDL operations must always be synchronous regardless of globalMutationMode
                 graph
-                    .mutate(label.name, label, listOf(edge), EdgeOperation.DELETE, audit = request.audit, mode = MutationMode.SYNC)
-                    .map {
+                    .mutate(
+                        label.name,
+                        label,
+                        listOf(edge),
+                        EdgeOperation.DELETE,
+                        audit = request.audit,
+                        internal = MutationMode.SYNC,
+                    ).map {
                         val result = it.result.first()
                         DdlStatus.fromEdgeOperationStatus(
                             result.status,
@@ -135,7 +147,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                     IllegalArgumentException(
                         DdlStatus<Entity>(
                             DdlStatus.Status.BAD_REQUEST,
-                            message = "ddl create failed...\n${it.joinToString("\n") }",
+                            message = "ddl create failed...\n${it.joinToString("\n")}",
                         ).toString(),
                     ),
                 )
@@ -160,7 +172,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                     ).toTraceEdge()
                 // DDL operations must always be synchronous regardless of globalMutationMode
                 graph
-                    .mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, mode = MutationMode.SYNC)
+                    .mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, internal = MutationMode.SYNC)
                     .map {
                         val result = it.result.first()
                         DdlStatus.fromEdgeOperationStatus(

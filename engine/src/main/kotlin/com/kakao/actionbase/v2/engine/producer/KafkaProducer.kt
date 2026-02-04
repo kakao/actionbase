@@ -30,7 +30,7 @@ class KafkaProducer(
                     entityName,
                     edge.toTraceEdge(),
                     EdgeOperation.INSERT,
-                    MutationModeContext(MutationMode.IGNORE, null, null, false),
+                    MutationModeContext(MutationMode.IGNORE, null, null, null, false),
                 )
             }
 
@@ -39,7 +39,17 @@ class KafkaProducer(
             properties: Properties,
         ): KafkaProducer =
             KafkaProducer(client, properties) { entityName, edge ->
-                CdcContext(entityName, edge.toTraceEdge(), EdgeOperation.INSERT, EdgeOperationStatus.CREATED, null, null, 0L, null, emptyList())
+                CdcContext(
+                    entityName,
+                    edge.toTraceEdge(),
+                    EdgeOperation.INSERT,
+                    EdgeOperationStatus.CREATED,
+                    null,
+                    null,
+                    0L,
+                    null,
+                    emptyList(),
+                )
             }
     }
 

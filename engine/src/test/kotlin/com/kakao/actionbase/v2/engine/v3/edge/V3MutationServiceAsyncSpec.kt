@@ -218,8 +218,12 @@ class V3MutationServiceAsyncSpec :
             val request = mapper.readValue<MultiEdgeBulkMutationRequest>(multiEdgeRequestString)
 
             v3MutationService
-                .mutateMultiEdge(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, request, mode = MutationMode.SYNC)
-                .test()
+                .mutateMultiEdge(
+                    multiEdgeTableName.service,
+                    multiEdgeTableName.nameNotNull,
+                    request,
+                    mode = MutationMode.SYNC,
+                ).test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1},{"id":100001,"status":"CREATED","count":1},{"id":100002,"status":"CREATED","count":1}]}"""
                 }.verifyComplete()

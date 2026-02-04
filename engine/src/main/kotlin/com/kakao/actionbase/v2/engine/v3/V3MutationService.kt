@@ -47,7 +47,8 @@ import reactor.core.scheduler.Schedulers
 class V3MutationService(
     private val graph: Graph,
 ) {
-    private val byteArrayBufferPool = ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
+    private val byteArrayBufferPool =
+        ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
 
     private val encoder =
         EdgeRecordMapper(
@@ -64,6 +65,7 @@ class V3MutationService(
         request: EdgeBulkMutationRequest,
         lock: Boolean = true,
         mode: MutationMode? = null,
+        internal: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<EdgeMutationResponse> {
         val aliasEntityName = EntityName(database, alias)
@@ -72,7 +74,7 @@ class V3MutationService(
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation"))
         }
 
-        val mutationMode = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, mode)
+        val mutationMode = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, mode, internal)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)
@@ -112,8 +114,13 @@ class V3MutationService(
                         .flatMap { group ->
                             val sortedGroup = group.sortedBy { it.event.version }
                             tableBinding
-                                .mutateEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
-                                .doOnNext { status ->
+                                .mutateEdge(
+                                    key,
+                                    sortedGroup.map { it.event },
+                                    lock,
+                                    encoder,
+                                    tableBinding.schema.codeToName,
+                                ).doOnNext { status ->
                                     val last = sortedGroup.last()
                                     val edge = last.toTraceEdge()
                                     val cdcMessage =
@@ -177,6 +184,7 @@ class V3MutationService(
         request: MultiEdgeBulkMutationRequest,
         lock: Boolean = true,
         mode: MutationMode? = null,
+        internal: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<MultiEdgeMutationResponse> {
         val aliasEntityName = EntityName(database, alias)
@@ -184,7 +192,7 @@ class V3MutationService(
         if (label !is HBaseIndexedLabel) {
             return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}) is not indexed or not supported for edge mutation"))
         }
-        val mutationMode = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, mode)
+        val mutationMode = MutationModeContext.of(label.entity.mode, graph.globalMutationMode, mode, internal)
 
         val tableBinding = label.v3TableBinding
         val audit = Audit(requestContext.actor)
@@ -223,8 +231,13 @@ class V3MutationService(
                         .flatMap { group ->
                             val sortedGroup = group.sortedBy { it.event.version }
                             tableBinding
-                                .mutateMultiEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
-                                .doOnNext { status ->
+                                .mutateMultiEdge(
+                                    key,
+                                    sortedGroup.map { it.event },
+                                    lock,
+                                    encoder,
+                                    tableBinding.schema.codeToName,
+                                ).doOnNext { status ->
                                     val last = sortedGroup.last()
                                     val edge = last.toTraceEdge()
                                     val cdcMessage =
@@ -233,8 +246,16 @@ class V3MutationService(
                                             edge = edge,
                                             op = last.event.type.toV2(),
                                             status = EdgeOperationStatus.valueOf(status.status),
-                                            before = status.before.toHashEdge(source = status.before.getMultiEdgeSource(), target = status.before.getMultiEdgeTarget()),
-                                            after = status.after.toHashEdge(source = status.after.getMultiEdgeSource(), target = status.after.getMultiEdgeTarget()),
+                                            before =
+                                                status.before.toHashEdge(
+                                                    source = status.before.getMultiEdgeSource(),
+                                                    target = status.before.getMultiEdgeTarget(),
+                                                ),
+                                            after =
+                                                status.after.toHashEdge(
+                                                    source = status.after.getMultiEdgeSource(),
+                                                    target = status.after.getMultiEdgeTarget(),
+                                                ),
                                             acc = status.acc,
                                             alias = if (aliasEntityName == label.entity.name) null else aliasEntityName,
                                             audit = Audit(requestContext.actor),
