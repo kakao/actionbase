@@ -1,7 +1,7 @@
 package com.kakao.actionbase.engine.datastore
 
 /**
- * Storage operations interface for compatibility testing.
+ * Storage operations interface for compatibility testing and byte-array stores.
  *
  * Defines the minimal operations required for Actionbase storage backends.
  */
