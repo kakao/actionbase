@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
+import io.slatedb.SlateDb
 import reactor.test.StepVerifier
 
 class SlateDbTableTest {
@@ -16,20 +17,23 @@ class SlateDbTableTest {
 
     private lateinit var table: SlateDbTable
 
-    private fun findLibraryPath(): Path {
+    private fun findLibraryPath(): String {
         var dir = Path.of(System.getProperty("user.dir"))
         while (!dir.resolve("settings.gradle.kts").toFile().exists() && dir.parent != null) {
             dir = dir.parent
         }
-        return dir.resolve("native/lib/libslatedb_c.dylib")
+        return dir.resolve("native/lib/libslatedb_c.dylib").toAbsolutePath().toString()
     }
 
     @BeforeEach
     fun setUp() {
+        val libraryPath = findLibraryPath()
+        SlateDb.loadLibrary(libraryPath)
+
         val fileUrl = "file://${tempDir.toAbsolutePath()}"
         val dbPath = "data"
-        val native = SlateDbNative.open(dbPath, fileUrl, findLibraryPath())
-        table = SlateDbTable.create(native)
+        val db = SlateDb.open(dbPath, fileUrl, null)
+        table = SlateDbTable.create(db)
     }
 
     @AfterEach

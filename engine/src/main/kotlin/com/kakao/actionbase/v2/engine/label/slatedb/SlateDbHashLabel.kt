@@ -131,8 +131,7 @@ open class SlateDbHashLabel(
                     // Filter by end key (exclusive)
                     .dropLastWhile { (key, _) ->
                         end?.key?.let { endKey -> Arrays.compareUnsigned(endKey, key) < 0 } ?: false
-                    }
-                    .take(limit)
+                    }.take(limit)
                     .map { (key, value) -> KeyFieldValue(key, value) }
             }
 
