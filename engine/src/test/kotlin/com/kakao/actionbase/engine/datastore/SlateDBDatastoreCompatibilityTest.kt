@@ -47,7 +47,7 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
         table?.close()
     }
 
-    override fun createStore(): StorageOperations = SlateDBOps(table!!)
+    override fun createStore(): StorageOperations = SlateDBOperations(table!!)
 
     override fun supportsCheckAndMutate() = false
 
@@ -73,27 +73,27 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
         return dir.resolve("native/lib/$libName").toAbsolutePath().toString()
     }
 
-    private class SlateDBOps(
-        private val t: SlateDbTable,
+    private class SlateDBOperations(
+        private val table: SlateDbTable,
     ) : StorageOperations {
-        override fun get(key: ByteArray): ByteArray? = t.get(key).block()
+        override fun get(key: ByteArray): ByteArray? = table.get(key).block()
 
-        override fun getAll(keys: List<ByteArray>) = keys.mapNotNull { k -> t.get(k).block()?.let { k to it } }
+        override fun getAll(keys: List<ByteArray>) = keys.mapNotNull { k -> table.get(k).block()?.let { k to it } }
 
         override fun scan(
             prefix: ByteArray,
             limit: Int,
-        ) = t.scanPrefix(prefix, limit).block() ?: emptyList()
+        ) = table.scanPrefix(prefix, limit).block() ?: emptyList()
 
         override fun put(
             key: ByteArray,
             value: ByteArray,
         ) {
-            t.put(key, value).block()
+            table.put(key, value).block()
         }
 
         override fun delete(key: ByteArray) {
-            t.delete(key).block()
+            table.delete(key).block()
         }
 
         override fun increment(
@@ -101,7 +101,7 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
             delta: Long,
         ): Long {
             val current =
-                t.get(key).block()?.let {
+                table.get(key).block()?.let {
                     ByteBuffer.wrap(it).order(ByteOrder.BIG_ENDIAN).long
                 } ?: 0L
             val newValue = current + delta
@@ -111,7 +111,7 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
                     .order(ByteOrder.BIG_ENDIAN)
                     .putLong(newValue)
                     .array()
-            t.put(key, bytes).block()
+            table.put(key, bytes).block()
             return newValue
         }
 
@@ -124,7 +124,7 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
                         is Mutation.Increment -> BatchOperation.Increment(m.key, m.delta)
                     }
                 }
-            t.batch(ops).block()
+            table.batch(ops).block()
         }
 
         override fun setIfNotExists(
