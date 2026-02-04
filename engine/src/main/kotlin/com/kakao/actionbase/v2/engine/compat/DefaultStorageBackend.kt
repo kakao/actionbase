@@ -1,7 +1,5 @@
 package com.kakao.actionbase.v2.engine.compat
 
-import com.kakao.actionbase.v2.engine.storage.memory.MemoryStorageBackend
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client.AsyncConnection
 import org.slf4j.LoggerFactory
@@ -25,9 +23,6 @@ object DefaultStorageBackend {
             -> {
                 DefaultHBaseCluster.initialize(properties)
                 instance0 = DefaultHBaseCluster.INSTANCE
-            }
-            "memory" -> {
-                instance0 = MemoryStorageBackend.initialize(properties)
             }
             else -> {
                 logger.warn("Unsupported storage backend type: {}. Falling back to HBase.", type)
