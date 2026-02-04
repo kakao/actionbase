@@ -15,7 +15,6 @@ import com.kakao.actionbase.v2.engine.v3.V3QueryService
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -301,7 +300,7 @@ class V3MutationServiceAsyncSpec :
             val request = mapper.readValue<EdgeBulkMutationRequest>(edgeRequestString)
 
             v3MutationService
-                .mutateEdge(edgeTableName.service, edgeTableName.nameNotNull, request, internal = MutationMode.SYNC)
+                .internalMutateEdge(edgeTableName.service, edgeTableName.nameNotNull, request, internal = MutationMode.SYNC)
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"CREATED","count":1},{"source":1,"target":2,"status":"CREATED","count":2}]}"""
@@ -327,7 +326,7 @@ class V3MutationServiceAsyncSpec :
             val request = mapper.readValue<MultiEdgeBulkMutationRequest>(multiEdgeRequestString)
 
             v3MutationService
-                .mutateMultiEdge(
+                .internalMutateMultiEdge(
                     multiEdgeTableName.service,
                     multiEdgeTableName.nameNotNull,
                     request,
@@ -347,20 +346,9 @@ class V3MutationServiceAsyncSpec :
                 .verifyComplete()
         }
 
-        "mutateEdge with both mode and internal should throw IllegalArgumentException" {
-            val request = mapper.readValue<EdgeBulkMutationRequest>(edgeRequestString)
-
-            shouldThrow<IllegalArgumentException> {
-                v3MutationService
-                    .mutateEdge(
-                        edgeTableName.service,
-                        edgeTableName.nameNotNull,
-                        request,
-                        mode = MutationMode.ASYNC,
-                        internal = MutationMode.SYNC,
-                    ).block()
-            }
-        }
+        // mutual exclusivity between mode and internal is now enforced structurally:
+        // mutateEdge accepts only mode, internalMutateEdge accepts only mode (as internal).
+        // MutationModeContext-level mutual exclusivity is tested in MutationModeContextSpec.
     }) {
     companion object {
         private val mapper = jacksonObjectMapper()

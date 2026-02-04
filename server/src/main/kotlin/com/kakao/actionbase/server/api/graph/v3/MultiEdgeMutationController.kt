@@ -30,7 +30,7 @@ class MultiEdgeMutationController(
         // Note: Multi-edges are not supported in AsyncProcessor.
         // Forces SYNC processing regardless of the table's ASYNC setting.
         v3MutationService
-            .mutateMultiEdge(database, table, request, lock, mode = MutationMode.SYNC, internal = null, requestContext)
+            .mutateMultiEdge(database, table, request, lock, mode = MutationMode.SYNC, requestContext = requestContext)
             .map { ResponseEntity.ok(it) }
 
     @PostMapping("/graph/v3/databases/{database}/tables/{table}/multi-edges/sync")
@@ -42,7 +42,7 @@ class MultiEdgeMutationController(
         requestContext: RequestContext,
     ): Mono<ResponseEntity<MultiEdgeMutationResponse>> =
         v3MutationService
-            .mutateMultiEdge(database, table, request, lock, mode = MutationMode.SYNC, internal = null, requestContext)
+            .mutateMultiEdge(database, table, request, lock, mode = MutationMode.SYNC, requestContext = requestContext)
             .map { ResponseEntity.ok(it) }
 
     @PostMapping("/graph/v3/databases/{database}/tables/{table}/multi-edges/internal/sync")
@@ -54,6 +54,6 @@ class MultiEdgeMutationController(
         requestContext: RequestContext,
     ): Mono<ResponseEntity<MultiEdgeMutationResponse>> =
         v3MutationService
-            .mutateMultiEdge(database, table, request, lock, mode = null, internal = MutationMode.SYNC, requestContext)
+            .internalMutateMultiEdge(database, table, request, lock, internal = MutationMode.SYNC, requestContext = requestContext)
             .map { ResponseEntity.ok(it) }
 }

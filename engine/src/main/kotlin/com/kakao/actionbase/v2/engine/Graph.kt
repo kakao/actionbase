@@ -265,8 +265,32 @@ class Graph(
             } + aliases.map { it.key.toString() to "Alias(${it.value})" }
         ).toMap()
 
-    @Suppress("LongMethod")
     fun mutate(
+        alias: EntityName,
+        label: Label,
+        edges: List<TraceEdge>,
+        operation: EdgeOperation,
+        audit: Audit = Audit.default,
+        requestId: String = "",
+        bulk: Boolean = false,
+        mode: MutationMode? = null,
+        failOnExist: Boolean = false,
+    ): Mono<MutationResult> = mutate(alias, label, edges, operation, audit, requestId, bulk, mode = mode, internal = null, failOnExist)
+
+    fun internalMutate(
+        alias: EntityName,
+        label: Label,
+        edges: List<TraceEdge>,
+        operation: EdgeOperation,
+        audit: Audit = Audit.default,
+        requestId: String = "",
+        bulk: Boolean = false,
+        internal: MutationMode? = null,
+        failOnExist: Boolean = false,
+    ): Mono<MutationResult> = mutate(alias, label, edges, operation, audit, requestId, bulk, mode = null, internal = internal, failOnExist)
+
+    @Suppress("LongMethod")
+    private fun mutate(
         alias: EntityName,
         label: Label,
         edges: List<TraceEdge>,

@@ -65,6 +65,24 @@ class V3MutationService(
         request: EdgeBulkMutationRequest,
         lock: Boolean = true,
         mode: MutationMode? = null,
+        requestContext: RequestContext = RequestContext.DEFAULT,
+    ): Mono<EdgeMutationResponse> = mutateEdge(database, alias, request, lock, mode = mode, internal = null, requestContext)
+
+    fun internalMutateEdge(
+        database: String,
+        alias: String,
+        request: EdgeBulkMutationRequest,
+        lock: Boolean = true,
+        internal: MutationMode? = null,
+        requestContext: RequestContext = RequestContext.DEFAULT,
+    ): Mono<EdgeMutationResponse> = mutateEdge(database, alias, request, lock, mode = null, internal = internal, requestContext)
+
+    private fun mutateEdge(
+        database: String,
+        alias: String,
+        request: EdgeBulkMutationRequest,
+        lock: Boolean = true,
+        mode: MutationMode? = null,
         internal: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<EdgeMutationResponse> {
@@ -185,6 +203,24 @@ class V3MutationService(
     }
 
     fun mutateMultiEdge(
+        database: String,
+        alias: String,
+        request: MultiEdgeBulkMutationRequest,
+        lock: Boolean = true,
+        mode: MutationMode? = null,
+        requestContext: RequestContext = RequestContext.DEFAULT,
+    ): Mono<MultiEdgeMutationResponse> = mutateMultiEdge(database, alias, request, lock, mode = mode, internal = null, requestContext)
+
+    fun internalMutateMultiEdge(
+        database: String,
+        alias: String,
+        request: MultiEdgeBulkMutationRequest,
+        lock: Boolean = true,
+        internal: MutationMode? = null,
+        requestContext: RequestContext = RequestContext.DEFAULT,
+    ): Mono<MultiEdgeMutationResponse> = mutateMultiEdge(database, alias, request, lock, mode = null, internal = internal, requestContext)
+
+    private fun mutateMultiEdge(
         database: String,
         alias: String,
         request: MultiEdgeBulkMutationRequest,

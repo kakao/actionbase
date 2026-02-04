@@ -367,7 +367,7 @@ class V3MutationServiceSpec :
                 """.trimIndent().toEdgeBulkMutationRequest()
 
             v3MutationService
-                .mutateEdge(database, table, insertRequest, internal = MutationMode.ASYNC)
+                .internalMutateEdge(database, table, insertRequest, internal = MutationMode.ASYNC)
                 .test()
                 .assertNext { actualObject ->
                     val expected =

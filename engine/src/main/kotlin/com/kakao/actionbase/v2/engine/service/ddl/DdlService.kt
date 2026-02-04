@@ -33,7 +33,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
         request: Create,
     ): Mono<MutationResult> {
         val edge = request.toEdge(name)
-        return graph.mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, internal = MutationMode.SYNC)
+        return graph.internalMutate(label.name, label, listOf(edge), EdgeOperation.INSERT, internal = MutationMode.SYNC)
     }
 
     fun create(
@@ -47,7 +47,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                     // mutate should call to write WAL
                     // DDL operations must always be synchronous regardless of globalMutationMode
                     graph
-                        .mutate(
+                        .internalMutate(
                             label.name,
                             label,
                             listOf(edge),
@@ -87,7 +87,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                     val edge = request.toEdge(name)
                     // DDL operations must always be synchronous regardless of globalMutationMode
                     graph
-                        .mutate(
+                        .internalMutate(
                             label.name,
                             label,
                             listOf(edge),
@@ -126,7 +126,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
             if (it.isEmpty()) {
                 // DDL operations must always be synchronous regardless of globalMutationMode
                 graph
-                    .mutate(
+                    .internalMutate(
                         label.name,
                         label,
                         listOf(edge),
@@ -172,7 +172,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                     ).toTraceEdge()
                 // DDL operations must always be synchronous regardless of globalMutationMode
                 graph
-                    .mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, internal = MutationMode.SYNC)
+                    .internalMutate(label.name, label, listOf(edge), EdgeOperation.INSERT, internal = MutationMode.SYNC)
                     .map {
                         val result = it.result.first()
                         DdlStatus.fromEdgeOperationStatus(
