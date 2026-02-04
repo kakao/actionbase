@@ -5,7 +5,6 @@ import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.core.metadata.common.Storage
 import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
 import com.kakao.actionbase.core.types.PrimitiveType
@@ -113,7 +112,7 @@ class TableControllerTest : E2ETestBase() {
                     properties = listOf(StructField("score", PrimitiveType.INT, "score", true)),
                     direction = DirectionType.OUT,
                 ),
-            storage = Storage.HBase("test-hbase-table"),
+            storage = "datastore://hbase/test-hbase-table",
             mode = MutationMode.SYNC,
             comment = "test table",
         )

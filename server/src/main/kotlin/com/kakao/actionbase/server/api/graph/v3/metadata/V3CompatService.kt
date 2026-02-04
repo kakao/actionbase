@@ -15,7 +15,6 @@ import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
 import com.kakao.actionbase.core.metadata.payload.DatabaseUpdateRequest
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2MutationMode
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2StorageString
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
@@ -110,7 +109,7 @@ class V3CompatService(
                 type = request.type,
                 schema = request.toV2EdgeSchema(),
                 dirType = request.toV2DirectionType(),
-                storage = request.storage.toV2StorageString(),
+                storage = request.storage,
                 groups = request.schema.groups,
                 indices = request.toV2Indices(),
                 event = false,

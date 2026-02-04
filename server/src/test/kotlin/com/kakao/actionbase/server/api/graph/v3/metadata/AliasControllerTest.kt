@@ -5,7 +5,6 @@ import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.core.metadata.common.Storage
 import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.server.test.E2ETestBase
@@ -162,7 +161,7 @@ class AliasControllerTest : E2ETestBase() {
                     properties = emptyList(),
                     direction = DirectionType.OUT,
                 ),
-            storage = Storage.HBase("alias-test-hbase-table"),
+            storage = "datastore://hbase/alias-test-hbase-table",
             mode = MutationMode.SYNC,
             comment = "target table",
         )

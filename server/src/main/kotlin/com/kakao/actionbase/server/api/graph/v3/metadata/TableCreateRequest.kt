@@ -6,7 +6,6 @@ import com.kakao.actionbase.v2.core.types.Field as V2Field
 
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.core.metadata.common.Storage
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DataType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DirectionType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2Index
@@ -17,7 +16,7 @@ import com.kakao.actionbase.v2.core.types.VertexField
 
 data class TableCreateRequest(
     val schema: ModelSchema.Edge,
-    val storage: Storage,
+    val storage: String,
     val mode: MutationMode = MutationMode.SYNC,
     val type: LabelType = LabelType.HASH,
     val comment: String = "",
