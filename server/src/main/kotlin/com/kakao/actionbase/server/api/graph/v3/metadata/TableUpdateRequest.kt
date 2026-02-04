@@ -1,13 +1,14 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.v2.core.code.Index as V2Index
+import com.kakao.actionbase.v2.core.types.Field as V2Field
+
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DataType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2Index
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2VertexType
-import com.kakao.actionbase.v2.core.code.Index as V2Index
 import com.kakao.actionbase.v2.core.types.EdgeSchema
-import com.kakao.actionbase.v2.core.types.Field as V2Field
 import com.kakao.actionbase.v2.core.types.VertexField
 
 data class TableUpdateRequest(

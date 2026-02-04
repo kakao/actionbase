@@ -1,19 +1,5 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.metadata.AliasDescriptor
-import com.kakao.actionbase.core.metadata.DatabaseDescriptor
-import com.kakao.actionbase.core.metadata.TableDescriptor
-import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
-import com.kakao.actionbase.core.metadata.payload.DatabaseUpdateRequest
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2AliasEntity
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2LabelEntity
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2MutationMode
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2StorageString
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
-import com.kakao.actionbase.v2.engine.Graph
-import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.service.ddl.AliasCreateRequest as V2AliasCreateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.AliasDeleteRequest as V2AliasDeleteRequest
 import com.kakao.actionbase.v2.engine.service.ddl.AliasUpdateRequest as V2AliasUpdateRequest
@@ -22,6 +8,19 @@ import com.kakao.actionbase.v2.engine.service.ddl.LabelUpdateRequest as V2LabelU
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceCreateRequest as V2ServiceCreateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceDeleteRequest as V2ServiceDeleteRequest
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceUpdateRequest as V2ServiceUpdateRequest
+
+import com.kakao.actionbase.core.metadata.AliasDescriptor
+import com.kakao.actionbase.core.metadata.DatabaseDescriptor
+import com.kakao.actionbase.core.metadata.TableDescriptor
+import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
+import com.kakao.actionbase.core.metadata.payload.DatabaseUpdateRequest
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2MutationMode
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2StorageString
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
+import com.kakao.actionbase.v2.engine.Graph
+import com.kakao.actionbase.v2.engine.entity.EntityName
 
 import org.springframework.stereotype.Service
 
@@ -57,29 +56,27 @@ class V3CompatService(
         val v2Request = V2ServiceCreateRequest(desc = request.comment)
         return graph.serviceDdl
             .create(EntityName.fromOrigin(database), v2Request)
-            .mapNotNull { it.content }
-            .map { it.toV3DatabaseDescriptor(tenant) }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3DatabaseDescriptor(tenant)) } }
     }
 
     fun updateDatabase(
         database: String,
         request: DatabaseUpdateRequest,
     ): Mono<DatabaseDescriptor> {
-        val v2Request = V2ServiceUpdateRequest(
-            active = request.active,
-            desc = request.comment,
-        )
+        val v2Request =
+            V2ServiceUpdateRequest(
+                active = request.active,
+                desc = request.comment,
+            )
         return graph.serviceDdl
             .update(EntityName.fromOrigin(database), v2Request)
-            .mapNotNull { it.content }
-            .map { it.toV3DatabaseDescriptor(tenant) }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3DatabaseDescriptor(tenant)) } }
     }
 
     fun deleteDatabase(database: String): Mono<DatabaseDescriptor> =
         graph.serviceDdl
             .delete(EntityName.fromOrigin(database), V2ServiceDeleteRequest())
-            .mapNotNull { it.content }
-            .map { it.toV3DatabaseDescriptor(tenant) }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3DatabaseDescriptor(tenant)) } }
 
     // endregion
 
@@ -107,22 +104,22 @@ class V3CompatService(
         table: String,
         request: TableCreateRequest,
     ): Mono<TableDescriptor.Edge> {
-        val v2Request = V2LabelCreateRequest(
-            desc = request.comment,
-            type = request.type,
-            schema = request.toV2EdgeSchema(),
-            dirType = request.toV2DirectionType(),
-            storage = request.storage.toV2StorageString(),
-            groups = request.schema.groups,
-            indices = request.toV2Indices(),
-            event = false,
-            readOnly = false,
-            mode = request.mode.toV2MutationMode(),
-        )
+        val v2Request =
+            V2LabelCreateRequest(
+                desc = request.comment,
+                type = request.type,
+                schema = request.toV2EdgeSchema(),
+                dirType = request.toV2DirectionType(),
+                storage = request.storage.toV2StorageString(),
+                groups = request.schema.groups,
+                indices = request.toV2Indices(),
+                event = false,
+                readOnly = false,
+                mode = request.mode.toV2MutationMode(),
+            )
         return graph.labelDdl
             .create(EntityName(database, table), v2Request)
-            .mapNotNull { it.content }
-            .map { it.toV3TableDescriptor(tenant) }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
     }
 
     fun updateTable(
@@ -130,20 +127,20 @@ class V3CompatService(
         table: String,
         request: TableUpdateRequest,
     ): Mono<TableDescriptor.Edge> {
-        val v2Request = V2LabelUpdateRequest(
-            active = request.active,
-            desc = request.comment,
-            type = null,
-            schema = request.toV2EdgeSchema(),
-            groups = request.schema?.groups,
-            indices = request.toV2Indices(),
-            readOnly = null,
-            mode = request.mode?.toV2MutationMode(),
-        )
+        val v2Request =
+            V2LabelUpdateRequest(
+                active = request.active,
+                desc = request.comment,
+                type = null,
+                schema = request.toV2EdgeSchema(),
+                groups = request.schema?.groups,
+                indices = request.toV2Indices(),
+                readOnly = null,
+                mode = request.mode?.toV2MutationMode(),
+            )
         return graph.labelDdl
             .update(EntityName(database, table), v2Request)
-            .mapNotNull { it.content }
-            .map { it.toV3TableDescriptor(tenant) }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
     }
 
     // endregion
@@ -172,14 +169,14 @@ class V3CompatService(
         alias: String,
         request: AliasCreateRequest,
     ): Mono<AliasDescriptor> {
-        val v2Request = V2AliasCreateRequest(
-            desc = request.comment,
-            target = "$database.${request.table}",
-        )
+        val v2Request =
+            V2AliasCreateRequest(
+                desc = request.comment,
+                target = "$database.${request.table}",
+            )
         return graph.aliasDdl
             .create(EntityName(database, alias), v2Request)
-            .mapNotNull { it.content }
-            .map { it.toV3AliasDescriptor(tenant) }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3AliasDescriptor(tenant)) } }
     }
 
     fun updateAlias(
@@ -187,15 +184,15 @@ class V3CompatService(
         alias: String,
         request: AliasUpdateRequest,
     ): Mono<AliasDescriptor> {
-        val v2Request = V2AliasUpdateRequest(
-            active = request.active,
-            desc = request.comment,
-            target = request.table?.let { "$database.$it" },
-        )
+        val v2Request =
+            V2AliasUpdateRequest(
+                active = request.active,
+                desc = request.comment,
+                target = request.table?.let { "$database.$it" },
+            )
         return graph.aliasDdl
             .update(EntityName(database, alias), v2Request)
-            .mapNotNull { it.content }
-            .map { it.toV3AliasDescriptor(tenant) }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3AliasDescriptor(tenant)) } }
     }
 
     fun deleteAlias(
@@ -204,8 +201,7 @@ class V3CompatService(
     ): Mono<AliasDescriptor> =
         graph.aliasDdl
             .delete(EntityName(database, alias), V2AliasDeleteRequest())
-            .mapNotNull { it.content }
-            .map { it.toV3AliasDescriptor(tenant) }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3AliasDescriptor(tenant)) } }
 
     // endregion
 }

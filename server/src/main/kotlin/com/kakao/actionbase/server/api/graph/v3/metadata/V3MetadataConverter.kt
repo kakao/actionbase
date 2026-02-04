@@ -1,28 +1,29 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.Constants
+import com.kakao.actionbase.core.java.codec.common.hbase.Order as V3Order
+import com.kakao.actionbase.core.metadata.common.DirectionType as V3DirectionType
+import com.kakao.actionbase.core.metadata.common.Field as V3Field
+import com.kakao.actionbase.core.metadata.common.Index as V3Index
+import com.kakao.actionbase.core.metadata.common.MutationMode as V3MutationMode
+import com.kakao.actionbase.v2.core.code.Index as V2Index
+import com.kakao.actionbase.v2.core.code.hbase.Order as V2Order
+import com.kakao.actionbase.v2.core.metadata.DirectionType as V2DirectionType
+import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
+import com.kakao.actionbase.v2.core.types.DataType as V2DataType
+import com.kakao.actionbase.v2.core.types.Field as V2Field
+
 import com.kakao.actionbase.core.metadata.AliasDescriptor
 import com.kakao.actionbase.core.metadata.DatabaseDescriptor
 import com.kakao.actionbase.core.metadata.TableDescriptor
-import com.kakao.actionbase.core.metadata.common.DirectionType as V3DirectionType
-import com.kakao.actionbase.core.metadata.common.Field as V3Field
 import com.kakao.actionbase.core.metadata.common.Group
-import com.kakao.actionbase.core.metadata.common.Index as V3Index
 import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.MutationMode as V3MutationMode
 import com.kakao.actionbase.core.metadata.common.Storage
 import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.EngineConstants
-import com.kakao.actionbase.v2.core.code.Index as V2Index
-import com.kakao.actionbase.v2.core.code.hbase.Order
-import com.kakao.actionbase.v2.core.metadata.DirectionType as V2DirectionType
 import com.kakao.actionbase.v2.core.metadata.LabelType
-import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
-import com.kakao.actionbase.v2.core.types.DataType as V2DataType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
-import com.kakao.actionbase.v2.core.types.Field as V2Field
 import com.kakao.actionbase.v2.core.types.VertexField
 import com.kakao.actionbase.v2.core.types.VertexType
 import com.kakao.actionbase.v2.engine.entity.AliasEntity
@@ -172,14 +173,16 @@ object V3MetadataConverter {
         groups: List<Group>,
     ): ModelSchema.Edge =
         ModelSchema.Edge(
-            source = V3Field(
-                type = src.type.toV3PrimitiveType(),
-                comment = src.desc,
-            ),
-            target = V3Field(
-                type = tgt.type.toV3PrimitiveType(),
-                comment = tgt.desc,
-            ),
+            source =
+                V3Field(
+                    type = src.type.toV3PrimitiveType(),
+                    comment = src.desc,
+                ),
+            target =
+                V3Field(
+                    type = tgt.type.toV3PrimitiveType(),
+                    comment = tgt.desc,
+                ),
             properties = fields.map { it.toV3StructField() },
             direction = direction,
             indexes = indices.map { it.toV3Index() },
@@ -200,7 +203,7 @@ object V3MetadataConverter {
     fun V2Field.toV3StructField(): StructField =
         StructField(
             name = name,
-            type = dataType.toV3PrimitiveType(),
+            type = type.toV3PrimitiveType(),
             comment = desc,
             nullable = isNullable,
         )
@@ -220,16 +223,32 @@ object V3MetadataConverter {
     fun V2Index.toV3Index(): V3Index =
         V3Index(
             index = name,
-            fields = fields.map { IndexField(field = it.name, order = it.order) },
+            fields = fields.map { IndexField(field = it.name, order = it.order.toV3Order()) },
             comment = desc,
         )
 
     fun V3Index.toV2Index(): V2Index =
         V2Index(
             index,
-            fields.map { V2Index.Field(it.field, it.order) },
+            fields.map { V2Index.Field(it.field, it.order.toV2Order()) },
             comment,
         )
+
+    // endregion
+
+    // region Order conversion
+
+    fun V2Order.toV3Order(): V3Order =
+        when (this) {
+            V2Order.ASC -> V3Order.ASC
+            V2Order.DESC -> V3Order.DESC
+        }
+
+    fun V3Order.toV2Order(): V2Order =
+        when (this) {
+            V3Order.ASC -> V2Order.ASC
+            V3Order.DESC -> V2Order.DESC
+        }
 
     // endregion
 
