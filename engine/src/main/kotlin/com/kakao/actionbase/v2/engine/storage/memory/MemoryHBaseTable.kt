@@ -12,6 +12,7 @@ import org.apache.hadoop.hbase.KeyValue
 import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.CheckAndMutate
 import org.apache.hadoop.hbase.client.CheckAndMutateResult
+import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder
 import org.apache.hadoop.hbase.client.Delete
 import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Increment
@@ -21,7 +22,6 @@ import org.apache.hadoop.hbase.client.Result
 import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.client.TableDescriptor
 import org.apache.hadoop.hbase.client.TableDescriptorBuilder
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder
 import org.apache.hadoop.hbase.filter.PrefixFilter
 import org.apache.hadoop.hbase.util.Bytes
 
@@ -101,8 +101,7 @@ class MemoryHBaseTable(
             }
         }
 
-    override fun exists(get: Get): Mono<Boolean> =
-        get(get).map { !it.isEmpty }
+    override fun exists(get: Get): Mono<Boolean> = get(get).map { !it.isEmpty }
 
     override fun checkAndMutate(checkAndMutate: CheckAndMutate): Mono<CheckAndMutateResult> =
         Mono.fromCallable {

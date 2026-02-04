@@ -5,8 +5,6 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
 
-import java.lang.AutoCloseable
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.TableName

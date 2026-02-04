@@ -4,7 +4,6 @@ import com.kakao.actionbase.v2.engine.storage.memory.MemoryStorageBackend
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client.AsyncConnection
-
 import org.slf4j.LoggerFactory
 
 object DefaultStorageBackend {
