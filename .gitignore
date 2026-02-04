@@ -86,3 +86,4 @@ native/src/c/*.dylib
 native/src/c/*.so
 native/slatedb/
 native/lib/
+!native/lib/.gitkeep
