@@ -5,6 +5,7 @@ import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
@@ -351,6 +352,41 @@ class V3MutationServiceSpec :
                 }.verifyComplete()
 
             executionCompleted.get() shouldBe true
+        }
+
+        "SYNC table with internal=ASYNC should queue mutations" {
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.hbaseIndexed
+            val insertRequest =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"permission": "na", "createdAt": 10}}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+
+            v3MutationService
+                .mutateEdge(database, table, insertRequest, internal = MutationMode.ASYNC)
+                .test()
+                .assertNext { actualObject ->
+                    val expected =
+                        """
+                        {
+                          "results": [
+                            {"status": "QUEUED", "source": 1000, "target": 9000, "count": 1}
+                          ]
+                        }
+                        """.trimIndent().toEdgeMutationResponse().toNormalizedString()
+                    actualObject.toNormalizedString() shouldBe expected
+                }.verifyComplete()
+
+            // Data should NOT be queryable (queued, not written)
+            v3QueryService
+                .gets(database, table, listOf("1000"), listOf("9000"))
+                .test()
+                .assertNext { it.edges.size shouldBe 0 }
+                .verifyComplete()
         }
     }) {
     companion object {
