@@ -1,6 +1,7 @@
 package com.kakao.actionbase.v2.engine.storage.hbase.impl
 
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
+import com.kakao.actionbase.v2.core.code.hbase.Constants
+import com.kakao.actionbase.v2.engine.storage.StorageOperation
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.TableName
@@ -42,14 +43,13 @@ class HBaseAsyncTable(
 
     override fun delete(delete: Delete): Mono<Void> = Mono.fromFuture(asyncTable.delete(delete))
 
-    override fun batch(deferredRequests: List<Any>): Mono<Void> {
+    override fun batch(operations: List<StorageOperation>): Mono<Void> {
         val mutations: List<Mutation> =
-            deferredRequests.map {
-                when (it) {
-                    is Put -> it
-                    is Delete -> it
-                    is Increment -> it
-                    else -> throw IllegalArgumentException("Unsupported mutation type: ${it::class.simpleName}")
+            operations.map { op ->
+                when (op) {
+                    is StorageOperation.PutOp -> Put(op.put.key).addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, op.put.value)
+                    is StorageOperation.DeleteOp -> Delete(op.delete.key)
+                    is StorageOperation.IncrementOp -> Increment(op.increment.key).addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, op.increment.amount)
                 }
             }
 

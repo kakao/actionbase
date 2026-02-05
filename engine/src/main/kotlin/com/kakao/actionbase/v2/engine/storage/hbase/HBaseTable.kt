@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
+import com.kakao.actionbase.v2.engine.storage.StorageOperation
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.HBaseAsyncTable
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.HBaseSyncTable
 
@@ -35,7 +36,7 @@ interface HBaseTable {
 
     fun delete(delete: Delete): Mono<Void>
 
-    fun batch(deferredRequests: List<Any>): Mono<Void>
+    fun batch(operations: List<StorageOperation>): Mono<Void>
 
     fun exists(get: Get): Mono<Boolean>
 

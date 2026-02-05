@@ -1,5 +1,9 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.v2.engine.storage.Delete as StorageDelete
+import com.kakao.actionbase.v2.engine.storage.Increment as StorageIncrement
+import com.kakao.actionbase.v2.engine.storage.Put as StoragePut
+
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationBuilder
 import com.kakao.actionbase.core.edge.payload.EdgeMutationStatus
@@ -11,17 +15,14 @@ import com.kakao.actionbase.core.state.Event
 import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.core.state.transit
-import com.kakao.actionbase.v2.core.code.hbase.Constants
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
-
-import org.apache.hadoop.hbase.client.Delete
-import org.apache.hadoop.hbase.client.Increment
-import org.apache.hadoop.hbase.client.Mutation
-import org.apache.hadoop.hbase.client.Put
+import com.kakao.actionbase.v2.engine.storage.StorageOperation
 
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
+
+// ... other imports ...
 
 class V3CompatibleTableBinding(
     private val descriptor: V3TableDescriptor,
@@ -76,41 +77,32 @@ class V3CompatibleTableBinding(
                     val beforeRecord = EdgeStateRecord.of(source, target, before, entity.id)
                     val afterRecord = EdgeStateRecord.of(source, target, after, entity.id)
                     val mutationRecords = EdgeMutationBuilder.build(beforeRecord, afterRecord, schema.direction, schema.indexes, schema.groups)
-                    val mutations = mutableListOf<Mutation>()
+                    val mutations = mutableListOf<StorageOperation>()
                     val record = mapper.state.encoder.encode(mutationRecords.stateRecord)
                     mutations +=
-                        Put(record.key)
-                            .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, record.value)
+                        StorageOperation.PutOp(StoragePut(record.key, record.value))
                     mutations +=
                         mutationRecords.createIndexRecords.map {
                             val record = mapper.index.encoder.encode(it)
-                            Put(record.key)
-                                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, record.value)
+                            StorageOperation.PutOp(StoragePut(record.key, record.value))
                         }
                     mutations +=
                         mutationRecords.countRecords.map {
                             val key = mapper.count.encoder.encodeKey(it.key)
-                            Increment(key)
-                                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, it.value)
+                            StorageOperation.IncrementOp(StorageIncrement(key, it.value))
                         }
                     mutations +=
                         mutationRecords.deleteIndexRecordKeys.map {
                             val key = mapper.index.encoder.encodeKey(it)
-                            Delete(key)
+                            StorageOperation.DeleteOp(StorageDelete(key))
                         }
                     mutations +=
-                        mutationRecords.groupRecords.groupBy { it.key to it.ttl }.map { (groupKey, records) ->
+                        mutationRecords.groupRecords.groupBy { it.key to it.ttl }.flatMap { (groupKey, records) ->
                             val (key, ttl) = groupKey
                             val encodedKey = mapper.group.encoder.encodeKey(key)
-                            val increment = Increment(encodedKey)
-                            records.mergeQualifiers().forEach { (mergedQualifier, mergedValue) ->
-                                val qualifier = mapper.group.encoder.encodeQualifier(mergedQualifier)
-                                increment.addColumn(Constants.DEFAULT_COLUMN_FAMILY, qualifier, mergedValue)
+                            records.mergeQualifiers().map { (mergedQualifier, mergedValue) ->
+                                StorageOperation.IncrementOp(StorageIncrement(encodedKey, mergedValue))
                             }
-                            if (ttl != null && ttl != Long.MAX_VALUE && ttl > 0) {
-                                increment.ttl = ttl
-                            }
-                            increment
                         }
                     handleDeferredRequests(mutations)
                         .thenReturn(
@@ -170,41 +162,32 @@ class V3CompatibleTableBinding(
                     val beforeRecord = EdgeStateRecord.of(key, key, before, entity.id)
                     val afterRecord = EdgeStateRecord.of(key, key, after, entity.id)
                     val mutationRecords = EdgeMutationBuilder.buildForMultiEdge(beforeRecord, afterRecord, schema.direction, schema.indexes, schema.groups)
-                    val mutations = mutableListOf<Mutation>()
+                    val mutations = mutableListOf<StorageOperation>()
                     val record = mapper.state.encoder.encode(mutationRecords.stateRecord)
                     mutations +=
-                        Put(record.key)
-                            .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, record.value)
+                        StorageOperation.PutOp(StoragePut(record.key, record.value))
                     mutations +=
                         mutationRecords.createIndexRecords.map {
                             val record = mapper.index.encoder.encode(it)
-                            Put(record.key)
-                                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, record.value)
+                            StorageOperation.PutOp(StoragePut(record.key, record.value))
                         }
                     mutations +=
                         mutationRecords.countRecords.map {
                             val key = mapper.count.encoder.encodeKey(it.key)
-                            Increment(key)
-                                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, it.value)
+                            StorageOperation.IncrementOp(StorageIncrement(key, it.value))
                         }
                     mutations +=
                         mutationRecords.deleteIndexRecordKeys.map {
                             val key = mapper.index.encoder.encodeKey(it)
-                            Delete(key)
+                            StorageOperation.DeleteOp(StorageDelete(key))
                         }
                     mutations +=
-                        mutationRecords.groupRecords.groupBy { it.key to it.ttl }.map { (groupKey, records) ->
+                        mutationRecords.groupRecords.groupBy { it.key to it.ttl }.flatMap { (groupKey, records) ->
                             val (key, ttl) = groupKey
                             val encodedKey = mapper.group.encoder.encodeKey(key)
-                            val increment = Increment(encodedKey)
-                            records.mergeQualifiers().forEach { (mergedQualifier, mergedValue) ->
-                                val qualifier = mapper.group.encoder.encodeQualifier(mergedQualifier)
-                                increment.addColumn(Constants.DEFAULT_COLUMN_FAMILY, qualifier, mergedValue)
+                            records.mergeQualifiers().map { (mergedQualifier, mergedValue) ->
+                                StorageOperation.IncrementOp(StorageIncrement(encodedKey, mergedValue))
                             }
-                            if (ttl != null && ttl != Long.MAX_VALUE && ttl > 0) {
-                                increment.ttl = ttl
-                            }
-                            increment
                         }
                     handleDeferredRequests(mutations)
                         .thenReturn(

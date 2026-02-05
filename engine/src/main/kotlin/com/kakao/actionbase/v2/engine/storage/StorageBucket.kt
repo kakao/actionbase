@@ -16,4 +16,6 @@ interface StorageBucket {
     fun scan(scan: Scan): Flux<ScanResult>
 
     fun increment(increment: Increment): Mono<Long>
+
+    fun batch(operations: List<StorageOperation>): Mono<Void>
 }

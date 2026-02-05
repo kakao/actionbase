@@ -29,10 +29,7 @@ import java.util.Arrays
 import org.apache.hadoop.hbase.CellUtil
 import org.apache.hadoop.hbase.CompareOperator
 import org.apache.hadoop.hbase.client.CheckAndMutate
-import org.apache.hadoop.hbase.client.Delete
 import org.apache.hadoop.hbase.client.Get
-import org.apache.hadoop.hbase.client.Increment
-import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.filter.BinaryComparator
 import org.apache.hadoop.hbase.filter.FilterList
@@ -68,29 +65,24 @@ open class HBaseHashLabel(
     override fun create(
         keyField: EncodedKey<ByteArray>,
         value: ByteArray,
-    ): Mono<List<Any>> {
+    ): Mono<StorageOperation> {
         require(keyField.field == null) { "field must be null" }
-        val put =
-            Put(keyField.key)
-                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, value)
-        // return tables.flatMap { it.edge.put(put) }
-        //    .thenReturn(true)
-        return Mono.just(listOf(put))
+        val put = StoragePut(keyField.key, value) // Use our StoragePut
+        return Mono.just(StorageOperation.PutOp(put))
     }
 
     override fun update(
         keyField: EncodedKey<ByteArray>,
         value: ByteArray,
-    ): Mono<List<Any>> = create(keyField, value)
+    ): Mono<StorageOperation> = create(keyField, value)
 
-    override fun delete(keyField: EncodedKey<ByteArray>): Mono<List<Any>> {
+    override fun delete(keyField: EncodedKey<ByteArray>): Mono<StorageOperation> {
         require(keyField.field == null) { "field must be null" }
-        val delete = Delete(keyField.key)
-        // return tables.flatMap { it.edge.delete(delete) }.thenReturn(true)
-        return Mono.just(listOf(delete))
+        val delete = StorageDelete(keyField.key) // Use our StorageDelete
+        return Mono.just(StorageOperation.DeleteOp(delete))
     }
 
-    override fun handleDeferredRequests(deferredRequests: List<Any>): Mono<Boolean> = tables.flatMap { it.edge.batch(deferredRequests) }.thenReturn(true)
+    override fun handleDeferredRequests(deferredRequests: List<StorageOperation>): Mono<Void> = tables.flatMap { it.edge.batch(deferredRequests) }.then()
 
     override fun setnx(
         keyField: EncodedKey<ByteArray>,
@@ -160,14 +152,9 @@ open class HBaseHashLabel(
     override fun incrby(
         key: ByteArray,
         acc: Long,
-    ): Mono<List<Any>> {
-        val increment =
-            Increment(key)
-                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, acc)
-        // return tables.flatMap { it.edge.increment(increment) }.map {
-        //     Bytes.toLong(it.value())
-        // }
-        return Mono.just(listOf(increment))
+    ): Mono<StorageOperation> {
+        val increment = StorageIncrement(key, acc) // Use our StorageIncrement
+        return Mono.just(StorageOperation.IncrementOp(increment))
     }
 
     // --- for scan

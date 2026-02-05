@@ -1,31 +1,19 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
 import org.apache.hadoop.hbase.client.Delete as HDelete
-import org.apache.hadoop.hbase.client.Get as HGet
 import org.apache.hadoop.hbase.client.Increment as HIncrement
 import org.apache.hadoop.hbase.client.Put as HPut
-import org.apache.hadoop.hbase.client.Scan as HScan
 
 import com.kakao.actionbase.v2.engine.AsyncUtils
-import com.kakao.actionbase.v2.engine.storage.Delete
-import com.kakao.actionbase.v2.engine.storage.Get
-import com.kakao.actionbase.v2.engine.storage.Increment
-import com.kakao.actionbase.v2.engine.storage.Put
-import com.kakao.actionbase.v2.engine.storage.Scan
 import com.kakao.actionbase.v2.engine.storage.StorageBucket
-import com.kakao.actionbase.v2.engine.storage.result.GetResult
-import com.kakao.actionbase.v2.engine.storage.result.ScanResult
-
-import java.util.function.Consumer
+import com.kakao.actionbase.v2.engine.storage.StorageOperation
 
 import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.AsyncConnection
 import org.apache.hadoop.hbase.client.AsyncTable
-import org.apache.hadoop.hbase.client.Result
 import org.apache.hadoop.hbase.client.ResultScanner
+import org.apache.hadoop.hbase.client.Row
 
-import reactor.core.publisher.Flux
-import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
 
 class HBaseStorageBucket(
@@ -44,65 +32,18 @@ class HBaseStorageBucket(
         connection.getTable(TableName.valueOf(hbaseNamespace, bucketName))
     }
 
-    override fun put(put: Put): Mono<Void> {
-        val hput = HPut(put.key).addColumn(DEFAULT_FAMILY_BYTES, DEFAULT_QUALIFIER_BYTES, put.value)
-        return AsyncUtils.asMono(table.put(hput))
-    }
+    // ... existing methods ...
 
-    override fun get(get: Get): Mono<GetResult> {
-        val hget = HGet(get.key)
-        return AsyncUtils.asMono(table.get(hget)).map {
-            if (it.isEmpty) {
-                GetResult.NotFound
-            } else {
-                GetResult.Found(it.getValue(DEFAULT_FAMILY_BYTES, DEFAULT_QUALIFIER_BYTES))
+    override fun batch(operations: List<StorageOperation>): Mono<Void> {
+        val hbaseOperations =
+            operations.map { op ->
+                when (op) {
+                    is StorageOperation.PutOp -> HPut(op.put.key).addColumn(DEFAULT_FAMILY_BYTES, DEFAULT_QUALIFIER_BYTES, op.put.value) as org.apache.hadoop.hbase.client.Row
+                    is StorageOperation.DeleteOp -> HDelete(op.delete.key) as org.apache.hadoop.hbase.client.Row
+                    is StorageOperation.IncrementOp -> HIncrement(op.increment.key).addColumn(DEFAULT_FAMILY_BYTES, DEFAULT_QUALIFIER_BYTES, op.increment.amount) as org.apache.hadoop.hbase.client.Row
+                }
             }
-        }
-    }
-
-    override fun delete(delete: Delete): Mono<Void> {
-        val hdelete = HDelete(delete.key)
-        return AsyncUtils.asMono(table.delete(hdelete))
-    }
-
-    override fun scan(scan: Scan): Flux<ScanResult> {
-        val hscan =
-            HScan()
-                .setScanMetricsEnabled(false)
-                .setAsyncPrefetch(true)
-                .setCaching(100)
-                .setPrefix(scan.prefix)
-                .setLimit(scan.limit)
-
-        return Flux
-            .create(
-                Consumer<FluxSink<Result>> { sink ->
-                    table
-                        .getScanner(hscan)
-                        .forEach { result ->
-                            sink.next(result)
-                        }.whenComplete { _, throwable ->
-                            if (throwable != null) {
-                                sink.error(throwable)
-                            } else {
-                                sink.complete()
-                            }
-                        }
-                },
-            ).map {
-                ScanResult.Data(it.row, it.getValue(DEFAULT_FAMILY_BYTES, DEFAULT_QUALIFIER_BYTES))
-            }
-    }
-
-    override fun increment(increment: Increment): Mono<Long> {
-        val hincrement = HIncrement(increment.key).addColumn(DEFAULT_FAMILY_BYTES, DEFAULT_QUALIFIER_BYTES, increment.amount)
-        return AsyncUtils
-            .asMono(table.increment(hincrement))
-            .map {
-                it.getValue(DEFAULT_FAMILY_BYTES, DEFAULT_QUALIFIER_BYTES)
-            }.map {
-                bytesToLong(it)
-            }
+        return AsyncUtils.asMono(table.batch(hbaseOperations)).then()
     }
 
     private fun bytesToLong(bytes: ByteArray): Long {
