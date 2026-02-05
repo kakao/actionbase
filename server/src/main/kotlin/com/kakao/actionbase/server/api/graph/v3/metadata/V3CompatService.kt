@@ -4,6 +4,7 @@ import com.kakao.actionbase.v2.engine.service.ddl.AliasCreateRequest as V2AliasC
 import com.kakao.actionbase.v2.engine.service.ddl.AliasDeleteRequest as V2AliasDeleteRequest
 import com.kakao.actionbase.v2.engine.service.ddl.AliasUpdateRequest as V2AliasUpdateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest as V2LabelCreateRequest
+import com.kakao.actionbase.v2.engine.service.ddl.LabelDeleteRequest as V2LabelDeleteRequest
 import com.kakao.actionbase.v2.engine.service.ddl.LabelUpdateRequest as V2LabelUpdateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceCreateRequest as V2ServiceCreateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceDeleteRequest as V2ServiceDeleteRequest
@@ -141,6 +142,14 @@ class V3CompatService(
             .update(EntityName(database, table), v2Request)
             .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
     }
+
+    fun deleteTable(
+        database: String,
+        table: String,
+    ): Mono<TableDescriptor.Edge> =
+        graph.labelDdl
+            .delete(EntityName(database, table), V2LabelDeleteRequest())
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
 
     // endregion
 

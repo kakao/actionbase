@@ -11,10 +11,15 @@ import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.VertexField
 
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Size
+
 data class TableUpdateRequest(
     val active: Boolean? = null,
+    @field:Valid
     val schema: ModelSchema.Edge? = null,
     val mode: MutationMode? = null,
+    @field:Size(max = 1000, message = "comment must be at most 1000 characters")
     val comment: String? = null,
 ) {
     fun toV2EdgeSchema(): EdgeSchema? =

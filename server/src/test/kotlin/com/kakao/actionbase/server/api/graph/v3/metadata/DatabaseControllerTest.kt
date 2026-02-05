@@ -2,6 +2,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 
 import com.kakao.actionbase.core.metadata.DatabaseDescriptor
 import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
+import com.kakao.actionbase.core.metadata.payload.DatabaseUpdateRequest
 import com.kakao.actionbase.server.test.E2ETestBase
 
 import org.assertj.core.api.Assertions.assertThat
@@ -55,6 +56,20 @@ class DatabaseControllerTest : E2ETestBase() {
 
     @Test
     @Order(4)
+    fun `update database`() {
+        client
+            .put()
+            .uri("/graph/v3/databases/$db")
+            .bodyValue(DatabaseUpdateRequest(comment = "updated comment"))
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody(DatabaseDescriptor::class.java)
+            .value { assertThat(it.comment).isEqualTo("updated comment") }
+    }
+
+    @Test
+    @Order(5)
     fun `get non-existent database returns 404`() {
         client
             .get()
@@ -62,5 +77,27 @@ class DatabaseControllerTest : E2ETestBase() {
             .exchange()
             .expectStatus()
             .isNotFound
+    }
+
+    @Test
+    @Order(6)
+    fun `invalid database name returns 400`() {
+        client
+            .get()
+            .uri("/graph/v3/databases/123-invalid")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    @Order(7)
+    fun `database name with dot returns 400`() {
+        client
+            .get()
+            .uri("/graph/v3/databases/db.injection")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
     }
 }

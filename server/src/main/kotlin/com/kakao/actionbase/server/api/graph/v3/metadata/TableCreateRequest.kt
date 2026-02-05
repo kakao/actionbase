@@ -14,11 +14,25 @@ import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.VertexField
 
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
+
 data class TableCreateRequest(
+    @field:NotNull(message = "schema is required")
+    @field:Valid
     val schema: ModelSchema.Edge,
+    @field:NotBlank(message = "storage is required")
+    @field:Pattern(
+        regexp = "^datastore://[a-z]+/[a-zA-Z0-9_-]+$",
+        message = "storage must be in format datastore://<type>/<name> (e.g., datastore://hbase/my-table)",
+    )
     val storage: String,
     val mode: MutationMode = MutationMode.SYNC,
     val type: LabelType = LabelType.HASH,
+    @field:Size(max = 1000, message = "comment must be at most 1000 characters")
     val comment: String = "",
 ) {
     fun toV2EdgeSchema(): EdgeSchema =

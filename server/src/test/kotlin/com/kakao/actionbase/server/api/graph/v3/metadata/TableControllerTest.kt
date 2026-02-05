@@ -94,6 +94,20 @@ class TableControllerTest : E2ETestBase() {
 
     @Test
     @Order(5)
+    fun `update table`() {
+        client
+            .put()
+            .uri("$baseUri/$table")
+            .bodyValue(TableUpdateRequest(comment = "updated comment"))
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody(TableDescriptor.Edge::class.java)
+            .value { assertThat(it.comment).isEqualTo("updated comment") }
+    }
+
+    @Test
+    @Order(6)
     fun `get non-existent table returns 404`() {
         client
             .get()
@@ -101,6 +115,66 @@ class TableControllerTest : E2ETestBase() {
             .exchange()
             .expectStatus()
             .isNotFound
+    }
+
+    @Test
+    @Order(7)
+    fun `invalid table name returns 400`() {
+        client
+            .get()
+            .uri("$baseUri/123-invalid")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    @Order(8)
+    fun `table name with dot returns 400`() {
+        client
+            .get()
+            .uri("$baseUri/table.injection")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    @Order(9)
+    fun `deactivate table`() {
+        client
+            .put()
+            .uri("$baseUri/$table")
+            .bodyValue(TableUpdateRequest(active = false))
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody(TableDescriptor.Edge::class.java)
+            .value { assertThat(it.active).isFalse() }
+    }
+
+    @Test
+    @Order(10)
+    fun `delete table returns 204`() {
+        client
+            .delete()
+            .uri("$baseUri/$table")
+            .exchange()
+            .expectStatus()
+            .isNoContent
+    }
+
+    @Test
+    @Order(11)
+    fun `list tables after delete - empty`() {
+        client
+            .get()
+            .uri(baseUri)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBodyList(TableDescriptor.Edge::class.java)
+            .hasSize(0)
     }
 
     private fun tableRequest() =

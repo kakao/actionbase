@@ -3,6 +3,8 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 import com.kakao.actionbase.core.metadata.TableDescriptor
 
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -11,9 +13,11 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
+import jakarta.validation.Valid
 import reactor.core.publisher.Mono
 
 @RestController
+@Validated
 @RequestMapping("/graph/v3/databases/{database}/tables")
 class TableController(
     private val v3CompatService: V3CompatService,
@@ -23,7 +27,7 @@ class TableController(
         @PathVariable database: String,
     ): Mono<ResponseEntity<List<TableDescriptor.Edge>>> =
         v3CompatService
-            .getTables(database)
+            .getTables(V3NameValidator.validateDatabase(database))
             .map { ResponseEntity.ok(it) }
 
     @GetMapping("/{table}")
@@ -32,7 +36,7 @@ class TableController(
         @PathVariable table: String,
     ): Mono<ResponseEntity<TableDescriptor.Edge>> =
         v3CompatService
-            .getTable(database, table)
+            .getTable(V3NameValidator.validateDatabase(database), V3NameValidator.validateTable(table))
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
@@ -40,20 +44,38 @@ class TableController(
     fun createTable(
         @PathVariable database: String,
         @PathVariable table: String,
-        @RequestBody request: TableCreateRequest,
+        @Valid @RequestBody request: TableCreateRequest,
     ): Mono<ResponseEntity<TableDescriptor.Edge>> =
         v3CompatService
-            .createTable(database, table, request)
+            .createTable(
+                V3NameValidator.validateDatabase(database),
+                V3NameValidator.validateTable(table),
+                request,
+            )
             .map { ResponseEntity.ok(it) }
 
     @PutMapping("/{table}")
     fun updateTable(
         @PathVariable database: String,
         @PathVariable table: String,
-        @RequestBody request: TableUpdateRequest,
+        @Valid @RequestBody request: TableUpdateRequest,
     ): Mono<ResponseEntity<TableDescriptor.Edge>> =
         v3CompatService
-            .updateTable(database, table, request)
+            .updateTable(
+                V3NameValidator.validateDatabase(database),
+                V3NameValidator.validateTable(table),
+                request,
+            )
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
+
+    @DeleteMapping("/{table}")
+    fun deleteTable(
+        @PathVariable database: String,
+        @PathVariable table: String,
+    ): Mono<ResponseEntity<Void>> =
+        v3CompatService
+            .deleteTable(V3NameValidator.validateDatabase(database), V3NameValidator.validateTable(table))
+            .then(Mono.just(ResponseEntity.noContent().build<Void>()))
+            .onErrorResume { Mono.just(ResponseEntity.notFound().build()) }
 }

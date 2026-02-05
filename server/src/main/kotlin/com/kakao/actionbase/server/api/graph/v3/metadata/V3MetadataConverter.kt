@@ -153,7 +153,13 @@ object V3MetadataConverter {
         val path = removePrefix(EngineConstants.DATASTORE_URI_PREFIX)
         val parts = path.split("/", limit = 2)
         return when (parts[0]) {
-            "hbase" -> Storage.HBase(tableName = parts.getOrElse(1) { "" })
+            "hbase" -> {
+                val tableName = parts.getOrElse(1) { "" }
+                require(tableName.isNotBlank()) {
+                    "HBase table name is required in datastore URI"
+                }
+                Storage.HBase(tableName = tableName)
+            }
             else -> throw IllegalArgumentException("Unsupported datastore type: ${parts[0]}")
         }
     }

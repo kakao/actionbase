@@ -115,6 +115,20 @@ class AliasControllerTest : E2ETestBase() {
 
     @Test
     @Order(6)
+    fun `update alias`() {
+        client
+            .put()
+            .uri("$baseUri/$alias")
+            .bodyValue(AliasUpdateRequest(comment = "updated comment"))
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody(AliasDescriptor::class.java)
+            .value { assertThat(it.comment).isEqualTo("updated comment") }
+    }
+
+    @Test
+    @Order(7)
     fun `deactivate alias`() {
         client
             .put()
@@ -128,19 +142,18 @@ class AliasControllerTest : E2ETestBase() {
     }
 
     @Test
-    @Order(7)
-    fun `delete alias`() {
-        // Delete returns 404 because entity no longer exists after deletion
+    @Order(8)
+    fun `delete alias returns 204`() {
         client
             .delete()
             .uri("$baseUri/$alias")
             .exchange()
             .expectStatus()
-            .isNotFound
+            .isNoContent
     }
 
     @Test
-    @Order(8)
+    @Order(9)
     fun `list aliases after delete - empty`() {
         client
             .get()
@@ -150,6 +163,28 @@ class AliasControllerTest : E2ETestBase() {
             .isOk
             .expectBodyList(AliasDescriptor::class.java)
             .hasSize(0)
+    }
+
+    @Test
+    @Order(10)
+    fun `invalid alias name returns 400`() {
+        client
+            .get()
+            .uri("$baseUri/123-invalid")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    @Order(11)
+    fun `alias name with dot returns 400`() {
+        client
+            .get()
+            .uri("$baseUri/alias.injection")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
     }
 
     private fun tableRequest() =

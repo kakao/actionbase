@@ -3,6 +3,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 import com.kakao.actionbase.core.metadata.AliasDescriptor
 
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -12,9 +13,11 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
+import jakarta.validation.Valid
 import reactor.core.publisher.Mono
 
 @RestController
+@Validated
 @RequestMapping("/graph/v3/databases/{database}/aliases")
 class AliasController(
     private val v3CompatService: V3CompatService,
@@ -24,7 +27,7 @@ class AliasController(
         @PathVariable database: String,
     ): Mono<ResponseEntity<List<AliasDescriptor>>> =
         v3CompatService
-            .getAliases(database)
+            .getAliases(V3NameValidator.validateDatabase(database))
             .map { ResponseEntity.ok(it) }
 
     @GetMapping("/{alias}")
@@ -33,7 +36,7 @@ class AliasController(
         @PathVariable alias: String,
     ): Mono<ResponseEntity<AliasDescriptor>> =
         v3CompatService
-            .getAlias(database, alias)
+            .getAlias(V3NameValidator.validateDatabase(database), V3NameValidator.validateAlias(alias))
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
@@ -41,20 +44,28 @@ class AliasController(
     fun createAlias(
         @PathVariable database: String,
         @PathVariable alias: String,
-        @RequestBody request: AliasCreateRequest,
+        @Valid @RequestBody request: AliasCreateRequest,
     ): Mono<ResponseEntity<AliasDescriptor>> =
         v3CompatService
-            .createAlias(database, alias, request)
+            .createAlias(
+                V3NameValidator.validateDatabase(database),
+                V3NameValidator.validateAlias(alias),
+                request,
+            )
             .map { ResponseEntity.ok(it) }
 
     @PutMapping("/{alias}")
     fun updateAlias(
         @PathVariable database: String,
         @PathVariable alias: String,
-        @RequestBody request: AliasUpdateRequest,
+        @Valid @RequestBody request: AliasUpdateRequest,
     ): Mono<ResponseEntity<AliasDescriptor>> =
         v3CompatService
-            .updateAlias(database, alias, request)
+            .updateAlias(
+                V3NameValidator.validateDatabase(database),
+                V3NameValidator.validateAlias(alias),
+                request,
+            )
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
@@ -62,9 +73,9 @@ class AliasController(
     fun deleteAlias(
         @PathVariable database: String,
         @PathVariable alias: String,
-    ): Mono<ResponseEntity<AliasDescriptor>> =
+    ): Mono<ResponseEntity<Void>> =
         v3CompatService
-            .deleteAlias(database, alias)
-            .map { ResponseEntity.ok(it) }
-            .defaultIfEmpty(ResponseEntity.notFound().build())
+            .deleteAlias(V3NameValidator.validateDatabase(database), V3NameValidator.validateAlias(alias))
+            .then(Mono.just(ResponseEntity.noContent().build<Void>()))
+            .onErrorResume { Mono.just(ResponseEntity.notFound().build()) }
 }

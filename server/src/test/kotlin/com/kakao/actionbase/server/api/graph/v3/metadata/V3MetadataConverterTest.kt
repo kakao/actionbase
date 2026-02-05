@@ -187,6 +187,24 @@ class V3MetadataConverterTest {
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("datastore://")
         }
+
+        @Test
+        fun `empty HBase table name throws exception`() {
+            val emptyTableUri = "datastore://hbase/"
+
+            assertThatThrownBy { emptyTableUri.toV3Storage() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("HBase table name is required")
+        }
+
+        @Test
+        fun `datastore URI without table name throws exception`() {
+            val noTableUri = "datastore://hbase"
+
+            assertThatThrownBy { noTableUri.toV3Storage() }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("HBase table name is required")
+        }
     }
 
     @Nested
