@@ -16,7 +16,6 @@ import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.cdc.CdcFactory
 import com.kakao.actionbase.v2.engine.client.kafka.KafkaClientFactory
 import com.kakao.actionbase.v2.engine.client.web.WebClientFactory
-import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
 import com.kakao.actionbase.v2.engine.edge.MutationResult
 import com.kakao.actionbase.v2.engine.edge.MutationResultItem
 import com.kakao.actionbase.v2.engine.entity.AliasEntity
@@ -59,6 +58,8 @@ import com.kakao.actionbase.v2.engine.sql.StatKey
 import com.kakao.actionbase.v2.engine.sql.StatLong
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.sql.toRowFlux
+import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
+import com.kakao.actionbase.v2.engine.storage.StorageBackend
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseOptions
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
@@ -92,7 +93,7 @@ class Graph(
     override val metastore: Database,
     override val metadataTable: MetadataTable,
     override val edgeEncoderFactory: EdgeEncoderFactory,
-    override val datastore: DefaultHBaseCluster,
+    override val datastore: StorageBackend,
     private val systemStorages: Map<EntityName, StorageEntity>,
     config: GraphConfig,
     serviceLabel: Label,
@@ -892,7 +893,7 @@ class Graph(
         intervalDisposable?.dispose()
         log.info("Disposed Flux.interval for reloading metastore - {}", intervalDisposable)
         HBaseConnections.closeConnections().block()
-        DefaultHBaseCluster.INSTANCE.close()
+        DefaultStorageBackendFactory.close()
     }
 
     fun status(name: EntityName): Mono<String> = getLabel(name).status()
@@ -941,7 +942,7 @@ class Graph(
             kafkaClientFactory: KafkaClientFactory,
             webClientFactory: WebClientFactory,
         ): Graph {
-            DefaultHBaseCluster.initialize(config.hbase)
+            DefaultStorageBackendFactory.initialize(config.hbase)
             log.info("phase: {}", config.phase)
             log.info("tenant: {}", config.tenant)
             log.info("graph config: {}", config)
@@ -999,7 +1000,7 @@ class Graph(
                     metadataTable,
                     edgeEncoderFactory,
                     storageEntities,
-                    DefaultHBaseCluster.INSTANCE,
+                    DefaultStorageBackendFactory.INSTANCE,
                 )
 
             val serviceLabel =

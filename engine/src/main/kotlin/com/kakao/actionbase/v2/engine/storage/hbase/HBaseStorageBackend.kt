@@ -35,6 +35,23 @@ class HBaseStorageBackend private constructor(
         return getBucket(ns, name)
     }
 
+    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))
+    override fun getTable(
+        namespace: String,
+        name: String,
+    ): Mono<HBaseTables> =
+        connectionMono.map { conn ->
+            val table = conn.getTable(TableName.valueOf(namespace, name))
+            val hbaseTable = HBaseTable.create(table)
+            HBaseTables(hbaseTable, hbaseTable)
+        }
+
+    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
+    override fun getTable(uri: String): Mono<HBaseTables> {
+        val (ns, name) = parseDatastoreUri(uri)
+        return getTable(ns, name)
+    }
+
     override fun close() {
         connectionMono.block()?.close()
     }

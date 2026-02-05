@@ -5,6 +5,7 @@ import com.kakao.actionbase.v2.engine.storage.StorageBuckets
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageBucket
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
 
 import org.apache.hadoop.hbase.TableName
@@ -21,10 +22,7 @@ class MockStorageBackend : StorageBackend {
         namespace: String,
         name: String,
     ): Mono<StorageBuckets> {
-        val conn = HBaseConnections.getMockConnection(namespace)
-        val mockTable = conn.getTable(TableName.valueOf("edges")) as MockHTable
-        val table = NewMockTable(mockTable)
-        val hbaseTable = HBaseTable.create(table)
+        val hbaseTable = createMockHBaseTable(namespace)
         val bucket = HBaseStorageBucket(hbaseTable)
         return Mono.just(StorageBuckets(bucket, bucket))
     }
@@ -34,8 +32,30 @@ class MockStorageBackend : StorageBackend {
         return getBucket(ns, "")
     }
 
+    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))
+    override fun getTable(
+        namespace: String,
+        name: String,
+    ): Mono<HBaseTables> {
+        val hbaseTable = createMockHBaseTable(namespace)
+        return Mono.just(HBaseTables(hbaseTable, hbaseTable))
+    }
+
+    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
+    override fun getTable(uri: String): Mono<HBaseTables> {
+        val (ns, _) = parseDatastoreUri(uri)
+        return getTable(ns, "")
+    }
+
     override fun close() {
         // nothing to close
+    }
+
+    private fun createMockHBaseTable(namespace: String): HBaseTable {
+        val conn = HBaseConnections.getMockConnection(namespace)
+        val mockTable = conn.getTable(TableName.valueOf("edges")) as MockHTable
+        val table = NewMockTable(mockTable)
+        return HBaseTable.create(table)
     }
 
     private fun parseDatastoreUri(uri: String): Pair<String, String> {
