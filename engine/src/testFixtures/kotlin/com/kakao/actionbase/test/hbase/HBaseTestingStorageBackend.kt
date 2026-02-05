@@ -63,8 +63,9 @@ class HBaseTestingStorageBackend(
     }
 
     private fun parseDatastoreUri(uri: String): Pair<String, String> {
+        require(uri.startsWith("datastore://")) { "Invalid datastore URI: $uri. Must start with 'datastore://'" }
         val parts = uri.removePrefix("datastore://").split("/")
-        require(parts.size == 2) { "Invalid datastore URI: $uri" }
+        require(parts.size == 2) { "Invalid datastore URI: $uri. Expected format: datastore://{namespace}/{tableName}" }
         return parts[0] to parts[1]
     }
 }

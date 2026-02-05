@@ -22,16 +22,19 @@ object DefaultStorageBackendFactory {
     private val logger = LoggerFactory.getLogger(DefaultStorageBackendFactory::class.java)
 
     @Volatile
-    private lateinit var instance0: StorageBackend
+    private var instance0: StorageBackend? = null
 
     @Volatile
     private var defaultNamespace0: String = "default"
 
     val INSTANCE: StorageBackend
-        get() = instance0
+        get() = instance0 ?: throw IllegalStateException("StorageBackend not initialized. Call initialize() first.")
 
     val defaultNamespace: String
         get() = defaultNamespace0
+
+    val isInitialized: Boolean
+        get() = instance0 != null
 
     /**
      * Initializes the storage backend based on the provided properties.
@@ -39,9 +42,13 @@ object DefaultStorageBackendFactory {
      * @param properties Configuration properties including:
      *   - type: Backend type (memory, embedded, hbase). Defaults to "hbase".
      *   - For HBase type, see HBaseStorageBackend.create for additional properties.
+     * @throws IllegalStateException if already initialized (call reset() first for re-initialization)
      */
     @Synchronized
     fun initialize(properties: Map<String, String>) {
+        check(!isInitialized) {
+            "StorageBackend already initialized. Call reset() before re-initializing."
+        }
         val type = properties["type"] ?: "hbase"
         defaultNamespace0 = properties["namespace"] ?: "default"
         logger.info("Initializing StorageBackend with type: {}, namespace: {}", type, defaultNamespace0)
@@ -74,29 +81,32 @@ object DefaultStorageBackendFactory {
      *
      * @param backend The StorageBackend instance to use.
      * @param namespace The default namespace to use.
+     * @throws IllegalStateException if already initialized (call reset() first for re-initialization)
      */
     @Synchronized
     fun initialize(
         backend: StorageBackend,
         namespace: String = "default",
     ) {
+        check(!isInitialized) {
+            "StorageBackend already initialized. Call reset() before re-initializing."
+        }
         logger.info("Initializing StorageBackend with provided instance: {}, namespace: {}", backend::class.simpleName, namespace)
         instance0 = backend
         defaultNamespace0 = namespace
     }
 
     fun close() {
-        if (::instance0.isInitialized) {
-            instance0.close()
-        }
+        instance0?.close()
     }
 
     /**
-     * For testing: reset the factory state.
+     * For testing: reset the factory state to allow re-initialization.
      */
+    @Synchronized
     internal fun reset() {
-        if (::instance0.isInitialized) {
-            instance0.close()
-        }
+        instance0?.close()
+        instance0 = null
+        defaultNamespace0 = "default"
     }
 }

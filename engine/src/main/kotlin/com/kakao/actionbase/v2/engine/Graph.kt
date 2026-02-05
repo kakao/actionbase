@@ -93,7 +93,6 @@ class Graph(
     override val metastore: Database,
     override val metadataTable: MetadataTable,
     override val edgeEncoderFactory: EdgeEncoderFactory,
-    override val datastore: StorageBackend,
     private val systemStorages: Map<EntityName, StorageEntity>,
     config: GraphConfig,
     serviceLabel: Label,
@@ -942,7 +941,9 @@ class Graph(
             kafkaClientFactory: KafkaClientFactory,
             webClientFactory: WebClientFactory,
         ): Graph {
-            DefaultStorageBackendFactory.initialize(config.hbase)
+            if (!DefaultStorageBackendFactory.isInitialized) {
+                DefaultStorageBackendFactory.initialize(config.hbase)
+            }
             log.info("phase: {}", config.phase)
             log.info("tenant: {}", config.tenant)
             log.info("graph config: {}", config)
@@ -1000,7 +1001,6 @@ class Graph(
                     metadataTable,
                     edgeEncoderFactory,
                     storageEntities,
-                    DefaultStorageBackendFactory.INSTANCE,
                 )
 
             val serviceLabel =
@@ -1062,7 +1062,6 @@ class Graph(
                 defaults.metastore,
                 defaults.metadataTable,
                 defaults.edgeEncoderFactory,
-                defaults.datastore,
                 defaults.storages,
                 config,
                 serviceLabel,

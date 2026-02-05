@@ -12,20 +12,22 @@ import reactor.core.publisher.Mono
 /**
  * Mock HBase storage backend for testing and embedded mode.
  * Uses HBase MockHTable for storage operations.
+ *
+ * Each namespace + name combination gets its own isolated table.
  */
 class MockHBaseStorageBackend : StorageBackend {
     override fun getBucket(
         namespace: String,
         name: String,
     ): Mono<StorageBuckets> {
-        val hbaseTable = createMockHBaseTable(namespace)
+        val hbaseTable = createMockHBaseTable(namespace, name)
         val bucket = HBaseStorageBucket(hbaseTable)
         return Mono.just(StorageBuckets(bucket, bucket))
     }
 
     override fun getBucket(uri: String): Mono<StorageBuckets> {
-        val (ns, _) = parseDatastoreUri(uri)
-        return getBucket(ns, "")
+        val (ns, name) = parseDatastoreUri(uri)
+        return getBucket(ns, name)
     }
 
     @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))
@@ -33,14 +35,14 @@ class MockHBaseStorageBackend : StorageBackend {
         namespace: String,
         name: String,
     ): Mono<HBaseTables> {
-        val hbaseTable = createMockHBaseTable(namespace)
+        val hbaseTable = createMockHBaseTable(namespace, name)
         return Mono.just(HBaseTables(hbaseTable, hbaseTable))
     }
 
     @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
     override fun getTable(uri: String): Mono<HBaseTables> {
-        val (ns, _) = parseDatastoreUri(uri)
-        return getTable(ns, "")
+        val (ns, name) = parseDatastoreUri(uri)
+        return getTable(ns, name)
     }
 
     override fun close() {
@@ -48,19 +50,23 @@ class MockHBaseStorageBackend : StorageBackend {
     }
 
     /**
-     * Creates a mock HBase table using the "edges" table name.
-     * All mock tables share the same "edges" table per namespace for backward compatibility.
+     * Creates a mock HBase table with proper namespace:name isolation.
      */
-    private fun createMockHBaseTable(namespace: String): HBaseTable {
+    private fun createMockHBaseTable(
+        namespace: String,
+        name: String,
+    ): HBaseTable {
         val conn = HBaseConnections.getMockConnection(namespace)
-        val mockTable = conn.getTable(TableName.valueOf("edges")) as MockHTable
+        val tableName = if (name.isEmpty()) "edges" else name
+        val mockTable = conn.getTable(TableName.valueOf(tableName)) as MockHTable
         val table = NewMockTable(mockTable)
         return HBaseTable.create(table)
     }
 
     private fun parseDatastoreUri(uri: String): Pair<String, String> {
+        require(uri.startsWith("datastore://")) { "Invalid datastore URI: $uri. Must start with 'datastore://'" }
         val parts = uri.removePrefix("datastore://").split("/")
-        require(parts.size == 2) { "Invalid datastore URI: $uri" }
+        require(parts.size == 2) { "Invalid datastore URI: $uri. Expected format: datastore://{namespace}/{tableName}" }
         return parts[0] to parts[1]
     }
 }

@@ -5,7 +5,6 @@ import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
 import com.kakao.actionbase.v2.engine.metadata.StorageType
-import com.kakao.actionbase.v2.engine.storage.StorageBackend
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 
 import org.jetbrains.exposed.sql.Database
@@ -16,7 +15,6 @@ interface GraphDefaults {
     val metadataTable: MetadataTable
     val storages: Map<EntityName, StorageEntity>
     val edgeEncoderFactory: EdgeEncoderFactory
-    val datastore: StorageBackend
 
     fun getStorage(uri: String): StorageEntity? =
         when {
@@ -35,5 +33,4 @@ data class AbstractGraphDefaults(
     override val metadataTable: MetadataTable,
     override val edgeEncoderFactory: EdgeEncoderFactory,
     override val storages: Map<EntityName, StorageEntity>,
-    override val datastore: StorageBackend,
 ) : GraphDefaults

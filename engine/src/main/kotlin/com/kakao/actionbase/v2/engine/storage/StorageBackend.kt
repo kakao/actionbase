@@ -14,10 +14,8 @@ interface StorageBackend : AutoCloseable {
 
     /**
      * Returns HBaseTables for backward compatibility with existing Label implementations.
-     * This method will be deprecated once all Labels migrate to use StorageBuckets.
-     *
-     * @deprecated Use getBucket() instead
      */
+    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))
     fun getTable(
         namespace: String,
         name: String,
@@ -25,9 +23,7 @@ interface StorageBackend : AutoCloseable {
 
     /**
      * Returns HBaseTables for backward compatibility with existing Label implementations.
-     * This method will be deprecated once all Labels migrate to use StorageBuckets.
-     *
-     * @deprecated Use getBucket() instead
      */
+    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
     fun getTable(uri: String): Mono<HBaseTables>
 }
