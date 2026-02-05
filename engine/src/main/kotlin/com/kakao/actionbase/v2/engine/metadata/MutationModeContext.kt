@@ -52,7 +52,7 @@ data class MutationModeContext private constructor(
                 "request and internal are mutually exclusive. request=$request, internal=$internal"
             }
             val mode = internal ?: global ?: request ?: table
-            require(!(table == IGNORE && internal == null && global == null && request == SYNC)) {
+            require(!(internal == null && global == null && request == SYNC && table == IGNORE)) {
                 "SYNC is not allowed when table mode is IGNORE."
             }
             val queue = mode == ASYNC || mode == IGNORE
