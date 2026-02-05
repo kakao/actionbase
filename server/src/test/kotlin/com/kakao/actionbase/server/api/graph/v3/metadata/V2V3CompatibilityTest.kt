@@ -32,9 +32,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 {"desc": "created by v2"}
               updateReq: |
                 {"comment": "updated by v3"}
+              expected: updated by v3
             """,
         )
-        fun `V2 create, V3 update`(name: String, createReq: String, updateReq: String) {
+        fun `V2 create, V3 update`(name: String, createReq: String, updateReq: String, expected: String) {
             // V2 create
             client.post().uri("/graph/v2/service/$name")
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
@@ -46,7 +47,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .exchange().expectStatus().isOk
 
             // Verify
-            verifyDatabase(name, "updated by v3")
+            verifyDatabase(name, expected)
         }
 
         @ObjectSourceParameterizedTest
@@ -57,9 +58,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 {"database": "db-v3v2", "comment": "created by v3"}
               updateReq: |
                 {"active": true, "desc": "updated by v2"}
+              expected: updated by v2
             """,
         )
-        fun `V3 create, V2 update`(name: String, createReq: String, updateReq: String) {
+        fun `V3 create, V2 update`(name: String, createReq: String, updateReq: String, expected: String) {
             // V3 create
             client.post().uri("/graph/v3/databases/$name")
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
@@ -71,17 +73,17 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .exchange().expectStatus().isOk
 
             // Verify
-            verifyDatabase(name, "updated by v2")
+            verifyDatabase(name, expected)
         }
 
-        private fun verifyDatabase(name: String, expectedComment: String) {
+        private fun verifyDatabase(name: String, expected: String) {
             client.get().uri("/graph/v2/service/$name")
                 .exchange().expectStatus().isOk
-                .expectBody().jsonPath("$.desc").isEqualTo(expectedComment)
+                .expectBody().jsonPath("$.desc").isEqualTo(expected)
 
             client.get().uri("/graph/v3/databases/$name")
                 .exchange().expectStatus().isOk
-                .expectBody().jsonPath("$.comment").isEqualTo(expectedComment)
+                .expectBody().jsonPath("$.comment").isEqualTo(expected)
         }
     }
 
@@ -116,9 +118,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               updateReq: |
                 {"comment": "updated by v3"}
+              expected: updated by v3
             """,
         )
-        fun `V2 create, V3 update`(name: String, createReq: String, updateReq: String) {
+        fun `V2 create, V3 update`(name: String, createReq: String, updateReq: String, expected: String) {
             // V2 create
             client.post().uri("/graph/v2/service/$db/label/$name")
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
@@ -130,7 +133,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .exchange().expectStatus().isOk
 
             // Verify
-            verifyTable(name, "updated by v3")
+            verifyTable(name, expected)
         }
 
         @ObjectSourceParameterizedTest
@@ -154,9 +157,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               updateReq: |
                 {"active": true, "desc": "updated by v2"}
+              expected: updated by v2
             """,
         )
-        fun `V3 create, V2 update`(name: String, createReq: String, updateReq: String) {
+        fun `V3 create, V2 update`(name: String, createReq: String, updateReq: String, expected: String) {
             // V3 create
             client.post().uri("/graph/v3/databases/$db/tables/$name")
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
@@ -168,17 +172,17 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .exchange().expectStatus().isOk
 
             // Verify
-            verifyTable(name, "updated by v2")
+            verifyTable(name, expected)
         }
 
-        private fun verifyTable(name: String, expectedComment: String) {
+        private fun verifyTable(name: String, expected: String) {
             client.get().uri("/graph/v2/service/$db/label/$name")
                 .exchange().expectStatus().isOk
-                .expectBody().jsonPath("$.desc").isEqualTo(expectedComment)
+                .expectBody().jsonPath("$.desc").isEqualTo(expected)
 
             client.get().uri("/graph/v3/databases/$db/tables/$name")
                 .exchange().expectStatus().isOk
-                .expectBody().jsonPath("$.comment").isEqualTo(expectedComment)
+                .expectBody().jsonPath("$.comment").isEqualTo(expected)
         }
     }
 
@@ -226,9 +230,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 {"desc": "created by v2", "target": "compat-alias-db.alias-target"}
               updateReq: |
                 {"comment": "updated by v3"}
+              expected: updated by v3
             """,
         )
-        fun `V2 create, V3 update`(name: String, createReq: String, updateReq: String) {
+        fun `V2 create, V3 update`(name: String, createReq: String, updateReq: String, expected: String) {
             // V2 create
             client.post().uri("/graph/v2/service/$db/alias/$name")
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
@@ -240,7 +245,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .exchange().expectStatus().isOk
 
             // Verify
-            verifyAlias(name, "updated by v3")
+            verifyAlias(name, expected)
         }
 
         @ObjectSourceParameterizedTest
@@ -251,9 +256,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 {"table": "alias-target", "comment": "created by v3"}
               updateReq: |
                 {"active": true, "desc": "updated by v2"}
+              expected: updated by v2
             """,
         )
-        fun `V3 create, V2 update`(name: String, createReq: String, updateReq: String) {
+        fun `V3 create, V2 update`(name: String, createReq: String, updateReq: String, expected: String) {
             // V3 create
             client.post().uri("/graph/v3/databases/$db/aliases/$name")
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
@@ -265,17 +271,17 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .exchange().expectStatus().isOk
 
             // Verify
-            verifyAlias(name, "updated by v2")
+            verifyAlias(name, expected)
         }
 
-        private fun verifyAlias(name: String, expectedComment: String) {
+        private fun verifyAlias(name: String, expected: String) {
             client.get().uri("/graph/v2/service/$db/alias/$name")
                 .exchange().expectStatus().isOk
-                .expectBody().jsonPath("$.desc").isEqualTo(expectedComment)
+                .expectBody().jsonPath("$.desc").isEqualTo(expected)
 
             client.get().uri("/graph/v3/databases/$db/aliases/$name")
                 .exchange().expectStatus().isOk
-                .expectBody().jsonPath("$.comment").isEqualTo(expectedComment)
+                .expectBody().jsonPath("$.comment").isEqualTo(expected)
         }
     }
 }
