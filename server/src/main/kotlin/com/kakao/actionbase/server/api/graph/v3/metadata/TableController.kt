@@ -40,16 +40,15 @@ class TableController(
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
-    @PostMapping("/graph/v3/databases/{database}/tables/{table}")
+    @PostMapping("/graph/v3/databases/{database}/tables")
     fun createTable(
         @PathVariable database: String,
-        @PathVariable table: String,
         @Valid @RequestBody request: TableCreateRequest,
     ): Mono<ResponseEntity<TableDescriptor.Edge>> =
         v3CompatService
             .createTable(
                 V3NameValidator.validateDatabase(database),
-                V3NameValidator.validateTable(table),
+                V3NameValidator.validateTable(request.table),
                 request,
             ).map { ResponseEntity.ok(it) }
 

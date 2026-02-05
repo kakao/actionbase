@@ -29,7 +29,7 @@ class TableControllerTest : E2ETestBase() {
     fun setup() {
         client
             .post()
-            .uri("/graph/v3/databases/$db")
+            .uri("/graph/v3/databases")
             .bodyValue(DatabaseCreateRequest(db, "test db"))
             .exchange()
             .expectStatus()
@@ -54,7 +54,7 @@ class TableControllerTest : E2ETestBase() {
     fun `create table`() {
         client
             .post()
-            .uri("$baseUri/$table")
+            .uri(baseUri)
             .bodyValue(tableRequest())
             .exchange()
             .expectStatus()
@@ -179,6 +179,7 @@ class TableControllerTest : E2ETestBase() {
 
     private fun tableRequest() =
         TableCreateRequest(
+            table = table,
             schema =
                 ModelSchema.Edge(
                     source = Field(PrimitiveType.STRING, "src"),

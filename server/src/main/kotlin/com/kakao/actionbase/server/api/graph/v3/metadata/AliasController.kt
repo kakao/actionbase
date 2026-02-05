@@ -40,16 +40,15 @@ class AliasController(
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
-    @PostMapping("/graph/v3/databases/{database}/aliases/{alias}")
+    @PostMapping("/graph/v3/databases/{database}/aliases")
     fun createAlias(
         @PathVariable database: String,
-        @PathVariable alias: String,
         @Valid @RequestBody request: AliasCreateRequest,
     ): Mono<ResponseEntity<AliasDescriptor>> =
         v3CompatService
             .createAlias(
                 V3NameValidator.validateDatabase(database),
-                V3NameValidator.validateAlias(alias),
+                V3NameValidator.validateAlias(request.alias),
                 request,
             ).map { ResponseEntity.ok(it) }
 

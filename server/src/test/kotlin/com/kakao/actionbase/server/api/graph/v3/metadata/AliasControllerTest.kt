@@ -30,7 +30,7 @@ class AliasControllerTest : E2ETestBase() {
         // Create database
         client
             .post()
-            .uri("/graph/v3/databases/$db")
+            .uri("/graph/v3/databases")
             .bodyValue(DatabaseCreateRequest(db, "test db"))
             .exchange()
             .expectStatus()
@@ -39,7 +39,7 @@ class AliasControllerTest : E2ETestBase() {
         // Create table (alias target)
         client
             .post()
-            .uri("/graph/v3/databases/$db/tables/$table")
+            .uri("/graph/v3/databases/$db/tables")
             .bodyValue(tableRequest())
             .exchange()
             .expectStatus()
@@ -64,8 +64,8 @@ class AliasControllerTest : E2ETestBase() {
     fun `create alias`() {
         client
             .post()
-            .uri("$baseUri/$alias")
-            .bodyValue(AliasCreateRequest(table, "test alias"))
+            .uri(baseUri)
+            .bodyValue(AliasCreateRequest(alias, table, "test alias"))
             .exchange()
             .expectStatus()
             .isOk
@@ -189,6 +189,7 @@ class AliasControllerTest : E2ETestBase() {
 
     private fun tableRequest() =
         TableCreateRequest(
+            table = table,
             schema =
                 ModelSchema.Edge(
                     source = Field(PrimitiveType.STRING, "src"),

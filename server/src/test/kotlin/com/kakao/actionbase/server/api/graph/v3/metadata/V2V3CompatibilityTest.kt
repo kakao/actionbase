@@ -97,7 +97,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         ) {
             client
                 .post()
-                .uri("/graph/v3/databases/$name")
+                .uri("/graph/v3/databases")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(v3)
                 .exchange()
@@ -124,7 +124,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         fun setup() {
             client
                 .post()
-                .uri("/graph/v3/databases/$db")
+                .uri("/graph/v3/databases")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""{"database": "$db", "comment": "test db"}""")
                 .exchange()
@@ -318,6 +318,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
             - name: tbl-v3v2-out
               v3: |
                 {
+                  "table": "tbl-v3v2-out",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "source"},
@@ -349,6 +350,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
             - name: tbl-v3v2-in
               v3: |
                 {
+                  "table": "tbl-v3v2-in",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "source"},
@@ -380,6 +382,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
             - name: tbl-v3v2-both
               v3: |
                 {
+                  "table": "tbl-v3v2-both",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "source"},
@@ -411,6 +414,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
             - name: tbl-v3v2-props
               v3: |
                 {
+                  "table": "tbl-v3v2-props",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "user"},
@@ -448,6 +452,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
             - name: tbl-v3v2-long
               v3: |
                 {
+                  "table": "tbl-v3v2-long",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "long", "comment": "uid"},
@@ -483,7 +488,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         ) {
             client
                 .post()
-                .uri("/graph/v3/databases/$db/tables/$name")
+                .uri("/graph/v3/databases/$db/tables")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(v3)
                 .exchange()
@@ -511,7 +516,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         fun setup() {
             client
                 .post()
-                .uri("/graph/v3/databases/$db")
+                .uri("/graph/v3/databases")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""{"database": "$db", "comment": "test db"}""")
                 .exchange()
@@ -520,11 +525,12 @@ class V2V3CompatibilityTest : E2ETestBase() {
 
             client
                 .post()
-                .uri("/graph/v3/databases/$db/tables/$table")
+                .uri("/graph/v3/databases/$db/tables")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(
                     """
                     {
+                      "table": "$table",
                       "schema": {
                         "type": "edge",
                         "source": {"type": "string", "comment": "src"},
@@ -593,17 +599,17 @@ class V2V3CompatibilityTest : E2ETestBase() {
             """
             - name: als-v3v2-basic
               v3: |
-                {"table": "als-target", "comment": "test alias"}
+                {"alias": "als-v3v2-basic", "table": "als-target", "comment": "test alias"}
               v2: |
                 {"name": "als-compat-db.als-v3v2-basic", "target": "als-compat-db.als-target", "desc": "test alias", "active": true}
             - name: als-v3v2-empty
               v3: |
-                {"table": "als-target", "comment": ""}
+                {"alias": "als-v3v2-empty", "table": "als-target", "comment": ""}
               v2: |
                 {"name": "als-compat-db.als-v3v2-empty", "target": "als-compat-db.als-target", "desc": "", "active": true}
             - name: als-v3v2-special
               v3: |
-                {"table": "als-target", "comment": "alias @#"}
+                {"alias": "als-v3v2-special", "table": "als-target", "comment": "alias @#"}
               v2: |
                 {"name": "als-compat-db.als-v3v2-special", "target": "als-compat-db.als-target", "desc": "alias @#", "active": true}
             """,
@@ -615,7 +621,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         ) {
             client
                 .post()
-                .uri("/graph/v3/databases/$db/aliases/$name")
+                .uri("/graph/v3/databases/$db/aliases")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(v3)
                 .exchange()
@@ -642,7 +648,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         fun setup() {
             client
                 .post()
-                .uri("/graph/v3/databases/$db")
+                .uri("/graph/v3/databases")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""{"database": "$db", "comment": "multiedge test db"}""")
                 .exchange()

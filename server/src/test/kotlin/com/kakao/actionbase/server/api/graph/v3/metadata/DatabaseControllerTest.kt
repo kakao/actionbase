@@ -32,7 +32,7 @@ class DatabaseControllerTest : E2ETestBase() {
     fun `create database`() {
         client
             .post()
-            .uri("/graph/v3/databases/$db")
+            .uri("/graph/v3/databases")
             .bodyValue(DatabaseCreateRequest(db, "test db"))
             .exchange()
             .expectStatus()

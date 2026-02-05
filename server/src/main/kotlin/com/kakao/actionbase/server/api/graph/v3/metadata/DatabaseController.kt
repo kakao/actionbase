@@ -39,13 +39,12 @@ class DatabaseController(
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
-    @PostMapping("/graph/v3/databases/{database}")
+    @PostMapping("/graph/v3/databases")
     fun createDatabase(
-        @PathVariable database: String,
         @Valid @RequestBody request: DatabaseCreateRequest,
     ): Mono<ResponseEntity<DatabaseDescriptor>> =
         v3CompatService
-            .createDatabase(V3NameValidator.validateDatabase(database), request)
+            .createDatabase(V3NameValidator.validateDatabase(request.database), request)
             .map { ResponseEntity.ok(it) }
 
     @PutMapping("/graph/v3/databases/{database}")
