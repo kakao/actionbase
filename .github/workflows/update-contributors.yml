@@ -1,0 +1,28 @@
+name: Update contributors
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  contributors:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update contributors
+        run: |
+          CONTRIBUTORS=$(gh api repos/${{ github.repository }}/contributors --paginate --jq \
+            '.[] | select(.type != "Bot") | "<a href=\"\(.html_url)\"><img src=\"\(.avatar_url)&s=70\" width=\"70\" alt=\"\(.login)\"/></a>"' \
+            | tr '\n' ' ')
+
+          sed -i '/<!-- contributors-start -->/,/<!-- contributors-end -->/{//!d}' README.md
+          sed -i "/<!-- contributors-start -->/a\\
+          ${CONTRIBUTORS}" README.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet || (git add README.md && git commit -m "docs: update contributors" && git push)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

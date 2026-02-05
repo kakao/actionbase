@@ -119,7 +119,8 @@ For questions, ideas, or feedback, join us on [GitHub Discussions](https://githu
 
 ## Contributors
 
-[![][contributors_img]][contributors]
+<!-- contributors-start -->
+<!-- contributors-end -->
 
 ## License
 
@@ -137,5 +138,3 @@ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
 
-[contributors]: https://github.com/kakao/actionbase/graphs/contributors
-[contributors_img]: https://contrib.rocks/image?repo=kakao/actionbase&v=2
