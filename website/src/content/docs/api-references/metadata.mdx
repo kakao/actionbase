@@ -115,7 +115,7 @@ Create a new database.
 ### Endpoint
 
 ```
-POST /graph/v3/databases/{database}
+POST /graph/v3/databases
 ```
 
 ### Parameters
@@ -123,7 +123,7 @@ POST /graph/v3/databases/{database}
 | Location | Parameter     | Required | Description                                  |
 | -------- | ------------- | -------- | -------------------------------------------- |
 | Header   | Authorization | Optional | Authentication key (reserved for future use) |
-| Path     | database      | Required | Database name                                |
+| Body     | database      | Required | Database name                                |
 | Body     | comment       | Required | Database description                         |
 
 ### Request Body
@@ -138,7 +138,7 @@ POST /graph/v3/databases/{database}
 
 ```bash
 curl -X POST \
-    "http://ab.example.com/graph/v3/databases/mydb" \
+    "http://ab.example.com/graph/v3/databases" \
     -H "Authorization: YOUR_API_KEY" \
     -H "Content-Type: application/json" \
     -d '{
@@ -329,7 +329,7 @@ Create a new table.
 ### Endpoint
 
 ```
-POST /graph/v3/databases/{database}/tables/{table}
+POST /graph/v3/databases/{database}/tables
 ```
 
 ### Parameters
@@ -338,7 +338,7 @@ POST /graph/v3/databases/{database}/tables/{table}
 | -------- | ------------- | -------- | -------------------------------------------- |
 | Header   | Authorization | Optional | Authentication key (reserved for future use) |
 | Path     | database      | Required | Database name                                |
-| Path     | table         | Required | Table name                                   |
+| Body     | table         | Required | Table name                                   |
 | Body     | schema        | Required | Edge schema definition                       |
 | Body     | storage       | Required | Storage URI (datastore://hbase/tableName)    |
 | Body     | mode          | Optional | Mutation mode (default: SYNC)                |
@@ -356,10 +356,11 @@ POST /graph/v3/databases/{database}/tables/{table}
 
 ```bash
 curl -X POST \
-    "http://ab.example.com/graph/v3/databases/mydb/tables/follows" \
+    "http://ab.example.com/graph/v3/databases/mydb/tables" \
     -H "Authorization: YOUR_API_KEY" \
     -H "Content-Type: application/json" \
     -d '{
+      "table": "follows",
       "schema": {
         "type": "EDGE",
         "source": { "type": "STRING", "comment": "user id" },
@@ -504,7 +505,7 @@ Create a new alias.
 ### Endpoint
 
 ```
-POST /graph/v3/databases/{database}/aliases/{alias}
+POST /graph/v3/databases/{database}/aliases
 ```
 
 ### Parameters
@@ -513,8 +514,8 @@ POST /graph/v3/databases/{database}/aliases/{alias}
 | -------- | ------------- | -------- | -------------------------------------------- |
 | Header   | Authorization | Optional | Authentication key (reserved for future use) |
 | Path     | database      | Required | Database name                                |
-| Path     | alias         | Required | Alias name                                   |
-| Body     | table         | Required | Target table name                            |
+| Body     | alias         | Required | Alias name                                   |
+| Body     | table         | Required | Target table name (same database only)       |
 | Body     | comment       | Optional | Alias description                            |
 
 ### Request Body
@@ -529,10 +530,11 @@ POST /graph/v3/databases/{database}/aliases/{alias}
 
 ```bash
 curl -X POST \
-    "http://ab.example.com/graph/v3/databases/mydb/aliases/friends" \
+    "http://ab.example.com/graph/v3/databases/mydb/aliases" \
     -H "Authorization: YOUR_API_KEY" \
     -H "Content-Type: application/json" \
     -d '{
+      "alias": "friends",
       "table": "follows",
       "comment": "Alias for follows"
     }'
@@ -636,10 +638,13 @@ data class DatabaseDescriptor(
 
 ### TableDescriptor
 
-Table information payload.
+Table information payload. Two types are supported: `edge` and `multiEdge`.
+
+#### TableDescriptor.Edge
 
 ```kotlin
 data class TableDescriptor.Edge(
+    val type: String = "edge",     // Table type discriminator
     val tenant: String,            // Tenant name
     val database: String,          // Database name
     val table: String,             // Table name
@@ -653,6 +658,27 @@ data class TableDescriptor.Edge(
     val createdBy: String,         // Creator
     val updatedAt: Long,           // Last update timestamp
     val updatedBy: String,         // Last updater
+)
+```
+
+#### TableDescriptor.MultiEdge
+
+```kotlin
+data class TableDescriptor.MultiEdge(
+    val type: String = "multiEdge",     // Table type discriminator
+    val tenant: String,                 // Tenant name
+    val database: String,               // Database name
+    val table: String,                  // Table name
+    val schema: ModelSchema.MultiEdge,  // MultiEdge schema definition
+    val storage: String,                // Storage URI (datastore://hbase/tableName)
+    val mode: MutationMode,             // Mutation mode (SYNC, ASYNC, DROP)
+    val active: Boolean,                // Whether the table is active
+    val comment: String,                // Table description
+    val revision: Long,                 // Revision number
+    val createdAt: Long,                // Creation timestamp
+    val createdBy: String,              // Creator
+    val updatedAt: Long,                // Last update timestamp
+    val updatedBy: String,              // Last updater
 )
 ```
 
@@ -682,6 +708,24 @@ Edge schema definition.
 
 ```kotlin
 data class ModelSchema.Edge(
+    val type: String = "EDGE",          // Schema type discriminator
+    val source: Field,                  // Source vertex field
+    val target: Field,                  // Target vertex field
+    val properties: List<StructField>,  // Edge properties
+    val direction: DirectionType,       // Direction type (OUT, IN, BOTH)
+    val indexes: List<Index>,           // Index definitions
+    val groups: List<Group>,            // Group definitions
+)
+```
+
+### ModelSchema.MultiEdge
+
+MultiEdge schema definition. Supports multiple edges between the same source-target pair, distinguished by an `id` field.
+
+```kotlin
+data class ModelSchema.MultiEdge(
+    val type: String = "MULTI_EDGE",    // Schema type discriminator
+    val id: Field,                      // Edge identifier field (distinguishes multiple edges)
     val source: Field,                  // Source vertex field
     val target: Field,                  // Target vertex field
     val properties: List<StructField>,  // Edge properties
@@ -743,7 +787,8 @@ Table creation request payload.
 
 ```kotlin
 data class TableCreateRequest(
-    val schema: ModelSchema.Edge,  // Edge schema definition
+    val table: String,             // Table name
+    val schema: ModelSchema,       // Schema definition (Edge or MultiEdge)
     val storage: String,           // Storage URI (datastore://hbase/tableName)
     val mode: MutationMode,        // Mutation mode (default: SYNC)
     val comment: String,           // Table description
@@ -769,7 +814,8 @@ Alias creation request payload.
 
 ```kotlin
 data class AliasCreateRequest(
-    val table: String,        // Target table name
+    val alias: String,        // Alias name
+    val table: String,        // Target table name (same database only)
     val comment: String,      // Alias description
 )
 ```
@@ -806,22 +852,30 @@ V3 API wraps the existing V2 DDL services with a new interface. The table below 
 | Label | Table | Table with edge schema |
 | Alias | Alias | Table alias (unchanged) |
 
+### Label Type Mapping
+
+| V2 LabelType | V3 Table Type | Conversion |
+|--------------|---------------|------------|
+| INDEXED | edge | Bidirectional |
+| MULTI_EDGE | multiEdge | Bidirectional |
+| HASH | edge | One-way (V2 to V3 only, deprecated) |
+
 ### API Endpoint Mapping
 
 | V2 Endpoint | V3 Endpoint |
 |-------------|-------------|
 | `GET /graph/v2/services` | `GET /graph/v3/databases` |
 | `GET /graph/v2/services/{service}` | `GET /graph/v3/databases/{database}` |
-| `POST /graph/v2/services/{service}` | `POST /graph/v3/databases/{database}` |
+| `POST /graph/v2/services/{service}` | `POST /graph/v3/databases` |
 | `PUT /graph/v2/services/{service}` | `PUT /graph/v3/databases/{database}` |
 | `DELETE /graph/v2/services/{service}` | `DELETE /graph/v3/databases/{database}` |
 | `GET /graph/v2/services/{service}/labels` | `GET /graph/v3/databases/{database}/tables` |
 | `GET /graph/v2/services/{service}/labels/{label}` | `GET /graph/v3/databases/{database}/tables/{table}` |
-| `POST /graph/v2/services/{service}/labels/{label}` | `POST /graph/v3/databases/{database}/tables/{table}` |
+| `POST /graph/v2/services/{service}/labels/{label}` | `POST /graph/v3/databases/{database}/tables` |
 | `PUT /graph/v2/services/{service}/labels/{label}` | `PUT /graph/v3/databases/{database}/tables/{table}` |
 | `GET /graph/v2/services/{service}/aliases` | `GET /graph/v3/databases/{database}/aliases` |
 | `GET /graph/v2/services/{service}/aliases/{alias}` | `GET /graph/v3/databases/{database}/aliases/{alias}` |
-| `POST /graph/v2/services/{service}/aliases/{alias}` | `POST /graph/v3/databases/{database}/aliases/{alias}` |
+| `POST /graph/v2/services/{service}/aliases/{alias}` | `POST /graph/v3/databases/{database}/aliases` |
 | `PUT /graph/v2/services/{service}/aliases/{alias}` | `PUT /graph/v3/databases/{database}/aliases/{alias}` |
 | `DELETE /graph/v2/services/{service}/aliases/{alias}` | `DELETE /graph/v3/databases/{database}/aliases/{alias}` |
 
@@ -833,3 +887,7 @@ V3 API wraps the existing V2 DDL services with a new interface. The table below 
 | ASYNC | ASYNC | Asynchronous mutation |
 | IGNORE | DROP | Drop mutations silently |
 | - | DENY | Deny mutations (V3 only, throws error) |
+
+### V3 Alias Constraints
+
+V3 aliases can only reference tables within the same database. Cross-database aliases (supported in V2 via `database.table` format) are not available in V3.
