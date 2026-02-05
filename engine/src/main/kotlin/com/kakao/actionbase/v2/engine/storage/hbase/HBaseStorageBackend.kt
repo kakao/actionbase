@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
 class HBaseStorageBackend private constructor(
-    private val connectionMono: Mono<AsyncConnection>,
+    val connectionMono: Mono<AsyncConnection>,
     private val namespace: String,
     private val config: Configuration,
 ) : StorageBackend {

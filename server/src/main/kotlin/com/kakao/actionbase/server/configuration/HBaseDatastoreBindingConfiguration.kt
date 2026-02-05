@@ -2,7 +2,8 @@ package com.kakao.actionbase.server.configuration
 
 import com.kakao.actionbase.engine.datastore.hbase.admin.HBaseAdmin
 import com.kakao.actionbase.v2.engine.Graph
-import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
+import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageBackend
 
 import org.apache.hadoop.hbase.NamespaceDescriptor
 import org.springframework.context.annotation.Bean
@@ -11,16 +12,19 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @ConditionalOnHBaseDatastore
 class HBaseDatastoreBindingConfiguration(
-    // DefaultHBaseCluster is initialized in graph, so graph configuration must be completed before hbase admin injection is possible.
+    // DefaultStorageBackendFactory is initialized in graph, so graph configuration must be completed before hbase admin injection is possible.
     private val graph: Graph,
 ) {
     @Bean
-    fun hBaseAdmin(): HBaseAdmin =
-        HBaseAdmin(
-            DefaultHBaseCluster.INSTANCE.connectionMono
+    fun hBaseAdmin(): HBaseAdmin {
+        val backend = DefaultStorageBackendFactory.INSTANCE as? HBaseStorageBackend
+            ?: throw IllegalStateException("HBaseAdmin requires HBaseStorageBackend but got ${DefaultStorageBackendFactory.INSTANCE::class.simpleName}")
+        return HBaseAdmin(
+            backend.connectionMono
                 .map { it.admin }
                 .cache(),
         )
+    }
 
     @Bean
     fun namespaceDescriptor(serverProperties: ServerProperties): NamespaceDescriptor =
