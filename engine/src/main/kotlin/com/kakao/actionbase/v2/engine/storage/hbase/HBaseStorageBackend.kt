@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
+import com.kakao.actionbase.v2.engine.storage.DatastoreUri
 import com.kakao.actionbase.v2.engine.storage.StorageBackend
 import com.kakao.actionbase.v2.engine.storage.StorageBuckets
 
@@ -33,7 +34,7 @@ class HBaseStorageBackend private constructor(
         }
 
     override fun getBucket(uri: String): Mono<StorageBuckets> {
-        val (ns, name) = parseDatastoreUri(uri)
+        val (ns, name) = DatastoreUri.parse(uri)
         return getBucket(ns, name)
     }
 
@@ -50,19 +51,12 @@ class HBaseStorageBackend private constructor(
 
     @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
     override fun getTable(uri: String): Mono<HBaseTables> {
-        val (ns, name) = parseDatastoreUri(uri)
+        val (ns, name) = DatastoreUri.parse(uri)
         return getTable(ns, name)
     }
 
     override fun close() {
         connectionMono.block()?.close()
-    }
-
-    private fun parseDatastoreUri(uri: String): Pair<String, String> {
-        require(uri.startsWith("datastore://")) { "Invalid datastore URI: $uri. Must start with 'datastore://'" }
-        val parts = uri.removePrefix("datastore://").split("/")
-        require(parts.size == 2) { "Invalid datastore URI: $uri. Expected format: datastore://{namespace}/{tableName}" }
-        return parts[0] to parts[1]
     }
 
     companion object {

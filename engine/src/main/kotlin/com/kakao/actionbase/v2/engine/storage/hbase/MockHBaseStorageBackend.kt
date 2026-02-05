@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
+import com.kakao.actionbase.v2.engine.storage.DatastoreUri
 import com.kakao.actionbase.v2.engine.storage.StorageBackend
 import com.kakao.actionbase.v2.engine.storage.StorageBuckets
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
@@ -26,7 +27,7 @@ class MockHBaseStorageBackend : StorageBackend {
     }
 
     override fun getBucket(uri: String): Mono<StorageBuckets> {
-        val (ns, name) = parseDatastoreUri(uri)
+        val (ns, name) = DatastoreUri.parse(uri)
         return getBucket(ns, name)
     }
 
@@ -41,7 +42,7 @@ class MockHBaseStorageBackend : StorageBackend {
 
     @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
     override fun getTable(uri: String): Mono<HBaseTables> {
-        val (ns, name) = parseDatastoreUri(uri)
+        val (ns, name) = DatastoreUri.parse(uri)
         return getTable(ns, name)
     }
 
@@ -61,12 +62,5 @@ class MockHBaseStorageBackend : StorageBackend {
         val mockTable = conn.getTable(TableName.valueOf(tableName)) as MockHTable
         val table = NewMockTable(mockTable)
         return HBaseTable.create(table)
-    }
-
-    private fun parseDatastoreUri(uri: String): Pair<String, String> {
-        require(uri.startsWith("datastore://")) { "Invalid datastore URI: $uri. Must start with 'datastore://'" }
-        val parts = uri.removePrefix("datastore://").split("/")
-        require(parts.size == 2) { "Invalid datastore URI: $uri. Expected format: datastore://{namespace}/{tableName}" }
-        return parts[0] to parts[1]
     }
 }
