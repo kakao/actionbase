@@ -12,10 +12,10 @@ import org.apache.hadoop.hbase.client.AsyncConnection
 import reactor.core.publisher.Mono
 
 /**
- * Storage backend that uses the embedded HBase testing cluster.
+ * Storage backend that uses the HBase mini cluster for testing.
  * This backend creates tables using the provided AsyncConnection.
  */
-class EmbeddedStorageBackend(
+class MiniHBaseStorageBackend(
     private val connectionMono: Mono<AsyncConnection>,
     private val defaultNamespace: String,
 ) : StorageBackend {
