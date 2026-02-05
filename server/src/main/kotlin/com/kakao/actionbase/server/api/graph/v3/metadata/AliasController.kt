@@ -51,8 +51,7 @@ class AliasController(
                 V3NameValidator.validateDatabase(database),
                 V3NameValidator.validateAlias(alias),
                 request,
-            )
-            .map { ResponseEntity.ok(it) }
+            ).map { ResponseEntity.ok(it) }
 
     @PutMapping("/graph/v3/databases/{database}/aliases/{alias}")
     fun updateAlias(
@@ -65,8 +64,7 @@ class AliasController(
                 V3NameValidator.validateDatabase(database),
                 V3NameValidator.validateAlias(alias),
                 request,
-            )
-            .map { ResponseEntity.ok(it) }
+            ).map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
     @DeleteMapping("/graph/v3/databases/{database}/aliases/{alias}")

@@ -3,6 +3,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 import com.kakao.actionbase.server.test.E2ETestBase
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
@@ -22,11 +23,9 @@ import org.springframework.http.MediaType
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class V2V3CompatibilityTest : E2ETestBase() {
-
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class DatabaseCompatibilityTest {
-
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
@@ -47,14 +46,28 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 {"database": "db-v2v3-special", "comment": "test @#$%", "active": true}
             """,
         )
-        fun `V2 create - V3 get`(name: String, v2: String, v3: String) {
-            client.post().uri("/graph/v2/service/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(v2)
-                .exchange().expectStatus().isOk
+        fun `V2 create - V3 get`(
+            name: String,
+            v2: String,
+            v3: String,
+        ) {
+            client
+                .post()
+                .uri("/graph/v2/service/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(v2)
+                .exchange()
+                .expectStatus()
+                .isOk
 
-            client.get().uri("/graph/v3/databases/$name")
-                .exchange().expectStatus().isOk
-                .expectBody().json(v3)
+            client
+                .get()
+                .uri("/graph/v3/databases/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(v3)
         }
 
         @ObjectSourceParameterizedTest
@@ -77,14 +90,28 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 {"name": "db-v3v2-special", "desc": "test @#$%", "active": true}
             """,
         )
-        fun `V3 create - V2 get`(name: String, v3: String, v2: String) {
-            client.post().uri("/graph/v3/databases/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(v3)
-                .exchange().expectStatus().isOk
+        fun `V3 create - V2 get`(
+            name: String,
+            v3: String,
+            v2: String,
+        ) {
+            client
+                .post()
+                .uri("/graph/v3/databases/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(v3)
+                .exchange()
+                .expectStatus()
+                .isOk
 
-            client.get().uri("/graph/v2/service/$name")
-                .exchange().expectStatus().isOk
-                .expectBody().json(v2)
+            client
+                .get()
+                .uri("/graph/v2/service/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(v2)
         }
     }
 
@@ -95,10 +122,14 @@ class V2V3CompatibilityTest : E2ETestBase() {
 
         @BeforeAll
         fun setup() {
-            client.post().uri("/graph/v3/databases/$db")
+            client
+                .post()
+                .uri("/graph/v3/databases/$db")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""{"database": "$db", "comment": "test db"}""")
-                .exchange().expectStatus().isOk
+                .exchange()
+                .expectStatus()
+                .isOk
         }
 
         @ObjectSourceParameterizedTest
@@ -256,14 +287,28 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
             """,
         )
-        fun `V2 create - V3 get`(name: String, v2: String, v3: String) {
-            client.post().uri("/graph/v2/service/$db/label/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(v2)
-                .exchange().expectStatus().isOk
+        fun `V2 create - V3 get`(
+            name: String,
+            v2: String,
+            v3: String,
+        ) {
+            client
+                .post()
+                .uri("/graph/v2/service/$db/label/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(v2)
+                .exchange()
+                .expectStatus()
+                .isOk
 
-            client.get().uri("/graph/v3/databases/$db/tables/$name")
-                .exchange().expectStatus().isOk
-                .expectBody().json(v3)
+            client
+                .get()
+                .uri("/graph/v3/databases/$db/tables/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(v3)
         }
 
         @ObjectSourceParameterizedTest
@@ -431,14 +476,28 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
             """,
         )
-        fun `V3 create - V2 get`(name: String, v3: String, v2: String) {
-            client.post().uri("/graph/v3/databases/$db/tables/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(v3)
-                .exchange().expectStatus().isOk
+        fun `V3 create - V2 get`(
+            name: String,
+            v3: String,
+            v2: String,
+        ) {
+            client
+                .post()
+                .uri("/graph/v3/databases/$db/tables/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(v3)
+                .exchange()
+                .expectStatus()
+                .isOk
 
-            client.get().uri("/graph/v2/service/$db/label/$name")
-                .exchange().expectStatus().isOk
-                .expectBody().json(v2)
+            client
+                .get()
+                .uri("/graph/v2/service/$db/label/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(v2)
         }
     }
 
@@ -450,12 +509,18 @@ class V2V3CompatibilityTest : E2ETestBase() {
 
         @BeforeAll
         fun setup() {
-            client.post().uri("/graph/v3/databases/$db")
+            client
+                .post()
+                .uri("/graph/v3/databases/$db")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""{"database": "$db", "comment": "test db"}""")
-                .exchange().expectStatus().isOk
+                .exchange()
+                .expectStatus()
+                .isOk
 
-            client.post().uri("/graph/v3/databases/$db/tables/$table")
+            client
+                .post()
+                .uri("/graph/v3/databases/$db/tables/$table")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(
                     """
@@ -474,8 +539,9 @@ class V2V3CompatibilityTest : E2ETestBase() {
                       "comment": "target table"
                     }
                     """.trimIndent(),
-                )
-                .exchange().expectStatus().isOk
+                ).exchange()
+                .expectStatus()
+                .isOk
         }
 
         @ObjectSourceParameterizedTest
@@ -498,14 +564,28 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 {"alias": "als-v2v3-special", "table": "als-target", "comment": "alias @#", "active": true}
             """,
         )
-        fun `V2 create - V3 get`(name: String, v2: String, v3: String) {
-            client.post().uri("/graph/v2/service/$db/alias/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(v2)
-                .exchange().expectStatus().isOk
+        fun `V2 create - V3 get`(
+            name: String,
+            v2: String,
+            v3: String,
+        ) {
+            client
+                .post()
+                .uri("/graph/v2/service/$db/alias/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(v2)
+                .exchange()
+                .expectStatus()
+                .isOk
 
-            client.get().uri("/graph/v3/databases/$db/aliases/$name")
-                .exchange().expectStatus().isOk
-                .expectBody().json(v3)
+            client
+                .get()
+                .uri("/graph/v3/databases/$db/aliases/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(v3)
         }
 
         @ObjectSourceParameterizedTest
@@ -528,14 +608,181 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 {"name": "als-compat-db.als-v3v2-special", "target": "als-compat-db.als-target", "desc": "alias @#", "active": true}
             """,
         )
-        fun `V3 create - V2 get`(name: String, v3: String, v2: String) {
-            client.post().uri("/graph/v3/databases/$db/aliases/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(v3)
-                .exchange().expectStatus().isOk
+        fun `V3 create - V2 get`(
+            name: String,
+            v3: String,
+            v2: String,
+        ) {
+            client
+                .post()
+                .uri("/graph/v3/databases/$db/aliases/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(v3)
+                .exchange()
+                .expectStatus()
+                .isOk
 
-            client.get().uri("/graph/v2/service/$db/alias/$name")
-                .exchange().expectStatus().isOk
-                .expectBody().json(v2)
+            client
+                .get()
+                .uri("/graph/v2/service/$db/alias/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(v2)
+        }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class MultiEdgeCompatibilityTest {
+        private val db = "me-compat-db"
+
+        @BeforeAll
+        fun setup() {
+            client
+                .post()
+                .uri("/graph/v3/databases/$db")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"database": "$db", "comment": "multiedge test db"}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            # Basic MultiEdge - direction BOTH
+            - name: me-v2v3-basic
+              v2: |
+                {
+                  "desc": "basic multiedge",
+                  "type": "MULTI_EDGE",
+                  "schema": {
+                    "src": {"type": "LONG", "desc": "sender"},
+                    "tgt": {"type": "LONG", "desc": "receiver"},
+                    "fields": [
+                      {"name": "_id", "type": "LONG", "nullable": false, "desc": "order id"}
+                    ]
+                  },
+                  "dirType": "BOTH",
+                  "storage": "datastore://hbase/me-v2v3-basic",
+                  "readOnly": true
+                }
+              v3: |
+                {
+                  "type": "multiEdge",
+                  "table": "me-v2v3-basic",
+                  "comment": "basic multiedge",
+                  "schema": {
+                    "type": "multiEdge",
+                    "id": {"type": "long", "comment": "order id"},
+                    "source": {"type": "long", "comment": "sender"},
+                    "target": {"type": "long", "comment": "receiver"},
+                    "properties": [],
+                    "direction": "BOTH"
+                  },
+                  "storage": {"type": "hbase", "tableName": "me-v2v3-basic"},
+                  "active": true
+                }
+
+            # MultiEdge with properties
+            - name: me-v2v3-props
+              v2: |
+                {
+                  "desc": "multiedge with props",
+                  "type": "MULTI_EDGE",
+                  "schema": {
+                    "src": {"type": "LONG", "desc": "user"},
+                    "tgt": {"type": "LONG", "desc": "item"},
+                    "fields": [
+                      {"name": "_id", "type": "LONG", "nullable": false, "desc": "txn id"},
+                      {"name": "amount", "type": "INT", "nullable": false, "desc": "purchase amount"},
+                      {"name": "timestamp", "type": "LONG", "nullable": false, "desc": "txn time"}
+                    ]
+                  },
+                  "dirType": "BOTH",
+                  "storage": "datastore://hbase/me-v2v3-props",
+                  "readOnly": true
+                }
+              v3: |
+                {
+                  "type": "multiEdge",
+                  "table": "me-v2v3-props",
+                  "comment": "multiedge with props",
+                  "schema": {
+                    "type": "multiEdge",
+                    "id": {"type": "long", "comment": "txn id"},
+                    "source": {"type": "long", "comment": "user"},
+                    "target": {"type": "long", "comment": "item"},
+                    "properties": [
+                      {"name": "amount", "type": "int", "comment": "purchase amount", "nullable": false},
+                      {"name": "timestamp", "type": "long", "comment": "txn time", "nullable": false}
+                    ],
+                    "direction": "BOTH"
+                  },
+                  "storage": {"type": "hbase", "tableName": "me-v2v3-props"},
+                  "active": true
+                }
+
+            # MultiEdge with STRING keys
+            - name: me-v2v3-string
+              v2: |
+                {
+                  "desc": "string key multiedge",
+                  "type": "MULTI_EDGE",
+                  "schema": {
+                    "src": {"type": "STRING", "desc": "from"},
+                    "tgt": {"type": "STRING", "desc": "to"},
+                    "fields": [
+                      {"name": "_id", "type": "LONG", "nullable": false, "desc": "msg id"}
+                    ]
+                  },
+                  "dirType": "OUT",
+                  "storage": "datastore://hbase/me-v2v3-string",
+                  "readOnly": true
+                }
+              v3: |
+                {
+                  "type": "multiEdge",
+                  "table": "me-v2v3-string",
+                  "comment": "string key multiedge",
+                  "schema": {
+                    "type": "multiEdge",
+                    "id": {"type": "long", "comment": "msg id"},
+                    "source": {"type": "string", "comment": "from"},
+                    "target": {"type": "string", "comment": "to"},
+                    "properties": [],
+                    "direction": "OUT"
+                  },
+                  "storage": {"type": "hbase", "tableName": "me-v2v3-string"},
+                  "active": true
+                }
+            """,
+        )
+        fun `V2 create - V3 get`(
+            name: String,
+            v2: String,
+            v3: String,
+        ) {
+            client
+                .post()
+                .uri("/graph/v2/service/$db/label/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(v2)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .get()
+                .uri("/graph/v3/databases/$db/tables/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(v3)
         }
     }
 }

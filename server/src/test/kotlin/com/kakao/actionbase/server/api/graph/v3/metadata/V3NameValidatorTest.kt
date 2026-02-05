@@ -9,7 +9,6 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.web.server.ResponseStatusException
 
 class V3NameValidatorTest {
-
     @Nested
     inner class ValidNamesTest {
         @ParameterizedTest

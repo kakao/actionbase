@@ -53,9 +53,9 @@ object V3MetadataConverter {
 
     // endregion
 
-    // region Table (V3 TableDescriptor.Edge <-> V2 LabelEntity)
+    // region Table (V3 TableDescriptor <-> V2 LabelEntity)
 
-    fun LabelEntity.toV3TableDescriptor(tenant: String): TableDescriptor.Edge =
+    fun LabelEntity.toV3TableDescriptorEdge(tenant: String): TableDescriptor.Edge =
         TableDescriptor.Edge(
             tenant = tenant,
             database = name.service,
@@ -66,6 +66,24 @@ object V3MetadataConverter {
             active = active,
             comment = desc,
         )
+
+    fun LabelEntity.toV3TableDescriptorMultiEdge(tenant: String): TableDescriptor.MultiEdge =
+        TableDescriptor.MultiEdge(
+            tenant = tenant,
+            database = name.service,
+            table = name.nameNotNull,
+            schema = schema.toV3ModelSchemaMultiEdge(dirType.toV3DirectionType(), indices, groups),
+            mode = mode.toV3MutationMode(),
+            storage = storage.toV3Storage(),
+            active = active,
+            comment = desc,
+        )
+
+    fun LabelEntity.toV3TableDescriptor(tenant: String): TableDescriptor<*> =
+        when (type) {
+            LabelType.MULTI_EDGE -> toV3TableDescriptorMultiEdge(tenant)
+            else -> toV3TableDescriptorEdge(tenant)
+        }
 
     fun TableDescriptor.Edge.toV2LabelEntity(): LabelEntity =
         LabelEntity(
@@ -80,6 +98,22 @@ object V3MetadataConverter {
             groups = schema.groups,
             event = false,
             readOnly = false,
+            mode = mode.toV2MutationMode(),
+        )
+
+    fun TableDescriptor.MultiEdge.toV2LabelEntity(): LabelEntity =
+        LabelEntity(
+            active = active,
+            name = EntityName(database, table),
+            desc = comment,
+            type = LabelType.MULTI_EDGE,
+            schema = schema.toV2EdgeSchema(),
+            dirType = schema.direction.toV2DirectionType(),
+            storage = storage.toV2StorageString(),
+            indices = schema.indexes.map { it.toV2Index() },
+            groups = schema.groups,
+            event = false,
+            readOnly = true,
             mode = mode.toV2MutationMode(),
         )
 
@@ -171,7 +205,7 @@ object V3MetadataConverter {
 
     // endregion
 
-    // region Schema conversion (V3 ModelSchema.Edge <-> V2 EdgeSchema)
+    // region Schema conversion (V3 ModelSchema <-> V2 EdgeSchema)
 
     fun EdgeSchema.toV3ModelSchemaEdge(
         direction: V3DirectionType,
@@ -195,12 +229,52 @@ object V3MetadataConverter {
             groups = groups,
         )
 
+    fun EdgeSchema.toV3ModelSchemaMultiEdge(
+        direction: V3DirectionType,
+        indices: List<V2Index>,
+        groups: List<Group>,
+    ): ModelSchema.MultiEdge {
+        val idField =
+            fields.find { it.name == "_id" }
+                ?: throw IllegalArgumentException("MultiEdge schema must have _id field")
+        return ModelSchema.MultiEdge(
+            id =
+                V3Field(
+                    type = idField.type.toV3PrimitiveType(),
+                    comment = idField.desc,
+                ),
+            source =
+                V3Field(
+                    type = src.type.toV3PrimitiveType(),
+                    comment = src.desc,
+                ),
+            target =
+                V3Field(
+                    type = tgt.type.toV3PrimitiveType(),
+                    comment = tgt.desc,
+                ),
+            properties = fields.filterNot { it.name == "_id" }.map { it.toV3StructField() },
+            direction = direction,
+            indexes = indices.map { it.toV3Index() },
+            groups = groups,
+        )
+    }
+
     fun ModelSchema.Edge.toV2EdgeSchema(): EdgeSchema =
         EdgeSchema(
             VertexField(source.type.toV2VertexType(), source.comment),
             VertexField(target.type.toV2VertexType(), target.comment),
             properties.map { it.toV2Field() },
         )
+
+    fun ModelSchema.MultiEdge.toV2EdgeSchema(): EdgeSchema {
+        val idField = V2Field("_id", id.type.toV2DataType(), false, id.comment)
+        return EdgeSchema(
+            VertexField(source.type.toV2VertexType(), source.comment),
+            VertexField(target.type.toV2VertexType(), target.comment),
+            listOf(idField) + properties.map { it.toV2Field() },
+        )
+    }
 
     // endregion
 

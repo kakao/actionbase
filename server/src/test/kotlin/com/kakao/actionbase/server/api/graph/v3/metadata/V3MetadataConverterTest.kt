@@ -8,6 +8,7 @@ import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
 
 import com.kakao.actionbase.core.metadata.AliasDescriptor
 import com.kakao.actionbase.core.metadata.DatabaseDescriptor
+import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.MutationMode
@@ -242,7 +243,7 @@ class V3MetadataConverterTest {
                 )
 
             // When
-            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant)
+            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.Edge
 
             // Then
             assertThat(v3Descriptor.tenant).isEqualTo(tenant)

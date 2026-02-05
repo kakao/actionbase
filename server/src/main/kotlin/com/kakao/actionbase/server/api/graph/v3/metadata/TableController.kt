@@ -25,7 +25,7 @@ class TableController(
     @GetMapping("/graph/v3/databases/{database}/tables")
     fun listTables(
         @PathVariable database: String,
-    ): Mono<ResponseEntity<List<TableDescriptor.Edge>>> =
+    ): Mono<ResponseEntity<List<TableDescriptor<*>>>> =
         v3CompatService
             .getTables(V3NameValidator.validateDatabase(database))
             .map { ResponseEntity.ok(it) }
@@ -34,7 +34,7 @@ class TableController(
     fun getTable(
         @PathVariable database: String,
         @PathVariable table: String,
-    ): Mono<ResponseEntity<TableDescriptor.Edge>> =
+    ): Mono<ResponseEntity<TableDescriptor<*>>> =
         v3CompatService
             .getTable(V3NameValidator.validateDatabase(database), V3NameValidator.validateTable(table))
             .map { ResponseEntity.ok(it) }
@@ -51,8 +51,7 @@ class TableController(
                 V3NameValidator.validateDatabase(database),
                 V3NameValidator.validateTable(table),
                 request,
-            )
-            .map { ResponseEntity.ok(it) }
+            ).map { ResponseEntity.ok(it) }
 
     @PutMapping("/graph/v3/databases/{database}/tables/{table}")
     fun updateTable(
@@ -65,8 +64,7 @@ class TableController(
                 V3NameValidator.validateDatabase(database),
                 V3NameValidator.validateTable(table),
                 request,
-            )
-            .map { ResponseEntity.ok(it) }
+            ).map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
     @DeleteMapping("/graph/v3/databases/{database}/tables/{table}")

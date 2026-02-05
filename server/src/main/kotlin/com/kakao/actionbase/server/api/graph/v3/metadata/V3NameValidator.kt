@@ -15,7 +15,10 @@ object V3NameValidator {
      * Validates a name and returns it if valid.
      * @throws ResponseStatusException with 400 Bad Request if invalid
      */
-    fun validate(name: String, fieldName: String): String {
+    fun validate(
+        name: String,
+        fieldName: String,
+    ): String {
         if (!name.matches(NAME_PATTERN)) {
             throw ResponseStatusException(
                 HttpStatus.BAD_REQUEST,

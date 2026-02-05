@@ -19,6 +19,7 @@ import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptorEdge
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 
@@ -85,12 +86,12 @@ class V3CompatService(
     fun getTable(
         database: String,
         table: String,
-    ): Mono<TableDescriptor.Edge> =
+    ): Mono<TableDescriptor<*>> =
         graph.labelDdl
             .getSingle(EntityName(database, table))
             .map { it.toV3TableDescriptor(tenant) }
 
-    fun getTables(database: String): Mono<List<TableDescriptor.Edge>> =
+    fun getTables(database: String): Mono<List<TableDescriptor<*>>> =
         graph.labelDdl
             .getAll(EntityName(database))
             .map { page ->
@@ -119,7 +120,7 @@ class V3CompatService(
             )
         return graph.labelDdl
             .create(EntityName(database, table), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptorEdge(tenant)) } }
     }
 
     fun updateTable(
@@ -140,13 +141,13 @@ class V3CompatService(
             )
         return graph.labelDdl
             .update(EntityName(database, table), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptorEdge(tenant)) } }
     }
 
     fun deleteTable(
         database: String,
         table: String,
-    ): Mono<TableDescriptor.Edge> =
+    ): Mono<TableDescriptor<*>> =
         graph.labelDdl
             .delete(EntityName(database, table), V2LabelDeleteRequest())
             .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
