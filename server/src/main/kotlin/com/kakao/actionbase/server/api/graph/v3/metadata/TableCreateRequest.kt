@@ -31,7 +31,7 @@ data class TableCreateRequest(
     )
     val storage: String,
     val mode: MutationMode = MutationMode.SYNC,
-    val type: LabelType = LabelType.HASH,
+    val type: LabelType = LabelType.INDEXED,
     @field:Size(max = 1000, message = "comment must be at most 1000 characters")
     val comment: String = "",
 ) {

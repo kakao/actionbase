@@ -72,7 +72,7 @@ object V3MetadataConverter {
             active = active,
             name = EntityName(database, table),
             desc = comment,
-            type = LabelType.HASH,
+            type = LabelType.INDEXED,
             schema = schema.toV2EdgeSchema(),
             dirType = schema.direction.toV2DirectionType(),
             storage = storage.toV2StorageString(),

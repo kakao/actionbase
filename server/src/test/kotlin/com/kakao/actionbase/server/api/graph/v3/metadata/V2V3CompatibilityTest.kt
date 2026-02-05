@@ -104,24 +104,24 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            # Basic edge table (V2 HASH only supports OUT)
-            - name: tbl-v2v3-basic
+            # Direction: OUT
+            - name: tbl-v2v3-out
               v2: |
                 {
-                  "desc": "basic edge",
-                  "type": "HASH",
+                  "desc": "direction out",
+                  "type": "INDEXED",
                   "schema": {
                     "src": {"type": "STRING", "desc": "source"},
                     "tgt": {"type": "STRING", "desc": "target"},
                     "fields": []
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v2v3-basic"
+                  "storage": "datastore://hbase/tbl-v2v3-out"
                 }
               v3: |
                 {
-                  "table": "tbl-v2v3-basic",
-                  "comment": "basic edge",
+                  "table": "tbl-v2v3-out",
+                  "comment": "direction out",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "source"},
@@ -129,45 +129,74 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "properties": [],
                     "direction": "OUT"
                   },
-                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-basic"},
+                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-out"},
                   "active": true
                 }
 
-            # Edge with INT property
-            - name: tbl-v2v3-int
+            # Direction: IN
+            - name: tbl-v2v3-in
               v2: |
                 {
-                  "desc": "with int",
-                  "type": "HASH",
+                  "desc": "direction in",
+                  "type": "INDEXED",
                   "schema": {
-                    "src": {"type": "STRING", "desc": "src"},
-                    "tgt": {"type": "STRING", "desc": "tgt"},
-                    "fields": [{"name": "score", "type": "INT", "nullable": true, "desc": "score"}]
+                    "src": {"type": "STRING", "desc": "source"},
+                    "tgt": {"type": "STRING", "desc": "target"},
+                    "fields": []
                   },
-                  "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v2v3-int"
+                  "dirType": "IN",
+                  "storage": "datastore://hbase/tbl-v2v3-in"
                 }
               v3: |
                 {
-                  "table": "tbl-v2v3-int",
-                  "comment": "with int",
+                  "table": "tbl-v2v3-in",
+                  "comment": "direction in",
                   "schema": {
                     "type": "edge",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
-                    "properties": [{"name": "score", "type": "int", "comment": "score", "nullable": true}],
-                    "direction": "OUT"
+                    "source": {"type": "string", "comment": "source"},
+                    "target": {"type": "string", "comment": "target"},
+                    "properties": [],
+                    "direction": "IN"
                   },
-                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-int"},
+                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-in"},
                   "active": true
                 }
 
-            # Edge with multiple properties
-            - name: tbl-v2v3-multi
+            # Direction: BOTH
+            - name: tbl-v2v3-both
               v2: |
                 {
-                  "desc": "multi props",
-                  "type": "HASH",
+                  "desc": "direction both",
+                  "type": "INDEXED",
+                  "schema": {
+                    "src": {"type": "STRING", "desc": "source"},
+                    "tgt": {"type": "STRING", "desc": "target"},
+                    "fields": []
+                  },
+                  "dirType": "BOTH",
+                  "storage": "datastore://hbase/tbl-v2v3-both"
+                }
+              v3: |
+                {
+                  "table": "tbl-v2v3-both",
+                  "comment": "direction both",
+                  "schema": {
+                    "type": "edge",
+                    "source": {"type": "string", "comment": "source"},
+                    "target": {"type": "string", "comment": "target"},
+                    "properties": [],
+                    "direction": "BOTH"
+                  },
+                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-both"},
+                  "active": true
+                }
+
+            # With properties
+            - name: tbl-v2v3-props
+              v2: |
+                {
+                  "desc": "with props",
+                  "type": "INDEXED",
                   "schema": {
                     "src": {"type": "STRING", "desc": "user"},
                     "tgt": {"type": "STRING", "desc": "item"},
@@ -177,12 +206,12 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v2v3-multi"
+                  "storage": "datastore://hbase/tbl-v2v3-props"
                 }
               v3: |
                 {
-                  "table": "tbl-v2v3-multi",
-                  "comment": "multi props",
+                  "table": "tbl-v2v3-props",
+                  "comment": "with props",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "user"},
@@ -193,16 +222,16 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ],
                     "direction": "OUT"
                   },
-                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-multi"},
+                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-props"},
                   "active": true
                 }
 
-            # Edge with LONG keys
+            # LONG keys
             - name: tbl-v2v3-long
               v2: |
                 {
                   "desc": "long keys",
-                  "type": "HASH",
+                  "type": "INDEXED",
                   "schema": {
                     "src": {"type": "LONG", "desc": "uid"},
                     "tgt": {"type": "LONG", "desc": "iid"},
@@ -240,8 +269,8 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            # Basic edge table
-            - name: tbl-v3v2-basic
+            # Direction: OUT
+            - name: tbl-v3v2-out
               v3: |
                 {
                   "schema": {
@@ -253,25 +282,87 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/tbl-v3v2-basic",
+                  "storage": "datastore://hbase/tbl-v3v2-out",
                   "mode": "SYNC",
-                  "comment": "basic edge"
+                  "comment": "direction out"
                 }
               v2: |
                 {
-                  "name": "tbl-compat-db.tbl-v3v2-basic",
-                  "desc": "basic edge",
+                  "name": "tbl-compat-db.tbl-v3v2-out",
+                  "desc": "direction out",
                   "schema": {
                     "src": {"type": "STRING", "desc": "source"},
                     "tgt": {"type": "STRING", "desc": "target"},
                     "fields": []
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v3v2-basic",
+                  "storage": "datastore://hbase/tbl-v3v2-out",
                   "active": true
                 }
 
-            # Edge with properties
+            # Direction: IN
+            - name: tbl-v3v2-in
+              v3: |
+                {
+                  "schema": {
+                    "type": "edge",
+                    "source": {"type": "string", "comment": "source"},
+                    "target": {"type": "string", "comment": "target"},
+                    "properties": [],
+                    "direction": "IN",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/tbl-v3v2-in",
+                  "mode": "SYNC",
+                  "comment": "direction in"
+                }
+              v2: |
+                {
+                  "name": "tbl-compat-db.tbl-v3v2-in",
+                  "desc": "direction in",
+                  "schema": {
+                    "src": {"type": "STRING", "desc": "source"},
+                    "tgt": {"type": "STRING", "desc": "target"},
+                    "fields": []
+                  },
+                  "dirType": "IN",
+                  "storage": "datastore://hbase/tbl-v3v2-in",
+                  "active": true
+                }
+
+            # Direction: BOTH
+            - name: tbl-v3v2-both
+              v3: |
+                {
+                  "schema": {
+                    "type": "edge",
+                    "source": {"type": "string", "comment": "source"},
+                    "target": {"type": "string", "comment": "target"},
+                    "properties": [],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/tbl-v3v2-both",
+                  "mode": "SYNC",
+                  "comment": "direction both"
+                }
+              v2: |
+                {
+                  "name": "tbl-compat-db.tbl-v3v2-both",
+                  "desc": "direction both",
+                  "schema": {
+                    "src": {"type": "STRING", "desc": "source"},
+                    "tgt": {"type": "STRING", "desc": "target"},
+                    "fields": []
+                  },
+                  "dirType": "BOTH",
+                  "storage": "datastore://hbase/tbl-v3v2-both",
+                  "active": true
+                }
+
+            # With properties
             - name: tbl-v3v2-props
               v3: |
                 {
@@ -308,7 +399,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                   "active": true
                 }
 
-            # Edge with LONG keys
+            # LONG keys
             - name: tbl-v3v2-long
               v3: |
                 {
