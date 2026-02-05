@@ -14,10 +14,10 @@ import org.apache.hadoop.hbase.client.mock.MockHTable
 import reactor.core.publisher.Mono
 
 /**
- * Mock storage backend for testing and embedded mode.
+ * Mock HBase storage backend for testing and embedded mode.
  * Uses HBase MockHTable for storage operations.
  */
-class MockStorageBackend : StorageBackend {
+class MockHBaseStorageBackend : StorageBackend {
     override fun getBucket(
         namespace: String,
         name: String,

@@ -2,7 +2,7 @@ package com.kakao.actionbase.v2.engine.storage
 
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageBackend
 import com.kakao.actionbase.v2.engine.storage.memory.MemoryStorageBackend
-import com.kakao.actionbase.v2.engine.storage.mock.MockStorageBackend
+import com.kakao.actionbase.v2.engine.storage.mock.MockHBaseStorageBackend
 
 import org.slf4j.LoggerFactory
 
@@ -40,13 +40,13 @@ object DefaultStorageBackendFactory {
                     MemoryStorageBackend()
                 }
                 "embedded" -> {
-                    logger.info("Using MockStorageBackend (embedded)")
-                    MockStorageBackend()
+                    logger.info("Using MockHBaseStorageBackend (embedded)")
+                    MockHBaseStorageBackend()
                 }
                 else -> {
                     if (properties.isEmpty() || properties["version"] == "embedded") {
                         logger.info("🚀 - Using Embedded Mock Storage (legacy)")
-                        MockStorageBackend()
+                        MockHBaseStorageBackend()
                     } else {
                         logger.info("Using HBaseStorageBackend")
                         HBaseStorageBackend.create(properties)

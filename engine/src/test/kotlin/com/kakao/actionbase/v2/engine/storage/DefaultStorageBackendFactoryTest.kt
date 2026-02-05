@@ -1,7 +1,7 @@
 package com.kakao.actionbase.v2.engine.storage
 
 import com.kakao.actionbase.v2.engine.storage.memory.MemoryStorageBackend
-import com.kakao.actionbase.v2.engine.storage.mock.MockStorageBackend
+import com.kakao.actionbase.v2.engine.storage.mock.MockHBaseStorageBackend
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DisplayName
@@ -25,24 +25,24 @@ class DefaultStorageBackendFactoryTest {
         }
 
         @Test
-        fun `creates MockStorageBackend for type embedded`() {
+        fun `creates MockHBaseStorageBackend for type embedded`() {
             DefaultStorageBackendFactory.initialize(mapOf("type" to "embedded"))
 
-            assert(DefaultStorageBackendFactory.INSTANCE is MockStorageBackend)
+            assert(DefaultStorageBackendFactory.INSTANCE is MockHBaseStorageBackend)
         }
 
         @Test
-        fun `creates MockStorageBackend for empty properties`() {
+        fun `creates MockHBaseStorageBackend for empty properties`() {
             DefaultStorageBackendFactory.initialize(emptyMap())
 
-            assert(DefaultStorageBackendFactory.INSTANCE is MockStorageBackend)
+            assert(DefaultStorageBackendFactory.INSTANCE is MockHBaseStorageBackend)
         }
 
         @Test
-        fun `creates MockStorageBackend for version embedded`() {
+        fun `creates MockHBaseStorageBackend for version embedded`() {
             DefaultStorageBackendFactory.initialize(mapOf("version" to "embedded"))
 
-            assert(DefaultStorageBackendFactory.INSTANCE is MockStorageBackend)
+            assert(DefaultStorageBackendFactory.INSTANCE is MockHBaseStorageBackend)
         }
     }
 
