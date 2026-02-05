@@ -458,7 +458,7 @@ open class HBaseHashLabel(
                 }
             } else {
                 edgeBucket.get(rows).map { records ->
-                    records.map { record -> HBaseRecord(record.key, record.value) }
+                    records.map { record -> HBaseRecord(record.key, value = record.value) }
                 }
             }
         }
