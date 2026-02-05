@@ -26,6 +26,8 @@ abstract class StorageBucketCompatibilityTest {
 
     protected open fun supportsScanLimit(): Boolean = true
 
+    protected open fun supportsIncrement(): Boolean = true
+
     private lateinit var bucket: StorageBucket
 
     @BeforeEach
@@ -132,6 +134,11 @@ abstract class StorageBucketCompatibilityTest {
     @Nested
     @DisplayName("increment")
     inner class IncrementTest {
+        @BeforeEach
+        fun checkSupport() {
+            assumeTrue(supportsIncrement())
+        }
+
         @Test
         fun `creates counter if not exists`() {
             assert(bucket.increment(b("cnt"), 10).block() == 10L)
@@ -169,6 +176,7 @@ abstract class StorageBucketCompatibilityTest {
 
         @Test
         fun `executes increments`() {
+            assumeTrue(supportsIncrement())
             bucket.batch(listOf(MutationRequest.Increment(b("c1"), 10), MutationRequest.Increment(b("c2"), 20))).block()
             assert(bytesToLong(bucket.get(b("c1")).block()!!) == 10L)
             assert(bytesToLong(bucket.get(b("c2")).block()!!) == 20L)
@@ -176,6 +184,7 @@ abstract class StorageBucketCompatibilityTest {
 
         @Test
         fun `executes mixed mutations`() {
+            assumeTrue(supportsIncrement())
             bucket.put(b("to-delete"), b("v")).block()
             bucket
                 .batch(
