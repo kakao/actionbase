@@ -28,21 +28,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             - name: db-v2v3
-              given: |
+              createReq: |
                 {"desc": "created by v2"}
-              expected: |
+              updateReq: |
                 {"comment": "updated by v3"}
             """,
         )
-        fun `V2 create, V3 update`(name: String, given: String, expected: String) {
+        fun `V2 create, V3 update`(name: String, createReq: String, updateReq: String) {
             // V2 create
             client.post().uri("/graph/v2/service/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
                 .exchange().expectStatus().isOk
 
             // V3 update
             client.put().uri("/graph/v3/databases/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(updateReq)
                 .exchange().expectStatus().isOk
 
             // Verify
@@ -53,21 +53,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             - name: db-v3v2
-              given: |
+              createReq: |
                 {"database": "db-v3v2", "comment": "created by v3"}
-              expected: |
+              updateReq: |
                 {"active": true, "desc": "updated by v2"}
             """,
         )
-        fun `V3 create, V2 update`(name: String, given: String, expected: String) {
+        fun `V3 create, V2 update`(name: String, createReq: String, updateReq: String) {
             // V3 create
             client.post().uri("/graph/v3/databases/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
                 .exchange().expectStatus().isOk
 
             // V2 update
             client.put().uri("/graph/v2/service/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(updateReq)
                 .exchange().expectStatus().isOk
 
             // Verify
@@ -102,7 +102,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             - name: tbl-v2v3
-              given: |
+              createReq: |
                 {
                   "desc": "created by v2",
                   "type": "HASH",
@@ -114,19 +114,19 @@ class V2V3CompatibilityTest : E2ETestBase() {
                   "dirType": "OUT",
                   "storage": "datastore://hbase/tbl-v2v3-storage"
                 }
-              expected: |
+              updateReq: |
                 {"comment": "updated by v3"}
             """,
         )
-        fun `V2 create, V3 update`(name: String, given: String, expected: String) {
+        fun `V2 create, V3 update`(name: String, createReq: String, updateReq: String) {
             // V2 create
             client.post().uri("/graph/v2/service/$db/label/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
                 .exchange().expectStatus().isOk
 
             // V3 update
             client.put().uri("/graph/v3/databases/$db/tables/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(updateReq)
                 .exchange().expectStatus().isOk
 
             // Verify
@@ -137,7 +137,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             - name: tbl-v3v2
-              given: |
+              createReq: |
                 {
                   "schema": {
                     "type": "edge",
@@ -152,19 +152,19 @@ class V2V3CompatibilityTest : E2ETestBase() {
                   "mode": "SYNC",
                   "comment": "created by v3"
                 }
-              expected: |
+              updateReq: |
                 {"active": true, "desc": "updated by v2"}
             """,
         )
-        fun `V3 create, V2 update`(name: String, given: String, expected: String) {
+        fun `V3 create, V2 update`(name: String, createReq: String, updateReq: String) {
             // V3 create
             client.post().uri("/graph/v3/databases/$db/tables/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
                 .exchange().expectStatus().isOk
 
             // V2 update
             client.put().uri("/graph/v2/service/$db/label/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(updateReq)
                 .exchange().expectStatus().isOk
 
             // Verify
@@ -222,21 +222,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             - name: als-v2v3
-              given: |
+              createReq: |
                 {"desc": "created by v2", "target": "compat-alias-db.alias-target"}
-              expected: |
+              updateReq: |
                 {"comment": "updated by v3"}
             """,
         )
-        fun `V2 create, V3 update`(name: String, given: String, expected: String) {
+        fun `V2 create, V3 update`(name: String, createReq: String, updateReq: String) {
             // V2 create
             client.post().uri("/graph/v2/service/$db/alias/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
                 .exchange().expectStatus().isOk
 
             // V3 update
             client.put().uri("/graph/v3/databases/$db/aliases/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(updateReq)
                 .exchange().expectStatus().isOk
 
             // Verify
@@ -247,21 +247,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             - name: als-v3v2
-              given: |
+              createReq: |
                 {"table": "alias-target", "comment": "created by v3"}
-              expected: |
+              updateReq: |
                 {"active": true, "desc": "updated by v2"}
             """,
         )
-        fun `V3 create, V2 update`(name: String, given: String, expected: String) {
+        fun `V3 create, V2 update`(name: String, createReq: String, updateReq: String) {
             // V3 create
             client.post().uri("/graph/v3/databases/$db/aliases/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(createReq)
                 .exchange().expectStatus().isOk
 
             // V2 update
             client.put().uri("/graph/v2/service/$db/alias/$name")
-                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(updateReq)
                 .exchange().expectStatus().isOk
 
             // Verify
