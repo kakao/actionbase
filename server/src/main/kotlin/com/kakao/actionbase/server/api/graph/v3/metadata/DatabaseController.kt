@@ -20,17 +20,17 @@ import reactor.core.publisher.Mono
 
 @RestController
 @Validated
-@RequestMapping("/graph/v3/databases")
+@RequestMapping
 class DatabaseController(
     private val v3CompatService: V3CompatService,
 ) {
-    @GetMapping
+    @GetMapping("/graph/v3/databases")
     fun listDatabases(): Mono<ResponseEntity<List<DatabaseDescriptor>>> =
         v3CompatService
             .getDatabases()
             .map { ResponseEntity.ok(it) }
 
-    @GetMapping("/{database}")
+    @GetMapping("/graph/v3/databases/{database}")
     fun getDatabase(
         @PathVariable database: String,
     ): Mono<ResponseEntity<DatabaseDescriptor>> =
@@ -39,7 +39,7 @@ class DatabaseController(
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
-    @PostMapping("/{database}")
+    @PostMapping("/graph/v3/databases/{database}")
     fun createDatabase(
         @PathVariable database: String,
         @Valid @RequestBody request: DatabaseCreateRequest,
@@ -48,7 +48,7 @@ class DatabaseController(
             .createDatabase(V3NameValidator.validateDatabase(database), request)
             .map { ResponseEntity.ok(it) }
 
-    @PutMapping("/{database}")
+    @PutMapping("/graph/v3/databases/{database}")
     fun updateDatabase(
         @PathVariable database: String,
         @Valid @RequestBody request: DatabaseUpdateRequest,
@@ -58,7 +58,7 @@ class DatabaseController(
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
-    @DeleteMapping("/{database}")
+    @DeleteMapping("/graph/v3/databases/{database}")
     fun deleteDatabase(
         @PathVariable database: String,
     ): Mono<ResponseEntity<Void>> =

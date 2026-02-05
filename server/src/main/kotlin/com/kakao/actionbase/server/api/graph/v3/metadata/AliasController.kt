@@ -18,11 +18,11 @@ import reactor.core.publisher.Mono
 
 @RestController
 @Validated
-@RequestMapping("/graph/v3/databases/{database}/aliases")
+@RequestMapping
 class AliasController(
     private val v3CompatService: V3CompatService,
 ) {
-    @GetMapping
+    @GetMapping("/graph/v3/databases/{database}/aliases")
     fun listAliases(
         @PathVariable database: String,
     ): Mono<ResponseEntity<List<AliasDescriptor>>> =
@@ -30,7 +30,7 @@ class AliasController(
             .getAliases(V3NameValidator.validateDatabase(database))
             .map { ResponseEntity.ok(it) }
 
-    @GetMapping("/{alias}")
+    @GetMapping("/graph/v3/databases/{database}/aliases/{alias}")
     fun getAlias(
         @PathVariable database: String,
         @PathVariable alias: String,
@@ -40,7 +40,7 @@ class AliasController(
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
-    @PostMapping("/{alias}")
+    @PostMapping("/graph/v3/databases/{database}/aliases/{alias}")
     fun createAlias(
         @PathVariable database: String,
         @PathVariable alias: String,
@@ -54,7 +54,7 @@ class AliasController(
             )
             .map { ResponseEntity.ok(it) }
 
-    @PutMapping("/{alias}")
+    @PutMapping("/graph/v3/databases/{database}/aliases/{alias}")
     fun updateAlias(
         @PathVariable database: String,
         @PathVariable alias: String,
@@ -69,7 +69,7 @@ class AliasController(
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
-    @DeleteMapping("/{alias}")
+    @DeleteMapping("/graph/v3/databases/{database}/aliases/{alias}")
     fun deleteAlias(
         @PathVariable database: String,
         @PathVariable alias: String,

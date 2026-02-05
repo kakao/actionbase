@@ -18,11 +18,11 @@ import reactor.core.publisher.Mono
 
 @RestController
 @Validated
-@RequestMapping("/graph/v3/databases/{database}/tables")
+@RequestMapping
 class TableController(
     private val v3CompatService: V3CompatService,
 ) {
-    @GetMapping
+    @GetMapping("/graph/v3/databases/{database}/tables")
     fun listTables(
         @PathVariable database: String,
     ): Mono<ResponseEntity<List<TableDescriptor.Edge>>> =
@@ -30,7 +30,7 @@ class TableController(
             .getTables(V3NameValidator.validateDatabase(database))
             .map { ResponseEntity.ok(it) }
 
-    @GetMapping("/{table}")
+    @GetMapping("/graph/v3/databases/{database}/tables/{table}")
     fun getTable(
         @PathVariable database: String,
         @PathVariable table: String,
@@ -40,7 +40,7 @@ class TableController(
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
-    @PostMapping("/{table}")
+    @PostMapping("/graph/v3/databases/{database}/tables/{table}")
     fun createTable(
         @PathVariable database: String,
         @PathVariable table: String,
@@ -54,7 +54,7 @@ class TableController(
             )
             .map { ResponseEntity.ok(it) }
 
-    @PutMapping("/{table}")
+    @PutMapping("/graph/v3/databases/{database}/tables/{table}")
     fun updateTable(
         @PathVariable database: String,
         @PathVariable table: String,
@@ -69,7 +69,7 @@ class TableController(
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
-    @DeleteMapping("/{table}")
+    @DeleteMapping("/graph/v3/databases/{database}/tables/{table}")
     fun deleteTable(
         @PathVariable database: String,
         @PathVariable table: String,
