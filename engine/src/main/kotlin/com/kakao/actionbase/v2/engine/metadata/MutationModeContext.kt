@@ -22,8 +22,8 @@ data class MutationModeContext private constructor(
          * queue = mode == ASYNC || mode == IGNORE
          *
          * Constraints:
-         *   - request!=null && internal!=null -> IllegalArgumentException
-         *   - table=IGNORE && internal=null && global=null && request=SYNC -> IllegalArgumentException
+         *   - internal!=null && request!=null -> IllegalArgumentException
+         *   - internal==null && global==null && request==SYNC && table==IGNORE -> IllegalArgumentException
          *
          * | internal | global | request | table  | mode   | queue   |
          * | -------- | ------ | ------- | ------ | ------ | ------- |
