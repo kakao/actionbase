@@ -27,9 +27,11 @@ class HBaseTestingClusterExtension :
 
     override fun beforeAll(context: ExtensionContext) {
         HBaseTestingCluster.startIfNeeded()
-        // Initialize both for backward compatibility during migration
+        // Initialize DefaultHBaseCluster for backward compatibility
         DefaultHBaseCluster.initialize(Mono.just(HBaseTestingCluster.asyncConnection), "ab_test", HBaseTestingCluster.hbaseConfiguration)
-        DefaultStorageBackendFactory.initialize(mapOf("type" to "embedded"))
+        // Initialize DefaultStorageBackendFactory with the embedded HBase cluster
+        val embeddedBackend = EmbeddedStorageBackend(Mono.just(HBaseTestingCluster.asyncConnection), "ab_test")
+        DefaultStorageBackendFactory.initialize(embeddedBackend)
     }
 
     override fun supportsParameter(

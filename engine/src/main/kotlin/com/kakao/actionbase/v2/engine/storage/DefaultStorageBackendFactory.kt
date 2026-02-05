@@ -55,6 +55,17 @@ object DefaultStorageBackendFactory {
             }
     }
 
+    /**
+     * Initializes the factory with a pre-created StorageBackend instance.
+     * This is primarily used for testing with embedded HBase clusters.
+     *
+     * @param backend The StorageBackend instance to use.
+     */
+    fun initialize(backend: StorageBackend) {
+        logger.info("Initializing StorageBackend with provided instance: {}", backend::class.simpleName)
+        instance0 = backend
+    }
+
     fun close() {
         if (::instance0.isInitialized) {
             instance0.close()
