@@ -21,8 +21,9 @@ data class MutationModeContext private constructor(
          * mode  = internal ?: global ?: request ?: table
          * queue = mode == ASYNC || mode == IGNORE
          *
-         * Constraint: request and internal are mutually exclusive (both non-null -> IllegalArgumentException)
-         * Constraint: table=IGNORE && internal=N/A && global=N/A && request=SYNC -> IllegalArgumentException
+         * Constraints:
+         *   - request!=null && internal!=null -> IllegalArgumentException
+         *   - table=IGNORE && internal=null && global=null && request=SYNC -> IllegalArgumentException
          *
          * | internal | global | request | table  | mode   | queue   |
          * | -------- | ------ | ------- | ------ | ------ | ------- |
