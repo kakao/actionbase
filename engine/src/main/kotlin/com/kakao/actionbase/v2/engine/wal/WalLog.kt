@@ -19,7 +19,7 @@ data class WalLog(
     val label: EntityName,
     val edge: TraceEdge,
     val op: EdgeOperation,
-    val mode: MutationModeContext = MutationModeContext.of(table = MutationMode.SYNC, request = null, global = null),
+    val mode: MutationModeContext = MutationModeContext.of(table = MutationMode.SYNC, request = null, global = null, internal = null),
     val audit: Audit = Audit.default,
     val requestId: String = "",
 ) : Log {

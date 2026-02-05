@@ -46,7 +46,7 @@ data class MutationModeContext private constructor(
             table: MutationMode,
             request: MutationMode?,
             global: MutationMode?,
-            internal: MutationMode? = null,
+            internal: MutationMode?,
         ): MutationModeContext {
             require(request == null || internal == null) {
                 "request and internal are mutually exclusive. request=$request, internal=$internal"
