@@ -1,8 +1,8 @@
 package com.kakao.actionbase.v2.engine.storage
 
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageBackend
+import com.kakao.actionbase.v2.engine.storage.hbase.MockHBaseStorageBackend
 import com.kakao.actionbase.v2.engine.storage.memory.MemoryStorageBackend
-import com.kakao.actionbase.v2.engine.storage.mock.MockHBaseStorageBackend
 
 import org.slf4j.LoggerFactory
 
