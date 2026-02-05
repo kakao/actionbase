@@ -1,0 +1,73 @@
+---
+title: 스토리지 백엔드
+description: Actionbase에서 스토리지 백엔드에 대한 이해
+sidebar:
+  order: 5
+translated-by-kanana-2: true
+---
+
+Actionbase는 `Datastore`라는 최소 인터페이스를 통해 스토리지를 추상화합니다. 다양한 백엔드를 통합할 수 있습니다.
+
+## 필수 연산 {#required-operations}
+
+스토리지 백엔드는 다음 연산을 지원해야 합니다:
+
+| 연산           | 설명                                     |
+| -------------- | ---------------------------------------- |
+| get            | 키로 값(들)을 조회                       |
+| delete         | 키로 값을 삭제                           |
+| scan           | 프리픽스, 시작, 종료, 제한으로 범위 스캔 |
+| checkAndMutate | 일관성 유지를 위한 원자적 체크-및-변경   |
+| batch          | 일괄 변경(선택 사항, 권장)               |
+
+## 지원 백엔드 {#supported-backends}
+
+### HBase {#hbase}
+
+프로덕션 백엔드. HDFS 기반의 분산형, 확장 가능한 NoSQL 데이터베이스입니다.
+
+| 특성          | 설명                       |
+| ------------- | -------------------------- |
+| 수평 확장성   | 데이터를 노드 간에 샤딩    |
+| 강력한 내구성 | 데이터가 노드 간에 복제    |
+| 저지연 액세스 | 랜덤 읽기 및 쓰기에 최적화 |
+
+HBase는 직접 사용할 경우 전문 지식이 필요합니다(행 키 설계, 리전 분할, 클러스터 관리 등). Actionbase는 State/Index/Counter와 같은 인터랙션 특화 기능을 갖춘 더 높은 수준의 추상화를 제공합니다.
+
+[HBase 운영 가이드](/ko/operations/hbase/)를 참고하세요.
+
+### 메모리 {#memory}
+
+개발 및 테스트를 위한 인메모리 백엔드입니다.
+
+| 특성              | 설명                        |
+| ----------------- | --------------------------- |
+| 쉬운 설정         | 별도의 설정이 필요하지 않음 |
+| 데이터 유지 안 됨 | 서버 종료 시 데이터 손실    |
+
+로컬 개발 및 프로토타이핑에 적합합니다.
+
+## Actionbase가 스토리지를 사용하는 방법 {#how-actionbase-uses-storage}
+
+| Actionbase 작업 | 스토리지 작업  | 데이터 구조           |
+| --------------- | -------------- | --------------------- |
+| Get 쿼리        | get            | EdgeState             |
+| Scan 쿼리       | scan           | EdgeIndex             |
+| Count 쿼리      | get            | EdgeCounter           |
+| 뮤테이션(락)    | checkAndMutate | Lock                  |
+| 뮤테이션(쓰기)  | batch / put    | State, Index, Counter |
+| 뮤테이션(정리)  | delete         | 이전 인덱스           |
+
+## 백엔드 선택 {#choosing-a-backend}
+
+| 백엔드 | 사용 사례 |
+| ------ | --------- |
+| HBase  | 프로덕션  |
+| 메모리 | 개발 환경 |
+
+더 가벼운 백엔드가 소규모 배포를 위해 계획되어 있습니다.
+
+## 다음 단계 {#next-steps}
+
+- [데이터 인코딩](/ko/internals/encoding/): 데이터가 어떻게 인코딩되는지 설명합니다.
+- [HBase 운영](/ko/operations/hbase/): HBase 구성 방법

@@ -1,0 +1,72 @@
+---
+title: Storage Backends
+description: Understanding storage backends in Actionbase
+sidebar:
+  order: 5
+---
+
+Actionbase abstracts storage through a minimal interface called `Datastore`. Different backends can be integrated.
+
+## Required Operations
+
+A storage backend must support:
+
+| Operation      | Description                                |
+| -------------- | ------------------------------------------ |
+| get            | Retrieve value(s) by key(s)                |
+| delete         | Delete a value by key                      |
+| scan           | Range scan with prefix, start, stop, limit |
+| checkAndMutate | Atomic check-and-mutate for consistency    |
+| batch          | Batch mutations (optional, recommended)    |
+
+## Supported Backends
+
+### HBase
+
+Production backend. Distributed, scalable NoSQL on HDFS.
+
+| Characteristic         | Description                           |
+| ---------------------- | ------------------------------------- |
+| Horizontal Scalability | Shards data across nodes              |
+| Strong Durability      | Data replicated across nodes          |
+| Low-latency Access     | Optimized for random reads and writes |
+
+HBase requires expertise when used directly (row key design, region splitting, cluster management). Actionbase provides a higher-level abstraction with interaction-specific features (State/Index/Count).
+
+See [HBase Operations](/operations/hbase/).
+
+### Memory
+
+In-memory backend for development and testing.
+
+| Characteristic | Description               |
+| -------------- | ------------------------- |
+| Easy Setup     | No configuration required |
+| No Persistence | Data lost on server stop  |
+
+Ideal for local development and prototyping.
+
+## How Actionbase Uses Storage
+
+| Actionbase Operation | Storage Operation | Data Structure        |
+| -------------------- | ----------------- | --------------------- |
+| Get Query            | get               | EdgeState             |
+| Scan Query           | scan              | EdgeIndex             |
+| Count Query          | get               | EdgeCounter           |
+| Mutation (lock)      | checkAndMutate    | Lock                  |
+| Mutation (write)     | batch / put       | State, Index, Counter |
+| Mutation (cleanup)   | delete            | Old indexes           |
+
+## Choosing a Backend
+
+| Backend | Use Case    |
+| ------- | ----------- |
+| HBase   | Production  |
+| Memory  | Development |
+
+Lighter backends are planned for smaller deployments.
+
+## Next Steps
+
+- [Data Encoding](/internals/encoding/): How data is encoded
+- [HBase Operations](/operations/hbase/): HBase configuration

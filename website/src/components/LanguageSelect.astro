@@ -1,0 +1,60 @@
+---
+import { locales } from '../../astro.config.mjs';
+import { Icon } from '@astrojs/starlight/components';
+
+const { slug, lang } = Astro.locals.starlightRoute;
+const currentPath = lang === 'en' ? slug : slug.replace(`${lang}/`, '');
+
+const links = Object.entries(locales).map(([key]) => {
+  const isRoot = key === 'root';
+  const code = isRoot ? 'en' : key;
+  return {
+    code,
+    label: code.toUpperCase(),
+    href: isRoot ? `/${currentPath}/` : `/${key}/${currentPath}/`,
+    isCurrent: (isRoot && lang === 'en') || lang === key,
+  };
+});
+---
+
+<nav class="lang-select" aria-label="Language">
+  <Icon name="translate" class="icon" />
+  {links.map((l, i) => (
+    <>
+      {i > 0 && <span class="sep">/</span>}
+      {l.isCurrent ? (
+        <span class="current">{l.label}</span>
+      ) : (
+        <a href={l.href} hreflang={l.code}>{l.label}</a>
+      )}
+    </>
+  ))}
+</nav>
+
+<style>
+  .lang-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--sl-text-xs);
+    flex-shrink: 0;
+  }
+  .icon {
+    color: var(--sl-color-gray-4);
+  }
+  .sep {
+    color: var(--sl-color-gray-5);
+  }
+  .current {
+    color: var(--sl-color-white);
+    font-weight: 500;
+  }
+  a {
+    color: var(--sl-color-gray-3);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  a:hover {
+    color: var(--sl-color-text-accent);
+  }
+</style>

@@ -1,8 +1,9 @@
 package model
 
 import (
-	"fmt"
 	"regexp"
+
+	"github.com/kakao/actionbase/internal/util"
 )
 
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -18,7 +19,7 @@ func Success() *Response {
 }
 
 func SuccessWithResult(result string) *Response {
-	fmt.Println(result)
+	util.Println(result)
 	cleanResult := stripANSICodes(result)
 	return &Response{IsSuccess: true, Result: &cleanResult}
 }
@@ -28,7 +29,7 @@ func SuccessWithResultNoOut(result string) *Response {
 }
 
 func Fail(message string) *Response {
-	fmt.Println(message)
+	util.Println(message)
 	return &Response{IsSuccess: false, ErrorMessage: &message}
 }
 

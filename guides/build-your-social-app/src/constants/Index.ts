@@ -28,4 +28,3 @@ export const UI = {
   CAROUSEL_TRANSITION_DURATION: 300,
   REFRESH_DELAY: 100,
 } as const;
-

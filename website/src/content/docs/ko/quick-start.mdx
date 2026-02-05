@@ -1,0 +1,268 @@
+---
+title: 빠른 시작
+description: Actionbase를 실행하고 몇 분 만에 핵심 작업을 체험해보세요.
+hideOverview: true
+translated-by-kanana-2: true
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import { User, Package, ArrowRight, ArrowLeft } from '@lucide/astro';
+
+<img src="/images/quick-start/quickstart.svg" alt="Actionbase Quick Start Demo" />
+
+## 사전 요구사항 {#prerequisites}
+
+- Docker
+
+## Actionbase 실행 {#start-actionbase}
+
+```bash
+docker run -it ghcr.io/kakao/actionbase:standalone
+```
+
+이 명령은 서버를 백그라운드(port 8080)에서 실행하고, CLI는 포그라운드에서 실행합니다.
+
+```
+actionbase>
+```
+
+<Aside>
+  CLI는 내부적으로 REST API를 호출합니다. 명령 실행 시 만들어지는 HTTP 요청도 함께 확인할 수
+  있습니다.
+</Aside>
+
+## 데이터 쓰기 {#write-data}
+
+미리 준비된 샘플 데이터를 다음 프롬프트(`actionbase>`)에서 불러옵니다:
+
+```
+load preset likes
+```
+
+이 명령은 `likes` 데이터베이스/테이블을 생성하고 3개의 엣지를 삽입합니다:
+
+```
+  │ 3 edges inserted
+  │  - Alice → Phone
+  │  - Bob → Phone
+  │  - Bob → Laptop
+```
+
+```
+Alice --- likes ----> +--------+
+                      | Phone  |
+Bob ----- likes ----> +--------+
+      |
+      |               +--------+
+      +-- likes ----> | Laptop |
+                      +--------+
+```
+
+쓰기 시점에 Actionbase는 **모든 것을 미리 계산**합니다. 읽기용 카운트, 인덱스, 정렬 정보를 **양방향 모두** 미리 준비해두므로, 즉시 다음 쿼리를 실행할 수 있습니다.
+
+<div class="icon-rows">
+  <div class="icon-row">
+    "Bob이 좋아한 것은?" <User size={18} /> <ArrowRight size={18} /> <Package size={18} />{' '}
+    (direction: OUT)
+  </div>
+  <div class="icon-row">
+    "Phone을 좋아한 사람은?" <Package size={18} /> <ArrowLeft size={18} /> <User size={18} /> (방향:
+    IN)
+  </div>
+</div>
+
+카운트와 인덱스가 쓰기 시점에 이미 준비되어 있으므로, 쿼리 시점에는 추가 계산이 필요 없습니다.
+
+<details>
+<summary>REST API 예시</summary>
+
+> curl을 사용하려면 `-p 8080:8080` 옵션으로 실행하고, 다른 터미널에서 다음 명령을 실행하세요:
+>
+> ```bash
+> docker run -it -p 8080:8080 ghcr.io/kakao/actionbase:standalone
+> ```
+
+**서비스(데이터베이스) 생성**
+
+```bash
+curl -X POST "http://localhost:8080/graph/v2/service/likes" \
+  -H "Content-Type: application/json" \
+  -d '{"desc":"Likes"}'
+```
+
+**레이블(테이블) 생성**
+
+```bash
+curl -X POST "http://localhost:8080/graph/v2/service/likes/label/likes" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "desc":"Like",
+    "type":"INDEXED",
+    "schema":{
+      "src":{"type":"STRING"},
+      "tgt":{"type":"STRING"},
+      "fields":[{"name":"created_at","type":"LONG","nullable":false}]
+    },
+    "dirType":"BOTH",
+    "storage":"datastore://likes/likes",
+    "indices":[{"name":"recent","fields":[{"name":"created_at","order":"DESC"}]}]
+  }'
+```
+
+엣지 삽입
+
+```bash
+curl -X POST "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mutations":[
+      {"type":"INSERT","edge":{"version":1737377177245,"source":"Alice","target":"Phone","properties":{"created_at":1737377177245}}},
+      {"type":"INSERT","edge":{"version":1737377177297,"source":"Bob","target":"Phone","properties":{"created_at":1737377177297}}},
+      {"type":"INSERT","edge":{"version":1737377177350,"source":"Bob","target":"Laptop","properties":{"created_at":1737377177350}}}
+    ]
+  }'
+```
+
+</details>
+
+## 데이터 읽기 {#read-data}
+
+### 조회 {#get}
+
+특정 엣지가 존재하는지 확인:
+
+```
+get --source Alice --target Phone
+```
+
+```
+  │ The edge is found: [Alice -> Phone]
+  │ |---------------|--------|--------|---------------------------|
+  │ | VERSION       | SOURCE | TARGET | PROPERTIES                |
+  │ |---------------|--------|--------|---------------------------|
+  │ | 1737377177245 | Alice  | Phone  | created_at: 1737377177245 |
+  │ |---------------|--------|--------|---------------------------|
+```
+
+<details>
+<summary>REST API 대응</summary>
+
+```bash
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/get?source=Alice&target=Phone"
+```
+
+</details>
+
+### 스캔 {#scan}
+
+<div class="icon-row">
+  <strong>What did Bob like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
+  <Package size={18} /> (direction: OUT)
+</div>
+
+```
+scan --index recent --start Bob --direction OUT
+```
+
+```
+  │ The 2 edges found (offset: -, hasNext: false)
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | # | VERSION       | SOURCE | TARGET | PROPERTIES                |
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | 1 | 1737377177350 | Bob    | Laptop | created_at: 1737377177350 |
+  │ | 2 | 1737377177297 | Bob    | Phone  | created_at: 1737377177297 |
+  │ |---|---------------|--------|--------|---------------------------|
+```
+
+<div class="icon-row">
+  <strong>Who liked Phone?</strong> <Package size={18} /> <ArrowLeft size={18} /> <User size={18} />{' '}
+  (direction: IN)
+</div>
+
+```
+scan --index recent --start Phone --direction IN
+```
+
+```
+  │ The 2 edges found (offset: -, hasNext: false)
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | # | VERSION       | SOURCE | TARGET | PROPERTIES                |
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | 1 | 1737377177297 | Bob    | Phone  | created_at: 1737377177297 |
+  │ | 2 | 1737377177245 | Alice  | Phone  | created_at: 1737377177245 |
+  │ |---|---------------|--------|--------|---------------------------|
+```
+
+<Aside type="note">
+  두 방향 모두 쓰기 시점에 미리 계산됩니다. 추가 인덱스나 쿼리 오버헤드가 없습니다.**
+</Aside>
+
+<details>
+<summary>REST API 대응</summary>
+
+```bash
+# OUT {#out}
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/recent?start=Bob&direction=OUT"
+
+# IN {#in}
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/recent?start=Phone&direction=IN"
+```
+
+</details>
+
+### 카운트 {#count}
+
+<div class="icon-row">
+  <strong>How many items did Alice like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
+  <Package size={18} /> (direction: OUT)
+</div>
+
+```
+count --start Alice --direction OUT
+```
+
+```
+  │ |-------|-----------|-------|
+  │ | START | DIRECTION | COUNT |
+  │ |-------|-----------|-------|
+  │ | Alice | OUT       | 1     |
+  │ |-------|-----------|-------|
+```
+
+<div class="icon-row">
+  <strong>How many users liked Phone?</strong> <Package size={18} /> <ArrowLeft size={18} />{' '}
+  <User size={18} /> (direction: IN)
+</div>
+
+```
+count --start Phone --direction IN
+```
+
+```
+  │ |-------|-----------|-------|
+  │ | START | DIRECTION | COUNT |
+  │ |-------|-----------|-------|
+  │ | Phone | IN        | 2     |
+  │ |-------|-----------|-------|
+```
+
+<Aside type="note">카운트는 쓰기 시점에 미리 계산됩니다. 집계가 필요하지 않습니다.</Aside>
+
+<details>
+<summary>REST API 대응</summary>
+
+```bash
+# OUT {#out}
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/count?start=Alice&direction=OUT"
+
+# IN {#in}
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/count?start=Phone&direction=IN"
+```
+
+</details>
+
+## 다음 단계 {#next-steps}
+
+- [핵심 개념](/ko/design/concepts/) — Actionbase 동작 방식
+- [소셜 미디어 앱 만들기](/ko/guides/build-your-social-media-app/) — 실습 가이드
+- [CLI 참조](/ko/operations/cli/) — 전체 CLI 문서

@@ -36,6 +36,9 @@ public class LabelDTO implements Serializable {
   @JsonProperty("indices")
   final List<Index> indices;
 
+  @JsonProperty("groups")
+  final List<Group> groups;
+
   @JsonProperty("event")
   final boolean event;
 
@@ -56,6 +59,7 @@ public class LabelDTO implements Serializable {
       @JsonProperty("dirType") DirectionType dirType,
       @JsonProperty("storage") String storage,
       @JsonProperty("indices") List<Index> indices,
+      @JsonProperty("groups") List<Group> groups,
       @JsonProperty("event") boolean event,
       @JsonProperty("readOnly") boolean readOnly,
       @JsonProperty("mode") MutationMode mode) {
@@ -66,6 +70,7 @@ public class LabelDTO implements Serializable {
     this.dirType = dirType;
     this.storage = storage;
     this.indices = indices;
+    this.groups = groups;
     this.event = event;
     this.readOnly = readOnly;
     this.mode = mode;
@@ -74,7 +79,8 @@ public class LabelDTO implements Serializable {
   }
 
   public LabelDTO copy(String name, String storage) {
-    return new LabelDTO(name, desc, type, schema, dirType, storage, indices, event, readOnly, mode);
+    return new LabelDTO(
+        name, desc, type, schema, dirType, storage, indices, groups, event, readOnly, mode);
   }
 
   public String getName() {
@@ -103,6 +109,10 @@ public class LabelDTO implements Serializable {
 
   public List<Index> getIndices() {
     return indices;
+  }
+
+  public List<Group> getGroups() {
+    return groups;
   }
 
   public boolean isEvent() {

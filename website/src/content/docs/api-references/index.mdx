@@ -1,0 +1,27 @@
+---
+title: REST API
+description: Actionbase REST API reference
+sidebar:
+  order: 0
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Actionbase provides REST APIs for metadata management, mutations, and queries.
+
+## Base URL
+
+- Local: `http://localhost:8080`
+- Deployed: your server URL (e.g., `http://ab.example.com`)
+
+## Authentication
+
+Internally, Actionbase uses a custom authentication system. We abstracted it via `CustomTokenFilter` interface, but weren't confident the implementation was ready for public release due to security considerations. Given the time available, we focused on documentation and developer experience, leaving the interface without a default implementation. The `Authorization` header is accepted but not validated—any value works, or omit it entirely.
+
+As we continue documenting production operations, we plan to provide authentication support as well.
+
+## APIs
+
+- [Metadata API](/api-references/metadata/) — Manage services, labels, aliases, and queries (v2)
+- [Mutation API](/api-references/mutation/) — Create, update, and delete edges (v3)
+- [Query API](/api-references/query/) — Query edges by count, scan, or get (v3)

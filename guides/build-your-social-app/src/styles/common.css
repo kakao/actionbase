@@ -125,7 +125,9 @@ body {
   background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   padding: 0;
-  transition: background var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .indicator.active {
@@ -135,4 +137,26 @@ body {
 
 .indicator:hover {
   background: rgba(255, 255, 255, 0.8);
+}
+
+/* Utility class to hide scrollbars while maintaining scroll functionality */
+.hide-scrollbar,
+.mobile-content,
+.mobile-content .app,
+.stories-container,
+.feed-scroll,
+.mobile-content-inner-scroll,
+.search-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar,
+.mobile-content::-webkit-scrollbar,
+.mobile-content .app::-webkit-scrollbar,
+.stories-container::-webkit-scrollbar,
+.feed-scroll::-webkit-scrollbar,
+.mobile-content-inner-scroll::-webkit-scrollbar,
+.search-scroll::-webkit-scrollbar {
+  display: none;
 }

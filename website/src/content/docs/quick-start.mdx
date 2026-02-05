@@ -1,329 +1,264 @@
 ---
 title: Quick Start
-description: Run Actionbase locally and define your first interactions.
+description: Run Actionbase and try core operations in minutes.
+hideOverview: true
 ---
 
-import { Aside, Steps, Badge } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
+import { User, Package, ArrowRight, ArrowLeft } from '@lucide/astro';
 
-<Aside>
-    This guide assumes a local, in-memory setup for quick evaluation.
-</Aside>
+<img src="/images/quick-start/quickstart.svg" alt="Actionbase Quick Start Demo" />
 
 ## Prerequisites
 
-- Java 17
+- Docker
 
 ## Start Actionbase
 
-Clone the repository and start the server:
+```bash
+docker run -it ghcr.io/kakao/actionbase:standalone
+```
+
+This runs the server in the background (port 8080) and the CLI in the foreground.
+
+```
+actionbase>
+```
+
+<Aside>The CLI calls REST API internally. Commands show the HTTP requests being made.</Aside>
+
+## Write Data
+
+Load sample data using a preset (at `actionbase>` prompt):
+
+```
+load preset likes
+```
+
+This creates a `likes` database/table and inserts 3 edges:
+
+```
+  │ 3 edges inserted
+  │  - Alice → Phone
+  │  - Bob → Phone
+  │  - Bob → Laptop
+```
+
+```
+Alice --- likes ----> +--------+
+                      | Phone  |
+Bob ----- likes ----> +--------+
+      |
+      |               +--------+
+      +-- likes ----> | Laptop |
+                      +--------+
+```
+
+At write time, Actionbase **precomputes everything** for reads—counts, indexes, ordering for **both directions**. This means you can instantly query:
+
+<div class="icon-rows">
+  <div class="icon-row">
+    "What did Bob like?" <User size={18} /> <ArrowRight size={18} /> <Package size={18} />{' '}
+    (direction: OUT)
+  </div>
+  <div class="icon-row">
+    "Who liked Phone?" <Package size={18} /> <ArrowLeft size={18} /> <User size={18} /> (direction:
+    IN)
+  </div>
+</div>
+
+Counts and indexes ready at write time—no computation at query time.
+
+<details>
+<summary>REST API equivalent</summary>
+
+> To use curl, run with `-p 8080:8080` and use another terminal:
+>
+> ```bash
+> docker run -it -p 8080:8080 ghcr.io/kakao/actionbase:standalone
+> ```
+
+**Create service (database)**
 
 ```bash
-git clone https://github.com/kakao/actionbase.git
-cd actionbase
-./gradlew :server:bootRun
+curl -X POST "http://localhost:8080/graph/v2/service/likes" \
+  -H "Content-Type: application/json" \
+  -d '{"desc":"Likes"}'
+```
+
+**Create label (table)**
+
+```bash
+curl -X POST "http://localhost:8080/graph/v2/service/likes/label/likes" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "desc":"Like",
+    "type":"INDEXED",
+    "schema":{
+      "src":{"type":"STRING"},
+      "tgt":{"type":"STRING"},
+      "fields":[{"name":"created_at","type":"LONG","nullable":false}]
+    },
+    "dirType":"BOTH",
+    "storage":"datastore://likes/likes",
+    "indices":[{"name":"recent","fields":[{"name":"created_at","order":"DESC"}]}]
+  }'
+```
+
+**Insert edges**
+
+```bash
+curl -X POST "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mutations":[
+      {"type":"INSERT","edge":{"version":1737377177245,"source":"Alice","target":"Phone","properties":{"created_at":1737377177245}}},
+      {"type":"INSERT","edge":{"version":1737377177297,"source":"Bob","target":"Phone","properties":{"created_at":1737377177297}}},
+      {"type":"INSERT","edge":{"version":1737377177350,"source":"Bob","target":"Laptop","properties":{"created_at":1737377177350}}}
+    ]
+  }'
+```
+
+</details>
+
+## Read Data
+
+### Get
+
+Check if a specific edge exists:
+
+```
+get --source Alice --target Phone
 ```
 
 ```
-    _        _   _             _
-   / \   ___| |_(_) ___  _ __ | |__   __ _ ___  ___
-  / _ \ / __| __| |/ _ \| '_ \| '_ \ / _` / __|/ _ \
- / ___ \ (__| |_| | (_) | | | | |_) | (_| \__ \  __/
-/_/   \_\___|\__|_|\___/|_| |_|_.__/ \__,_|___/\___| (0.0.1-SNAPSHOT, ...................)
-
-* Java: 17.0.13
-* Tenant: ab-none
-* startUp: ...................
-* activeProfiles: default
-* Datastore: MEMORY {}
+  │ The edge is found: [Alice -> Phone]
+  │ |---------------|--------|--------|---------------------------|
+  │ | VERSION       | SOURCE | TARGET | PROPERTIES                |
+  │ |---------------|--------|--------|---------------------------|
+  │ | 1737377177245 | Alice  | Phone  | created_at: 1737377177245 |
+  │ |---------------|--------|--------|---------------------------|
 ```
 
-> ✅ The server is now running at `http://localhost:8080` and ready to accept requests.
+<details>
+<summary>REST API equivalent</summary>
 
-> ℹ️ `bootRun` runs in the foreground. Use another terminal for the next steps.
+```bash
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/get?source=Alice&target=Phone"
+```
 
-## Define metadata
+</details>
 
-> <Badge text="Note" variant="caution" />
-> Metadata management currently uses **v2 APIs** (service / label),
-> while data read & write operations use **v3 APIs** (database / table).
+### Scan
 
-Before writing any interaction data, you must define its schema and indexes using metadata APIs. In Actionbase, interactions are stored as edges in a graph model. Create a service and label to define the structure of your edges.
+<div class="icon-row">
+  <strong>What did Bob like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
+  <Package size={18} /> (direction: OUT)
+</div>
 
-<Steps>
+```
+scan --index recent --start Bob --direction OUT
+```
 
-1. **Create a service**
+```
+  │ The 2 edges found (offset: -, hasNext: false)
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | # | VERSION       | SOURCE | TARGET | PROPERTIES                |
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | 1 | 1737377177350 | Bob    | Laptop | created_at: 1737377177350 |
+  │ | 2 | 1737377177297 | Bob    | Phone  | created_at: 1737377177297 |
+  │ |---|---------------|--------|--------|---------------------------|
+```
 
-   Create a namespace for grouping labels. In this guide, we use `awesome` as an example service name. See [Metadata API Reference](/api-references/metadata/#13-create-service) for details.
+<div class="icon-row">
+  <strong>Who liked Phone?</strong> <Package size={18} /> <ArrowLeft size={18} /> <User size={18} />{' '}
+  (direction: IN)
+</div>
 
-   ```bash
-   curl -X POST "http://localhost:8080/graph/v2/service/awesome" \
-     -H "Content-Type: application/json" \
-     -d '{"desc":"Sample"}'
-   ```
+```
+scan --index recent --start Phone --direction IN
+```
 
-   Expected response:
+```
+  │ The 2 edges found (offset: -, hasNext: false)
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | # | VERSION       | SOURCE | TARGET | PROPERTIES                |
+  │ |---|---------------|--------|--------|---------------------------|
+  │ | 1 | 1737377177297 | Bob    | Phone  | created_at: 1737377177297 |
+  │ | 2 | 1737377177245 | Alice  | Phone  | created_at: 1737377177245 |
+  │ |---|---------------|--------|--------|---------------------------|
+```
 
-   ```json
-   {
-     "status": "CREATED",
-     "result": {
-       "active": true,
-       "name": "awesome",
-       "desc": "Sample"
-     }
-   }
-   ```
+<Aside type="note">
+  Both directions are precomputed at write time. No additional indexing or query overhead.
+</Aside>
 
-2. **Create a label**
+<details>
+<summary>REST API equivalent</summary>
 
-   Define the edge schema (source, target, properties) and indexes. See [Metadata API Reference](/api-references/metadata/#23-create-label) for details.
+```bash
+# OUT
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/recent?start=Bob&direction=OUT"
 
-   Key fields:
-   - `src`, `tgt`: source and target node IDs
-   - `fields`: edge properties
-   - `indices`: used for ordered scans
+# IN
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/recent?start=Phone&direction=IN"
+```
 
-   ```bash
-   curl -X POST "http://localhost:8080/graph/v2/service/awesome/label/likes" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "desc":"Like",
-       "type":"INDEXED",
-       "schema":{
-         "src":{"type":"STRING"},
-         "tgt":{"type":"STRING"},
-         "fields":[{"name":"created_at","type":"LONG","nullable":false}]
-       },
-       "dirType":"BOTH",
-       "storage":"datastore://awesome/likes",
-       "indices":[{"name":"created_at_desc","fields":[{"name":"created_at","order":"DESC"}]}]
-     }'
-   ```
+</details>
 
-   Expected response:
+### Count
 
-   ```json
-   {
-     "status": "CREATED",
-     "result": {
-       "active": true,
-       "name": "awesome.likes",
-       "desc": "Like",
-       "type": "INDEXED",
-       "schema": {
-         "src": {"type": "STRING", "desc": ""},
-         "tgt": {"type": "STRING", "desc": ""},
-         "fields": [{"name": "created_at", "type": "LONG", "nullable": false, "desc": ""}]
-       },
-       "dirType": "BOTH",
-       "storage": "datastore://awesome/likes",
-       "groups": [],
-       "indices": [{
-         "name": "created_at_desc",
-         "fields": [{"name": "created_at", "order": "DESC"}],
-         "desc": ""
-       }],
-       "event": false,
-       "readOnly": false,
-       "mode": "SYNC"
-     }
-   }
-   ```
+<div class="icon-row">
+  <strong>How many items did Alice like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
+  <Package size={18} /> (direction: OUT)
+</div>
 
-</Steps>
+```
+count --start Alice --direction OUT
+```
 
-## Write edges
+```
+  │ |-------|-----------|-------|
+  │ | START | DIRECTION | COUNT |
+  │ |-------|-----------|-------|
+  │ | Alice | OUT       | 1     |
+  │ |-------|-----------|-------|
+```
 
-Insert interaction edges to record user actions.
+<div class="icon-row">
+  <strong>How many users liked Phone?</strong> <Package size={18} /> <ArrowLeft size={18} />{' '}
+  <User size={18} /> (direction: IN)
+</div>
 
-<Steps>
+```
+count --start Phone --direction IN
+```
 
-1. **Insert edges**
+```
+  │ |-------|-----------|-------|
+  │ | START | DIRECTION | COUNT |
+  │ |-------|-----------|-------|
+  │ | Phone | IN        | 2     |
+  │ |-------|-----------|-------|
+```
 
-   Record user actions as edges. See [Mutation API Reference](/api-references/mutation/#1-edge-mutation) for details.
+<Aside type="note">Counts are precomputed at write time. No aggregation needed.</Aside>
 
-   Key fields:
-   - `version`: edge version used for concurrency control and out-of-order event handling
-   - `created_at`: application-level timestamp stored as a property
+<details>
+<summary>REST API equivalent</summary>
 
-   In this example, we use the same timestamp for both `version` and `created_at` for simplicity. Use the timestamp when the user performed the action. See [FAQ - How does Actionbase handle out-of-order events?](/faq/#how-does-actionbase-handle-out-of-order-events) for details.
+```bash
+# OUT
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/count?start=Alice&direction=OUT"
 
-   ```mermaid
-   graph LR
-       Alice((Alice)) -->|likes| Phone((📱 Phone))
-       Alice -->|likes| Laptop((💻 Laptop))
-       Bob((Bob)) -->|likes| Phone
-   ```
+# IN
+curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/count?start=Phone&direction=IN"
+```
 
-   ```bash
-   curl -X POST "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "mutations":[
-         {"type":"INSERT","edge":{"version":1767571200000,"source":"Alice","target":"Phone","properties":{"created_at":1767571200000}}},
-         {"type":"INSERT","edge":{"version":1767571200000,"source":"Alice","target":"Laptop","properties":{"created_at":1767571200000}}},
-         {"type":"INSERT","edge":{"version":1767571200000,"source":"Bob","target":"Phone","properties":{"created_at":1767571200000}}}
-       ]
-     }'
-   ```
+</details>
 
-   Expected response:
+## Next Steps
 
-   ```json
-   {
-     "results": [
-       {"source": "Alice", "target": "Laptop", "status": "CREATED", "count": 1},
-       {"source": "Alice", "target": "Phone", "status": "CREATED", "count": 1},
-       {"source": "Bob", "target": "Phone", "status": "CREATED", "count": 1}
-     ]
-   }
-   ```
-
-</Steps>
-
-## Read edges
-
-Query edges using get, scan, and count operations.
-
-<Steps>
-
-1. **Get**
-
-   Retrieve a specific edge by source and target. See [Query API Reference](/api-references/query/#2-get) for details.
-
-   ```bash
-   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/get?source=Alice&target=Phone"
-   ```
-
-   Expected response:
-
-   ```json
-   {
-     "edges": [{
-       "version": 1767571200000,
-       "source": "Alice",
-       "target": "Phone",
-       "properties": {"created_at": 1767571200000},
-       "context": {}
-     }],
-     "count": 1,
-     "total": 1,
-     "offset": null,
-     "hasNext": false,
-     "context": {}
-   }
-   ```
-
-2. **Scan (Out)**
-
-   List outgoing edges from a source, ordered by index. See [Query API Reference](/api-references/query/#3-scan) for details.
-
-   ```bash
-   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/scan/created_at_desc?start=Alice&direction=OUT"
-   ```
-
-   Expected response:
-
-   ```json
-   {
-     "edges": [
-       {
-         "version": 1767571200000,
-         "source": "Alice",
-         "target": "Laptop",
-         "properties": {"created_at": 1767571200000},
-         "context": {}
-       },
-       {
-         "version": 1767571200000,
-         "source": "Alice",
-         "target": "Phone",
-         "properties": {"created_at": 1767571200000},
-         "context": {}
-       }
-     ],
-     "count": 2,
-     "total": -1,
-     "offset": null,
-     "hasNext": false,
-     "context": {}
-   }
-   ```
-
-3. **Scan (In)**
-
-   List incoming edges to a target, ordered by index. See [Query API Reference](/api-references/query/#3-scan) for details.
-
-   ```bash
-   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/scan/created_at_desc?start=Phone&direction=IN"
-   ```
-
-   Expected response:
-
-   ```json
-   {
-     "edges": [
-       {
-         "version": 1767571200000,
-         "source": "Alice",
-         "target": "Phone",
-         "properties": {"created_at": 1767571200000},
-         "context": {}
-       },
-       {
-         "version": 1767571200000,
-         "source": "Bob",
-         "target": "Phone",
-         "properties": {"created_at": 1767571200000},
-         "context": {}
-       }
-     ],
-     "count": 2,
-     "total": -1,
-     "offset": null,
-     "hasNext": false,
-     "context": {}
-   }
-   ```
-
-4. **Count**
-
-   Count edges for a specific direction. See [Query API Reference](/api-references/query/#1-count) for details.
-
-   ```bash
-   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/count?start=Alice&direction=OUT"
-   ```
-
-   Expected response:
-
-   ```json
-   {
-     "start": "Alice",
-     "direction": "OUT",
-     "count": 2,
-     "context": {}
-   }
-   ```
-
-   Count incoming edges:
-
-   ```bash
-   curl -X GET "http://localhost:8080/graph/v3/databases/awesome/tables/likes/edges/count?start=Phone&direction=IN"
-   ```
-
-   Expected response:
-
-   ```json
-   {
-     "start": "Phone",
-     "direction": "IN",
-     "count": 2,
-     "context": {}
-   }
-   ```
-
-</Steps>
-
-## Stop Actionbase
-
-Terminate the `bootRun` process (Ctrl+C) to stop the server.
+- [Core Concepts](/design/concepts/) — How Actionbase works
+- [Build Your Social Media App](/guides/build-your-social-media-app/) — Hands-on guide
+- [CLI Reference](/operations/cli/) — Full CLI documentation

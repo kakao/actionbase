@@ -1,40 +1,86 @@
-import React, {createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import {driver, Driver} from "driver.js";
-import "driver.js/dist/driver.css";
-import {useNavigate} from "react-router-dom";
-import {useToast} from "./ToastContext";
-import {DESCRIPTION, TITLE} from "../constants/breadCrumbSteps";
-import {ButtonEvent, StepEvent, stepNextEvent, stepPrevEvent, stepVerifiers} from "../constants/driverSteps";
-
-export const STEP = {
-  NEXT: 'next',
-  PREV: 'prev',
-  CLOSE: 'close',
-  RELOAD: 'reload'
-}
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { driver, Driver, DriveStep } from 'driver.js';
+import 'driver.js/dist/driver.css';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from './ToastContext';
+import { run } from '../api/cli';
+import {
+  getNextNavigation,
+  getPrevNavigation,
+  getStepCommand,
+  getStepConfig,
+  getStepVerifier,
+  STEP,
+  stepsConfig,
+} from '../constants/stepsConfig';
+import {
+  getAnalyticsChoice,
+  initAnalytics,
+  loadUmamiScript,
+  setAnalyticsChoice,
+  clearAnalyticsChoice,
+} from '../utils/analytics';
+import {
+  getStorageItem,
+  getStorageNumber,
+  removeStorageItem,
+  setStorageItem,
+  setStorageNumber,
+  STORAGE_KEYS,
+} from '../utils/storage';
 
 const BUTTON_TEXT = {
-  PREV: "< prev",
-  NEXT: "next >"
+  NEXT: 'next ↵',
+};
+
+const TOAST_DURATION = 1700;
+
+export interface CommandHistory {
+  prompt: string;
+  content?: string;
+  result?: string;
+  stepIndex?: number;
 }
 
-const TOAST_DURATION = 1700
+interface TerminalContext {
+  database?: string;
+}
 
 interface DriverContextType {
   stepIndex: number;
-  setStepIndex: React.Dispatch<React.SetStateAction<number>>;
-  moveNext: () => void;
-  buttonEvent: ButtonEvent | undefined,
+
+  currentCommand: CommandHistory | null;
+  commandHistory: CommandHistory[];
+  terminalContext: TerminalContext;
+  isExecuting: boolean;
+
+  executeCommand: () => Promise<void>;
+  resetStep: () => void;
 }
 
 const DriverContext = createContext<DriverContextType | null>(null);
+
+const PROMPT_PREFIX = 'actionbase';
+
+const formatPrompt = (database?: string) => {
+  return database ? `${PROMPT_PREFIX}(${database})` : PROMPT_PREFIX;
+};
 
 const waitForElement = (selector: string[], timeout = 3000): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
     const selectors = Array.isArray(selector) ? selector : [selector];
 
     const checkSelectors = () => {
-      return selectors.some(sel => document.querySelector(sel) !== null);
+      return selectors.some((sel) => document.querySelector(sel) !== null);
     };
 
     if (checkSelectors()) {
@@ -48,7 +94,7 @@ const waitForElement = (selector: string[], timeout = 3000): Promise<void> => {
         resolve();
       }
     });
-    observer.observe(document.body, {childList: true, subtree: true});
+    observer.observe(document.body, { childList: true, subtree: true });
     setTimeout(() => {
       observer.disconnect();
       reject();
@@ -59,446 +105,523 @@ const waitForElement = (selector: string[], timeout = 3000): Promise<void> => {
 export const useDriver = () => {
   const context = useContext(DriverContext);
   if (!context) {
-    throw new Error("useDriver must be used within DriverProvider");
+    throw new Error('useDriver must be used within DriverProvider');
   }
   return context;
 };
 
-export const DriverProvider: React.FC<{ children: ReactNode }> = ({children}) => {
-  const navigate = useNavigate();
-  const {showToast} = useToast();
+export const STEP_INDEX_STORAGE_KEY = STORAGE_KEYS.STEP_INDEX;
 
-  const [stepIndex, setStepIndex] = useState(0);
-  const [buttonEvent, setButtonEvent] = useState<ButtonEvent | undefined>(undefined);
+export { STEP };
+
+const getStoredStepIndex = (): number => getStorageNumber(STORAGE_KEYS.STEP_INDEX, 0);
+const getStoredCommandHistory = (): CommandHistory[] =>
+  getStorageItem<CommandHistory[]>(STORAGE_KEYS.COMMAND_HISTORY, []);
+const getStoredTerminalContext = (): TerminalContext =>
+  getStorageItem<TerminalContext>(STORAGE_KEYS.TERMINAL_CONTEXT, {});
+
+export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  const [stepIndex, setStepIndex] = useState(getStoredStepIndex);
+  const [currentCommand, setCurrentCommand] = useState<CommandHistory | null>(null);
+  const [commandHistory, setCommandHistory] = useState<CommandHistory[]>(getStoredCommandHistory);
+  const [terminalContext, setTerminalContext] = useState<TerminalContext>(getStoredTerminalContext);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [showRestartNotice, setShowRestartNotice] = useState(() => {
+    const notice = getStorageItem<string>(STORAGE_KEYS.RESTART_NOTICE, '');
+    if (notice === 'true') {
+      removeStorageItem(STORAGE_KEYS.RESTART_NOTICE);
+      return true;
+    }
+    return false;
+  });
 
   const driverObj = useRef<Driver | null>(null);
-  const setButtonEventRef = useRef(setButtonEvent);
   const showToastRef = useRef(showToast);
+  const currentCommandRef = useRef(currentCommand);
+  const isInitializedRef = useRef(false);
 
-  const onMoveAfter = useCallback(
-    (type: string, stepEvents: Map<number, StepEvent>, eventType: string | undefined = undefined, stepIndex: number | undefined = undefined, timeout: number = 100) => {
-      if (!(type === STEP.NEXT || type === STEP.PREV || type === STEP.RELOAD)) {
-        console.error('Unsupported eventType:', type);
-        return;
-      }
+  useEffect(() => {
+    setStorageNumber(STORAGE_KEYS.STEP_INDEX, stepIndex);
+  }, [stepIndex]);
 
-      return async () => {
-        if (driverObj.current) {
+  // Initialize analytics on mount if user already opted in
+  useEffect(() => {
+    initAnalytics();
+  }, []);
 
-          let currentIndex = stepIndex;
-          if (!currentIndex) {
-            currentIndex = driverObj.current.getActiveIndex();
-            if (!currentIndex) {
-              console.error('Failed to get active index');
-              return;
-            }
-          }
+  // Handle analytics consent and advance from step 0
+  const handleAnalyticsStart = useCallback((enableAnalytics: boolean) => {
+    if (!driverObj.current) return;
 
-          if (type === STEP.NEXT) {
-            if (!await isStepValid(currentIndex)) {
-              showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION);
-              return;
-            }
-          }
-
-          setButtonEvent({type: type})
-
-          const stepEvent = stepEvents.get(currentIndex);
-          if (!stepEvent) {
-            console.error('Failed to get target stepEvent');
-            return;
-          }
-
-          if (stepEvent.to) {
-            navigate(stepEvent.to);
-          }
-
-          const indexToDrive = type === STEP.NEXT ? currentIndex + 1 : currentIndex - 1;
-          if (eventType) {
-            window.dispatchEvent(new CustomEvent(eventType, {detail: {nextIndex: indexToDrive}}));
-          }
-
-          if (stepEvent.target) {
-            try {
-              await waitForElement(stepEvent.target);
-              await new Promise(r => setTimeout(r, timeout));
-            } catch (error) {
-              console.error('Failed to find target elements');
-            }
-          }
-
-          driverObj.current.drive(indexToDrive);
-          setStepIndex(indexToDrive)
-        }
-      }
-    }, [navigate, buttonEvent, setStepIndex]);
-
-  const moveNext = useCallback(async () => {
-    setButtonEvent({type: STEP.NEXT})
-
-    if (driverObj.current) {
-      const activeIndex = driverObj.current.getActiveIndex()
-      if (activeIndex !== undefined) {
-        if (!await isStepValid(activeIndex)) {
-          showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION)
-          const movePrev = onMoveAfter(STEP.RELOAD, stepPrevEvent, 'render', activeIndex + 1);
-          if (movePrev) {
-            await movePrev();
-          }
-          return;
-        }
-      }
-
-      const activeStep = driverObj.current.getActiveStep();
-      if (activeStep?.popover?.onNextClick) {
-        const element = activeStep.element as HTMLElement
-        if (element) {
-          activeStep.popover.onNextClick(element, activeStep,
-            {
-              config: driverObj.current.getConfig(),
-              state: driverObj.current.getState(),
-              driver: driverObj.current
-            });
-        }
-      }
+    setAnalyticsChoice(enableAnalytics ? 'yes' : 'no');
+    if (enableAnalytics) {
+      loadUmamiScript();
     }
-  }, [buttonEvent]);
 
-  const isStepValid = async (stepIndex: number) => {
-    const stepVerifier = stepVerifiers.get(stepIndex)
+    // Advance to step 1
+    setStepIndex(1);
+    driverObj.current.drive(1);
+  }, []);
+
+  useEffect(() => {
+    showToastRef.current = showToast;
+  }, [showToast]);
+
+  useEffect(() => {
+    currentCommandRef.current = currentCommand;
+  }, [currentCommand]);
+
+  useEffect(() => {
+    setStorageItem(STORAGE_KEYS.COMMAND_HISTORY, commandHistory);
+  }, [commandHistory]);
+
+  useEffect(() => {
+    setStorageItem(STORAGE_KEYS.TERMINAL_CONTEXT, terminalContext);
+  }, [terminalContext]);
+
+  const isStepValid = useCallback(async (index: number) => {
+    const stepVerifier = getStepVerifier(index);
     if (!stepVerifier) {
       return true;
     }
 
     try {
-      return await stepVerifier()
+      return await stepVerifier();
     } catch (err) {
       return false;
     }
-  }
+  }, []);
 
-  useEffect(() => {
-    setButtonEventRef.current = setButtonEvent;
-    showToastRef.current = showToast;
-  }, [setButtonEvent, showToast]);
+  const setCommandForStep = useCallback(
+    (targetIndex: number) => {
+      const stepCommand = getStepCommand(targetIndex);
+
+      if (stepCommand) {
+        const prompt = formatPrompt(terminalContext.database);
+        setCurrentCommand({
+          prompt,
+          content: stepCommand.content,
+          stepIndex: targetIndex,
+        });
+      } else {
+        setCurrentCommand(null);
+      }
+    },
+    [terminalContext.database]
+  );
+
+  const clearCurrentCommand = useCallback((addToHistory: boolean = true) => {
+    const command = currentCommandRef.current;
+    if (command && addToHistory) {
+      // Add unexecuted command to history (without result)
+      setCommandHistory((prev) => [...prev, command]);
+    }
+    setCurrentCommand(null);
+  }, []);
+
+  const executeCommand = useCallback(async () => {
+    if (!currentCommand?.content || isExecuting) return;
+
+    setIsExecuting(true);
+
+    try {
+      // Check if mutation step is already completed (verifier passes)
+      const stepConfig = getStepConfig(currentCommand.stepIndex!);
+      if (stepConfig?.command?.skipIfDone) {
+        const stepVerifier = getStepVerifier(currentCommand.stepIndex!);
+        if (stepVerifier) {
+          try {
+            const alreadyDone = await stepVerifier();
+            if (alreadyDone) {
+              // Skip execution, show "already done" message
+              const result = '<p class="command-result success">✓ Already done</p>';
+              setCommandHistory((prev) => [...prev, { ...currentCommand, result }]);
+              setCurrentCommand(null);
+              currentCommandRef.current = null;
+
+              if (driverObj.current) {
+                const activeStep = driverObj.current.getActiveStep();
+                if (activeStep?.popover?.onNextClick) {
+                  const element = activeStep.element as HTMLElement;
+                  activeStep.popover.onNextClick(element || undefined, activeStep, {
+                    config: driverObj.current.getConfig(),
+                    state: driverObj.current.getState(),
+                    driver: driverObj.current,
+                  });
+                }
+              }
+              return;
+            }
+          } catch {
+            // Verifier failed, proceed with execution
+          }
+        }
+      }
+
+      const normalizedCommand = currentCommand.content.replaceAll('\\\n', '');
+      let result: string;
+
+      try {
+        const response = await run({ command: normalizedCommand });
+
+        if (response.error) {
+          result = `<p class="command-result error">${response.error}</p>`;
+        } else if (response.result) {
+          result = `<p class="command-result">${response.result}</p>`;
+        } else {
+          result = response.success
+            ? '<p class="command-result success">✓ Success</p>'
+            : '<p class="command-result error">Failed</p>';
+        }
+      } catch (err: any) {
+        console.error('Failed to execute command:', err);
+        result = `<p class="command-result error">${err.responseData?.error || err.message || 'Failed to execute command'}</p>`;
+      }
+
+      // Add executed command to history with result
+      setCommandHistory((prev) => [...prev, { ...currentCommand, result }]);
+
+      // Update terminal context if command changes it
+      if (stepConfig?.command?.context?.database) {
+        setTerminalContext({ database: stepConfig.command.context.database });
+      }
+
+      if (stepConfig?.command?.reload) {
+        window.dispatchEvent(new CustomEvent('reload'));
+      }
+
+      // Clear current command
+      setCurrentCommand(null);
+      currentCommandRef.current = null;
+
+      if (driverObj.current) {
+        const activeStep = driverObj.current.getActiveStep();
+        if (activeStep?.popover?.onNextClick) {
+          const element = activeStep.element as HTMLElement;
+          activeStep.popover.onNextClick(element || undefined, activeStep, {
+            config: driverObj.current.getConfig(),
+            state: driverObj.current.getState(),
+            driver: driverObj.current,
+          });
+        }
+      }
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [currentCommand, isExecuting]);
+
+  const navigateToStep = useCallback(
+    async (type: typeof STEP.NEXT | typeof STEP.PREV, currentIndex: number) => {
+      if (!driverObj.current) return;
+
+      // For NEXT: if there's a command to execute, click the run button
+      if (type === STEP.NEXT) {
+        const runButton = document.getElementById('run-command-btn');
+        if (runButton && currentCommandRef.current?.content) {
+          runButton.click();
+          return;
+        }
+
+        if (!(await isStepValid(currentIndex))) {
+          showToastRef.current(
+            'Please complete the current step before proceeding.',
+            'warning',
+            TOAST_DURATION
+          );
+          return;
+        }
+      }
+
+      const getNavConfig = type === STEP.NEXT ? getNextNavigation : getPrevNavigation;
+      const navConfig = getNavConfig(currentIndex);
+
+      if (!navConfig) {
+        console.error('Failed to get navigation config for step', currentIndex);
+        return;
+      }
+
+      const targetIndex = type === STEP.NEXT ? currentIndex + 1 : currentIndex - 1;
+
+      if (currentIndex === 0 && type === STEP.NEXT) {
+        setShowRestartNotice(false);
+      }
+
+      if (currentCommand) {
+        clearCurrentCommand(true);
+      }
+
+      // Navigate route if needed
+      if (navConfig.to) {
+        navigate(navConfig.to);
+      }
+
+      // Set command for target step
+      setCommandForStep(targetIndex);
+
+      // Wait for elements if needed
+      if (navConfig.waitFor && navConfig.waitFor.length > 0) {
+        try {
+          await waitForElement(navConfig.waitFor);
+          await new Promise((r) => setTimeout(r, 100));
+        } catch (error) {
+          console.error('Failed to find target elements');
+          return;
+        }
+      }
+
+      // Drive to target step
+      driverObj.current.drive(targetIndex);
+      setStepIndex(targetIndex);
+    },
+    [isStepValid, currentCommand, clearCurrentCommand, setCommandForStep, navigate]
+  );
+
+  const createNavigationHandler = useCallback(
+    (type: typeof STEP.NEXT | typeof STEP.PREV) => {
+      return async () => {
+        if (!driverObj.current) return;
+
+        let currentIndex = driverObj.current.getActiveIndex();
+        if (currentIndex === undefined) {
+          currentIndex = getStoredStepIndex();
+        }
+        if (currentIndex === undefined) {
+          console.error('Failed to get active index');
+          return;
+        }
+
+        await navigateToStep(type, currentIndex);
+      };
+    },
+    [navigateToStep]
+  );
+
+  const resetStep = useCallback(() => {
+    removeStorageItem(STORAGE_KEYS.STEP_INDEX);
+    removeStorageItem(STORAGE_KEYS.COMMAND_HISTORY);
+    removeStorageItem(STORAGE_KEYS.TERMINAL_CONTEXT);
+    clearAnalyticsChoice();
+    setStorageItem(STORAGE_KEYS.RESTART_NOTICE, 'true');
+    window.location.href = '/';
+  }, []);
+
+  const generateDriverSteps = useCallback((): DriveStep[] => {
+    return stepsConfig.map((step) => {
+      const title = step.titleNumber
+        ? `<span class="driver-popover-title-number">${step.titleNumber}</span> ${step.title || ''}`
+        : step.title;
+
+      const description = step.description;
+
+      const popover: DriveStep['popover'] = {
+        title,
+        description,
+        side: step.popover?.side || 'bottom',
+        align: step.popover?.align || 'start',
+      };
+
+      if (step.popover?.nextBtnText) {
+        popover.nextBtnText = step.popover.nextBtnText;
+      }
+      if (step.popover?.showButtons) {
+        popover.showButtons = step.popover.showButtons;
+      }
+
+      // Add navigation handlers
+      if (step.navigation?.next) {
+        popover.onNextClick = createNavigationHandler(STEP.NEXT);
+      }
+
+      const driverStep: DriveStep = { popover };
+
+      if (step.element) {
+        driverStep.element = step.element;
+      }
+
+      return driverStep;
+    });
+  }, [createNavigationHandler, showRestartNotice]);
 
   useEffect(() => {
     if (!driverObj.current) {
       driverObj.current = driver({
         disableActiveInteraction: true,
         showProgress: false,
-        showButtons: ['next', 'previous', 'close'],
-        allowClose: true,
+        showButtons: ['next'],
+        allowClose: false,
+        smoothScroll: false,
         overlayColor: 'rgba(0, 0, 0, 0.4)',
-        prevBtnText: BUTTON_TEXT.PREV,
         nextBtnText: BUTTON_TEXT.NEXT,
-        doneBtnText: 'Bye 👋🏻',
+        doneBtnText: 'Explore',
+        allowKeyboardControl: false,
         overlayClickBehavior: () => {
           window.dispatchEvent(new CustomEvent('close-toast'));
         },
-        steps: [
-          {
-            popover: {
-              title: `<span class="driver-popover-title-number">1</span> ${TITLE.STEP_0}`,
-              description: DESCRIPTION.STEP_0,
-              side: 'over',
-              align: 'center',
-              nextBtnText: "start",
-            },
-          },
-          {
-            popover: {
-              title: `<span class="driver-popover-title-number">2</span> ${TITLE.STEP_1}`,
-              description: DESCRIPTION.STEP_1,
-              side: 'right',
-              align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            }
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_2,
-              description: DESCRIPTION.STEP_2,
-              side: 'right',
-              align: 'start',
-              nextBtnText: "done",
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_3,
-              description: DESCRIPTION.STEP_3,
-              side: 'right',
-              align: 'start',
-              nextBtnText: "done",
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent)
-            },
-          },
-          {
-            element: "[id='search-results-list']",
-            popover: {
-              title: `<span class="driver-popover-title-number">3</span> ${TITLE.STEP_4}`,
-              description: DESCRIPTION.STEP_4,
-              side: 'bottom',
-              nextBtnText: "done",
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render')
-            },
-          },
-          {
-            popover: {
-              title: `<span class="driver-popover-title-number">4</span> ${TITLE.STEP_5}`,
-              description: DESCRIPTION.STEP_5,
-              side: 'right',
-              align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_6,
-              description: DESCRIPTION.STEP_6,
-              side: 'right',
-              align: 'start',
-              nextBtnText: 'done',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_7,
-              description: DESCRIPTION.STEP_7,
-              side: 'right',
-              align: 'start',
-              nextBtnText: 'done',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload'),
-            },
-          },
-          {
-            element: "[id='btn-profile-following']",
-            popover: {
-              description: DESCRIPTION.STEP_8,
-              side: 'right',
-              nextBtnText: "done",
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_9,
-              description: DESCRIPTION.STEP_9,
-              side: 'right',
-              nextBtnText: "done",
-              align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_10,
-              description: DESCRIPTION.STEP_10,
-              side: 'right',
-              align: 'start',
-              nextBtnText: "done",
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload'),
-            },
-          },
-          {
-            element: "[id='profile-followers']",
-            popover: {
-              description: DESCRIPTION.STEP_11,
-              side: 'right',
-              nextBtnText: "done",
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_12,
-              description: DESCRIPTION.STEP_12,
-              side: 'right',
-              align: 'start',
-              nextBtnText: "done",
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent),
-            },
-          },
-          {
-            element: "[id='followers-list']",
-            popover: {
-              description: DESCRIPTION.STEP_13,
-              side: 'right',
-              nextBtnText: "done",
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-            },
-          },
-          {
-            popover: {
-              title: `<span class="driver-popover-title-number">5</span> ${TITLE.STEP_14}`,
-              description: DESCRIPTION.STEP_14,
-              side: 'over',
-              align: 'start',
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_15,
-              description: DESCRIPTION.STEP_15,
-              side: 'right',
-              align: 'start',
-              nextBtnText: "done",
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'reload')
-            },
-          },
-          {
-            element: "[id='btn-likes']",
-            popover: {
-              description: DESCRIPTION.STEP_16,
-              side: 'right',
-              nextBtnText: "done",
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent, 'render')
-            },
-          },
-          {
-            element: "[id='run-command-btn']",
-            popover: {
-              title: TITLE.STEP_17,
-              description: DESCRIPTION.STEP_17,
-              side: 'right',
-              nextBtnText: "done",
-              align: 'start',
-            },
-          },
-          {
-            popover: {
-              title: TITLE.STEP_18,
-              description: DESCRIPTION.STEP_18,
-              side: 'over',
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent, 'render'),
-              onNextClick: onMoveAfter(STEP.NEXT, stepNextEvent)
-            },
-          },
-          {
-            element: "[class='mobile-frame']",
-            popover: {
-              title: `<span class="driver-popover-title-number">6</span> ${TITLE.STEP_19}`,
-              description: DESCRIPTION.STEP_19,
-              side: 'right',
-              align: 'start',
-              onPrevClick: onMoveAfter(STEP.PREV, stepPrevEvent)
-            },
-          },
-          {
-            popover: {
-              title: `<span class="driver-popover-title-number">7</span> ${TITLE.STEP_20}`,
-              description: DESCRIPTION.STEP_20,
-              side: 'over',
-              align: 'center',
-            },
-          },
-          {
-            popover: {
-              title: `<span class="driver-popover-title-number">8</span> ${TITLE.STEP_21}`,
-              description: DESCRIPTION.STEP_21,
-              side: 'over',
-              align: 'center',
-              nextBtnText: 'Bye 👋🏻',
-              onNextClick: () => {
-                if (driverObj.current) {
-                  driverObj.current.destroy();
-                }
-              }
-            },
-          },
-        ],
-        onPopoverRender: () => {
-          setTimeout(() => {
-            setButtonEventRef.current({type: undefined});
-          }, 0);
-        },
-        onCloseClick: () => {
-          setButtonEventRef.current({type: STEP.CLOSE});
-
-          if (driverObj.current) {
-            driverObj.current.destroy();
-            setStepIndex(0);
-          }
-        },
-        onPrevClick: () => {
-          setButtonEventRef.current({type: STEP.PREV});
-
-          if (driverObj.current) {
-            const stepIndex = driverObj.current.getActiveIndex();
-            if (stepIndex !== undefined) {
-              setStepIndex(stepIndex - 1)
-              driverObj.current.moveTo(stepIndex - 1);
-            }
-          }
-        },
+        steps: generateDriverSteps(),
         onNextClick: async () => {
           if (driverObj.current) {
-            const stepIndex = driverObj.current.getActiveIndex();
-            if (stepIndex !== undefined) {
-              if (!await isStepValid(stepIndex)) {
-                showToastRef.current("Please complete the current step before proceeding.", TOAST_DURATION);
+            const index = driverObj.current.getActiveIndex();
+            if (index !== undefined) {
+              // If there's a command to execute, click the run button
+              const runButton = document.getElementById('run-command-btn');
+              if (runButton && currentCommandRef.current?.content) {
+                runButton.click();
                 return;
               }
 
-              const event = {type: STEP.NEXT, isClicked: true};
-              setButtonEventRef.current(event);
+              if (!(await isStepValid(index))) {
+                showToastRef.current(
+                  'Please complete the current step before proceeding.',
+                  'warning',
+                  TOAST_DURATION
+                );
+                return;
+              }
 
-              setStepIndex(stepIndex + 1)
-              driverObj.current.moveTo(stepIndex + 1);
+              // Clear command when using default next
+              if (currentCommandRef.current) {
+                clearCurrentCommand(true);
+              }
+
+              setStepIndex(index + 1);
+              driverObj.current.moveTo(index + 1);
             }
           }
         },
       });
     }
 
-    const timer = setTimeout(() => {
-      if (driverObj.current) {
-        driverObj.current.drive();
+    // Restore step on mount (only once)
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+
+      const restoreStep = async () => {
+        if (!driverObj.current) return;
+
+        const currentStepIndex = getStoredStepIndex();
+        const stepConfig = getStepConfig(currentStepIndex);
+
+        // Navigate to route if needed
+        if (currentStepIndex > 0) {
+          const prevNavigation = getNextNavigation(currentStepIndex - 1);
+          if (prevNavigation?.to) {
+            navigate(prevNavigation.to);
+          }
+        }
+
+        // Set command FIRST so elements can render
+        setCommandForStep(currentStepIndex);
+
+        // Wait for step's target element after command is set
+        if (stepConfig?.element) {
+          try {
+            await waitForElement([stepConfig.element], 5000);
+          } catch {
+            console.error('Failed to find step element during restore:', stepConfig.element);
+          }
+        }
+
+        // Drive to the stored step
+        driverObj.current.drive(currentStepIndex);
+      };
+
+      // Wait for initial React render to complete
+      const timeoutId = setTimeout(restoreStep, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [generateDriverSteps, isStepValid, setCommandForStep, clearCurrentCommand]);
+
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return;
+      if (!driverObj.current) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const index = driverObj.current.getActiveIndex();
+      if (index === undefined) return;
+
+      // On step 0, require explicit button click (no Enter)
+      if (index === 0 && getAnalyticsChoice() === null) {
+        return;
       }
-    }, 100);
 
-    return () => {
-      clearTimeout(timer);
+      const runButton = document.getElementById('run-command-btn');
+      if (runButton && currentCommandRef.current?.content && !isExecuting) {
+        runButton.click();
+        return;
+      }
+
+      const activeStep = driverObj.current.getActiveStep();
+      if (activeStep?.popover?.onNextClick) {
+        const element = activeStep.element as HTMLElement;
+        activeStep.popover.onNextClick(element || undefined, activeStep, {
+          config: driverObj.current.getConfig(),
+          state: driverObj.current.getState(),
+          driver: driverObj.current,
+        });
+      } else {
+        if (!(await isStepValid(index))) {
+          showToastRef.current(
+            'Please complete the current step before proceeding.',
+            'warning',
+            TOAST_DURATION
+          );
+          return;
+        }
+        if (currentCommandRef.current) {
+          clearCurrentCommand(true);
+        }
+        setStepIndex(index + 1);
+        driverObj.current.moveTo(index + 1);
+      }
     };
-  }, []);
 
-  const contextValue = useMemo(() => {
-    return {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isExecuting, isStepValid, clearCurrentCommand, currentCommand, handleAnalyticsStart]);
+
+  // Handle analytics button clicks via event delegation
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.id === 'analytics-start-btn') {
+        handleAnalyticsStart(false);
+      } else if (target.id === 'analytics-share-btn') {
+        handleAnalyticsStart(true);
+      }
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [handleAnalyticsStart]);
+
+  const contextValue = useMemo(
+    () => ({
       stepIndex,
-      setStepIndex,
-      moveNext,
-      buttonEvent,
-    };
-  }, [stepIndex, setStepIndex, moveNext, buttonEvent]);
-
-  return (
-    <DriverContext.Provider value={contextValue}>
-      {children}
-    </DriverContext.Provider>
+      currentCommand,
+      commandHistory,
+      terminalContext,
+      isExecuting,
+      executeCommand,
+      resetStep,
+    }),
+    [
+      stepIndex,
+      currentCommand,
+      commandHistory,
+      terminalContext,
+      isExecuting,
+      executeCommand,
+      resetStep,
+    ]
   );
+
+  return <DriverContext.Provider value={contextValue}>{children}</DriverContext.Provider>;
 };

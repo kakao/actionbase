@@ -1,0 +1,52 @@
+name: Website CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "website/**"
+      - ".github/workflows/website-ci.yml"
+
+  pull_request:
+    branches: [ main ]
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    paths:
+      - "website/**"
+      - ".github/workflows/website-ci.yml"
+
+jobs:
+  lint:
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./website
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./website
+        run: npm run lint
+
+      - name: Check Prettier formatting
+        working-directory: ./website
+        run: npm run format:check
+
+      - name: Build website
+        working-directory: ./website
+        run: npm run build

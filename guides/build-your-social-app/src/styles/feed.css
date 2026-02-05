@@ -69,12 +69,7 @@
   border-left: none;
   border-right: none;
   overflow-x: auto;
-  scrollbar-width: none;
   flex-shrink: 0;
-}
-
-.stories-container::-webkit-scrollbar {
-  display: none;
 }
 
 .story {
@@ -99,7 +94,14 @@
   height: 66px;
   border-radius: 50%;
   padding: 2px;
-  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  background: linear-gradient(
+    45deg,
+    #f09433 0%,
+    #e6683c 25%,
+    #dc2743 50%,
+    #cc2366 75%,
+    #bc1888 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -151,6 +153,18 @@
   font-size: 30px;
   font-weight: 600;
   color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .story-username {
@@ -168,14 +182,9 @@
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;
   min-height: 0;
   position: relative;
   padding-bottom: 50px;
-}
-
-.feed-scroll::-webkit-scrollbar {
-  display: none;
 }
 
 .feed {
@@ -214,6 +223,14 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-white);
+  overflow: hidden;
+}
+
+.post-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius-full);
 }
 
 .post-user-info {
@@ -322,7 +339,9 @@
   cursor: pointer;
   padding: var(--spacing-md);
   color: var(--color-text-primary);
-  transition: transform var(--transition-fast), color var(--transition-base);
+  transition:
+    transform var(--transition-fast),
+    color var(--transition-base);
 }
 
 .action-btn:active {
@@ -332,7 +351,10 @@
 .action-btn svg {
   width: var(--font-size-xl);
   height: var(--font-size-xl);
-  transition: fill var(--transition-base), stroke var(--transition-base), transform var(--transition-fast);
+  transition:
+    fill var(--transition-base),
+    stroke var(--transition-base),
+    transform var(--transition-fast);
 }
 
 .action-btn.liked {
@@ -400,10 +422,6 @@
 @media (min-width: 768px) {
   .app {
     background-color: var(--color-background);
-  }
-
-  .app-header {
-    padding: 30px var(--spacing-2xl) var(--spacing-lg) var(--spacing-2xl);
   }
 
   .stories-container {

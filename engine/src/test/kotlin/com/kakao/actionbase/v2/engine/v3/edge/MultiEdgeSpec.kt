@@ -628,6 +628,201 @@ class MultiEdgeSpec :
             actualLastCdc.after?.props?.get("_source") shouldBe 1
             actualLastCdc.after?.props?.get("_target") shouldBe 2
         }
+
+        "ids query should return multiple edges by their ids" {
+            // Insert test data
+            val requestAsString =
+                """
+                {
+                  "mutations": [
+                    {
+                      "type": "INSERT",
+                      "edge": { "version": 1234567890, "id": 100000, "source": 1, "target": 2, "properties": { "paidAt": 1234567890, "productId": 200 } }
+                    },
+                    {
+                      "type": "INSERT",
+                      "edge": { "version": 1234567891, "id": 100001, "source": 1, "target": 3, "properties": { "paidAt": 1234567891, "productId": 201 } }
+                    },
+                    {
+                      "type": "INSERT",
+                      "edge": { "version": 1234567892, "id": 100002, "source": 2, "target": 3, "properties": { "paidAt": 1234567892, "productId": 202 } }
+                    }
+                  ]
+                }
+                """.trimIndent()
+            val request = mapper.readValue<MultiEdgeBulkMutationRequest>(requestAsString)
+
+            v3MutationService
+                .mutateMultiEdge(database, table, request)
+                .test()
+                .assertNext { result ->
+                    result.results.size shouldBe 3
+                }.verifyComplete()
+
+            // Query multiple ids at once
+            v3QueryService
+                .gets(database, table, listOf(100000L, 100001L, 100002L))
+                .test()
+                .assertNext { result ->
+                    result.edges.size shouldBe 3
+                    result.count shouldBe 3
+
+                    val edgesByIds = result.edges.associateBy { it.properties["_id"] }
+
+                    edgesByIds[100000L]?.let { edge ->
+                        edge.source shouldBe 1L
+                        edge.target shouldBe 2L
+                        edge.properties["productId"] shouldBe 200L
+                    }
+
+                    edgesByIds[100001L]?.let { edge ->
+                        edge.source shouldBe 1L
+                        edge.target shouldBe 3L
+                        edge.properties["productId"] shouldBe 201L
+                    }
+
+                    edgesByIds[100002L]?.let { edge ->
+                        edge.source shouldBe 2L
+                        edge.target shouldBe 3L
+                        edge.properties["productId"] shouldBe 202L
+                    }
+                }.verifyComplete()
+        }
+
+        "ids query should return only existing edges" {
+            // Insert test data
+            val requestAsString =
+                """
+                {
+                  "mutations": [
+                    {
+                      "type": "INSERT",
+                      "edge": { "version": 1234567890, "id": 200000, "source": 1, "target": 2, "properties": { "paidAt": 1234567890, "productId": 300 } }
+                    }
+                  ]
+                }
+                """.trimIndent()
+            val request = mapper.readValue<MultiEdgeBulkMutationRequest>(requestAsString)
+
+            v3MutationService
+                .mutateMultiEdge(database, table, request)
+                .test()
+                .assertNext { result ->
+                    result.results.size shouldBe 1
+                }.verifyComplete()
+
+            // Query with mix of existing and non-existing ids
+            v3QueryService
+                .gets(database, table, listOf(200000L, 999999L))
+                .test()
+                .assertNext { result ->
+                    result.edges.size shouldBe 1
+                    result.count shouldBe 1
+                    result.edges[0].properties["_id"] shouldBe 200000L
+                }.verifyComplete()
+        }
+
+        "ids query should return empty result for non-existing ids" {
+            v3QueryService
+                .gets(database, table, listOf(888888L, 999999L))
+                .test()
+                .assertNext { result ->
+                    result.edges.size shouldBe 0
+                    result.count shouldBe 0
+                }.verifyComplete()
+        }
+
+        "ids query should support filters" {
+            // Insert test data
+            val requestAsString =
+                """
+                {
+                  "mutations": [
+                    {
+                      "type": "INSERT",
+                      "edge": { "version": 1234567890, "id": 300000, "source": 1, "target": 2, "properties": { "paidAt": 1000, "productId": 400 } }
+                    },
+                    {
+                      "type": "INSERT",
+                      "edge": { "version": 1234567891, "id": 300001, "source": 1, "target": 3, "properties": { "paidAt": 2000, "productId": 401 } }
+                    }
+                  ]
+                }
+                """.trimIndent()
+            val request = mapper.readValue<MultiEdgeBulkMutationRequest>(requestAsString)
+
+            v3MutationService
+                .mutateMultiEdge(database, table, request)
+                .test()
+                .assertNext { result ->
+                    result.results.size shouldBe 2
+                }.verifyComplete()
+
+            // Query with filter
+            v3QueryService
+                .gets(database, table, listOf(300000L, 300001L), filters = "paidAt:gt:1500")
+                .test()
+                .assertNext { result ->
+                    result.edges.size shouldBe 1
+                    result.edges[0].properties["_id"] shouldBe 300001L
+                    result.edges[0].properties["paidAt"] shouldBe 2000L
+                }.verifyComplete()
+        }
+
+        "ids query should not return deleted edges" {
+            // Insert test data
+            val insertRequest =
+                """
+                {
+                  "mutations": [
+                    {
+                      "type": "INSERT",
+                      "edge": { "version": 1234567890, "id": 400000, "source": 1, "target": 2, "properties": { "paidAt": 1234567890, "productId": 500 } }
+                    },
+                    {
+                      "type": "INSERT",
+                      "edge": { "version": 1234567891, "id": 400001, "source": 1, "target": 3, "properties": { "paidAt": 1234567891, "productId": 501 } }
+                    }
+                  ]
+                }
+                """.trimIndent()
+
+            v3MutationService
+                .mutateMultiEdge(database, table, mapper.readValue<MultiEdgeBulkMutationRequest>(insertRequest))
+                .test()
+                .assertNext { result ->
+                    result.results.size shouldBe 2
+                }.verifyComplete()
+
+            // Delete one edge
+            val deleteRequest =
+                """
+                {
+                  "mutations": [
+                    {
+                      "type": "DELETE",
+                      "edge": { "version": 1234567895, "id": 400000 }
+                    }
+                  ]
+                }
+                """.trimIndent()
+
+            v3MutationService
+                .mutateMultiEdge(database, table, mapper.readValue<MultiEdgeBulkMutationRequest>(deleteRequest))
+                .test()
+                .assertNext { result ->
+                    result.results.size shouldBe 1
+                }.verifyComplete()
+
+            // Query both ids - only non-deleted one should be returned
+            v3QueryService
+                .gets(database, table, listOf(400000L, 400001L))
+                .test()
+                .assertNext { result ->
+                    result.edges.size shouldBe 1
+                    result.edges[0].properties["_id"] shouldBe 400001L
+                }.verifyComplete()
+        }
     }) {
     companion object {
         private val mapper = jacksonObjectMapper()

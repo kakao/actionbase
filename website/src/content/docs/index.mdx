@@ -3,13 +3,13 @@ title: Actionbase
 head:
   - tag: title
     content: Actionbase
-description: A database for serving user interactions.
+description: A database for serving user interactions at scale.
 template: splash
 editUrl: false
 lastUpdated: false
 hero:
   title: Actionbase
-  tagline: A database for serving user interactions.
+  tagline: One database for likes, views, and follows — pre-computed, served in real-time
   image:
     file: ~/assets/hero.webp
   actions:
@@ -22,23 +22,25 @@ hero:
       link: https://github.com/kakao/actionbase
 
 banner:
-    content: '🚀 Open-sourced — <a href="/blog/open-source-announcement/">Learn more</a>'
+  content: '🚀 Open-sourced — <a href="/blog/open-source-announcement/">Learn more</a>'
 ---
-
 
 import { CardGrid, Card } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
-	<Card title="Write-Time Materialization" icon="rocket">
-        Pre-compute the data required for fast, predictable reads at write time, eliminating service-specific indexing and counting logic.
-	</Card>
-	<Card title="Interaction-Oriented Graph Model" icon="document">
-        Represent user interactions as actor→target edges with schema-defined properties for efficient querying.
-    </Card>
-	<Card title="Unified REST API" icon="puzzle">
-        Expose a simple, storage-agnostic API for querying and mutating interaction data.
-    </Card>
-	<Card title="WAL / CDC Integration" icon="external">
-        Emit write-ahead logs and change data capture streams for recovery, replay, asynchronous processing, and downstream data pipelines.
-	</Card>
+  <Card title="Pre-computed Reads" icon="star">
+    Writes do the work. Reads return what's already computed.
+  </Card>
+  <Card title="Likes · Views · Follows" icon="heart">
+    One model for common user interactions.
+  </Card>
+  <Card title="REST API" icon="forward-slash">
+    Simple writes, fast reads — all via HTTP.
+  </Card>
+  <Card title="CDC Built-in" icon="seti:pipeline">
+    Stream changes for downstream pipelines.
+  </Card>
+  <Card title="Battle-tested" icon="rocket">
+    Serving over a million requests per minute at Kakao.
+  </Card>
 </CardGrid>

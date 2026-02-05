@@ -1,0 +1,39 @@
+---
+title: 벤치마크
+description: Actionbase의 성능 벤치마크 및 지표
+sidebar:
+  order: 3
+translated-by-kanana-2: true
+---
+
+Actionbase의 성능 벤치마크
+
+**Note:** At this initial release, benchmark results are approximate. We plan to provide transparent benchmarks using generalized datasets in future releases.
+
+## 프로덕션 인프라 {#production-infrastructure}
+
+Actionbase는 수평 확장이 가능한 무상태 서비스로 동작합니다:
+
+- **Ingress**(Actionbase): 9개 노드(6코어, 12GB RAM) — API 게이트웨이, 요청 라우팅
+- **Worker**(Actionbase): 9개 노드(40코어, 64GB RAM) — 뮤테이션 처리, 쿼리 실행
+- **HBase**: 9개 리전 서버(20코어, 각 64GB RAM) — 스토리지 백엔드
+
+Ingress와 Worker는 Actionbase 배포입니다. 이들은 로컬 상태를 유지하지 않으며, 모든 데이터는 스토리지 백엔드(HBase)에 저장됩니다. 이러한 무상태 아키텍처는 다음과 같은 이점을 제공합니다:
+
+- **수평 확장**: 데이터 마이그레이션 없이 노드를 추가할 수 있음
+- **롤링 업데이트**: 다운타임 없이 배포 가능
+- **장애 복구**: 어떤 노드든 모든 요청을 처리할 수 있음
+
+## 프로덕션 트래픽 {#production-traffic}
+
+현재 피크: ~33,000 RPS(2,000,000 RPM). 일반적인 워크로드: 쓰기 ~15%, 읽기 ~85%
+
+- **지연 시간**: 읽기 ~5ms, 쓰기 ~20ms
+
+## 용량 {#capacity}
+
+내부 테스트에서 60,000+ RPS 달성
+
+## 확장성 {#scalability}
+
+테스트 범위 내에서 선형적으로 확장됨.

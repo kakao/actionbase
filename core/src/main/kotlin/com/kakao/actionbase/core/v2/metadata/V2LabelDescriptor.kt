@@ -1,6 +1,7 @@
 package com.kakao.actionbase.core.v2.metadata
 
 import com.kakao.actionbase.core.metadata.common.DirectionType
+import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.v2.metadata.common.V2Identifier
 import com.kakao.actionbase.core.v2.metadata.common.V2Index
 import com.kakao.actionbase.core.v2.metadata.common.V2MutationMode
@@ -17,6 +18,7 @@ data class V2LabelDescriptor(
     val dirType: DirectionType,
     val storage: String,
     val indices: List<V2Index>,
+    val groups: List<Group>,
     val event: Boolean,
     val readOnly: Boolean,
     val mode: V2MutationMode,

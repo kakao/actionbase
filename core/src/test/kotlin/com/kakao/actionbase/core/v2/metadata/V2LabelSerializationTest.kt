@@ -84,6 +84,7 @@ class V2LabelSerializationTest {
                             desc = "Wish creation time descending index",
                         ),
                     ),
+                groups = emptyList(),
                 event = false,
                 readOnly = false,
                 mode = V2MutationMode.SYNC,
@@ -141,6 +142,7 @@ class V2LabelSerializationTest {
                   "desc": "Wish creation time descending index"
                 }
               ],
+              "groups": [],
               "event": false,
               "readOnly": false,
               "mode": "SYNC"
@@ -218,6 +220,7 @@ class V2LabelSerializationTest {
                   "desc": "Wish creation time descending index"
                 }
               ],
+              "groups": [],
               "event": false,
               "readOnly": false,
               "mode": "SYNC"
@@ -288,6 +291,7 @@ class V2LabelSerializationTest {
                             desc = "Wish creation time descending index",
                         ),
                     ),
+                groups = emptyList(),
                 event = false,
                 readOnly = false,
                 mode = V2MutationMode.SYNC,

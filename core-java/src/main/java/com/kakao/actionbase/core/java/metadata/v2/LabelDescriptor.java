@@ -7,6 +7,7 @@ import com.kakao.actionbase.core.java.metadata.v3.EdgeTableDescriptor;
 import com.kakao.actionbase.core.java.metadata.v3.ImmutableEdgeTableDescriptor;
 import com.kakao.actionbase.core.java.metadata.v3.TableDescriptor;
 import com.kakao.actionbase.core.java.metadata.v3.common.DirectionType;
+import com.kakao.actionbase.core.metadata.common.Group;
 
 import java.util.List;
 
@@ -35,6 +36,8 @@ public interface LabelDescriptor extends Descriptor<TableDescriptor<?>> {
   String storage();
 
   List<Index> indices();
+
+  List<Group> groups();
 
   List<TopNCompositeKey> topNCompositeKeys();
 

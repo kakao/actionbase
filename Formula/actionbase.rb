@@ -1,29 +1,24 @@
 class Actionbase < Formula
-  desc "actionbase CLI"
+  desc "Command-line interface for Actionbase"
   homepage "https://github.com/kakao/actionbase"
-  version "0.0.1"
-  license "Apache-2.0 license"
+  url "https://github.com/kakao/actionbase/archive/refs/tags/cli/0.0.1.tar.gz"
+  sha256 "29dc4cfef2956a2b3bda43d4ad097dfbe8996f83b899ca1a7360e6ac56a14bf4"
+  license "Apache-2.0"
 
-  on_macos do
-    if Hardware::CPU.arm?
-      url "https://github.com/kakao/actionbase/releases/download/cli/#{version}/actionbase_latest_darwin_arm64.tar.gz"
-      sha256 "0ac3b042eff3e3dcd5e1d299815d4782149fe6e17039b461783ee3cd29fe6d88"
-    else
-      url "https://github.com/kakao/actionbase/releases/download/cli/#{version}/actionbase_latest_darwin_amd64.tar.gz"
-      sha256 "b96e8967a91109830ab1cbd90f567cdf0e24fd9bc486b91c753df91b7065e4eb"
+  depends_on "go" => :build
+
+  def install
+    ldflags = %W[
+      -s -w
+      -X main.Version=#{version}
+    ]
+
+    cd "cli/cmd/actionbase" do
+      system "go", "build", *std_go_args(ldflags: ldflags)
     end
   end
 
-  on_linux do
-    url "https://github.com/kakao/actionbase/releases/download/cli/#{version}/actionbase_latest_linux_amd64.tar.gz"
-    sha256 "b2e8f88534f417099892025209b68a389e1abe24e6883a08cfed24decb4cf939"
-  end
-
-  def install
-    bin.install "actionbase"
-  end
-
   test do
-    system "#{bin}/actionbase", "--version"
+    system bin/"actionbase", "--version"
   end
 end

@@ -2,7 +2,7 @@
 title: Path to Open Source
 description: Actionbase project development history before open source
 sidebar:
-    order: 1
+  order: 1
 ---
 
 This document covers the development history of Actionbase before it was open-sourced. Future development will be tracked in public repositories.
@@ -11,71 +11,100 @@ This document covers the development history of Actionbase before it was open-so
 
 The MVP phase represents the entire period from project inception to open-source release. During this period, Actionbase was applied to various services and evolved through real-world use.
 
-### Phase 1: Foundation Building (April 2023)
+### Phase 1: Foundation Building (2023)
 
-**Focus:** Validating technical feasibility and establishing a technical foundation.
+**Q: How do we validate technical feasibility and establish a foundation?**
 
 This period was invested to ensure a technical base that would support stable development in subsequent phases.
 
 Key milestones:
+
 - Project kickoff and initial planning
 - Core design and implementation
 
-### Phase 2: Service Integration (March 2024)
+AI used: GPT-4
 
-**Focus:** Validating through real-world service deployment.
+### Phase 2: Service Integration (Early 2024)
+
+**Q: How do we validate through real-world service deployment?**
 
 The system was safely integrated into production by maintaining the existing system, applying dual writes, and gradually migrating read functionality after sufficient validation.
 
 Key activities:
-- First production service write/read migration
 
-### Phase 3: Stabilization (July 2024)
+- First production service write/read migration: [KakaoTalk Gift Wish](/stories/kakaotalk-gift-wish/)
 
-**Focus:** System stabilization and tenant expansion.
+AI used: GPT-4
+
+### Phase 3: Stabilization (Late 2024)
+
+**Q: How do we stabilize the system and expand tenants?**
 
 Starting from a multi-tenant architecture, this phase introduced support for independent tenant configurations to ensure service isolation and enable isolated deployments.
 
 Key improvements:
+
 - System stabilization and tenant expansion
 - Support for independent tenant configurations to isolate services
 - Operations automation and monitoring enhancement
-- Applied across KakaoShopping
+- Applied across commerce domain (e.g., [KakaoTalk Gift Recent Views](/stories/kakaotalk-gift-recent-views/))
 
-### Phase 4: Building Sustainable Operations (January 2025 - April 2025)
+AI used: Claude 3.5 Sonnet
 
-**Focus:** Improving operational efficiency and developer experience, addressing technical debt.
+### Phase 4: Building Sustainable Operations (Early 2025)
+
+**Q: How do we improve operational efficiency and address technical debt?**
 
 During this phase, Actionbase continued to be applied to various services while improving its operational foundation. Key efforts included reducing operational overhead, improving developer tooling, and addressing accumulated technical debt.
 
-### Phase 5: Preparing for Open Source (May 2025 - December 2025)
+Key activities:
 
-**Focus:** Preparing for open-source release and expanding adoption across Kakao's major services.
+- Applied across multiple domains (e.g., [KakaoTalk Friends](/stories/kakaotalk-friends/))
 
-Building on the foundation from Phase 4, this phase focused on making Actionbase ready for open source. The reimplementation process led to the decision to open-source Actionbase. While legacy code remains, the reimplementation continues to progress toward a more maintainable codebase. During this period, Actionbase expanded its adoption across [Kakao](/project/about-kakao/)'s major services including KakaoShopping and KakaoTalk.
+AI used: GPT-4o, Claude 3.5 Sonnet
+
+### Phase 5: Preparing for Open Source (2025)
+
+**Q: How do we prepare for open-source release while expanding adoption?**
+
+Building on the foundation from Phase 4, this phase focused on making Actionbase ready for open source. The reimplementation process led to the decision to open-source Actionbase. While legacy code remains, the reimplementation continues to progress toward a more maintainable codebase. During this period, Actionbase was broadly adopted across [Kakao](/project/about-kakao/)'s services.
 
 Key changes:
+
 - Maintained API compatibility with existing systems
 - Redesigned API structure
 - Repository separation and organization
 - Separated internal and open-source areas
-- Expanded adoption to major services in KakaoShopping and KakaoTalk
+
+AI used: GPT-4o, Claude 3.5 Sonnet, Cursor
 
 ## Open Source Release (January 2026)
 
-After this MVP period, during which Actionbase was applied to various services, Actionbase was open-sourced in January 2026.
+After this MVP period, Actionbase was open-sourced in January 2026.
 
 The codebase released is the same one that was developed, operated, and refined inside Kakao. Only minimal modifications were applied to remove security-sensitive or organization-specific details, and some internal features will be opened gradually as they are reviewed.
 
 ### Why We Open-Sourced Actionbase
 
-**1. Transparent real-world history**
+The same interaction features—likes, recent views, follows—were being rebuilt across teams, each time with different stacks, different schemas, different failure modes. And when traffic grew, each hit similar scaling walls.
 
-The codebase grew organically in production environments. By releasing it as-is (with only essential sanitization), we aim to share its genuine journey rather than a rewritten or polished version.
+Actionbase emerged as an attempt to stop solving the same problem ten different ways—and to solve it at scale.
 
-**2. Long-term sustainability**
+**Sharing a real journey**
 
-The system has gone through multiple generations of requirements, contributors, and architectural changes. Open-sourcing it helps create a healthier long-term lifecycle and encourages community-driven improvement.
+This codebase wasn't designed for release. It grew through production incidents, shifting requirements, and years of real traffic. We chose to share it as-is—not a rewritten showcase, but the actual code that survived.
+
+**Outliving its creators**
+
+Internal systems often fade when their original maintainers move on. Open-sourcing creates a chance for the system to grow beyond any single team or company—shaped by those who actually use it.
+
+**Becoming part of something larger**
+
+Inside a company, an internal service is just another API to call. Developers designing new systems rarely adopt it as a core component, working with well-known technologies feels more valuable for their growth.
+
+We understand this. By open-sourcing Actionbase, we hope it can become part of architectures we never imagined.
+
+[More](https://github.com/kakao/actionbase/discussions/32)
 
 ### Acknowledgements
 
@@ -84,4 +113,3 @@ This work was supported by Kakao's leaders and engineers, who helped the team bu
 Special appreciation goes to the HBase engineers at Kakao. Actionbase's reliability benefits from the stability provided by HBase.
 
 This release reflects the efforts of those who contributed to the system and the teams who supported its development. We look forward to continuing this project together with the open-source community.
-

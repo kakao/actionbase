@@ -24,8 +24,10 @@ const (
 )
 
 type ActionbaseCommandLineRunner struct {
-	ReadLine *readline.Instance
 	logger   *slog.Logger
+	version  string
+	host     string
+	ReadLine *readline.Instance
 	*CommandLineRunner
 	handler         *atomic.Value
 	client          *client.ActionbaseClient
@@ -36,15 +38,17 @@ type ActionbaseCommandLineRunner struct {
 	currentPort     string
 }
 
-func NewActionbaseCommandLineRunner(host string, authKey *string, currentPort string, IsServerEnabled bool) *ActionbaseCommandLineRunner {
+func NewActionbaseCommandLineRunner(version, host string, authKey *string, currentPort string, IsServerEnabled, isDebugEnabled bool) *ActionbaseCommandLineRunner {
 	logger := util.NewLogger(slog.LevelDebug)
 	slog.SetDefault(logger)
 
-	clientContext := client.Context{IsServerModeEnabled: IsServerEnabled, IsDebugEnabled: false}
+	clientContext := client.Context{IsProxyModeEnabled: IsServerEnabled, IsDebugEnabled: isDebugEnabled}
 	httpClient := client.NewHTTPClient(host, authKey, &clientContext)
 
 	runner := &ActionbaseCommandLineRunner{
 		logger:            logger,
+		version:           version,
+		host:              host,
 		CommandLineRunner: NewCommandLineRunner("Actionbase", "0.0.1"),
 		client:            client.NewActionbaseClient(httpClient, &clientContext),
 		clientContext:     &clientContext,
@@ -74,7 +78,6 @@ func NewActionbaseCommandLineRunner(host string, authKey *string, currentPort st
 
 func (r *ActionbaseCommandLineRunner) Run() {
 	r.showBanner()
-	command.PrintContext(r.client.GetHost(), r.currentDatabase, r.currentTable, r.currentAlias, r.GetCurrentPort(), r.IsServerModeEnabled(), r.IsDebugEnabled())
 
 	rl, err := readline.New(defaultPrompt + " ")
 	if err != nil {
@@ -149,8 +152,12 @@ func (r *ActionbaseCommandLineRunner) RunCommand(input string) (*model.Response,
 	result := r.executeCommand(cmdName, args)
 	elapsed := time.Since(start).Seconds()
 
-	fmt.Printf("\033[90m(Took %.4f seconds)\n\n\033[0m", elapsed)
+	util.Print("\033[90m(Took %.4f seconds)\033[0m\n\n", elapsed)
 	return result, elapsed
+}
+
+func (r *ActionbaseCommandLineRunner) GetHost() string {
+	return r.host
 }
 
 func (r *ActionbaseCommandLineRunner) GetCurrentDatabase() string {
@@ -169,8 +176,8 @@ func (r *ActionbaseCommandLineRunner) GetCurrentAlias() string {
 	return r.currentAlias
 }
 
-func (r *ActionbaseCommandLineRunner) IsServerModeEnabled() bool {
-	return r.clientContext.IsServerModeEnabled
+func (r *ActionbaseCommandLineRunner) IsProxyModeEnabled() bool {
+	return r.clientContext.IsProxyModeEnabled
 }
 
 func (r *ActionbaseCommandLineRunner) IsDebugEnabled() bool {
@@ -193,8 +200,8 @@ func (r *ActionbaseCommandLineRunner) SetIsDebugEnabled(debugging bool) {
 	r.clientContext.IsDebugEnabled = debugging
 }
 
-func (r *ActionbaseCommandLineRunner) SetIsServerModeEnabled(isServerModeEnabled bool) {
-	r.clientContext.IsServerModeEnabled = isServerModeEnabled
+func (r *ActionbaseCommandLineRunner) SetIsProxyModeEnabled(isProxyModeEnabled bool) {
+	r.clientContext.IsProxyModeEnabled = isProxyModeEnabled
 }
 
 func (r *ActionbaseCommandLineRunner) SetCurrentPort(port string) {
@@ -203,6 +210,10 @@ func (r *ActionbaseCommandLineRunner) SetCurrentPort(port string) {
 
 func (r *ActionbaseCommandLineRunner) GetHandler() *atomic.Value {
 	return r.handler
+}
+
+func (r *ActionbaseCommandLineRunner) isDebugEnabled() bool {
+	return r.clientContext.IsDebugEnabled
 }
 
 func (r *ActionbaseCommandLineRunner) BuildPrompt() string {
@@ -225,19 +236,61 @@ func (r *ActionbaseCommandLineRunner) CheckConnection() {
 	response := r.client.GetTenant()
 
 	if response.IsError() {
-		fmt.Println("Connection Failed. Check if a server is available")
+		fmt.Printf("Failed to connect to %s. Check if the server is available", r.GetHost())
 		os.Exit(0)
 	}
 }
 
 func (r *ActionbaseCommandLineRunner) showBanner() {
-	banner := "    _        _   _             _\n" +
-		"   / \\   ___| |_(_) ___  _ __ | |__   __ _ ___  ___\n" +
-		"  / _ \\ / __| __| |/ _ \\| '_ \\| '_ \\ / _` / __|/ _ \\\n" +
-		" / ___ \\ (__| |_| | (_) | | | | |_) | (_| \\__ \\  __/\n" +
-		"/_/   \\_\\___|\\__|_|\\___/|_| |_|_.__/ \\__,_|___/\\___|\n"
+	version := "(v" + r.version + ")"
 
-	fmt.Printf("\033[33m%s\033[0m\n", banner)
+	proxy := "off (port -)"
+	if r.IsProxyModeEnabled() {
+		proxy = "on (port " + r.GetCurrentPort() + ")"
+	}
+
+	debug := "off"
+	if r.IsDebugEnabled() {
+		debug = "on"
+	}
+
+	fmt.Println()
+	fmt.Println("\033[33m╭────────────────────────────────────────────────────────────────────────────────────────────────╮\033[0m")
+	fmt.Println("\033[33m│                                                                                                │\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("                    _____________                                                               \033[33m│\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Printf("                 __/      ___    \\        Welcome to Actionbase! %-21s          \033[33m│\033[0m\n", version)
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("               _/\\   ____/   \\____\\_                                                            \033[33m│\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Printf("              / \\/ _/      @    \\_\033[33m♥/\033[0m\\     \033[33mActionbase %-42s │\033[0m\n", r.GetHost())
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("             /   /                | |                                                           \033[33m│\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Printf("           _/   /             ___/ \\/     \033[33mproxy\033[0m %-48s\033[33m│\033[0m\n", proxy)
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Printf("          /     |           ______/       \033[33mdebug\033[0m %-48s\033[33m│\033[0m\n", debug)
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("       __/      |          /                                                                    \033[33m│\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("   ___/         \\        _/                                                                     \033[33m│\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("                 |      /\\__                                                                    \033[33m│\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("                 |     /    \\__         \033[33m     _        _   _             _                       │\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("                 |    /______  \\        \033[33m    / \\   ___| |_(_) ___  _ __ | |__   __ _ ___  ___    │\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("              \\   \\_         \\  \\    \033[33m      / _ \\ / __| __| |/ _ \\| '_ \\| '_ \\ / _` / __|/ _ \\   │\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("               \\__  \\__       |_|      \033[33m   / ___ \\ (__| |_| | (_) | | | | |_) | (_| \\__ \\  __/   │\033[0m")
+	fmt.Printf("\033[33m│\033[0m")
+	fmt.Println("                  \\____\\               \033[33m  /_/   \\_\\___|\\__|_|\\___/|_| |_|_.__/ \\__,_|___/\\___|   │\033[0m")
+	fmt.Println("\033[33m│                                                                                                │\033[0m")
+	fmt.Println("\033[33m│                                                                                                │\033[0m")
+	fmt.Println("\033[33m╰────────────────────────────────────────────────────────────────────────────────────────────────╯\033[0m")
+	fmt.Println()
 }
 
 func (r *ActionbaseCommandLineRunner) isOpenString(buffer []string) bool {
@@ -266,7 +319,7 @@ func (r *ActionbaseCommandLineRunner) StartServer(parser *util.Parser) {
 	}
 
 	r.SetCurrentPort(port)
-	r.SetIsServerModeEnabled(true)
+	r.SetIsProxyModeEnabled(true)
 }
 
 func (r *ActionbaseCommandLineRunner) getServerPort(parser *util.Parser) string {

@@ -1,0 +1,27 @@
+---
+title: REST API
+description: Actionbase REST API 레퍼런스
+sidebar:
+  order: 0
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Actionbase는 메타데이터 관리, 뮤테이션, 쿼리를 위한 REST API를 제공합니다.
+
+## Base URL
+
+- 로컬: `http://localhost:8080`
+- 배포 환경: 서버 URL (예: `http://ab.example.com`)
+
+## 인증
+
+내부적으로 Actionbase는 자체 인증 시스템을 사용합니다. `CustomTokenFilter` 인터페이스를 통해 추상화했지만, 보안 고려 사항으로 인해 공개 릴리스에 적합한 수준인지 확신할 수 없었습니다. 주어진 시간 내에 문서화와 개발자 경험에 집중하여, 기본 구현 없이 인터페이스만 남겨두었습니다. `Authorization` 헤더는 수신되지만 검증되지 않습니다—어떤 값이든 사용할 수 있으며, 생략해도 됩니다.
+
+프로덕션 운영 문서화를 계속 진행하면서, 인증 지원도 함께 제공할 계획입니다.
+
+## APIs
+
+- [Metadata API](/ko/api-references/metadata/) — 서비스, 레이블, 별칭, 쿼리 관리 (v2)
+- [Mutation API](/ko/api-references/mutation/) — 엣지 생성, 수정, 삭제 (v3)
+- [Query API](/ko/api-references/query/) — 카운트, 스캔, 겟으로 엣지 쿼리 (v3)

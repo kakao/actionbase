@@ -8,11 +8,13 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/kakao/actionbase/internal/util"
 )
 
 type Context struct {
-	IsServerModeEnabled bool
-	IsDebugEnabled      bool
+	IsProxyModeEnabled bool
+	IsDebugEnabled     bool
 }
 
 type Response[T any] struct {
@@ -64,18 +66,18 @@ func Get[T any](c *HTTPClient, uri string) *Response[T] {
 		request.Header.Set("Authorization", *c.authKey)
 	}
 
-	return call[T](c, request)
+	return call[T](c, request, nil)
 }
 
 func Post[T any, R any](c *HTTPClient, uri string, requestBody T) *Response[R] {
 	url := fmt.Sprintf("%s%s", c.baseUrl, uri)
-	jsonData, err := json.Marshal(requestBody)
+	requestBodyJson, err := json.Marshal(requestBody)
 	if err != nil {
 		var nil R
 		return NewResponse[R](-1, &nil, fmt.Errorf("failed to marshal request Body: %w", err))
 	}
 
-	request, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	request, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBodyJson))
 	if err != nil {
 		var nil R
 		return NewResponse[R](-1, &nil, fmt.Errorf("failed to create request: %w", err))
@@ -86,15 +88,15 @@ func Post[T any, R any](c *HTTPClient, uri string, requestBody T) *Response[R] {
 		request.Header.Set("Authorization", *c.authKey)
 	}
 
-	return call[R](c, request)
+	return call[R](c, request, requestBodyJson)
 }
 
-func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
+func call[T any](c *HTTPClient, request *http.Request, requestBody []byte) *Response[T] {
 	if c.context.IsDebugEnabled {
-		if request.Body != nil {
-			slog.Debug(fmt.Sprintf("Trying to call '%s %s'\n> request: %s", request.Method, request.URL, request.Body))
+		if requestBody == nil {
+			slog.Debug(fmt.Sprintf("\u2192 %s %s", request.Method, request.URL.RequestURI()))
 		} else {
-			slog.Debug(fmt.Sprintf("Trying to call '%s %s'", request.Method, request.URL))
+			slog.Debug(fmt.Sprintf("\u2192 %s %s %s", request.Method, request.URL.RequestURI(), util.Truncate(string(requestBody), 60)))
 		}
 	}
 
@@ -115,7 +117,7 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 	body, err := io.ReadAll(response.Body)
 
 	if c.context.IsDebugEnabled {
-		slog.Debug(fmt.Sprintf("%s\n> %s", response.Status, body))
+		slog.Debug(fmt.Sprintf("\u2190 %s %s", response.Status, util.Truncate(string(body), 60)))
 	}
 
 	if err != nil {
@@ -126,7 +128,7 @@ func call[T any](c *HTTPClient, request *http.Request) *Response[T] {
 	var responseBody T
 	if err := json.Unmarshal(body, &responseBody); err != nil {
 		if c.context.IsDebugEnabled {
-			slog.Debug(fmt.Sprintf("Failed to parse response: %s\n", err.Error()))
+			slog.Debug(fmt.Sprintf("Failed to parse response: %s", err.Error()))
 		}
 		var nil T
 		return NewResponse[T](-1, &nil, fmt.Errorf("failed to read response Body: %w", err))

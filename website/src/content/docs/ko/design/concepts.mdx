@@ -1,0 +1,115 @@
+---
+title: 핵심 개념
+description: Actionbase 설계의 핵심 개념
+sidebar:
+  order: 1
+translated-by-kanana-2: true
+---
+
+Actionbase는 범용 그래프 데이터베이스가 아니라 사용자 인터랙션을 제공하기 위한 데이터베이스입니다.
+
+## 설계 목표 {#design-goals}
+
+- **쓰기 시점 최적화** — 쓰기 시점에 읽기 구조를 미리 계산합니다. 읽기는 단순 조회가 됩니다.
+- **검증된 스토리지 활용** — 내구성과 확장성을 위해 HBase 위에 구축합니다. 스토리지는 새로 만들지 않습니다.
+
+## 사용자 인터랙션 {#user-interactions}
+
+Actionbase는 다음을 처리합니다:
+
+- 최근 조회(상품, 콘텐츠)
+- 좋아요 및 반응
+- 팔로우
+
+이들은 공통적인 특성을 가집니다: **누가** **무엇을** 어떤 **대상**에 했는지, 실시간 접근, 예측 가능한 쿼리 패턴.
+
+## 프로퍼티 그래프 모델 {#property-graph-model}
+
+Actionbase는 인터랙션을 엣지로 모델링합니다:
+
+- **소스**: 누가(예: user_id)
+- **타겟**: 무엇을(예: product_id, content_id, user_id)
+- **프로퍼티**: 스키마로 정의된 속성(예: `created_at`, `reaction_type`)
+
+```
+User --[likes]--> Product (edge)
+  ├─ source: "user123"
+  ├─ target: "product456"
+  └─ properties: {
+      created_at: 1234567890,
+      reaction_type: "heart"
+    }
+
+User --[follows]--> User (edge)
+  ├─ source: "user123"
+  ├─ target: "user789"
+  └─ properties: {
+      created_at: 1234567891
+    }
+```
+
+엣지 정의는 [스키마](/ko/design/schema/)를 참고하세요.
+
+## 상태 및 이벤트 모델 {#state-and-event-model}
+
+Actionbase는 상태 기반 뮤테이션 모델을 사용합니다:
+
+- **상태**: 현재 상태(예: "사용자가 상품을 좋아함")
+- **이벤트**: 상태를 전환하는 입력(예: "사용자가 좋아요 클릭")
+
+상호작용이 발생하면:
+
+1. 현재 상태를 읽음
+2. 상태 전환을 적용함
+3. 새 상태를 저장함
+
+클라이언트는 이벤트에 타임스탬프를 부여합니다. 이벤트가 순서가 뒤섞여 도착하더라도 Actionbase는 올바른 최종 상태를 계산합니다.
+
+자세한 내용은 [뮤테이션](/ko/design/mutation/)을 참조하세요.
+
+## 쓰기 시점 최적화 {#write-time-optimization}
+
+엣지가 쓰일 때 Actionbase는 미리 계산합니다:
+
+1. **상태** — 소스와 타겟 간의 현재 관계
+2. **인덱스** — 프로퍼티 기반 정렬 구조(예: `created_at DESC`)
+3. **카운터** — 카운터(예: 아이템별 좋아요 수)
+
+읽기는 쿼리 시점 계산 없이 간단한 GET, COUNT, SCAN 연산을 사용합니다.
+
+이러한 구조가 어떻게 만들어지는지는 [뮤테이션](/ko/design/mutation/)을 참조하세요. 접근 방법은 [쿼리](/ko/design/query/)를 참조하세요.
+
+## 데이터 흐름 {#data-flow}
+
+### 쓰기 경로 {#write-path}
+
+```
+Client → Server → Engine → WAL → Storage → CDC
+```
+
+1. 내구성을 위해 WAL에 쓰기
+2. 락 획득
+3. 현재 상태 읽기
+4. 상태 전환을 적용합니다.
+5. 인덱스와 카운터를 계산합니다.
+6. 스토리지에 기록합니다.
+7. 다운스트림 시스템을 위한 CDC를 발생시킵니다.
+
+[뮤테이션](/ko/design/mutation/)을 참고하세요.
+
+### 읽기 경로 {#read-path}
+
+```
+Client → Server → Engine → Storage → Response
+```
+
+- **COUNT** → EdgeCounter
+- **GET** → EdgeState
+- **SCAN** → EdgeIndex
+
+[쿼리](/ko/design/query/)를 참고하세요.
+
+## 다음 단계 {#next-steps}
+
+- [스키마](/ko/design/schema/): 엣지 구조를 정의합니다.
+- [가이드](/ko/guides/build-your-social-media-app/): 실습 튜토리얼

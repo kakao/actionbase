@@ -1,0 +1,149 @@
+---
+title: 인코딩
+description: 내부 데이터 인코딩 및 저장 상세 정보
+sidebar:
+  order: 1
+translated-by-kanana-2: true
+---
+
+이 문서는 Actionbase가 내부적으로 데이터를 인코딩하고 저장하는 방법을 설명합니다. 이 정보는 주로 기여자와 저수준 저장 포맷을 이해해야 하는 사용자를 위한 것입니다.
+
+고수준 개념은 [핵심 개념](/ko/design/concepts/)을 참조하세요.
+
+## 행 타입 {#row-types}
+
+Actionbase는 스토리지 백엔드에서 여러 행 타입을 사용하여 엣지 데이터를 저장합니다. 각 행 타입은 특정 쿼리 목적에 맞게 설계되었습니다.
+
+| 행 타입     | 타입 코드 | 목적           | 쿼리 타입 |
+| ----------- | --------- | -------------- | --------- |
+| 엣지 상태   | -3        | 현재 엣지 상태 | Get       |
+| 엣지 인덱스 | -4        | 인덱스 항목    | Scan      |
+| 엣지 카운트 | -2        | 엣지 카운트    | Count     |
+
+## 엣지 상태(타입 코드: -3) {#edge-state-type-code-3}
+
+Get 쿼리를 위한 엣지의 현재 상태를 저장합니다.
+
+### 키 구조 {#key-structure}
+
+```
+[4-byte hash] + [1-byte + source] + [1-byte + table code] + [1-byte + type code(-3)] + [1-byte + target]
+```
+
+### 값 구조 {#value-structure}
+
+| 필드       | 타입    | 설명                                      |
+| ---------- | ------- | ----------------------------------------- |
+| active     | Boolean | 엣지 활성 상태                            |
+| version    | Long    | 엣지 버전                                 |
+| properties | Map     | 프로퍼티별 버전 정보를 포함한 프로퍼티 값 |
+| createdAt  | Long    | 생성 타임스탬프                           |
+| deletedAt  | Long    | 삭제 타임스탬프                           |
+
+## 엣지 인덱스 (타입 코드: -4) {#edge-index-type-code-4}
+
+Scan 쿼리의 인덱스 엔트리를 저장합니다. 고카디널리티 인덱스를 위해 **내로우 로우** 포맷을 사용합니다.
+
+### 키 구조 {#key-structure}
+
+```
+[4-byte hash] + [1-byte + directed source] + [1-byte + table code] + [1-byte + type code(-4)] +
+[1-byte + direction] + [1-byte + index code] + [(1-byte + N) * # index values] + [1-byte + directed target]
+```
+
+### 값 구조 {#value-structure}
+
+| 필드       | 타입 | 설명        |
+| ---------- | ---- | ----------- |
+| version    | Long | 엣지 버전   |
+| properties | Map  | 프로퍼티 값 |
+
+## 엣지 카운트 (타입 코드: -2) {#edge-count-type-code-2}
+
+카운트 쿼리의 카운터를 저장합니다. 스토리지 백엔드의 `increment` 연산을 사용합니다.
+
+### 키 구조 {#key-structure}
+
+```
+[4-byte hash] + [1-byte + directed source] + [1-byte + table code] + [1-byte + type code(-2)] + [1-byte + direction]
+```
+
+### 값 구조 {#value-structure}
+
+| 필드  | 타입 | 설명        |
+| ----- | ---- | ----------- |
+| count | Long | 엣지 카운트 |
+
+## 로우 키 인코딩 {#row-key-encoding}
+
+모든 로우 키는 공통 패턴을 따릅니다:
+
+```
+[4-byte hash] + [1-byte + source] + [1-byte + table code] + [1-byte + type code] + [additional fields...]
+```
+
+| 컴포넌트  | 크기      | 목적                                |
+| --------- | --------- | ----------------------------------- |
+| 해시      | 4 bytes   | region distribution을 위한 xxhash32 |
+| 타입 코드 | 1 byte    | 데이터 타입 식별 (-2, -3, -4)       |
+| 소스/타겟 | 가변 길이 | 1바이트 길이 접두사 포함            |
+
+해쉬 프리픽스는 HBase region 전체에 고르게 분산되도록 하여 핫스팟을 방지합니다.
+
+## 값 인코딩 {#value-encoding}
+
+Actionbase는 타입 정보를 유지하기 위해 바이트 헤더를 사용합니다:
+
+### 형식 {#format}
+
+```
+[1-byte type information] + [actual value]
+```
+
+### 타입 정보 {#type-information}
+
+| 측면      | 설명                                   |
+| --------- | -------------------------------------- |
+| 타입 코드 | NULL, STRING, INT, FLOAT, JSON 등 구분 |
+| 정렬 순서 | 인덱스 정렬을 위한 ASC/DESC 포함       |
+| 인코딩    | 정렬 순서에 따라 값 인코딩             |
+
+### 버전 추적 {#version-tracking}
+
+| 행 타입   | 버전 범위   |
+| --------- | ----------- |
+| EdgeState | 속성별 버전 |
+| EdgeIndex | 엣지별 버전 |
+
+## 키 설계 원칙 {#key-design-principles}
+
+### 해시 프리픽스 {#hash-prefix}
+
+4바이트 xxhash32 프리픽스는 다음을 보장합니다:
+
+- 스토리지 영역 전반에 걸친 균일한 분배
+- 쓰기 핫스팟 방지
+- 균형 잡힌 읽기/쓰기 부하
+
+### 음수 타입 코드 {#negative-type-codes}
+
+타입 코드는 음수 값(-2, -3, -4)을 사용하여:
+
+- 사용자 데이터와 분리
+- 효율적인 키 범위 스캔 가능
+- 명확한 타입 식별 제공
+
+### 길이 접두사 문자열 {#length-prefixed-strings}
+
+모든 가변 길이 필드는 1바이트 길이 접두사를 사용합니다:
+
+- 효율적인 파싱 지원
+- 바이너리 안전 인코딩 지원
+- 접두사 기반 스캔 허용
+
+[//]: # 'TODO: Add related documents when available'
+[//]: # '## Related Documents'
+[//]: # '- [How Both-Directed Edges Work](/ko/internals/explained/edge-both-directed/)'
+[//]: # '- [How Out-Directed Edges Work](/ko/internals/explained/edge-out-directed/)'
+[//]: # '- [How Multi-Edges Work](/ko/internals/explained/multi-edge/)'
+[//]: # '- [How Aggregation Works](/ko/internals/explained/aggregation/)'

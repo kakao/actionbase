@@ -1,0 +1,144 @@
+---
+title: 스키마
+description: 인터랙션 데이터의 구조를 정의합니다
+sidebar:
+  order: 2
+translated-by-kanana-2: true
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+스키마는 인터랙션 데이터의 구조를 정의합니다. 데이터를 저장하기 전에 엣지가 어떻게 구조화되어 있는지, 어떤 프로퍼티를 가지는지, 그리고 어떻게 쿼리할 수 있는지 정의해야 합니다.
+
+자세한 내용은 [핵심 개념](/ko/design/concepts/)을 참조하세요.
+
+## 스키마 계층 구조 {#schema-hierarchy}
+
+<Aside type="note">
+  Actionbase는 v3 전환 시점에 오픈소스로 공개되었습니다. 대부분의 문서는 v3 용어를 사용하지만, 이
+  문서는 v2 용어(현재 스키마 API)를 사용합니다. v3 용어는 괄호로 표시되어 있습니다. 마지막 섹션에서
+  전체 매핑 정보를 확인할 수 있습니다.
+</Aside>
+
+```
+Service (v3: Database)
+├── Label (v3: Table)
+│   ├── Schema (src, tgt, fields)
+│   └── Indices (v3: Indexes)
+└── Alias
+```
+
+- **서비스**는 관련된 레이블과 별칭을 그룹화합니다
+- **레이블**은 엣지에 대한 스키마를 정의합니다
+- **별칭**은 레이블에 대한 대체 이름을 제공합니다
+
+## 서비스 (v3: 데이터베이스) {#service-v3-database}
+
+레이블과 별칭을 포함하는 네임스페이스입니다.
+
+| 프로퍼티 | 설명                            |
+| -------- | ------------------------------- |
+| name     | 서비스 식별자 (예: `myservice`) |
+| desc     | 설명 (v3: 코멘트)               |
+| active   | 활성화 여부                     |
+
+Example: an e-commerce service might contain labels for `likes`, `recent_views`, and `purchases`.
+
+## 레이블 (v3: 테이블) {#label-v3-table}
+
+엣지의 스키마—src, tgt, 필드, 인덱스를 정의합니다.
+
+| 프로퍼티 | 설명                                                 |
+| -------- | ---------------------------------------------------- |
+| name     | 형식: `service.label`                                |
+| desc     | 설명 (v3: 코멘트)                                    |
+| type     | 레이블 타입 (INDEXED, HASH, MULTI_EDGE)              |
+| schema   | 엣지 구조 (src, tgt, fields)                         |
+| dirType  | 방향 타입 (v3: direction)                            |
+| storage  | 스토리지 URI (예: `datastore://<namespace>/<table>`) |
+| indices  | 쿼리용 인덱스 (v3: indexes)                          |
+| active   | 활성화 여부                                          |
+
+### 스키마 정의 {#schema-definition}
+
+- **src** (v3: source): 소스 타입 (STRING, LONG) — 누가
+- **tgt** (v3: target): 타겟 타입 (STRING, LONG) — 무엇을
+- **fields** (v3: properties): 각각 name, type, nullable 포함
+
+**Example: Recent Views**
+
+```
+src: user_id (LONG)
+tgt: product_id (LONG)
+fields:
+  - created_at (LONG)
+dirType: BOTH
+```
+
+**Example: Reactions**
+
+```
+src: user_id (LONG)
+tgt: product_id (LONG)
+fields:
+  - created_at (LONG)
+  - reaction_type (STRING)
+dirType: BOTH
+```
+
+### 인덱스 정의 {#index-definition}
+
+인덱스는 효율적인 쿼리를 가능하게 합니다. 각 인덱스는 이름과 정렬 순서를 갖는 필드 목록을 가집니다.
+
+```
+indices:
+  - name: by_created_at
+    fields: [created_at DESC]
+  - name: by_type_and_time
+    fields: [reaction_type ASC, created_at DESC]
+```
+
+인덱스는 쓰기 시점에 미리 계산됩니다. 자세한 내용은 [쿼리](/ko/design/query/)를 참고하세요.
+
+## 별칭 {#alias}
+
+레이블의 대체 이름입니다.
+
+| 프로퍼티 | 설명                  |
+| -------- | --------------------- |
+| name     | 형식: `service.alias` |
+| desc     | 설명 (v3: comment)    |
+| target   | 가리키는 레이블       |
+| active   | 활성화 여부           |
+
+점진적 마이그레이션이나 도메인별 네이밍에 유용합니다.
+
+## 네이밍 규칙 {#naming-conventions}
+
+| 유형   | 형식            | 예시                |
+| ------ | --------------- | ------------------- |
+| 서비스 | 간단한 식별자   | `myservice`         |
+| 레이블 | `service.label` | `myservice.likes`   |
+| 별칭   | `service.alias` | `myservice.friends` |
+
+## 스키마 버전 {#schema-versions}
+
+v2와 v3는 거의 1:1로 매핑됩니다.
+
+| v2 (현재) | v3 (미래) |
+| --------- | --------- |
+| service   | database  |
+| 레이블    | 테이블    |
+| src       | 소스      |
+| tgt       | 타겟      |
+| ts        | 버전      |
+| fields    | 프로퍼티  |
+| dirType   | 방향      |
+| indices   | 인덱스    |
+| desc      | 코멘트    |
+
+## 다음 단계 {#next-steps}
+
+- [뮤테이션](/ko/design/mutation/): 데이터 쓰기
+- [쿼리](/ko/design/query/): 데이터 조회
+- [메타데이터 API](/ko/api-references/metadata/): API 레퍼런스

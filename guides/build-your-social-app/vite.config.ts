@@ -7,6 +7,20 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: 'dist/hands-on-social',
+  },
+  server: {
+    proxy: {
+      '/api/command': {
+        target: 'http://localhost:9300',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/graph': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+    }
   }
 })
 

@@ -1,13 +1,13 @@
 package command
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/kakao/actionbase/internal/client"
 	clientModel "github.com/kakao/actionbase/internal/client/model"
@@ -15,17 +15,18 @@ import (
 	"github.com/kakao/actionbase/internal/util"
 )
 
+type YAMLCommand struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+	Command     string `yaml:"command"`
+}
+
 const (
 	singleQuote = '\''
 	doubleQuote = '"'
-
-	multilineOutCommentStart = "# @out"
-	multilineOutCommentEnd   = "#"
-	singleLineOutComment     = "# @out:"
 )
 
 type Load struct {
-	context          *Context
 	runner           LoadRunner
 	actionbaseClient *client.ActionbaseClient
 }
@@ -47,127 +48,113 @@ func NewLoad(runner LoadRunner, actionbaseClient *client.ActionbaseClient) *Load
 }
 
 func (l *Load) Execute(args []string) *model.Response {
-	if len(args) != 1 {
-		return model.Fail(fmt.Sprintf("Invalid arguments: %s", args))
+	if len(args) < 2 {
+		return model.Fail(fmt.Sprintf("Usage: %s", l.GetType().GetCommand()))
 	}
 
-	path := args[0]
-	file, err := os.Open(path)
+	switch args[0] {
+	case "file":
+		if len(args) != 2 {
+			return model.Fail(fmt.Sprintf("Usage: %s", l.GetType().GetCommand()))
+		}
+
+		return l.loadFile(args[1])
+	case "preset":
+		parser := util.ParseArgs(args)
+		refs, _ := parser.GetLenient("ref")
+		return l.loadPreset(args[1], refs)
+	default:
+		return model.Fail(fmt.Sprintf("Usage: %s", l.GetType().GetCommand()))
+	}
+}
+
+func (l *Load) loadFile(path string) *model.Response {
+	if !strings.HasSuffix(path, ".yaml") && !strings.HasSuffix(path, ".yml") {
+		return model.Fail(fmt.Sprintf("Unsupported file extension: %s", filepath.Ext(path)))
+	}
+
+	return l.loadYAMLFile(path)
+}
+
+func (l *Load) loadYAMLFile(path string) *model.Response {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return model.Fail(fmt.Sprintf("failed to get current working directory: %s", err.Error()))
+	}
+
+	safeDirAbs, err := filepath.Abs(cwd)
+	if err != nil {
+		return model.Fail(fmt.Sprintf("failed to resolve safe directory: %s", err.Error()))
+	}
+
+	absPath, err := filepath.Abs(filepath.Join(safeDirAbs, path))
+	if err != nil {
+		return model.Fail(fmt.Sprintf("failed to resolve absolute path: %s", err.Error()))
+	}
+
+	rel, err := filepath.Rel(safeDirAbs, absPath)
+	if err != nil || rel == ".." || rel == "." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return model.Fail("invalid file path")
+	}
+
+	return l.executeYAMLCommands(absPath)
+}
+
+func (l *Load) executeYAMLCommands(absPath string) *model.Response {
+	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return model.Fail(err.Error())
 	}
 
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
+	var commands []YAMLCommand
+	err = yaml.Unmarshal(data, &commands)
+	if err != nil {
+		return model.Fail(fmt.Sprintf("Failed to parse YAML: %s", err.Error()))
+	}
 
-		}
-	}(file)
-
-	reader := bufio.NewReader(file)
-
-	return l.load(reader, path)
-}
-
-func (l *Load) load(reader *bufio.Reader, path string) *model.Response {
-	var resultBuffer strings.Builder
-	var command strings.Builder
-	var multilineOutComment strings.Builder
-	isInOutCommentBlock := false
-
-	for {
-		line, err := reader.ReadString('\n')
-		if err == io.EOF {
-			if isInOutCommentBlock {
-				decoratedOutComment := fmt.Sprintf("/**\n%s\n*/\n", strings.TrimSpace(multilineOutComment.String()))
-				resultBuffer.WriteString(decoratedOutComment)
-				fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
-
-				multilineOutComment.Reset()
-				isInOutCommentBlock = false
-				break
-			}
-			if command.Len() > 0 {
-				chunk := l.normalize(command.String())
-				if len(chunk) == 0 {
-					break
-				}
-
-				result := l.doLoad(chunk)
-				if !result.IsSuccess {
-					resultMessage := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
-					fmt.Printf(resultMessage)
-					resultBuffer.WriteString(resultMessage)
-					return model.FailWithNoOut(resultBuffer.String())
-				}
-				resultBuffer.WriteString(*result.Result)
-			}
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		trimmedLine := strings.TrimSpace(line)
-
-		if strings.HasPrefix(trimmedLine, singleLineOutComment) {
-			outContent := strings.TrimPrefix(trimmedLine, singleLineOutComment)
-
-			decoratedOutComment := fmt.Sprintf("/* %s */\n", strings.TrimSpace(outContent))
-			resultBuffer.WriteString(decoratedOutComment)
-			fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
-
-			command.Reset()
+	var results []string
+	for _, cmd := range commands {
+		if cmd.Command == "" {
 			continue
 		}
 
-		if trimmedLine == multilineOutCommentStart {
-			isInOutCommentBlock = true
-			multilineOutComment.Reset()
+		if cmd.Description != "" {
+			decoratedDescription := fmt.Sprintf("/* %s */", cmd.Description)
+			results = append(results, decoratedDescription)
+			util.Print("\033[90m%s\033[0m\n", decoratedDescription)
+		}
+
+		chunk := l.normalize(cmd.Command)
+		if len(chunk) == 0 {
 			continue
 		}
 
-		if isInOutCommentBlock && trimmedLine == multilineOutCommentEnd {
-			decoratedOutComment := fmt.Sprintf("/**\n%s\n*/\n", strings.TrimSpace(multilineOutComment.String()))
-			resultBuffer.WriteString(decoratedOutComment)
-			fmt.Printf("\033[90m%s\033[0m\n", decoratedOutComment)
-
-			multilineOutComment.Reset()
-			isInOutCommentBlock = false
-			command.Reset()
-			continue
+		result := l.doLoad(chunk)
+		if !result.IsSuccess {
+			resultMessage := "Failed to execute command. Please check your command syntax or system log"
+			util.Println(resultMessage)
+			results = append(results, resultMessage)
+			return model.FailWithNoOut(strings.Join(results, "\n"))
 		}
-
-		if isInOutCommentBlock {
-			multilineOutComment.WriteString(strings.TrimSuffix(line, "\n"))
-			multilineOutComment.WriteString("\n")
-			continue
-		}
-
-		command.WriteString(line)
-
-		if strings.HasSuffix(strings.TrimSpace(line), ";") {
-			chunk := l.normalize(command.String())
-
-			if len(chunk) > 0 {
-				result := l.doLoad(chunk)
-				if !result.IsSuccess {
-					resultMessage := fmt.Sprintf("Failed to doLoad '%s'. Please check your command syntax or system log", path)
-					fmt.Println(resultMessage)
-					resultBuffer.WriteString(resultMessage)
-					return model.FailWithNoOut(resultBuffer.String())
-				}
-				resultBuffer.WriteString(*result.Result)
-			}
-			command.Reset()
+		if result.Result != nil {
+			results = append(results, *result.Result)
 		}
 	}
 
-	return model.SuccessWithResultNoOut(resultBuffer.String())
+	return model.SuccessWithResultNoOut(strings.Join(results, "\n"))
 }
 
 func (l *Load) doLoad(data string) *model.Response {
 	results := l.parseArgsWithQuotes(data)
+	if len(results) < 2 {
+		return model.Fail(fmt.Sprintf("Usage: %s", l.GetType().GetCommand()))
+	}
+
+	// Handle "use" command for setting database/table context
+	if results[0] == "use" {
+		return l.loadUse(results[1:])
+	}
+
 	resourceType := results[1]
 
 	parser := util.ParseArgs(results)
@@ -290,7 +277,50 @@ func (l *Load) loadEdge(parser *util.Parser, data string) *model.Response {
 		}
 	}
 
-	return model.SuccessWithResult(fmt.Sprintf("%d edges are mutated (total: %d, failed: %d)\n", len(edgeBulkMutations.Mutations), updatedCount, failedCount))
+	// Build edge list for display
+	var edgeList strings.Builder
+	for _, mutation := range edgeBulkMutations.Mutations {
+		source := util.ToString(mutation.Edge.Source)
+		target := util.ToString(mutation.Edge.Target)
+		edgeList.WriteString(fmt.Sprintf("\n - %s \u2192 %s", source, target))
+	}
+
+	return model.SuccessWithResult(fmt.Sprintf("%d edges inserted%s", len(edgeBulkMutations.Mutations), edgeList.String()))
+}
+
+func (l *Load) loadUse(args []string) *model.Response {
+	if len(args) < 2 {
+		return model.Fail("Usage: use <database|table> <name>")
+	}
+
+	resourceType := args[0]
+	name := args[1]
+
+	switch resourceType {
+	case "database":
+		response := l.actionbaseClient.GetDatabase(name)
+		if response.IsError() {
+			return model.Fail(fmt.Sprintf("No database '%s' found", name))
+		}
+		l.runner.SetCurrentDatabase(name)
+		l.runner.SetCurrentTable("")
+		return model.SuccessWithResult(fmt.Sprintf("Database changed to '%s'", name))
+
+	case "table":
+		database := l.runner.GetCurrentDatabase()
+		if database == "" {
+			return model.Fail("No database selected. Use 'use database <name>' first")
+		}
+		response := l.actionbaseClient.GetTable(database, name)
+		if response.IsError() {
+			return model.Fail(fmt.Sprintf("No table '%s' found in database '%s'", name, database))
+		}
+		l.runner.SetCurrentTable(name)
+		return model.SuccessWithResult(fmt.Sprintf("Table changed to '%s'", name))
+
+	default:
+		return model.Fail("Usage: use <database|table> <name>")
+	}
 }
 
 func (l *Load) normalize(chunk string) string {
@@ -356,6 +386,35 @@ func (l *Load) parseArgsWithQuotes(line string) []string {
 
 	return args
 }
+
+func (l *Load) loadPreset(filename, refs string) *model.Response {
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {
+		return model.Fail("invalid preset filename")
+	}
+
+	cleanedFilename := filepath.Clean(filename) + ".preset.yaml"
+	downloadPath := filepath.Join(os.TempDir(), "actionbase-presets", cleanedFilename)
+
+	// Ensure temp directory exists
+	if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
+		return model.Fail(fmt.Sprintf("Failed to create temp directory: %s", err.Error()))
+	}
+
+	var url string
+	if refs != "" {
+		url = "https://raw.githubusercontent.com/kakao/actionbase/" + refs + "/examples/presets/" + cleanedFilename
+	} else {
+		url = "https://github.com/kakao/actionbase/releases/download/examples/" + cleanedFilename
+	}
+
+	ok := util.Download(downloadPath, url)
+	if !ok {
+		return model.Fail("Failed to download preset file")
+	}
+
+	return l.executeYAMLCommands(downloadPath)
+}
+
 
 func (l *Load) GetDescription() string {
 	return "Load resources"
