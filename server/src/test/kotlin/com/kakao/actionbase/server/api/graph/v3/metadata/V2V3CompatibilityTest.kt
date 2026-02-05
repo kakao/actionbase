@@ -34,15 +34,22 @@ class V2V3CompatibilityTest : E2ETestBase() {
             - scenario: V2 create, V3 update
               v2Name: compat-db-v2v3
               v3Name: compat-db-v2v3
-              v2CreateReq: '{"desc": "created by v2"}'
-              v3UpdateReq: '{"comment": "updated by v3"}'
+              v2CreateReq: |
+                {"desc": "created by v2"}
+              v3UpdateReq: |
+                {"comment": "updated by v3"}
               expectedValue: updated by v3
 
             - scenario: V3 create, V2 update
               v2Name: compat-db-v3v2
               v3Name: compat-db-v3v2
-              v3CreateReq: '{"database": "compat-db-v3v2", "comment": "created by v3"}'
-              v2UpdateReq: '{"active": true, "desc": "updated by v2"}'
+              v3CreateReq: |
+                {
+                  "database": "compat-db-v3v2",
+                  "comment": "created by v3"
+                }
+              v2UpdateReq: |
+                {"active": true, "desc": "updated by v2"}
               expectedValue: updated by v2
             """,
         )
@@ -130,14 +137,41 @@ class V2V3CompatibilityTest : E2ETestBase() {
             """
             - scenario: V2 create, V3 update
               name: compat-tbl-v2v3
-              v2CreateReq: '{"desc": "created by v2", "type": "HASH", "schema": {"src": {"type": "STRING", "desc": "source"}, "tgt": {"type": "STRING", "desc": "target"}, "fields": []}, "dirType": "OUT", "storage": "datastore://hbase/compat-tbl-v2v3-storage"}'
-              v3UpdateReq: '{"comment": "updated by v3"}'
+              v2CreateReq: |
+                {
+                  "desc": "created by v2",
+                  "type": "HASH",
+                  "schema": {
+                    "src": {"type": "STRING", "desc": "source"},
+                    "tgt": {"type": "STRING", "desc": "target"},
+                    "fields": []
+                  },
+                  "dirType": "OUT",
+                  "storage": "datastore://hbase/compat-tbl-v2v3-storage"
+                }
+              v3UpdateReq: |
+                {"comment": "updated by v3"}
               expectedValue: updated by v3
 
             - scenario: V3 create, V2 update
               name: compat-tbl-v3v2
-              v3CreateReq: '{"schema": {"type": "edge", "source": {"type": "string", "comment": "source"}, "target": {"type": "string", "comment": "target"}, "properties": [], "direction": "OUT", "indexes": [], "groups": []}, "storage": "datastore://hbase/compat-tbl-v3v2-storage", "mode": "SYNC", "comment": "created by v3"}'
-              v2UpdateReq: '{"active": true, "desc": "updated by v2"}'
+              v3CreateReq: |
+                {
+                  "schema": {
+                    "type": "edge",
+                    "source": {"type": "string", "comment": "source"},
+                    "target": {"type": "string", "comment": "target"},
+                    "properties": [],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/compat-tbl-v3v2-storage",
+                  "mode": "SYNC",
+                  "comment": "created by v3"
+                }
+              v2UpdateReq: |
+                {"active": true, "desc": "updated by v2"}
               expectedValue: updated by v2
             """,
         )
@@ -224,7 +258,24 @@ class V2V3CompatibilityTest : E2ETestBase() {
             client.post()
                 .uri("/graph/v3/databases/$db/tables/$table")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("""{"schema": {"type": "edge", "source": {"type": "string", "comment": "src"}, "target": {"type": "string", "comment": "tgt"}, "properties": [], "direction": "OUT", "indexes": [], "groups": []}, "storage": "datastore://hbase/compat-alias-target-storage", "mode": "SYNC", "comment": "target table"}""")
+                .bodyValue(
+                    """
+                    {
+                      "schema": {
+                        "type": "edge",
+                        "source": {"type": "string", "comment": "src"},
+                        "target": {"type": "string", "comment": "tgt"},
+                        "properties": [],
+                        "direction": "OUT",
+                        "indexes": [],
+                        "groups": []
+                      },
+                      "storage": "datastore://hbase/compat-alias-target-storage",
+                      "mode": "SYNC",
+                      "comment": "target table"
+                    }
+                    """.trimIndent(),
+                )
                 .exchange()
                 .expectStatus().isOk
         }
@@ -234,14 +285,24 @@ class V2V3CompatibilityTest : E2ETestBase() {
             """
             - scenario: V2 create, V3 update
               name: compat-als-v2v3
-              v2CreateReq: '{"desc": "created by v2", "target": "compat-alias-db.compat-alias-target"}'
-              v3UpdateReq: '{"comment": "updated by v3"}'
+              v2CreateReq: |
+                {
+                  "desc": "created by v2",
+                  "target": "compat-alias-db.compat-alias-target"
+                }
+              v3UpdateReq: |
+                {"comment": "updated by v3"}
               expectedValue: updated by v3
 
             - scenario: V3 create, V2 update
               name: compat-als-v3v2
-              v3CreateReq: '{"table": "compat-alias-target", "comment": "created by v3"}'
-              v2UpdateReq: '{"active": true, "desc": "updated by v2"}'
+              v3CreateReq: |
+                {
+                  "table": "compat-alias-target",
+                  "comment": "created by v3"
+                }
+              v2UpdateReq: |
+                {"active": true, "desc": "updated by v2"}
               expectedValue: updated by v2
             """,
         )
