@@ -17,8 +17,9 @@ class HBaseDatastoreBindingConfiguration(
 ) {
     @Bean
     fun hBaseAdmin(): HBaseAdmin {
-        val backend = DefaultStorageBackendFactory.INSTANCE as? HBaseStorageBackend
-            ?: throw IllegalStateException("HBaseAdmin requires HBaseStorageBackend but got ${DefaultStorageBackendFactory.INSTANCE::class.simpleName}")
+        val backend =
+            DefaultStorageBackendFactory.INSTANCE as? HBaseStorageBackend
+                ?: throw IllegalStateException("HBaseAdmin requires HBaseStorageBackend but got ${DefaultStorageBackendFactory.INSTANCE::class.simpleName}")
         return HBaseAdmin(
             backend.connectionMono
                 .map { it.admin }

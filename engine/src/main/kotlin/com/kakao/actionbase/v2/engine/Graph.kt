@@ -59,7 +59,6 @@ import com.kakao.actionbase.v2.engine.sql.StatLong
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.sql.toRowFlux
 import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
-import com.kakao.actionbase.v2.engine.storage.StorageBackend
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseOptions
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
@@ -941,9 +940,8 @@ class Graph(
             kafkaClientFactory: KafkaClientFactory,
             webClientFactory: WebClientFactory,
         ): Graph {
-            if (!DefaultStorageBackendFactory.isInitialized) {
-                DefaultStorageBackendFactory.initialize(config.hbase)
-            }
+            // Initialize storage backend if not already initialized (idempotent)
+            DefaultStorageBackendFactory.initialize(config.hbase)
             log.info("phase: {}", config.phase)
             log.info("tenant: {}", config.tenant)
             log.info("graph config: {}", config)

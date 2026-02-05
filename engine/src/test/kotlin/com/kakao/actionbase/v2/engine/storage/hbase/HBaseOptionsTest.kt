@@ -59,9 +59,7 @@ class HBaseOptionsTest(
     @Test
     fun `use default hbase cluster namespace`() =
         test(config.tableName) { tableName ->
-
-            Storage
-                .parseOptions<HBaseOptions>(makeConfig("", tableName.qualifierAsString))
+            Storage.parseOptions<HBaseOptions>(makeConfig("", tableName.qualifierAsString))
         }
 
     private fun makeConfig(
@@ -87,7 +85,8 @@ class HBaseOptionsTest(
                 assertNotNull(tables)
                 assertNotNull(tables.edge)
                 assertNotNull(tables.lock)
-                assertEquals(expectTableName, tables.edge.name)
+                // MockHBaseStorageBackend uses table name without namespace prefix
+                assertEquals(expectTableName.qualifierAsString, tables.edge.name.qualifierAsString)
             }.verifyComplete()
     }
 

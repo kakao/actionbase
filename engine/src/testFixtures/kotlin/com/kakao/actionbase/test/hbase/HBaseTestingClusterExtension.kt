@@ -26,11 +26,9 @@ class HBaseTestingClusterExtension :
 
     override fun beforeAll(context: ExtensionContext) {
         HBaseTestingCluster.startIfNeeded()
-        // Initialize DefaultStorageBackendFactory with the HBase testing cluster (if not already initialized)
-        if (!DefaultStorageBackendFactory.isInitialized) {
-            val testingBackend = HBaseTestingStorageBackend(Mono.just(HBaseTestingCluster.asyncConnection), "ab_test")
-            DefaultStorageBackendFactory.initialize(testingBackend, "ab_test")
-        }
+        // Initialize DefaultStorageBackendFactory with the HBase testing cluster (idempotent)
+        val testingBackend = HBaseTestingStorageBackend(Mono.just(HBaseTestingCluster.asyncConnection), "ab_test")
+        DefaultStorageBackendFactory.initialize(testingBackend, "ab_test")
     }
 
     override fun supportsParameter(

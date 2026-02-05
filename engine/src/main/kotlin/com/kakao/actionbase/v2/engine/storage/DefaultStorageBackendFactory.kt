@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
  *
  * Thread-safety: This factory is designed to be initialized once at application startup.
  * The initialize() method is synchronized to prevent race conditions during initialization.
+ * Once initialized, the factory cannot be re-initialized.
  *
  * Usage:
  * ```yaml
@@ -38,16 +39,17 @@ object DefaultStorageBackendFactory {
 
     /**
      * Initializes the storage backend based on the provided properties.
+     * If already initialized, this method does nothing (idempotent).
      *
      * @param properties Configuration properties including:
      *   - type: Backend type (memory, embedded, hbase). Defaults to "hbase".
      *   - For HBase type, see HBaseStorageBackend.create for additional properties.
-     * @throws IllegalStateException if already initialized (call reset() first for re-initialization)
      */
     @Synchronized
     fun initialize(properties: Map<String, String>) {
-        check(!isInitialized) {
-            "StorageBackend already initialized. Call reset() before re-initializing."
+        if (isInitialized) {
+            logger.debug("StorageBackend already initialized, skipping")
+            return
         }
         val type = properties["type"] ?: "hbase"
         defaultNamespace0 = properties["namespace"] ?: "default"
@@ -77,19 +79,19 @@ object DefaultStorageBackendFactory {
 
     /**
      * Initializes the factory with a pre-created StorageBackend instance.
-     * This is primarily used for testing with embedded HBase clusters.
+     * If already initialized, this method does nothing (idempotent).
      *
      * @param backend The StorageBackend instance to use.
      * @param namespace The default namespace to use.
-     * @throws IllegalStateException if already initialized (call reset() first for re-initialization)
      */
     @Synchronized
     fun initialize(
         backend: StorageBackend,
         namespace: String = "default",
     ) {
-        check(!isInitialized) {
-            "StorageBackend already initialized. Call reset() before re-initializing."
+        if (isInitialized) {
+            logger.debug("StorageBackend already initialized, skipping")
+            return
         }
         logger.info("Initializing StorageBackend with provided instance: {}, namespace: {}", backend::class.simpleName, namespace)
         instance0 = backend
@@ -98,15 +100,5 @@ object DefaultStorageBackendFactory {
 
     fun close() {
         instance0?.close()
-    }
-
-    /**
-     * For testing: reset the factory state to allow re-initialization.
-     */
-    @Synchronized
-    internal fun reset() {
-        instance0?.close()
-        instance0 = null
-        defaultNamespace0 = "default"
     }
 }

@@ -1,11 +1,11 @@
 package com.kakao.actionbase.v2.engine.storage
 
+import kotlin.test.assertEquals
+
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-
-import kotlin.test.assertEquals
 
 class DatastoreUriTest {
     @Nested
