@@ -18,9 +18,13 @@ import org.slf4j.LoggerFactory
 object DefaultStorageBackendFactory {
     private val logger = LoggerFactory.getLogger(DefaultStorageBackendFactory::class.java)
     private lateinit var instance0: StorageBackend
+    private var defaultNamespace0: String = "default"
 
     val INSTANCE: StorageBackend
         get() = instance0
+
+    val defaultNamespace: String
+        get() = defaultNamespace0
 
     /**
      * Initializes the storage backend based on the provided properties.
@@ -31,7 +35,8 @@ object DefaultStorageBackendFactory {
      */
     fun initialize(properties: Map<String, String>) {
         val type = properties["type"] ?: "hbase"
-        logger.info("Initializing StorageBackend with type: {}", type)
+        defaultNamespace0 = properties["namespace"] ?: "default"
+        logger.info("Initializing StorageBackend with type: {}, namespace: {}", type, defaultNamespace0)
 
         instance0 =
             when (type) {
@@ -60,10 +65,15 @@ object DefaultStorageBackendFactory {
      * This is primarily used for testing with embedded HBase clusters.
      *
      * @param backend The StorageBackend instance to use.
+     * @param namespace The default namespace to use.
      */
-    fun initialize(backend: StorageBackend) {
-        logger.info("Initializing StorageBackend with provided instance: {}", backend::class.simpleName)
+    fun initialize(
+        backend: StorageBackend,
+        namespace: String = "default",
+    ) {
+        logger.info("Initializing StorageBackend with provided instance: {}, namespace: {}", backend::class.simpleName, namespace)
         instance0 = backend
+        defaultNamespace0 = namespace
     }
 
     fun close() {

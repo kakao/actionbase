@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
-import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
 import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
 import com.kakao.actionbase.v2.engine.storage.StorageBuckets
 
@@ -27,9 +26,9 @@ data class HBaseOptions(
     fun checkConnection(): Mono<Boolean> = Mono.just(true)
 
     /**
-     * Returns the effective namespace, using DefaultHBaseCluster's namespace as fallback.
+     * Returns the effective namespace, using DefaultStorageBackendFactory's defaultNamespace as fallback.
      */
-    private fun getEffectiveNamespace(): String = namespace.ifEmpty { DefaultHBaseCluster.INSTANCE.namespace }
+    private fun getEffectiveNamespace(): String = namespace.ifEmpty { DefaultStorageBackendFactory.defaultNamespace }
 
     /**
      * Returns StorageBuckets for the configured namespace and tableName.

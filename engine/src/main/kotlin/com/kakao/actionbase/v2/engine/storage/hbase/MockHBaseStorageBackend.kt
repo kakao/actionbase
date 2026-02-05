@@ -49,11 +49,10 @@ class MockHBaseStorageBackend : StorageBackend {
 
     /**
      * Creates a mock HBase table using the "edges" table name.
-     * This matches the original DefaultHBaseCluster mock behavior for backward compatibility.
+     * All mock tables share the same "edges" table per namespace for backward compatibility.
      */
     private fun createMockHBaseTable(namespace: String): HBaseTable {
         val conn = HBaseConnections.getMockConnection(namespace)
-        // Always use "edges" table for mock mode - matches DefaultHBaseCluster behavior
         val mockTable = conn.getTable(TableName.valueOf("edges")) as MockHTable
         val table = NewMockTable(mockTable)
         return HBaseTable.create(table)
