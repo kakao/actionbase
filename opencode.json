@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["OPENCODE.md"],
+  "provider": {
+    "kap": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "KAP (On-Premise)",
+      "options": {
+        "baseURL": "https://api-inference-internal.kap.9rum.cc/v1"
+      },
+      "models": {
+        "qwen3-coder-480b-instruct": {
+          "name": "Qwen3 Coder 480B"
+        },
+        "gpt-oss-120b": {
+          "name": "GPT OSS 120B"
+        }
+      }
+    }
+  },
+  "tui": {
+    "diff_style": "auto"
+  },
+  "tools": {
+    "bash": true,
+    "read": true,
+    "write": true,
+    "edit": true,
+    "glob": true,
+    "grep": true,
+    "list": true,
+    "webfetch": true,
+    "task": true
+  }
+}
