@@ -16,8 +16,10 @@ import reactor.core.scheduler.Schedulers
 
 class HBaseStorageBackend private constructor(
     val connectionMono: Mono<AsyncConnection>,
-    private val namespace: String,
-    private val config: Configuration,
+    // Retained for potential future use (e.g., default namespace fallback, admin operations)
+    @Suppress("unused") private val namespace: String,
+    // Retained for potential future use (e.g., connection pool management, config inspection)
+    @Suppress("unused") private val config: Configuration,
 ) : StorageBackend {
     override fun getBucket(
         namespace: String,

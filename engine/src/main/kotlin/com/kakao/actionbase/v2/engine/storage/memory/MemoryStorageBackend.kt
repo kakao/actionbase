@@ -36,7 +36,8 @@ class MemoryStorageBackend : StorageBackend {
 
     private fun parseUri(uri: String): Pair<String, String> {
         val parts = uri.removePrefix("datastore://").split("/")
-        return if (parts.size >= 2) parts[0] to parts[1] else "" to ""
+        require(parts.size == 2) { "Invalid datastore URI: $uri. Expected format: datastore://{namespace}/{tableName}" }
+        return parts[0] to parts[1]
     }
 
     @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))

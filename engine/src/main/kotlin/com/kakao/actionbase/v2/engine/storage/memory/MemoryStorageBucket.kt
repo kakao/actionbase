@@ -29,7 +29,28 @@ class MemoryStorageBucket(
         limit: Int,
         start: ByteArray?,
         stop: ByteArray?,
-    ): Mono<List<HBaseRecord>> = Mono.fromCallable { store.prefixScan(prefix).take(limit) }
+    ): Mono<List<HBaseRecord>> =
+        Mono.fromCallable {
+            store
+                .prefixScan(prefix)
+                .filter { record ->
+                    val afterStart = start == null || compareByteArrays(record.key, start) >= 0
+                    val beforeStop = stop == null || compareByteArrays(record.key, stop) < 0
+                    afterStart && beforeStop
+                }.take(limit)
+        }
+
+    private fun compareByteArrays(
+        a: ByteArray,
+        b: ByteArray,
+    ): Int {
+        val minLen = minOf(a.size, b.size)
+        for (i in 0 until minLen) {
+            val cmp = (a[i].toInt() and 0xFF) - (b[i].toInt() and 0xFF)
+            if (cmp != 0) return cmp
+        }
+        return a.size - b.size
+    }
 
     override fun increment(
         key: ByteArray,

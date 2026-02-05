@@ -9,6 +9,9 @@ import org.slf4j.LoggerFactory
 /**
  * Factory for creating StorageBackend instances.
  *
+ * Thread-safety: This factory is designed to be initialized once at application startup.
+ * The initialize() method is synchronized to prevent race conditions during initialization.
+ *
  * Usage:
  * ```yaml
  * hbase:
@@ -17,7 +20,11 @@ import org.slf4j.LoggerFactory
  */
 object DefaultStorageBackendFactory {
     private val logger = LoggerFactory.getLogger(DefaultStorageBackendFactory::class.java)
+
+    @Volatile
     private lateinit var instance0: StorageBackend
+
+    @Volatile
     private var defaultNamespace0: String = "default"
 
     val INSTANCE: StorageBackend
@@ -33,6 +40,7 @@ object DefaultStorageBackendFactory {
      *   - type: Backend type (memory, embedded, hbase). Defaults to "hbase".
      *   - For HBase type, see HBaseStorageBackend.create for additional properties.
      */
+    @Synchronized
     fun initialize(properties: Map<String, String>) {
         val type = properties["type"] ?: "hbase"
         defaultNamespace0 = properties["namespace"] ?: "default"
@@ -67,6 +75,7 @@ object DefaultStorageBackendFactory {
      * @param backend The StorageBackend instance to use.
      * @param namespace The default namespace to use.
      */
+    @Synchronized
     fun initialize(
         backend: StorageBackend,
         namespace: String = "default",
