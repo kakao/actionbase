@@ -32,7 +32,7 @@ class ByteArrayStore internal constructor() {
     operator fun get(key: ByteArray): ByteArray? = underlying[key]?.clone()
 
     /**
-     * Scans all entries with keys starting with the given prefix
+     * Scans all entries with keys starting with the given prefix.
      * Returns copies of keys and values.
      */
     fun prefixScan(prefix: ByteArray): List<HBaseRecord> =
