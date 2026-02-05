@@ -192,7 +192,7 @@ class V3MutationServiceAsyncSpec :
             val walActual = walSource.readWal().filter { it.label == tableName }
             walActual.size shouldBe expectedSize
             walActual.all { it.mode.queue == queue } shouldBe true
-            walActual.all { it.mode.t == tableMode } shouldBe true
+            walActual.all { it.mode.l == tableMode } shouldBe true
             walActual.all { it.mode.r == requestMode } shouldBe true
             walActual.all { it.mode.g == globalMode } shouldBe true
             walActual.all { it.mode.i == internalMode } shouldBe true

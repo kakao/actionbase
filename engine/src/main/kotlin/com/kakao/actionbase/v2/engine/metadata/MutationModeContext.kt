@@ -5,8 +5,10 @@ import com.kakao.actionbase.v2.core.metadata.MutationMode.ASYNC
 import com.kakao.actionbase.v2.core.metadata.MutationMode.IGNORE
 import com.kakao.actionbase.v2.core.metadata.MutationMode.SYNC
 
-data class MutationModeContext(
-    val t: MutationMode, // table
+// TODO: Add @ConsistentCopyVisibility annotation when Kotlin is upgraded to 1.9.20+.
+//       In Kotlin 2.5, the generated copy() method will expose the private constructor.
+data class MutationModeContext private constructor(
+    val l: MutationMode, // label (table)
     val r: MutationMode?, // request
     val g: MutationMode?, // global
     val i: MutationMode?, // internal
@@ -53,7 +55,7 @@ data class MutationModeContext(
                 "SYNC is not allowed when table mode is IGNORE."
             }
             val queue = mode == ASYNC || mode == IGNORE
-            return MutationModeContext(t = table, r = request, g = global, i = internal, queue = queue)
+            return MutationModeContext(l = table, r = request, g = global, i = internal, queue = queue)
         }
     }
 }
