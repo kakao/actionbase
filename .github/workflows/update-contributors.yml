@@ -5,24 +5,22 @@ on:
   workflow_dispatch:
 
 jobs:
-  contributors:
+  update:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - name: Update contributors
+      - name: Update cache buster
         run: |
-          CONTRIBUTORS=$(gh api repos/${{ github.repository }}/contributors --paginate --jq \
-            '.[] | select(.type != "Bot") | "<a href=\"\(.html_url)\"><img src=\"\(.avatar_url)&s=70\" width=\"70\" alt=\"\(.login)\"/></a>"' \
-            | tr '\n' ' ')
-
-          sed -i '/<!-- contributors-start -->/,/<!-- contributors-end -->/{//!d}' README.md
-          sed -i "/<!-- contributors-start -->/a\\
-          ${CONTRIBUTORS}" README.md
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git diff --quiet || (git add README.md && git commit -m "docs: update contributors" && git push)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TODAY=$(date +%Y%m%d)
+          sed -i "s/contrib.rocks\/image?repo=kakao\/actionbase[^)]*/contrib.rocks\/image?repo=kakao\/actionbase\&v=$TODAY/" README.md
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: 'docs: update contributors'
+          title: 'docs: update contributors'
+          body: 'Automated cache bust for contributors image.'
+          branch: auto-update-contributors
+          delete-branch: true

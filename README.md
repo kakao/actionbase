@@ -119,8 +119,7 @@ For questions, ideas, or feedback, join us on [GitHub Discussions](https://githu
 
 ## Contributors
 
-<!-- contributors-start -->
-<!-- contributors-end -->
+[![contributors](https://contrib.rocks/image?repo=kakao/actionbase&v=20260206)](https://github.com/kakao/actionbase/graphs/contributors)
 
 ## License
 
