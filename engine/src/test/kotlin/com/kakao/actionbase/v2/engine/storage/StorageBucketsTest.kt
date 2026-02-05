@@ -21,7 +21,7 @@ class StorageBucketsTest {
     }
 
     private class StubBucket : StorageBucket {
-        override fun get(key: ByteArray): Mono<ByteArray?> = Mono.just(null)
+        override fun get(key: ByteArray): Mono<ByteArray?> = Mono.empty()
 
         override fun get(keys: List<ByteArray>): Mono<List<HBaseRecord>> = Mono.just(emptyList())
 
