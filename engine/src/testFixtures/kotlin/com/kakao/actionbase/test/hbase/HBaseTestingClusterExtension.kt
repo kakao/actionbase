@@ -1,6 +1,7 @@
 package com.kakao.actionbase.test.hbase
 
 import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
+import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
 
 import org.apache.hadoop.hbase.client.AsyncConnection
 import org.apache.hadoop.hbase.client.AsyncTable
@@ -26,7 +27,9 @@ class HBaseTestingClusterExtension :
 
     override fun beforeAll(context: ExtensionContext) {
         HBaseTestingCluster.startIfNeeded()
+        // Initialize both for backward compatibility during migration
         DefaultHBaseCluster.initialize(Mono.just(HBaseTestingCluster.asyncConnection), "ab_test", HBaseTestingCluster.hbaseConfiguration)
+        DefaultStorageBackendFactory.initialize(mapOf("type" to "embedded"))
     }
 
     override fun supportsParameter(

@@ -22,14 +22,14 @@ class MockStorageBackend : StorageBackend {
         namespace: String,
         name: String,
     ): Mono<StorageBuckets> {
-        val hbaseTable = createMockHBaseTable(namespace)
+        val hbaseTable = createMockHBaseTable(namespace, name.ifEmpty { "edges" })
         val bucket = HBaseStorageBucket(hbaseTable)
         return Mono.just(StorageBuckets(bucket, bucket))
     }
 
     override fun getBucket(uri: String): Mono<StorageBuckets> {
-        val (ns, _) = parseDatastoreUri(uri)
-        return getBucket(ns, "")
+        val (ns, name) = parseDatastoreUri(uri)
+        return getBucket(ns, name)
     }
 
     @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))
@@ -37,23 +37,32 @@ class MockStorageBackend : StorageBackend {
         namespace: String,
         name: String,
     ): Mono<HBaseTables> {
-        val hbaseTable = createMockHBaseTable(namespace)
+        val hbaseTable = createMockHBaseTable(namespace, name.ifEmpty { "edges" })
         return Mono.just(HBaseTables(hbaseTable, hbaseTable))
     }
 
     @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
     override fun getTable(uri: String): Mono<HBaseTables> {
-        val (ns, _) = parseDatastoreUri(uri)
-        return getTable(ns, "")
+        val (ns, name) = parseDatastoreUri(uri)
+        return getTable(ns, name)
     }
 
     override fun close() {
         // nothing to close
     }
 
-    private fun createMockHBaseTable(namespace: String): HBaseTable {
+    private fun createMockHBaseTable(
+        namespace: String,
+        tableName: String,
+    ): HBaseTable {
         val conn = HBaseConnections.getMockConnection(namespace)
-        val mockTable = conn.getTable(TableName.valueOf("edges")) as MockHTable
+        val fullTableName =
+            if (namespace.isNotEmpty()) {
+                TableName.valueOf(namespace, tableName)
+            } else {
+                TableName.valueOf(tableName)
+            }
+        val mockTable = conn.getTable(fullTableName) as MockHTable
         val table = NewMockTable(mockTable)
         return HBaseTable.create(table)
     }

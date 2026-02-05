@@ -1,11 +1,10 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
 import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
-import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
+import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
+import com.kakao.actionbase.v2.engine.storage.StorageBuckets
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.TableName
-import org.apache.hadoop.hbase.client.mock.MockHTable
 import org.slf4j.LoggerFactory
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
@@ -13,8 +12,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import reactor.core.publisher.Mono
 
 /**
- * This supports only HBase 2.4 or below.
- * To support HBase 2.5, use [com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster]
+ * HBase storage options for Label configurations.
+ * Uses DefaultStorageBackendFactory for storage backend access.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class HBaseOptions(
@@ -24,37 +23,35 @@ data class HBaseOptions(
 ) {
     private val logger = LoggerFactory.getLogger(HBaseOptions::class.java)
 
-    private fun useMockConnection(): Boolean = mock || DefaultHBaseCluster.INSTANCE.mock
-
-    // Mock or DefaultHBaseCluster connections is always available.
+    // Connection is always available via DefaultStorageBackendFactory.
     fun checkConnection(): Mono<Boolean> = Mono.just(true)
 
     /**
-     * // DefaultHBaseCluster = DHC
-     * | mock  | DHC.mock ||| connection    | namespace       | note                               |
-     * |-------|----------|||---------------|-----------------|------------------------------------|
-     * | true  | -        ||| mock          | given namespace | original logic                     |
-     * | -     | true     ||| mock          | given namespace | original logic                     |
-     * | false | false    ||| DHC with      | given namespace | use already created DHC connection |
-     * |-------|----------|||---------------|-----------------|------------------------------------|
+     * Returns the effective namespace, using DefaultHBaseCluster's namespace as fallback.
      */
-    fun getTables(): Mono<HBaseTables> =
-        if (useMockConnection()) {
-            logger.info("Using MockHBase for tableName: {}", tableName)
-            val conn = HBaseConnections.getMockConnection(namespace)
-            val table = NewMockTable(conn.getTable(TableName.valueOf("edges")) as MockHTable)
-            val hbaseTable = HBaseTable.create(table)
-            Mono.just(HBaseTables(hbaseTable, hbaseTable))
-        } else {
-            val namespace = if (namespace.isBlank()) DefaultHBaseCluster.INSTANCE.namespace else this.namespace
-            logger.info("🚀 Using DefaultHBaseCluster for tableName: {} (using namespace: {})", tableName, namespace)
-            DefaultHBaseCluster.INSTANCE.connectionMono
-                .map { connection ->
-                    val edgeTable = connection.getTable(TableName.valueOf(namespace, tableName))
-                    val hbaseTable = HBaseTable.create(edgeTable)
-                    HBaseTables(hbaseTable, hbaseTable)
-                }.cache()
-        }
+    private fun getEffectiveNamespace(): String = namespace.ifEmpty { DefaultHBaseCluster.INSTANCE.namespace }
+
+    /**
+     * Returns StorageBuckets for the configured namespace and tableName.
+     * This is the preferred method for new code.
+     */
+    fun getBuckets(): Mono<StorageBuckets> {
+        val effectiveNs = getEffectiveNamespace()
+        logger.info("Using StorageBackend for tableName: {}", tableName)
+        return DefaultStorageBackendFactory.INSTANCE.getBucket(effectiveNs, tableName).cache()
+    }
+
+    /**
+     * Returns HBaseTables for backward compatibility with existing Label implementations.
+     * @deprecated Use getBuckets() instead
+     */
+    @Deprecated("Use getBuckets() instead", ReplaceWith("getBuckets()"))
+    @Suppress("DEPRECATION")
+    fun getTables(): Mono<HBaseTables> {
+        val effectiveNs = getEffectiveNamespace()
+        logger.info("Using StorageBackend (HBaseTables) for tableName: {}", tableName)
+        return DefaultStorageBackendFactory.INSTANCE.getTable(effectiveNs, tableName).cache()
+    }
 
     companion object {
         fun newConfiguration(): Configuration = Configuration()
