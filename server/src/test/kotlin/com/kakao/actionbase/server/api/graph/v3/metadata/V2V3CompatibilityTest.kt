@@ -12,10 +12,6 @@ import org.springframework.http.MediaType
 /**
  * V2-V3 API Compatibility E2E Tests
  *
- * Tests that V2 and V3 APIs are fully compatible:
- * - Create with V2 → Update with V3 → Verify consistency
- * - Create with V3 → Update with V2 → Verify consistency
- *
  * Terminology mapping:
  * - V2 Service = V3 Database
  * - V2 Label = V3 Table
@@ -24,11 +20,6 @@ import org.springframework.http.MediaType
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class V2V3CompatibilityTest : E2ETestBase() {
 
-    // Test data classes for Given-When-Then structure
-    data class Given(val name: String)
-    data class When(val createApi: String, val createReq: String, val updateApi: String, val updateReq: String)
-    data class Then(val expectedComment: String)
-
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class DatabaseCompatibilityTest {
@@ -36,83 +27,61 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - scenario: V2 create, V3 update
-              given:
-                name: compat-db-v2v3
-              when:
-                createApi: V2
-                createReq: |
-                  {"desc": "created by v2"}
-                updateApi: V3
-                updateReq: |
-                  {"comment": "updated by v3"}
-              then:
-                expectedComment: updated by v3
-
-            - scenario: V3 create, V2 update
-              given:
-                name: compat-db-v3v2
-              when:
-                createApi: V3
-                createReq: |
-                  {
-                    "database": "compat-db-v3v2",
-                    "comment": "created by v3"
-                  }
-                updateApi: V2
-                updateReq: |
-                  {"active": true, "desc": "updated by v2"}
-              then:
-                expectedComment: updated by v2
+            - name: db-v2v3
+              given: |
+                {"desc": "created by v2"}
+              expected: |
+                {"comment": "updated by v3"}
             """,
         )
-        fun `database compatibility - create and update across API versions`(
-            scenario: String,
-            given: Given,
-            `when`: When,
-            then: Then,
-        ) {
-            // Create
-            val createUri = when (`when`.createApi) {
-                "V2" -> "/graph/v2/service/${given.name}"
-                "V3" -> "/graph/v3/databases/${given.name}"
-                else -> error("Unknown API: ${`when`.createApi}")
-            }
-            client.post()
-                .uri(createUri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(`when`.createReq)
-                .exchange()
-                .expectStatus().isOk
+        fun `V2 create, V3 update`(name: String, given: String, expected: String) {
+            // V2 create
+            client.post().uri("/graph/v2/service/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .exchange().expectStatus().isOk
 
-            // Update
-            val updateUri = when (`when`.updateApi) {
-                "V2" -> "/graph/v2/service/${given.name}"
-                "V3" -> "/graph/v3/databases/${given.name}"
-                else -> error("Unknown API: ${`when`.updateApi}")
-            }
-            client.put()
-                .uri(updateUri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(`when`.updateReq)
-                .exchange()
-                .expectStatus().isOk
+            // V3 update
+            client.put().uri("/graph/v3/databases/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .exchange().expectStatus().isOk
 
-            // Verify via V2 API
-            client.get()
-                .uri("/graph/v2/service/${given.name}")
-                .exchange()
-                .expectStatus().isOk
-                .expectBody()
-                .jsonPath("$.desc").isEqualTo(then.expectedComment)
+            // Verify
+            verifyDatabase(name, "updated by v3")
+        }
 
-            // Verify via V3 API
-            client.get()
-                .uri("/graph/v3/databases/${given.name}")
-                .exchange()
-                .expectStatus().isOk
-                .expectBody()
-                .jsonPath("$.comment").isEqualTo(then.expectedComment)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: db-v3v2
+              given: |
+                {"database": "db-v3v2", "comment": "created by v3"}
+              expected: |
+                {"active": true, "desc": "updated by v2"}
+            """,
+        )
+        fun `V3 create, V2 update`(name: String, given: String, expected: String) {
+            // V3 create
+            client.post().uri("/graph/v3/databases/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .exchange().expectStatus().isOk
+
+            // V2 update
+            client.put().uri("/graph/v2/service/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .exchange().expectStatus().isOk
+
+            // Verify
+            verifyDatabase(name, "updated by v2")
+        }
+
+        private fun verifyDatabase(name: String, expectedComment: String) {
+            client.get().uri("/graph/v2/service/$name")
+                .exchange().expectStatus().isOk
+                .expectBody().jsonPath("$.desc").isEqualTo(expectedComment)
+
+            client.get().uri("/graph/v3/databases/$name")
+                .exchange().expectStatus().isOk
+                .expectBody().jsonPath("$.comment").isEqualTo(expectedComment)
         }
     }
 
@@ -123,114 +92,93 @@ class V2V3CompatibilityTest : E2ETestBase() {
 
         @BeforeAll
         fun setup() {
-            client.post()
-                .uri("/graph/v3/databases/$db")
+            client.post().uri("/graph/v3/databases/$db")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""{"database": "$db", "comment": "test db"}""")
-                .exchange()
-                .expectStatus().isOk
+                .exchange().expectStatus().isOk
         }
 
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - scenario: V2 create, V3 update
-              given:
-                name: compat-tbl-v2v3
-              when:
-                createApi: V2
-                createReq: |
-                  {
-                    "desc": "created by v2",
-                    "type": "HASH",
-                    "schema": {
-                      "src": {"type": "STRING", "desc": "source"},
-                      "tgt": {"type": "STRING", "desc": "target"},
-                      "fields": []
-                    },
-                    "dirType": "OUT",
-                    "storage": "datastore://hbase/compat-tbl-v2v3-storage"
-                  }
-                updateApi: V3
-                updateReq: |
-                  {"comment": "updated by v3"}
-              then:
-                expectedComment: updated by v3
-
-            - scenario: V3 create, V2 update
-              given:
-                name: compat-tbl-v3v2
-              when:
-                createApi: V3
-                createReq: |
-                  {
-                    "schema": {
-                      "type": "edge",
-                      "source": {"type": "string", "comment": "source"},
-                      "target": {"type": "string", "comment": "target"},
-                      "properties": [],
-                      "direction": "OUT",
-                      "indexes": [],
-                      "groups": []
-                    },
-                    "storage": "datastore://hbase/compat-tbl-v3v2-storage",
-                    "mode": "SYNC",
-                    "comment": "created by v3"
-                  }
-                updateApi: V2
-                updateReq: |
-                  {"active": true, "desc": "updated by v2"}
-              then:
-                expectedComment: updated by v2
+            - name: tbl-v2v3
+              given: |
+                {
+                  "desc": "created by v2",
+                  "type": "HASH",
+                  "schema": {
+                    "src": {"type": "STRING", "desc": "source"},
+                    "tgt": {"type": "STRING", "desc": "target"},
+                    "fields": []
+                  },
+                  "dirType": "OUT",
+                  "storage": "datastore://hbase/tbl-v2v3-storage"
+                }
+              expected: |
+                {"comment": "updated by v3"}
             """,
         )
-        fun `table compatibility - create and update across API versions`(
-            scenario: String,
-            given: Given,
-            `when`: When,
-            then: Then,
-        ) {
-            // Create
-            val createUri = when (`when`.createApi) {
-                "V2" -> "/graph/v2/service/$db/label/${given.name}"
-                "V3" -> "/graph/v3/databases/$db/tables/${given.name}"
-                else -> error("Unknown API: ${`when`.createApi}")
-            }
-            client.post()
-                .uri(createUri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(`when`.createReq)
-                .exchange()
-                .expectStatus().isOk
+        fun `V2 create, V3 update`(name: String, given: String, expected: String) {
+            // V2 create
+            client.post().uri("/graph/v2/service/$db/label/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .exchange().expectStatus().isOk
 
-            // Update
-            val updateUri = when (`when`.updateApi) {
-                "V2" -> "/graph/v2/service/$db/label/${given.name}"
-                "V3" -> "/graph/v3/databases/$db/tables/${given.name}"
-                else -> error("Unknown API: ${`when`.updateApi}")
-            }
-            client.put()
-                .uri(updateUri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(`when`.updateReq)
-                .exchange()
-                .expectStatus().isOk
+            // V3 update
+            client.put().uri("/graph/v3/databases/$db/tables/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .exchange().expectStatus().isOk
 
-            // Verify via V2 API
-            client.get()
-                .uri("/graph/v2/service/$db/label/${given.name}")
-                .exchange()
-                .expectStatus().isOk
-                .expectBody()
-                .jsonPath("$.desc").isEqualTo(then.expectedComment)
+            // Verify
+            verifyTable(name, "updated by v3")
+        }
 
-            // Verify via V3 API
-            client.get()
-                .uri("/graph/v3/databases/$db/tables/${given.name}")
-                .exchange()
-                .expectStatus().isOk
-                .expectBody()
-                .jsonPath("$.comment").isEqualTo(then.expectedComment)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: tbl-v3v2
+              given: |
+                {
+                  "schema": {
+                    "type": "edge",
+                    "source": {"type": "string", "comment": "source"},
+                    "target": {"type": "string", "comment": "target"},
+                    "properties": [],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/tbl-v3v2-storage",
+                  "mode": "SYNC",
+                  "comment": "created by v3"
+                }
+              expected: |
+                {"active": true, "desc": "updated by v2"}
+            """,
+        )
+        fun `V3 create, V2 update`(name: String, given: String, expected: String) {
+            // V3 create
+            client.post().uri("/graph/v3/databases/$db/tables/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .exchange().expectStatus().isOk
+
+            // V2 update
+            client.put().uri("/graph/v2/service/$db/label/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .exchange().expectStatus().isOk
+
+            // Verify
+            verifyTable(name, "updated by v2")
+        }
+
+        private fun verifyTable(name: String, expectedComment: String) {
+            client.get().uri("/graph/v2/service/$db/label/$name")
+                .exchange().expectStatus().isOk
+                .expectBody().jsonPath("$.desc").isEqualTo(expectedComment)
+
+            client.get().uri("/graph/v3/databases/$db/tables/$name")
+                .exchange().expectStatus().isOk
+                .expectBody().jsonPath("$.comment").isEqualTo(expectedComment)
         }
     }
 
@@ -238,21 +186,16 @@ class V2V3CompatibilityTest : E2ETestBase() {
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class AliasCompatibilityTest {
         private val db = "compat-alias-db"
-        private val table = "compat-alias-target"
+        private val table = "alias-target"
 
         @BeforeAll
         fun setup() {
-            // Create database
-            client.post()
-                .uri("/graph/v3/databases/$db")
+            client.post().uri("/graph/v3/databases/$db")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""{"database": "$db", "comment": "test db"}""")
-                .exchange()
-                .expectStatus().isOk
+                .exchange().expectStatus().isOk
 
-            // Create table (alias target)
-            client.post()
-                .uri("/graph/v3/databases/$db/tables/$table")
+            client.post().uri("/graph/v3/databases/$db/tables/$table")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(
                     """
@@ -266,99 +209,73 @@ class V2V3CompatibilityTest : E2ETestBase() {
                         "indexes": [],
                         "groups": []
                       },
-                      "storage": "datastore://hbase/compat-alias-target-storage",
+                      "storage": "datastore://hbase/alias-target-storage",
                       "mode": "SYNC",
                       "comment": "target table"
                     }
                     """.trimIndent(),
                 )
-                .exchange()
-                .expectStatus().isOk
+                .exchange().expectStatus().isOk
         }
 
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - scenario: V2 create, V3 update
-              given:
-                name: compat-als-v2v3
-              when:
-                createApi: V2
-                createReq: |
-                  {
-                    "desc": "created by v2",
-                    "target": "compat-alias-db.compat-alias-target"
-                  }
-                updateApi: V3
-                updateReq: |
-                  {"comment": "updated by v3"}
-              then:
-                expectedComment: updated by v3
-
-            - scenario: V3 create, V2 update
-              given:
-                name: compat-als-v3v2
-              when:
-                createApi: V3
-                createReq: |
-                  {
-                    "table": "compat-alias-target",
-                    "comment": "created by v3"
-                  }
-                updateApi: V2
-                updateReq: |
-                  {"active": true, "desc": "updated by v2"}
-              then:
-                expectedComment: updated by v2
+            - name: als-v2v3
+              given: |
+                {"desc": "created by v2", "target": "compat-alias-db.alias-target"}
+              expected: |
+                {"comment": "updated by v3"}
             """,
         )
-        fun `alias compatibility - create and update across API versions`(
-            scenario: String,
-            given: Given,
-            `when`: When,
-            then: Then,
-        ) {
-            // Create
-            val createUri = when (`when`.createApi) {
-                "V2" -> "/graph/v2/service/$db/alias/${given.name}"
-                "V3" -> "/graph/v3/databases/$db/aliases/${given.name}"
-                else -> error("Unknown API: ${`when`.createApi}")
-            }
-            client.post()
-                .uri(createUri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(`when`.createReq)
-                .exchange()
-                .expectStatus().isOk
+        fun `V2 create, V3 update`(name: String, given: String, expected: String) {
+            // V2 create
+            client.post().uri("/graph/v2/service/$db/alias/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .exchange().expectStatus().isOk
 
-            // Update
-            val updateUri = when (`when`.updateApi) {
-                "V2" -> "/graph/v2/service/$db/alias/${given.name}"
-                "V3" -> "/graph/v3/databases/$db/aliases/${given.name}"
-                else -> error("Unknown API: ${`when`.updateApi}")
-            }
-            client.put()
-                .uri(updateUri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(`when`.updateReq)
-                .exchange()
-                .expectStatus().isOk
+            // V3 update
+            client.put().uri("/graph/v3/databases/$db/aliases/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .exchange().expectStatus().isOk
 
-            // Verify via V2 API
-            client.get()
-                .uri("/graph/v2/service/$db/alias/${given.name}")
-                .exchange()
-                .expectStatus().isOk
-                .expectBody()
-                .jsonPath("$.desc").isEqualTo(then.expectedComment)
+            // Verify
+            verifyAlias(name, "updated by v3")
+        }
 
-            // Verify via V3 API
-            client.get()
-                .uri("/graph/v3/databases/$db/aliases/${given.name}")
-                .exchange()
-                .expectStatus().isOk
-                .expectBody()
-                .jsonPath("$.comment").isEqualTo(then.expectedComment)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: als-v3v2
+              given: |
+                {"table": "alias-target", "comment": "created by v3"}
+              expected: |
+                {"active": true, "desc": "updated by v2"}
+            """,
+        )
+        fun `V3 create, V2 update`(name: String, given: String, expected: String) {
+            // V3 create
+            client.post().uri("/graph/v3/databases/$db/aliases/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(given)
+                .exchange().expectStatus().isOk
+
+            // V2 update
+            client.put().uri("/graph/v2/service/$db/alias/$name")
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(expected)
+                .exchange().expectStatus().isOk
+
+            // Verify
+            verifyAlias(name, "updated by v2")
+        }
+
+        private fun verifyAlias(name: String, expectedComment: String) {
+            client.get().uri("/graph/v2/service/$db/alias/$name")
+                .exchange().expectStatus().isOk
+                .expectBody().jsonPath("$.desc").isEqualTo(expectedComment)
+
+            client.get().uri("/graph/v3/databases/$db/aliases/$name")
+                .exchange().expectStatus().isOk
+                .expectBody().jsonPath("$.comment").isEqualTo(expectedComment)
         }
     }
 }
