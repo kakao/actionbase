@@ -1,12 +1,12 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
 import com.kakao.actionbase.server.test.E2ETestBase
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 import org.springframework.http.MediaType
 
 /**
@@ -28,13 +28,22 @@ class V2V3CompatibilityTest : E2ETestBase() {
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class DatabaseCompatibilityTest {
 
-        @ParameterizedTest(name = "[{index}] {0}")
-        @CsvSource(
-            delimiter = '|',
-            textBlock = """
-                # scenario           | v2Name         | v3Name         | v2CreateReq                | v3CreateReq                                            | v2UpdateReq                          | v3UpdateReq                     | expectedValue
-                V2 create, V3 update | compat-db-v2v3 | compat-db-v2v3 | {"desc": "created by v2"}  |                                                        |                                      | {"comment": "updated by v3"}    | updated by v3
-                V3 create, V2 update | compat-db-v3v2 | compat-db-v3v2 |                            | {"database": "compat-db-v3v2", "comment": "created by v3"} | {"active": true, "desc": "updated by v2"} |                             | updated by v2
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - scenario: V2 create, V3 update
+              v2Name: compat-db-v2v3
+              v3Name: compat-db-v2v3
+              v2CreateReq: '{"desc": "created by v2"}'
+              v3UpdateReq: '{"comment": "updated by v3"}'
+              expectedValue: updated by v3
+
+            - scenario: V3 create, V2 update
+              v2Name: compat-db-v3v2
+              v3Name: compat-db-v3v2
+              v3CreateReq: '{"database": "compat-db-v3v2", "comment": "created by v3"}'
+              v2UpdateReq: '{"active": true, "desc": "updated by v2"}'
+              expectedValue: updated by v2
             """,
         )
         fun `database compatibility - create and update across API versions`(
@@ -116,13 +125,20 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectStatus().isOk
         }
 
-        @ParameterizedTest(name = "[{index}] {0}")
-        @CsvSource(
-            delimiter = '|',
-            textBlock = """
-                # scenario           | name            | v2CreateReq | v3CreateReq | v2UpdateReq | v3UpdateReq | expectedValue
-                V2 create, V3 update | compat-tbl-v2v3 | {"desc": "created by v2", "type": "HASH", "schema": {"src": {"type": "STRING", "desc": "source"}, "tgt": {"type": "STRING", "desc": "target"}, "fields": []}, "dirType": "OUT", "storage": "datastore://hbase/compat-tbl-v2v3-storage"} |  |  | {"comment": "updated by v3"} | updated by v3
-                V3 create, V2 update | compat-tbl-v3v2 |  | {"schema": {"source": {"type": "STRING", "comment": "source"}, "target": {"type": "STRING", "comment": "target"}, "properties": [], "direction": "OUT"}, "storage": "datastore://hbase/compat-tbl-v3v2-storage", "mode": "SYNC", "comment": "created by v3"} | {"active": true, "desc": "updated by v2"} |  | updated by v2
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - scenario: V2 create, V3 update
+              name: compat-tbl-v2v3
+              v2CreateReq: '{"desc": "created by v2", "type": "HASH", "schema": {"src": {"type": "STRING", "desc": "source"}, "tgt": {"type": "STRING", "desc": "target"}, "fields": []}, "dirType": "OUT", "storage": "datastore://hbase/compat-tbl-v2v3-storage"}'
+              v3UpdateReq: '{"comment": "updated by v3"}'
+              expectedValue: updated by v3
+
+            - scenario: V3 create, V2 update
+              name: compat-tbl-v3v2
+              v3CreateReq: '{"schema": {"type": "edge", "source": {"type": "string", "comment": "source"}, "target": {"type": "string", "comment": "target"}, "properties": [], "direction": "OUT", "indexes": [], "groups": []}, "storage": "datastore://hbase/compat-tbl-v3v2-storage", "mode": "SYNC", "comment": "created by v3"}'
+              v2UpdateReq: '{"active": true, "desc": "updated by v2"}'
+              expectedValue: updated by v2
             """,
         )
         fun `table compatibility - create and update across API versions`(
@@ -208,18 +224,25 @@ class V2V3CompatibilityTest : E2ETestBase() {
             client.post()
                 .uri("/graph/v3/databases/$db/tables/$table")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("""{"schema": {"source": {"type": "STRING", "comment": "src"}, "target": {"type": "STRING", "comment": "tgt"}, "properties": [], "direction": "OUT"}, "storage": "datastore://hbase/compat-alias-target-storage", "mode": "SYNC", "comment": "target table"}""")
+                .bodyValue("""{"schema": {"type": "edge", "source": {"type": "string", "comment": "src"}, "target": {"type": "string", "comment": "tgt"}, "properties": [], "direction": "OUT", "indexes": [], "groups": []}, "storage": "datastore://hbase/compat-alias-target-storage", "mode": "SYNC", "comment": "target table"}""")
                 .exchange()
                 .expectStatus().isOk
         }
 
-        @ParameterizedTest(name = "[{index}] {0}")
-        @CsvSource(
-            delimiter = '|',
-            textBlock = """
-                # scenario           | name            | v2CreateReq | v3CreateReq | v2UpdateReq | v3UpdateReq | expectedValue
-                V2 create, V3 update | compat-als-v2v3 | {"desc": "created by v2", "target": "compat-alias-db.compat-alias-target"} |  |  | {"comment": "updated by v3"} | updated by v3
-                V3 create, V2 update | compat-als-v3v2 |  | {"table": "compat-alias-target", "comment": "created by v3"} | {"active": true, "desc": "updated by v2"} |  | updated by v2
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - scenario: V2 create, V3 update
+              name: compat-als-v2v3
+              v2CreateReq: '{"desc": "created by v2", "target": "compat-alias-db.compat-alias-target"}'
+              v3UpdateReq: '{"comment": "updated by v3"}'
+              expectedValue: updated by v3
+
+            - scenario: V3 create, V2 update
+              name: compat-als-v3v2
+              v3CreateReq: '{"table": "compat-alias-target", "comment": "created by v3"}'
+              v2UpdateReq: '{"active": true, "desc": "updated by v2"}'
+              expectedValue: updated by v2
             """,
         )
         fun `alias compatibility - create and update across API versions`(

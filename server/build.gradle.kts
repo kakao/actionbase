@@ -56,6 +56,9 @@ dependencies {
     testFixturesApi(Dependencies.Testing.JUPITER_API)
     testFixturesApi(Dependencies.Spring.BOOT_STARTER_TEST)
     testFixturesApi(Dependencies.Spring.BOOT_STARTER_WEBFLUX)
+
+    // test
+    testImplementation(testFixtures(project(":core")))
 }
 
 gitProperties {
