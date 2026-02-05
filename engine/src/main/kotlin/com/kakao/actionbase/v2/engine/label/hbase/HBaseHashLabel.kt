@@ -2,6 +2,7 @@ package com.kakao.actionbase.v2.engine.label.hbase
 
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.storage.HBaseRecord
+import com.kakao.actionbase.core.storage.MutationRequest
 import com.kakao.actionbase.engine.util.HBaseRecordCache
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.EncodedKey
@@ -21,22 +22,21 @@ import com.kakao.actionbase.v2.engine.label.LabelFactory
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
 import com.kakao.actionbase.v2.engine.sql.StatKey
+import com.kakao.actionbase.v2.engine.storage.StorageBuckets
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageBucket
 
+import java.nio.ByteBuffer
 import java.util.Arrays
 
 import org.apache.hadoop.hbase.CellUtil
 import org.apache.hadoop.hbase.CompareOperator
-import org.apache.hadoop.hbase.client.CheckAndMutate
 import org.apache.hadoop.hbase.client.Delete
 import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Increment
 import org.apache.hadoop.hbase.client.Put
-import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.filter.BinaryComparator
 import org.apache.hadoop.hbase.filter.FilterList
-import org.apache.hadoop.hbase.filter.PageFilter
 import org.apache.hadoop.hbase.filter.QualifierFilter
 import org.apache.hadoop.hbase.filter.ValueFilter
 import org.apache.hadoop.hbase.util.Bytes
@@ -46,23 +46,21 @@ import reactor.core.publisher.Mono
 open class HBaseHashLabel(
     entity: LabelEntity,
     coder: EdgeEncoder<ByteArray>,
-    private val tables: Mono<HBaseTables>,
+    private val buckets: Mono<StorageBuckets>,
 ) : AbstractLabel<ByteArray>(entity, coder) {
     private val hbaseRecordCache: HBaseRecordCache = HBaseRecordCache.create()
 
     override fun findHashEdge(keyField: EncodedKey<ByteArray>): Mono<ByteArray> {
         require(keyField.field == null) { "field must be null" }
-        val get =
-            Get(keyField.key)
-                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
-        val result = tables.flatMap { it.edge.get(get) }
-        return result.mapNotNull {
-            if (it.isEmpty) {
-                null
-            } else {
-                it.value()
+        return buckets
+            .flatMap { it.edge.get(keyField.key) }
+            .flatMap { value ->
+                if (value == null) {
+                    Mono.empty()
+                } else {
+                    Mono.just(value)
+                }
             }
-        }
     }
 
     override fun create(
@@ -70,12 +68,7 @@ open class HBaseHashLabel(
         value: ByteArray,
     ): Mono<List<Any>> {
         require(keyField.field == null) { "field must be null" }
-        val put =
-            Put(keyField.key)
-                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, value)
-        // return tables.flatMap { it.edge.put(put) }
-        //    .thenReturn(true)
-        return Mono.just(listOf(put))
+        return Mono.just(listOf(MutationRequest.Put(keyField.key, value)))
     }
 
     override fun update(
@@ -85,26 +78,43 @@ open class HBaseHashLabel(
 
     override fun delete(keyField: EncodedKey<ByteArray>): Mono<List<Any>> {
         require(keyField.field == null) { "field must be null" }
-        val delete = Delete(keyField.key)
-        // return tables.flatMap { it.edge.delete(delete) }.thenReturn(true)
-        return Mono.just(listOf(delete))
+        return Mono.just(listOf(MutationRequest.Delete(keyField.key)))
     }
 
-    override fun handleDeferredRequests(deferredRequests: List<Any>): Mono<Boolean> = tables.flatMap { it.edge.batch(deferredRequests) }.thenReturn(true)
+    override fun handleDeferredRequests(deferredRequests: List<Any>): Mono<Boolean> =
+        buckets.flatMap { storageBuckets ->
+            val mutationRequests = deferredRequests.filterIsInstance<MutationRequest>()
+            val hbaseMutations =
+                deferredRequests.filter { request ->
+                    request is Put || request is Delete || request is Increment
+                }
+
+            val operations = mutableListOf<Mono<Void>>()
+
+            if (mutationRequests.isNotEmpty()) {
+                operations += storageBuckets.edge.batch(mutationRequests)
+            }
+
+            if (hbaseMutations.isNotEmpty()) {
+                val hbaseBucket =
+                    storageBuckets.edge as? HBaseStorageBucket
+                        ?: throw IllegalArgumentException("HBase mutations require HBaseStorageBucket")
+                operations += hbaseBucket.batchRaw(hbaseMutations)
+            }
+
+            if (operations.isEmpty()) {
+                Mono.just(true)
+            } else {
+                Mono.`when`(operations).thenReturn(true)
+            }
+        }
 
     override fun setnx(
         keyField: EncodedKey<ByteArray>,
         value: ByteArray,
     ): Mono<Boolean> {
         require(keyField.field == null) { "field must be null" }
-        val request =
-            CheckAndMutate
-                .newBuilder(keyField.key)
-                .ifNotExists(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
-                .build(Put(keyField.key).addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, value))
-        return tables.flatMap { it.edge.checkAndMutate(request) }.map {
-            it.isSuccess
-        }
+        return buckets.flatMap { it.edge.setIfNotExists(keyField.key, value) }
     }
 
     override fun setnxOnLock(
@@ -112,14 +122,7 @@ open class HBaseHashLabel(
         value: ByteArray,
     ): Mono<Boolean> {
         require(keyField.field == null) { "field must be null" }
-        val request =
-            CheckAndMutate
-                .newBuilder(keyField.key)
-                .ifNotExists(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
-                .build(Put(keyField.key).addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, value))
-        return tables.flatMap { it.lock.checkAndMutate(request) }.map {
-            it.isSuccess
-        }
+        return buckets.flatMap { it.lock.setIfNotExists(keyField.key, value) }
     }
 
     override fun cad(
@@ -127,48 +130,22 @@ open class HBaseHashLabel(
         value: ByteArray,
     ): Mono<Long> {
         require(keyField.field == null) { "field must be null" }
-        val request =
-            CheckAndMutate
-                .newBuilder(keyField.key)
-                .ifEquals(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, value)
-                .build(Delete(keyField.key))
-        return tables.flatMap { tables ->
-            tables.lock
-                .checkAndMutate(request)
-                .map { result ->
-                    result.isSuccess
-                }.map { isSuccess -> if (isSuccess) 1L else 0L }
-        }
+        return buckets
+            .flatMap { it.lock.deleteIfEquals(keyField.key, value) }
+            .map { isSuccess -> if (isSuccess) 1L else 0L }
     }
 
     override fun findLockValue(keyField: EncodedKey<ByteArray>): Mono<ByteArray> {
         require(keyField.field == null) { "field must be null" }
-        val get =
-            Get(keyField.key)
-                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
-        return tables.flatMap {
-            it.lock.get(get).mapNotNull { result ->
-                if (result.isEmpty) {
-                    null
-                } else {
-                    result.getValue(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
-                }
-            }
-        }
+        return buckets
+            .flatMap { it.lock.get(keyField.key) }
+            .flatMap { value -> if (value == null) Mono.empty() else Mono.just(value) }
     }
 
     override fun incrby(
         key: ByteArray,
         acc: Long,
-    ): Mono<List<Any>> {
-        val increment =
-            Increment(key)
-                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, acc)
-        // return tables.flatMap { it.edge.increment(increment) }.map {
-        //     Bytes.toLong(it.value())
-        // }
-        return Mono.just(listOf(increment))
-    }
+    ): Mono<List<Any>> = Mono.just(listOf(MutationRequest.Increment(key, acc)))
 
     // --- for scan
 
@@ -180,29 +157,14 @@ open class HBaseHashLabel(
     ): Mono<List<KeyFieldValue<ByteArray>>> {
         // inclusive false is not working
         // we need limit + 1 and drop the first element
-        val scan =
-            Scan()
-                .setRowPrefixFilter(prefix.key)
-                .setFilter(PageFilter((limit + 1).toLong())) // plus 1 for the inclusive start row
-
-        start?.let { scan.withStartRow(it.key, false) }
-
-        end?.let { scan.withStopRow(it.key, false) }
-
-        scan.addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
-
-        return tables
-            .flatMap { it.edge.scan(scan, limit + 1) } // plus 1 for the inclusive start row
-            .map {
-                it
-                    // Search for rows greater than or equal to start key and offset
-                    .dropWhile { result -> start?.key?.let { key -> Arrays.compareUnsigned(key, result.row) >= 0 } ?: false }
-                    // Search for rows less than end key
-                    .dropLastWhile { result -> end?.key?.let { key -> Arrays.compareUnsigned(key, result.row) < 0 } ?: false }
+        return buckets
+            .flatMap { it.edge.scan(prefix.key, limit + 1, start?.key, end?.key) }
+            .map { records ->
+                records
+                    .dropWhile { record -> start?.key?.let { key -> Arrays.compareUnsigned(key, record.key) >= 0 } ?: false }
+                    .dropLastWhile { record -> end?.key?.let { key -> Arrays.compareUnsigned(key, record.key) < 0 } ?: false }
                     .take(limit)
-                    .map { result ->
-                        KeyFieldValue(result.row, result.value())
-                    }
+                    .map { record -> KeyFieldValue(record.key, record.value) }
             }
     }
 
@@ -218,31 +180,29 @@ open class HBaseHashLabel(
         val withAll = stats.contains(StatKey.WITH_ALL)
         val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
 
-        val gets =
+        val encodedKeys =
             src.map {
                 val edge = Edge(0L, it, it).ensureType(entity.schema)
-                val key = coder.encodeHashEdgeKey(edge, entity.id)
-                Get(key.key)
-                    .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
+                coder.encodeHashEdgeKey(edge, entity.id)
             }
 
         val rows =
-            tables
-                .flatMap { it.edge.get(gets) }
-                .mapNotNull { results ->
-                    results
-                        .map {
-                            if (it.isEmpty) {
+            buckets
+                .flatMap { it.edge.get(encodedKeys.map { key -> key.key }) }
+                .mapNotNull { records ->
+                    val recordByKey = recordMap(records)
+                    encodedKeys
+                        .mapNotNull { encodedKey ->
+                            val record = recordByKey[wrapKey(encodedKey.key)] ?: return@mapNotNull null
+                            val schemaEdge = encodedEdgeToSchemaEdge(KeyFieldValue(record.key, record.value))
+                            if (!withAll && !schemaEdge.isActive) {
                                 null
                             } else {
-                                encodedEdgeToSchemaEdge(KeyFieldValue(it.row, it.value()))
-                            }
-                        }.filter { it != null && (withAll || it.isActive) }
-                        .map {
-                            if (withEdgeId) {
-                                it!!.toRow(withAll, idEdgeEncoder)
-                            } else {
-                                it!!.toRow(withAll, null)
+                                if (withEdgeId) {
+                                    schemaEdge.toRow(withAll, idEdgeEncoder)
+                                } else {
+                                    schemaEdge.toRow(withAll, null)
+                                }
                             }
                         }
                 }
@@ -272,31 +232,29 @@ open class HBaseHashLabel(
         val withAll = stats.contains(StatKey.WITH_ALL)
         val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
 
-        val gets =
+        val encodedKeys =
             tgt.map {
                 val edge = Edge(0L, src, it).ensureType(entity.schema)
-                val key = coder.encodeHashEdgeKey(edge, entity.id)
-                Get(key.key)
-                    .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
+                coder.encodeHashEdgeKey(edge, entity.id)
             }
 
         val rows =
-            tables
-                .flatMap { it.edge.get(gets) }
-                .mapNotNull { results ->
-                    results
-                        .map {
-                            if (it.isEmpty) {
+            buckets
+                .flatMap { it.edge.get(encodedKeys.map { key -> key.key }) }
+                .mapNotNull { records ->
+                    val recordByKey = recordMap(records)
+                    encodedKeys
+                        .mapNotNull { encodedKey ->
+                            val record = recordByKey[wrapKey(encodedKey.key)] ?: return@mapNotNull null
+                            val schemaEdge = encodedEdgeToSchemaEdge(KeyFieldValue(record.key, record.value))
+                            if (!withAll && !schemaEdge.isActive) {
                                 null
                             } else {
-                                encodedEdgeToSchemaEdge(KeyFieldValue(it.row, it.value()))
-                            }
-                        }.filter { it != null && (withAll || it.isActive) }
-                        .map {
-                            if (withEdgeId) {
-                                it!!.toRow(withAll, idEdgeEncoder, isMultiEdge)
-                            } else {
-                                it!!.toRow(withAll, null, isMultiEdge)
+                                if (withEdgeId) {
+                                    schemaEdge.toRow(withAll, idEdgeEncoder, isMultiEdge)
+                                } else {
+                                    schemaEdge.toRow(withAll, null, isMultiEdge)
+                                }
                             }
                         }
                 }
@@ -318,9 +276,13 @@ open class HBaseHashLabel(
 
     fun getActiveStates(gets: List<Get>): Mono<DataFrame> {
         val rows =
-            tables
-                .flatMap { it.edge.get(gets) }
-                .mapNotNull { results ->
+            buckets
+                .flatMap { buckets ->
+                    val edgeBucket =
+                        buckets.edge as? HBaseStorageBucket
+                            ?: throw IllegalArgumentException("HBaseStorageBucket is required for Get-based reads.")
+                    edgeBucket.getRaw(gets)
+                }.mapNotNull { results ->
                     results
                         .map {
                             if (it.isEmpty) {
@@ -346,22 +308,16 @@ open class HBaseHashLabel(
         srcAndKeys: List<Pair<Any, ByteArray>>,
         dir: Direction,
     ): Mono<List<Row>> {
-        val gets =
-            srcAndKeys.map {
-                Get(
-                    it.second,
-                ).addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
-            }
-        return tables
-            .flatMap { it.edge.get(gets) }
-            .map {
-                srcAndKeys
-                    .map { (src, _) -> src }
-                    .zip(it)
-                    .map { (src, result) ->
-                        val count = if (result.isEmpty) 0L else Bytes.toLong(result.value())
-                        Row(arrayOf(src, count, dir))
-                    }
+        val keys = srcAndKeys.map { it.second }
+        return buckets
+            .flatMap { it.edge.get(keys) }
+            .map { records ->
+                val recordByKey = recordMap(records)
+                srcAndKeys.map { (src, key) ->
+                    val record = recordByKey[wrapKey(key)]
+                    val count = record?.let { Bytes.toLong(it.value) } ?: 0L
+                    Row(arrayOf(src, count, dir))
+                }
             }
     }
 
@@ -485,18 +441,32 @@ open class HBaseHashLabel(
                 )
                 get.setFilter(complexFilter)
             }
-        return tables.flatMap { it.edge.get(gets) }.map {
-            it.flatMap { result ->
-                val cells = result.listCells() ?: return@flatMap emptyList()
-                cells.map { cell ->
-                    val row = CellUtil.cloneRow(cell)
-                    val qualifier = CellUtil.cloneQualifier(cell)
-                    val value = CellUtil.cloneValue(cell)
-                    HBaseRecord(row, qualifier, value)
+
+        return buckets.flatMap { storageBuckets ->
+            val edgeBucket = storageBuckets.edge
+            if (edgeBucket is HBaseStorageBucket) {
+                edgeBucket.getRaw(gets).map { results ->
+                    results.flatMap { result ->
+                        val cells = result.listCells() ?: return@flatMap emptyList()
+                        cells.map { cell ->
+                            val row = CellUtil.cloneRow(cell)
+                            val qualifier = CellUtil.cloneQualifier(cell)
+                            val value = CellUtil.cloneValue(cell)
+                            HBaseRecord(row, qualifier, value)
+                        }
+                    }
+                }
+            } else {
+                edgeBucket.get(rows).map { records ->
+                    records.map { record -> HBaseRecord(record.key, record.value) }
                 }
             }
         }
     }
+
+    private fun recordMap(records: List<HBaseRecord>): Map<ByteBuffer, HBaseRecord> = records.associateBy { wrapKey(it.key) }
+
+    private fun wrapKey(key: ByteArray): ByteBuffer = ByteBuffer.wrap(key)
 
     companion object : LabelFactory<HBaseHashLabel, HBaseStorage> {
         override fun create(
@@ -505,11 +475,11 @@ open class HBaseHashLabel(
             storage: HBaseStorage,
             block: HBaseHashLabel.() -> Unit,
         ): HBaseHashLabel {
-            val tables = storage.options.getTables()
+            val buckets = storage.options.getBuckets()
             return HBaseHashLabel(
                 entity = entity,
                 coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
-                tables = tables,
+                buckets = buckets,
             )
         }
     }

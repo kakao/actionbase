@@ -12,8 +12,8 @@ import com.kakao.actionbase.v2.engine.label.mixin.IndexedLabelMixin
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
+import com.kakao.actionbase.v2.engine.storage.StorageBuckets
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import com.kakao.actionbase.v2.engine.v3.V3CompatibleTableBinding
 import com.kakao.actionbase.v2.engine.v3.V3TableDescriptor
 
@@ -27,11 +27,11 @@ open class HBaseIndexedLabel(
     coder: EdgeEncoder<ByteArray>,
     override val indices: List<Index>,
     override val indexNameToIndex: Map<String, Index>,
-    tables: Mono<HBaseTables>,
+    buckets: Mono<StorageBuckets>,
 ) : HBaseHashLabel(
         entity = entity,
         coder = coder,
-        tables = tables,
+        buckets = buckets,
     ),
     IndexedLabelMixin<ByteArray> {
     val v3TableBinding =
@@ -62,7 +62,7 @@ open class HBaseIndexedLabel(
             storage: HBaseStorage,
             block: HBaseIndexedLabel.() -> Unit,
         ): HBaseIndexedLabel {
-            val tables = storage.options.getTables()
+            val buckets = storage.options.getBuckets()
             val indices: List<Index> = entity.indices
             val indexNameToId = indices.associateBy { it.name }
             return HBaseIndexedLabel(
@@ -70,7 +70,7 @@ open class HBaseIndexedLabel(
                 coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
                 indices = indices,
                 indexNameToIndex = indexNameToId,
-                tables = tables,
+                buckets = buckets,
             )
         }
     }

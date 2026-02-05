@@ -82,12 +82,13 @@ class HBaseOptionsTest(
     ) {
         val options = optionProvider(expectTableName)
         StepVerifier
-            .create(options.getTables())
-            .assertNext { tables ->
-                assertNotNull(tables)
-                assertNotNull(tables.edge)
-                assertNotNull(tables.lock)
-                assertEquals(expectTableName, tables.edge.name)
+            .create(options.getBuckets())
+            .assertNext { buckets ->
+                assertNotNull(buckets)
+                assertNotNull(buckets.edge)
+                assertNotNull(buckets.lock)
+                val edgeBucket = buckets.edge as HBaseStorageBucket
+                assertEquals(expectTableName, edgeBucket.table.name)
             }.verifyComplete()
     }
 

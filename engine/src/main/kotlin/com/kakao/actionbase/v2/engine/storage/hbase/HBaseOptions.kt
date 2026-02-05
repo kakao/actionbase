@@ -1,21 +1,17 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
-import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
-import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
+import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
+import com.kakao.actionbase.v2.engine.storage.StorageBackend
+import com.kakao.actionbase.v2.engine.storage.StorageBuckets
+import com.kakao.actionbase.v2.engine.storage.mock.MockStorageBackend
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.TableName
-import org.apache.hadoop.hbase.client.mock.MockHTable
 import org.slf4j.LoggerFactory
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 import reactor.core.publisher.Mono
 
-/**
- * This supports only HBase 2.4 or below.
- * To support HBase 2.5, use [com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster]
- */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class HBaseOptions(
     val mock: Boolean = false,
@@ -24,36 +20,34 @@ data class HBaseOptions(
 ) {
     private val logger = LoggerFactory.getLogger(HBaseOptions::class.java)
 
-    private fun useMockConnection(): Boolean = mock || DefaultHBaseCluster.INSTANCE.mock
-
-    // Mock or DefaultHBaseCluster connections is always available.
+    // Mock or default backend connections are always available.
     fun checkConnection(): Mono<Boolean> = Mono.just(true)
 
-    /**
-     * // DefaultHBaseCluster = DHC
-     * | mock  | DHC.mock ||| connection    | namespace       | note                               |
-     * |-------|----------|||---------------|-----------------|------------------------------------|
-     * | true  | -        ||| mock          | given namespace | original logic                     |
-     * | -     | true     ||| mock          | given namespace | original logic                     |
-     * | false | false    ||| DHC with      | given namespace | use already created DHC connection |
-     * |-------|----------|||---------------|-----------------|------------------------------------|
-     */
-    fun getTables(): Mono<HBaseTables> =
-        if (useMockConnection()) {
-            logger.info("Using MockHBase for tableName: {}", tableName)
-            val conn = HBaseConnections.getMockConnection(namespace)
-            val table = NewMockTable(conn.getTable(TableName.valueOf("edges")) as MockHTable)
-            val hbaseTable = HBaseTable.create(table)
-            Mono.just(HBaseTables(hbaseTable, hbaseTable))
+    fun getBuckets(): Mono<StorageBuckets> {
+        val backend = resolveBackend()
+        val resolvedNamespace =
+            if (namespace.isBlank()) {
+                (backend as? HBaseStorageBackend)?.namespace ?: namespace
+            } else {
+                namespace
+            }
+
+        if (mock) {
+            logger.info("Using MockStorageBackend for tableName: {}", tableName)
         } else {
-            val namespace = if (namespace.isBlank()) DefaultHBaseCluster.INSTANCE.namespace else this.namespace
-            logger.info("🚀 Using DefaultHBaseCluster for tableName: {} (using namespace: {})", tableName, namespace)
-            DefaultHBaseCluster.INSTANCE.connectionMono
-                .map { connection ->
-                    val edgeTable = connection.getTable(TableName.valueOf(namespace, tableName))
-                    val hbaseTable = HBaseTable.create(edgeTable)
-                    HBaseTables(hbaseTable, hbaseTable)
-                }.cache()
+            logger.info("Using StorageBackend for tableName: {} (namespace: {})", tableName, resolvedNamespace)
+        }
+
+        return backend
+            .getBucket(resolvedNamespace, tableName)
+            .cache()
+    }
+
+    private fun resolveBackend(): StorageBackend =
+        if (mock) {
+            MockStorageBackend()
+        } else {
+            DefaultStorageBackendFactory.INSTANCE
         }
 
     companion object {

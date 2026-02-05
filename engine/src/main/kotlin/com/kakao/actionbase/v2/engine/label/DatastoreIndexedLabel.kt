@@ -5,7 +5,7 @@ import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.engine.GraphDefaults
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
+import com.kakao.actionbase.v2.engine.storage.StorageBuckets
 
 import reactor.core.publisher.Mono
 
@@ -14,8 +14,8 @@ class DatastoreIndexedLabel(
     coder: EdgeEncoder<ByteArray>,
     indices: List<Index>,
     indexNameToIndex: Map<String, Index>,
-    tables: Mono<HBaseTables>,
-) : HBaseIndexedLabel(entity, coder, indices, indexNameToIndex, tables) {
+    buckets: Mono<StorageBuckets>,
+) : HBaseIndexedLabel(entity, coder, indices, indexNameToIndex, buckets) {
     companion object {
         fun create(
             entity: LabelEntity,
@@ -24,13 +24,13 @@ class DatastoreIndexedLabel(
         ): DatastoreIndexedLabel {
             val indices = entity.indices
             val indexNameToIndex = indices.associateBy { it.name }
-            val tables = graph.datastore.getTable(entity.storage).cache()
+            val buckets = graph.datastore.getBucket(entity.storage).cache()
             return DatastoreIndexedLabel(
                 entity = entity,
                 coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
                 indices = indices,
                 indexNameToIndex = indexNameToIndex,
-                tables = tables,
+                buckets = buckets,
             ).apply(initialize)
         }
     }
