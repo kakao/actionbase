@@ -7,6 +7,7 @@ package com.kakao.actionbase.v2.engine.storage
  */
 object DatastoreUri {
     private const val PREFIX = "datastore://"
+    private val SAFE_NAME_PATTERN = Regex("^[a-zA-Z0-9_-]+$")
 
     /**
      * Parses a datastore URI and returns namespace and table name.
@@ -23,6 +24,13 @@ object DatastoreUri {
         require(parts.size == 2) {
             "Invalid datastore URI: $uri. Expected format: datastore://{namespace}/{tableName}"
         }
-        return parts[0] to parts[1]
+        val (namespace, tableName) = parts[0] to parts[1]
+        require(namespace.isEmpty() || namespace.matches(SAFE_NAME_PATTERN)) {
+            "Invalid namespace: $namespace. Must contain only alphanumeric, underscore, or hyphen."
+        }
+        require(tableName.matches(SAFE_NAME_PATTERN)) {
+            "Invalid table name: $tableName. Must contain only alphanumeric, underscore, or hyphen."
+        }
+        return namespace to tableName
     }
 }
