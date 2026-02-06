@@ -40,6 +40,28 @@ export default defineConfig({
   site,
   base,
   trailingSlash: 'always',
+  redirects: {
+    '/stories/kakaotalk-gift-wish/': '/stories/use-cases/kakaotalk-gift-wish/',
+    '/stories/kakaotalk-gift-recent-views/': '/stories/use-cases/kakaotalk-gift-recent-views/',
+    '/stories/kakaotalk-friends/': '/stories/use-cases/kakaotalk-friends/',
+    '/stories/pipeline/': '/stories/engineering/pipeline/',
+    '/stories/contracts/': '/stories/how-we-survived/contracts/',
+    '/stories/shadow-testing/': '/stories/how-we-survived/shadow-testing/',
+    '/stories/migration-verification/': '/stories/how-we-survived/migration-verification/',
+    '/stories/hbase-consistency/': '/stories/how-we-survived/hbase-consistency/',
+    '/stories/unified-graph/': '/stories/vision/unified-graph/',
+    '/stories/30-label-how-we-survived/': '/stories/how-we-survived/',
+    '/ko/stories/kakaotalk-gift-wish/': '/ko/stories/use-cases/kakaotalk-gift-wish/',
+    '/ko/stories/kakaotalk-gift-recent-views/':
+      '/ko/stories/use-cases/kakaotalk-gift-recent-views/',
+    '/ko/stories/kakaotalk-friends/': '/ko/stories/use-cases/kakaotalk-friends/',
+    '/ko/stories/pipeline/': '/ko/stories/engineering/pipeline/',
+    '/ko/stories/shadow-testing/': '/ko/stories/how-we-survived/shadow-testing/',
+    '/ko/stories/migration-verification/': '/ko/stories/how-we-survived/migration-verification/',
+    '/ko/stories/hbase-consistency/': '/ko/stories/how-we-survived/hbase-consistency/',
+    '/ko/stories/unified-graph/': '/ko/stories/vision/unified-graph/',
+    '/ko/stories/30-label-how-we-survived/': '/ko/stories/how-we-survived/',
+  },
   markdown: {
     remarkPlugins: [remarkHeadingId],
   },
@@ -106,7 +128,7 @@ export default defineConfig({
         {
           label: 'Nav',
           items: [
-            { label: 'Docs', link: '/introduction/' },
+            { label: 'Docs', slug: 'introduction' },
             { label: 'Blog', link: '/blog/' },
           ],
         },
@@ -155,7 +177,13 @@ export default defineConfig({
         {
           label: 'Stories',
           translations: { ko: '스토리' },
-          autogenerate: { directory: 'stories' },
+          items: [
+            'stories',
+            { label: 'Use Cases', autogenerate: { directory: 'stories/use-cases' } },
+            { label: 'Engineering', autogenerate: { directory: 'stories/engineering' } },
+            { label: 'How We Survived', autogenerate: { directory: 'stories/how-we-survived' } },
+            { label: 'Vision', autogenerate: { directory: 'stories/vision' } },
+          ],
         },
       ],
       components: {

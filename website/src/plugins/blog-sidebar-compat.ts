@@ -10,7 +10,7 @@ import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
  *
  * This middleware runs at `post` order (before starlight-utils) to:
  * - Wrap non-group entries in a "Blog" group
- * - Re-inject the "Nav" group so navLinks can find it
+ * - Re-inject the "Nav" group so navLinks can find it (locale-aware)
  */
 export const onRequest = defineRouteMiddleware((context) => {
   const sidebar = context.locals.starlightRoute.sidebar;
@@ -30,6 +30,10 @@ export const onRequest = defineRouteMiddleware((context) => {
   }
 
   if (!hasNavGroup) {
+    // Derive locale prefix from the current route
+    const locale = context.locals.starlightRoute.locale;
+    const localePrefix = locale ? `/${locale}` : '';
+
     context.locals.starlightRoute.sidebar.unshift({
       type: 'group' as const,
       label: 'Nav',
@@ -37,7 +41,7 @@ export const onRequest = defineRouteMiddleware((context) => {
         {
           type: 'link' as const,
           label: 'Docs',
-          href: '/introduction/',
+          href: `${localePrefix}/introduction/`,
           isCurrent: false,
           badge: undefined,
           attrs: {},
