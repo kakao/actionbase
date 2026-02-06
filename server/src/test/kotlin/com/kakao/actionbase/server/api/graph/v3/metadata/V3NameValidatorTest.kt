@@ -1,81 +1,108 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.web.server.ResponseStatusException
 
 class V3NameValidatorTest {
     @Nested
     inner class ValidNamesTest {
-        @ParameterizedTest
-        @ValueSource(strings = ["mydb", "MyDB", "my-db", "my_db", "db123", "a", "A"])
-        fun `valid names should pass validation`(name: String) {
-            val result = V3NameValidator.validateDatabase(name)
-            assertThat(result).isEqualTo(name)
-        }
-
-        @Test
-        fun `max length name should pass`() {
-            val maxLengthName = "a" + "b".repeat(63)
-            val result = V3NameValidator.validateDatabase(maxLengthName)
-            assertThat(result).isEqualTo(maxLengthName)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: mydb
+            - name: MyDB
+            - name: my-db
+            - name: my_db
+            - name: db123
+            - name: a
+            - name: A
+            # 64 chars (max valid length)
+            - name: abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+            """,
+        )
+        fun `valid database names`(name: String) {
+            assertThat(V3NameValidator.validateDatabase(name)).isEqualTo(name)
         }
     }
 
     @Nested
     inner class InvalidNamesTest {
-        @ParameterizedTest
-        @ValueSource(strings = ["123db", "1", "-db", "_db"])
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: 123db
+            - name: "1"
+            - name: -db
+            - name: _db
+            """,
+        )
         fun `name starting with non-letter should fail`(name: String) {
             assertThatThrownBy { V3NameValidator.validateDatabase(name) }
                 .isInstanceOf(ResponseStatusException::class.java)
                 .hasMessageContaining("must start with a letter")
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = ["db.name", "db:name", "db/name", "db\\name", "db name"])
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: db.name
+            - name: "db:name"
+            - name: db/name
+            - name: 'db\name'
+            - name: "db name"
+            - name: mydb.othertable
+            """,
+        )
         fun `name with invalid characters should fail`(name: String) {
             assertThatThrownBy { V3NameValidator.validateDatabase(name) }
                 .isInstanceOf(ResponseStatusException::class.java)
                 .hasMessageContaining("Invalid database")
         }
 
-        @Test
-        fun `empty name should fail`() {
-            assertThatThrownBy { V3NameValidator.validateDatabase("") }
-                .isInstanceOf(ResponseStatusException::class.java)
-        }
-
-        @Test
-        fun `name exceeding max length should fail`() {
-            val tooLongName = "a" + "b".repeat(64)
-            assertThatThrownBy { V3NameValidator.validateDatabase(tooLongName) }
-                .isInstanceOf(ResponseStatusException::class.java)
-        }
-
-        @Test
-        fun `injection attempt with dot should fail`() {
-            assertThatThrownBy { V3NameValidator.validateDatabase("mydb.othertable") }
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            # empty
+            - name: ""
+            # 65 chars (exceeds max length)
+            - name: abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+            """,
+        )
+        fun `edge case names should fail`(name: String) {
+            assertThatThrownBy { V3NameValidator.validateDatabase(name) }
                 .isInstanceOf(ResponseStatusException::class.java)
         }
     }
 
     @Nested
     inner class FieldNameVariantsTest {
-        @Test
-        fun `validateTable returns correct field name in error`() {
-            assertThatThrownBy { V3NameValidator.validateTable("123invalid") }
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: 123invalid
+            - name: .dotname
+            """,
+        )
+        fun `validateTable error message`(name: String) {
+            assertThatThrownBy { V3NameValidator.validateTable(name) }
                 .isInstanceOf(ResponseStatusException::class.java)
                 .hasMessageContaining("Invalid table")
         }
 
-        @Test
-        fun `validateAlias returns correct field name in error`() {
-            assertThatThrownBy { V3NameValidator.validateAlias("123invalid") }
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: 123invalid
+            - name: .dotname
+            """,
+        )
+        fun `validateAlias error message`(name: String) {
+            assertThatThrownBy { V3NameValidator.validateAlias(name) }
                 .isInstanceOf(ResponseStatusException::class.java)
                 .hasMessageContaining("Invalid alias")
         }
