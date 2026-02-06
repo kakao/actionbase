@@ -108,42 +108,21 @@ export default defineConfig({
       locales,
       sidebar: [
         {
-          label: 'Learn',
+          label: 'All',
+          translations: { ko: '전체' },
           items: [
             {
               label: 'Getting Started',
               items: ['introduction', 'quick-start', 'faq', 'for-rdb-users', 'llms-txt'],
             },
             {
-              label: 'Stories',
-              autogenerate: { directory: 'stories' },
-            },
-            {
               label: 'Design',
               autogenerate: { directory: 'design' },
             },
-          ],
-        },
-        {
-          label: 'Build',
-          items: [
             {
               label: 'Guides',
               autogenerate: { directory: 'guides' },
             },
-            {
-              label: 'API References',
-              autogenerate: { directory: 'api-references' },
-            },
-            {
-              label: 'Internals',
-              autogenerate: { directory: 'internals' },
-            },
-          ],
-        },
-        {
-          label: 'Operate',
-          items: [
             {
               label: 'Provisioning',
               autogenerate: { directory: 'provisioning' },
@@ -152,11 +131,14 @@ export default defineConfig({
               label: 'Operations',
               autogenerate: { directory: 'operations' },
             },
-          ],
-        },
-        {
-          label: 'Contribute',
-          items: [
+            {
+              label: 'Internals',
+              autogenerate: { directory: 'internals' },
+            },
+            {
+              label: 'API References',
+              autogenerate: { directory: 'api-references' },
+            },
             {
               label: 'Project',
               autogenerate: { directory: 'project' },
@@ -165,6 +147,18 @@ export default defineConfig({
               label: 'Community',
               autogenerate: { directory: 'community' },
             },
+          ],
+        },
+        {
+          label: 'Stories',
+          translations: { ko: '스토리' },
+          autogenerate: { directory: 'stories' },
+        },
+        {
+          label: 'Blog',
+          translations: { ko: '블로그' },
+          items: [
+            { label: 'All Posts', link: '/blog/' },
           ],
         },
       ],
