@@ -98,7 +98,9 @@ object DefaultStorageBackendFactory {
         defaultNamespace0 = namespace
     }
 
+    @Synchronized
     fun close() {
         instance0?.close()
+        instance0 = null
     }
 }

@@ -16,12 +16,18 @@ import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
 class HBaseStorageBackend private constructor(
-    val connectionMono: Mono<AsyncConnection>,
+    private val connectionMono: Mono<AsyncConnection>,
     // Retained for potential future use (e.g., default namespace fallback, admin operations)
     @Suppress("unused") private val namespace: String,
     // Retained for potential future use (e.g., connection pool management, config inspection)
     @Suppress("unused") private val config: Configuration,
 ) : StorageBackend {
+    /**
+     * Returns a cached Mono of AsyncAdmin for HBase admin operations.
+     * Use this instead of accessing the raw connection directly.
+     */
+    fun getAdminMono(): Mono<org.apache.hadoop.hbase.client.AsyncAdmin> = connectionMono.map { it.admin }.cache()
+
     override fun getBucket(
         namespace: String,
         name: String,

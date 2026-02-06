@@ -39,10 +39,10 @@ class MemoryStorageBackend : StorageBackend {
     override fun getTable(
         namespace: String,
         name: String,
-    ): Mono<HBaseTables> = throw UnsupportedOperationException("MemoryStorageBackend does not support HBaseTables. Use getBucket() instead.")
+    ): Mono<HBaseTables> = Mono.error(UnsupportedOperationException("MemoryStorageBackend does not support HBaseTables. Use getBucket() instead."))
 
     @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
-    override fun getTable(uri: String): Mono<HBaseTables> = throw UnsupportedOperationException("MemoryStorageBackend does not support HBaseTables. Use getBucket() instead.")
+    override fun getTable(uri: String): Mono<HBaseTables> = Mono.error(UnsupportedOperationException("MemoryStorageBackend does not support HBaseTables. Use getBucket() instead."))
 
     override fun close() {
         // nothing to close

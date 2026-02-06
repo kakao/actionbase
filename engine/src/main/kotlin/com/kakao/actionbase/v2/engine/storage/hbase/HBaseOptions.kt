@@ -36,7 +36,7 @@ data class HBaseOptions(
      */
     fun getBuckets(): Mono<StorageBuckets> {
         val effectiveNs = getEffectiveNamespace()
-        logger.info("Using StorageBackend for tableName: {}", tableName)
+        logger.debug("Using StorageBackend for tableName: {}", tableName)
         return DefaultStorageBackendFactory.INSTANCE.getBucket(effectiveNs, tableName).cache()
     }
 
@@ -48,7 +48,7 @@ data class HBaseOptions(
     @Suppress("DEPRECATION")
     fun getTables(): Mono<HBaseTables> {
         val effectiveNs = getEffectiveNamespace()
-        logger.info("Using StorageBackend (HBaseTables) for tableName: {}", tableName)
+        logger.debug("Using StorageBackend (HBaseTables) for tableName: {}", tableName)
         return DefaultStorageBackendFactory.INSTANCE.getTable(effectiveNs, tableName).cache()
     }
 
