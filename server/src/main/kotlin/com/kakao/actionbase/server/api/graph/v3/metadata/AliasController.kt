@@ -74,5 +74,4 @@ class AliasController(
         v3CompatService
             .deleteAlias(V3NameValidator.validateDatabase(database), V3NameValidator.validateAlias(alias))
             .then(Mono.just(ResponseEntity.noContent().build<Void>()))
-            .onErrorResume { Mono.just(ResponseEntity.notFound().build()) }
 }

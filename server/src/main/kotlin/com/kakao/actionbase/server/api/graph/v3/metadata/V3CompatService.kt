@@ -19,7 +19,6 @@ import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptorEdge
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 
@@ -104,7 +103,7 @@ class V3CompatService(
         database: String,
         table: String,
         request: TableCreateRequest,
-    ): Mono<TableDescriptor.Edge> {
+    ): Mono<TableDescriptor<*>> {
         val v2Request =
             V2LabelCreateRequest(
                 desc = request.comment,
@@ -120,14 +119,14 @@ class V3CompatService(
             )
         return graph.labelDdl
             .create(EntityName(database, table), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptorEdge(tenant)) } }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
     }
 
     fun updateTable(
         database: String,
         table: String,
         request: TableUpdateRequest,
-    ): Mono<TableDescriptor.Edge> {
+    ): Mono<TableDescriptor<*>> {
         val v2Request =
             V2LabelUpdateRequest(
                 active = request.active,
@@ -141,7 +140,7 @@ class V3CompatService(
             )
         return graph.labelDdl
             .update(EntityName(database, table), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptorEdge(tenant)) } }
+            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
     }
 
     fun deleteTable(

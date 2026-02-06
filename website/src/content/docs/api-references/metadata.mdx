@@ -222,7 +222,7 @@ DELETE /graph/v3/databases/{database}
 
 ### Response Type
 
-[DatabaseDescriptor](#databasedescriptor) - Deleted database information
+204 No Content (no response body)
 
 ### Request Example
 
@@ -419,7 +419,37 @@ curl -X PUT \
     }'
 ```
 
-## 10. List Aliases
+## 10. Delete Table
+
+Delete an existing table.
+
+### Endpoint
+
+```
+DELETE /graph/v3/databases/{database}/tables/{table}
+```
+
+### Parameters
+
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | database      | Required | Database name                                |
+| Path     | table         | Required | Table name                                   |
+
+### Response Type
+
+204 No Content (no response body)
+
+### Request Example
+
+```bash
+curl -X DELETE \
+    "http://ab.example.com/graph/v3/databases/mydb/tables/follows" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+## 11. List Aliases
 
 Retrieve all aliases in a database.
 
@@ -448,7 +478,7 @@ curl -X GET \
     -H "Authorization: YOUR_API_KEY"
 ```
 
-## 11. Get Alias
+## 12. Get Alias
 
 Retrieve a single alias by name.
 
@@ -498,7 +528,7 @@ curl -X GET \
 }
 ```
 
-## 12. Create Alias
+## 13. Create Alias
 
 Create a new alias.
 
@@ -540,7 +570,7 @@ curl -X POST \
     }'
 ```
 
-## 13. Update Alias
+## 14. Update Alias
 
 Update an existing alias.
 
@@ -582,7 +612,7 @@ curl -X PUT \
     }'
 ```
 
-## 14. Delete Alias
+## 15. Delete Alias
 
 Delete an existing alias.
 
@@ -606,7 +636,7 @@ DELETE /graph/v3/databases/{database}/aliases/{alias}
 
 ### Response Type
 
-[AliasDescriptor](#aliasdescriptor) - Deleted alias information
+204 No Content (no response body)
 
 ### Request Example
 
@@ -788,7 +818,7 @@ Table creation request payload.
 ```kotlin
 data class TableCreateRequest(
     val table: String,             // Table name
-    val schema: ModelSchema,       // Schema definition (Edge or MultiEdge)
+    val schema: ModelSchema.Edge,  // Edge schema definition
     val storage: String,           // Storage URI (datastore://hbase/tableName)
     val mode: MutationMode,        // Mutation mode (default: SYNC)
     val comment: String,           // Table description
@@ -837,7 +867,7 @@ data class AliasUpdateRequest(
 ```kotlin
 enum class MutationMode { SYNC, ASYNC, DROP }
 enum class DirectionType { OUT, IN, BOTH }
-enum class PrimitiveType { BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, BYTES }
+enum class PrimitiveType { BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, OBJECT }
 ```
 
 ## V2 Compatibility
@@ -873,6 +903,7 @@ V3 API wraps the existing V2 DDL services with a new interface. The table below 
 | `GET /graph/v2/services/{service}/labels/{label}` | `GET /graph/v3/databases/{database}/tables/{table}` |
 | `POST /graph/v2/services/{service}/labels/{label}` | `POST /graph/v3/databases/{database}/tables` |
 | `PUT /graph/v2/services/{service}/labels/{label}` | `PUT /graph/v3/databases/{database}/tables/{table}` |
+| `DELETE /graph/v2/services/{service}/labels/{label}` | `DELETE /graph/v3/databases/{database}/tables/{table}` |
 | `GET /graph/v2/services/{service}/aliases` | `GET /graph/v3/databases/{database}/aliases` |
 | `GET /graph/v2/services/{service}/aliases/{alias}` | `GET /graph/v3/databases/{database}/aliases/{alias}` |
 | `POST /graph/v2/services/{service}/aliases/{alias}` | `POST /graph/v3/databases/{database}/aliases` |

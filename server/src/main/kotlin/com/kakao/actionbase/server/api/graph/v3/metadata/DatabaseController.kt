@@ -64,5 +64,4 @@ class DatabaseController(
         v3CompatService
             .deleteDatabase(V3NameValidator.validateDatabase(database))
             .then(Mono.just(ResponseEntity.noContent().build<Void>()))
-            .onErrorResume { Mono.just(ResponseEntity.notFound().build()) }
 }

@@ -44,7 +44,7 @@ class TableController(
     fun createTable(
         @PathVariable database: String,
         @Valid @RequestBody request: TableCreateRequest,
-    ): Mono<ResponseEntity<TableDescriptor.Edge>> =
+    ): Mono<ResponseEntity<TableDescriptor<*>>> =
         v3CompatService
             .createTable(
                 V3NameValidator.validateDatabase(database),
@@ -57,7 +57,7 @@ class TableController(
         @PathVariable database: String,
         @PathVariable table: String,
         @Valid @RequestBody request: TableUpdateRequest,
-    ): Mono<ResponseEntity<TableDescriptor.Edge>> =
+    ): Mono<ResponseEntity<TableDescriptor<*>>> =
         v3CompatService
             .updateTable(
                 V3NameValidator.validateDatabase(database),
@@ -74,5 +74,4 @@ class TableController(
         v3CompatService
             .deleteTable(V3NameValidator.validateDatabase(database), V3NameValidator.validateTable(table))
             .then(Mono.just(ResponseEntity.noContent().build<Void>()))
-            .onErrorResume { Mono.just(ResponseEntity.notFound().build()) }
 }
