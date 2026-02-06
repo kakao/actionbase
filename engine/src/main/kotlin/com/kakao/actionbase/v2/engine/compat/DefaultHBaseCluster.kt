@@ -84,10 +84,10 @@ class DefaultHBaseCluster private constructor(
          *   hbase.client.bootstrap.servers: host1:16000,host2:16000,host3:16000
          *
          * # for secure cluster
-         *   kerberos.realm: e.g. EXAMPLE.COM
-         *   krb5ConfPath: (optional) /path/to/krb5.conf
-         *   keytabPath: e.g. /path/to/hadoop-cdl-write.keytab
-         *   principal: e.g. hadoop-cdl-write@EXAMPLE.COM
+         *   kerberos.realm: e.g. EXAMPLE.COM (or env AB_KERBEROS_REALM)
+         *   krb5ConfPath: /path/to/krb5.conf (or env AB_KRB5_CONF_PATH)
+         *   keytabPath: e.g. /path/to/hadoop-cdl-write.keytab (or env AB_KEYTAB_PATH)
+         *   principal: e.g. hadoop-cdl-write@EXAMPLE.COM (or env AB_PRINCIPAL)
          */
         fun initialize(properties: Map<String, String>) {
             logger.info("KerberosHelper is being initialized.")
@@ -126,7 +126,9 @@ class DefaultHBaseCluster private constructor(
                 val principal = principalOpt ?: throw IllegalStateException("Kerberos principal is not set")
                 val keytabPath = keytabPathOpt ?: throw IllegalStateException("Kerberos keytab path is not set")
                 val kerberosRealm = properties["kerberos.realm"]
+                    ?: System.getenv("AB_KERBEROS_REALM")
                     ?: throw IllegalStateException("Kerberos realm is not set for secure cluster")
+                require(kerberosRealm.isNotBlank()) { "Kerberos realm must not be blank" }
 
                 System.setProperty("java.security.krb5.conf", krb5ConfPath)
 
