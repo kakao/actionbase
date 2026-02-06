@@ -1,103 +1,112 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.metadata.DatabaseDescriptor
-import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
-import com.kakao.actionbase.core.metadata.payload.DatabaseUpdateRequest
 import com.kakao.actionbase.server.test.E2ETestBase
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestMethodOrder
+import org.junit.jupiter.api.TestInstance
+import org.springframework.http.MediaType
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class DatabaseControllerTest : E2ETestBase() {
-    private val db = "v3-test-db"
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class CrudLifecycleTest {
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-db-basic
+              create: |
+                {"database": "v3-db-basic", "comment": "test db"}
+              expected: |
+                {"database": "v3-db-basic", "comment": "test db", "active": true}
 
-    @Test
-    @Order(1)
-    fun `list databases`() {
-        client
-            .get()
-            .uri("/graph/v3/databases")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBodyList(DatabaseDescriptor::class.java)
+            - name: v3-db-empty-comment
+              create: |
+                {"database": "v3-db-empty-comment", "comment": ""}
+              expected: |
+                {"database": "v3-db-empty-comment", "comment": "", "active": true}
+
+            - name: v3-db-special
+              create: |
+                {"database": "v3-db-special", "comment": "test @#$%"}
+              expected: |
+                {"database": "v3-db-special", "comment": "test @#$%", "active": true}
+            """,
+        )
+        fun `create - get - update`(
+            name: String,
+            create: String,
+            expected: String,
+        ) {
+            // Create
+            client
+                .post()
+                .uri("/graph/v3/databases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+
+            // Get
+            client
+                .get()
+                .uri("/graph/v3/databases/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+
+            // Update
+            client
+                .put()
+                .uri("/graph/v3/databases/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"comment": "updated comment"}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json("""{"database": "$name", "comment": "updated comment", "active": true}""")
+        }
     }
 
-    @Test
-    @Order(2)
-    fun `create database`() {
-        client
-            .post()
-            .uri("/graph/v3/databases")
-            .bodyValue(DatabaseCreateRequest(db, "test db"))
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(DatabaseDescriptor::class.java)
-            .value { assertThat(it.database).isEqualTo(db) }
-    }
+    @Nested
+    inner class ValidationTest {
+        @Test
+        fun `get non-existent database returns 404`() {
+            client
+                .get()
+                .uri("/graph/v3/databases/non-existent")
+                .exchange()
+                .expectStatus()
+                .isNotFound
+        }
 
-    @Test
-    @Order(3)
-    fun `get database`() {
-        client
-            .get()
-            .uri("/graph/v3/databases/$db")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(DatabaseDescriptor::class.java)
-            .value { assertThat(it.database).isEqualTo(db) }
-    }
+        @Test
+        fun `invalid database name returns 400`() {
+            client
+                .get()
+                .uri("/graph/v3/databases/123-invalid")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
 
-    @Test
-    @Order(4)
-    fun `update database`() {
-        client
-            .put()
-            .uri("/graph/v3/databases/$db")
-            .bodyValue(DatabaseUpdateRequest(comment = "updated comment"))
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(DatabaseDescriptor::class.java)
-            .value { assertThat(it.comment).isEqualTo("updated comment") }
-    }
-
-    @Test
-    @Order(5)
-    fun `get non-existent database returns 404`() {
-        client
-            .get()
-            .uri("/graph/v3/databases/non-existent")
-            .exchange()
-            .expectStatus()
-            .isNotFound
-    }
-
-    @Test
-    @Order(6)
-    fun `invalid database name returns 400`() {
-        client
-            .get()
-            .uri("/graph/v3/databases/123-invalid")
-            .exchange()
-            .expectStatus()
-            .isBadRequest
-    }
-
-    @Test
-    @Order(7)
-    fun `database name with dot returns 400`() {
-        client
-            .get()
-            .uri("/graph/v3/databases/db.injection")
-            .exchange()
-            .expectStatus()
-            .isBadRequest
+        @Test
+        fun `database name with dot returns 400`() {
+            client
+                .get()
+                .uri("/graph/v3/databases/db.injection")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
     }
 }

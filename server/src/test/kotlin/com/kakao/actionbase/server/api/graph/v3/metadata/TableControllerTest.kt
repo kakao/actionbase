@@ -1,28 +1,18 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.metadata.TableDescriptor
-import com.kakao.actionbase.core.metadata.common.DirectionType
-import com.kakao.actionbase.core.metadata.common.Field
-import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.core.metadata.common.StructField
-import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
-import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.server.test.E2ETestBase
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestMethodOrder
+import org.springframework.http.MediaType
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TableControllerTest : E2ETestBase() {
     private val db = "v3-table-test-db"
-    private val table = "v3-test-table"
     private val baseUri = "/graph/v3/databases/$db/tables"
 
     @BeforeAll
@@ -30,242 +20,271 @@ class TableControllerTest : E2ETestBase() {
         client
             .post()
             .uri("/graph/v3/databases")
-            .bodyValue(DatabaseCreateRequest(db, "test db"))
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"database": "$db", "comment": "test db"}""")
             .exchange()
             .expectStatus()
             .isOk
     }
 
-    @Test
-    @Order(1)
-    fun `list tables - empty`() {
-        client
-            .get()
-            .uri(baseUri)
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBodyList(TableDescriptor.Edge::class.java)
-            .hasSize(0)
-    }
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class CrudLifecycleTest {
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            # Edge table - basic CRUD
+            - name: v3-edge-crud
+              create: |
+                {
+                  "table": "v3-edge-crud",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "src"},
+                    "target": {"type": "string", "comment": "tgt"},
+                    "properties": [
+                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/v3-edge-crud",
+                  "mode": "SYNC",
+                  "comment": "edge table"
+                }
+              expected: |
+                {
+                  "type": "edge",
+                  "table": "v3-edge-crud",
+                  "database": "v3-table-test-db",
+                  "comment": "edge table",
+                  "schema": {
+                    "type": "edge",
+                    "source": {"type": "string", "comment": "src"},
+                    "target": {"type": "string", "comment": "tgt"},
+                    "properties": [
+                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
+                    ],
+                    "direction": "OUT"
+                  },
+                  "storage": {"type": "hbase", "tableName": "v3-edge-crud"},
+                  "active": true
+                }
 
-    @Test
-    @Order(2)
-    fun `create table`() {
-        client
-            .post()
-            .uri(baseUri)
-            .bodyValue(tableRequest())
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(TableDescriptor.Edge::class.java)
-            .value {
-                assertThat(it.database).isEqualTo(db)
-                assertThat(it.table).isEqualTo(table)
-            }
-    }
+            # MultiEdge table - basic CRUD
+            - name: v3-multiedge-crud
+              create: |
+                {
+                  "table": "v3-multiedge-crud",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "order id"},
+                    "source": {"type": "long", "comment": "sender"},
+                    "target": {"type": "long", "comment": "receiver"},
+                    "properties": [],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/v3-multiedge-crud",
+                  "mode": "SYNC",
+                  "comment": "multiedge table"
+                }
+              expected: |
+                {
+                  "type": "multiEdge",
+                  "table": "v3-multiedge-crud",
+                  "database": "v3-table-test-db",
+                  "comment": "multiedge table",
+                  "schema": {
+                    "type": "multiEdge",
+                    "id": {"type": "long", "comment": "order id"},
+                    "source": {"type": "long", "comment": "sender"},
+                    "target": {"type": "long", "comment": "receiver"},
+                    "properties": [],
+                    "direction": "BOTH"
+                  },
+                  "storage": {"type": "hbase", "tableName": "v3-multiedge-crud"},
+                  "active": true
+                }
 
-    @Test
-    @Order(3)
-    fun `get table`() {
-        client
-            .get()
-            .uri("$baseUri/$table")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(TableDescriptor.Edge::class.java)
-            .value { assertThat(it.table).isEqualTo(table) }
-    }
+            # Edge table with properties and indexes
+            - name: v3-edge-full
+              create: |
+                {
+                  "table": "v3-edge-full",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "long", "comment": "user"},
+                    "target": {"type": "long", "comment": "item"},
+                    "properties": [
+                      {"name": "rating", "type": "int", "comment": "rating", "nullable": true},
+                      {"name": "createdat", "type": "long", "comment": "time", "nullable": false}
+                    ],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/v3-edge-full",
+                  "mode": "SYNC",
+                  "comment": "full edge table"
+                }
+              expected: |
+                {
+                  "type": "edge",
+                  "table": "v3-edge-full",
+                  "database": "v3-table-test-db",
+                  "comment": "full edge table",
+                  "schema": {
+                    "type": "edge",
+                    "source": {"type": "long", "comment": "user"},
+                    "target": {"type": "long", "comment": "item"},
+                    "properties": [
+                      {"name": "rating", "type": "int", "comment": "rating", "nullable": true},
+                      {"name": "createdat", "type": "long", "comment": "time", "nullable": false}
+                    ],
+                    "direction": "BOTH"
+                  },
+                  "storage": {"type": "hbase", "tableName": "v3-edge-full"},
+                  "active": true
+                }
 
-    @Test
-    @Order(4)
-    fun `list tables - has one`() {
-        client
-            .get()
-            .uri(baseUri)
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBodyList(TableDescriptor.Edge::class.java)
-            .hasSize(1)
-    }
-
-    @Test
-    @Order(5)
-    fun `update table`() {
-        client
-            .put()
-            .uri("$baseUri/$table")
-            .bodyValue(TableUpdateRequest(comment = "updated comment"))
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(TableDescriptor.Edge::class.java)
-            .value { assertThat(it.comment).isEqualTo("updated comment") }
-    }
-
-    @Test
-    @Order(6)
-    fun `get non-existent table returns 404`() {
-        client
-            .get()
-            .uri("$baseUri/non-existent")
-            .exchange()
-            .expectStatus()
-            .isNotFound
-    }
-
-    @Test
-    @Order(7)
-    fun `invalid table name returns 400`() {
-        client
-            .get()
-            .uri("$baseUri/123-invalid")
-            .exchange()
-            .expectStatus()
-            .isBadRequest
-    }
-
-    @Test
-    @Order(8)
-    fun `table name with dot returns 400`() {
-        client
-            .get()
-            .uri("$baseUri/table.injection")
-            .exchange()
-            .expectStatus()
-            .isBadRequest
-    }
-
-    @Test
-    @Order(9)
-    fun `deactivate table`() {
-        client
-            .put()
-            .uri("$baseUri/$table")
-            .bodyValue(TableUpdateRequest(active = false))
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(TableDescriptor.Edge::class.java)
-            .value { assertThat(it.active).isFalse() }
-    }
-
-    @Test
-    @Order(10)
-    fun `delete table returns 204`() {
-        client
-            .delete()
-            .uri("$baseUri/$table")
-            .exchange()
-            .expectStatus()
-            .isNoContent
-    }
-
-    @Test
-    @Order(11)
-    fun `list tables after delete - empty`() {
-        client
-            .get()
-            .uri(baseUri)
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBodyList(TableDescriptor.Edge::class.java)
-            .hasSize(0)
-    }
-
-    @Test
-    @Order(12)
-    fun `create multiEdge table`() {
-        client
-            .post()
-            .uri(baseUri)
-            .bodyValue(multiEdgeTableRequest())
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(TableDescriptor.MultiEdge::class.java)
-            .value {
-                assertThat(it.database).isEqualTo(db)
-                assertThat(it.table).isEqualTo("v3-test-multiedge")
-                assertThat(it.schema.id.type).isEqualTo(PrimitiveType.LONG)
-            }
-    }
-
-    @Test
-    @Order(13)
-    fun `get multiEdge table`() {
-        client
-            .get()
-            .uri("$baseUri/v3-test-multiedge")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(TableDescriptor.MultiEdge::class.java)
-            .value {
-                assertThat(it.table).isEqualTo("v3-test-multiedge")
-                assertThat(it.schema.id.type).isEqualTo(PrimitiveType.LONG)
-                assertThat(it.schema.source.type).isEqualTo(PrimitiveType.LONG)
-                assertThat(it.schema.target.type).isEqualTo(PrimitiveType.LONG)
-            }
-    }
-
-    @Test
-    @Order(14)
-    fun `deactivate multiEdge table`() {
-        client
-            .put()
-            .uri("$baseUri/v3-test-multiedge")
-            .bodyValue(TableUpdateRequest(active = false))
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(TableDescriptor.MultiEdge::class.java)
-            .value { assertThat(it.active).isFalse() }
-    }
-
-    @Test
-    @Order(15)
-    fun `delete multiEdge table returns 204`() {
-        client
-            .delete()
-            .uri("$baseUri/v3-test-multiedge")
-            .exchange()
-            .expectStatus()
-            .isNoContent
-    }
-
-    private fun tableRequest() =
-        TableCreateRequest(
-            table = table,
-            schema =
-                ModelSchema.Edge(
-                    source = Field(PrimitiveType.STRING, "src"),
-                    target = Field(PrimitiveType.STRING, "tgt"),
-                    properties = listOf(StructField("score", PrimitiveType.INT, "score", true)),
-                    direction = DirectionType.OUT,
-                ),
-            storage = "datastore://hbase/test-hbase-table",
-            mode = MutationMode.SYNC,
-            comment = "test table",
+            # MultiEdge table with properties
+            - name: v3-multiedge-full
+              create: |
+                {
+                  "table": "v3-multiedge-full",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "txn id"},
+                    "source": {"type": "long", "comment": "buyer"},
+                    "target": {"type": "long", "comment": "product"},
+                    "properties": [
+                      {"name": "amount", "type": "int", "comment": "purchase amount", "nullable": false},
+                      {"name": "timestamp", "type": "long", "comment": "txn time", "nullable": false}
+                    ],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/v3-multiedge-full",
+                  "mode": "SYNC",
+                  "comment": "full multiedge table"
+                }
+              expected: |
+                {
+                  "type": "multiEdge",
+                  "table": "v3-multiedge-full",
+                  "database": "v3-table-test-db",
+                  "comment": "full multiedge table",
+                  "schema": {
+                    "type": "multiEdge",
+                    "id": {"type": "long", "comment": "txn id"},
+                    "source": {"type": "long", "comment": "buyer"},
+                    "target": {"type": "long", "comment": "product"},
+                    "properties": [
+                      {"name": "amount", "type": "int", "comment": "purchase amount", "nullable": false},
+                      {"name": "timestamp", "type": "long", "comment": "txn time", "nullable": false}
+                    ],
+                    "direction": "BOTH"
+                  },
+                  "storage": {"type": "hbase", "tableName": "v3-multiedge-full"},
+                  "active": true
+                }
+            """,
         )
+        fun `create - get - update - deactivate - delete`(
+            name: String,
+            create: String,
+            expected: String,
+        ) {
+            // Create
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
 
-    private fun multiEdgeTableRequest() =
-        TableCreateRequest(
-            table = "v3-test-multiedge",
-            schema =
-                ModelSchema.MultiEdge(
-                    id = Field(PrimitiveType.LONG, "order id"),
-                    source = Field(PrimitiveType.LONG, "sender"),
-                    target = Field(PrimitiveType.LONG, "receiver"),
-                    properties = emptyList(),
-                    direction = DirectionType.BOTH,
-                ),
-            storage = "datastore://hbase/test-multiedge-table",
-            mode = MutationMode.SYNC,
-            comment = "test multiedge table",
-        )
+            // Get
+            client
+                .get()
+                .uri("$baseUri/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+
+            // Update comment
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"comment": "updated comment"}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json("""{"table": "$name", "comment": "updated comment", "active": true}""")
+
+            // Deactivate
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"active": false}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json("""{"table": "$name", "active": false}""")
+
+            // Delete
+            client
+                .delete()
+                .uri("$baseUri/$name")
+                .exchange()
+                .expectStatus()
+                .isNoContent
+        }
+    }
+
+    @Nested
+    inner class ValidationTest {
+        @Test
+        fun `get non-existent table returns 404`() {
+            client
+                .get()
+                .uri("$baseUri/non-existent")
+                .exchange()
+                .expectStatus()
+                .isNotFound
+        }
+
+        @Test
+        fun `invalid table name returns 400`() {
+            client
+                .get()
+                .uri("$baseUri/123-invalid")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
+        fun `table name with dot returns 400`() {
+            client
+                .get()
+                .uri("$baseUri/table.injection")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+    }
 }

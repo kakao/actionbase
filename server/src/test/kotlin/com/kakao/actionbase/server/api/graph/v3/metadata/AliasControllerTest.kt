@@ -1,28 +1,19 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.metadata.AliasDescriptor
-import com.kakao.actionbase.core.metadata.common.DirectionType
-import com.kakao.actionbase.core.metadata.common.Field
-import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
-import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.server.test.E2ETestBase
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestMethodOrder
+import org.springframework.http.MediaType
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AliasControllerTest : E2ETestBase() {
     private val db = "v3-alias-test-db"
     private val table = "v3-alias-target-table"
-    private val alias = "v3-test-alias"
     private val baseUri = "/graph/v3/databases/$db/aliases"
 
     @BeforeAll
@@ -31,7 +22,8 @@ class AliasControllerTest : E2ETestBase() {
         client
             .post()
             .uri("/graph/v3/databases")
-            .bodyValue(DatabaseCreateRequest(db, "test db"))
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"database": "$db", "comment": "test db"}""")
             .exchange()
             .expectStatus()
             .isOk
@@ -40,165 +32,146 @@ class AliasControllerTest : E2ETestBase() {
         client
             .post()
             .uri("/graph/v3/databases/$db/tables")
-            .bodyValue(tableRequest())
-            .exchange()
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$table",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "src"},
+                    "target": {"type": "string", "comment": "tgt"},
+                    "properties": [],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/alias-test-hbase-table",
+                  "mode": "SYNC",
+                  "comment": "target table"
+                }
+                """.trimIndent(),
+            ).exchange()
             .expectStatus()
             .isOk
     }
 
-    @Test
-    @Order(1)
-    fun `list aliases - empty`() {
-        client
-            .get()
-            .uri(baseUri)
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBodyList(AliasDescriptor::class.java)
-            .hasSize(0)
-    }
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class CrudLifecycleTest {
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-alias-basic
+              create: |
+                {"alias": "v3-alias-basic", "table": "v3-alias-target-table", "comment": "test alias"}
+              expected: |
+                {"alias": "v3-alias-basic", "table": "v3-alias-target-table", "comment": "test alias", "active": true}
 
-    @Test
-    @Order(2)
-    fun `create alias`() {
-        client
-            .post()
-            .uri(baseUri)
-            .bodyValue(AliasCreateRequest(alias, table, "test alias"))
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(AliasDescriptor::class.java)
-            .value {
-                assertThat(it.alias).isEqualTo(alias)
-                assertThat(it.table).isEqualTo(table)
-            }
-    }
+            - name: v3-alias-empty
+              create: |
+                {"alias": "v3-alias-empty", "table": "v3-alias-target-table", "comment": ""}
+              expected: |
+                {"alias": "v3-alias-empty", "table": "v3-alias-target-table", "comment": "", "active": true}
 
-    @Test
-    @Order(3)
-    fun `get alias`() {
-        client
-            .get()
-            .uri("$baseUri/$alias")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(AliasDescriptor::class.java)
-            .value { assertThat(it.alias).isEqualTo(alias) }
-    }
-
-    @Test
-    @Order(4)
-    fun `list aliases - has one`() {
-        client
-            .get()
-            .uri(baseUri)
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBodyList(AliasDescriptor::class.java)
-            .hasSize(1)
-    }
-
-    @Test
-    @Order(5)
-    fun `get non-existent alias returns 404`() {
-        client
-            .get()
-            .uri("$baseUri/non-existent")
-            .exchange()
-            .expectStatus()
-            .isNotFound
-    }
-
-    @Test
-    @Order(6)
-    fun `update alias`() {
-        client
-            .put()
-            .uri("$baseUri/$alias")
-            .bodyValue(AliasUpdateRequest(comment = "updated comment"))
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(AliasDescriptor::class.java)
-            .value { assertThat(it.comment).isEqualTo("updated comment") }
-    }
-
-    @Test
-    @Order(7)
-    fun `deactivate alias`() {
-        client
-            .put()
-            .uri("$baseUri/$alias")
-            .bodyValue(AliasUpdateRequest(active = false))
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody(AliasDescriptor::class.java)
-            .value { assertThat(it.active).isFalse() }
-    }
-
-    @Test
-    @Order(8)
-    fun `delete alias returns 204`() {
-        client
-            .delete()
-            .uri("$baseUri/$alias")
-            .exchange()
-            .expectStatus()
-            .isNoContent
-    }
-
-    @Test
-    @Order(9)
-    fun `list aliases after delete - empty`() {
-        client
-            .get()
-            .uri(baseUri)
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBodyList(AliasDescriptor::class.java)
-            .hasSize(0)
-    }
-
-    @Test
-    @Order(10)
-    fun `invalid alias name returns 400`() {
-        client
-            .get()
-            .uri("$baseUri/123-invalid")
-            .exchange()
-            .expectStatus()
-            .isBadRequest
-    }
-
-    @Test
-    @Order(11)
-    fun `alias name with dot returns 400`() {
-        client
-            .get()
-            .uri("$baseUri/alias.injection")
-            .exchange()
-            .expectStatus()
-            .isBadRequest
-    }
-
-    private fun tableRequest() =
-        TableCreateRequest(
-            table = table,
-            schema =
-                ModelSchema.Edge(
-                    source = Field(PrimitiveType.STRING, "src"),
-                    target = Field(PrimitiveType.STRING, "tgt"),
-                    properties = emptyList(),
-                    direction = DirectionType.OUT,
-                ),
-            storage = "datastore://hbase/alias-test-hbase-table",
-            mode = MutationMode.SYNC,
-            comment = "target table",
+            - name: v3-alias-special
+              create: |
+                {"alias": "v3-alias-special", "table": "v3-alias-target-table", "comment": "alias @#"}
+              expected: |
+                {"alias": "v3-alias-special", "table": "v3-alias-target-table", "comment": "alias @#", "active": true}
+            """,
         )
+        fun `create - get - update - deactivate - delete`(
+            name: String,
+            create: String,
+            expected: String,
+        ) {
+            // Create
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+
+            // Get
+            client
+                .get()
+                .uri("$baseUri/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+
+            // Update
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"comment": "updated comment"}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json("""{"alias": "$name", "comment": "updated comment", "active": true}""")
+
+            // Deactivate
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"active": false}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json("""{"alias": "$name", "active": false}""")
+
+            // Delete
+            client
+                .delete()
+                .uri("$baseUri/$name")
+                .exchange()
+                .expectStatus()
+                .isNoContent
+        }
+    }
+
+    @Nested
+    inner class ValidationTest {
+        @Test
+        fun `get non-existent alias returns 404`() {
+            client
+                .get()
+                .uri("$baseUri/non-existent")
+                .exchange()
+                .expectStatus()
+                .isNotFound
+        }
+
+        @Test
+        fun `invalid alias name returns 400`() {
+            client
+                .get()
+                .uri("$baseUri/123-invalid")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
+        fun `alias name with dot returns 400`() {
+            client
+                .get()
+                .uri("$baseUri/alias.injection")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+    }
 }
