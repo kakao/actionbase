@@ -50,7 +50,6 @@ export default defineConfig({
     '/stories/migration-verification/': '/stories/how-we-survived/migration-verification/',
     '/stories/hbase-consistency/': '/stories/how-we-survived/hbase-consistency/',
     '/stories/unified-graph/': '/stories/vision/unified-graph/',
-    '/stories/30-label-how-we-survived/': '/stories/how-we-survived/',
     '/ko/stories/kakaotalk-gift-wish/': '/ko/stories/use-cases/kakaotalk-gift-wish/',
     '/ko/stories/kakaotalk-gift-recent-views/':
       '/ko/stories/use-cases/kakaotalk-gift-recent-views/',
@@ -60,7 +59,6 @@ export default defineConfig({
     '/ko/stories/migration-verification/': '/ko/stories/how-we-survived/migration-verification/',
     '/ko/stories/hbase-consistency/': '/ko/stories/how-we-survived/hbase-consistency/',
     '/ko/stories/unified-graph/': '/ko/stories/vision/unified-graph/',
-    '/ko/stories/30-label-how-we-survived/': '/ko/stories/how-we-survived/',
   },
   markdown: {
     remarkPlugins: [remarkHeadingId],
@@ -130,6 +128,11 @@ export default defineConfig({
           items: [
             { label: 'Docs', slug: 'introduction' },
             { label: 'Blog', link: '/blog/' },
+            {
+              label: 'GitHub',
+              link: 'https://github.com/kakao/actionbase',
+              attrs: { class: 'nav-external', target: '_blank', rel: 'noopener' },
+            },
           ],
         },
         {
