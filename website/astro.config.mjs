@@ -175,6 +175,10 @@ export default defineConfig({
       },
       expressiveCode: { shiki: { langs: [markdocGrammar] } },
       plugins: [
+        // IMPORTANT: blog-multi-sidebar-compat must be listed before starlightUtils
+        // because both register 'post'-order middleware and Starlight runs them in
+        // declaration order. The compat middleware wraps blog's flat sidebar entries
+        // into a group before starlight-utils validates the sidebar structure.
         {
           name: 'blog-multi-sidebar-compat',
           hooks: {
