@@ -19,6 +19,7 @@ import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
+import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 
@@ -107,7 +108,7 @@ class V3CompatService(
         val v2Request =
             V2LabelCreateRequest(
                 desc = request.comment,
-                type = request.type,
+                type = LabelType.INDEXED,
                 schema = request.toV2EdgeSchema(),
                 dirType = request.toV2DirectionType(),
                 storage = request.storage,

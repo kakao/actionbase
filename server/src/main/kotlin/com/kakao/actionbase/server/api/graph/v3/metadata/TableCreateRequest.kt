@@ -10,7 +10,6 @@ import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DirectionType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2Index
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2VertexType
-import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.VertexField
 
@@ -37,7 +36,6 @@ data class TableCreateRequest(
     )
     val storage: String,
     val mode: MutationMode = MutationMode.SYNC,
-    val type: LabelType = LabelType.INDEXED,
     @field:Size(max = 1000, message = "comment must be at most 1000 characters")
     val comment: String = "",
 ) {
