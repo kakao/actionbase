@@ -5,12 +5,9 @@ import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.http.MediaType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -59,9 +56,7 @@ class AliasControllerTest : E2ETestBase() {
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-    inner class CrudLifecycleTest {
-        @Order(1)
+    inner class CrudTest {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
@@ -108,32 +103,52 @@ class AliasControllerTest : E2ETestBase() {
                 .json(expected)
         }
 
-        @Order(2)
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            """
-            - name: v3-alias-basic
+            shared = """
+              table: v3-alias-target-table
+            """,
+            cases = """
+            - name: v3-alias-upd-basic
+              create: |
+                {"alias": "v3-alias-upd-basic", "table": "v3-alias-target-table", "comment": "test alias"}
               update: |
                 {"comment": "updated comment"}
               expected: |
-                {"alias": "v3-alias-basic", "comment": "updated comment", "active": true}
-            - name: v3-alias-empty
+                {"alias": "v3-alias-upd-basic", "comment": "updated comment", "active": true}
+            - name: v3-alias-upd-empty
+              create: |
+                {"alias": "v3-alias-upd-empty", "table": "v3-alias-target-table", "comment": ""}
               update: |
                 {"comment": "updated empty"}
               expected: |
-                {"alias": "v3-alias-empty", "comment": "updated empty", "active": true}
-            - name: v3-alias-special
+                {"alias": "v3-alias-upd-empty", "comment": "updated empty", "active": true}
+            - name: v3-alias-upd-special
+              create: |
+                {"alias": "v3-alias-upd-special", "table": "v3-alias-target-table", "comment": "alias @#"}
               update: |
                 {"comment": "updated special"}
               expected: |
-                {"alias": "v3-alias-special", "comment": "updated special", "active": true}
+                {"alias": "v3-alias-upd-special", "comment": "updated special", "active": true}
             """,
         )
         fun `update alias`(
             name: String,
+            table: String,
+            create: String,
             update: String,
             expected: String,
         ) {
+            // precondition
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
             client
                 .put()
                 .uri("$baseUri/$name")
@@ -146,32 +161,46 @@ class AliasControllerTest : E2ETestBase() {
                 .json(expected)
         }
 
-        @Order(3)
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            """
-            - name: v3-alias-basic
+            shared = """
               deactivate: |
                 {"active": false}
+            """,
+            cases = """
+            - name: v3-alias-deact-basic
+              create: |
+                {"alias": "v3-alias-deact-basic", "table": "v3-alias-target-table", "comment": "test alias"}
               expected: |
-                {"alias": "v3-alias-basic", "active": false}
-            - name: v3-alias-empty
-              deactivate: |
-                {"active": false}
+                {"alias": "v3-alias-deact-basic", "active": false}
+            - name: v3-alias-deact-empty
+              create: |
+                {"alias": "v3-alias-deact-empty", "table": "v3-alias-target-table", "comment": ""}
               expected: |
-                {"alias": "v3-alias-empty", "active": false}
-            - name: v3-alias-special
-              deactivate: |
-                {"active": false}
+                {"alias": "v3-alias-deact-empty", "active": false}
+            - name: v3-alias-deact-special
+              create: |
+                {"alias": "v3-alias-deact-special", "table": "v3-alias-target-table", "comment": "alias @#"}
               expected: |
-                {"alias": "v3-alias-special", "active": false}
+                {"alias": "v3-alias-deact-special", "active": false}
             """,
         )
         fun `deactivate alias`(
             name: String,
+            create: String,
             deactivate: String,
             expected: String,
         ) {
+            // precondition
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
             client
                 .put()
                 .uri("$baseUri/$name")
@@ -184,16 +213,48 @@ class AliasControllerTest : E2ETestBase() {
                 .json(expected)
         }
 
-        @Order(4)
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            """
-            - name: v3-alias-basic
-            - name: v3-alias-empty
-            - name: v3-alias-special
+            shared = """
+              deactivate: |
+                {"active": false}
+            """,
+            cases = """
+            - name: v3-alias-del-basic
+              create: |
+                {"alias": "v3-alias-del-basic", "table": "v3-alias-target-table", "comment": "test alias"}
+            - name: v3-alias-del-empty
+              create: |
+                {"alias": "v3-alias-del-empty", "table": "v3-alias-target-table", "comment": ""}
+            - name: v3-alias-del-special
+              create: |
+                {"alias": "v3-alias-del-special", "table": "v3-alias-target-table", "comment": "alias @#"}
             """,
         )
-        fun `delete alias`(name: String) {
+        fun `delete alias`(
+            name: String,
+            create: String,
+            deactivate: String,
+        ) {
+            // precondition: create + deactivate
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(deactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+
             client
                 .delete()
                 .uri("$baseUri/$name")

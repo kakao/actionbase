@@ -5,12 +5,9 @@ import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.http.MediaType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -32,9 +29,7 @@ class TableControllerTest : E2ETestBase() {
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-    inner class CrudLifecycleTest {
-        @Order(1)
+    inner class CrudTest {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
@@ -225,37 +220,70 @@ class TableControllerTest : E2ETestBase() {
                 .json(expected)
         }
 
-        @Order(2)
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: v3-edge-crud
+            - name: v3-edge-upd
+              create: |
+                {
+                  "table": "v3-edge-upd",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "src"},
+                    "target": {"type": "string", "comment": "tgt"},
+                    "properties": [],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://test_namespace/v3_edge_upd",
+                  "mode": "SYNC",
+                  "comment": "edge table"
+                }
               update: |
                 {"comment": "updated edge"}
               expected: |
-                {"table": "v3-edge-crud", "comment": "updated edge", "active": true}
-            - name: v3-multiedge-crud
+                {"table": "v3-edge-upd", "comment": "updated edge", "active": true}
+            - name: v3-multiedge-upd
+              create: |
+                {
+                  "table": "v3-multiedge-upd",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "id"},
+                    "source": {"type": "long", "comment": "src"},
+                    "target": {"type": "long", "comment": "tgt"},
+                    "properties": [],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://test_namespace/v3_multiedge_upd",
+                  "mode": "SYNC",
+                  "comment": "multiedge table"
+                }
               update: |
                 {"comment": "updated multiedge"}
               expected: |
-                {"table": "v3-multiedge-crud", "comment": "updated multiedge", "active": true}
-            - name: v3-edge-full
-              update: |
-                {"comment": "updated full edge"}
-              expected: |
-                {"table": "v3-edge-full", "comment": "updated full edge", "active": true}
-            - name: v3-multiedge-full
-              update: |
-                {"comment": "updated full multiedge"}
-              expected: |
-                {"table": "v3-multiedge-full", "comment": "updated full multiedge", "active": true}
+                {"table": "v3-multiedge-upd", "comment": "updated multiedge", "active": true}
             """,
         )
         fun `update table`(
             name: String,
+            create: String,
             update: String,
             expected: String,
         ) {
+            // precondition
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
             client
                 .put()
                 .uri("$baseUri/$name")
@@ -268,37 +296,70 @@ class TableControllerTest : E2ETestBase() {
                 .json(expected)
         }
 
-        @Order(3)
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            """
-            - name: v3-edge-crud
+            shared = """
               deactivate: |
                 {"active": false}
+            """,
+            cases = """
+            - name: v3-edge-deact
+              create: |
+                {
+                  "table": "v3-edge-deact",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "src"},
+                    "target": {"type": "string", "comment": "tgt"},
+                    "properties": [],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://test_namespace/v3_edge_deact",
+                  "mode": "SYNC",
+                  "comment": "edge table"
+                }
               expected: |
-                {"table": "v3-edge-crud", "active": false}
-            - name: v3-multiedge-crud
-              deactivate: |
-                {"active": false}
+                {"table": "v3-edge-deact", "active": false}
+            - name: v3-multiedge-deact
+              create: |
+                {
+                  "table": "v3-multiedge-deact",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "id"},
+                    "source": {"type": "long", "comment": "src"},
+                    "target": {"type": "long", "comment": "tgt"},
+                    "properties": [],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://test_namespace/v3_multiedge_deact",
+                  "mode": "SYNC",
+                  "comment": "multiedge table"
+                }
               expected: |
-                {"table": "v3-multiedge-crud", "active": false}
-            - name: v3-edge-full
-              deactivate: |
-                {"active": false}
-              expected: |
-                {"table": "v3-edge-full", "active": false}
-            - name: v3-multiedge-full
-              deactivate: |
-                {"active": false}
-              expected: |
-                {"table": "v3-multiedge-full", "active": false}
+                {"table": "v3-multiedge-deact", "active": false}
             """,
         )
         fun `deactivate table`(
             name: String,
+            create: String,
             deactivate: String,
             expected: String,
         ) {
+            // precondition
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
             client
                 .put()
                 .uri("$baseUri/$name")
@@ -311,17 +372,74 @@ class TableControllerTest : E2ETestBase() {
                 .json(expected)
         }
 
-        @Order(4)
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            """
-            - name: v3-edge-crud
-            - name: v3-multiedge-crud
-            - name: v3-edge-full
-            - name: v3-multiedge-full
+            shared = """
+              deactivate: |
+                {"active": false}
+            """,
+            cases = """
+            - name: v3-edge-del
+              create: |
+                {
+                  "table": "v3-edge-del",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "src"},
+                    "target": {"type": "string", "comment": "tgt"},
+                    "properties": [],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://test_namespace/v3_edge_del",
+                  "mode": "SYNC",
+                  "comment": "edge table"
+                }
+            - name: v3-multiedge-del
+              create: |
+                {
+                  "table": "v3-multiedge-del",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "id"},
+                    "source": {"type": "long", "comment": "src"},
+                    "target": {"type": "long", "comment": "tgt"},
+                    "properties": [],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://test_namespace/v3_multiedge_del",
+                  "mode": "SYNC",
+                  "comment": "multiedge table"
+                }
             """,
         )
-        fun `delete table`(name: String) {
+        fun `delete table`(
+            name: String,
+            create: String,
+            deactivate: String,
+        ) {
+            // precondition: create + deactivate
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(deactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+
             client
                 .delete()
                 .uri("$baseUri/$name")
