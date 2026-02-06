@@ -5,9 +5,12 @@ import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.http.MediaType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -18,7 +21,6 @@ class AliasControllerTest : E2ETestBase() {
 
     @BeforeAll
     fun setup() {
-        // Create database
         client
             .post()
             .uri("/graph/v3/databases")
@@ -28,7 +30,6 @@ class AliasControllerTest : E2ETestBase() {
             .expectStatus()
             .isOk
 
-        // Create table (alias target)
         client
             .post()
             .uri("/graph/v3/databases/$db/tables")
@@ -58,7 +59,9 @@ class AliasControllerTest : E2ETestBase() {
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
     inner class CrudLifecycleTest {
+        @Order(1)
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
@@ -67,13 +70,11 @@ class AliasControllerTest : E2ETestBase() {
                 {"alias": "v3-alias-basic", "table": "v3-alias-target-table", "comment": "test alias"}
               expected: |
                 {"alias": "v3-alias-basic", "table": "v3-alias-target-table", "comment": "test alias", "active": true}
-
             - name: v3-alias-empty
               create: |
                 {"alias": "v3-alias-empty", "table": "v3-alias-target-table", "comment": ""}
               expected: |
                 {"alias": "v3-alias-empty", "table": "v3-alias-target-table", "comment": "", "active": true}
-
             - name: v3-alias-special
               create: |
                 {"alias": "v3-alias-special", "table": "v3-alias-target-table", "comment": "alias @#"}
@@ -81,12 +82,11 @@ class AliasControllerTest : E2ETestBase() {
                 {"alias": "v3-alias-special", "table": "v3-alias-target-table", "comment": "alias @#", "active": true}
             """,
         )
-        fun `create - get - update - deactivate - delete`(
+        fun `create alias`(
             name: String,
             create: String,
             expected: String,
         ) {
-            // Create
             client
                 .post()
                 .uri(baseUri)
@@ -98,7 +98,6 @@ class AliasControllerTest : E2ETestBase() {
                 .expectBody()
                 .json(expected)
 
-            // Get
             client
                 .get()
                 .uri("$baseUri/$name")
@@ -107,32 +106,94 @@ class AliasControllerTest : E2ETestBase() {
                 .isOk
                 .expectBody()
                 .json(expected)
+        }
 
-            // Update
+        @Order(2)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-alias-basic
+              update: |
+                {"comment": "updated comment"}
+              expected: |
+                {"alias": "v3-alias-basic", "comment": "updated comment", "active": true}
+            - name: v3-alias-empty
+              update: |
+                {"comment": "updated empty"}
+              expected: |
+                {"alias": "v3-alias-empty", "comment": "updated empty", "active": true}
+            - name: v3-alias-special
+              update: |
+                {"comment": "updated special"}
+              expected: |
+                {"alias": "v3-alias-special", "comment": "updated special", "active": true}
+            """,
+        )
+        fun `update alias`(
+            name: String,
+            update: String,
+            expected: String,
+        ) {
             client
                 .put()
                 .uri("$baseUri/$name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("""{"comment": "updated comment"}""")
+                .bodyValue(update)
                 .exchange()
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json("""{"alias": "$name", "comment": "updated comment", "active": true}""")
+                .json(expected)
+        }
 
-            // Deactivate
+        @Order(3)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-alias-basic
+              deactivate: |
+                {"active": false}
+              expected: |
+                {"alias": "v3-alias-basic", "active": false}
+            - name: v3-alias-empty
+              deactivate: |
+                {"active": false}
+              expected: |
+                {"alias": "v3-alias-empty", "active": false}
+            - name: v3-alias-special
+              deactivate: |
+                {"active": false}
+              expected: |
+                {"alias": "v3-alias-special", "active": false}
+            """,
+        )
+        fun `deactivate alias`(
+            name: String,
+            deactivate: String,
+            expected: String,
+        ) {
             client
                 .put()
                 .uri("$baseUri/$name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("""{"active": false}""")
+                .bodyValue(deactivate)
                 .exchange()
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json("""{"alias": "$name", "active": false}""")
+                .json(expected)
+        }
 
-            // Delete
+        @Order(4)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-alias-basic
+            - name: v3-alias-empty
+            - name: v3-alias-special
+            """,
+        )
+        fun `delete alias`(name: String) {
             client
                 .delete()
                 .uri("$baseUri/$name")
