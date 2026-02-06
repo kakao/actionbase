@@ -96,7 +96,7 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/kakao/actionbase/edit/main/website/',
       },
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kakao/actionbase' }],
+      social: [],
       head: [
         {
           tag: 'script',
@@ -191,7 +191,6 @@ export default defineConfig({
       ],
       components: {
         Head: './src/components/Head.astro',
-        SocialIcons: './src/components/SocialIcons.astro',
         PageSidebar: './src/components/PageSidebar.astro',
         Footer: './src/components/Footer.astro',
       },
