@@ -117,10 +117,6 @@ For questions, ideas, or feedback, join us on [GitHub Discussions](https://githu
 * [Roadmap](ROADMAP.md)
 * [Actionbase at if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE) (YouTube, Korean)
 
-## Contributors
-
-[![][contributors_img]][contributors]
-
 ## License
 
 This software is licensed under the [Apache 2 license](LICENSE).
@@ -137,5 +133,3 @@ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
 
-[contributors]: https://github.com/kakao/actionbase/graphs/contributors
-[contributors_img]: https://contrib.rocks/image?repo=kakao/actionbase&v=2
