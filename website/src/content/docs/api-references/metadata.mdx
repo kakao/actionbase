@@ -302,15 +302,15 @@ curl -X GET \
   "database": "mydb",
   "table": "follows",
   "schema": {
-    "type": "EDGE",
-    "source": { "type": "STRING", "comment": "user id" },
-    "target": { "type": "STRING", "comment": "user id" },
+    "type": "edge",
+    "source": { "type": "string", "comment": "user id" },
+    "target": { "type": "string", "comment": "user id" },
     "properties": [],
     "direction": "OUT",
     "indexes": [],
     "groups": []
   },
-  "storage": "datastore://hbase/follows-table",
+  "storage": "datastore://hbase/follows_table",
   "mode": "SYNC",
   "active": true,
   "comment": "User follows relationship",
@@ -334,15 +334,15 @@ POST /graph/v3/databases/{database}/tables
 
 ### Parameters
 
-| Location | Parameter     | Required | Description                                  |
-| -------- | ------------- | -------- | -------------------------------------------- |
-| Header   | Authorization | Optional | Authentication key (reserved for future use) |
-| Path     | database      | Required | Database name                                |
-| Body     | table         | Required | Table name                                   |
-| Body     | schema        | Required | Edge schema definition                       |
-| Body     | storage       | Required | Storage URI (datastore://hbase/tableName)    |
-| Body     | mode          | Optional | Mutation mode (default: SYNC)                |
-| Body     | comment       | Optional | Table description                            |
+| Location | Parameter     | Required | Description                                     |
+| -------- | ------------- | -------- | ----------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use)    |
+| Path     | database      | Required | Database name                                   |
+| Body     | table         | Required | Table name                                      |
+| Body     | schema        | Required | Edge schema definition                          |
+| Body     | storage       | Required | Storage URI (`datastore://<namespace>/<table>`) |
+| Body     | mode          | Optional | Mutation mode (default: SYNC)                   |
+| Body     | comment       | Required | Table description                               |
 
 ### Request Body
 
@@ -363,14 +363,14 @@ curl -X POST \
       "table": "follows",
       "schema": {
         "type": "EDGE",
-        "source": { "type": "STRING", "comment": "user id" },
-        "target": { "type": "STRING", "comment": "user id" },
+        "source": { "type": "string", "comment": "user id" },
+        "target": { "type": "string", "comment": "user id" },
         "properties": [],
         "direction": "OUT",
         "indexes": [],
         "groups": []
       },
-      "storage": "datastore://hbase/follows-table",
+      "storage": "datastore://hbase/follows_table",
       "mode": "SYNC",
       "comment": "User follows relationship"
     }'
@@ -546,7 +546,7 @@ POST /graph/v3/databases/{database}/aliases
 | Path     | database      | Required | Database name                                |
 | Body     | alias         | Required | Alias name                                   |
 | Body     | table         | Required | Target table name (same database only)       |
-| Body     | comment       | Optional | Alias description                            |
+| Body     | comment       | Required | Alias description                            |
 
 ### Request Body
 
@@ -677,7 +677,7 @@ data class TableDescriptor.Edge(
     val database: String,          // Database name
     val table: String,             // Table name
     val schema: ModelSchema.Edge,  // Edge schema definition
-    val storage: String,           // Storage URI (datastore://hbase/tableName)
+    val storage: String,           // Storage URI (`datastore://<namespace>/<table>`)
     val mode: MutationMode,        // Mutation mode (SYNC, ASYNC, DROP)
     val active: Boolean,           // Whether the table is active
     val comment: String,           // Table description
@@ -698,7 +698,7 @@ data class TableDescriptor.MultiEdge(
     val database: String,               // Database name
     val table: String,                  // Table name
     val schema: ModelSchema.MultiEdge,  // MultiEdge schema definition
-    val storage: String,                // Storage URI (datastore://hbase/tableName)
+    val storage: String,                // Storage URI (`datastore://<namespace>/<table>`)
     val mode: MutationMode,             // Mutation mode (SYNC, ASYNC, DROP)
     val active: Boolean,                // Whether the table is active
     val comment: String,                // Table description
@@ -732,58 +732,97 @@ data class AliasDescriptor(
 
 ### ModelSchema.Edge
 
-Edge schema definition.
+Edge schema definition. The `type` discriminator is `"EDGE"` in requests and `"edge"` in responses.
 
 ```kotlin
 data class ModelSchema.Edge(
-    val type: String = "EDGE",          // Schema type discriminator
-    val source: Field,                  // Source vertex field
-    val target: Field,                  // Target vertex field
-    val properties: List<StructField>,  // Edge properties
-    val direction: DirectionType,       // Direction type (OUT, IN, BOTH)
-    val indexes: List<Index>,           // Index definitions
-    val groups: List<Group>,            // Group definitions
+    val type: String,                               // "EDGE" (request) / "edge" (response)
+    val source: Field,                              // Source vertex field
+    val target: Field,                              // Target vertex field
+    val properties: List<StructField> = emptyList(),// Edge properties
+    val direction: DirectionType,                   // Direction type (OUT, IN, BOTH)
+    val indexes: List<Index> = emptyList(),          // Index definitions
+    val groups: List<Group> = emptyList(),            // Group definitions
 )
 ```
 
 ### ModelSchema.MultiEdge
 
-MultiEdge schema definition. Supports multiple edges between the same source-target pair, distinguished by an `id` field.
+MultiEdge schema definition. Supports multiple edges between the same source-target pair, distinguished by an `id` field. The `type` discriminator is `"MULTI_EDGE"` in requests and `"multiEdge"` in responses.
 
 ```kotlin
 data class ModelSchema.MultiEdge(
-    val type: String = "MULTI_EDGE",    // Schema type discriminator
-    val id: Field,                      // Edge identifier field (distinguishes multiple edges)
-    val source: Field,                  // Source vertex field
-    val target: Field,                  // Target vertex field
-    val properties: List<StructField>,  // Edge properties
-    val direction: DirectionType,       // Direction type (OUT, IN, BOTH)
-    val indexes: List<Index>,           // Index definitions
-    val groups: List<Group>,            // Group definitions
+    val type: String,                               // "MULTI_EDGE" (request) / "multiEdge" (response)
+    val id: Field,                                  // Edge identifier field (distinguishes multiple edges)
+    val source: Field,                              // Source vertex field
+    val target: Field,                              // Target vertex field
+    val properties: List<StructField> = emptyList(),// Edge properties
+    val direction: DirectionType,                   // Direction type (OUT, IN, BOTH)
+    val indexes: List<Index> = emptyList(),          // Index definitions
+    val groups: List<Group> = emptyList(),            // Group definitions
 )
 ```
 
 ### Field
 
-Vertex field definition.
+Vertex field definition. The `type` value is lowercase in JSON (e.g., `"string"`, `"long"`).
 
 ```kotlin
 data class Field(
-    val type: PrimitiveType,  // Data type
+    val type: PrimitiveType,  // Data type (JSON: lowercase, e.g., "string", "long")
     val comment: String,      // Field description
 )
 ```
 
 ### StructField
 
-Property field definition.
+Property field definition. The `type` value is lowercase in JSON (e.g., `"int"`, `"long"`).
 
 ```kotlin
 data class StructField(
     val name: String,         // Field name
-    val type: PrimitiveType,  // Data type
+    val type: PrimitiveType,  // Data type (JSON: lowercase, e.g., "int", "long")
     val comment: String,      // Field description
     val nullable: Boolean,    // Whether the field is nullable
+)
+```
+
+### Index
+
+Index definition.
+
+```kotlin
+data class Index(
+    val index: String,                              // Index name
+    val fields: List<IndexField>,                   // Indexed fields with sort order
+    val comment: String = "",                       // Index description
+)
+```
+
+### IndexField
+
+Index field definition.
+
+```kotlin
+data class IndexField(
+    val field: String,  // Field name
+    val order: Order,   // Sort order (ASC, DESC)
+)
+```
+
+### Group
+
+Group definition for aggregation queries.
+
+```kotlin
+data class Group(
+    val group: String,                              // Group name
+    val type: GroupType,                            // Aggregation type (SUM, COUNT)
+    val fields: List<GroupField>,                   // Group key fields
+    val valueField: String = "-",                   // Value field name
+    val comment: String = "",                       // Group description
+    val directionType: DirectionType = BOTH,        // Direction type
+    val ttl: Long = -1,                             // Time-to-live in milliseconds (-1 = no expiry)
 )
 ```
 
@@ -817,7 +856,7 @@ Table creation request payload.
 data class TableCreateRequest(
     val table: String,             // Table name
     val schema: ModelSchema,       // Schema definition (ModelSchema.Edge or ModelSchema.MultiEdge)
-    val storage: String,           // Storage URI (datastore://hbase/tableName)
+    val storage: String,           // Storage URI (`datastore://<namespace>/<table>`)
     val mode: MutationMode,        // Mutation mode (default: SYNC)
     val comment: String,           // Table description
 )
@@ -863,10 +902,25 @@ data class AliasUpdateRequest(
 ### Enums
 
 ```kotlin
-enum class MutationMode { SYNC, ASYNC, DROP }
-enum class DirectionType { OUT, IN, BOTH }
+enum class MutationMode { SYNC, ASYNC, DROP, DENY }
+enum class DirectionType { BOTH, OUT, IN }
 enum class PrimitiveType { BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, OBJECT }
+enum class Order { ASC, DESC }
+enum class GroupType { SUM, COUNT }
 ```
+
+<Aside type="note">
+  `PrimitiveType` values are serialized as **lowercase** in JSON (e.g., `"string"`, `"int"`,
+  `"long"`). All other enums use uppercase (e.g., `"SYNC"`, `"OUT"`).
+</Aside>
+
+### Validation Rules
+
+| Field                         | Rule                                                                 |
+| ----------------------------- | -------------------------------------------------------------------- |
+| Database / Table / Alias name | `^[a-zA-Z][a-zA-Z0-9_-]{0,63}$` — starts with a letter, max 64 chars |
+| Storage URI                   | `^datastore://[a-z_]+/[a-zA-Z0-9_]+$`                                |
+| Comment                       | Max 1000 characters                                                  |
 
 ## V2 Compatibility
 
