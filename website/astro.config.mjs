@@ -76,11 +76,7 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/kakao/actionbase/edit/main/website/',
       },
-      social: [
-        { icon: 'document', label: 'Documentation', href: '/introduction/' },
-        { icon: 'pen', label: 'Blog', href: '/blog/' },
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/kakao/actionbase' },
-      ],
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kakao/actionbase' }],
       head: [
         {
           tag: 'script',
@@ -107,6 +103,13 @@ export default defineConfig({
       customCss: ['./src/assets/landing.css'],
       locales,
       sidebar: [
+        {
+          label: 'Nav',
+          items: [
+            { label: 'Docs', link: '/introduction/' },
+            { label: 'Blog', link: '/blog/' },
+          ],
+        },
         {
           label: 'All',
           translations: { ko: '전체' },
@@ -154,11 +157,6 @@ export default defineConfig({
           translations: { ko: '스토리' },
           autogenerate: { directory: 'stories' },
         },
-        {
-          label: 'Blog',
-          translations: { ko: '블로그' },
-          items: [{ label: 'All Posts', link: '/blog/' }],
-        },
       ],
       components: {
         Head: './src/components/Head.astro',
@@ -185,6 +183,11 @@ export default defineConfig({
         starlightUtils({
           multiSidebar: {
             switcherStyle: 'horizontalList',
+          },
+          navLinks: {
+            leading: {
+              useSidebarLabelled: 'Nav',
+            },
           },
         }),
         starlightLinksValidator({

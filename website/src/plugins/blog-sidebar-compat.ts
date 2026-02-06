@@ -1,16 +1,20 @@
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 
 /**
- * Wraps non-group top-level sidebar entries in a group so that
- * starlight-utils multi-sidebar validation passes on blog pages.
+ * Ensures starlight-utils multi-sidebar and navLinks work on blog pages.
  *
  * starlight-blog replaces the entire sidebar on blog pages with flat link
- * entries. Multi-sidebar requires all top-level entries to be groups.
- * This middleware runs at `post` order (before starlight-utils) to wrap
- * those entries.
+ * entries. This causes two issues:
+ * 1. Multi-sidebar requires all top-level entries to be groups.
+ * 2. The navLinks "Nav" group is missing from the replaced sidebar.
+ *
+ * This middleware runs at `post` order (before starlight-utils) to:
+ * - Wrap non-group entries in a "Blog" group
+ * - Re-inject the "Nav" group so navLinks can find it
  */
 export const onRequest = defineRouteMiddleware((context) => {
   const sidebar = context.locals.starlightRoute.sidebar;
+  const hasNavGroup = sidebar.some((entry) => entry.label === 'Nav');
   const hasNonGroup = sidebar.some((entry) => entry.type !== 'group');
 
   if (hasNonGroup) {
@@ -23,5 +27,32 @@ export const onRequest = defineRouteMiddleware((context) => {
         collapsed: false,
       },
     ];
+  }
+
+  if (!hasNavGroup) {
+    context.locals.starlightRoute.sidebar.unshift({
+      type: 'group' as const,
+      label: 'Nav',
+      entries: [
+        {
+          type: 'link' as const,
+          label: 'Docs',
+          href: '/introduction/',
+          isCurrent: false,
+          badge: undefined,
+          attrs: {},
+        },
+        {
+          type: 'link' as const,
+          label: 'Blog',
+          href: '/blog/',
+          isCurrent: false,
+          badge: undefined,
+          attrs: {},
+        },
+      ],
+      badge: undefined,
+      collapsed: false,
+    });
   }
 });
