@@ -10,6 +10,7 @@ import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DirectionType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2Index
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2VertexType
+import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.VertexField
 
@@ -28,7 +29,7 @@ data class TableCreateRequest(
     val table: String,
     @field:NotNull(message = "schema is required")
     @field:Valid
-    val schema: ModelSchema.Edge,
+    val schema: ModelSchema,
     @field:NotBlank(message = "storage is required")
     @field:Pattern(
         regexp = "^datastore://[a-z]+/[a-zA-Z0-9_-]+$",
@@ -40,15 +41,43 @@ data class TableCreateRequest(
     val comment: String = "",
 ) {
     fun toV2EdgeSchema(): EdgeSchema =
-        EdgeSchema(
-            VertexField(schema.source.type.toV2VertexType(), schema.source.comment),
-            VertexField(schema.target.type.toV2VertexType(), schema.target.comment),
-            schema.properties.map {
-                V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
-            },
-        )
+        when (schema) {
+            is ModelSchema.Edge ->
+                EdgeSchema(
+                    VertexField(schema.source.type.toV2VertexType(), schema.source.comment),
+                    VertexField(schema.target.type.toV2VertexType(), schema.target.comment),
+                    schema.properties.map {
+                        V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
+                    },
+                )
+            is ModelSchema.MultiEdge -> {
+                val idField = V2Field("_id", schema.id.type.toV2DataType(), false, schema.id.comment)
+                EdgeSchema(
+                    VertexField(schema.source.type.toV2VertexType(), schema.source.comment),
+                    VertexField(schema.target.type.toV2VertexType(), schema.target.comment),
+                    listOf(idField) +
+                        schema.properties.map {
+                            V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
+                        },
+                )
+            }
+        }
 
-    fun toV2DirectionType(): V2DirectionType = schema.direction.toV2DirectionType()
+    fun toV2DirectionType(): V2DirectionType =
+        when (schema) {
+            is ModelSchema.Edge -> schema.direction.toV2DirectionType()
+            is ModelSchema.MultiEdge -> schema.direction.toV2DirectionType()
+        }
 
-    fun toV2Indices(): List<V2Index> = schema.indexes.map { it.toV2Index() }
+    fun toV2Indices(): List<V2Index> =
+        when (schema) {
+            is ModelSchema.Edge -> schema.indexes.map { it.toV2Index() }
+            is ModelSchema.MultiEdge -> schema.indexes.map { it.toV2Index() }
+        }
+
+    fun labelType(): LabelType =
+        when (schema) {
+            is ModelSchema.Edge -> LabelType.INDEXED
+            is ModelSchema.MultiEdge -> LabelType.MULTI_EDGE
+        }
 }

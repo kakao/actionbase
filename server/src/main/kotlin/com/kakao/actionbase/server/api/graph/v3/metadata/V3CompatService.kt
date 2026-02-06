@@ -13,13 +13,13 @@ import com.kakao.actionbase.v2.engine.service.ddl.ServiceUpdateRequest as V2Serv
 import com.kakao.actionbase.core.metadata.AliasDescriptor
 import com.kakao.actionbase.core.metadata.DatabaseDescriptor
 import com.kakao.actionbase.core.metadata.TableDescriptor
+import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
 import com.kakao.actionbase.core.metadata.payload.DatabaseUpdateRequest
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2MutationMode
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
-import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 
@@ -105,17 +105,23 @@ class V3CompatService(
         table: String,
         request: TableCreateRequest,
     ): Mono<TableDescriptor<*>> {
+        val isMultiEdge = request.schema is ModelSchema.MultiEdge
+        val groups =
+            when (val s = request.schema) {
+                is ModelSchema.Edge -> s.groups
+                is ModelSchema.MultiEdge -> s.groups
+            }
         val v2Request =
             V2LabelCreateRequest(
                 desc = request.comment,
-                type = LabelType.INDEXED,
+                type = request.labelType(),
                 schema = request.toV2EdgeSchema(),
                 dirType = request.toV2DirectionType(),
                 storage = request.storage,
-                groups = request.schema.groups,
+                groups = groups,
                 indices = request.toV2Indices(),
                 event = false,
-                readOnly = false,
+                readOnly = isMultiEdge,
                 mode = request.mode.toV2MutationMode(),
             )
         return graph.labelDdl
@@ -134,7 +140,7 @@ class V3CompatService(
                 desc = request.comment,
                 type = null,
                 schema = request.toV2EdgeSchema(),
-                groups = request.schema?.groups,
+                groups = request.toV2Groups(),
                 indices = request.toV2Indices(),
                 readOnly = null,
                 mode = request.mode?.toV2MutationMode(),

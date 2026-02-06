@@ -816,7 +816,7 @@ Table creation request payload.
 ```kotlin
 data class TableCreateRequest(
     val table: String,             // Table name
-    val schema: ModelSchema.Edge,  // Edge schema definition
+    val schema: ModelSchema,       // Schema definition (ModelSchema.Edge or ModelSchema.MultiEdge)
     val storage: String,           // Storage URI (datastore://hbase/tableName)
     val mode: MutationMode,        // Mutation mode (default: SYNC)
     val comment: String,           // Table description
@@ -830,7 +830,7 @@ Table update request payload.
 ```kotlin
 data class TableUpdateRequest(
     val active: Boolean?,          // Whether the table is active (optional)
-    val schema: ModelSchema.Edge?, // Edge schema definition (optional)
+    val schema: ModelSchema?,      // Schema definition (optional, ModelSchema.Edge or ModelSchema.MultiEdge)
     val mode: MutationMode?,       // Mutation mode (optional)
     val comment: String?,          // Table description (optional)
 )

@@ -790,5 +790,143 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectBody()
                 .json(v3)
         }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            # Basic MultiEdge - V3 create -> V2 get
+            - name: me-v3v2-basic
+              v3: |
+                {
+                  "table": "me-v3v2-basic",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "order id"},
+                    "source": {"type": "long", "comment": "sender"},
+                    "target": {"type": "long", "comment": "receiver"},
+                    "properties": [],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/me-v3v2-basic",
+                  "mode": "SYNC",
+                  "comment": "basic multiedge"
+                }
+              v2: |
+                {
+                  "name": "me-compat-db.me-v3v2-basic",
+                  "desc": "basic multiedge",
+                  "schema": {
+                    "src": {"type": "LONG", "desc": "sender"},
+                    "tgt": {"type": "LONG", "desc": "receiver"},
+                    "fields": [
+                      {"name": "_id", "type": "LONG", "nullable": false, "desc": "order id"}
+                    ]
+                  },
+                  "dirType": "BOTH",
+                  "storage": "datastore://hbase/me-v3v2-basic",
+                  "active": true
+                }
+
+            # MultiEdge with properties - V3 create -> V2 get
+            - name: me-v3v2-props
+              v3: |
+                {
+                  "table": "me-v3v2-props",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "txn id"},
+                    "source": {"type": "long", "comment": "user"},
+                    "target": {"type": "long", "comment": "item"},
+                    "properties": [
+                      {"name": "amount", "type": "int", "comment": "purchase amount", "nullable": false},
+                      {"name": "timestamp", "type": "long", "comment": "txn time", "nullable": false}
+                    ],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/me-v3v2-props",
+                  "mode": "SYNC",
+                  "comment": "multiedge with props"
+                }
+              v2: |
+                {
+                  "name": "me-compat-db.me-v3v2-props",
+                  "desc": "multiedge with props",
+                  "schema": {
+                    "src": {"type": "LONG", "desc": "user"},
+                    "tgt": {"type": "LONG", "desc": "item"},
+                    "fields": [
+                      {"name": "_id", "type": "LONG", "nullable": false, "desc": "txn id"},
+                      {"name": "amount", "type": "INT", "nullable": false, "desc": "purchase amount"},
+                      {"name": "timestamp", "type": "LONG", "nullable": false, "desc": "txn time"}
+                    ]
+                  },
+                  "dirType": "BOTH",
+                  "storage": "datastore://hbase/me-v3v2-props",
+                  "active": true
+                }
+
+            # MultiEdge with STRING keys - V3 create -> V2 get
+            - name: me-v3v2-string
+              v3: |
+                {
+                  "table": "me-v3v2-string",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "msg id"},
+                    "source": {"type": "string", "comment": "from"},
+                    "target": {"type": "string", "comment": "to"},
+                    "properties": [],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://hbase/me-v3v2-string",
+                  "mode": "SYNC",
+                  "comment": "string key multiedge"
+                }
+              v2: |
+                {
+                  "name": "me-compat-db.me-v3v2-string",
+                  "desc": "string key multiedge",
+                  "schema": {
+                    "src": {"type": "STRING", "desc": "from"},
+                    "tgt": {"type": "STRING", "desc": "to"},
+                    "fields": [
+                      {"name": "_id", "type": "LONG", "nullable": false, "desc": "msg id"}
+                    ]
+                  },
+                  "dirType": "OUT",
+                  "storage": "datastore://hbase/me-v3v2-string",
+                  "active": true
+                }
+            """,
+        )
+        fun `V3 create - V2 get`(
+            name: String,
+            v3: String,
+            v2: String,
+        ) {
+            client
+                .post()
+                .uri("/graph/v3/databases/$db/tables")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(v3)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .get()
+                .uri("/graph/v2/service/$db/label/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(v2)
+        }
     }
 }

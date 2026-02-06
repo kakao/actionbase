@@ -177,6 +177,67 @@ class TableControllerTest : E2ETestBase() {
             .hasSize(0)
     }
 
+    @Test
+    @Order(12)
+    fun `create multiEdge table`() {
+        client
+            .post()
+            .uri(baseUri)
+            .bodyValue(multiEdgeTableRequest())
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody(TableDescriptor.MultiEdge::class.java)
+            .value {
+                assertThat(it.database).isEqualTo(db)
+                assertThat(it.table).isEqualTo("v3-test-multiedge")
+                assertThat(it.schema.id.type).isEqualTo(PrimitiveType.LONG)
+            }
+    }
+
+    @Test
+    @Order(13)
+    fun `get multiEdge table`() {
+        client
+            .get()
+            .uri("$baseUri/v3-test-multiedge")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody(TableDescriptor.MultiEdge::class.java)
+            .value {
+                assertThat(it.table).isEqualTo("v3-test-multiedge")
+                assertThat(it.schema.id.type).isEqualTo(PrimitiveType.LONG)
+                assertThat(it.schema.source.type).isEqualTo(PrimitiveType.LONG)
+                assertThat(it.schema.target.type).isEqualTo(PrimitiveType.LONG)
+            }
+    }
+
+    @Test
+    @Order(14)
+    fun `deactivate multiEdge table`() {
+        client
+            .put()
+            .uri("$baseUri/v3-test-multiedge")
+            .bodyValue(TableUpdateRequest(active = false))
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody(TableDescriptor.MultiEdge::class.java)
+            .value { assertThat(it.active).isFalse() }
+    }
+
+    @Test
+    @Order(15)
+    fun `delete multiEdge table returns 204`() {
+        client
+            .delete()
+            .uri("$baseUri/v3-test-multiedge")
+            .exchange()
+            .expectStatus()
+            .isNoContent
+    }
+
     private fun tableRequest() =
         TableCreateRequest(
             table = table,
@@ -190,5 +251,21 @@ class TableControllerTest : E2ETestBase() {
             storage = "datastore://hbase/test-hbase-table",
             mode = MutationMode.SYNC,
             comment = "test table",
+        )
+
+    private fun multiEdgeTableRequest() =
+        TableCreateRequest(
+            table = "v3-test-multiedge",
+            schema =
+                ModelSchema.MultiEdge(
+                    id = Field(PrimitiveType.LONG, "order id"),
+                    source = Field(PrimitiveType.LONG, "sender"),
+                    target = Field(PrimitiveType.LONG, "receiver"),
+                    properties = emptyList(),
+                    direction = DirectionType.BOTH,
+                ),
+            storage = "datastore://hbase/test-multiedge-table",
+            mode = MutationMode.SYNC,
+            comment = "test multiedge table",
         )
 }
