@@ -377,6 +377,94 @@ class TableControllerTest : E2ETestBase() {
             shared = """
               deactivate: |
                 {"active": false}
+              reactivate: |
+                {"active": true}
+            """,
+            cases = """
+            - name: v3-edge-react
+              create: |
+                {
+                  "table": "v3-edge-react",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "src"},
+                    "target": {"type": "string", "comment": "tgt"},
+                    "properties": [],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://test_namespace/v3_edge_react",
+                  "mode": "SYNC",
+                  "comment": "edge table"
+                }
+              expected: |
+                {"table": "v3-edge-react", "active": true}
+            - name: v3-multiedge-react
+              create: |
+                {
+                  "table": "v3-multiedge-react",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "id"},
+                    "source": {"type": "long", "comment": "src"},
+                    "target": {"type": "long", "comment": "tgt"},
+                    "properties": [],
+                    "direction": "BOTH",
+                    "indexes": [],
+                    "groups": []
+                  },
+                  "storage": "datastore://test_namespace/v3_multiedge_react",
+                  "mode": "SYNC",
+                  "comment": "multiedge table"
+                }
+              expected: |
+                {"table": "v3-multiedge-react", "active": true}
+            """,
+        )
+        fun `reactivate table`(
+            name: String,
+            create: String,
+            deactivate: String,
+            reactivate: String,
+            expected: String,
+        ) {
+            // precondition: create + deactivate
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(deactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(reactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            shared = """
+              deactivate: |
+                {"active": false}
             """,
             cases = """
             - name: v3-edge-del

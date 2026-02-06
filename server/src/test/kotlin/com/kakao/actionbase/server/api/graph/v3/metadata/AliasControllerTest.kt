@@ -214,6 +214,65 @@ class AliasControllerTest : E2ETestBase() {
             shared = """
               deactivate: |
                 {"active": false}
+              reactivate: |
+                {"active": true}
+            """,
+            cases = """
+            - name: v3-alias-react-basic
+              create: |
+                {"alias": "v3-alias-react-basic", "table": "v3-alias-target-table", "comment": "test alias"}
+              expected: |
+                {"alias": "v3-alias-react-basic", "active": true}
+            - name: v3-alias-react-empty
+              create: |
+                {"alias": "v3-alias-react-empty", "table": "v3-alias-target-table", "comment": ""}
+              expected: |
+                {"alias": "v3-alias-react-empty", "active": true}
+            """,
+        )
+        fun `reactivate alias`(
+            name: String,
+            create: String,
+            deactivate: String,
+            reactivate: String,
+            expected: String,
+        ) {
+            // precondition: create + deactivate
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(deactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(reactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            shared = """
+              deactivate: |
+                {"active": false}
             """,
             cases = """
             - name: v3-alias-del-basic

@@ -113,6 +113,159 @@ class DatabaseControllerTest : E2ETestBase() {
                 .expectBody()
                 .json(expected)
         }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            shared = """
+              deactivate: |
+                {"active": false}
+            """,
+            cases = """
+            - name: v3-db-deact-basic
+              create: |
+                {"database": "v3-db-deact-basic", "comment": "test db"}
+              expected: |
+                {"database": "v3-db-deact-basic", "active": false}
+            - name: v3-db-deact-empty
+              create: |
+                {"database": "v3-db-deact-empty", "comment": ""}
+              expected: |
+                {"database": "v3-db-deact-empty", "active": false}
+            """,
+        )
+        fun `deactivate database`(
+            name: String,
+            create: String,
+            deactivate: String,
+            expected: String,
+        ) {
+            // precondition
+            client
+                .post()
+                .uri("/graph/v3/databases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("/graph/v3/databases/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(deactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            shared = """
+              deactivate: |
+                {"active": false}
+              reactivate: |
+                {"active": true}
+            """,
+            cases = """
+            - name: v3-db-react-basic
+              create: |
+                {"database": "v3-db-react-basic", "comment": "test db"}
+              expected: |
+                {"database": "v3-db-react-basic", "active": true}
+            - name: v3-db-react-empty
+              create: |
+                {"database": "v3-db-react-empty", "comment": ""}
+              expected: |
+                {"database": "v3-db-react-empty", "active": true}
+            """,
+        )
+        fun `reactivate database`(
+            name: String,
+            create: String,
+            deactivate: String,
+            reactivate: String,
+            expected: String,
+        ) {
+            // precondition: create + deactivate
+            client
+                .post()
+                .uri("/graph/v3/databases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("/graph/v3/databases/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(deactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("/graph/v3/databases/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(reactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            shared = """
+              deactivate: |
+                {"active": false}
+            """,
+            cases = """
+            - name: v3-db-del-basic
+              create: |
+                {"database": "v3-db-del-basic", "comment": "test db"}
+            - name: v3-db-del-empty
+              create: |
+                {"database": "v3-db-del-empty", "comment": ""}
+            """,
+        )
+        fun `delete database`(
+            name: String,
+            create: String,
+            deactivate: String,
+        ) {
+            // precondition: create + deactivate
+            client
+                .post()
+                .uri("/graph/v3/databases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("/graph/v3/databases/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(deactivate)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .delete()
+                .uri("/graph/v3/databases/$name")
+                .exchange()
+                .expectStatus()
+                .isNoContent
+        }
     }
 
     @Nested
