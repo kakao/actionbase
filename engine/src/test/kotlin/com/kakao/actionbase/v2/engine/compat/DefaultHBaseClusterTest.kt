@@ -6,22 +6,23 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class DefaultHBaseClusterTest {
-
-    private val secureBaseProperties = mapOf(
-        "secure" to "true",
-        "version" to "2.4",
-        "namespace" to "test",
-        "hbase.zookeeper.quorum" to "localhost:2181",
-        "krb5ConfPath" to "/tmp/krb5.conf",
-        "keytabPath" to "/tmp/test.keytab",
-        "principal" to "user@EXAMPLE.COM",
-    )
+    private val secureBaseProperties =
+        mapOf(
+            "secure" to "true",
+            "version" to "2.4",
+            "namespace" to "test",
+            "hbase.zookeeper.quorum" to "localhost:2181",
+            "krb5ConfPath" to "/tmp/krb5.conf",
+            "keytabPath" to "/tmp/test.keytab",
+            "principal" to "user@EXAMPLE.COM",
+        )
 
     @Test
     fun `missing kerberos realm should throw for secure cluster`() {
-        val exception = assertThrows<IllegalStateException> {
-            DefaultHBaseCluster.initialize(secureBaseProperties)
-        }
+        val exception =
+            assertThrows<IllegalStateException> {
+                DefaultHBaseCluster.initialize(secureBaseProperties)
+            }
         assertEquals("Kerberos realm is not set for secure cluster", exception.message)
     }
 
@@ -29,9 +30,10 @@ class DefaultHBaseClusterTest {
     fun `blank kerberos realm should throw for secure cluster`() {
         val properties = secureBaseProperties + ("kerberos.realm" to "  ")
 
-        val exception = assertThrows<IllegalArgumentException> {
-            DefaultHBaseCluster.initialize(properties)
-        }
+        val exception =
+            assertThrows<IllegalArgumentException> {
+                DefaultHBaseCluster.initialize(properties)
+            }
         assertEquals("Kerberos realm must not be blank", exception.message)
     }
 
