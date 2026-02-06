@@ -28,6 +28,7 @@ data class DatabaseDescriptor(
 
     fun toUpdateRequest(): DatabaseUpdateRequest =
         DatabaseUpdateRequest(
+            active = active,
             comment = comment,
         )
 }

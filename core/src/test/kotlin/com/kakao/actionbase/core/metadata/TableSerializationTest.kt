@@ -10,7 +10,6 @@ import com.kakao.actionbase.core.metadata.common.Index
 import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.core.metadata.common.Storage
 import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.test.json.PrettyObjectWriter
@@ -73,10 +72,7 @@ class TableSerializationTest {
                             ),
                     ),
                 mode = MutationMode.SYNC,
-                storage =
-                    Storage.HBase(
-                        tableName = "test_tenant:test_table",
-                    ),
+                storage = "datastore://test_namespace/test_tenant:test_table",
             )
 
         // when
@@ -142,7 +138,7 @@ class TableSerializationTest {
                 ]
               },
               "mode": "SYNC",
-              "storage": {"type": "hbase", "tableName": "test_tenant:test_table"},
+              "storage": "datastore://test_namespace/test_tenant:test_table",
               "active": true,
               "comment": "",
               "revision": -1,
@@ -212,7 +208,7 @@ class TableSerializationTest {
                 ]
               },
               "mode": "SYNC",
-              "storage": {"type": "hbase", "tableName": "test_tenant:test_table"}
+              "storage": "datastore://test_namespace/test_tenant:test_table"
             }
             """.trimIndent()
 
@@ -265,10 +261,7 @@ class TableSerializationTest {
                             ),
                     ),
                 mode = MutationMode.SYNC,
-                storage =
-                    Storage.HBase(
-                        tableName = "test_tenant:test_table",
-                    ),
+                storage = "datastore://test_namespace/test_tenant:test_table",
             )
         assertEquals(expected, actual)
     }

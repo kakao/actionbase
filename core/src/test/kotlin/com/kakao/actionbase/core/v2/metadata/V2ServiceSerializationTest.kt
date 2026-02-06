@@ -110,7 +110,7 @@ class V2ServiceSerializationTest {
         val actual = v2ServiceDescriptor.toV3("test_tenant").toUpdateRequest()
 
         // then
-        val expected = DatabaseUpdateRequest(comment = "Gift")
+        val expected = DatabaseUpdateRequest(active = true, comment = "Gift")
 
         val sameVersion = 0L
         assertEquals(expected.copy(version = sameVersion), actual.copy(version = sameVersion))

@@ -17,7 +17,7 @@ import org.springframework.web.server.WebFilter
 @Configuration
 class WebFilterConfig(
     private val properties: GraphProperties,
-    private val gitProperties: GitProperties,
+    private val gitProperties: GitProperties?,
     private val buildProperties: BuildProperties,
 ) {
     @Bean("responseMetaFilter")
