@@ -294,15 +294,15 @@ class ObjectSourceTest {
     }
 
     @Nested
-    inner class TestsAliasTest {
+    inner class CasesAliasTest {
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            tests = """
+            cases = """
             - number: 42
               string: hello
             """,
         )
-        fun `tests parameter works as alias for value`(
+        fun `cases parameter works as alias for value`(
             number: Int,
             string: String,
         ) {
@@ -312,14 +312,14 @@ class ObjectSourceTest {
 
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            tests = """
+            cases = """
             - number: 1
               string: first
             - number: 2
               string: second
             """,
         )
-        fun `tests parameter with multiple cases`(
+        fun `cases parameter with multiple cases`(
             number: Int,
             string: String,
         ) {
@@ -329,18 +329,18 @@ class ObjectSourceTest {
     }
 
     @Nested
-    inner class AllFieldsTest {
+    inner class SharedFieldsTest {
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            all = """
+            shared = """
               shared: common-value
             """,
-            tests = """
+            cases = """
             - name: case1
             - name: case2
             """,
         )
-        fun `all fields are merged into every test case`(
+        fun `shared fields are merged into every test case`(
             shared: String,
             name: String,
         ) {
@@ -350,11 +350,11 @@ class ObjectSourceTest {
 
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            all = """
+            shared = """
               setup: |
                 {"database": "test-db", "comment": "test"}
             """,
-            tests = """
+            cases = """
             - name: alias-basic
               update: |
                 {"comment": "updated"}
@@ -363,7 +363,7 @@ class ObjectSourceTest {
                 {"comment": ""}
             """,
         )
-        fun `all with JSON block scalars`(
+        fun `shared with JSON block scalars`(
             setup: String,
             name: String,
             update: String,
@@ -375,15 +375,15 @@ class ObjectSourceTest {
 
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            all = """
+            shared = """
               base: default
             """,
-            tests = """
+            cases = """
             - base: overridden
               extra: value
             """,
         )
-        fun `per-case fields override all fields`(
+        fun `per-case fields override shared fields`(
             base: String,
             extra: String,
         ) {
@@ -414,11 +414,11 @@ class ObjectSourceTest {
             value = """
             - name: from-value
             """,
-            all = """
+            shared = """
               shared: via-value
             """,
         )
-        fun `all works with value parameter`(
+        fun `shared works with value parameter`(
             shared: String,
             name: String,
         ) {

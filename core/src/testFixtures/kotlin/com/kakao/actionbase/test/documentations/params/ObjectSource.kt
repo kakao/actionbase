@@ -4,6 +4,6 @@ package com.kakao.actionbase.test.documentations.params
 @Target(AnnotationTarget.FUNCTION)
 annotation class ObjectSource(
     val value: String = "",
-    val tests: String = "",
-    val all: String = "",
+    val cases: String = "",
+    val shared: String = "",
 )
