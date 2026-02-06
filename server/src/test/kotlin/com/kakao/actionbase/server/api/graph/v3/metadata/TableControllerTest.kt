@@ -5,9 +5,12 @@ import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.http.MediaType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -29,11 +32,13 @@ class TableControllerTest : E2ETestBase() {
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
     inner class CrudLifecycleTest {
+        @Order(1)
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            # Edge table - basic CRUD
+            # Edge table - basic
             - name: v3-edge-crud
               create: |
                 {
@@ -72,7 +77,7 @@ class TableControllerTest : E2ETestBase() {
                   "active": true
                 }
 
-            # MultiEdge table - basic CRUD
+            # MultiEdge table - basic
             - name: v3-multiedge-crud
               create: |
                 {
@@ -109,7 +114,7 @@ class TableControllerTest : E2ETestBase() {
                   "active": true
                 }
 
-            # Edge table with properties and indexes
+            # Edge table with properties
             - name: v3-edge-full
               create: |
                 {
@@ -194,12 +199,11 @@ class TableControllerTest : E2ETestBase() {
                 }
             """,
         )
-        fun `create - get - update - deactivate - delete`(
+        fun `create table`(
             name: String,
             create: String,
             expected: String,
         ) {
-            // Create
             client
                 .post()
                 .uri(baseUri)
@@ -211,7 +215,6 @@ class TableControllerTest : E2ETestBase() {
                 .expectBody()
                 .json(expected)
 
-            // Get
             client
                 .get()
                 .uri("$baseUri/$name")
@@ -220,32 +223,105 @@ class TableControllerTest : E2ETestBase() {
                 .isOk
                 .expectBody()
                 .json(expected)
+        }
 
-            // Update comment
+        @Order(2)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-edge-crud
+              update: |
+                {"comment": "updated edge"}
+              expected: |
+                {"table": "v3-edge-crud", "comment": "updated edge", "active": true}
+            - name: v3-multiedge-crud
+              update: |
+                {"comment": "updated multiedge"}
+              expected: |
+                {"table": "v3-multiedge-crud", "comment": "updated multiedge", "active": true}
+            - name: v3-edge-full
+              update: |
+                {"comment": "updated full edge"}
+              expected: |
+                {"table": "v3-edge-full", "comment": "updated full edge", "active": true}
+            - name: v3-multiedge-full
+              update: |
+                {"comment": "updated full multiedge"}
+              expected: |
+                {"table": "v3-multiedge-full", "comment": "updated full multiedge", "active": true}
+            """,
+        )
+        fun `update table`(
+            name: String,
+            update: String,
+            expected: String,
+        ) {
             client
                 .put()
                 .uri("$baseUri/$name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("""{"comment": "updated comment"}""")
+                .bodyValue(update)
                 .exchange()
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json("""{"table": "$name", "comment": "updated comment", "active": true}""")
+                .json(expected)
+        }
 
-            // Deactivate
+        @Order(3)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-edge-crud
+              deactivate: |
+                {"active": false}
+              expected: |
+                {"table": "v3-edge-crud", "active": false}
+            - name: v3-multiedge-crud
+              deactivate: |
+                {"active": false}
+              expected: |
+                {"table": "v3-multiedge-crud", "active": false}
+            - name: v3-edge-full
+              deactivate: |
+                {"active": false}
+              expected: |
+                {"table": "v3-edge-full", "active": false}
+            - name: v3-multiedge-full
+              deactivate: |
+                {"active": false}
+              expected: |
+                {"table": "v3-multiedge-full", "active": false}
+            """,
+        )
+        fun `deactivate table`(
+            name: String,
+            deactivate: String,
+            expected: String,
+        ) {
             client
                 .put()
                 .uri("$baseUri/$name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("""{"active": false}""")
+                .bodyValue(deactivate)
                 .exchange()
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json("""{"table": "$name", "active": false}""")
+                .json(expected)
+        }
 
-            // Delete
+        @Order(4)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-edge-crud
+            - name: v3-multiedge-crud
+            - name: v3-edge-full
+            - name: v3-multiedge-full
+            """,
+        )
+        fun `delete table`(name: String) {
             client
                 .delete()
                 .uri("$baseUri/$name")
