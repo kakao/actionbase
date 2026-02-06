@@ -68,6 +68,7 @@ class DefaultHBaseCluster private constructor(
     companion object {
         const val DEFAULT_HBASE_NAMESPACE = "default"
         const val DEFAULT_HBASE_CLUSTER_NAME = "__DEFAULT_HBASE_CLUSTER__"
+        const val LEGACY_DEFAULT_KERBEROS_REALM = "KAKAO.HADOOP"
 
         private val logger = LoggerFactory.getLogger(DefaultHBaseCluster::class.java)
 
@@ -85,6 +86,7 @@ class DefaultHBaseCluster private constructor(
          *
          * # for secure cluster
          *   kerberos.realm: e.g. EXAMPLE.COM (or env AB_KERBEROS_REALM)
+         *     - If missing, defaults to KAKAO.HADOOP for backward compatibility (deprecated)
          *   krb5ConfPath: /path/to/krb5.conf (or env AB_KRB5_CONF_PATH)
          *   keytabPath: e.g. /path/to/hadoop-cdl-write.keytab (or env AB_KEYTAB_PATH)
          *   principal: e.g. hadoop-cdl-write@EXAMPLE.COM (or env AB_PRINCIPAL)
@@ -125,11 +127,7 @@ class DefaultHBaseCluster private constructor(
                 val krb5ConfPath = krb5ConfPathOpt ?: throw IllegalStateException("Kerberos krb5.conf path is not set")
                 val principal = principalOpt ?: throw IllegalStateException("Kerberos principal is not set")
                 val keytabPath = keytabPathOpt ?: throw IllegalStateException("Kerberos keytab path is not set")
-                val kerberosRealm =
-                    properties["kerberos.realm"]
-                        ?: System.getenv("AB_KERBEROS_REALM")
-                        ?: throw IllegalStateException("Kerberos realm is not set for secure cluster")
-                require(kerberosRealm.isNotBlank()) { "Kerberos realm must not be blank" }
+                val kerberosRealm = resolveKerberosRealm(properties)
 
                 System.setProperty("java.security.krb5.conf", krb5ConfPath)
 
@@ -191,6 +189,25 @@ class DefaultHBaseCluster private constructor(
                     }.cache()
 
             initialize(connectionMono, namespace, config)
+        }
+
+        internal fun resolveKerberosRealm(
+            properties: Map<String, String>,
+            envKerberosRealm: String? = System.getenv("AB_KERBEROS_REALM"),
+        ): String {
+            val kerberosRealm = (properties["kerberos.realm"] ?: envKerberosRealm)?.trim()
+
+            if (kerberosRealm == null) {
+                logger.warn(
+                    "`kerberos.realm` is not set; falling back to legacy default realm `{}` for backward compatibility. This fallback is deprecated and will be removed in a future release.",
+                    LEGACY_DEFAULT_KERBEROS_REALM,
+                )
+                // TODO(ab#180): Remove legacy fallback and require explicit kerberos.realm after migration period.
+                return LEGACY_DEFAULT_KERBEROS_REALM
+            }
+
+            require(kerberosRealm.isNotEmpty()) { "Kerberos realm must not be blank" }
+            return kerberosRealm
         }
 
         fun initialize(

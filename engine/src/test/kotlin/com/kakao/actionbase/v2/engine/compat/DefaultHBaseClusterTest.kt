@@ -18,12 +18,35 @@ class DefaultHBaseClusterTest {
         )
 
     @Test
-    fun `missing kerberos realm should throw for secure cluster`() {
-        val exception =
-            assertThrows<IllegalStateException> {
-                DefaultHBaseCluster.initialize(secureBaseProperties)
-            }
-        assertEquals("Kerberos realm is not set for secure cluster", exception.message)
+    fun `missing kerberos realm should use legacy default for compatibility`() {
+        val kerberosRealm = DefaultHBaseCluster.resolveKerberosRealm(secureBaseProperties, null)
+
+        assertEquals(DefaultHBaseCluster.LEGACY_DEFAULT_KERBEROS_REALM, kerberosRealm)
+    }
+
+    @Test
+    fun `environment kerberos realm should be used when property is missing`() {
+        val kerberosRealm = DefaultHBaseCluster.resolveKerberosRealm(secureBaseProperties, "ENV.EXAMPLE.COM")
+
+        assertEquals("ENV.EXAMPLE.COM", kerberosRealm)
+    }
+
+    @Test
+    fun `property kerberos realm should override environment realm`() {
+        val properties = secureBaseProperties + ("kerberos.realm" to "PROP.EXAMPLE.COM")
+
+        val kerberosRealm = DefaultHBaseCluster.resolveKerberosRealm(properties, "ENV.EXAMPLE.COM")
+
+        assertEquals("PROP.EXAMPLE.COM", kerberosRealm)
+    }
+
+    @Test
+    fun `kerberos realm should be trimmed`() {
+        val properties = secureBaseProperties + ("kerberos.realm" to "  EXAMPLE.COM  ")
+
+        val kerberosRealm = DefaultHBaseCluster.resolveKerberosRealm(properties, null)
+
+        assertEquals("EXAMPLE.COM", kerberosRealm)
     }
 
     @Test
