@@ -154,6 +154,11 @@ export default defineConfig({
           translations: { ko: '스토리' },
           autogenerate: { directory: 'stories' },
         },
+        {
+          label: 'Blog',
+          translations: { ko: '블로그' },
+          items: [{ label: 'All Posts', link: '/blog/' }],
+        },
       ],
       components: {
         Head: './src/components/Head.astro',
