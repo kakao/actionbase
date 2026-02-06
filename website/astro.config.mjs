@@ -7,6 +7,7 @@ import starlightLlmsTxt from 'starlight-llms-txt';
 import mermaid from 'astro-mermaid';
 import starlightBlog from 'starlight-blog';
 import { remarkHeadingId } from 'remark-custom-heading-id';
+import starlightUtils from '@lorenzo_lewis/starlight-utils';
 
 export const locales = {
   root: { label: 'English', lang: 'en' },
@@ -77,6 +78,7 @@ export default defineConfig({
       },
       social: [
         { icon: 'document', label: 'Documentation', href: '/introduction/' },
+        { icon: 'pen', label: 'Blog', href: '/blog/' },
         { icon: 'github', label: 'GitHub', href: 'https://github.com/kakao/actionbase' },
       ],
       head: [
@@ -106,44 +108,64 @@ export default defineConfig({
       locales,
       sidebar: [
         {
-          label: 'Getting Started',
-          items: ['introduction', 'quick-start', 'faq', 'for-rdb-users', 'llms-txt'],
+          label: 'Learn',
+          items: [
+            {
+              label: 'Getting Started',
+              items: ['introduction', 'quick-start', 'faq', 'for-rdb-users', 'llms-txt'],
+            },
+            {
+              label: 'Stories',
+              autogenerate: { directory: 'stories' },
+            },
+            {
+              label: 'Design',
+              autogenerate: { directory: 'design' },
+            },
+          ],
         },
         {
-          label: 'Stories',
-          autogenerate: { directory: 'stories' },
+          label: 'Build',
+          items: [
+            {
+              label: 'Guides',
+              autogenerate: { directory: 'guides' },
+            },
+            {
+              label: 'API References',
+              autogenerate: { directory: 'api-references' },
+            },
+            {
+              label: 'Internals',
+              autogenerate: { directory: 'internals' },
+            },
+          ],
         },
         {
-          label: 'Design',
-          autogenerate: { directory: 'design' },
+          label: 'Operate',
+          items: [
+            {
+              label: 'Provisioning',
+              autogenerate: { directory: 'provisioning' },
+            },
+            {
+              label: 'Operations',
+              autogenerate: { directory: 'operations' },
+            },
+          ],
         },
         {
-          label: 'Guides',
-          autogenerate: { directory: 'guides' },
-        },
-        {
-          label: 'Provisioning',
-          autogenerate: { directory: 'provisioning' },
-        },
-        {
-          label: 'Operations',
-          autogenerate: { directory: 'operations' },
-        },
-        {
-          label: 'Internals',
-          autogenerate: { directory: 'internals' },
-        },
-        {
-          label: 'API References',
-          autogenerate: { directory: 'api-references' },
-        },
-        {
-          label: 'Project',
-          autogenerate: { directory: 'project' },
-        },
-        {
-          label: 'Community',
-          autogenerate: { directory: 'community' },
+          label: 'Contribute',
+          items: [
+            {
+              label: 'Project',
+              autogenerate: { directory: 'project' },
+            },
+            {
+              label: 'Community',
+              autogenerate: { directory: 'community' },
+            },
+          ],
         },
       ],
       components: {
@@ -153,6 +175,22 @@ export default defineConfig({
       },
       expressiveCode: { shiki: { langs: [markdocGrammar] } },
       plugins: [
+        {
+          name: 'blog-multi-sidebar-compat',
+          hooks: {
+            setup({ addRouteMiddleware }) {
+              addRouteMiddleware({
+                entrypoint: './src/plugins/blog-sidebar-compat.ts',
+                order: 'post',
+              });
+            },
+          },
+        },
+        starlightUtils({
+          multiSidebar: {
+            switcherStyle: 'horizontalList',
+          },
+        }),
         starlightLinksValidator({
           errorOnFallbackPages: false,
           errorOnInconsistentLocale: true,
@@ -187,6 +225,7 @@ export default defineConfig({
           ],
         }),
         starlightBlog({
+          navigation: 'none',
           authors: {
             em3s: {
               name: 'Minseok Kim',
