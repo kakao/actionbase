@@ -84,9 +84,10 @@ class DefaultHBaseCluster private constructor(
          *   hbase.client.bootstrap.servers: host1:16000,host2:16000,host3:16000
          *
          * # for secure cluster
+         *   kerberos.realm: e.g. EXAMPLE.COM
          *   krb5ConfPath: (optional) /path/to/krb5.conf
          *   keytabPath: e.g. /path/to/hadoop-cdl-write.keytab
-         *   principal: e.g. hadoop-cdl-write@KAKAO.HADOOP
+         *   principal: e.g. hadoop-cdl-write@EXAMPLE.COM
          */
         fun initialize(properties: Map<String, String>) {
             logger.info("KerberosHelper is being initialized.")
@@ -124,13 +125,15 @@ class DefaultHBaseCluster private constructor(
                 val krb5ConfPath = krb5ConfPathOpt ?: throw IllegalStateException("Kerberos krb5.conf path is not set")
                 val principal = principalOpt ?: throw IllegalStateException("Kerberos principal is not set")
                 val keytabPath = keytabPathOpt ?: throw IllegalStateException("Kerberos keytab path is not set")
+                val kerberosRealm = properties["kerberos.realm"]
+                    ?: throw IllegalStateException("Kerberos realm is not set for secure cluster")
 
                 System.setProperty("java.security.krb5.conf", krb5ConfPath)
 
                 config["hadoop.security.authentication"] = "kerberos"
                 config["hbase.security.authentication"] = "kerberos"
-                config["hbase.master.kerberos.principal"] = "hbase/_HOST@KAKAO.HADOOP"
-                config["hbase.regionserver.kerberos.principal"] = "hbase/_HOST@KAKAO.HADOOP"
+                config["hbase.master.kerberos.principal"] = "hbase/_HOST@$kerberosRealm"
+                config["hbase.regionserver.kerberos.principal"] = "hbase/_HOST@$kerberosRealm"
 
                 config["hbase.client.keytab.principal"] = principal
                 config["hbase.client.keytab.file"] = keytabPath
