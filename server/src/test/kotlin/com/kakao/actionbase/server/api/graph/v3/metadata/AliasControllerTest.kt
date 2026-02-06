@@ -105,10 +105,7 @@ class AliasControllerTest : E2ETestBase() {
 
         @ObjectSourceParameterizedTest
         @ObjectSource(
-            shared = """
-              table: v3-alias-target-table
-            """,
-            cases = """
+            """
             - name: v3-alias-upd-basic
               create: |
                 {"alias": "v3-alias-upd-basic", "table": "v3-alias-target-table", "comment": "test alias"}
@@ -134,7 +131,6 @@ class AliasControllerTest : E2ETestBase() {
         )
         fun `update alias`(
             name: String,
-            table: String,
             create: String,
             update: String,
             expected: String,
