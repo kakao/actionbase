@@ -136,8 +136,8 @@ export default defineConfig({
           ],
         },
         {
-          label: 'All',
-          translations: { ko: '전체' },
+          label: 'Main',
+          translations: { ko: '메인' },
           items: [
             {
               label: 'Getting Started',
@@ -191,6 +191,7 @@ export default defineConfig({
       ],
       components: {
         Head: './src/components/Head.astro',
+        SocialIcons: './src/components/SocialIcons.astro',
         PageSidebar: './src/components/PageSidebar.astro',
         Footer: './src/components/Footer.astro',
       },
