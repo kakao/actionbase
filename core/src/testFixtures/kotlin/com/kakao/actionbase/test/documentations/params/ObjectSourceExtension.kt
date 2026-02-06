@@ -17,7 +17,15 @@ class ObjectSourceExtension : TestTemplateInvocationContextProvider {
 
     override fun provideTestTemplateInvocationContexts(context: ExtensionContext): Stream<TestTemplateInvocationContext> {
         val annotation = context.requiredTestMethod.getAnnotation(ObjectSource::class.java)
-        val testData = annotation.tests.ifEmpty { annotation.value }
+
+        require(annotation.value.isBlank() || annotation.tests.isBlank()) {
+            "@ObjectSource: specify either 'value' or 'tests', not both"
+        }
+
+        val testData =
+            annotation.tests.ifBlank { annotation.value }.also {
+                require(it.isNotBlank()) { "@ObjectSource: 'value' or 'tests' must be provided" }
+            }
         val testCases: List<Map<String, Any?>> = ObjectMappers.YAML.readValue(testData)
 
         val allFields: Map<String, Any?> =

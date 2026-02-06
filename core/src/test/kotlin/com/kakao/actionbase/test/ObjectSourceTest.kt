@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 
@@ -322,8 +323,8 @@ class ObjectSourceTest {
             number: Int,
             string: String,
         ) {
-            assert(number in 1..2)
-            assert(string in listOf("first", "second"))
+            assertTrue(number in 1..2) { "Expected number in 1..2 but got $number" }
+            assertTrue(string in listOf("first", "second")) { "Expected string in [first, second] but got $string" }
         }
     }
 
@@ -344,7 +345,7 @@ class ObjectSourceTest {
             name: String,
         ) {
             assertEquals("common-value", shared)
-            assert(name in listOf("case1", "case2"))
+            assertTrue(name in listOf("case1", "case2")) { "Expected name in [case1, case2] but got $name" }
         }
 
         @ObjectSourceParameterizedTest
@@ -368,8 +369,8 @@ class ObjectSourceTest {
             update: String,
         ) {
             assertEquals("{\"database\": \"test-db\", \"comment\": \"test\"}\n", setup)
-            assert(name in listOf("alias-basic", "alias-empty"))
-            assert(update.contains("comment"))
+            assertTrue(name in listOf("alias-basic", "alias-empty")) { "Expected name in [alias-basic, alias-empty] but got $name" }
+            assertTrue(update.contains("comment")) { "Expected update to contain 'comment' but got $update" }
         }
 
         @ObjectSourceParameterizedTest
@@ -406,6 +407,23 @@ class ObjectSourceTest {
         ) {
             assertEquals(99, number)
             assertEquals("backward", string)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            value = """
+            - name: from-value
+            """,
+            all = """
+              shared: via-value
+            """,
+        )
+        fun `all works with value parameter`(
+            shared: String,
+            name: String,
+        ) {
+            assertEquals("via-value", shared)
+            assertEquals("from-value", name)
         }
     }
 
