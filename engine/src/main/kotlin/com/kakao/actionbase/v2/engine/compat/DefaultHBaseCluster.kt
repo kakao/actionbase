@@ -125,9 +125,10 @@ class DefaultHBaseCluster private constructor(
                 val krb5ConfPath = krb5ConfPathOpt ?: throw IllegalStateException("Kerberos krb5.conf path is not set")
                 val principal = principalOpt ?: throw IllegalStateException("Kerberos principal is not set")
                 val keytabPath = keytabPathOpt ?: throw IllegalStateException("Kerberos keytab path is not set")
-                val kerberosRealm = properties["kerberos.realm"]
-                    ?: System.getenv("AB_KERBEROS_REALM")
-                    ?: throw IllegalStateException("Kerberos realm is not set for secure cluster")
+                val kerberosRealm =
+                    properties["kerberos.realm"]
+                        ?: System.getenv("AB_KERBEROS_REALM")
+                        ?: throw IllegalStateException("Kerberos realm is not set for secure cluster")
                 require(kerberosRealm.isNotBlank()) { "Kerberos realm must not be blank" }
 
                 System.setProperty("java.security.krb5.conf", krb5ConfPath)
