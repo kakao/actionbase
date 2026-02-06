@@ -49,7 +49,7 @@ class TableControllerTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/v3-edge-crud",
+                  "storage": "datastore://test_namespace/v3_edge_crud",
                   "mode": "SYNC",
                   "comment": "edge table"
                 }
@@ -68,7 +68,7 @@ class TableControllerTest : E2ETestBase() {
                     ],
                     "direction": "OUT"
                   },
-                  "storage": {"type": "hbase", "tableName": "v3-edge-crud"},
+                  "storage": "datastore://test_namespace/v3_edge_crud",
                   "active": true
                 }
 
@@ -87,7 +87,7 @@ class TableControllerTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/v3-multiedge-crud",
+                  "storage": "datastore://test_namespace/v3_multiedge_crud",
                   "mode": "SYNC",
                   "comment": "multiedge table"
                 }
@@ -105,7 +105,7 @@ class TableControllerTest : E2ETestBase() {
                     "properties": [],
                     "direction": "BOTH"
                   },
-                  "storage": {"type": "hbase", "tableName": "v3-multiedge-crud"},
+                  "storage": "datastore://test_namespace/v3_multiedge_crud",
                   "active": true
                 }
 
@@ -126,7 +126,7 @@ class TableControllerTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/v3-edge-full",
+                  "storage": "datastore://test_namespace/v3_edge_full",
                   "mode": "SYNC",
                   "comment": "full edge table"
                 }
@@ -146,7 +146,7 @@ class TableControllerTest : E2ETestBase() {
                     ],
                     "direction": "BOTH"
                   },
-                  "storage": {"type": "hbase", "tableName": "v3-edge-full"},
+                  "storage": "datastore://test_namespace/v3_edge_full",
                   "active": true
                 }
 
@@ -168,7 +168,7 @@ class TableControllerTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/v3-multiedge-full",
+                  "storage": "datastore://test_namespace/v3_multiedge_full",
                   "mode": "SYNC",
                   "comment": "full multiedge table"
                 }
@@ -189,7 +189,7 @@ class TableControllerTest : E2ETestBase() {
                     ],
                     "direction": "BOTH"
                   },
-                  "storage": {"type": "hbase", "tableName": "v3-multiedge-full"},
+                  "storage": "datastore://test_namespace/v3_multiedge_full",
                   "active": true
                 }
             """,

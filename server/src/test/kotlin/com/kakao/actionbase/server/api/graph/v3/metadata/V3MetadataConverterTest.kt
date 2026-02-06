@@ -12,18 +12,15 @@ import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.core.metadata.common.Storage
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2AliasEntity
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DirectionType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2MutationMode
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2ServiceEntity
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2StorageString
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DirectionType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3MutationMode
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3Storage
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
 import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.DataType
@@ -154,61 +151,6 @@ class V3MetadataConverterTest {
     }
 
     @Nested
-    inner class StorageConversionTest {
-        @Test
-        fun `datastore URI to V3 Storage`() {
-            // Given
-            val uri = "datastore://hbase/my-table"
-
-            // When
-            val storage = uri.toV3Storage()
-
-            // Then
-            assertThat(storage).isInstanceOf(Storage.HBase::class.java)
-            assertThat((storage as Storage.HBase).tableName).isEqualTo("my-table")
-        }
-
-        @Test
-        fun `V3 Storage to datastore URI`() {
-            // Given
-            val storage = Storage.HBase(tableName = "my-table")
-
-            // When
-            val uri = storage.toV2StorageString()
-
-            // Then
-            assertThat(uri).isEqualTo("datastore://hbase/my-table")
-        }
-
-        @Test
-        fun `non-datastore URI throws exception`() {
-            val invalidUri = "hbase:my-table"
-
-            assertThatThrownBy { invalidUri.toV3Storage() }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("datastore://")
-        }
-
-        @Test
-        fun `empty HBase table name throws exception`() {
-            val emptyTableUri = "datastore://hbase/"
-
-            assertThatThrownBy { emptyTableUri.toV3Storage() }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("HBase table name is required")
-        }
-
-        @Test
-        fun `datastore URI without table name throws exception`() {
-            val noTableUri = "datastore://hbase"
-
-            assertThatThrownBy { noTableUri.toV3Storage() }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("HBase table name is required")
-        }
-    }
-
-    @Nested
     inner class TableConversionTest {
         @Test
         fun `LabelEntity to TableDescriptor`() {
@@ -231,7 +173,7 @@ class V3MetadataConverterTest {
                     type = LabelType.HASH,
                     schema = edgeSchema,
                     dirType = V2DirectionType.OUT,
-                    storage = "datastore://hbase/test-table",
+                    storage = "datastore://test_namespace/test_table",
                     indices =
                         listOf(
                             V2Index("idx1", listOf(V2Index.Field("score", V2Order.DESC)), "index desc"),
@@ -252,7 +194,7 @@ class V3MetadataConverterTest {
             assertThat(v3Descriptor.active).isTrue()
             assertThat(v3Descriptor.comment).isEqualTo("test table")
             assertThat(v3Descriptor.mode).isEqualTo(MutationMode.SYNC)
-            assertThat(v3Descriptor.storage).isEqualTo(Storage.HBase("test-table"))
+            assertThat(v3Descriptor.storage).isEqualTo("datastore://test_namespace/test_table")
 
             val schema = v3Descriptor.schema
             assertThat(schema.direction).isEqualTo(DirectionType.OUT)

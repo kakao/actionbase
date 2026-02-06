@@ -46,7 +46,7 @@ class AliasControllerTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/alias-test-hbase-table",
+                  "storage": "datastore://test_namespace/alias_test_hbase_table",
                   "mode": "SYNC",
                   "comment": "target table"
                 }

@@ -18,10 +18,8 @@ import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.Storage
 import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.types.PrimitiveType
-import com.kakao.actionbase.engine.EngineConstants
 import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.VertexField
@@ -32,8 +30,6 @@ import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 
 object V3MetadataConverter {
-    private const val DATASTORE_HBASE_PREFIX = "${EngineConstants.DATASTORE_URI_PREFIX}hbase/"
-
     // region Database (V3 DatabaseDescriptor <-> V2 ServiceEntity)
 
     fun ServiceEntity.toV3DatabaseDescriptor(tenant: String): DatabaseDescriptor =
@@ -62,7 +58,7 @@ object V3MetadataConverter {
             table = name.nameNotNull,
             schema = schema.toV3ModelSchemaEdge(dirType.toV3DirectionType(), indices, groups),
             mode = mode.toV3MutationMode(),
-            storage = storage.toV3Storage(),
+            storage = storage,
             active = active,
             comment = desc,
         )
@@ -74,7 +70,7 @@ object V3MetadataConverter {
             table = name.nameNotNull,
             schema = schema.toV3ModelSchemaMultiEdge(dirType.toV3DirectionType(), indices, groups),
             mode = mode.toV3MutationMode(),
-            storage = storage.toV3Storage(),
+            storage = storage,
             active = active,
             comment = desc,
         )
@@ -93,7 +89,7 @@ object V3MetadataConverter {
             type = LabelType.INDEXED,
             schema = schema.toV2EdgeSchema(),
             dirType = schema.direction.toV2DirectionType(),
-            storage = storage.toV2StorageString(),
+            storage = storage,
             indices = schema.indexes.map { it.toV2Index() },
             groups = schema.groups,
             event = false,
@@ -109,7 +105,7 @@ object V3MetadataConverter {
             type = LabelType.MULTI_EDGE,
             schema = schema.toV2EdgeSchema(),
             dirType = schema.direction.toV2DirectionType(),
-            storage = storage.toV2StorageString(),
+            storage = storage,
             indices = schema.indexes.map { it.toV2Index() },
             groups = schema.groups,
             event = false,
@@ -174,33 +170,6 @@ object V3MetadataConverter {
             V3DirectionType.BOTH -> V2DirectionType.BOTH
             V3DirectionType.OUT -> V2DirectionType.OUT
             V3DirectionType.IN -> V2DirectionType.IN
-        }
-
-    // endregion
-
-    // region Storage conversion (V3 enforces datastore:// URI)
-
-    fun String.toV3Storage(): Storage {
-        require(startsWith(EngineConstants.DATASTORE_URI_PREFIX)) {
-            "V3 requires datastore:// URI format, got: $this"
-        }
-        val path = removePrefix(EngineConstants.DATASTORE_URI_PREFIX)
-        val parts = path.split("/", limit = 2)
-        return when (parts[0]) {
-            "hbase" -> {
-                val tableName = parts.getOrElse(1) { "" }
-                require(tableName.isNotBlank()) {
-                    "HBase table name is required in datastore URI"
-                }
-                Storage.HBase(tableName = tableName)
-            }
-            else -> throw IllegalArgumentException("Unsupported datastore type: ${parts[0]}")
-        }
-    }
-
-    fun Storage.toV2StorageString(): String =
-        when (this) {
-            is Storage.HBase -> "$DATASTORE_HBASE_PREFIX$tableName"
         }
 
     // endregion

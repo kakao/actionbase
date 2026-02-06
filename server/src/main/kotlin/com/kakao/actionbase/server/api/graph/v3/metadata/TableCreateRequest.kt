@@ -32,8 +32,8 @@ data class TableCreateRequest(
     val schema: ModelSchema,
     @field:NotBlank(message = "storage is required")
     @field:Pattern(
-        regexp = "^datastore://[a-z]+/[a-zA-Z0-9_-]+$",
-        message = "storage must be in format datastore://<type>/<name> (e.g., datastore://hbase/my-table)",
+        regexp = "^datastore://[a-z_]+/[a-zA-Z0-9_]+$",
+        message = "storage must be in format datastore://<namespace>/<table> (e.g., datastore://my_namespace/my_table)",
     )
     val storage: String,
     val mode: MutationMode = MutationMode.SYNC,

@@ -19,7 +19,6 @@ import org.springframework.http.MediaType
  * - V2 Service = V3 Database
  * - V2 Label = V3 Table
  * - V2 desc = V3 comment
- * - V2 storage (string) = V3 storage (object)
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class V2V3CompatibilityTest : E2ETestBase() {
@@ -30,32 +29,32 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             - name: db-v2v3-basic
-              v2: |
+              create: |
                 {"desc": "test database"}
-              v3: |
+              expected: |
                 {"database": "db-v2v3-basic", "comment": "test database", "active": true}
             - name: db-v2v3-empty
-              v2: |
+              create: |
                 {"desc": ""}
-              v3: |
+              expected: |
                 {"database": "db-v2v3-empty", "comment": "", "active": true}
             - name: db-v2v3-special
-              v2: |
+              create: |
                 {"desc": "test @#$%"}
-              v3: |
+              expected: |
                 {"database": "db-v2v3-special", "comment": "test @#$%", "active": true}
             """,
         )
         fun `V2 create - V3 get`(
             name: String,
-            v2: String,
-            v3: String,
+            create: String,
+            expected: String,
         ) {
             client
                 .post()
                 .uri("/graph/v2/service/$name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(v2)
+                .bodyValue(create)
                 .exchange()
                 .expectStatus()
                 .isOk
@@ -67,39 +66,39 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(v3)
+                .json(expected)
         }
 
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
             - name: db-v3v2-basic
-              v3: |
+              create: |
                 {"database": "db-v3v2-basic", "comment": "test database"}
-              v2: |
+              expected: |
                 {"name": "db-v3v2-basic", "desc": "test database", "active": true}
             - name: db-v3v2-empty
-              v3: |
+              create: |
                 {"database": "db-v3v2-empty", "comment": ""}
-              v2: |
+              expected: |
                 {"name": "db-v3v2-empty", "desc": "", "active": true}
             - name: db-v3v2-special
-              v3: |
+              create: |
                 {"database": "db-v3v2-special", "comment": "test @#$%"}
-              v2: |
+              expected: |
                 {"name": "db-v3v2-special", "desc": "test @#$%", "active": true}
             """,
         )
         fun `V3 create - V2 get`(
             name: String,
-            v3: String,
-            v2: String,
+            create: String,
+            expected: String,
         ) {
             client
                 .post()
                 .uri("/graph/v3/databases")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(v3)
+                .bodyValue(create)
                 .exchange()
                 .expectStatus()
                 .isOk
@@ -111,7 +110,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(v2)
+                .json(expected)
         }
     }
 
@@ -137,7 +136,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
             """
             # Direction: OUT
             - name: tbl-v2v3-out
-              v2: |
+              create: |
                 {
                   "desc": "direction out",
                   "type": "INDEXED",
@@ -147,9 +146,9 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "fields": []
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v2v3-out"
+                  "storage": "datastore://test_namespace/tbl_v2v3_out"
                 }
-              v3: |
+              expected: |
                 {
                   "table": "tbl-v2v3-out",
                   "comment": "direction out",
@@ -160,13 +159,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "properties": [],
                     "direction": "OUT"
                   },
-                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-out"},
+                  "storage": "datastore://test_namespace/tbl_v2v3_out",
                   "active": true
                 }
 
             # Direction: IN
             - name: tbl-v2v3-in
-              v2: |
+              create: |
                 {
                   "desc": "direction in",
                   "type": "INDEXED",
@@ -176,9 +175,9 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "fields": []
                   },
                   "dirType": "IN",
-                  "storage": "datastore://hbase/tbl-v2v3-in"
+                  "storage": "datastore://test_namespace/tbl_v2v3_in"
                 }
-              v3: |
+              expected: |
                 {
                   "table": "tbl-v2v3-in",
                   "comment": "direction in",
@@ -189,13 +188,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "properties": [],
                     "direction": "IN"
                   },
-                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-in"},
+                  "storage": "datastore://test_namespace/tbl_v2v3_in",
                   "active": true
                 }
 
             # Direction: BOTH
             - name: tbl-v2v3-both
-              v2: |
+              create: |
                 {
                   "desc": "direction both",
                   "type": "INDEXED",
@@ -205,9 +204,9 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "fields": []
                   },
                   "dirType": "BOTH",
-                  "storage": "datastore://hbase/tbl-v2v3-both"
+                  "storage": "datastore://test_namespace/tbl_v2v3_both"
                 }
-              v3: |
+              expected: |
                 {
                   "table": "tbl-v2v3-both",
                   "comment": "direction both",
@@ -218,13 +217,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "properties": [],
                     "direction": "BOTH"
                   },
-                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-both"},
+                  "storage": "datastore://test_namespace/tbl_v2v3_both",
                   "active": true
                 }
 
             # With properties
             - name: tbl-v2v3-props
-              v2: |
+              create: |
                 {
                   "desc": "with props",
                   "type": "INDEXED",
@@ -237,9 +236,9 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v2v3-props"
+                  "storage": "datastore://test_namespace/tbl_v2v3_props"
                 }
-              v3: |
+              expected: |
                 {
                   "table": "tbl-v2v3-props",
                   "comment": "with props",
@@ -253,13 +252,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ],
                     "direction": "OUT"
                   },
-                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-props"},
+                  "storage": "datastore://test_namespace/tbl_v2v3_props",
                   "active": true
                 }
 
             # LONG keys
             - name: tbl-v2v3-long
-              v2: |
+              create: |
                 {
                   "desc": "long keys",
                   "type": "INDEXED",
@@ -269,9 +268,9 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "fields": []
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v2v3-long"
+                  "storage": "datastore://test_namespace/tbl_v2v3_long"
                 }
-              v3: |
+              expected: |
                 {
                   "table": "tbl-v2v3-long",
                   "comment": "long keys",
@@ -282,21 +281,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "properties": [],
                     "direction": "OUT"
                   },
-                  "storage": {"type": "hbase", "tableName": "tbl-v2v3-long"},
+                  "storage": "datastore://test_namespace/tbl_v2v3_long",
                   "active": true
                 }
             """,
         )
         fun `V2 create - V3 get`(
             name: String,
-            v2: String,
-            v3: String,
+            create: String,
+            expected: String,
         ) {
             client
                 .post()
                 .uri("/graph/v2/service/$db/label/$name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(v2)
+                .bodyValue(create)
                 .exchange()
                 .expectStatus()
                 .isOk
@@ -308,7 +307,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(v3)
+                .json(expected)
         }
 
         @ObjectSourceParameterizedTest
@@ -316,7 +315,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
             """
             # Direction: OUT
             - name: tbl-v3v2-out
-              v3: |
+              create: |
                 {
                   "table": "tbl-v3v2-out",
                   "schema": {
@@ -328,11 +327,11 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/tbl-v3v2-out",
+                  "storage": "datastore://test_namespace/tbl_v3v2_out",
                   "mode": "SYNC",
                   "comment": "direction out"
                 }
-              v2: |
+              expected: |
                 {
                   "name": "tbl-compat-db.tbl-v3v2-out",
                   "desc": "direction out",
@@ -342,13 +341,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "fields": []
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v3v2-out",
+                  "storage": "datastore://test_namespace/tbl_v3v2_out",
                   "active": true
                 }
 
             # Direction: IN
             - name: tbl-v3v2-in
-              v3: |
+              create: |
                 {
                   "table": "tbl-v3v2-in",
                   "schema": {
@@ -360,11 +359,11 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/tbl-v3v2-in",
+                  "storage": "datastore://test_namespace/tbl_v3v2_in",
                   "mode": "SYNC",
                   "comment": "direction in"
                 }
-              v2: |
+              expected: |
                 {
                   "name": "tbl-compat-db.tbl-v3v2-in",
                   "desc": "direction in",
@@ -374,13 +373,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "fields": []
                   },
                   "dirType": "IN",
-                  "storage": "datastore://hbase/tbl-v3v2-in",
+                  "storage": "datastore://test_namespace/tbl_v3v2_in",
                   "active": true
                 }
 
             # Direction: BOTH
             - name: tbl-v3v2-both
-              v3: |
+              create: |
                 {
                   "table": "tbl-v3v2-both",
                   "schema": {
@@ -392,11 +391,11 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/tbl-v3v2-both",
+                  "storage": "datastore://test_namespace/tbl_v3v2_both",
                   "mode": "SYNC",
                   "comment": "direction both"
                 }
-              v2: |
+              expected: |
                 {
                   "name": "tbl-compat-db.tbl-v3v2-both",
                   "desc": "direction both",
@@ -406,13 +405,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "fields": []
                   },
                   "dirType": "BOTH",
-                  "storage": "datastore://hbase/tbl-v3v2-both",
+                  "storage": "datastore://test_namespace/tbl_v3v2_both",
                   "active": true
                 }
 
             # With properties
             - name: tbl-v3v2-props
-              v3: |
+              create: |
                 {
                   "table": "tbl-v3v2-props",
                   "schema": {
@@ -427,11 +426,11 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/tbl-v3v2-props",
+                  "storage": "datastore://test_namespace/tbl_v3v2_props",
                   "mode": "SYNC",
                   "comment": "with props"
                 }
-              v2: |
+              expected: |
                 {
                   "name": "tbl-compat-db.tbl-v3v2-props",
                   "desc": "with props",
@@ -444,13 +443,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v3v2-props",
+                  "storage": "datastore://test_namespace/tbl_v3v2_props",
                   "active": true
                 }
 
             # LONG keys
             - name: tbl-v3v2-long
-              v3: |
+              create: |
                 {
                   "table": "tbl-v3v2-long",
                   "schema": {
@@ -462,11 +461,11 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/tbl-v3v2-long",
+                  "storage": "datastore://test_namespace/tbl_v3v2_long",
                   "mode": "SYNC",
                   "comment": "long keys"
                 }
-              v2: |
+              expected: |
                 {
                   "name": "tbl-compat-db.tbl-v3v2-long",
                   "desc": "long keys",
@@ -476,21 +475,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "fields": []
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/tbl-v3v2-long",
+                  "storage": "datastore://test_namespace/tbl_v3v2_long",
                   "active": true
                 }
             """,
         )
         fun `V3 create - V2 get`(
             name: String,
-            v3: String,
-            v2: String,
+            create: String,
+            expected: String,
         ) {
             client
                 .post()
                 .uri("/graph/v3/databases/$db/tables")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(v3)
+                .bodyValue(create)
                 .exchange()
                 .expectStatus()
                 .isOk
@@ -502,7 +501,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(v2)
+                .json(expected)
         }
     }
 
@@ -540,7 +539,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                         "indexes": [],
                         "groups": []
                       },
-                      "storage": "datastore://hbase/als-target-storage",
+                      "storage": "datastore://test_namespace/als_target_storage",
                       "mode": "SYNC",
                       "comment": "target table"
                     }
@@ -554,32 +553,32 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             - name: als-v2v3-basic
-              v2: |
+              create: |
                 {"desc": "test alias", "target": "als-compat-db.als-target"}
-              v3: |
+              expected: |
                 {"alias": "als-v2v3-basic", "table": "als-target", "comment": "test alias", "active": true}
             - name: als-v2v3-empty
-              v2: |
+              create: |
                 {"desc": "", "target": "als-compat-db.als-target"}
-              v3: |
+              expected: |
                 {"alias": "als-v2v3-empty", "table": "als-target", "comment": "", "active": true}
             - name: als-v2v3-special
-              v2: |
+              create: |
                 {"desc": "alias @#", "target": "als-compat-db.als-target"}
-              v3: |
+              expected: |
                 {"alias": "als-v2v3-special", "table": "als-target", "comment": "alias @#", "active": true}
             """,
         )
         fun `V2 create - V3 get`(
             name: String,
-            v2: String,
-            v3: String,
+            create: String,
+            expected: String,
         ) {
             client
                 .post()
                 .uri("/graph/v2/service/$db/alias/$name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(v2)
+                .bodyValue(create)
                 .exchange()
                 .expectStatus()
                 .isOk
@@ -591,39 +590,39 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(v3)
+                .json(expected)
         }
 
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
             - name: als-v3v2-basic
-              v3: |
+              create: |
                 {"alias": "als-v3v2-basic", "table": "als-target", "comment": "test alias"}
-              v2: |
+              expected: |
                 {"name": "als-compat-db.als-v3v2-basic", "target": "als-compat-db.als-target", "desc": "test alias", "active": true}
             - name: als-v3v2-empty
-              v3: |
+              create: |
                 {"alias": "als-v3v2-empty", "table": "als-target", "comment": ""}
-              v2: |
+              expected: |
                 {"name": "als-compat-db.als-v3v2-empty", "target": "als-compat-db.als-target", "desc": "", "active": true}
             - name: als-v3v2-special
-              v3: |
+              create: |
                 {"alias": "als-v3v2-special", "table": "als-target", "comment": "alias @#"}
-              v2: |
+              expected: |
                 {"name": "als-compat-db.als-v3v2-special", "target": "als-compat-db.als-target", "desc": "alias @#", "active": true}
             """,
         )
         fun `V3 create - V2 get`(
             name: String,
-            v3: String,
-            v2: String,
+            create: String,
+            expected: String,
         ) {
             client
                 .post()
                 .uri("/graph/v3/databases/$db/aliases")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(v3)
+                .bodyValue(create)
                 .exchange()
                 .expectStatus()
                 .isOk
@@ -635,7 +634,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(v2)
+                .json(expected)
         }
     }
 
@@ -661,7 +660,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
             """
             # Basic MultiEdge - direction BOTH
             - name: me-v2v3-basic
-              v2: |
+              create: |
                 {
                   "desc": "basic multiedge",
                   "type": "MULTI_EDGE",
@@ -673,10 +672,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "BOTH",
-                  "storage": "datastore://hbase/me-v2v3-basic",
+                  "storage": "datastore://test_namespace/me_v2v3_basic",
                   "readOnly": true
                 }
-              v3: |
+              expected: |
                 {
                   "type": "multiEdge",
                   "table": "me-v2v3-basic",
@@ -689,13 +688,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "properties": [],
                     "direction": "BOTH"
                   },
-                  "storage": {"type": "hbase", "tableName": "me-v2v3-basic"},
+                  "storage": "datastore://test_namespace/me_v2v3_basic",
                   "active": true
                 }
 
             # MultiEdge with properties
             - name: me-v2v3-props
-              v2: |
+              create: |
                 {
                   "desc": "multiedge with props",
                   "type": "MULTI_EDGE",
@@ -709,10 +708,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "BOTH",
-                  "storage": "datastore://hbase/me-v2v3-props",
+                  "storage": "datastore://test_namespace/me_v2v3_props",
                   "readOnly": true
                 }
-              v3: |
+              expected: |
                 {
                   "type": "multiEdge",
                   "table": "me-v2v3-props",
@@ -728,13 +727,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ],
                     "direction": "BOTH"
                   },
-                  "storage": {"type": "hbase", "tableName": "me-v2v3-props"},
+                  "storage": "datastore://test_namespace/me_v2v3_props",
                   "active": true
                 }
 
             # MultiEdge with STRING keys
             - name: me-v2v3-string
-              v2: |
+              create: |
                 {
                   "desc": "string key multiedge",
                   "type": "MULTI_EDGE",
@@ -746,10 +745,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/me-v2v3-string",
+                  "storage": "datastore://test_namespace/me_v2v3_string",
                   "readOnly": true
                 }
-              v3: |
+              expected: |
                 {
                   "type": "multiEdge",
                   "table": "me-v2v3-string",
@@ -762,21 +761,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "properties": [],
                     "direction": "OUT"
                   },
-                  "storage": {"type": "hbase", "tableName": "me-v2v3-string"},
+                  "storage": "datastore://test_namespace/me_v2v3_string",
                   "active": true
                 }
             """,
         )
         fun `V2 create - V3 get`(
             name: String,
-            v2: String,
-            v3: String,
+            create: String,
+            expected: String,
         ) {
             client
                 .post()
                 .uri("/graph/v2/service/$db/label/$name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(v2)
+                .bodyValue(create)
                 .exchange()
                 .expectStatus()
                 .isOk
@@ -788,7 +787,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(v3)
+                .json(expected)
         }
 
         @ObjectSourceParameterizedTest
@@ -796,7 +795,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
             """
             # Basic MultiEdge - V3 create -> V2 get
             - name: me-v3v2-basic
-              v3: |
+              create: |
                 {
                   "table": "me-v3v2-basic",
                   "schema": {
@@ -809,11 +808,11 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/me-v3v2-basic",
+                  "storage": "datastore://test_namespace/me_v3v2_basic",
                   "mode": "SYNC",
                   "comment": "basic multiedge"
                 }
-              v2: |
+              expected: |
                 {
                   "name": "me-compat-db.me-v3v2-basic",
                   "desc": "basic multiedge",
@@ -825,13 +824,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "BOTH",
-                  "storage": "datastore://hbase/me-v3v2-basic",
+                  "storage": "datastore://test_namespace/me_v3v2_basic",
                   "active": true
                 }
 
             # MultiEdge with properties - V3 create -> V2 get
             - name: me-v3v2-props
-              v3: |
+              create: |
                 {
                   "table": "me-v3v2-props",
                   "schema": {
@@ -847,11 +846,11 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/me-v3v2-props",
+                  "storage": "datastore://test_namespace/me_v3v2_props",
                   "mode": "SYNC",
                   "comment": "multiedge with props"
                 }
-              v2: |
+              expected: |
                 {
                   "name": "me-compat-db.me-v3v2-props",
                   "desc": "multiedge with props",
@@ -865,13 +864,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "BOTH",
-                  "storage": "datastore://hbase/me-v3v2-props",
+                  "storage": "datastore://test_namespace/me_v3v2_props",
                   "active": true
                 }
 
             # MultiEdge with STRING keys - V3 create -> V2 get
             - name: me-v3v2-string
-              v3: |
+              create: |
                 {
                   "table": "me-v3v2-string",
                   "schema": {
@@ -884,11 +883,11 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "indexes": [],
                     "groups": []
                   },
-                  "storage": "datastore://hbase/me-v3v2-string",
+                  "storage": "datastore://test_namespace/me_v3v2_string",
                   "mode": "SYNC",
                   "comment": "string key multiedge"
                 }
-              v2: |
+              expected: |
                 {
                   "name": "me-compat-db.me-v3v2-string",
                   "desc": "string key multiedge",
@@ -900,21 +899,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://hbase/me-v3v2-string",
+                  "storage": "datastore://test_namespace/me_v3v2_string",
                   "active": true
                 }
             """,
         )
         fun `V3 create - V2 get`(
             name: String,
-            v3: String,
-            v2: String,
+            create: String,
+            expected: String,
         ) {
             client
                 .post()
                 .uri("/graph/v3/databases/$db/tables")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(v3)
+                .bodyValue(create)
                 .exchange()
                 .expectStatus()
                 .isOk
@@ -926,7 +925,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(v2)
+                .json(expected)
         }
     }
 }

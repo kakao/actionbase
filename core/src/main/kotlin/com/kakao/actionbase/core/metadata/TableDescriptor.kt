@@ -3,7 +3,6 @@ package com.kakao.actionbase.core.metadata
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.core.metadata.common.Storage
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonSubTypes
@@ -28,7 +27,7 @@ sealed class TableDescriptor<T : ModelSchema> : V3Descriptor<TableId> {
 
     abstract val mode: MutationMode
 
-    abstract val storage: Storage
+    abstract val storage: String
 
     @JsonTypeName("edge")
     data class Edge(
@@ -37,7 +36,7 @@ sealed class TableDescriptor<T : ModelSchema> : V3Descriptor<TableId> {
         override val table: String,
         override val schema: ModelSchema.Edge,
         override val mode: MutationMode,
-        override val storage: Storage,
+        override val storage: String,
         override val active: Boolean = true,
         override val comment: String = Constants.DEFAULT_COMMENT,
         override val revision: Long = Constants.DEFAULT_REVISION,
@@ -57,7 +56,7 @@ sealed class TableDescriptor<T : ModelSchema> : V3Descriptor<TableId> {
         override val table: String,
         override val schema: ModelSchema.MultiEdge,
         override val mode: MutationMode,
-        override val storage: Storage,
+        override val storage: String,
         override val active: Boolean = true,
         override val comment: String = Constants.DEFAULT_COMMENT,
         override val revision: Long = Constants.DEFAULT_REVISION,
