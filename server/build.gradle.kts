@@ -8,7 +8,7 @@ plugins {
     id("actionbase.jib-conventions")
     `java-test-fixtures`
 
-    id("com.gorylenko.gradle-git-properties") version "2.4.2"
+    id("com.gorylenko.gradle-git-properties") version "2.5.5"
 }
 
 dependencyManagement {
