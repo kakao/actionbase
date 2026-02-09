@@ -244,6 +244,23 @@ class V3MutationService(
                                         .write(cdcMessage)
                                         .subscribeOn(Schedulers.boundedElastic())
                                         .subscribe()
+                                }.onErrorResume {
+                                    if (it is LockAcquisitionFailedException) {
+                                        label
+                                            .findStaleLockAndClear(it.lockEdge, graph.lockTimeout)
+                                            .subscribeOn(Schedulers.boundedElastic())
+                                            .subscribe()
+                                    }
+                                    Mono.just(
+                                        MultiEdgeMutationStatus(
+                                            id = key,
+                                            count = 0,
+                                            status = EdgeOperationStatus.ERROR.name,
+                                            before = State.initial,
+                                            after = State.initial,
+                                            acc = 0,
+                                        ),
+                                    )
                                 }
                         }.subscribeOn(Schedulers.boundedElastic())
                 }
