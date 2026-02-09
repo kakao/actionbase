@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
-import com.kakao.actionbase.v2.engine.storage.DatastoreUri
 import com.kakao.actionbase.v2.engine.storage.StorageBackend
 import com.kakao.actionbase.v2.engine.storage.StorageTable
 
@@ -28,7 +27,7 @@ class HBaseStorageBackend private constructor(
      */
     fun getAdminMono(): Mono<org.apache.hadoop.hbase.client.AsyncAdmin> = connectionMono.map { it.admin }.cache()
 
-    override fun open(
+    override fun getStorageTable(
         namespace: String,
         name: String,
     ): Mono<StorageTable> =
@@ -37,28 +36,6 @@ class HBaseStorageBackend private constructor(
             val hbaseTable = HBaseTable.create(table)
             HBaseStorageTable(hbaseTable)
         }
-
-    override fun open(uri: String): Mono<StorageTable> {
-        val (ns, name) = DatastoreUri.parse(uri)
-        return open(ns, name)
-    }
-
-    @Deprecated("Use open() instead", ReplaceWith("open(namespace, name)"))
-    override fun getTable(
-        namespace: String,
-        name: String,
-    ): Mono<HBaseTables> =
-        connectionMono.map { conn ->
-            val table = conn.getTable(TableName.valueOf(namespace, name))
-            val hbaseTable = HBaseTable.create(table)
-            HBaseTables(hbaseTable, hbaseTable)
-        }
-
-    @Deprecated("Use open() instead", ReplaceWith("open(uri)"))
-    override fun getTable(uri: String): Mono<HBaseTables> {
-        val (ns, name) = DatastoreUri.parse(uri)
-        return getTable(ns, name)
-    }
 
     override fun close() {
         connectionMono.block()?.close()
