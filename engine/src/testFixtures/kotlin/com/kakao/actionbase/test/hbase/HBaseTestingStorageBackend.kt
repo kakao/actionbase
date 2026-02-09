@@ -1,11 +1,9 @@
 package com.kakao.actionbase.test.hbase
 
-import com.kakao.actionbase.v2.engine.storage.DatastoreUri
-import com.kakao.actionbase.v2.engine.storage.StorageBackend
-import com.kakao.actionbase.v2.engine.storage.StorageBuckets
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageBucket
+import com.kakao.actionbase.engine.storage.StorageBackend
+import com.kakao.actionbase.engine.storage.StorageTable
+import com.kakao.actionbase.engine.storage.hbase.HBaseStorageTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 
 import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.AsyncConnection
@@ -20,43 +18,17 @@ class HBaseTestingStorageBackend(
     private val connectionMono: Mono<AsyncConnection>,
     private val defaultNamespace: String,
 ) : StorageBackend {
-    override fun getBucket(
+    override fun getStorageTable(
         namespace: String,
         name: String,
-    ): Mono<StorageBuckets> {
+    ): Mono<StorageTable> {
         val effectiveNs = namespace.ifEmpty { defaultNamespace }
         return connectionMono.map { conn ->
             val tableName = TableName.valueOf(effectiveNs, name)
             val asyncTable = conn.getTable(tableName)
             val hbaseTable = HBaseTable.create(asyncTable)
-            val bucket = HBaseStorageBucket(hbaseTable)
-            StorageBuckets(bucket, bucket)
+            HBaseStorageTable(hbaseTable)
         }
-    }
-
-    override fun getBucket(uri: String): Mono<StorageBuckets> {
-        val (ns, name) = DatastoreUri.parse(uri)
-        return getBucket(ns, name)
-    }
-
-    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))
-    override fun getTable(
-        namespace: String,
-        name: String,
-    ): Mono<HBaseTables> {
-        val effectiveNs = namespace.ifEmpty { defaultNamespace }
-        return connectionMono.map { conn ->
-            val tableName = TableName.valueOf(effectiveNs, name)
-            val asyncTable = conn.getTable(tableName)
-            val hbaseTable = HBaseTable.create(asyncTable)
-            HBaseTables(hbaseTable, hbaseTable)
-        }
-    }
-
-    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
-    override fun getTable(uri: String): Mono<HBaseTables> {
-        val (ns, name) = DatastoreUri.parse(uri)
-        return getTable(ns, name)
     }
 
     override fun close() {

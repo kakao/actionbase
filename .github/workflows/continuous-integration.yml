@@ -35,7 +35,7 @@ jobs:
       - name: Build (Check, Compile, Test)
         id: build
         continue-on-error: true
-        run: ./gradlew build
+        run: ./gradlew spotlessCheck build
 
       - name: Summarize Test Report
         uses: dorny/test-reporter@v2
