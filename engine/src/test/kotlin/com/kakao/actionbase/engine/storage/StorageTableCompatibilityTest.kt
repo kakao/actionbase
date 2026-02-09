@@ -78,7 +78,7 @@ abstract class StorageTableCompatibilityTest {
               expected: 1
             """,
         )
-        fun `getAll`(
+        fun `get all`(
             keys: List<String>,
             values: List<String>,
             expected: Int,

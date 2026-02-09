@@ -4,6 +4,8 @@ import com.kakao.actionbase.engine.storage.memory.MemoryStorageBackend
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
+import kotlin.test.assertNotNull
+
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -42,7 +44,7 @@ class MemoryStorageBackendTest {
             name: String,
         ) {
             val table = backend.getStorageTable(namespace, name).block()!!
-            assert(table != null)
+            assertNotNull(table)
         }
 
         @ObjectSourceParameterizedTest
@@ -54,7 +56,7 @@ class MemoryStorageBackendTest {
         )
         fun `returns StorageTable with uri`(uri: String) {
             val table = backend.getStorageTable(uri).block()!!
-            assert(table != null)
+            assertNotNull(table)
         }
 
         @Test
