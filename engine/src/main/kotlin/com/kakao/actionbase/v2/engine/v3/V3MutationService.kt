@@ -66,11 +66,12 @@ class V3MutationService(
         sync: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<EdgeMutationResponse> {
-        val ctx = try {
-            resolveMutationContext(database, alias, sync, requestContext)
-        } catch (e: UnsupportedOperationException) {
-            return Mono.error(e)
-        }
+        val ctx =
+            try {
+                resolveMutationContext(database, alias, sync, requestContext)
+            } catch (e: UnsupportedOperationException) {
+                return Mono.error(e)
+            }
         val (aliasEntityName, label, mutationMode, tableBinding, audit, requestId) = ctx
 
         return Flux
@@ -111,7 +112,9 @@ class V3MutationService(
                                 .doOnNext { status ->
                                     val last = sortedGroup.last()
                                     writeCdc(
-                                        ctx, last.toTraceEdge(), last.event.type,
+                                        ctx,
+                                        last.toTraceEdge(),
+                                        last.event.type,
                                         status.status,
                                         status.before.toHashEdge(key.first, key.second),
                                         status.after.toHashEdge(key.first, key.second),
@@ -158,11 +161,12 @@ class V3MutationService(
         sync: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<MultiEdgeMutationResponse> {
-        val ctx = try {
-            resolveMutationContext(database, alias, sync, requestContext)
-        } catch (e: UnsupportedOperationException) {
-            return Mono.error(e)
-        }
+        val ctx =
+            try {
+                resolveMutationContext(database, alias, sync, requestContext)
+            } catch (e: UnsupportedOperationException) {
+                return Mono.error(e)
+            }
         val (aliasEntityName, label, mutationMode, tableBinding, audit, requestId) = ctx
 
         return Flux
@@ -202,7 +206,9 @@ class V3MutationService(
                                 .doOnNext { status ->
                                     val last = sortedGroup.last()
                                     writeCdc(
-                                        ctx, last.toTraceEdge(), last.event.type,
+                                        ctx,
+                                        last.toTraceEdge(),
+                                        last.event.type,
                                         status.status,
                                         status.before.toHashEdge(source = status.before.getMultiEdgeSource(), target = status.before.getMultiEdgeTarget()),
                                         status.after.toHashEdge(source = status.after.getMultiEdgeSource(), target = status.after.getMultiEdgeTarget()),
@@ -297,7 +303,10 @@ class V3MutationService(
             .subscribe()
     }
 
-    private fun handleMutationError(error: Throwable, label: HBaseIndexedLabel) {
+    private fun handleMutationError(
+        error: Throwable,
+        label: HBaseIndexedLabel,
+    ) {
         if (error is LockAcquisitionFailedException) {
             label
                 .findStaleLockAndClear(error.lockEdge, graph.lockTimeout)
