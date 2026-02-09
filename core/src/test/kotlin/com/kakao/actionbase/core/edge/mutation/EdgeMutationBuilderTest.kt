@@ -4,6 +4,8 @@ import com.kakao.actionbase.core.edge.record.EdgeStateRecord
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
+import com.kakao.actionbase.core.metadata.common.Group
+import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.Index
 import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.core.state.StateValue
@@ -141,6 +143,64 @@ class EdgeMutationBuilderTest {
             assertEquals("postX", inIndex.key.prefix.directedSource)
             assertEquals("userA", inIndex.key.suffix.directedTarget)
         }
+
+        @Test
+        fun `CREATED with COUNT group produces groupRecords with value 1`() {
+            val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
+            val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
+            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
+
+            assertEquals("CREATED", result.status)
+            assertEquals(2, result.groupRecords.size)
+            assertTrue(result.groupRecords.all { it.value == 1L })
+
+            val outGroup = result.groupRecords.first { it.key.direction == Direction.OUT }
+            assertEquals("userA", outGroup.key.directedSource)
+            val inGroup = result.groupRecords.first { it.key.direction == Direction.IN }
+            assertEquals("postX", inGroup.key.directedSource)
+        }
+
+        @Test
+        fun `DELETED with COUNT group produces groupRecords with value -1`() {
+            val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val before = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
+            val after = edgeRecord(source = "userA", target = "postX", active = false, version = 2)
+            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
+
+            assertEquals("DELETED", result.status)
+            assertEquals(2, result.groupRecords.size)
+            assertTrue(result.groupRecords.all { it.value == -1L })
+        }
+
+        @Test
+        fun `UPDATED with COUNT group produces decrement and increment groupRecords`() {
+            val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val before = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
+            val after = edgeRecord(source = "userA", target = "postX", active = true, version = 2)
+            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
+
+            assertEquals("UPDATED", result.status)
+            // 2 directions x 2 (decrement + increment) = 4 group records
+            assertEquals(4, result.groupRecords.size)
+            val decrementRecords = result.groupRecords.filter { it.value == -1L }
+            val incrementRecords = result.groupRecords.filter { it.value == 1L }
+            assertEquals(2, decrementRecords.size)
+            assertEquals(2, incrementRecords.size)
+        }
+
+        @Test
+        fun `CREATED with SUM group produces groupRecords with weight times field value`() {
+            val sumGroup = Group(group = "sum_group", type = GroupType.SUM, fields = listOf(Group.Field("version")), valueField = "version")
+            val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
+            val after = edgeRecord(source = "userA", target = "postX", active = true, version = 5)
+            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, emptyList(), listOf(sumGroup))
+
+            assertEquals("CREATED", result.status)
+            assertEquals(2, result.groupRecords.size)
+            // weight=1 * version=5 = 5
+            assertTrue(result.groupRecords.all { it.value == 5L })
+        }
     }
 
     @Nested
@@ -228,6 +288,51 @@ class EdgeMutationBuilderTest {
             val inIndex = result.createIndexRecords.first { it.key.prefix.direction == Direction.IN }
             assertEquals("postX", inIndex.key.prefix.directedSource)
             assertEquals("edgeId1", inIndex.key.suffix.directedTarget)
+        }
+
+        @Test
+        fun `CREATED with COUNT group uses properties for directedSource`() {
+            val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = false, version = 0)
+            val after = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
+            val result = EdgeMutationBuilder.buildForMultiEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
+
+            assertEquals("CREATED", result.status)
+            assertEquals(2, result.groupRecords.size)
+            assertTrue(result.groupRecords.all { it.value == 1L })
+
+            // MultiEdge: directedSource comes from properties (_source/_target), not key
+            val outGroup = result.groupRecords.first { it.key.direction == Direction.OUT }
+            assertEquals("userA", outGroup.key.directedSource)
+            val inGroup = result.groupRecords.first { it.key.direction == Direction.IN }
+            assertEquals("postX", inGroup.key.directedSource)
+        }
+
+        @Test
+        fun `DELETED with COUNT group produces groupRecords with value -1`() {
+            val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
+            val after = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = false, version = 2)
+            val result = EdgeMutationBuilder.buildForMultiEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
+
+            assertEquals("DELETED", result.status)
+            assertEquals(2, result.groupRecords.size)
+            assertTrue(result.groupRecords.all { it.value == -1L })
+        }
+
+        @Test
+        fun `UPDATED with COUNT group produces decrement and increment groupRecords`() {
+            val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
+            val after = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 2)
+            val result = EdgeMutationBuilder.buildForMultiEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
+
+            assertEquals("UPDATED", result.status)
+            assertEquals(4, result.groupRecords.size)
+            val decrementRecords = result.groupRecords.filter { it.value == -1L }
+            val incrementRecords = result.groupRecords.filter { it.value == 1L }
+            assertEquals(2, decrementRecords.size)
+            assertEquals(2, incrementRecords.size)
         }
     }
 

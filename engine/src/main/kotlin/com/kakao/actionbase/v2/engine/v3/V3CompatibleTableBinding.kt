@@ -192,7 +192,7 @@ class V3CompatibleTableBinding(
     }
 
     companion object {
-        private fun State.specialStateValueToNull(): State =
+        internal fun State.specialStateValueToNull(): State =
             State(
                 active = this.active,
                 version = this.version,
