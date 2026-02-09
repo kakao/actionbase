@@ -1135,7 +1135,6 @@ class DdlServiceSpec :
                 )
 
             try {
-                // Create service first (required for label creation)
                 val serviceName = "test_async_service"
                 graphGlobalAsync.serviceDdl
                     .create(
@@ -1164,7 +1163,6 @@ class DdlServiceSpec :
                         storage = Metadata.metastoreName,
                     )
 
-                // Create should return CREATED, not QUEUED
                 graphGlobalAsync.labelDdl
                     .create(labelName, labelCreateRequest)
                     .test()
@@ -1172,7 +1170,6 @@ class DdlServiceSpec :
                         ddlResult.status shouldBe DdlStatus.Status.CREATED
                     }.verifyComplete()
 
-                // Update should return UPDATED, not QUEUED
                 val labelUpdateRequest =
                     LabelUpdateRequest(
                         active = null,
@@ -1192,7 +1189,6 @@ class DdlServiceSpec :
                         ddlResult.status shouldBe DdlStatus.Status.UPDATED
                     }.verifyComplete()
 
-                // Deactivate then delete should return DELETED, not QUEUED
                 val deactivateRequest =
                     LabelUpdateRequest(
                         active = false,

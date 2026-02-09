@@ -354,10 +354,6 @@ class V3MutationServiceAsyncSpec :
                 .verifyComplete()
         }
 
-        // mutual exclusivity between mode and internal is now enforced structurally:
-        // mutateEdge accepts only mode, internalMutateEdge accepts only mode (as internal).
-        // MutationModeContext-level mutual exclusivity is tested in MutationModeContextSpec.
-
         "global=ASYNC makes SYNC table queue mutations" {
             val globalAsyncGraph =
                 GraphFixtures.create(

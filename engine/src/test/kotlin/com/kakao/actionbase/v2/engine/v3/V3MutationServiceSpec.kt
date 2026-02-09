@@ -381,7 +381,6 @@ class V3MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            // Data should NOT be queryable (queued, not written)
             v3QueryService
                 .gets(database, table, listOf("1000"), listOf("9000"))
                 .test()
