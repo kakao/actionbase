@@ -29,13 +29,13 @@ interface HBaseTable {
 
     fun get(get: Get): Mono<Result>
 
-    fun get(gets: List<Get>): Mono<List<Result>>
+    fun getAll(gets: List<Get>): Mono<List<Result>>
 
     fun put(put: Put): Mono<Void>
 
     fun delete(delete: Delete): Mono<Void>
 
-    fun batch(deferredRequests: List<Any>): Mono<Void>
+    fun batchAll(deferredRequests: List<Any>): Mono<Void>
 
     fun exists(get: Get): Mono<Boolean>
 

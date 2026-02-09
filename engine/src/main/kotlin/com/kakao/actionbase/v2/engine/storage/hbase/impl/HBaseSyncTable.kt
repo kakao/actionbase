@@ -36,13 +36,13 @@ class HBaseSyncTable(
 
     override fun get(get: Get): Mono<Result> = Mono.fromCallable { table.get(get) }
 
-    override fun get(gets: List<Get>): Mono<List<Result>> = Mono.fromCallable { table.get(gets).asList() }
+    override fun getAll(gets: List<Get>): Mono<List<Result>> = Mono.fromCallable { table.get(gets).asList() }
 
     override fun put(put: Put): Mono<Void> = Mono.fromCallable { table.put(put) }.then()
 
     override fun delete(delete: Delete): Mono<Void> = Mono.fromCallable { table.delete(delete) }.then()
 
-    override fun batch(deferredRequests: List<Any>): Mono<Void> {
+    override fun batchAll(deferredRequests: List<Any>): Mono<Void> {
         val mutations: List<Mutation> =
             deferredRequests.map {
                 when (it) {

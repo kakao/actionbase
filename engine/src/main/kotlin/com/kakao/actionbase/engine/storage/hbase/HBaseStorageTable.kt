@@ -32,7 +32,7 @@ class HBaseStorageTable(
 
     override fun get(keys: List<ByteArray>): Mono<List<HBaseRecord>> {
         val gets = keys.map { Get(it).addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER) }
-        return table.get(gets).map { results ->
+        return table.getAll(gets).map { results ->
             results.filter { !it.isEmpty }.map { result ->
                 HBaseRecord(
                     key = result.row,
@@ -108,7 +108,7 @@ class HBaseStorageTable(
                         )
                 }
             }
-        return table.batch(mutations)
+        return table.batchAll(mutations)
     }
 
     override fun exists(key: ByteArray): Mono<Boolean> {

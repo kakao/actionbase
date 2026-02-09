@@ -90,7 +90,7 @@ open class HBaseHashLabel(
         return Mono.just(listOf(delete))
     }
 
-    override fun handleDeferredRequests(deferredRequests: List<Any>): Mono<Boolean> = tables.flatMap { it.edge.batch(deferredRequests) }.thenReturn(true)
+    override fun handleDeferredRequests(deferredRequests: List<Any>): Mono<Boolean> = tables.flatMap { it.edge.batchAll(deferredRequests) }.thenReturn(true)
 
     override fun setnx(
         keyField: EncodedKey<ByteArray>,
@@ -228,7 +228,7 @@ open class HBaseHashLabel(
 
         val rows =
             tables
-                .flatMap { it.edge.get(gets) }
+                .flatMap { it.edge.getAll(gets) }
                 .mapNotNull { results ->
                     results
                         .map {
@@ -282,7 +282,7 @@ open class HBaseHashLabel(
 
         val rows =
             tables
-                .flatMap { it.edge.get(gets) }
+                .flatMap { it.edge.getAll(gets) }
                 .mapNotNull { results ->
                     results
                         .map {
@@ -319,7 +319,7 @@ open class HBaseHashLabel(
     fun getActiveStates(gets: List<Get>): Mono<DataFrame> {
         val rows =
             tables
-                .flatMap { it.edge.get(gets) }
+                .flatMap { it.edge.getAll(gets) }
                 .mapNotNull { results ->
                     results
                         .map {
@@ -353,7 +353,7 @@ open class HBaseHashLabel(
                 ).addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
             }
         return tables
-            .flatMap { it.edge.get(gets) }
+            .flatMap { it.edge.getAll(gets) }
             .map {
                 srcAndKeys
                     .map { (src, _) -> src }
@@ -485,7 +485,7 @@ open class HBaseHashLabel(
                 )
                 get.setFilter(complexFilter)
             }
-        return tables.flatMap { it.edge.get(gets) }.map {
+        return tables.flatMap { it.edge.getAll(gets) }.map {
             it.flatMap { result ->
                 val cells = result.listCells() ?: return@flatMap emptyList()
                 cells.map { cell ->

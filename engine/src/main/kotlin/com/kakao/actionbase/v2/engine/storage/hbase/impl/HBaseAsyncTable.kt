@@ -33,7 +33,7 @@ class HBaseAsyncTable(
 
     override fun get(get: Get): Mono<Result> = Mono.fromFuture(asyncTable.get(get))
 
-    override fun get(gets: List<Get>): Mono<List<Result>> {
+    override fun getAll(gets: List<Get>): Mono<List<Result>> {
         val futures = asyncTable.getAll(gets)
         return Mono.fromFuture(futures)
     }
@@ -42,7 +42,7 @@ class HBaseAsyncTable(
 
     override fun delete(delete: Delete): Mono<Void> = Mono.fromFuture(asyncTable.delete(delete))
 
-    override fun batch(deferredRequests: List<Any>): Mono<Void> {
+    override fun batchAll(deferredRequests: List<Any>): Mono<Void> {
         val mutations: List<Mutation> =
             deferredRequests.map {
                 when (it) {
