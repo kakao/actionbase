@@ -11,7 +11,7 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 
 import reactor.core.publisher.Mono
 
-class DatastoreHashLabel(
+class HBaseStorageBackendHashLabel(
     entity: LabelEntity,
     coder: EdgeEncoder<ByteArray>,
     tables: Mono<HBaseTables>,
@@ -20,15 +20,15 @@ class DatastoreHashLabel(
         fun create(
             entity: LabelEntity,
             graph: GraphDefaults,
-            initialize: DatastoreHashLabel.() -> Unit,
-        ): DatastoreHashLabel {
+            initialize: HBaseStorageBackendHashLabel.() -> Unit,
+        ): HBaseStorageBackendHashLabel {
             val (ns, name) = DatastoreUri.parse(entity.storage)
             val effectiveNs = ns.ifEmpty { DefaultStorageBackendFactory.defaultNamespace }
             val provider =
                 DefaultStorageBackendFactory.INSTANCE as? HBaseTablesProvider
                     ?: throw IllegalStateException("StorageBackend does not support HBaseTables")
             val tables = provider.getHBaseTables(effectiveNs, name).cache()
-            return DatastoreHashLabel(
+            return HBaseStorageBackendHashLabel(
                 entity = entity,
                 coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
                 tables = tables,

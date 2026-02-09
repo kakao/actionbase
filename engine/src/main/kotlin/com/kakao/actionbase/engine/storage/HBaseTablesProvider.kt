@@ -8,6 +8,7 @@ import reactor.core.publisher.Mono
  * Provides HBaseTables for v2 Label implementations that need direct HBase table access
  * (e.g., Filters, CellUtil) beyond what StorageTable supports.
  */
+@Deprecated("backwards compatibility for v2, use StorageBackend instead")
 interface HBaseTablesProvider {
     fun getHBaseTables(
         namespace: String,

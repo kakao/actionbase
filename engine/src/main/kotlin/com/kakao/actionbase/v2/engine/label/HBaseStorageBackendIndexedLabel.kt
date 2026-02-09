@@ -12,7 +12,7 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 
 import reactor.core.publisher.Mono
 
-class DatastoreIndexedLabel(
+class HBaseStorageBackendIndexedLabel(
     entity: LabelEntity,
     coder: EdgeEncoder<ByteArray>,
     indices: List<Index>,
@@ -23,8 +23,8 @@ class DatastoreIndexedLabel(
         fun create(
             entity: LabelEntity,
             graph: GraphDefaults,
-            initialize: DatastoreIndexedLabel.() -> Unit,
-        ): DatastoreIndexedLabel {
+            initialize: HBaseStorageBackendIndexedLabel.() -> Unit,
+        ): HBaseStorageBackendIndexedLabel {
             val indices = entity.indices
             val indexNameToIndex = indices.associateBy { it.name }
             val (ns, name) = DatastoreUri.parse(entity.storage)
@@ -33,7 +33,7 @@ class DatastoreIndexedLabel(
                 DefaultStorageBackendFactory.INSTANCE as? HBaseTablesProvider
                     ?: throw IllegalStateException("StorageBackend does not support HBaseTables")
             val tables = provider.getHBaseTables(effectiveNs, name).cache()
-            return DatastoreIndexedLabel(
+            return HBaseStorageBackendIndexedLabel(
                 entity = entity,
                 coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
                 indices = indices,
