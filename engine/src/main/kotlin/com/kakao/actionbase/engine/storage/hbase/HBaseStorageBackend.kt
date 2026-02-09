@@ -17,17 +17,7 @@ import reactor.core.scheduler.Schedulers
 
 class HBaseStorageBackend private constructor(
     private val connectionMono: Mono<AsyncConnection>,
-    // Retained for potential future use (e.g., default namespace fallback, admin operations)
-    @Suppress("unused") private val namespace: String,
-    // Retained for potential future use (e.g., connection pool management, config inspection)
-    @Suppress("unused") private val config: Configuration,
 ) : StorageBackend {
-    /**
-     * Returns a cached Mono of AsyncAdmin for HBase admin operations.
-     * Use this instead of accessing the raw connection directly.
-     */
-    fun getAdminMono(): Mono<org.apache.hadoop.hbase.client.AsyncAdmin> = connectionMono.map { it.admin }.cache()
-
     override fun getStorageTable(
         namespace: String,
         name: String,
@@ -75,7 +65,7 @@ class HBaseStorageBackend private constructor(
 
             val isSecure = properties["secure"]?.toBoolean() ?: false
             val version = properties["version"] ?: "2.4"
-            val namespace = properties["namespace"] ?: throw IllegalArgumentException("HBase namespace is not set")
+            requireNotNull(properties["namespace"]) { "HBase namespace is not set" }
 
             require(version.startsWith("2.4") || version.startsWith("2.5")) {
                 "Unsupported HBase version: $version. Supported versions are 2.4.x and 2.5.x."
@@ -149,7 +139,7 @@ class HBaseStorageBackend private constructor(
                         Mono.fromFuture(ConnectionFactory.createAsyncConnection(config))
                     }.cache()
 
-            return HBaseStorageBackend(connectionMono, namespace, config)
+            return HBaseStorageBackend(connectionMono)
         }
 
         internal fun resolveKerberosRealm(

@@ -12,6 +12,7 @@ import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Increment
 import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.client.Scan
+import org.apache.hadoop.hbase.util.Bytes
 
 import reactor.core.publisher.Mono
 
@@ -83,7 +84,7 @@ class HBaseStorageTable(
     ): Mono<Long> {
         val increment = Increment(key).addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, delta)
         return table.increment(increment).map { result ->
-            result.getValue(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER).toLong()
+            Bytes.toLong(result.getValue(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER))
         }
     }
 
@@ -136,14 +137,5 @@ class HBaseStorageTable(
                 .ifEquals(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, expectedValue)
                 .build(Delete(key))
         return table.checkAndMutate(checkAndMutate).map { it.isSuccess }
-    }
-
-    companion object {
-        private fun ByteArray.toLong(): Long {
-            require(size == 8) { "Expected 8 bytes, got $size" }
-            return (0..7).fold(0L) { acc, i ->
-                (acc shl 8) or (this[i].toLong() and 0xFF)
-            }
-        }
     }
 }
