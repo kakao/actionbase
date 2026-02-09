@@ -7,8 +7,6 @@ import actionbase.dependencies.Dependencies
 
 class ReactorConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        println("🔵Applying reactor conventions...")
-
         // Apply plugins
         project.pluginManager.apply("actionbase.base-conventions")
 

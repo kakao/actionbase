@@ -11,8 +11,6 @@ import actionbase.dependencies.Dependencies
 
 class KotlinConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        println("🟢Applying Kotlin conventions...")
-
         // Apply plugins
         project.pluginManager.apply("actionbase.base-conventions")
         project.pluginManager.apply("org.jetbrains.kotlin.jvm")
