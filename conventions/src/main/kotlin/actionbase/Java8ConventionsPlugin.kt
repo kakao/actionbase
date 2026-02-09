@@ -10,8 +10,6 @@ import actionbase.dependencies.Dependencies
 
 class Java8ConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        project.logger.lifecycle("Applying Java 8 conventions...")
-
         // Apply plugins
         project.pluginManager.apply("actionbase.base-conventions")
         project.pluginManager.apply("java-library")

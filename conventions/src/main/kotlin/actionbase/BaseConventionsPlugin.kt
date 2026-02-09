@@ -15,8 +15,6 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
 
 class BaseConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        project.logger.lifecycle("Applying base conventions...")
-
         // Apply plugins
         project.pluginManager.apply("java")
         project.pluginManager.apply("com.diffplug.spotless")
