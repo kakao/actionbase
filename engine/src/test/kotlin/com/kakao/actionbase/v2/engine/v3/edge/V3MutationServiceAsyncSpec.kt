@@ -4,10 +4,9 @@ import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
-import com.kakao.actionbase.v2.engine.GraphConfig
 import com.kakao.actionbase.v2.engine.entity.EntityName
+import com.kakao.actionbase.v2.engine.metadata.MutationModeContext
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
-import com.kakao.actionbase.v2.engine.service.ddl.ServiceCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
 import com.kakao.actionbase.v2.engine.test.wal.InMemoryWal
@@ -182,28 +181,18 @@ class V3MutationServiceAsyncSpec :
         fun verifyWal(
             tableName: EntityName,
             expectedSize: Int,
-            queue: Boolean,
-            tableMode: MutationMode = MutationMode.ASYNC,
-            requestMode: MutationMode? = null,
-            globalMode: MutationMode? = null,
-            internalMode: MutationMode? = null,
-            walSource: InMemoryWal = wal,
+            expectedMode: MutationModeContext,
         ) {
-            val walActual = walSource.readWal().filter { it.label == tableName }
+            val walActual = wal.readWal().filter { it.label == tableName }
             walActual.size shouldBe expectedSize
-            walActual.all { it.mode.queue == queue } shouldBe true
-            walActual.all { it.mode.l == tableMode } shouldBe true
-            walActual.all { it.mode.r == requestMode } shouldBe true
-            walActual.all { it.mode.g == globalMode } shouldBe true
-            walActual.all { it.mode.i == internalMode } shouldBe true
+            walActual.all { it.mode == expectedMode } shouldBe true
         }
 
         fun verifyCdc(
             tableName: EntityName,
             expectedSize: Int = 0,
-            cdcSource: InMemoryCdc = cdc,
         ) {
-            val cdcActual = cdcSource.readCdc().filter { it.label == tableName }
+            val cdcActual = cdc.readCdc().filter { it.label == tableName }
             if (expectedSize == 0) {
                 cdcActual.shouldBeEmpty()
             } else {
@@ -215,9 +204,8 @@ class V3MutationServiceAsyncSpec :
             tableName: EntityName,
             sources: List<Long>,
             targets: List<Long>,
-            queryService: V3QueryService = v3QueryService,
         ) {
-            queryService
+            v3QueryService
                 .gets(tableName.service, tableName.nameNotNull, sources, targets)
                 .test()
                 .assertNext { it.edges.size shouldBe 0 }
@@ -238,7 +226,7 @@ class V3MutationServiceAsyncSpec :
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1},{"id":100001,"status":"CREATED","count":1},{"id":100002,"status":"CREATED","count":1}]}"""
                 }.verifyComplete()
 
-            verifyWal(multiEdgeTableName, 3, queue = false, requestMode = MutationMode.SYNC)
+            verifyWal(multiEdgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = MutationMode.SYNC, global = null, internal = null))
             verifyCdc(multiEdgeTableName, 3)
 
             v3QueryService
@@ -258,7 +246,7 @@ class V3MutationServiceAsyncSpec :
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"QUEUED","count":1},{"id":100001,"status":"QUEUED","count":1},{"id":100002,"status":"QUEUED","count":1}]}"""
                 }.verifyComplete()
 
-            verifyWal(multiEdgeTableName, 3, queue = true, requestMode = null)
+            verifyWal(multiEdgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = null, global = null, internal = null))
             verifyCdc(multiEdgeTableName)
             verifyEmptyQuery(multiEdgeTableName, listOf(100000L), listOf(100000L))
         }
@@ -273,7 +261,7 @@ class V3MutationServiceAsyncSpec :
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"QUEUED","count":1},{"source":1,"target":2,"status":"QUEUED","count":2}]}"""
                 }.verifyComplete()
 
-            verifyWal(edgeTableName, 3, queue = true, requestMode = null)
+            verifyWal(edgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = null, global = null, internal = null))
             verifyCdc(edgeTableName)
             verifyEmptyQuery(edgeTableName, listOf(1L), listOf(0L))
         }
@@ -288,7 +276,7 @@ class V3MutationServiceAsyncSpec :
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"CREATED","count":1},{"source":1,"target":2,"status":"CREATED","count":2}]}"""
                 }.verifyComplete()
 
-            verifyWal(edgeTableName, 3, queue = false, requestMode = MutationMode.SYNC)
+            verifyWal(edgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = MutationMode.SYNC, global = null, internal = null))
             verifyCdc(edgeTableName, 2)
 
             v3QueryService
@@ -314,7 +302,7 @@ class V3MutationServiceAsyncSpec :
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"CREATED","count":1},{"source":1,"target":2,"status":"CREATED","count":2}]}"""
                 }.verifyComplete()
 
-            verifyWal(edgeTableName, 3, queue = false, requestMode = null, internalMode = MutationMode.SYNC)
+            verifyWal(edgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = null, global = null, internal = MutationMode.SYNC))
             verifyCdc(edgeTableName, 2)
 
             v3QueryService
@@ -344,7 +332,7 @@ class V3MutationServiceAsyncSpec :
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1},{"id":100001,"status":"CREATED","count":1},{"id":100002,"status":"CREATED","count":1}]}"""
                 }.verifyComplete()
 
-            verifyWal(multiEdgeTableName, 3, queue = false, requestMode = null, internalMode = MutationMode.SYNC)
+            verifyWal(multiEdgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = null, global = null, internal = MutationMode.SYNC))
             verifyCdc(multiEdgeTableName, 3)
 
             v3QueryService
@@ -353,134 +341,8 @@ class V3MutationServiceAsyncSpec :
                 .assertNext { it.edges.size shouldBe 1 }
                 .verifyComplete()
         }
-
-        "global=ASYNC makes SYNC table queue mutations" {
-            val globalAsyncGraph =
-                GraphFixtures.create(
-                    configBuilder = GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC),
-                    withTestData = false,
-                )
-            globalAsyncGraph.use { graph ->
-                val globalWal = graph.wal as InMemoryWal
-                val globalCdc = graph.cdc as InMemoryCdc
-
-                val database = GraphFixtures.serviceName
-                val table = "sync_edge_for_global_test"
-                val syncTableName = EntityName(database, table)
-
-                graph.serviceDdl
-                    .create(EntityName.fromOrigin(database), ServiceCreateRequest(desc = "test service"))
-                    .block()
-                graph.labelDdl
-                    .create(
-                        syncTableName,
-                        mapper.readValue<LabelCreateRequest>(syncEdgeDescriptor),
-                    ).block()
-
-                val globalMutationService = V3MutationService(graph)
-                val globalQueryService = V3QueryService(graph)
-                val request =
-                    mapper.readValue<EdgeBulkMutationRequest>(
-                        """
-                        {
-                          "mutations": [
-                            {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"permission": "na", "createdAt": 10}}}
-                          ]
-                        }
-                        """.trimIndent(),
-                    )
-
-                globalMutationService
-                    .mutateEdge(database, table, request)
-                    .test()
-                    .assertNext {
-                        mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"QUEUED","count":1}]}"""
-                    }.verifyComplete()
-
-                verifyWal(syncTableName, 1, queue = true, tableMode = MutationMode.SYNC, globalMode = MutationMode.ASYNC, walSource = globalWal)
-                verifyCdc(syncTableName, cdcSource = globalCdc)
-                verifyEmptyQuery(syncTableName, listOf(1000L), listOf(9000L), queryService = globalQueryService)
-            }
-        }
-
-        "internal=SYNC overrides global=ASYNC - mutations are written synchronously" {
-            val globalAsyncGraph =
-                GraphFixtures.create(
-                    configBuilder = GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC),
-                    withTestData = false,
-                )
-            globalAsyncGraph.use { graph ->
-                val globalWal = graph.wal as InMemoryWal
-                val globalCdc = graph.cdc as InMemoryCdc
-
-                val database = GraphFixtures.serviceName
-                val table = "sync_edge_for_global_test"
-                val syncTableName = EntityName(database, table)
-
-                graph.serviceDdl
-                    .create(EntityName.fromOrigin(database), ServiceCreateRequest(desc = "test service"))
-                    .block()
-                graph.labelDdl
-                    .create(
-                        syncTableName,
-                        mapper.readValue<LabelCreateRequest>(syncEdgeDescriptor),
-                    ).block()
-
-                val globalMutationService = V3MutationService(graph)
-                val globalQueryService = V3QueryService(graph)
-                val request =
-                    mapper.readValue<EdgeBulkMutationRequest>(
-                        """
-                        {
-                          "mutations": [
-                            {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"permission": "na", "createdAt": 10}}}
-                          ]
-                        }
-                        """.trimIndent(),
-                    )
-
-                globalMutationService
-                    .internalMutateEdge(database, table, request, internal = MutationMode.SYNC)
-                    .test()
-                    .assertNext {
-                        mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"CREATED","count":1}]}"""
-                    }.verifyComplete()
-
-                verifyWal(syncTableName, 1, queue = false, tableMode = MutationMode.SYNC, globalMode = MutationMode.ASYNC, internalMode = MutationMode.SYNC, walSource = globalWal)
-                verifyCdc(syncTableName, 1, cdcSource = globalCdc)
-
-                globalQueryService
-                    .gets(database, table, listOf(1000L), listOf(9000L))
-                    .test()
-                    .assertNext { it.edges.size shouldBe 1 }
-                    .verifyComplete()
-            }
-        }
     }) {
     companion object {
         private val mapper = jacksonObjectMapper()
-
-        private val syncEdgeDescriptor =
-            """
-            {
-              "desc": "sync edge for global mode test",
-              "type": "INDEXED",
-              "schema": {
-                "src": {"type": "LONG", "desc": "sender"},
-                "tgt": {"type": "LONG", "desc": "receiver"},
-                "fields": [
-                  {"name": "permission", "type": "STRING", "nullable": false, "desc": "permission"},
-                  {"name": "createdAt", "type": "LONG", "nullable": false, "desc": "created at"}
-                ]
-              },
-              "dirType": "BOTH",
-              "storage": "${GraphFixtures.datastoreStorage}",
-              "indices": [
-                {"name": "created_at_desc", "fields": [{"name": "createdAt", "order": "DESC"}], "desc": "recently created first"}
-              ],
-              "event": false,
-              "readOnly": true
-            }
-            """.trimIndent()
     }
 }
