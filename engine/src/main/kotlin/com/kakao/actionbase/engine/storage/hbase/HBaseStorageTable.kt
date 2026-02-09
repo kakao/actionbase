@@ -138,5 +138,4 @@ class HBaseStorageTable(
                 .build(Delete(key))
         return table.checkAndMutate(checkAndMutate).map { it.isSuccess }
     }
-
 }
