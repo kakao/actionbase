@@ -1,6 +1,7 @@
 package com.kakao.actionbase.v2.engine.compat
 
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageBackend
+
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
