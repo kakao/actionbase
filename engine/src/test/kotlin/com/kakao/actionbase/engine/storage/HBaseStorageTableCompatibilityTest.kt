@@ -1,8 +1,8 @@
-package com.kakao.actionbase.v2.engine.storage
+package com.kakao.actionbase.engine.storage
 
+import com.kakao.actionbase.engine.storage.hbase.HBaseStorageTable
 import com.kakao.actionbase.test.hbase.HBaseTestingCluster
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.HBaseSyncTable
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable

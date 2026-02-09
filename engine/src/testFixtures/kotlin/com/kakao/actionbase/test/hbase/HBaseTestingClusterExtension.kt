@@ -1,7 +1,7 @@
 package com.kakao.actionbase.test.hbase
 
+import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
 import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
-import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
 
 import org.apache.hadoop.hbase.client.AsyncConnection
 import org.apache.hadoop.hbase.client.AsyncTable

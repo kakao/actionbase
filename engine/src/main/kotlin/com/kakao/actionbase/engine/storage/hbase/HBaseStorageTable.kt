@@ -1,9 +1,10 @@
-package com.kakao.actionbase.v2.engine.storage.hbase
+package com.kakao.actionbase.engine.storage.hbase
 
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.storage.HBaseRecord
 import com.kakao.actionbase.core.storage.MutationRequest
-import com.kakao.actionbase.v2.engine.storage.StorageTable
+import com.kakao.actionbase.engine.storage.StorageTable
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
 
 import org.apache.hadoop.hbase.client.CheckAndMutate
 import org.apache.hadoop.hbase.client.Delete

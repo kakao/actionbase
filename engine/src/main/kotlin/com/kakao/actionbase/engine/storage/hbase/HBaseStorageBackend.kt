@@ -1,7 +1,8 @@
-package com.kakao.actionbase.v2.engine.storage.hbase
+package com.kakao.actionbase.engine.storage.hbase
 
-import com.kakao.actionbase.v2.engine.storage.StorageBackend
-import com.kakao.actionbase.v2.engine.storage.StorageTable
+import com.kakao.actionbase.engine.storage.StorageBackend
+import com.kakao.actionbase.engine.storage.StorageTable
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.HBaseConfiguration
