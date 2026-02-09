@@ -15,7 +15,7 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
 
 class BaseConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        println("🔴Applying base conventions...")
+        project.logger.lifecycle("Applying base conventions...")
 
         // Apply plugins
         project.pluginManager.apply("java")
@@ -59,6 +59,8 @@ class BaseConventionsPlugin : Plugin<Project> {
 
     private fun configureJava(project: Project) {
         project.extensions.configure(JavaPluginExtension::class.java) {
+            // Sources and Javadoc JARs are only needed for CI/publishing.
+            // Skipping locally saves ~seconds per module during compilation.
             if (System.getenv("CI") != null) {
                 withSourcesJar()
                 withJavadocJar()
@@ -75,7 +77,7 @@ class BaseConventionsPlugin : Plugin<Project> {
             useJUnitPlatform()
 
             testLogging {
-                events = setOf(TestLogEvent.FAILED)
+                events = setOf(TestLogEvent.FAILED, TestLogEvent.SKIPPED)
                 exceptionFormat = TestExceptionFormat.FULL
                 showStandardStreams = false
             }
@@ -93,8 +95,8 @@ class BaseConventionsPlugin : Plugin<Project> {
 
     private fun configureSpotless(project: Project) {
         project.extensions.configure(SpotlessExtension::class.java) {
-            // Decouple spotlessCheck from the build lifecycle
-            // Run manually: ./gradlew spotlessCheck or ./gradlew spotlessApply
+            // Decouple spotlessCheck from the build lifecycle.
+            // Run ./gradlew spotlessApply before pushing. CI enforces via spotlessCheck.
             setEnforceCheck(false)
 
             java {
