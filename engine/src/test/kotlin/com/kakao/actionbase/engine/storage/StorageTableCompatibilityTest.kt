@@ -1,4 +1,4 @@
-package com.kakao.actionbase.v2.engine.storage
+package com.kakao.actionbase.engine.storage
 
 import com.kakao.actionbase.core.storage.MutationRequest
 
