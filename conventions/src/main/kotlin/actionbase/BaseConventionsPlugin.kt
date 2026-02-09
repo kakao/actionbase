@@ -59,8 +59,10 @@ class BaseConventionsPlugin : Plugin<Project> {
 
     private fun configureJava(project: Project) {
         project.extensions.configure(JavaPluginExtension::class.java) {
-            withSourcesJar()
-            withJavadocJar()
+            if (System.getenv("CI") != null) {
+                withSourcesJar()
+                withJavadocJar()
+            }
         }
     }
 
@@ -73,14 +75,9 @@ class BaseConventionsPlugin : Plugin<Project> {
             useJUnitPlatform()
 
             testLogging {
-                events =
-                    setOf(
-                        TestLogEvent.PASSED,
-                        TestLogEvent.SKIPPED,
-                        TestLogEvent.FAILED,
-                    )
+                events = setOf(TestLogEvent.FAILED)
                 exceptionFormat = TestExceptionFormat.FULL
-                showStandardStreams = true
+                showStandardStreams = false
             }
 
             maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).takeIf { cores -> cores > 0 } ?: 1
@@ -96,6 +93,10 @@ class BaseConventionsPlugin : Plugin<Project> {
 
     private fun configureSpotless(project: Project) {
         project.extensions.configure(SpotlessExtension::class.java) {
+            // Decouple spotlessCheck from the build lifecycle
+            // Run manually: ./gradlew spotlessCheck or ./gradlew spotlessApply
+            setEnforceCheck(false)
+
             java {
                 googleJavaFormat()
                 importOrder(*GenerateCodeStyleTask.getJavaImportsOrder())
