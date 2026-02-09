@@ -12,7 +12,7 @@ class MemoryStorageTable(
 ) : StorageTable {
     override fun get(key: ByteArray): Mono<ByteArray?> = Mono.fromCallable { store[key] }
 
-    override fun getAll(keys: List<ByteArray>): Mono<List<HBaseRecord>> =
+    override fun get(keys: List<ByteArray>): Mono<List<HBaseRecord>> =
         Mono.fromCallable {
             keys.mapNotNull { k -> store[k]?.let { HBaseRecord(key = k, value = it) } }
         }
@@ -57,7 +57,7 @@ class MemoryStorageTable(
         delta: Long,
     ): Mono<Long> = Mono.fromCallable { store.increment(key, delta) }
 
-    override fun batchAll(requests: List<MutationRequest>): Mono<Void> =
+    override fun batch(requests: List<MutationRequest>): Mono<Void> =
         Mono
             .fromCallable {
                 requests.forEach {

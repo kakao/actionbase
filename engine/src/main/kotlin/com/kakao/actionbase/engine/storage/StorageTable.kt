@@ -8,7 +8,7 @@ import reactor.core.publisher.Mono
 interface StorageTable {
     fun get(key: ByteArray): Mono<ByteArray?>
 
-    fun getAll(keys: List<ByteArray>): Mono<List<HBaseRecord>>
+    fun get(keys: List<ByteArray>): Mono<List<HBaseRecord>>
 
     fun put(
         key: ByteArray,
@@ -29,7 +29,7 @@ interface StorageTable {
         delta: Long,
     ): Mono<Long>
 
-    fun batchAll(requests: List<MutationRequest>): Mono<Void>
+    fun batch(requests: List<MutationRequest>): Mono<Void>
 
     fun exists(key: ByteArray): Mono<Boolean>
 
