@@ -11,7 +11,7 @@ import actionbase.dependencies.Dependencies
 
 class KotlinConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        println("🟢Applying Kotlin conventions...")
+        project.logger.lifecycle("Applying Kotlin conventions...")
 
         // Apply plugins
         project.pluginManager.apply("actionbase.base-conventions")

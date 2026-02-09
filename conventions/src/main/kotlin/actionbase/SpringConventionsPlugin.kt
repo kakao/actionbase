@@ -5,7 +5,7 @@ import org.gradle.api.Project
 
 class SpringConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        println("🟢Applying spring conventions...")
+        project.logger.lifecycle("Applying spring conventions...")
 
         // Apply plugins
         project.pluginManager.apply("actionbase.kotlin-conventions")
