@@ -7,6 +7,7 @@ import starlightLlmsTxt from 'starlight-llms-txt';
 import mermaid from 'astro-mermaid';
 import starlightBlog from 'starlight-blog';
 import { remarkHeadingId } from 'remark-custom-heading-id';
+import starlightUtils from '@lorenzo_lewis/starlight-utils';
 
 export const locales = {
   root: { label: 'English', lang: 'en' },
@@ -39,6 +40,26 @@ export default defineConfig({
   site,
   base,
   trailingSlash: 'always',
+  redirects: {
+    '/stories/kakaotalk-gift-wish/': '/stories/use-cases/kakaotalk-gift-wish/',
+    '/stories/kakaotalk-gift-recent-views/': '/stories/use-cases/kakaotalk-gift-recent-views/',
+    '/stories/kakaotalk-friends/': '/stories/use-cases/kakaotalk-friends/',
+    '/stories/pipeline/': '/stories/engineering/pipeline/',
+    '/stories/contracts/': '/stories/how-we-survived/contracts/',
+    '/stories/shadow-testing/': '/stories/how-we-survived/shadow-testing/',
+    '/stories/migration-verification/': '/stories/how-we-survived/migration-verification/',
+    '/stories/hbase-consistency/': '/stories/how-we-survived/hbase-consistency/',
+    '/stories/unified-graph/': '/stories/vision/unified-graph/',
+    '/ko/stories/kakaotalk-gift-wish/': '/ko/stories/use-cases/kakaotalk-gift-wish/',
+    '/ko/stories/kakaotalk-gift-recent-views/':
+      '/ko/stories/use-cases/kakaotalk-gift-recent-views/',
+    '/ko/stories/kakaotalk-friends/': '/ko/stories/use-cases/kakaotalk-friends/',
+    '/ko/stories/pipeline/': '/ko/stories/engineering/pipeline/',
+    '/ko/stories/shadow-testing/': '/ko/stories/how-we-survived/shadow-testing/',
+    '/ko/stories/migration-verification/': '/ko/stories/how-we-survived/migration-verification/',
+    '/ko/stories/hbase-consistency/': '/ko/stories/how-we-survived/hbase-consistency/',
+    '/ko/stories/unified-graph/': '/ko/stories/vision/unified-graph/',
+  },
   markdown: {
     remarkPlugins: [remarkHeadingId],
   },
@@ -75,10 +96,7 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/kakao/actionbase/edit/main/website/',
       },
-      social: [
-        { icon: 'document', label: 'Documentation', href: '/introduction/' },
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/kakao/actionbase' },
-      ],
+      social: [],
       head: [
         {
           tag: 'script',
@@ -106,44 +124,69 @@ export default defineConfig({
       locales,
       sidebar: [
         {
-          label: 'Getting Started',
-          items: ['introduction', 'quick-start', 'faq', 'for-rdb-users', 'llms-txt'],
+          label: 'Nav',
+          items: [
+            { label: 'Docs', slug: 'introduction' },
+            { label: 'Blog', link: '/blog/' },
+            {
+              label: 'GitHub',
+              link: 'https://github.com/kakao/actionbase',
+              attrs: { class: 'nav-external', target: '_blank', rel: 'noopener' },
+            },
+          ],
+        },
+        {
+          label: 'Main',
+          translations: { ko: '메인' },
+          items: [
+            {
+              label: 'Getting Started',
+              items: ['introduction', 'quick-start', 'faq', 'for-rdb-users', 'llms-txt'],
+            },
+            {
+              label: 'Design',
+              autogenerate: { directory: 'design' },
+            },
+            {
+              label: 'Guides',
+              autogenerate: { directory: 'guides' },
+            },
+            {
+              label: 'Provisioning',
+              autogenerate: { directory: 'provisioning' },
+            },
+            {
+              label: 'Operations',
+              autogenerate: { directory: 'operations' },
+            },
+            {
+              label: 'Internals',
+              autogenerate: { directory: 'internals' },
+            },
+            {
+              label: 'API References',
+              autogenerate: { directory: 'api-references' },
+            },
+            {
+              label: 'Project',
+              autogenerate: { directory: 'project' },
+            },
+            {
+              label: 'Community',
+              autogenerate: { directory: 'community' },
+            },
+          ],
         },
         {
           label: 'Stories',
-          autogenerate: { directory: 'stories' },
-        },
-        {
-          label: 'Design',
-          autogenerate: { directory: 'design' },
-        },
-        {
-          label: 'Guides',
-          autogenerate: { directory: 'guides' },
-        },
-        {
-          label: 'Provisioning',
-          autogenerate: { directory: 'provisioning' },
-        },
-        {
-          label: 'Operations',
-          autogenerate: { directory: 'operations' },
-        },
-        {
-          label: 'Internals',
-          autogenerate: { directory: 'internals' },
-        },
-        {
-          label: 'API References',
-          autogenerate: { directory: 'api-references' },
-        },
-        {
-          label: 'Project',
-          autogenerate: { directory: 'project' },
-        },
-        {
-          label: 'Community',
-          autogenerate: { directory: 'community' },
+          translations: { ko: '스토리' },
+          items: [
+            'stories',
+            { label: 'Use Cases', autogenerate: { directory: 'stories/use-cases' } },
+            { label: 'Engineering', autogenerate: { directory: 'stories/engineering' } },
+            { label: 'How We Survived', autogenerate: { directory: 'stories/how-we-survived' } },
+            { label: 'Vision', autogenerate: { directory: 'stories/vision' } },
+          ],
         },
       ],
       components: {
@@ -153,6 +196,31 @@ export default defineConfig({
       },
       expressiveCode: { shiki: { langs: [markdocGrammar] } },
       plugins: [
+        // IMPORTANT: blog-multi-sidebar-compat must be listed before starlightUtils
+        // because both register 'post'-order middleware and Starlight runs them in
+        // declaration order. The compat middleware wraps blog's flat sidebar entries
+        // into a group before starlight-utils validates the sidebar structure.
+        {
+          name: 'blog-multi-sidebar-compat',
+          hooks: {
+            setup({ addRouteMiddleware }) {
+              addRouteMiddleware({
+                entrypoint: './src/plugins/blog-sidebar-compat.ts',
+                order: 'post',
+              });
+            },
+          },
+        },
+        starlightUtils({
+          multiSidebar: {
+            switcherStyle: 'horizontalList',
+          },
+          navLinks: {
+            leading: {
+              useSidebarLabelled: 'Nav',
+            },
+          },
+        }),
         starlightLinksValidator({
           errorOnFallbackPages: false,
           errorOnInconsistentLocale: true,
@@ -187,6 +255,7 @@ export default defineConfig({
           ],
         }),
         starlightBlog({
+          navigation: 'none',
           authors: {
             em3s: {
               name: 'Minseok Kim',

@@ -59,46 +59,28 @@
   margin-bottom: 0;
 }
 
+/* Hide empty social-icons separator when social config is empty */
+.social-icons:not(:has(a))::after {
+  display: none;
+}
+
+/* Align nav links vertically when shields.io badge is present */
+ul:has(.nav-external) {
+  align-items: center;
+}
+
+.gh-badge {
+  height: 1.35rem;
+  display: block;
+  position: relative;
+  top: 1px;
+}
+
+:root[data-theme='light'] .gh-badge {
+  filter: invert(0.88);
+}
+
 /* WIP items in sidebar */
 .sidebar-wip {
   opacity: 0.5;
-}
-
-/* Category labels in sidebar */
-.sidebar-label {
-  pointer-events: none;
-  font-weight: 700;
-  color: var(--sl-color-gray-1);
-  margin-top: 0.25rem;
-}
-
-.sidebar-label-link {
-  font-weight: 700;
-  color: var(--sl-color-gray-1);
-  margin-top: 0.25rem;
-  border-left: 2px solid var(--sl-color-accent);
-  padding-left: 0.5rem;
-  margin-left: -0.5rem;
-  border-radius: 0;
-}
-
-.sidebar-label-link:hover {
-  color: var(--sl-color-text-accent);
-}
-
-:root[data-theme='light'] .sidebar-label-link:hover {
-  color: hsl(255, 85%, 50%);
-}
-
-.sidebar-label-link[aria-current='page'] {
-  color: hsl(224, 10%, 10%);
-}
-
-:root[data-theme='light'] .sidebar-label-link[aria-current='page'] {
-  color: white;
-}
-
-:root[data-theme='light'] .sidebar-label,
-:root[data-theme='light'] .sidebar-label-link {
-  color: hsl(224, 10%, 10%);
 }

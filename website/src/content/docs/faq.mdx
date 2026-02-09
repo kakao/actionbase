@@ -157,7 +157,7 @@ WAL and CDC streams can feed analytics systems, async processors, background job
 
 ### Can Actionbase handle high write throughput?
 
-For high-frequency interactions (e.g., [recent views](/stories/kakaotalk-gift-recent-views/)), Actionbase uses async processing via Spark Streaming:
+For high-frequency interactions (e.g., [recent views](/stories/use-cases/kakaotalk-gift-recent-views/)), Actionbase uses async processing via Spark Streaming:
 
 1. Request queued to WAL, response returned immediately
 2. Async processor (Spark Streaming) consumes queued WAL entries and sends mutations back to Actionbase

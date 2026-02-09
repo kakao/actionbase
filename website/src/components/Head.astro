@@ -26,3 +26,23 @@ import StarlightHead from '@astrojs/starlight/components/Head.astro';
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateFavicon);
   })();
 </script>
+
+<script>
+  const BADGE_URL = 'https://img.shields.io/github/stars/kakao/actionbase?style=flat&logo=github&label=&color=rgba(0%2C0%2C0%2C0)&labelColor=rgba(0%2C0%2C0%2C0)';
+
+  function render() {
+    document.querySelectorAll('.nav-external').forEach((el) => {
+      if (el.querySelector('.gh-badge')) return;
+      const img = document.createElement('img');
+      img.src = BADGE_URL;
+      img.alt = 'GitHub stars';
+      img.className = 'gh-badge';
+      img.loading = 'lazy';
+      el.textContent = '';
+      el.appendChild(img);
+    });
+  }
+
+  render();
+  document.addEventListener('astro:after-swap', render);
+</script>

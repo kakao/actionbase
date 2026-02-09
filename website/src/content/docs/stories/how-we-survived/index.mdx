@@ -3,8 +3,6 @@ title: How We Survived
 description: How we earned trust in production
 sidebar:
   order: 30
-  attrs:
-    class: sidebar-label-link
 ---
 
 Actionbase was deployed to production before it was "complete." It had to keep evolving while maintaining production contracts.
@@ -15,12 +13,12 @@ So we built verification layers.
 
 ## Verification Layers {#verification-layers}
 
-| Stage      | Method                                                      | Purpose                                          |
-| ---------- | ----------------------------------------------------------- | ------------------------------------------------ |
-| Dev        | [Tests as Contracts](/stories/contracts/)                   | Define and protect promised behaviors            |
-| Pre-Deploy | [Shadow Testing](/stories/shadow-testing/)                  | Verify new versions with production traffic      |
-| Migration  | [Comparison Verification](/stories/migration-verification/) | Confirm Source DB and Actionbase data match      |
-| Runtime    | [HBase Consistency](/stories/hbase-consistency/)            | Maintain consistency between State, Index, Count |
+| Stage      | Method                                                                      | Purpose                                          |
+| ---------- | --------------------------------------------------------------------------- | ------------------------------------------------ |
+| Dev        | [Tests as Contracts](/stories/how-we-survived/contracts/)                   | Define and protect promised behaviors            |
+| Pre-Deploy | [Shadow Testing](/stories/how-we-survived/shadow-testing/)                  | Verify new versions with production traffic      |
+| Migration  | [Comparison Verification](/stories/how-we-survived/migration-verification/) | Confirm Source DB and Actionbase data match      |
+| Runtime    | [HBase Consistency](/stories/how-we-survived/hbase-consistency/)            | Maintain consistency between State, Index, Count |
 
 Each layer catches different types of problems. One layer isn't enough.
 
