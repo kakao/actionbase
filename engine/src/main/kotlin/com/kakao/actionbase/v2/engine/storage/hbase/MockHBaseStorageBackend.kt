@@ -2,7 +2,7 @@ package com.kakao.actionbase.v2.engine.storage.hbase
 
 import com.kakao.actionbase.v2.engine.storage.DatastoreUri
 import com.kakao.actionbase.v2.engine.storage.StorageBackend
-import com.kakao.actionbase.v2.engine.storage.StorageBuckets
+import com.kakao.actionbase.v2.engine.storage.StorageTable
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
 
 import org.apache.hadoop.hbase.TableName
@@ -17,21 +17,20 @@ import reactor.core.publisher.Mono
  * Each namespace + name combination gets its own isolated table.
  */
 class MockHBaseStorageBackend : StorageBackend {
-    override fun getBucket(
+    override fun open(
         namespace: String,
         name: String,
-    ): Mono<StorageBuckets> {
+    ): Mono<StorageTable> {
         val hbaseTable = createMockHBaseTable(namespace, name)
-        val bucket = HBaseStorageBucket(hbaseTable)
-        return Mono.just(StorageBuckets(bucket, bucket))
+        return Mono.just(HBaseStorageTable(hbaseTable))
     }
 
-    override fun getBucket(uri: String): Mono<StorageBuckets> {
+    override fun open(uri: String): Mono<StorageTable> {
         val (ns, name) = DatastoreUri.parse(uri)
-        return getBucket(ns, name)
+        return open(ns, name)
     }
 
-    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))
+    @Deprecated("Use open() instead", ReplaceWith("open(namespace, name)"))
     override fun getTable(
         namespace: String,
         name: String,
@@ -40,7 +39,7 @@ class MockHBaseStorageBackend : StorageBackend {
         return Mono.just(HBaseTables(hbaseTable, hbaseTable))
     }
 
-    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
+    @Deprecated("Use open() instead", ReplaceWith("open(uri)"))
     override fun getTable(uri: String): Mono<HBaseTables> {
         val (ns, name) = DatastoreUri.parse(uri)
         return getTable(ns, name)

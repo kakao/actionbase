@@ -3,7 +3,7 @@ package com.kakao.actionbase.v2.engine.storage.hbase
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.storage.HBaseRecord
 import com.kakao.actionbase.core.storage.MutationRequest
-import com.kakao.actionbase.v2.engine.storage.StorageBucket
+import com.kakao.actionbase.v2.engine.storage.StorageTable
 
 import org.apache.hadoop.hbase.client.CheckAndMutate
 import org.apache.hadoop.hbase.client.Delete
@@ -14,9 +14,9 @@ import org.apache.hadoop.hbase.client.Scan
 
 import reactor.core.publisher.Mono
 
-class HBaseStorageBucket(
+class HBaseStorageTable(
     private val table: HBaseTable,
-) : StorageBucket {
+) : StorageTable {
     override fun get(key: ByteArray): Mono<ByteArray?> {
         val get = Get(key).addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
         return table.get(get).handle { result, sink ->

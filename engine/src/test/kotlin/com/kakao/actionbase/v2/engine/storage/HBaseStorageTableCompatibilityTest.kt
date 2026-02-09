@@ -2,7 +2,7 @@ package com.kakao.actionbase.v2.engine.storage
 
 import com.kakao.actionbase.test.hbase.HBaseTestingCluster
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageBucket
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.HBaseSyncTable
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
@@ -22,14 +22,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInstance
 
 /**
- * HBase compatibility test for StorageBucket.
+ * HBase compatibility test for StorageTable.
  * Default: MockConnection. Set HBASE_MINI_CLUSTER=true for mini cluster.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class HBaseStorageBucketCompatibilityTest : StorageBucketCompatibilityTest() {
+class HBaseStorageTableCompatibilityTest : StorageTableCompatibilityTest() {
     private lateinit var table: Table
     private lateinit var hbaseTable: HBaseTable
-    private val tableName = TableName.valueOf("test", "storage_bucket_test")
+    private val tableName = TableName.valueOf("test", "storage_table_test")
     private val cf = "f".toByteArray()
     private val useMiniCluster = System.getenv("HBASE_MINI_CLUSTER") == "true"
 
@@ -64,7 +64,7 @@ class HBaseStorageBucketCompatibilityTest : StorageBucketCompatibilityTest() {
         }
     }
 
-    override fun createBucket(): StorageBucket = HBaseStorageBucket(hbaseTable)
+    override fun createTable(): StorageTable = HBaseStorageTable(hbaseTable)
 
     override fun supportsCheckAndMutate() = useMiniCluster
 
