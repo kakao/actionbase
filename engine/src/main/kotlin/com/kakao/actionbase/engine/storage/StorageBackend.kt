@@ -1,4 +1,4 @@
-package com.kakao.actionbase.v2.engine.storage
+package com.kakao.actionbase.engine.storage
 
 import reactor.core.publisher.Mono
 

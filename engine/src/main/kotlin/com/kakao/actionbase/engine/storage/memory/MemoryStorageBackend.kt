@@ -1,8 +1,8 @@
-package com.kakao.actionbase.v2.engine.storage.memory
+package com.kakao.actionbase.engine.storage.memory
 
 import com.kakao.actionbase.engine.datastore.impl.ByteArrayStore
-import com.kakao.actionbase.v2.engine.storage.StorageBackend
-import com.kakao.actionbase.v2.engine.storage.StorageTable
+import com.kakao.actionbase.engine.storage.StorageBackend
+import com.kakao.actionbase.engine.storage.StorageTable
 
 import java.util.concurrent.ConcurrentHashMap
 
