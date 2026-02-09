@@ -45,7 +45,6 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                 if (it.isEmpty()) {
                     val edge = request.toEdge(name)
                     // mutate should call to write WAL
-
                     graph
                         .internalMutate(
                             label.name,
@@ -85,7 +84,6 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
             .flatMap {
                 if (it.isEmpty()) {
                     val edge = request.toEdge(name)
-
                     graph
                         .internalMutate(
                             label.name,
@@ -124,7 +122,6 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
         // mutate should call to write WAL
         return checkDeletePrecondition(name, request).flatMap {
             if (it.isEmpty()) {
-                // DDL operations must always be synchronous regardless of globalMutationMode
                 graph
                     .internalMutate(
                         label.name,
@@ -170,7 +167,6 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                         to.name,
                         fromEdge.props + props,
                     ).toTraceEdge()
-                // DDL operations must always be synchronous regardless of globalMutationMode
                 graph
                     .internalMutate(label.name, label, listOf(edge), EdgeOperation.INSERT, internal = MutationMode.SYNC)
                     .map {
