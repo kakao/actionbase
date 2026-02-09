@@ -22,85 +22,60 @@ class MemoryStorageBackendTest {
     }
 
     @Nested
-    @DisplayName("getBucket")
-    inner class GetBucketTest {
+    @DisplayName("open")
+    inner class OpenTest {
         @Test
-        fun `returns StorageBuckets with namespace and name`() {
-            val buckets = backend.getBucket("test-ns", "test-table").block()!!
+        fun `returns StorageTable with namespace and name`() {
+            val table = backend.open("test-ns", "test-table").block()!!
 
-            assert(buckets.edge != null)
-            assert(buckets.lock != null)
+            assert(table != null)
         }
 
         @Test
-        fun `returns StorageBuckets with uri`() {
-            val buckets = backend.getBucket("datastore://test-ns/test-table").block()!!
+        fun `returns StorageTable with uri`() {
+            val table = backend.open("datastore://test-ns/test-table").block()!!
 
-            assert(buckets.edge != null)
-            assert(buckets.lock != null)
+            assert(table != null)
         }
 
         @Test
-        fun `buckets share the same underlying store`() {
-            val buckets = backend.getBucket("test-ns", "test-table").block()!!
-            val key = "test-key".toByteArray()
-            val value = "test-value".toByteArray()
-
-            buckets.edge.put(key, value).block()
-
-            // Both edge and lock should see the same data since they share the store
-            assert(
-                buckets.edge
-                    .get(key)
-                    .block()
-                    ?.contentEquals(value) == true,
-            )
-            assert(
-                buckets.lock
-                    .get(key)
-                    .block()
-                    ?.contentEquals(value) == true,
-            )
-        }
-
-        @Test
-        fun `different buckets are isolated from each other`() {
-            val buckets1 = backend.getBucket("ns1", "table1").block()!!
-            val buckets2 = backend.getBucket("ns2", "table2").block()!!
+        fun `different tables are isolated from each other`() {
+            val table1 = backend.open("ns1", "table1").block()!!
+            val table2 = backend.open("ns2", "table2").block()!!
             val key = "same-key".toByteArray()
-            val value1 = "value-from-bucket1".toByteArray()
-            val value2 = "value-from-bucket2".toByteArray()
+            val value1 = "value-from-table1".toByteArray()
+            val value2 = "value-from-table2".toByteArray()
 
-            buckets1.edge.put(key, value1).block()
-            buckets2.edge.put(key, value2).block()
+            table1.put(key, value1).block()
+            table2.put(key, value2).block()
 
-            // Each bucket should have its own value for the same key
+            // Each table should have its own value for the same key
             assert(
-                buckets1.edge
+                table1
                     .get(key)
                     .block()
                     ?.contentEquals(value1) == true,
-            ) { "bucket1 should have value1" }
+            ) { "table1 should have value1" }
             assert(
-                buckets2.edge
+                table2
                     .get(key)
                     .block()
                     ?.contentEquals(value2) == true,
-            ) { "bucket2 should have value2" }
+            ) { "table2 should have value2" }
         }
 
         @Test
         fun `same namespace and name returns same store`() {
-            val buckets1 = backend.getBucket("ns", "table").block()!!
-            val buckets2 = backend.getBucket("ns", "table").block()!!
+            val table1 = backend.open("ns", "table").block()!!
+            val table2 = backend.open("ns", "table").block()!!
             val key = "test-key".toByteArray()
             val value = "test-value".toByteArray()
 
-            buckets1.edge.put(key, value).block()
+            table1.put(key, value).block()
 
-            // Second getBucket with same namespace/name should see the data
+            // Second open with same namespace/name should see the data
             assert(
-                buckets2.edge
+                table2
                     .get(key)
                     .block()
                     ?.contentEquals(value) == true,

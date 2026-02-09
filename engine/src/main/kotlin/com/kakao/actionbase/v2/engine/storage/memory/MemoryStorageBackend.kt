@@ -3,7 +3,7 @@ package com.kakao.actionbase.v2.engine.storage.memory
 import com.kakao.actionbase.engine.datastore.impl.ByteArrayStore
 import com.kakao.actionbase.v2.engine.storage.DatastoreUri
 import com.kakao.actionbase.v2.engine.storage.StorageBackend
-import com.kakao.actionbase.v2.engine.storage.StorageBuckets
+import com.kakao.actionbase.v2.engine.storage.StorageTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 
 import java.util.concurrent.ConcurrentHashMap
@@ -21,28 +21,27 @@ class MemoryStorageBackend : StorageBackend {
         return stores.computeIfAbsent(key) { ByteArrayStore() }
     }
 
-    override fun getBucket(
+    override fun open(
         namespace: String,
         name: String,
-    ): Mono<StorageBuckets> {
+    ): Mono<StorageTable> {
         val store = getOrCreateStore(namespace, name)
-        val bucket = MemoryStorageBucket(store)
-        return Mono.just(StorageBuckets(bucket, bucket))
+        return Mono.just(MemoryStorageTable(store))
     }
 
-    override fun getBucket(uri: String): Mono<StorageBuckets> {
+    override fun open(uri: String): Mono<StorageTable> {
         val (ns, name) = DatastoreUri.parse(uri)
-        return getBucket(ns, name)
+        return open(ns, name)
     }
 
-    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))
+    @Deprecated("Use open() instead", ReplaceWith("open(namespace, name)"))
     override fun getTable(
         namespace: String,
         name: String,
-    ): Mono<HBaseTables> = Mono.error(UnsupportedOperationException("MemoryStorageBackend does not support HBaseTables. Use getBucket() instead."))
+    ): Mono<HBaseTables> = Mono.error(UnsupportedOperationException("MemoryStorageBackend does not support HBaseTables. Use open() instead."))
 
-    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
-    override fun getTable(uri: String): Mono<HBaseTables> = Mono.error(UnsupportedOperationException("MemoryStorageBackend does not support HBaseTables. Use getBucket() instead."))
+    @Deprecated("Use open() instead", ReplaceWith("open(uri)"))
+    override fun getTable(uri: String): Mono<HBaseTables> = Mono.error(UnsupportedOperationException("MemoryStorageBackend does not support HBaseTables. Use open() instead."))
 
     override fun close() {
         // nothing to close

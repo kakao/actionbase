@@ -15,12 +15,12 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
- * Abstract compatibility test for StorageBucket implementations.
+ * Abstract compatibility test for StorageTable implementations.
  *
  * Required operations: get, scan, put, delete, increment, batch, checkAndMutate.
  */
-abstract class StorageBucketCompatibilityTest {
-    protected abstract fun createBucket(): StorageBucket
+abstract class StorageTableCompatibilityTest {
+    protected abstract fun createTable(): StorageTable
 
     protected open fun supportsCheckAndMutate(): Boolean = true
 
@@ -28,11 +28,11 @@ abstract class StorageBucketCompatibilityTest {
 
     protected open fun supportsIncrement(): Boolean = true
 
-    private lateinit var bucket: StorageBucket
+    private lateinit var table: StorageTable
 
     @BeforeEach
     fun setUp() {
-        bucket = createBucket()
+        table = createTable()
     }
 
     @Nested
@@ -40,26 +40,26 @@ abstract class StorageBucketCompatibilityTest {
     inner class GetTest {
         @Test
         fun `returns value when key exists`() {
-            bucket.put(b("key"), b("value")).block()
-            assert(bucket.get(b("key")).block()?.contentEquals(b("value")) == true)
+            table.put(b("key"), b("value")).block()
+            assert(table.get(b("key")).block()?.contentEquals(b("value")) == true)
         }
 
         @Test
         fun `returns null when key not exists`() {
-            assert(bucket.get(b("missing")).block() == null)
+            assert(table.get(b("missing")).block() == null)
         }
 
         @Test
         fun `getAll returns matching records`() {
-            bucket.put(b("k1"), b("v1")).block()
-            bucket.put(b("k2"), b("v2")).block()
-            assert(bucket.get(listOf(b("k1"), b("k2"))).block()!!.size == 2)
+            table.put(b("k1"), b("v1")).block()
+            table.put(b("k2"), b("v2")).block()
+            assert(table.get(listOf(b("k1"), b("k2"))).block()!!.size == 2)
         }
 
         @Test
         fun `getAll skips missing keys`() {
-            bucket.put(b("exists"), b("v")).block()
-            assert(bucket.get(listOf(b("exists"), b("missing"))).block()!!.size == 1)
+            table.put(b("exists"), b("v")).block()
+            assert(table.get(listOf(b("exists"), b("missing"))).block()!!.size == 1)
         }
     }
 
@@ -69,32 +69,32 @@ abstract class StorageBucketCompatibilityTest {
         @BeforeEach
         fun setup() {
             listOf("user:001:a", "user:001:b", "user:002:a", "post:001").forEach {
-                bucket.put(b(it), b("v")).block()
+                table.put(b(it), b("v")).block()
             }
         }
 
         @Test
         fun `returns matching prefix`() {
-            val results = bucket.scan(b("user:001"), 100, null, null).block()!!
+            val results = table.scan(b("user:001"), 100, null, null).block()!!
             assert(results.size == 2)
             assert(results.all { String(it.key).startsWith("user:001") })
         }
 
         @Test
         fun `returns empty for non-matching prefix`() {
-            assert(bucket.scan(b("nonexistent"), 100, null, null).block()!!.isEmpty())
+            assert(table.scan(b("nonexistent"), 100, null, null).block()!!.isEmpty())
         }
 
         @Test
         fun `returns sorted keys`() {
-            val keys = bucket.scan(b("user:"), 100, null, null).block()!!.map { String(it.key) }
+            val keys = table.scan(b("user:"), 100, null, null).block()!!.map { String(it.key) }
             assert(keys == keys.sorted())
         }
 
         @Test
         fun `respects limit`() {
             assumeTrue(supportsScanLimit())
-            assert(bucket.scan(b("user:"), 2, null, null).block()!!.size == 2)
+            assert(table.scan(b("user:"), 2, null, null).block()!!.size == 2)
         }
     }
 
@@ -103,15 +103,15 @@ abstract class StorageBucketCompatibilityTest {
     inner class PutTest {
         @Test
         fun `stores value`() {
-            bucket.put(b("k"), b("v")).block()
-            assert(bucket.get(b("k")).block()?.contentEquals(b("v")) == true)
+            table.put(b("k"), b("v")).block()
+            assert(table.get(b("k")).block()?.contentEquals(b("v")) == true)
         }
 
         @Test
         fun `overwrites existing`() {
-            bucket.put(b("k"), b("old")).block()
-            bucket.put(b("k"), b("new")).block()
-            assert(String(bucket.get(b("k")).block()!!) == "new")
+            table.put(b("k"), b("old")).block()
+            table.put(b("k"), b("new")).block()
+            assert(String(table.get(b("k")).block()!!) == "new")
         }
     }
 
@@ -120,14 +120,14 @@ abstract class StorageBucketCompatibilityTest {
     inner class DeleteTest {
         @Test
         fun `removes key`() {
-            bucket.put(b("k"), b("v")).block()
-            bucket.delete(b("k")).block()
-            assert(bucket.get(b("k")).block() == null)
+            table.put(b("k"), b("v")).block()
+            table.delete(b("k")).block()
+            assert(table.get(b("k")).block() == null)
         }
 
         @Test
         fun `silently succeeds for missing key`() {
-            bucket.delete(b("nonexistent")).block()
+            table.delete(b("nonexistent")).block()
         }
     }
 
@@ -141,19 +141,19 @@ abstract class StorageBucketCompatibilityTest {
 
         @Test
         fun `creates counter if not exists`() {
-            assert(bucket.increment(b("cnt"), 10).block() == 10L)
+            assert(table.increment(b("cnt"), 10).block() == 10L)
         }
 
         @Test
         fun `updates existing counter`() {
-            bucket.put(b("cnt"), longToBytes(100)).block()
-            assert(bucket.increment(b("cnt"), 50).block() == 150L)
+            table.put(b("cnt"), longToBytes(100)).block()
+            assert(table.increment(b("cnt"), 50).block() == 150L)
         }
 
         @Test
         fun `decrements with negative delta`() {
-            bucket.put(b("cnt"), longToBytes(100)).block()
-            assert(bucket.increment(b("cnt"), -30).block() == 70L)
+            table.put(b("cnt"), longToBytes(100)).block()
+            assert(table.increment(b("cnt"), -30).block() == 70L)
         }
     }
 
@@ -162,31 +162,31 @@ abstract class StorageBucketCompatibilityTest {
     inner class BatchTest {
         @Test
         fun `executes puts`() {
-            bucket.batch(listOf(MutationRequest.Put(b("b1"), b("v1")), MutationRequest.Put(b("b2"), b("v2")))).block()
-            assert(bucket.get(listOf(b("b1"), b("b2"))).block()!!.size == 2)
+            table.batch(listOf(MutationRequest.Put(b("b1"), b("v1")), MutationRequest.Put(b("b2"), b("v2")))).block()
+            assert(table.get(listOf(b("b1"), b("b2"))).block()!!.size == 2)
         }
 
         @Test
         fun `executes deletes`() {
-            bucket.put(b("d1"), b("v")).block()
-            bucket.put(b("d2"), b("v")).block()
-            bucket.batch(listOf(MutationRequest.Delete(b("d1")), MutationRequest.Delete(b("d2")))).block()
-            assert(bucket.get(listOf(b("d1"), b("d2"))).block()!!.isEmpty())
+            table.put(b("d1"), b("v")).block()
+            table.put(b("d2"), b("v")).block()
+            table.batch(listOf(MutationRequest.Delete(b("d1")), MutationRequest.Delete(b("d2")))).block()
+            assert(table.get(listOf(b("d1"), b("d2"))).block()!!.isEmpty())
         }
 
         @Test
         fun `executes increments`() {
             assumeTrue(supportsIncrement())
-            bucket.batch(listOf(MutationRequest.Increment(b("c1"), 10), MutationRequest.Increment(b("c2"), 20))).block()
-            assert(bytesToLong(bucket.get(b("c1")).block()!!) == 10L)
-            assert(bytesToLong(bucket.get(b("c2")).block()!!) == 20L)
+            table.batch(listOf(MutationRequest.Increment(b("c1"), 10), MutationRequest.Increment(b("c2"), 20))).block()
+            assert(bytesToLong(table.get(b("c1")).block()!!) == 10L)
+            assert(bytesToLong(table.get(b("c2")).block()!!) == 20L)
         }
 
         @Test
         fun `executes mixed mutations`() {
             assumeTrue(supportsIncrement())
-            bucket.put(b("to-delete"), b("v")).block()
-            bucket
+            table.put(b("to-delete"), b("v")).block()
+            table
                 .batch(
                     listOf(
                         MutationRequest.Put(b("new"), b("v")),
@@ -194,9 +194,9 @@ abstract class StorageBucketCompatibilityTest {
                         MutationRequest.Increment(b("cnt"), 100),
                     ),
                 ).block()
-            assert(bucket.get(b("new")).block() != null)
-            assert(bucket.get(b("to-delete")).block() == null)
-            assert(bytesToLong(bucket.get(b("cnt")).block()!!) == 100L)
+            assert(table.get(b("new")).block() != null)
+            assert(table.get(b("to-delete")).block() == null)
+            assert(bytesToLong(table.get(b("cnt")).block()!!) == 100L)
         }
     }
 
@@ -205,13 +205,13 @@ abstract class StorageBucketCompatibilityTest {
     inner class ExistsTest {
         @Test
         fun `returns true when key exists`() {
-            bucket.put(b("k"), b("v")).block()
-            assert(bucket.exists(b("k")).block() == true)
+            table.put(b("k"), b("v")).block()
+            assert(table.exists(b("k")).block() == true)
         }
 
         @Test
         fun `returns false when key not exists`() {
-            assert(bucket.exists(b("missing")).block() == false)
+            assert(table.exists(b("missing")).block() == false)
         }
     }
 
@@ -228,15 +228,15 @@ abstract class StorageBucketCompatibilityTest {
         inner class SetIfNotExistsTest {
             @Test
             fun `succeeds when key not exists`() {
-                assert(bucket.setIfNotExists(b("lock"), b("owner")).block() == true)
-                assert(bucket.get(b("lock")).block()?.contentEquals(b("owner")) == true)
+                assert(table.setIfNotExists(b("lock"), b("owner")).block() == true)
+                assert(table.get(b("lock")).block()?.contentEquals(b("owner")) == true)
             }
 
             @Test
             fun `fails when key exists`() {
-                bucket.put(b("lock"), b("existing")).block()
-                assert(bucket.setIfNotExists(b("lock"), b("new")).block() == false)
-                assert(String(bucket.get(b("lock")).block()!!) == "existing")
+                table.put(b("lock"), b("existing")).block()
+                assert(table.setIfNotExists(b("lock"), b("new")).block() == false)
+                assert(String(table.get(b("lock")).block()!!) == "existing")
             }
         }
 
@@ -245,21 +245,21 @@ abstract class StorageBucketCompatibilityTest {
         inner class DeleteIfEqualsTest {
             @Test
             fun `succeeds when value matches`() {
-                bucket.put(b("lock"), b("owner")).block()
-                assert(bucket.deleteIfEquals(b("lock"), b("owner")).block() == true)
-                assert(bucket.get(b("lock")).block() == null)
+                table.put(b("lock"), b("owner")).block()
+                assert(table.deleteIfEquals(b("lock"), b("owner")).block() == true)
+                assert(table.get(b("lock")).block() == null)
             }
 
             @Test
             fun `fails when value differs`() {
-                bucket.put(b("lock"), b("owner")).block()
-                assert(bucket.deleteIfEquals(b("lock"), b("different")).block() == false)
-                assert(bucket.get(b("lock")).block() != null)
+                table.put(b("lock"), b("owner")).block()
+                assert(table.deleteIfEquals(b("lock"), b("different")).block() == false)
+                assert(table.get(b("lock")).block() != null)
             }
 
             @Test
             fun `fails when key not exists`() {
-                assert(bucket.deleteIfEquals(b("missing"), b("v")).block() == false)
+                assert(table.deleteIfEquals(b("missing"), b("v")).block() == false)
             }
         }
 
@@ -276,7 +276,7 @@ abstract class StorageBucketCompatibilityTest {
                 repeat(threads) { i ->
                     executor.submit {
                         try {
-                            if (bucket.setIfNotExists(b("lock"), b("owner-$i")).block() == true) {
+                            if (table.setIfNotExists(b("lock"), b("owner-$i")).block() == true) {
                                 acquired.incrementAndGet()
                             }
                         } finally {
@@ -292,7 +292,7 @@ abstract class StorageBucketCompatibilityTest {
 
             @Test
             fun `only owner releases lock`() {
-                bucket.put(b("lock"), b("owner-0")).block()
+                table.put(b("lock"), b("owner-0")).block()
                 val threads = 10
                 val released = AtomicInteger(0)
                 val latch = CountDownLatch(threads)
@@ -301,7 +301,7 @@ abstract class StorageBucketCompatibilityTest {
                 repeat(threads) { i ->
                     executor.submit {
                         try {
-                            if (bucket.deleteIfEquals(b("lock"), b("owner-$i")).block() == true) {
+                            if (table.deleteIfEquals(b("lock"), b("owner-$i")).block() == true) {
                                 released.incrementAndGet()
                             }
                         } finally {

@@ -5,7 +5,7 @@ import com.kakao.actionbase.core.storage.MutationRequest
 
 import reactor.core.publisher.Mono
 
-interface StorageBucket {
+interface StorageTable {
     fun get(key: ByteArray): Mono<ByteArray?>
 
     fun get(keys: List<ByteArray>): Mono<List<HBaseRecord>>

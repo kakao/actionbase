@@ -5,17 +5,17 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import reactor.core.publisher.Mono
 
 interface StorageBackend : AutoCloseable {
-    fun getBucket(
+    fun open(
         namespace: String,
         name: String,
-    ): Mono<StorageBuckets>
+    ): Mono<StorageTable>
 
-    fun getBucket(uri: String): Mono<StorageBuckets>
+    fun open(uri: String): Mono<StorageTable>
 
     /**
      * Returns HBaseTables for backward compatibility with existing Label implementations.
      */
-    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(namespace, name)"))
+    @Deprecated("Use open() instead", ReplaceWith("open(namespace, name)"))
     fun getTable(
         namespace: String,
         name: String,
@@ -24,6 +24,6 @@ interface StorageBackend : AutoCloseable {
     /**
      * Returns HBaseTables for backward compatibility with existing Label implementations.
      */
-    @Deprecated("Use getBucket() instead", ReplaceWith("getBucket(uri)"))
+    @Deprecated("Use open() instead", ReplaceWith("open(uri)"))
     fun getTable(uri: String): Mono<HBaseTables>
 }

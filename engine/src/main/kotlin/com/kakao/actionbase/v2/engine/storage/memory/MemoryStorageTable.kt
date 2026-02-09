@@ -3,13 +3,13 @@ package com.kakao.actionbase.v2.engine.storage.memory
 import com.kakao.actionbase.core.storage.HBaseRecord
 import com.kakao.actionbase.core.storage.MutationRequest
 import com.kakao.actionbase.engine.datastore.impl.ByteArrayStore
-import com.kakao.actionbase.v2.engine.storage.StorageBucket
+import com.kakao.actionbase.v2.engine.storage.StorageTable
 
 import reactor.core.publisher.Mono
 
-class MemoryStorageBucket(
+class MemoryStorageTable(
     private val store: ByteArrayStore,
-) : StorageBucket {
+) : StorageTable {
     override fun get(key: ByteArray): Mono<ByteArray?> = Mono.fromCallable { store[key] }
 
     override fun get(keys: List<ByteArray>): Mono<List<HBaseRecord>> =
