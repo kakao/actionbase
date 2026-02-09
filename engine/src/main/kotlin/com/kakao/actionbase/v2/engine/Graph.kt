@@ -222,8 +222,7 @@ class Graph(
 
     override fun getLabel(name: EntityName): Label =
         if (aliases.containsKey(name)) {
-            labels[aliases[name]]
-                ?: throw UnsupportedOperationException("No such label ${aliases[name]} of the alias $name.")
+            labels[aliases[name]] ?: throw UnsupportedOperationException("No such label ${aliases[name]} of the alias $name.")
         } else {
             labels[name] ?: throw UnsupportedOperationException("No such label $name.")
         }
@@ -510,7 +509,6 @@ class Graph(
                             null
                         }
                     }
-
                     else -> null
                 }
             }
@@ -651,7 +649,6 @@ class Graph(
                     val options = storage.materialize().options as HBaseOptions
                     options.checkConnection()
                 }
-
                 else -> Mono.just(false)
             }
 
@@ -815,11 +812,7 @@ class Graph(
                         .then(insertCurrentMetadata())
                 }.subscribeOn(Schedulers.boundedElastic()) // Use the dedicated scheduler
                 .onErrorContinue { error, _ ->
-                    logger.error(
-                        "Error occurred during metastore reload or unexpected error: {}. Continuing with next interval.",
-                        error.message,
-                        error,
-                    )
+                    logger.error("Error occurred during metastore reload or unexpected error: {}. Continuing with next interval.", error.message, error)
                 }.subscribe()
     }
 
@@ -899,27 +892,23 @@ class Graph(
                     val metadataOnHosts = getOnlineMetadata(MetadataType.STORAGE)
                     metadataOnMetastore to metadataOnHosts
                 }
-
                 MetadataType.SERVICE -> {
                     val metadataOnMetastore = serviceDdl.getAll(EntityName.origin)
                     val metadataOnHosts = getOnlineMetadata(MetadataType.SERVICE)
                     metadataOnMetastore to metadataOnHosts
                 }
-
                 MetadataType.LABEL -> {
                     requireNotNull(service) { "service should not be null for LABEL" }
                     val metadataOnMetastore = labelDdl.getAll(EntityName(service))
                     val metadataOnHosts = getOnlineMetadata(MetadataType.LABEL)
                     metadataOnMetastore to metadataOnHosts
                 }
-
                 MetadataType.ALIAS -> {
                     requireNotNull(service) { "service should not be null for ALIAS" }
                     val metadataOnMetastore = aliasDdl.getAll(EntityName(service))
                     val metadataOnHosts = getOnlineMetadata(MetadataType.ALIAS)
                     metadataOnMetastore to metadataOnHosts
                 }
-
                 MetadataType.QUERY -> {
                     requireNotNull(service) { "service should not be null for QUERY" }
                     val metadataOnMetastore = queryDdl.getAll(EntityName(service))
@@ -1132,7 +1121,6 @@ class Graph(
                             driver = "org.h2.Driver",
                         )
                     }
-
                     "global" -> {
                         val hikariConfig =
                             HikariConfig().apply {
@@ -1148,7 +1136,6 @@ class Graph(
                         val dataSource = HikariDataSource(hikariConfig)
                         Database.connect(dataSource)
                     }
-
                     else -> {
                         throw UnsupportedOperationException("Unsupported database type: $type")
                     }

@@ -69,7 +69,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                         IllegalArgumentException(
                             DdlStatus<Entity>(
                                 DdlStatus.Status.BAD_REQUEST,
-                                message = "ddl create failed...\n${it.joinToString("\n")}",
+                                message = "ddl create failed...\n${it.joinToString("\n") }",
                             ).toString(),
                         ),
                     )
@@ -108,7 +108,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                         IllegalArgumentException(
                             DdlStatus<Entity>(
                                 DdlStatus.Status.BAD_REQUEST,
-                                message = "ddl update failed...\n${it.joinToString("\n")}",
+                                message = "ddl update failed...\n${it.joinToString("\n") }",
                             ).toString(),
                         ),
                     )
@@ -147,7 +147,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                     IllegalArgumentException(
                         DdlStatus<Entity>(
                             DdlStatus.Status.BAD_REQUEST,
-                            message = "ddl create failed...\n${it.joinToString("\n")}",
+                            message = "ddl create failed...\n${it.joinToString("\n") }",
                         ).toString(),
                     ),
                 )
