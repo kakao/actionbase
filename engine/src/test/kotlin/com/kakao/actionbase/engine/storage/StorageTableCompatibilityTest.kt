@@ -1,6 +1,8 @@
 package com.kakao.actionbase.engine.storage
 
 import com.kakao.actionbase.core.storage.MutationRequest
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -38,10 +40,23 @@ abstract class StorageTableCompatibilityTest {
     @Nested
     @DisplayName("get")
     inner class GetTest {
-        @Test
-        fun `returns value when key exists`() {
-            table.put(b("key"), b("value")).block()
-            assert(table.get(b("key")).block()?.contentEquals(b("value")) == true)
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - key: key1
+              value: value1
+            - key: k
+              value: v
+            - key: long_key_name
+              value: long_value
+            """,
+        )
+        fun `returns stored value`(
+            key: String,
+            value: String,
+        ) {
+            table.put(b(key), b(value)).block()
+            assert(String(table.get(b(key)).block()!!) == value)
         }
 
         @Test
@@ -49,17 +64,27 @@ abstract class StorageTableCompatibilityTest {
             assert(table.get(b("missing")).block() == null)
         }
 
-        @Test
-        fun `getAll returns matching records`() {
-            table.put(b("k1"), b("v1")).block()
-            table.put(b("k2"), b("v2")).block()
-            assert(table.get(listOf(b("k1"), b("k2"))).block()!!.size == 2)
-        }
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            # all keys exist
+            - keys: [k1, k2]
+              values: [v1, v2]
+              expected: 2
 
-        @Test
-        fun `getAll skips missing keys`() {
-            table.put(b("exists"), b("v")).block()
-            assert(table.get(listOf(b("exists"), b("missing"))).block()!!.size == 1)
+            # some keys missing
+            - keys: [exists, missing]
+              values: [v]
+              expected: 1
+            """,
+        )
+        fun `getAll`(
+            keys: List<String>,
+            values: List<String>,
+            expected: Int,
+        ) {
+            keys.zip(values).forEach { (k, v) -> table.put(b(k), b(v)).block() }
+            assert(table.get(keys.map { b(it) }).block()!!.size == expected)
         }
     }
 
@@ -73,16 +98,25 @@ abstract class StorageTableCompatibilityTest {
             }
         }
 
-        @Test
-        fun `returns matching prefix`() {
-            val results = table.scan(b("user:001"), 100, null, null).block()!!
-            assert(results.size == 2)
-            assert(results.all { String(it.key).startsWith("user:001") })
-        }
-
-        @Test
-        fun `returns empty for non-matching prefix`() {
-            assert(table.scan(b("nonexistent"), 100, null, null).block()!!.isEmpty())
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - prefix: "user:001"
+              expected: 2
+            - prefix: "user:"
+              expected: 3
+            - prefix: "post:"
+              expected: 1
+            - prefix: nonexistent
+              expected: 0
+            """,
+        )
+        fun `returns matching prefix`(
+            prefix: String,
+            expected: Int,
+        ) {
+            val results = table.scan(b(prefix), 100, null, null).block()!!
+            assert(results.size == expected) { "prefix=$prefix: expected $expected but got ${results.size}" }
         }
 
         @Test
@@ -139,21 +173,34 @@ abstract class StorageTableCompatibilityTest {
             assumeTrue(supportsIncrement())
         }
 
-        @Test
-        fun `creates counter if not exists`() {
-            assert(table.increment(b("cnt"), 10).block() == 10L)
-        }
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            # new counter
+            - initial: 0
+              delta: 10
+              expected: 10
 
-        @Test
-        fun `updates existing counter`() {
-            table.put(b("cnt"), longToBytes(100)).block()
-            assert(table.increment(b("cnt"), 50).block() == 150L)
-        }
+            # add to existing
+            - initial: 100
+              delta: 50
+              expected: 150
 
-        @Test
-        fun `decrements with negative delta`() {
-            table.put(b("cnt"), longToBytes(100)).block()
-            assert(table.increment(b("cnt"), -30).block() == 70L)
+            # decrement
+            - initial: 100
+              delta: -30
+              expected: 70
+            """,
+        )
+        fun `increment counter`(
+            initial: Long,
+            delta: Long,
+            expected: Long,
+        ) {
+            if (initial != 0L) {
+                table.put(b("cnt"), longToBytes(initial)).block()
+            }
+            assert(table.increment(b("cnt"), delta).block() == expected)
         }
     }
 
