@@ -42,8 +42,60 @@ class V3CompatibleTableBinding(
         require(schema is ModelSchema.Edge) {
             "mutateEdge is only supported for Edge schema, but got ${schema::class.java.simpleName}"
         }
-
         val (source, target) = key
+        return mutateInternal(
+            source = source,
+            target = target,
+            events = events,
+            acquireLock = acquireLock,
+            mapper = mapper,
+            codeToFieldNameMap = codeToFieldNameMap,
+            buildMutationRecords = { beforeRecord, afterRecord ->
+                EdgeMutationBuilder.build(beforeRecord, afterRecord, schema.direction, schema.indexes, schema.groups)
+            },
+            toStatus = { count, status, before, after, acc ->
+                EdgeMutationStatus(source, target, count, status, before, after, acc)
+            },
+        )
+    }
+
+    fun mutateMultiEdge(
+        key: Any,
+        events: List<Event>,
+        acquireLock: Boolean,
+        mapper: EdgeRecordMapper,
+        codeToFieldNameMap: Map<Int, String>,
+    ): Mono<MultiEdgeMutationStatus> {
+        val schema = descriptor.schema
+        require(schema is ModelSchema.MultiEdge) {
+            "mutateMultiEdge is only supported for MultiEdge schema, but got ${schema::class.java.simpleName}"
+        }
+        return mutateInternal(
+            source = key,
+            target = key,
+            events = events,
+            acquireLock = acquireLock,
+            mapper = mapper,
+            codeToFieldNameMap = codeToFieldNameMap,
+            buildMutationRecords = { beforeRecord, afterRecord ->
+                EdgeMutationBuilder.buildForMultiEdge(beforeRecord, afterRecord, schema.direction, schema.indexes, schema.groups)
+            },
+            toStatus = { count, status, before, after, acc ->
+                MultiEdgeMutationStatus(key, count, status, before, after, acc)
+            },
+        )
+    }
+
+    private fun <S : Any> mutateInternal(
+        source: Any,
+        target: Any,
+        events: List<Event>,
+        acquireLock: Boolean,
+        mapper: EdgeRecordMapper,
+        codeToFieldNameMap: Map<Int, String>,
+        buildMutationRecords: (EdgeStateRecord, EdgeStateRecord) -> EdgeMutationRecords,
+        toStatus: (Int, String, State, State, Long) -> S,
+    ): Mono<S> {
         with(label) {
             val eventId = events.first().id
             val compatibleEdge = Edge(0L, source, target)
@@ -58,62 +110,16 @@ class V3CompatibleTableBinding(
                 .map { before ->
                     val after =
                         events.fold(before) { acc, event ->
-                            acc.transit(event, schema)
+                            acc.transit(event, descriptor.schema)
                         }
                     before.specialStateValueToNull() to after.specialStateValueToNull()
                 }.flatMap { (before, after) ->
                     val beforeRecord = EdgeStateRecord.of(source, target, before, entity.id)
                     val afterRecord = EdgeStateRecord.of(source, target, after, entity.id)
-                    val mutationRecords = EdgeMutationBuilder.build(beforeRecord, afterRecord, schema.direction, schema.indexes, schema.groups)
+                    val mutationRecords = buildMutationRecords(beforeRecord, afterRecord)
                     handleDeferredRequests(buildHBaseMutations(mutationRecords, mapper))
                         .thenReturn(
-                            EdgeMutationStatus(source, target, events.size, mutationRecords.status, before, after, mutationRecords.acc),
-                        )
-                }.subscribeOn(Schedulers.boundedElastic())
-                .doFinally {
-                    releaseLock(eventId, encodedLockEdge, bulk)
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .subscribe()
-                }
-        }
-    }
-
-    fun mutateMultiEdge(
-        key: Any,
-        events: List<Event>,
-        acquireLock: Boolean,
-        mapper: EdgeRecordMapper,
-        codeToFieldNameMap: Map<Int, String>,
-    ): Mono<MultiEdgeMutationStatus> {
-        val schema = descriptor.schema
-        require(schema is ModelSchema.MultiEdge) {
-            "mutateMultiEdge is only supported for MultiEdge schema, but got ${schema::class.java.simpleName}"
-        }
-
-        with(label) {
-            val eventId = events.first().id
-            val compatibleEdge = Edge(0L, key, key)
-            val encodedHashEdgeKey = coder.encodeHashEdgeKey(compatibleEdge, entity.id)
-            val encodedLockEdge = coder.encodeLockEdge(compatibleEdge, entity.id)
-            val bulk = !acquireLock
-            return acquireLock(eventId, encodedLockEdge, bulk)
-                .flatMap {
-                    findHashEdge(encodedHashEdgeKey)
-                }.map { decodeCurrentState(it, mapper, codeToFieldNameMap) }
-                .switchIfEmpty(Mono.defer { Mono.just(State.initial) })
-                .map { before ->
-                    val after =
-                        events.fold(before) { acc, event ->
-                            acc.transit(event, schema)
-                        }
-                    before.specialStateValueToNull() to after.specialStateValueToNull()
-                }.flatMap { (before, after) ->
-                    val beforeRecord = EdgeStateRecord.of(key, key, before, entity.id)
-                    val afterRecord = EdgeStateRecord.of(key, key, after, entity.id)
-                    val mutationRecords = EdgeMutationBuilder.buildForMultiEdge(beforeRecord, afterRecord, schema.direction, schema.indexes, schema.groups)
-                    handleDeferredRequests(buildHBaseMutations(mutationRecords, mapper))
-                        .thenReturn(
-                            MultiEdgeMutationStatus(key, events.size, mutationRecords.status, before, after, mutationRecords.acc),
+                            toStatus(events.size, mutationRecords.status, before, after, mutationRecords.acc),
                         )
                 }.subscribeOn(Schedulers.boundedElastic())
                 .doFinally {
