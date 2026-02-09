@@ -1134,9 +1134,9 @@ class DdlServiceSpec :
                     withTestData = false,
                 )
 
-            try {
+            graphGlobalAsync.use { graph ->
                 val serviceName = "test_async_service"
-                graphGlobalAsync.serviceDdl
+                graph.serviceDdl
                     .create(
                         EntityName.fromOrigin(serviceName),
                         ServiceCreateRequest(desc = "test service"),
@@ -1163,7 +1163,7 @@ class DdlServiceSpec :
                         storage = Metadata.metastoreName,
                     )
 
-                graphGlobalAsync.labelDdl
+                graph.labelDdl
                     .create(labelName, labelCreateRequest)
                     .test()
                     .assertNext { ddlResult ->
@@ -1182,7 +1182,7 @@ class DdlServiceSpec :
                         indices = null,
                     )
 
-                graphGlobalAsync.labelDdl
+                graph.labelDdl
                     .update(labelName, labelUpdateRequest)
                     .test()
                     .assertNext { ddlResult ->
@@ -1201,21 +1201,19 @@ class DdlServiceSpec :
                         indices = null,
                     )
 
-                graphGlobalAsync.labelDdl
+                graph.labelDdl
                     .update(labelName, deactivateRequest)
                     .test()
                     .assertNext { ddlResult ->
                         ddlResult.status shouldBe DdlStatus.Status.UPDATED
                     }.verifyComplete()
 
-                graphGlobalAsync.labelDdl
+                graph.labelDdl
                     .delete(labelName, LabelDeleteRequest())
                     .test()
                     .assertNext { ddlResult ->
                         ddlResult.status shouldBe DdlStatus.Status.DELETED
                     }.verifyComplete()
-            } finally {
-                graphGlobalAsync.close()
             }
         }
     })
