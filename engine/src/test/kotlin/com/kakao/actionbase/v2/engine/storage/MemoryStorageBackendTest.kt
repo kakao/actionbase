@@ -22,26 +22,26 @@ class MemoryStorageBackendTest {
     }
 
     @Nested
-    @DisplayName("open")
-    inner class OpenTest {
+    @DisplayName("getStorageTable")
+    inner class GetStorageTableTest {
         @Test
         fun `returns StorageTable with namespace and name`() {
-            val table = backend.open("test-ns", "test-table").block()!!
+            val table = backend.getStorageTable("test-ns", "test-table").block()!!
 
             assert(table != null)
         }
 
         @Test
         fun `returns StorageTable with uri`() {
-            val table = backend.open("datastore://test-ns/test-table").block()!!
+            val table = backend.getStorageTable("datastore://test-ns/test-table").block()!!
 
             assert(table != null)
         }
 
         @Test
         fun `different tables are isolated from each other`() {
-            val table1 = backend.open("ns1", "table1").block()!!
-            val table2 = backend.open("ns2", "table2").block()!!
+            val table1 = backend.getStorageTable("ns1", "table1").block()!!
+            val table2 = backend.getStorageTable("ns2", "table2").block()!!
             val key = "same-key".toByteArray()
             val value1 = "value-from-table1".toByteArray()
             val value2 = "value-from-table2".toByteArray()
@@ -66,8 +66,8 @@ class MemoryStorageBackendTest {
 
         @Test
         fun `same namespace and name returns same store`() {
-            val table1 = backend.open("ns", "table").block()!!
-            val table2 = backend.open("ns", "table").block()!!
+            val table1 = backend.getStorageTable("ns", "table").block()!!
+            val table2 = backend.getStorageTable("ns", "table").block()!!
             val key = "test-key".toByteArray()
             val value = "test-value".toByteArray()
 
