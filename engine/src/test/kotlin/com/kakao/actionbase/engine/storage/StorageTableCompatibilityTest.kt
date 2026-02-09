@@ -84,7 +84,7 @@ abstract class StorageTableCompatibilityTest {
             expected: Int,
         ) {
             keys.zip(values).forEach { (k, v) -> table.put(b(k), b(v)).block() }
-            assert(table.get(keys.map { b(it) }).block()!!.size == expected)
+            assert(table.getAll(keys.map { b(it) }).block()!!.size == expected)
         }
     }
 
@@ -209,22 +209,22 @@ abstract class StorageTableCompatibilityTest {
     inner class BatchTest {
         @Test
         fun `executes puts`() {
-            table.batch(listOf(MutationRequest.Put(b("b1"), b("v1")), MutationRequest.Put(b("b2"), b("v2")))).block()
-            assert(table.get(listOf(b("b1"), b("b2"))).block()!!.size == 2)
+            table.batchAll(listOf(MutationRequest.Put(b("b1"), b("v1")), MutationRequest.Put(b("b2"), b("v2")))).block()
+            assert(table.getAll(listOf(b("b1"), b("b2"))).block()!!.size == 2)
         }
 
         @Test
         fun `executes deletes`() {
             table.put(b("d1"), b("v")).block()
             table.put(b("d2"), b("v")).block()
-            table.batch(listOf(MutationRequest.Delete(b("d1")), MutationRequest.Delete(b("d2")))).block()
-            assert(table.get(listOf(b("d1"), b("d2"))).block()!!.isEmpty())
+            table.batchAll(listOf(MutationRequest.Delete(b("d1")), MutationRequest.Delete(b("d2")))).block()
+            assert(table.getAll(listOf(b("d1"), b("d2"))).block()!!.isEmpty())
         }
 
         @Test
         fun `executes increments`() {
             assumeTrue(supportsIncrement())
-            table.batch(listOf(MutationRequest.Increment(b("c1"), 10), MutationRequest.Increment(b("c2"), 20))).block()
+            table.batchAll(listOf(MutationRequest.Increment(b("c1"), 10), MutationRequest.Increment(b("c2"), 20))).block()
             assert(bytesToLong(table.get(b("c1")).block()!!) == 10L)
             assert(bytesToLong(table.get(b("c2")).block()!!) == 20L)
         }
@@ -234,7 +234,7 @@ abstract class StorageTableCompatibilityTest {
             assumeTrue(supportsIncrement())
             table.put(b("to-delete"), b("v")).block()
             table
-                .batch(
+                .batchAll(
                     listOf(
                         MutationRequest.Put(b("new"), b("v")),
                         MutationRequest.Delete(b("to-delete")),
