@@ -66,17 +66,12 @@ class V3MutationService(
         sync: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<EdgeMutationResponse> {
-        val aliasEntityName = EntityName(database, alias)
-        val label = graph.getLabel(aliasEntityName)
-        if (label !is HBaseIndexedLabel) {
-            return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation"))
+        val ctx = try {
+            resolveMutationContext(database, alias, sync, requestContext)
+        } catch (e: UnsupportedOperationException) {
+            return Mono.error(e)
         }
-
-        val mutationMode = MutationModeContext.of(label.entity.mode, sync)
-
-        val tableBinding = label.v3TableBinding
-        val audit = Audit(requestContext.actor)
-        val requestId = requestContext.requestId
+        val (aliasEntityName, label, mutationMode, tableBinding, audit, requestId) = ctx
 
         return Flux
             .fromIterable(request.mutations)
@@ -115,31 +110,15 @@ class V3MutationService(
                                 .mutateEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
                                 .doOnNext { status ->
                                     val last = sortedGroup.last()
-                                    val edge = last.toTraceEdge()
-                                    val cdcMessage =
-                                        CdcContext(
-                                            label = label.entity.name,
-                                            edge = edge,
-                                            op = last.event.type.toV2(),
-                                            status = EdgeOperationStatus.valueOf(status.status),
-                                            before = status.before.toHashEdge(key.first, key.second),
-                                            after = status.after.toHashEdge(key.first, key.second),
-                                            acc = status.acc,
-                                            alias = if (aliasEntityName == label.entity.name) null else aliasEntityName,
-                                            audit = Audit(requestContext.actor),
-                                            requestId = requestContext.requestId,
-                                        )
-                                    graph.cdc
-                                        .write(cdcMessage)
-                                        .subscribeOn(Schedulers.boundedElastic())
-                                        .subscribe()
+                                    writeCdc(
+                                        ctx, last.toTraceEdge(), last.event.type,
+                                        status.status,
+                                        status.before.toHashEdge(key.first, key.second),
+                                        status.after.toHashEdge(key.first, key.second),
+                                        status.acc,
+                                    )
                                 }.onErrorResume {
-                                    if (it is LockAcquisitionFailedException) {
-                                        label
-                                            .findStaleLockAndClear(it.lockEdge, graph.lockTimeout)
-                                            .subscribeOn(Schedulers.boundedElastic())
-                                            .subscribe()
-                                    }
+                                    handleMutationError(it, label)
                                     Mono.just(
                                         EdgeMutationStatus(
                                             source = key.first,
@@ -179,16 +158,12 @@ class V3MutationService(
         sync: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<MultiEdgeMutationResponse> {
-        val aliasEntityName = EntityName(database, alias)
-        val label = graph.getLabel(aliasEntityName)
-        if (label !is HBaseIndexedLabel) {
-            return Mono.error(UnsupportedOperationException("This Label (${label.entity.fullName}) is not indexed or not supported for edge mutation"))
+        val ctx = try {
+            resolveMutationContext(database, alias, sync, requestContext)
+        } catch (e: UnsupportedOperationException) {
+            return Mono.error(e)
         }
-        val mutationMode = MutationModeContext.of(label.entity.mode, sync)
-
-        val tableBinding = label.v3TableBinding
-        val audit = Audit(requestContext.actor)
-        val requestId = requestContext.requestId
+        val (aliasEntityName, label, mutationMode, tableBinding, audit, requestId) = ctx
 
         return Flux
             .fromIterable(request.mutations)
@@ -226,24 +201,25 @@ class V3MutationService(
                                 .mutateMultiEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
                                 .doOnNext { status ->
                                     val last = sortedGroup.last()
-                                    val edge = last.toTraceEdge()
-                                    val cdcMessage =
-                                        CdcContext(
-                                            label = label.entity.name,
-                                            edge = edge,
-                                            op = last.event.type.toV2(),
-                                            status = EdgeOperationStatus.valueOf(status.status),
-                                            before = status.before.toHashEdge(source = status.before.getMultiEdgeSource(), target = status.before.getMultiEdgeTarget()),
-                                            after = status.after.toHashEdge(source = status.after.getMultiEdgeSource(), target = status.after.getMultiEdgeTarget()),
-                                            acc = status.acc,
-                                            alias = if (aliasEntityName == label.entity.name) null else aliasEntityName,
-                                            audit = Audit(requestContext.actor),
-                                            requestId = requestContext.requestId,
-                                        )
-                                    graph.cdc
-                                        .write(cdcMessage)
-                                        .subscribeOn(Schedulers.boundedElastic())
-                                        .subscribe()
+                                    writeCdc(
+                                        ctx, last.toTraceEdge(), last.event.type,
+                                        status.status,
+                                        status.before.toHashEdge(source = status.before.getMultiEdgeSource(), target = status.before.getMultiEdgeTarget()),
+                                        status.after.toHashEdge(source = status.after.getMultiEdgeSource(), target = status.after.getMultiEdgeTarget()),
+                                        status.acc,
+                                    )
+                                }.onErrorResume {
+                                    handleMutationError(it, label)
+                                    Mono.just(
+                                        MultiEdgeMutationStatus(
+                                            id = key,
+                                            count = 0,
+                                            status = EdgeOperationStatus.ERROR.name,
+                                            before = State.initial,
+                                            after = State.initial,
+                                            acc = 0,
+                                        ),
+                                    )
                                 }
                         }.subscribeOn(Schedulers.boundedElastic())
                 }
@@ -261,6 +237,73 @@ class V3MutationService(
                 )
             }.timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
+    }
+
+    private data class MutationContext(
+        val aliasEntityName: EntityName,
+        val label: HBaseIndexedLabel,
+        val mutationMode: MutationModeContext,
+        val tableBinding: V3CompatibleTableBinding,
+        val audit: Audit,
+        val requestId: String,
+    )
+
+    private fun resolveMutationContext(
+        database: String,
+        alias: String,
+        sync: MutationMode?,
+        requestContext: RequestContext,
+    ): MutationContext {
+        val aliasEntityName = EntityName(database, alias)
+        val label = graph.getLabel(aliasEntityName)
+        if (label !is HBaseIndexedLabel) {
+            throw UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation")
+        }
+        return MutationContext(
+            aliasEntityName = aliasEntityName,
+            label = label,
+            mutationMode = MutationModeContext.of(label.entity.mode, sync),
+            tableBinding = label.v3TableBinding,
+            audit = Audit(requestContext.actor),
+            requestId = requestContext.requestId,
+        )
+    }
+
+    private fun writeCdc(
+        ctx: MutationContext,
+        edge: TraceEdge,
+        lastEventType: EventType,
+        status: String,
+        beforeHashEdge: HashEdge?,
+        afterHashEdge: HashEdge?,
+        acc: Long,
+    ) {
+        val cdcMessage =
+            CdcContext(
+                label = ctx.label.entity.name,
+                edge = edge,
+                op = lastEventType.toV2(),
+                status = EdgeOperationStatus.valueOf(status),
+                before = beforeHashEdge,
+                after = afterHashEdge,
+                acc = acc,
+                alias = if (ctx.aliasEntityName == ctx.label.entity.name) null else ctx.aliasEntityName,
+                audit = ctx.audit,
+                requestId = ctx.requestId,
+            )
+        graph.cdc
+            .write(cdcMessage)
+            .subscribeOn(Schedulers.boundedElastic())
+            .subscribe()
+    }
+
+    private fun handleMutationError(error: Throwable, label: HBaseIndexedLabel) {
+        if (error is LockAcquisitionFailedException) {
+            label
+                .findStaleLockAndClear(error.lockEdge, graph.lockTimeout)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe()
+        }
     }
 
     private fun State.toHashEdge(
