@@ -1,9 +1,9 @@
 package com.kakao.actionbase.server.configuration
 
 import com.kakao.actionbase.engine.datastore.hbase.admin.HBaseAdmin
+import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
+import com.kakao.actionbase.engine.storage.hbase.HBaseStorageBackend
 import com.kakao.actionbase.v2.engine.Graph
-import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorageBackend
 
 import org.apache.hadoop.hbase.NamespaceDescriptor
 import org.springframework.context.annotation.Bean

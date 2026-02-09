@@ -28,6 +28,10 @@ class DatastoreUriTest {
             - uri: datastore://ns/t
               namespace: ns
               table: t
+            # uppercase allowed for backward compatibility
+            - uri: datastore://MyNamespace/table
+              namespace: MyNamespace
+              table: table
             """,
         )
         fun `valid URI`(
@@ -62,10 +66,6 @@ class DatastoreUriTest {
               error: Invalid namespace
             - uri: datastore://ns/table;drop
               error: Invalid table name
-
-            # uppercase not allowed
-            - uri: datastore://MyNamespace/table
-              error: Invalid namespace
 
             # hyphen not allowed
             - uri: datastore://ns/my-table

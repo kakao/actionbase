@@ -1,7 +1,7 @@
 package com.kakao.actionbase.v2.engine.storage.hbase
 
-import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory
-import com.kakao.actionbase.v2.engine.storage.StorageBuckets
+import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
+import com.kakao.actionbase.engine.storage.HBaseTablesProvider
 
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.LoggerFactory
@@ -31,25 +31,15 @@ data class HBaseOptions(
     private fun getEffectiveNamespace(): String = namespace.ifEmpty { DefaultStorageBackendFactory.defaultNamespace }
 
     /**
-     * Returns StorageBuckets for the configured namespace and tableName.
-     * This is the preferred method for new code.
+     * Returns HBaseTables for Label implementations that need direct HBase table access.
      */
-    fun getBuckets(): Mono<StorageBuckets> {
-        val effectiveNs = getEffectiveNamespace()
-        logger.debug("Using StorageBackend for tableName: {}", tableName)
-        return DefaultStorageBackendFactory.INSTANCE.getBucket(effectiveNs, tableName).cache()
-    }
-
-    /**
-     * Returns HBaseTables for backward compatibility with existing Label implementations.
-     * @deprecated Use getBuckets() instead
-     */
-    @Deprecated("Use getBuckets() instead", ReplaceWith("getBuckets()"))
-    @Suppress("DEPRECATION")
     fun getTables(): Mono<HBaseTables> {
         val effectiveNs = getEffectiveNamespace()
         logger.debug("Using StorageBackend (HBaseTables) for tableName: {}", tableName)
-        return DefaultStorageBackendFactory.INSTANCE.getTable(effectiveNs, tableName).cache()
+        val provider =
+            DefaultStorageBackendFactory.INSTANCE as? HBaseTablesProvider
+                ?: throw IllegalStateException("StorageBackend does not support HBaseTables")
+        return provider.getHBaseTables(effectiveNs, tableName).cache()
     }
 
     companion object {

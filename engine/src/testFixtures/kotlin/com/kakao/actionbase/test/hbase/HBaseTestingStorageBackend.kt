@@ -1,9 +1,11 @@
 package com.kakao.actionbase.test.hbase
 
+import com.kakao.actionbase.engine.storage.HBaseTablesProvider
 import com.kakao.actionbase.engine.storage.StorageBackend
 import com.kakao.actionbase.engine.storage.StorageTable
 import com.kakao.actionbase.engine.storage.hbase.HBaseStorageTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 
 import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client.AsyncConnection
@@ -17,7 +19,8 @@ import reactor.core.publisher.Mono
 class HBaseTestingStorageBackend(
     private val connectionMono: Mono<AsyncConnection>,
     private val defaultNamespace: String,
-) : StorageBackend {
+) : StorageBackend,
+    HBaseTablesProvider {
     override fun getStorageTable(
         namespace: String,
         name: String,
@@ -28,6 +31,19 @@ class HBaseTestingStorageBackend(
             val asyncTable = conn.getTable(tableName)
             val hbaseTable = HBaseTable.create(asyncTable)
             HBaseStorageTable(hbaseTable)
+        }
+    }
+
+    override fun getHBaseTables(
+        namespace: String,
+        name: String,
+    ): Mono<HBaseTables> {
+        val effectiveNs = namespace.ifEmpty { defaultNamespace }
+        return connectionMono.map { conn ->
+            val tableName = TableName.valueOf(effectiveNs, name)
+            val asyncTable = conn.getTable(tableName)
+            val hbaseTable = HBaseTable.create(asyncTable)
+            HBaseTables(hbaseTable, hbaseTable)
         }
     }
 

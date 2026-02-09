@@ -1,9 +1,11 @@
 package com.kakao.actionbase.engine.storage.hbase
 
+import com.kakao.actionbase.engine.storage.HBaseTablesProvider
 import com.kakao.actionbase.engine.storage.StorageBackend
 import com.kakao.actionbase.engine.storage.StorageTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import com.kakao.actionbase.v2.engine.storage.hbase.impl.NewMockTable
 
 import org.apache.hadoop.hbase.TableName
@@ -17,13 +19,23 @@ import reactor.core.publisher.Mono
  *
  * Each namespace + name combination gets its own isolated table.
  */
-class MockHBaseStorageBackend : StorageBackend {
+class MockHBaseStorageBackend :
+    StorageBackend,
+    HBaseTablesProvider {
     override fun getStorageTable(
         namespace: String,
         name: String,
     ): Mono<StorageTable> {
         val hbaseTable = createMockHBaseTable(namespace, name)
         return Mono.just(HBaseStorageTable(hbaseTable))
+    }
+
+    override fun getHBaseTables(
+        namespace: String,
+        name: String,
+    ): Mono<HBaseTables> {
+        val hbaseTable = createMockHBaseTable(namespace, name)
+        return Mono.just(HBaseTables(hbaseTable, hbaseTable))
     }
 
     override fun close() {

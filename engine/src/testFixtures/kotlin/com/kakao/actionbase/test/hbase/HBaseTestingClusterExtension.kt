@@ -1,7 +1,6 @@
 package com.kakao.actionbase.test.hbase
 
 import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
-import com.kakao.actionbase.v2.engine.storage.DefaultStorageBackendFactory as V2DefaultStorageBackendFactory
 
 import org.apache.hadoop.hbase.client.AsyncConnection
 import org.apache.hadoop.hbase.client.AsyncTable
@@ -27,7 +26,6 @@ class HBaseTestingClusterExtension :
 
     override fun beforeAll(context: ExtensionContext) {
         HBaseTestingCluster.startIfNeeded()
-        V2DefaultStorageBackendFactory.initialize(mapOf("type" to "embedded", "namespace" to "ab_test"))
         // Initialize DefaultStorageBackendFactory with the HBase testing cluster (idempotent)
         val testingBackend = HBaseTestingStorageBackend(Mono.just(HBaseTestingCluster.asyncConnection), "ab_test")
         DefaultStorageBackendFactory.initialize(testingBackend, "ab_test")

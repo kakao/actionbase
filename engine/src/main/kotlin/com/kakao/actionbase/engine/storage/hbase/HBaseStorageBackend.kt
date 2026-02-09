@@ -1,12 +1,15 @@
 package com.kakao.actionbase.engine.storage.hbase
 
+import com.kakao.actionbase.engine.storage.HBaseTablesProvider
 import com.kakao.actionbase.engine.storage.StorageBackend
 import com.kakao.actionbase.engine.storage.StorageTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.TableName
+import org.apache.hadoop.hbase.client.AsyncAdmin
 import org.apache.hadoop.hbase.client.AsyncConnection
 import org.apache.hadoop.hbase.client.ConnectionFactory
 import org.apache.hadoop.security.UserGroupInformation
@@ -17,7 +20,8 @@ import reactor.core.scheduler.Schedulers
 
 class HBaseStorageBackend private constructor(
     private val connectionMono: Mono<AsyncConnection>,
-) : StorageBackend {
+) : StorageBackend,
+    HBaseTablesProvider {
     override fun getStorageTable(
         namespace: String,
         name: String,
@@ -27,6 +31,18 @@ class HBaseStorageBackend private constructor(
             val hbaseTable = HBaseTable.create(table)
             HBaseStorageTable(hbaseTable)
         }
+
+    override fun getHBaseTables(
+        namespace: String,
+        name: String,
+    ): Mono<HBaseTables> =
+        connectionMono.map { conn ->
+            val table = conn.getTable(TableName.valueOf(namespace, name))
+            val hbaseTable = HBaseTable.create(table)
+            HBaseTables(hbaseTable, hbaseTable)
+        }
+
+    fun getAdminMono(): Mono<AsyncAdmin> = connectionMono.map { it.admin }.cache()
 
     override fun close() {
         connectionMono.block()?.close()
