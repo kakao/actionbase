@@ -5,7 +5,6 @@ import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.metadata.MutationModeContext
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
@@ -181,11 +180,14 @@ class V3MutationServiceAsyncSpec :
         fun verifyWal(
             tableName: EntityName,
             expectedSize: Int,
-            expectedMode: MutationModeContext,
+            queue: Boolean,
+            requestMode: MutationMode?,
         ) {
             val walActual = wal.readWal().filter { it.label == tableName }
             walActual.size shouldBe expectedSize
-            walActual.all { it.mode == expectedMode } shouldBe true
+            walActual.all { it.mode.queue == queue } shouldBe true
+            walActual.all { it.mode.l == MutationMode.ASYNC } shouldBe true
+            walActual.all { it.mode.r == requestMode } shouldBe true
         }
 
         fun verifyCdc(
@@ -216,17 +218,13 @@ class V3MutationServiceAsyncSpec :
             val request = mapper.readValue<MultiEdgeBulkMutationRequest>(multiEdgeRequestString)
 
             v3MutationService
-                .mutateMultiEdge(
-                    multiEdgeTableName.service,
-                    multiEdgeTableName.nameNotNull,
-                    request,
-                    mode = MutationMode.SYNC,
-                ).test()
+                .mutateMultiEdge(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, request, mode = MutationMode.SYNC)
+                .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1},{"id":100001,"status":"CREATED","count":1},{"id":100002,"status":"CREATED","count":1}]}"""
                 }.verifyComplete()
 
-            verifyWal(multiEdgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = MutationMode.SYNC, global = null, internal = null))
+            verifyWal(multiEdgeTableName, 3, queue = false, MutationMode.SYNC)
             verifyCdc(multiEdgeTableName, 3)
 
             v3QueryService
@@ -246,7 +244,7 @@ class V3MutationServiceAsyncSpec :
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"QUEUED","count":1},{"id":100001,"status":"QUEUED","count":1},{"id":100002,"status":"QUEUED","count":1}]}"""
                 }.verifyComplete()
 
-            verifyWal(multiEdgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = null, global = null, internal = null))
+            verifyWal(multiEdgeTableName, 3, queue = true, null)
             verifyCdc(multiEdgeTableName)
             verifyEmptyQuery(multiEdgeTableName, listOf(100000L), listOf(100000L))
         }
@@ -261,7 +259,7 @@ class V3MutationServiceAsyncSpec :
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"QUEUED","count":1},{"source":1,"target":2,"status":"QUEUED","count":2}]}"""
                 }.verifyComplete()
 
-            verifyWal(edgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = null, global = null, internal = null))
+            verifyWal(edgeTableName, 3, queue = true, null)
             verifyCdc(edgeTableName)
             verifyEmptyQuery(edgeTableName, listOf(1L), listOf(0L))
         }
@@ -276,7 +274,7 @@ class V3MutationServiceAsyncSpec :
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"CREATED","count":1},{"source":1,"target":2,"status":"CREATED","count":2}]}"""
                 }.verifyComplete()
 
-            verifyWal(edgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = MutationMode.SYNC, global = null, internal = null))
+            verifyWal(edgeTableName, 3, queue = false, MutationMode.SYNC)
             verifyCdc(edgeTableName, 2)
 
             v3QueryService
@@ -287,56 +285,6 @@ class V3MutationServiceAsyncSpec :
 
             v3QueryService
                 .gets(edgeTableName.service, edgeTableName.nameNotNull, listOf(1L), listOf(0L))
-                .test()
-                .assertNext { it.edges.size shouldBe 1 }
-                .verifyComplete()
-        }
-
-        "ASYNC EDGE table with internal=SYNC produces WAL and CDC" {
-            val request = mapper.readValue<EdgeBulkMutationRequest>(edgeRequestString)
-
-            v3MutationService
-                .internalMutateEdge(edgeTableName.service, edgeTableName.nameNotNull, request, internal = MutationMode.SYNC)
-                .test()
-                .assertNext {
-                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"CREATED","count":1},{"source":1,"target":2,"status":"CREATED","count":2}]}"""
-                }.verifyComplete()
-
-            verifyWal(edgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = null, global = null, internal = MutationMode.SYNC))
-            verifyCdc(edgeTableName, 2)
-
-            v3QueryService
-                .gets(edgeTableName.service, edgeTableName.nameNotNull, listOf(1L), listOf(2L))
-                .test()
-                .assertNext { it.edges.size shouldBe 1 }
-                .verifyComplete()
-
-            v3QueryService
-                .gets(edgeTableName.service, edgeTableName.nameNotNull, listOf(1L), listOf(0L))
-                .test()
-                .assertNext { it.edges.size shouldBe 1 }
-                .verifyComplete()
-        }
-
-        "ASYNC MULTI_EDGE table with internal=SYNC produces WAL and CDC" {
-            val request = mapper.readValue<MultiEdgeBulkMutationRequest>(multiEdgeRequestString)
-
-            v3MutationService
-                .internalMutateMultiEdge(
-                    multiEdgeTableName.service,
-                    multiEdgeTableName.nameNotNull,
-                    request,
-                    internal = MutationMode.SYNC,
-                ).test()
-                .assertNext {
-                    mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1},{"id":100001,"status":"CREATED","count":1},{"id":100002,"status":"CREATED","count":1}]}"""
-                }.verifyComplete()
-
-            verifyWal(multiEdgeTableName, 3, MutationModeContext.of(table = MutationMode.ASYNC, request = null, global = null, internal = MutationMode.SYNC))
-            verifyCdc(multiEdgeTableName, 3)
-
-            v3QueryService
-                .gets(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, listOf(100000L), listOf(100000L))
                 .test()
                 .assertNext { it.edges.size shouldBe 1 }
                 .verifyComplete()

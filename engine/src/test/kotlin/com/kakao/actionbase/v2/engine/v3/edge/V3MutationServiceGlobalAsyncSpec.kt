@@ -1,11 +1,12 @@
 package com.kakao.actionbase.v2.engine.v3.edge
 
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
+import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.GraphConfig
 import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.metadata.MutationModeContext
+import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
@@ -26,12 +27,18 @@ class V3MutationServiceGlobalAsyncSpec :
     StringSpec({
 
         val database = GraphFixtures.serviceName
-        val table = "sync_edge_for_global_test"
-        val syncTableName = EntityName(database, table)
+
+        val syncEdgeTableName = "sync_edge"
+        val syncMultiEdgeTableName = "sync_multi_edge"
+        val asyncEdgeTableName = "async_edge"
+        val asyncMultiEdgeTableName = "async_multi_edge"
+
+        lateinit var syncEdgeTable: Label
+        lateinit var syncMultiEdgeTable: Label
+        lateinit var asyncEdgeTable: Label
+        lateinit var asyncMultiEdgeTable: Label
 
         lateinit var graph: Graph
-        lateinit var wal: InMemoryWal
-        lateinit var cdc: InMemoryCdc
         lateinit var v3MutationService: V3MutationService
         lateinit var v3QueryService: V3QueryService
 
@@ -41,17 +48,19 @@ class V3MutationServiceGlobalAsyncSpec :
                     configBuilder = GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC),
                     withTestData = false,
                 )
-            wal = graph.wal as InMemoryWal
-            cdc = graph.cdc as InMemoryCdc
 
             graph.serviceDdl
                 .create(EntityName.fromOrigin(database), ServiceCreateRequest(desc = "test service"))
                 .block()
-            graph.labelDdl
-                .create(
-                    syncTableName,
-                    mapper.readValue<LabelCreateRequest>(syncEdgeDescriptor),
-                ).block()
+            graph.labelDdl.create(EntityName(database, syncEdgeTableName), mapper.readValue<LabelCreateRequest>(syncEdgeDescriptor)).block()
+            graph.labelDdl.create(EntityName(database, syncMultiEdgeTableName), mapper.readValue<LabelCreateRequest>(syncMultiEdgeDescriptor)).block()
+            graph.labelDdl.create(EntityName(database, asyncEdgeTableName), mapper.readValue<LabelCreateRequest>(asyncEdgeDescriptor)).block()
+            graph.labelDdl.create(EntityName(database, asyncMultiEdgeTableName), mapper.readValue<LabelCreateRequest>(asyncMultiEdgeDescriptor)).block()
+
+            syncEdgeTable = graph.getLabel(EntityName(database, syncEdgeTableName))
+            syncMultiEdgeTable = graph.getLabel(EntityName(database, syncMultiEdgeTableName))
+            asyncEdgeTable = graph.getLabel(EntityName(database, asyncEdgeTableName))
+            asyncMultiEdgeTable = graph.getLabel(EntityName(database, asyncMultiEdgeTableName))
 
             v3MutationService = V3MutationService(graph)
             v3QueryService = V3QueryService(graph)
@@ -59,25 +68,27 @@ class V3MutationServiceGlobalAsyncSpec :
 
         afterTest {
             graph.close()
-            wal.init()
-            cdc.init()
+            (graph.wal as InMemoryWal).init()
+            (graph.cdc as InMemoryCdc).init()
         }
 
         fun verifyWal(
-            tableName: EntityName,
+            graph: Graph,
+            table: Label,
             expectedSize: Int,
-            expectedMode: MutationModeContext,
+            queue: Boolean,
         ) {
-            val walActual = wal.readWal().filter { it.label == tableName }
+            val walActual = (graph.wal as InMemoryWal).readWal().filter { it.label == table.name }
             walActual.size shouldBe expectedSize
-            walActual.all { it.mode == expectedMode } shouldBe true
+            walActual.all { it.mode.queue == queue } shouldBe true
         }
 
         fun verifyCdc(
-            tableName: EntityName,
+            graph: Graph,
+            table: Label,
             expectedSize: Int = 0,
         ) {
-            val cdcActual = cdc.readCdc().filter { it.label == tableName }
+            val cdcActual = (graph.cdc as InMemoryCdc).readCdc().filter { it.label == table.name }
             if (expectedSize == 0) {
                 cdcActual.shouldBeEmpty()
             } else {
@@ -85,19 +96,9 @@ class V3MutationServiceGlobalAsyncSpec :
             }
         }
 
-        fun verifyEmptyQuery(
-            tableName: EntityName,
-            sources: List<Long>,
-            targets: List<Long>,
-        ) {
-            v3QueryService
-                .gets(tableName.service, tableName.nameNotNull, sources, targets)
-                .test()
-                .assertNext { it.edges.size shouldBe 0 }
-                .verifyComplete()
-        }
+        // ---- scenario 1: global=ASYNC overrides table ----
 
-        "global=ASYNC makes SYNC table queue mutations" {
+        "global=ASYNC overrides SYNC EDGE table" {
             val request =
                 mapper.readValue<EdgeBulkMutationRequest>(
                     """
@@ -110,41 +111,166 @@ class V3MutationServiceGlobalAsyncSpec :
                 )
 
             v3MutationService
-                .mutateEdge(database, table, request)
+                .mutateEdge(database, syncEdgeTableName, request)
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"QUEUED","count":1}]}"""
                 }.verifyComplete()
 
-            verifyWal(syncTableName, 1, MutationModeContext.of(table = MutationMode.SYNC, request = null, global = MutationMode.ASYNC, internal = null))
-            verifyCdc(syncTableName)
-            verifyEmptyQuery(syncTableName, listOf(1000L), listOf(9000L))
+            verifyWal(graph, syncEdgeTable, 1, queue = true)
+            verifyCdc(graph, syncEdgeTable)
+
+            v3QueryService
+                .gets(database, syncEdgeTableName, listOf(1000L), listOf(9000L))
+                .test()
+                .assertNext { it.edges.size shouldBe 0 }
+                .verifyComplete()
         }
 
-        "internal=SYNC overrides global=ASYNC - mutations are written synchronously" {
+        "global=ASYNC overrides SYNC MULTI_EDGE table" {
             val request =
-                mapper.readValue<EdgeBulkMutationRequest>(
+                mapper.readValue<MultiEdgeBulkMutationRequest>(
                     """
                     {
                       "mutations": [
-                        {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"permission": "na", "createdAt": 10}}}
+                        {"type": "INSERT", "edge": {"version": 10, "id": 100000, "source": 1, "target": 2, "properties": {"paidAt": 1234567890, "productId": 200}}}
                       ]
                     }
                     """.trimIndent(),
                 )
 
             v3MutationService
-                .internalMutateEdge(database, table, request, internal = MutationMode.SYNC)
+                .mutateMultiEdge(database, syncMultiEdgeTableName, request)
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"QUEUED","count":1}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, syncMultiEdgeTable, 1, queue = true)
+            verifyCdc(graph, syncMultiEdgeTable)
+
+            v3QueryService
+                .gets(database, syncMultiEdgeTableName, listOf(100000L), listOf(100000L))
+                .test()
+                .assertNext { it.edges.size shouldBe 0 }
+                .verifyComplete()
+        }
+
+        // ---- scenario 2: global=ASYNC overrides request=SYNC ----
+
+        "global=ASYNC overrides request=SYNC on ASYNC EDGE table" {
+            val request =
+                mapper.readValue<EdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"paidAt": 1234567890, "productId": 200}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            v3MutationService
+                .mutateEdge(database, asyncEdgeTableName, request, mode = MutationMode.SYNC)
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"QUEUED","count":1}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, asyncEdgeTable, 1, queue = true)
+            verifyCdc(graph, asyncEdgeTable)
+
+            v3QueryService
+                .gets(database, asyncEdgeTableName, listOf(1000L), listOf(9000L))
+                .test()
+                .assertNext { it.edges.size shouldBe 0 }
+                .verifyComplete()
+        }
+
+        "global=ASYNC overrides request=SYNC on ASYNC MULTI_EDGE table" {
+            val request =
+                mapper.readValue<MultiEdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "edge": {"version": 10, "id": 100000, "source": 1, "target": 2, "properties": {"paidAt": 1234567890, "productId": 200}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            v3MutationService
+                .mutateMultiEdge(database, asyncMultiEdgeTableName, request, mode = MutationMode.SYNC)
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"QUEUED","count":1}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, asyncMultiEdgeTable, 1, queue = true)
+            verifyCdc(graph, asyncMultiEdgeTable)
+
+            v3QueryService
+                .gets(database, asyncMultiEdgeTableName, listOf(100000L), listOf(100000L))
+                .test()
+                .assertNext { it.edges.size shouldBe 0 }
+                .verifyComplete()
+        }
+
+        // ---- scenario 3: internal=SYNC overrides global=ASYNC ----
+
+        "internal=SYNC overrides global=ASYNC on ASYNC EDGE table" {
+            val request =
+                mapper.readValue<EdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"paidAt": 1234567890, "productId": 200}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            v3MutationService
+                .internalMutateEdge(database, asyncEdgeTableName, request, internal = MutationMode.SYNC)
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"CREATED","count":1}]}"""
                 }.verifyComplete()
 
-            verifyWal(syncTableName, 1, MutationModeContext.of(table = MutationMode.SYNC, request = null, global = MutationMode.ASYNC, internal = MutationMode.SYNC))
-            verifyCdc(syncTableName, 1)
+            verifyWal(graph, asyncEdgeTable, 1, queue = false)
+            verifyCdc(graph, asyncEdgeTable, 1)
 
             v3QueryService
-                .gets(database, table, listOf(1000L), listOf(9000L))
+                .gets(database, asyncEdgeTableName, listOf(1000L), listOf(9000L))
+                .test()
+                .assertNext { it.edges.size shouldBe 1 }
+                .verifyComplete()
+        }
+
+        "internal=SYNC overrides global=ASYNC on ASYNC MULTI_EDGE table" {
+            val request =
+                mapper.readValue<MultiEdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "edge": {"version": 10, "id": 100000, "source": 1, "target": 2, "properties": {"paidAt": 1234567890, "productId": 200}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            v3MutationService
+                .internalMutateMultiEdge(database, asyncMultiEdgeTableName, request, internal = MutationMode.SYNC)
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, asyncMultiEdgeTable, 1, queue = false)
+            verifyCdc(graph, asyncMultiEdgeTable, 1)
+
+            v3QueryService
+                .gets(database, asyncMultiEdgeTableName, listOf(100000L), listOf(100000L))
                 .test()
                 .assertNext { it.edges.size shouldBe 1 }
                 .verifyComplete()
@@ -173,6 +299,79 @@ class V3MutationServiceGlobalAsyncSpec :
               ],
               "event": false,
               "readOnly": true
+            }
+            """.trimIndent()
+
+        private val syncMultiEdgeDescriptor =
+            """
+            {
+              "desc": "sync multi edge for global mode test",
+              "type": "MULTI_EDGE",
+              "schema": {
+                "src": {"type": "LONG", "desc": "sender"},
+                "tgt": {"type": "LONG", "desc": "receiver"},
+                "fields": [
+                  {"name": "_id", "type": "LONG", "nullable": false, "desc": "order.id"},
+                  {"name": "paidAt", "type": "LONG", "nullable": false, "desc": "payment time"},
+                  {"name": "productId", "type": "LONG", "nullable": false, "desc": "product id"}
+                ]
+              },
+              "dirType": "BOTH",
+              "storage": "${GraphFixtures.datastoreStorage}",
+              "indices": [
+                {"name": "paid_at_desc", "fields": [{"name": "paidAt", "order": "DESC"}], "desc": "recently paid first"}
+              ],
+              "event": false,
+              "readOnly": true
+            }
+            """.trimIndent()
+
+        private val asyncEdgeDescriptor =
+            """
+            {
+              "desc": "async edge for global mode test",
+              "type": "INDEXED",
+              "schema": {
+                "src": {"type": "LONG", "desc": "sender"},
+                "tgt": {"type": "LONG", "desc": "receiver"},
+                "fields": [
+                  {"name": "paidAt", "type": "LONG", "nullable": false, "desc": "payment time"},
+                  {"name": "productId", "type": "LONG", "nullable": false, "desc": "product id"}
+                ]
+              },
+              "dirType": "BOTH",
+              "storage": "${GraphFixtures.datastoreStorage}",
+              "indices": [
+                {"name": "paid_at_desc", "fields": [{"name": "paidAt", "order": "DESC"}], "desc": "recently paid first"}
+              ],
+              "event": false,
+              "readOnly": true,
+              "mode": "ASYNC"
+            }
+            """.trimIndent()
+
+        private val asyncMultiEdgeDescriptor =
+            """
+            {
+              "desc": "async multi edge for global mode test",
+              "type": "MULTI_EDGE",
+              "schema": {
+                "src": {"type": "LONG", "desc": "sender"},
+                "tgt": {"type": "LONG", "desc": "receiver"},
+                "fields": [
+                  {"name": "_id", "type": "LONG", "nullable": false, "desc": "order.id"},
+                  {"name": "paidAt", "type": "LONG", "nullable": false, "desc": "payment time"},
+                  {"name": "productId", "type": "LONG", "nullable": false, "desc": "product id"}
+                ]
+              },
+              "dirType": "BOTH",
+              "storage": "${GraphFixtures.datastoreStorage}",
+              "indices": [
+                {"name": "paid_at_desc", "fields": [{"name": "paidAt", "order": "DESC"}], "desc": "recently paid first"}
+              ],
+              "event": false,
+              "readOnly": true,
+              "mode": "ASYNC"
             }
             """.trimIndent()
     }
