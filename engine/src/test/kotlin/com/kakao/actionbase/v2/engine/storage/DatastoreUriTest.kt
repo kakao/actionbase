@@ -89,11 +89,29 @@ class DatastoreUriTest {
         }
 
         @Test
-        fun `accepts hyphen and underscore in names`() {
-            val (namespace, tableName) = DatastoreUri.parse("datastore://my-namespace_1/my_table-2")
+        fun `accepts underscore and digits in names`() {
+            val (namespace, tableName) = DatastoreUri.parse("datastore://my_namespace_1/my_table_2")
 
-            assertEquals("my-namespace_1", namespace)
-            assertEquals("my_table-2", tableName)
+            assertEquals("my_namespace_1", namespace)
+            assertEquals("my_table_2", tableName)
+        }
+
+        @Test
+        fun `throws for uppercase characters`() {
+            assertThrows<IllegalArgumentException> {
+                DatastoreUri.parse("datastore://MyNamespace/table")
+            }.also {
+                assert(it.message!!.contains("Invalid namespace"))
+            }
+        }
+
+        @Test
+        fun `throws for hyphen in name`() {
+            assertThrows<IllegalArgumentException> {
+                DatastoreUri.parse("datastore://namespace/my-table")
+            }.also {
+                assert(it.message!!.contains("Invalid table name"))
+            }
         }
     }
 }
