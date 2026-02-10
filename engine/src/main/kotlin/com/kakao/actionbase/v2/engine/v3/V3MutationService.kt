@@ -139,66 +139,56 @@ class V3MutationService(
         errorStatus: (K) -> S,
         toResponse: (List<S>) -> R,
     ): Mono<R> =
-        resolveMutationContextMono(database, alias, sync, requestContext)
+        Mono
+            .fromCallable { resolveMutationContext(database, alias, sync, requestContext) }
             .flatMap { ctx ->
-                val tableBinding = ctx.tableBinding
-                createEventFlux(ctx, mutations, tableBinding.schema)
-                    .groupAndMutate(
-                        ctx = ctx,
-                        mutate = { key, events -> mutate(tableBinding, key, events) },
-                        stateToV2HashEdge = stateToV2HashEdge,
-                        queuedStatus = queuedStatus,
-                        errorStatus = errorStatus,
-                    ).map(toResponse)
+                val tb = ctx.tableBinding
+                createEventFlux(ctx, mutations, tb.schema)
+                    .groupBy { it.id }
+                    .flatMap { groupedFlux ->
+                        val key = groupedFlux.key()
+                        if (ctx.mutationMode.queue) {
+                            groupedFlux
+                                .collectList()
+                                .map { group -> queuedStatus(key, group.size) }
+                        } else {
+                            groupedFlux
+                                .collectList()
+                                .flatMap { group ->
+                                    mutateGroupWithCdc(ctx, key, group, { k, events -> mutate(tb, k, events) }, stateToV2HashEdge, errorStatus)
+                                }.subscribeOn(Schedulers.boundedElastic())
+                        }
+                    }.collectList()
+                    .map(toResponse)
             }.timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
 
-    private fun resolveMutationContextMono(
-        database: String,
-        alias: String,
-        sync: MutationMode?,
-        requestContext: RequestContext,
-    ): Mono<MutationContext> = Mono.fromCallable { resolveMutationContext(database, alias, sync, requestContext) }
-
-    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> Flux<E>.groupAndMutate(
+    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> mutateGroupWithCdc(
         ctx: MutationContext,
+        key: K,
+        group: List<E>,
         mutate: (K, List<Event>) -> Mono<S>,
         stateToV2HashEdge: (State, K) -> HashEdge?,
-        queuedStatus: (K, Int) -> S,
         errorStatus: (K) -> S,
-    ): Mono<List<S>> =
-        this
-            .groupBy { it.id }
-            .flatMap { groupedFlux ->
-                val key = groupedFlux.key()
-                if (ctx.mutationMode.queue) {
-                    groupedFlux
-                        .collectList()
-                        .map { group -> queuedStatus(key, group.size) }
-                } else {
-                    groupedFlux
-                        .collectList()
-                        .flatMap { group ->
-                            val sortedGroup = group.sortedBy { it.event.version }
-                            val last = sortedGroup.last()
-                            mutate(key, sortedGroup.map { it.event })
-                                .doOnNext { status ->
-                                    writeCdc(
-                                        ctx,
-                                        last.toTraceEdge(),
-                                        last.event.type,
-                                        status.status,
-                                        stateToV2HashEdge(status.before, key),
-                                        stateToV2HashEdge(status.after, key),
-                                        status.acc,
-                                    )
-                                }.onErrorResume {
-                                    handleMutationError(it, ctx.label)
-                                    Mono.just(errorStatus(key))
-                                }
-                        }.subscribeOn(Schedulers.boundedElastic())
-                }
-            }.collectList()
+    ): Mono<S> {
+        val sortedGroup = group.sortedBy { it.event.version }
+        val last = sortedGroup.last()
+        return mutate(key, sortedGroup.map { it.event })
+            .doOnNext { status ->
+                writeCdc(
+                    ctx,
+                    last.toTraceEdge(),
+                    last.event.type,
+                    status.status,
+                    stateToV2HashEdge(status.before, key),
+                    stateToV2HashEdge(status.after, key),
+                    status.acc,
+                )
+            }.onErrorResume {
+                handleMutationError(it, ctx.label)
+                Mono.just(errorStatus(key))
+            }
+    }
 
     private fun <E : MutationEvent<K>, K : Any> createEventFlux(
         ctx: MutationContext,
