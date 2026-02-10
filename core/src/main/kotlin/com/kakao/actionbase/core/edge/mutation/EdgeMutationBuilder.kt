@@ -22,7 +22,7 @@ object EdgeMutationBuilder {
     val MULTI_EDGE_SOURCE_CODE = XXHash32Wrapper.default.stringHash(MULTI_EDGE_SOURCE_FIELD_NAME)
     val MULTI_EDGE_TARGET_CODE = XXHash32Wrapper.default.stringHash(MULTI_EDGE_TARGET_FIELD_NAME)
 
-    fun build(
+    fun buildForUniqueEdge(
         before: EdgeStateRecord,
         after: EdgeStateRecord,
         directionType: DirectionType,

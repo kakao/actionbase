@@ -28,7 +28,7 @@ class EdgeMutationBuilderTest {
         @Test
         fun `IDLE when before equals after`() {
             val record = edgeRecord(source = "userA", target = "postX", active = true)
-            val result = EdgeMutationBuilder.build(record, record, DirectionType.BOTH, emptyList(), emptyList())
+            val result = EdgeMutationBuilder.buildForUniqueEdge(record, record, DirectionType.BOTH, emptyList(), emptyList())
 
             assertEquals("IDLE", result.status)
             assertEquals(0L, result.acc)
@@ -42,7 +42,7 @@ class EdgeMutationBuilderTest {
         fun `CREATED when inactive to active`() {
             val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
             val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
-            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, listOf(versionIndex), emptyList())
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, listOf(versionIndex), emptyList())
 
             assertEquals("CREATED", result.status)
             assertEquals(1L, result.acc)
@@ -55,7 +55,7 @@ class EdgeMutationBuilderTest {
         fun `DELETED uses after record for count and has acc -1`() {
             val before = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
             val after = edgeRecord(source = "userA", target = "postX", active = false, version = 2)
-            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, listOf(versionIndex), emptyList())
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, listOf(versionIndex), emptyList())
 
             assertEquals("DELETED", result.status)
             assertEquals(-1L, result.acc)
@@ -74,7 +74,7 @@ class EdgeMutationBuilderTest {
         fun `UPDATED produces no count records for Edge`() {
             val before = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
             val after = edgeRecord(source = "userA", target = "postX", active = true, version = 2)
-            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, listOf(versionIndex), emptyList())
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, listOf(versionIndex), emptyList())
 
             assertEquals("UPDATED", result.status)
             assertEquals(0L, result.acc)
@@ -85,7 +85,7 @@ class EdgeMutationBuilderTest {
         fun `CREATED index directedSource and directedTarget follow key source-target swap`() {
             val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
             val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
-            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, listOf(versionIndex), emptyList())
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, listOf(versionIndex), emptyList())
 
             val outIndex = result.createIndexRecords.first { it.key.prefix.direction == Direction.OUT }
             assertEquals("userA", outIndex.key.prefix.directedSource)
@@ -101,7 +101,7 @@ class EdgeMutationBuilderTest {
             val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
             val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
             val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
-            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
 
             assertEquals("CREATED", result.status)
             assertEquals(2, result.groupRecords.size)
@@ -118,7 +118,7 @@ class EdgeMutationBuilderTest {
             val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
             val before = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
             val after = edgeRecord(source = "userA", target = "postX", active = false, version = 2)
-            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
 
             assertEquals("DELETED", result.status)
             assertEquals(2, result.groupRecords.size)
@@ -130,7 +130,7 @@ class EdgeMutationBuilderTest {
             val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
             val before = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
             val after = edgeRecord(source = "userA", target = "postX", active = true, version = 2)
-            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countGroup))
 
             assertEquals("UPDATED", result.status)
             // 2 directions x 2 (decrement + increment) = 4 group records
@@ -146,7 +146,7 @@ class EdgeMutationBuilderTest {
             val sumGroup = Group(group = "sum_group", type = GroupType.SUM, fields = listOf(Group.Field("version")), valueField = "version")
             val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
             val after = edgeRecord(source = "userA", target = "postX", active = true, version = 5)
-            val result = EdgeMutationBuilder.build(before, after, DirectionType.BOTH, emptyList(), listOf(sumGroup))
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, emptyList(), listOf(sumGroup))
 
             assertEquals("CREATED", result.status)
             assertEquals(2, result.groupRecords.size)
@@ -296,7 +296,7 @@ class EdgeMutationBuilderTest {
             val edgeRecord = edgeRecord(source = "a", target = "b", active = true)
             val multiRecord = multiEdgeRecord(id = "id1", source = "a", target = "b", active = true)
             assertEquals(
-                EdgeMutationBuilder.build(edgeRecord, edgeRecord, DirectionType.BOTH, emptyList(), emptyList()).status,
+                EdgeMutationBuilder.buildForUniqueEdge(edgeRecord, edgeRecord, DirectionType.BOTH, emptyList(), emptyList()).status,
                 EdgeMutationBuilder.buildForMultiEdge(multiRecord, multiRecord, DirectionType.BOTH, emptyList(), emptyList()).status,
             )
 
@@ -306,7 +306,7 @@ class EdgeMutationBuilderTest {
             val multiInactiveBefore = multiEdgeRecord(id = "id1", source = "a", target = "b", active = false, version = 0)
             val multiActiveAfter = multiEdgeRecord(id = "id1", source = "a", target = "b", active = true, version = 1)
             assertEquals(
-                EdgeMutationBuilder.build(inactiveBefore, activeAfter, DirectionType.BOTH, emptyList(), emptyList()).status,
+                EdgeMutationBuilder.buildForUniqueEdge(inactiveBefore, activeAfter, DirectionType.BOTH, emptyList(), emptyList()).status,
                 EdgeMutationBuilder.buildForMultiEdge(multiInactiveBefore, multiActiveAfter, DirectionType.BOTH, emptyList(), emptyList()).status,
             )
         }
@@ -315,7 +315,7 @@ class EdgeMutationBuilderTest {
         fun `OUT direction produces single record per type`() {
             val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
             val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
-            val result = EdgeMutationBuilder.build(before, after, DirectionType.OUT, listOf(versionIndex), emptyList())
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.OUT, listOf(versionIndex), emptyList())
 
             assertEquals(1, result.createIndexRecords.size)
             assertEquals(1, result.countRecords.size)

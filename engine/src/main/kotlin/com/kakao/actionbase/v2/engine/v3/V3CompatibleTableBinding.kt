@@ -51,7 +51,7 @@ class V3CompatibleTableBinding(
             mapper = mapper,
             codeToFieldNameMap = codeToFieldNameMap,
             buildMutationRecords = { beforeRecord, afterRecord ->
-                EdgeMutationBuilder.build(beforeRecord, afterRecord, schema.direction, schema.indexes, schema.groups)
+                EdgeMutationBuilder.buildForUniqueEdge(beforeRecord, afterRecord, schema.direction, schema.indexes, schema.groups)
             },
             toStatus = { count, status, before, after, acc ->
                 EdgeMutationStatus(source, target, count, status, before, after, acc)
