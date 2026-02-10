@@ -19,7 +19,6 @@ import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationStatus
 import com.kakao.actionbase.core.edge.payload.MutationStatus
-import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.Event
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.state.State
@@ -143,7 +142,10 @@ class V3MutationService(
             .fromCallable { resolveMutationContext(database, alias, sync, requestContext) }
             .flatMap { ctx ->
                 val tb = ctx.tableBinding
-                createEventFlux(ctx, mutations, tb.schema)
+                Flux
+                    .fromIterable(mutations)
+                    .map { it.createEvent(tb.schema) }
+                    .flatMap { event -> writeWal(ctx, event.toTraceEdge(), event.event.type).thenReturn(event) }
                     .groupBy { it.id }
                     .flatMap { groupedFlux ->
                         val key = groupedFlux.key()
@@ -189,19 +191,6 @@ class V3MutationService(
                 Mono.just(errorStatus(key))
             }
     }
-
-    private fun <E : MutationEvent<K>, K : Any> createEventFlux(
-        ctx: MutationContext,
-        mutations: List<MutationEvent.Source<E>>,
-        schema: ModelSchema,
-    ): Flux<E> =
-        Flux
-            .fromIterable(mutations)
-            .map { it.createEvent(schema) }
-            .flatMap { event ->
-                writeWal(ctx, event.toTraceEdge(), event.event.type)
-                    .thenReturn(event)
-            }
 
     private fun writeWal(
         ctx: MutationContext,
