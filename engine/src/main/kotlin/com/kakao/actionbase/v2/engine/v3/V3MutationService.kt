@@ -18,7 +18,9 @@ import com.kakao.actionbase.core.edge.payload.EdgeMutationStatus
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationStatus
+import com.kakao.actionbase.core.edge.payload.MutationStatus
 import com.kakao.actionbase.core.metadata.common.ModelSchema
+import com.kakao.actionbase.core.state.Event
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.context.RequestContext
@@ -77,31 +79,17 @@ class V3MutationService(
 
         return executeMutationPipeline(
             ctx = ctx,
+            label = label,
             events = createEventFlux(ctx, request.mutations, tableBinding.schema),
             queuedStatus = { key, count ->
                 EdgeMutationStatus(key.first, key.second, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
             },
-            executeGroup = { key, group ->
-                val sortedGroup = group.sortedBy { it.event.version }
-                val last = sortedGroup.last()
-                tableBinding
-                    .mutateEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
-                    .doOnNext { status ->
-                        writeCdc(
-                            ctx,
-                            last.toTraceEdge(),
-                            last.event.type,
-                            status.status,
-                            status.before.toHashEdge(key.first, key.second),
-                            status.after.toHashEdge(key.first, key.second),
-                            status.acc,
-                        )
-                    }.onErrorResume {
-                        handleMutationError(it, label)
-                        Mono.just(
-                            EdgeMutationStatus(key.first, key.second, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0),
-                        )
-                    }
+            mutate = { key, events ->
+                tableBinding.mutateEdge(key, events, lock, encoder, tableBinding.schema.codeToName)
+            },
+            stateToHashEdge = { state, key -> state.toHashEdge(key.first, key.second) },
+            errorStatus = { key ->
+                EdgeMutationStatus(key.first, key.second, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
         ).map { statuses ->
             EdgeMutationResponse(
@@ -130,31 +118,17 @@ class V3MutationService(
 
         return executeMutationPipeline(
             ctx = ctx,
+            label = label,
             events = createEventFlux(ctx, request.mutations, tableBinding.schema),
             queuedStatus = { key, count ->
                 MultiEdgeMutationStatus(key, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
             },
-            executeGroup = { key, group ->
-                val sortedGroup = group.sortedBy { it.event.version }
-                val last = sortedGroup.last()
-                tableBinding
-                    .mutateMultiEdge(key, sortedGroup.map { it.event }, lock, encoder, tableBinding.schema.codeToName)
-                    .doOnNext { status ->
-                        writeCdc(
-                            ctx,
-                            last.toTraceEdge(),
-                            last.event.type,
-                            status.status,
-                            status.before.toHashEdge(status.before.getMultiEdgeSource(), status.before.getMultiEdgeTarget()),
-                            status.after.toHashEdge(status.after.getMultiEdgeSource(), status.after.getMultiEdgeTarget()),
-                            status.acc,
-                        )
-                    }.onErrorResume {
-                        handleMutationError(it, label)
-                        Mono.just(
-                            MultiEdgeMutationStatus(key, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0),
-                        )
-                    }
+            mutate = { key, events ->
+                tableBinding.mutateMultiEdge(key, events, lock, encoder, tableBinding.schema.codeToName)
+            },
+            stateToHashEdge = { state, _ -> state.toHashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
+            errorStatus = { key ->
+                MultiEdgeMutationStatus(key, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
         ).map { statuses ->
             MultiEdgeMutationResponse(
@@ -165,11 +139,14 @@ class V3MutationService(
         }
     }
 
-    private fun <E : MutationEvent<K>, K : Any, S : Any> executeMutationPipeline(
+    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> executeMutationPipeline(
         ctx: MutationContext,
+        label: HBaseIndexedLabel,
         events: Flux<E>,
         queuedStatus: (K, Int) -> S,
-        executeGroup: (K, List<E>) -> Mono<S>,
+        mutate: (K, List<Event>) -> Mono<S>,
+        stateToHashEdge: (State, K) -> HashEdge?,
+        errorStatus: (K) -> S,
     ): Mono<List<S>> =
         events
             .groupBy { it.id }
@@ -182,8 +159,25 @@ class V3MutationService(
                 } else {
                     groupedFlux
                         .collectList()
-                        .flatMap { group -> executeGroup(key, group) }
-                        .subscribeOn(Schedulers.boundedElastic())
+                        .flatMap { group ->
+                            val sortedGroup = group.sortedBy { it.event.version }
+                            val last = sortedGroup.last()
+                            mutate(key, sortedGroup.map { it.event })
+                                .doOnNext { status ->
+                                    writeCdc(
+                                        ctx,
+                                        last.toTraceEdge(),
+                                        last.event.type,
+                                        status.status,
+                                        stateToHashEdge(status.before, key),
+                                        stateToHashEdge(status.after, key),
+                                        status.acc,
+                                    )
+                                }.onErrorResume {
+                                    handleMutationError(it, label)
+                                    Mono.just(errorStatus(key))
+                                }
+                        }.subscribeOn(Schedulers.boundedElastic())
                 }
             }.collectList()
             .timeout(Duration.ofMillis(graph.mutationRequestTimeout))
