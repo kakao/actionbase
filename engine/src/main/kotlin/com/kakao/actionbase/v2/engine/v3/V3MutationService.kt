@@ -154,7 +154,7 @@ class V3MutationService(
             .flatMap { groupedFlux ->
                 val key = groupedFlux.key()
                 if (ctx.mutationMode.queue) {
-                    enqueueGroup(groupedFlux, key, queuedStatus)
+                    groupedFlux.collectList().map { group -> queuedStatus(key, group.size) }
                 } else {
                     mutateGroup(groupedFlux, ctx, tb, key, mutate, stateToV2HashEdge, errorStatus)
                 }
@@ -178,15 +178,6 @@ class V3MutationService(
                 ctx.requestId,
                 ctx.mutationMode,
             ).thenReturn(event)
-
-    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> enqueueGroup(
-        groupedFlux: Flux<E>,
-        key: K,
-        queuedStatus: (K, Int) -> S,
-    ): Mono<S> =
-        groupedFlux
-            .collectList()
-            .map { group -> queuedStatus(key, group.size) }
 
     private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> mutateGroup(
         groupedFlux: Flux<E>,
@@ -298,7 +289,6 @@ class V3MutationService(
                         event.properties["_target"] ?: DEFAULT_PRIMITIVE_VALUE,
                         event.properties - "_source" - "_target" + mapOf("_id" to id),
                     )
-                else -> error("Unknown MutationEvent type: $this")
             }.withTraceId(event.id)
 
         fun State.getMultiEdgeSource(): Any? = properties[EdgeMutationBuilder.MULTI_EDGE_SOURCE_FIELD_NAME]?.value

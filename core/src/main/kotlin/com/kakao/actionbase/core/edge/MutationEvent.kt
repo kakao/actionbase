@@ -3,7 +3,7 @@ package com.kakao.actionbase.core.edge
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.Event
 
-interface MutationEvent<K : Any> {
+sealed interface MutationEvent<K : Any> {
     val id: K
     val event: Event
 

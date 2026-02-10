@@ -7,5 +7,5 @@ data class EdgeEvent(
     val target: Any,
     override val event: Event,
 ) : MutationEvent<Pair<Any, Any>> {
-    override val id: Pair<Any, Any> get() = source to target
+    override val id: Pair<Any, Any> = source to target
 }
