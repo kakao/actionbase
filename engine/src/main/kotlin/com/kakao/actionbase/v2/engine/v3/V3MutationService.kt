@@ -139,8 +139,21 @@ class V3MutationService(
         toResponse: (List<S>) -> R,
     ): Mono<R> =
         Mono
-            .fromCallable { resolveMutationContext(database, alias, sync, requestContext) }
-            .flatMap { ctx ->
+            .fromCallable {
+                val aliasEntityName = EntityName(database, alias)
+                val label = graph.getLabel(aliasEntityName)
+                if (label !is HBaseIndexedLabel) {
+                    throw UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation")
+                }
+                MutationContext(
+                    aliasEntityName = aliasEntityName,
+                    label = label,
+                    mutationMode = MutationModeContext.of(label.entity.mode, sync),
+                    tableBinding = label.v3TableBinding,
+                    audit = Audit(requestContext.actor),
+                    requestId = requestContext.requestId,
+                )
+            }.flatMap { ctx ->
                 val tb = ctx.tableBinding
                 Flux
                     .fromIterable(mutations)
@@ -150,28 +163,46 @@ class V3MutationService(
                     .flatMap { groupedFlux ->
                         val key = groupedFlux.key()
                         if (ctx.mutationMode.queue) {
-                            groupedFlux
-                                .collectList()
-                                .map { group -> queuedStatus(key, group.size) }
+                            enqueueGroup(groupedFlux, key, queuedStatus)
                         } else {
-                            groupedFlux
-                                .collectList()
-                                .flatMap { group ->
-                                    val sorted = group.sortedBy { it.event.version }
-                                    val last = sorted.last()
-                                    mutate(tb, key, sorted.map { it.event })
-                                        .doOnNext { status ->
-                                            writeCdc(ctx, last.toTraceEdge(), last.event.type, status.status, stateToV2HashEdge(status.before, key), stateToV2HashEdge(status.after, key), status.acc)
-                                        }.onErrorResume {
-                                            handleMutationError(it, ctx.label)
-                                            Mono.just(errorStatus(key))
-                                        }
-                                }.subscribeOn(Schedulers.boundedElastic())
+                            mutateGroup(groupedFlux, ctx, tb, key, mutate, stateToV2HashEdge, errorStatus)
                         }
                     }.collectList()
                     .map(toResponse)
             }.timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
+
+    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> enqueueGroup(
+        groupedFlux: Flux<E>,
+        key: K,
+        queuedStatus: (K, Int) -> S,
+    ): Mono<S> =
+        groupedFlux
+            .collectList()
+            .map { group -> queuedStatus(key, group.size) }
+
+    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> mutateGroup(
+        groupedFlux: Flux<E>,
+        ctx: MutationContext,
+        tb: V3CompatibleTableBinding,
+        key: K,
+        mutate: (V3CompatibleTableBinding, K, List<Event>) -> Mono<S>,
+        stateToV2HashEdge: (State, K) -> HashEdge?,
+        errorStatus: (K) -> S,
+    ): Mono<S> =
+        groupedFlux
+            .collectList()
+            .flatMap { group ->
+                val sorted = group.sortedBy { it.event.version }
+                val last = sorted.last()
+                mutate(tb, key, sorted.map { it.event })
+                    .doOnNext { status ->
+                        writeCdc(ctx, last.toTraceEdge(), last.event.type, status.status, stateToV2HashEdge(status.before, key), stateToV2HashEdge(status.after, key), status.acc)
+                    }.onErrorResume {
+                        handleMutationError(it, ctx.label)
+                        Mono.just(errorStatus(key))
+                    }
+            }.subscribeOn(Schedulers.boundedElastic())
 
     private fun <E : MutationEvent<*>> writeWal(
         ctx: MutationContext,
@@ -196,27 +227,6 @@ class V3MutationService(
         val audit: Audit,
         val requestId: String,
     )
-
-    private fun resolveMutationContext(
-        database: String,
-        alias: String,
-        sync: MutationMode?,
-        requestContext: RequestContext,
-    ): MutationContext {
-        val aliasEntityName = EntityName(database, alias)
-        val label = graph.getLabel(aliasEntityName)
-        if (label !is HBaseIndexedLabel) {
-            throw UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation")
-        }
-        return MutationContext(
-            aliasEntityName = aliasEntityName,
-            label = label,
-            mutationMode = MutationModeContext.of(label.entity.mode, sync),
-            tableBinding = label.v3TableBinding,
-            audit = Audit(requestContext.actor),
-            requestId = requestContext.requestId,
-        )
-    }
 
     private fun writeCdc(
         ctx: MutationContext,
