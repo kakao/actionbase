@@ -99,10 +99,9 @@ class V3CompatibleTableBinding(
         with(label) {
             val eventId = events.first().id
             val compatibleEdge = Edge(0L, source, target)
-            val encodedHashEdgeKey = coder.encodeHashEdgeKey(compatibleEdge, entity.id)
             return withLock(eventId, compatibleEdge, !acquireLock) {
                 // v2
-                findHashEdge(encodedHashEdgeKey)
+                findHashEdge(coder.encodeHashEdgeKey(compatibleEdge, entity.id))
                     .map {
                         // v2 -> v3
                         decodeV2HashEdgeToState(it, mapper, codeToFieldNameMap)
