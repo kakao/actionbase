@@ -138,42 +138,36 @@ class V3MutationService(
         queuedStatus: (K, Int) -> S,
         errorStatus: (K) -> S,
         toResponse: (List<S>) -> R,
-    ): Mono<R> {
-        val ctx =
-            try {
-                resolveMutationContext(database, alias, sync, requestContext)
-            } catch (e: UnsupportedOperationException) {
-                return Mono.error(e)
-            }
-        val (_, label, _, tableBinding, _, _) = ctx
-
-        // req → events → WAL
-        val events = createEventFlux(ctx, mutations, tableBinding.schema)
-
-        // group → (queue | mutate → CDC) → response
-        return groupAndMutate(
-            ctx = ctx,
-            label = label,
-            events = events,
-            mutate = { key, eventList -> mutate(tableBinding, key, eventList) },
-            stateToV2HashEdge = stateToV2HashEdge,
-            queuedStatus = queuedStatus,
-            errorStatus = errorStatus,
-        ).map(toResponse)
-            .timeout(Duration.ofMillis(graph.mutationRequestTimeout))
+    ): Mono<R> =
+        resolveMutationContextMono(database, alias, sync, requestContext)
+            .flatMap { ctx ->
+                val tableBinding = ctx.tableBinding
+                createEventFlux(ctx, mutations, tableBinding.schema)
+                    .groupAndMutate(
+                        ctx = ctx,
+                        mutate = { key, events -> mutate(tableBinding, key, events) },
+                        stateToV2HashEdge = stateToV2HashEdge,
+                        queuedStatus = queuedStatus,
+                        errorStatus = errorStatus,
+                    ).map(toResponse)
+            }.timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
-    }
 
-    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> groupAndMutate(
+    private fun resolveMutationContextMono(
+        database: String,
+        alias: String,
+        sync: MutationMode?,
+        requestContext: RequestContext,
+    ): Mono<MutationContext> = Mono.fromCallable { resolveMutationContext(database, alias, sync, requestContext) }
+
+    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> Flux<E>.groupAndMutate(
         ctx: MutationContext,
-        label: HBaseIndexedLabel,
-        events: Flux<E>,
         mutate: (K, List<Event>) -> Mono<S>,
         stateToV2HashEdge: (State, K) -> HashEdge?,
         queuedStatus: (K, Int) -> S,
         errorStatus: (K) -> S,
     ): Mono<List<S>> =
-        events
+        this
             .groupBy { it.id }
             .flatMap { groupedFlux ->
                 val key = groupedFlux.key()
@@ -199,7 +193,7 @@ class V3MutationService(
                                         status.acc,
                                     )
                                 }.onErrorResume {
-                                    handleMutationError(it, label)
+                                    handleMutationError(it, ctx.label)
                                     Mono.just(errorStatus(key))
                                 }
                         }.subscribeOn(Schedulers.boundedElastic())
