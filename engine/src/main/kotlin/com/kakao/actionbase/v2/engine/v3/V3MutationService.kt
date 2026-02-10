@@ -91,13 +91,14 @@ class V3MutationService(
             errorStatus = { key ->
                 EdgeMutationStatus(key.first, key.second, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
-        ).map { statuses ->
-            EdgeMutationResponse(
-                statuses
-                    .map { EdgeMutationResponse.Item(source = it.source, target = it.target, count = it.count, status = it.status) }
-                    .sortedBy { "${it.source}:${it.target}" },
-            )
-        }
+            toResponse = { statuses ->
+                EdgeMutationResponse(
+                    statuses
+                        .map { EdgeMutationResponse.Item(source = it.source, target = it.target, count = it.count, status = it.status) }
+                        .sortedBy { "${it.source}:${it.target}" },
+                )
+            },
+        )
     }
 
     fun mutateMultiEdge(
@@ -130,16 +131,17 @@ class V3MutationService(
             errorStatus = { key ->
                 MultiEdgeMutationStatus(key, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
-        ).map { statuses ->
-            MultiEdgeMutationResponse(
-                statuses
-                    .map { MultiEdgeMutationResponse.Item(id = it.id, count = it.count, status = it.status) }
-                    .sortedBy { it.toString() },
-            )
-        }
+            toResponse = { statuses ->
+                MultiEdgeMutationResponse(
+                    statuses
+                        .map { MultiEdgeMutationResponse.Item(id = it.id, count = it.count, status = it.status) }
+                        .sortedBy { it.toString() },
+                )
+            },
+        )
     }
 
-    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> executeMutationPipeline(
+    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus, R> executeMutationPipeline(
         ctx: MutationContext,
         label: HBaseIndexedLabel,
         events: Flux<E>,
@@ -147,7 +149,8 @@ class V3MutationService(
         mutate: (K, List<Event>) -> Mono<S>,
         stateToHashEdge: (State, K) -> HashEdge?,
         errorStatus: (K) -> S,
-    ): Mono<List<S>> =
+        toResponse: (List<S>) -> R,
+    ): Mono<R> =
         events
             .groupBy { it.id }
             .flatMap { groupedFlux ->
@@ -180,6 +183,7 @@ class V3MutationService(
                         }.subscribeOn(Schedulers.boundedElastic())
                 }
             }.collectList()
+            .map(toResponse)
             .timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
 
