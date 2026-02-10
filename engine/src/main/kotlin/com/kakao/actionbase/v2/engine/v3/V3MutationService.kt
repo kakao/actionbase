@@ -145,7 +145,7 @@ class V3MutationService(
                 Flux
                     .fromIterable(mutations)
                     .map { it.createEvent(tb.schema) }
-                    .flatMap { event -> writeWal(ctx, event.toTraceEdge(), event.event.type).thenReturn(event) }
+                    .flatMap { writeWal(ctx, it) }
                     .groupBy { it.id }
                     .flatMap { groupedFlux ->
                         val key = groupedFlux.key()
@@ -173,20 +173,20 @@ class V3MutationService(
             }.timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
 
-    private fun writeWal(
+    private fun <E : MutationEvent<*>> writeWal(
         ctx: MutationContext,
-        traceEdge: TraceEdge,
-        eventType: EventType,
-    ): Mono<Void> =
-        graph.wal.write(
-            ctx.aliasEntityName,
-            ctx.label.name,
-            traceEdge,
-            eventType.toV2(),
-            ctx.audit,
-            ctx.requestId,
-            ctx.mutationMode,
-        )
+        event: E,
+    ): Mono<E> =
+        graph.wal
+            .write(
+                ctx.aliasEntityName,
+                ctx.label.name,
+                event.toTraceEdge(),
+                event.event.type.toV2(),
+                ctx.audit,
+                ctx.requestId,
+                ctx.mutationMode,
+            ).thenReturn(event)
 
     private data class MutationContext(
         val aliasEntityName: EntityName,
