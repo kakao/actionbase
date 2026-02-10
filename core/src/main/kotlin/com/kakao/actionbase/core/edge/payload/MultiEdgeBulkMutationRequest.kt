@@ -16,19 +16,18 @@ data class MultiEdgeBulkMutationRequest(
     ) : MutationEvent.Source<MultiEdgeEvent> {
         override fun createEvent(schema: ModelSchema): MultiEdgeEvent {
             require(schema is ModelSchema.MultiEdge) { "Expected ModelSchema.MultiEdge, but got ${schema::class.simpleName}" }
-            val multiEdgeSchema = schema
-            val id = multiEdgeSchema.id.type.cast(edge.id)
+            val id = schema.id.type.cast(edge.id)
             val additionalProperties =
                 listOfNotNull(
-                    edge.source?.let { "_source" to multiEdgeSchema.source.type.cast(it) },
-                    edge.target?.let { "_target" to multiEdgeSchema.target.type.cast(it) },
+                    edge.source?.let { "_source" to schema.source.type.cast(it) },
+                    edge.target?.let { "_target" to schema.target.type.cast(it) },
                 )
             val event =
                 Event.create(
                     type = type,
                     version = edge.version,
                     properties =
-                        multiEdgeSchema.properties
+                        schema.properties
                             .mapNotNull { field ->
                                 edge.properties[field.name]?.let { value ->
                                     field.name to field.type.cast(value)

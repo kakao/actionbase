@@ -75,8 +75,8 @@ sealed interface EdgeMutationStrategy {
             direction: Direction,
         ): Any =
             when (direction) {
-                Direction.OUT -> record.value.properties[EdgeMutationBuilder.MULTI_EDGE_SOURCE_CODE]?.value!!
-                Direction.IN -> record.value.properties[EdgeMutationBuilder.MULTI_EDGE_TARGET_CODE]?.value!!
+                Direction.OUT -> requireNotNull(record.value.properties[EdgeMutationBuilder.MULTI_EDGE_SOURCE_CODE]?.value) { "Missing _source property in MultiEdge record" }
+                Direction.IN -> requireNotNull(record.value.properties[EdgeMutationBuilder.MULTI_EDGE_TARGET_CODE]?.value) { "Missing _target property in MultiEdge record" }
             }
 
         override fun directedTarget(

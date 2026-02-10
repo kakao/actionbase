@@ -16,15 +16,14 @@ data class EdgeBulkMutationRequest(
     ) : MutationEvent.Source<EdgeEvent> {
         override fun createEvent(schema: ModelSchema): EdgeEvent {
             require(schema is ModelSchema.Edge) { "Expected ModelSchema.Edge, but got ${schema::class.simpleName}" }
-            val edgeSchema = schema
-            val source = edgeSchema.source.type.cast(edge.source)
-            val target = edgeSchema.target.type.cast(edge.target)
+            val source = schema.source.type.cast(edge.source)
+            val target = schema.target.type.cast(edge.target)
             val event =
                 Event.create(
                     type = type,
                     version = edge.version,
                     properties =
-                        edgeSchema.properties
+                        schema.properties
                             .filter { field -> field.name in edge.properties.keys }
                             .associate { field ->
                                 val value = edge.properties[field.name]
