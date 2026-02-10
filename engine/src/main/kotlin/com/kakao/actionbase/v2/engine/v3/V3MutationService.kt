@@ -81,7 +81,7 @@ class V3MutationService(
             mutate = { tb, key, events ->
                 tb.mutateEdge(key, events, lock, encoder, tb.schema.codeToName)
             },
-            stateToV2HashEdge = { state, key -> state.toHashEdge(key.first, key.second) },
+            stateToV2HashEdge = { state, key -> state.toV2HashEdge(key.first, key.second) },
             errorStatus = { key ->
                 EdgeMutationStatus(key.first, key.second, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
@@ -114,7 +114,7 @@ class V3MutationService(
             mutate = { tb, key, events ->
                 tb.mutateMultiEdge(key, events, lock, encoder, tb.schema.codeToName)
             },
-            stateToV2HashEdge = { state, _ -> state.toHashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
+            stateToV2HashEdge = { state, _ -> state.toV2HashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
             errorStatus = { key ->
                 MultiEdgeMutationStatus(key, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
@@ -303,7 +303,7 @@ class V3MutationService(
         }
     }
 
-    private fun State.toHashEdge(
+    private fun State.toV2HashEdge(
         source: Any?,
         target: Any?,
     ): HashEdge? =
