@@ -81,7 +81,7 @@ class V3MutationService(
             mutate = { tb, key, events ->
                 tb.mutateEdge(key, events, lock, encoder, tb.schema.codeToName)
             },
-            stateToHashEdge = { state, key -> state.toHashEdge(key.first, key.second) },
+            stateToV2HashEdge = { state, key -> state.toHashEdge(key.first, key.second) },
             errorStatus = { key ->
                 EdgeMutationStatus(key.first, key.second, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
@@ -114,7 +114,7 @@ class V3MutationService(
             mutate = { tb, key, events ->
                 tb.mutateMultiEdge(key, events, lock, encoder, tb.schema.codeToName)
             },
-            stateToHashEdge = { state, _ -> state.toHashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
+            stateToV2HashEdge = { state, _ -> state.toHashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
             errorStatus = { key ->
                 MultiEdgeMutationStatus(key, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
@@ -135,7 +135,7 @@ class V3MutationService(
         mutations: List<MutationEvent.Source<E>>,
         queuedStatus: (K, Int) -> S,
         mutate: (V3CompatibleTableBinding, K, List<Event>) -> Mono<S>,
-        stateToHashEdge: (State, K) -> HashEdge?,
+        stateToV2HashEdge: (State, K) -> HashEdge?,
         errorStatus: (K) -> S,
         toResponse: (List<S>) -> R,
     ): Mono<R> {
@@ -153,7 +153,7 @@ class V3MutationService(
             events = createEventFlux(ctx, mutations, tableBinding.schema),
             queuedStatus = queuedStatus,
             mutate = { key, events -> mutate(tableBinding, key, events) },
-            stateToHashEdge = stateToHashEdge,
+            stateToV2HashEdge = stateToV2HashEdge,
             errorStatus = errorStatus,
             toResponse = toResponse,
         )
@@ -165,7 +165,7 @@ class V3MutationService(
         events: Flux<E>,
         queuedStatus: (K, Int) -> S,
         mutate: (K, List<Event>) -> Mono<S>,
-        stateToHashEdge: (State, K) -> HashEdge?,
+        stateToV2HashEdge: (State, K) -> HashEdge?,
         errorStatus: (K) -> S,
         toResponse: (List<S>) -> R,
     ): Mono<R> =
@@ -190,8 +190,8 @@ class V3MutationService(
                                         last.toTraceEdge(),
                                         last.event.type,
                                         status.status,
-                                        stateToHashEdge(status.before, key),
-                                        stateToHashEdge(status.after, key),
+                                        stateToV2HashEdge(status.before, key),
+                                        stateToV2HashEdge(status.after, key),
                                         status.acc,
                                     )
                                 }.onErrorResume {
