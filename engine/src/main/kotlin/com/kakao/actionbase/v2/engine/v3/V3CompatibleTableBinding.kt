@@ -100,38 +100,47 @@ class V3CompatibleTableBinding(
             val eventId = events.first().id
             val compatibleEdge = Edge(0L, source, target)
             val encodedHashEdgeKey = coder.encodeHashEdgeKey(compatibleEdge, entity.id)
-            val encodedLockEdge = coder.encodeLockEdge(compatibleEdge, entity.id)
-            val bulk = !acquireLock
-            return acquireLock(eventId, encodedLockEdge, bulk)
-                .flatMap {
-                    // v2
-                    findHashEdge(encodedHashEdgeKey)
-                }.map {
-                    // v2 -> v3
-                    decodeV2HashEdgeToState(it, mapper, codeToFieldNameMap)
-                }.switchIfEmpty(Mono.defer { Mono.just(State.initial) })
-                .map { before ->
-                    // v3
-                    val after =
-                        events.fold(before) { acc, event ->
-                            acc.transit(event, descriptor.schema)
-                        }
-                    before.specialStateValueToNull() to after.specialStateValueToNull()
-                }.flatMap { (before, after) ->
-                    val beforeRecord = EdgeStateRecord.of(source, target, before, entity.id)
-                    val afterRecord = EdgeStateRecord.of(source, target, after, entity.id)
-                    val mutationRecords = buildMutationRecords(beforeRecord, afterRecord)
-                    handleDeferredRequests(buildHBaseMutations(mutationRecords, mapper))
-                        .thenReturn(
-                            toStatus(events.size, mutationRecords.status, before, after, mutationRecords.acc),
-                        )
-                }.subscribeOn(Schedulers.boundedElastic())
-                .doFinally {
-                    releaseLock(eventId, encodedLockEdge, bulk)
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .subscribe()
-                }
+            return withLock(eventId, compatibleEdge, !acquireLock) {
+                // v2
+                findHashEdge(encodedHashEdgeKey)
+                    .map {
+                        // v2 -> v3
+                        decodeV2HashEdgeToState(it, mapper, codeToFieldNameMap)
+                    }.switchIfEmpty(Mono.defer { Mono.just(State.initial) })
+                    .map { before ->
+                        // v3
+                        val after =
+                            events.fold(before) { acc, event ->
+                                acc.transit(event, descriptor.schema)
+                            }
+                        before.specialStateValueToNull() to after.specialStateValueToNull()
+                    }.flatMap { (before, after) ->
+                        val beforeRecord = EdgeStateRecord.of(source, target, before, entity.id)
+                        val afterRecord = EdgeStateRecord.of(source, target, after, entity.id)
+                        val mutationRecords = buildMutationRecords(beforeRecord, afterRecord)
+                        handleDeferredRequests(buildHBaseMutations(mutationRecords, mapper))
+                            .thenReturn(
+                                toStatus(events.size, mutationRecords.status, before, after, mutationRecords.acc),
+                            )
+                    }.subscribeOn(Schedulers.boundedElastic())
+            }
         }
+    }
+
+    private fun <S> HBaseIndexedLabel.withLock(
+        traceId: String,
+        edge: Edge,
+        bulk: Boolean,
+        action: () -> Mono<S>,
+    ): Mono<S> {
+        val lockEdge = coder.encodeLockEdge(edge, entity.id)
+        return acquireLock(traceId, lockEdge, bulk)
+            .flatMap { action() }
+            .doFinally {
+                releaseLock(traceId, lockEdge, bulk)
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe()
+            }
     }
 
     private fun decodeV2HashEdgeToState(
