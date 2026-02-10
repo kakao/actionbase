@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.ByteArrayBufferPool
 import com.kakao.actionbase.core.edge.EdgeEvent
 import com.kakao.actionbase.core.edge.MultiEdgeEvent
+import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.edge.mapper.EdgeCountRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
@@ -74,19 +75,9 @@ class V3MutationService(
             }
         val (_, label, _, tableBinding, _, _) = ctx
 
-        val eventFlux =
-            Flux
-                .fromIterable(request.mutations)
-                .map { it.createEvent(tableBinding.schema as ModelSchema.Edge) }
-                .flatMap { edgeEvent ->
-                    writeWal(ctx, edgeEvent.toTraceEdge(), edgeEvent.event.type)
-                        .thenReturn(edgeEvent)
-                }
-
         return executeMutationPipeline(
             ctx = ctx,
-            events = eventFlux,
-            groupKey = { it.source to it.target },
+            events = createEventFlux(ctx, request.mutations, tableBinding.schema),
             queuedStatus = { key, count ->
                 EdgeMutationStatus(key.first, key.second, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
             },
@@ -137,19 +128,9 @@ class V3MutationService(
             }
         val (_, label, _, tableBinding, _, _) = ctx
 
-        val eventFlux =
-            Flux
-                .fromIterable(request.mutations)
-                .map { it.createEvent(tableBinding.schema as ModelSchema.MultiEdge) }
-                .flatMap { multiEdgeEvent ->
-                    writeWal(ctx, multiEdgeEvent.toTraceEdge(), multiEdgeEvent.event.type)
-                        .thenReturn(multiEdgeEvent)
-                }
-
         return executeMutationPipeline(
             ctx = ctx,
-            events = eventFlux,
-            groupKey = { it.id },
+            events = createEventFlux(ctx, request.mutations, tableBinding.schema),
             queuedStatus = { key, count ->
                 MultiEdgeMutationStatus(key, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
             },
@@ -184,15 +165,14 @@ class V3MutationService(
         }
     }
 
-    private fun <E, K : Any, S : Any> executeMutationPipeline(
+    private fun <E : MutationEvent<K>, K : Any, S : Any> executeMutationPipeline(
         ctx: MutationContext,
         events: Flux<E>,
-        groupKey: (E) -> K,
         queuedStatus: (K, Int) -> S,
         executeGroup: (K, List<E>) -> Mono<S>,
     ): Mono<List<S>> =
         events
-            .groupBy(groupKey)
+            .groupBy { it.id }
             .flatMap { groupedFlux ->
                 val key = groupedFlux.key()
                 if (ctx.mutationMode.queue) {
@@ -208,6 +188,19 @@ class V3MutationService(
             }.collectList()
             .timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
+
+    private fun <E : MutationEvent<K>, K : Any> createEventFlux(
+        ctx: MutationContext,
+        mutations: List<MutationEvent.Source<E>>,
+        schema: ModelSchema,
+    ): Flux<E> =
+        Flux
+            .fromIterable(mutations)
+            .map { it.createEvent(schema) }
+            .flatMap { event ->
+                writeWal(ctx, event.toTraceEdge(), event.event.type)
+                    .thenReturn(event)
+            }
 
     private fun writeWal(
         ctx: MutationContext,
@@ -321,21 +314,24 @@ class V3MutationService(
                 EventType.DELETE -> EdgeOperation.DELETE
             }
 
-        private fun MultiEdgeEvent.toTraceEdge(): TraceEdge =
-            Edge(
-                this.event.version,
-                this.event.properties["_source"] ?: DEFAULT_PRIMITIVE_VALUE,
-                this.event.properties["_target"] ?: DEFAULT_PRIMITIVE_VALUE,
-                this.event.properties - "_source" - "_target" + mapOf("_id" to this.id),
-            ).withTraceId(this.event.id)
-
-        private fun EdgeEvent.toTraceEdge(): TraceEdge =
-            Edge(
-                this.event.version,
-                this.source,
-                this.target,
-                this.event.properties,
-            ).withTraceId(this.event.id)
+        private fun MutationEvent<*>.toTraceEdge(): TraceEdge =
+            when (this) {
+                is EdgeEvent ->
+                    Edge(
+                        event.version,
+                        source,
+                        target,
+                        event.properties,
+                    )
+                is MultiEdgeEvent ->
+                    Edge(
+                        event.version,
+                        event.properties["_source"] ?: DEFAULT_PRIMITIVE_VALUE,
+                        event.properties["_target"] ?: DEFAULT_PRIMITIVE_VALUE,
+                        event.properties - "_source" - "_target" + mapOf("_id" to id),
+                    )
+                else -> error("Unknown MutationEvent type: $this")
+            }.withTraceId(event.id)
 
         fun State.getMultiEdgeSource(): Any? = properties[EdgeMutationBuilder.MULTI_EDGE_SOURCE_FIELD_NAME]?.value
 
