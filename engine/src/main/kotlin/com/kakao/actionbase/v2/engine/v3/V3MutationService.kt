@@ -196,7 +196,7 @@ class V3MutationService(
             .write(
                 ctx.aliasEntityName,
                 ctx.label.name,
-                event.toTraceEdge(),
+                event.toV2TraceEdge(),
                 event.event.type.toV2(),
                 ctx.audit,
                 ctx.requestId,
@@ -228,7 +228,7 @@ class V3MutationService(
                 val last = sorted.last()
                 mutate(tb, key, sorted.map { it.event })
                     .doOnNext { status ->
-                        writeCdc(ctx, last.toTraceEdge(), last.event.type, status.status, stateToV2HashEdge(status.before, key), stateToV2HashEdge(status.after, key), status.acc)
+                        writeCdc(ctx, last.toV2TraceEdge(), last.event.type, status.status, stateToV2HashEdge(status.before, key), stateToV2HashEdge(status.after, key), status.acc)
                     }.onErrorResume {
                         handleMutationError(it, ctx.label)
                         Mono.just(errorStatus(key))
@@ -306,7 +306,7 @@ class V3MutationService(
                 EventType.DELETE -> EdgeOperation.DELETE
             }
 
-        private fun MutationEvent<*>.toTraceEdge(): TraceEdge =
+        private fun MutationEvent<*>.toV2TraceEdge(): TraceEdge =
             when (this) {
                 is EdgeEvent ->
                     Edge(
