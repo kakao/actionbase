@@ -157,40 +157,21 @@ class V3MutationService(
                             groupedFlux
                                 .collectList()
                                 .flatMap { group ->
-                                    mutateGroupWithCdc(ctx, key, group, { k, events -> mutate(tb, k, events) }, stateToV2HashEdge, errorStatus)
+                                    val sorted = group.sortedBy { it.event.version }
+                                    val last = sorted.last()
+                                    mutate(tb, key, sorted.map { it.event })
+                                        .doOnNext { status ->
+                                            writeCdc(ctx, last.toTraceEdge(), last.event.type, status.status, stateToV2HashEdge(status.before, key), stateToV2HashEdge(status.after, key), status.acc)
+                                        }.onErrorResume {
+                                            handleMutationError(it, ctx.label)
+                                            Mono.just(errorStatus(key))
+                                        }
                                 }.subscribeOn(Schedulers.boundedElastic())
                         }
                     }.collectList()
                     .map(toResponse)
             }.timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
-
-    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> mutateGroupWithCdc(
-        ctx: MutationContext,
-        key: K,
-        group: List<E>,
-        mutate: (K, List<Event>) -> Mono<S>,
-        stateToV2HashEdge: (State, K) -> HashEdge?,
-        errorStatus: (K) -> S,
-    ): Mono<S> {
-        val sortedGroup = group.sortedBy { it.event.version }
-        val last = sortedGroup.last()
-        return mutate(key, sortedGroup.map { it.event })
-            .doOnNext { status ->
-                writeCdc(
-                    ctx,
-                    last.toTraceEdge(),
-                    last.event.type,
-                    status.status,
-                    stateToV2HashEdge(status.before, key),
-                    stateToV2HashEdge(status.after, key),
-                    status.acc,
-                )
-            }.onErrorResume {
-                handleMutationError(it, ctx.label)
-                Mono.just(errorStatus(key))
-            }
-    }
 
     private fun writeWal(
         ctx: MutationContext,
