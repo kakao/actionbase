@@ -60,6 +60,8 @@ class V3MutationService(
             group = EdgeGroupRecordMapper.create(byteArrayBufferPool),
         )
 
+    // -- public API
+
     fun mutateEdge(
         database: String,
         alias: String,
@@ -124,6 +126,40 @@ class V3MutationService(
             )
         }
 
+    // -- context
+
+    private data class MutationContext(
+        val aliasEntityName: EntityName,
+        val label: HBaseIndexedLabel,
+        val mutationMode: MutationModeContext,
+        val tableBinding: V3CompatibleTableBinding,
+        val audit: Audit,
+        val requestId: String,
+    )
+
+    private fun resolveMutationContext(
+        database: String,
+        alias: String,
+        sync: MutationMode?,
+        requestContext: RequestContext,
+    ): MutationContext {
+        val aliasEntityName = EntityName(database, alias)
+        val label = graph.getLabel(aliasEntityName)
+        if (label !is HBaseIndexedLabel) {
+            throw UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation")
+        }
+        return MutationContext(
+            aliasEntityName = aliasEntityName,
+            label = label,
+            mutationMode = MutationModeContext.of(label.entity.mode, sync),
+            tableBinding = label.v3TableBinding,
+            audit = Audit(requestContext.actor),
+            requestId = requestContext.requestId,
+        )
+    }
+
+    // -- pipeline
+
     private fun <E : MutationEvent<K>, K : Any, S : MutationStatus, R> executeMutation(
         ctx: MutationContext,
         mutations: List<MutationEvent.Source<E>>,
@@ -151,6 +187,21 @@ class V3MutationService(
             .timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
     }
+
+    private fun <E : MutationEvent<*>> writeWal(
+        ctx: MutationContext,
+        event: E,
+    ): Mono<E> =
+        graph.wal
+            .write(
+                ctx.aliasEntityName,
+                ctx.label.name,
+                event.toTraceEdge(),
+                event.event.type.toV2(),
+                ctx.audit,
+                ctx.requestId,
+                ctx.mutationMode,
+            ).thenReturn(event)
 
     private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> enqueueGroup(
         groupedFlux: Flux<E>,
@@ -184,50 +235,7 @@ class V3MutationService(
                     }
             }.subscribeOn(Schedulers.boundedElastic())
 
-    private fun resolveMutationContext(
-        database: String,
-        alias: String,
-        sync: MutationMode?,
-        requestContext: RequestContext,
-    ): MutationContext {
-        val aliasEntityName = EntityName(database, alias)
-        val label = graph.getLabel(aliasEntityName)
-        if (label !is HBaseIndexedLabel) {
-            throw UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation")
-        }
-        return MutationContext(
-            aliasEntityName = aliasEntityName,
-            label = label,
-            mutationMode = MutationModeContext.of(label.entity.mode, sync),
-            tableBinding = label.v3TableBinding,
-            audit = Audit(requestContext.actor),
-            requestId = requestContext.requestId,
-        )
-    }
-
-    private fun <E : MutationEvent<*>> writeWal(
-        ctx: MutationContext,
-        event: E,
-    ): Mono<E> =
-        graph.wal
-            .write(
-                ctx.aliasEntityName,
-                ctx.label.name,
-                event.toTraceEdge(),
-                event.event.type.toV2(),
-                ctx.audit,
-                ctx.requestId,
-                ctx.mutationMode,
-            ).thenReturn(event)
-
-    private data class MutationContext(
-        val aliasEntityName: EntityName,
-        val label: HBaseIndexedLabel,
-        val mutationMode: MutationModeContext,
-        val tableBinding: V3CompatibleTableBinding,
-        val audit: Audit,
-        val requestId: String,
-    )
+    // -- side effects
 
     private fun writeCdc(
         ctx: MutationContext,
@@ -268,6 +276,8 @@ class V3MutationService(
                 .subscribe()
         }
     }
+
+    // -- v2 compat helpers
 
     private fun State.toV2HashEdge(
         source: Any?,
