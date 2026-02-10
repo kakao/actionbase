@@ -8,4 +8,13 @@ data class MultiEdgeMutationResponse(
         val status: String,
         val count: Int,
     )
+
+    companion object {
+        fun from(statuses: List<MultiEdgeMutationStatus>) =
+            MultiEdgeMutationResponse(
+                statuses
+                    .map { Item(id = it.id, count = it.count, status = it.status) }
+                    .sortedBy { it.toString() },
+            )
+    }
 }

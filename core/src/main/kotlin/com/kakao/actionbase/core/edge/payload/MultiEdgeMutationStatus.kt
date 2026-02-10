@@ -9,4 +9,12 @@ data class MultiEdgeMutationStatus(
     override val before: State,
     override val after: State,
     override val acc: Long,
-) : MutationStatus
+) : MutationStatus {
+    companion object {
+        fun of(
+            id: Any,
+            count: Int,
+            status: String,
+        ) = MultiEdgeMutationStatus(id, count, status, State.initial, State.initial, 0)
+    }
+}

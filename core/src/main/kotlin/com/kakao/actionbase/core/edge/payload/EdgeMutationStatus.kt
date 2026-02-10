@@ -10,4 +10,12 @@ data class EdgeMutationStatus(
     override val before: State,
     override val after: State,
     override val acc: Long,
-) : MutationStatus
+) : MutationStatus {
+    companion object {
+        fun of(
+            key: Pair<Any, Any>,
+            count: Int,
+            status: String,
+        ) = EdgeMutationStatus(key.first, key.second, count, status, State.initial, State.initial, 0)
+    }
+}

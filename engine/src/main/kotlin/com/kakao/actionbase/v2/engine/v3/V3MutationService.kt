@@ -74,23 +74,11 @@ class V3MutationService(
             executeMutation(
                 ctx = ctx,
                 mutations = request.mutations,
-                mutate = { tb, key, events ->
-                    tb.mutateEdge(key, events, lock, encoder, tb.schema.codeToName)
-                },
+                mutate = { tb, key, events -> tb.mutateEdge(key, events, lock, encoder, tb.schema.codeToName) },
                 stateToV2HashEdge = { state, key -> state.toV2HashEdge(key.first, key.second) },
-                queuedStatus = { key, count ->
-                    EdgeMutationStatus(key.first, key.second, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
-                },
-                errorStatus = { key ->
-                    EdgeMutationStatus(key.first, key.second, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
-                },
-                toResponse = { statuses ->
-                    EdgeMutationResponse(
-                        statuses
-                            .map { EdgeMutationResponse.Item(source = it.source, target = it.target, count = it.count, status = it.status) }
-                            .sortedBy { "${it.source}:${it.target}" },
-                    )
-                },
+                queuedStatus = { key, count -> EdgeMutationStatus.of(key, count, EdgeOperationStatus.QUEUED.name) },
+                errorStatus = { key -> EdgeMutationStatus.of(key, 0, EdgeOperationStatus.ERROR.name) },
+                toResponse = EdgeMutationResponse::from,
             )
         }
 
@@ -106,23 +94,11 @@ class V3MutationService(
             executeMutation(
                 ctx = ctx,
                 mutations = request.mutations,
-                mutate = { tb, key, events ->
-                    tb.mutateMultiEdge(key, events, lock, encoder, tb.schema.codeToName)
-                },
+                mutate = { tb, key, events -> tb.mutateMultiEdge(key, events, lock, encoder, tb.schema.codeToName) },
                 stateToV2HashEdge = { state, _ -> state.toV2HashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
-                queuedStatus = { key, count ->
-                    MultiEdgeMutationStatus(key, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
-                },
-                errorStatus = { key ->
-                    MultiEdgeMutationStatus(key, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
-                },
-                toResponse = { statuses ->
-                    MultiEdgeMutationResponse(
-                        statuses
-                            .map { MultiEdgeMutationResponse.Item(id = it.id, count = it.count, status = it.status) }
-                            .sortedBy { it.toString() },
-                    )
-                },
+                queuedStatus = { key, count -> MultiEdgeMutationStatus.of(key, count, EdgeOperationStatus.QUEUED.name) },
+                errorStatus = { key -> MultiEdgeMutationStatus.of(key, 0, EdgeOperationStatus.ERROR.name) },
+                toResponse = MultiEdgeMutationResponse::from,
             )
         }
 

@@ -9,4 +9,13 @@ data class EdgeMutationResponse(
         val status: String,
         val count: Int,
     )
+
+    companion object {
+        fun from(statuses: List<EdgeMutationStatus>) =
+            EdgeMutationResponse(
+                statuses
+                    .map { Item(source = it.source, target = it.target, count = it.count, status = it.status) }
+                    .sortedBy { "${it.source}:${it.target}" },
+            )
+    }
 }
