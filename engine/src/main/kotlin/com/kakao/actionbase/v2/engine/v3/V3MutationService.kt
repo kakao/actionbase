@@ -75,13 +75,13 @@ class V3MutationService(
             sync = sync,
             requestContext = requestContext,
             mutations = request.mutations,
-            queuedStatus = { key, count ->
-                EdgeMutationStatus(key.first, key.second, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
-            },
             mutate = { tb, key, events ->
                 tb.mutateEdge(key, events, lock, encoder, tb.schema.codeToName)
             },
             stateToV2HashEdge = { state, key -> state.toV2HashEdge(key.first, key.second) },
+            queuedStatus = { key, count ->
+                EdgeMutationStatus(key.first, key.second, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
+            },
             errorStatus = { key ->
                 EdgeMutationStatus(key.first, key.second, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
@@ -108,13 +108,13 @@ class V3MutationService(
             sync = sync,
             requestContext = requestContext,
             mutations = request.mutations,
-            queuedStatus = { key, count ->
-                MultiEdgeMutationStatus(key, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
-            },
             mutate = { tb, key, events ->
                 tb.mutateMultiEdge(key, events, lock, encoder, tb.schema.codeToName)
             },
             stateToV2HashEdge = { state, _ -> state.toV2HashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
+            queuedStatus = { key, count ->
+                MultiEdgeMutationStatus(key, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
+            },
             errorStatus = { key ->
                 MultiEdgeMutationStatus(key, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
             },
@@ -133,9 +133,9 @@ class V3MutationService(
         sync: MutationMode?,
         requestContext: RequestContext,
         mutations: List<MutationEvent.Source<E>>,
-        queuedStatus: (K, Int) -> S,
         mutate: (V3CompatibleTableBinding, K, List<Event>) -> Mono<S>,
         stateToV2HashEdge: (State, K) -> HashEdge?,
+        queuedStatus: (K, Int) -> S,
         errorStatus: (K) -> S,
         toResponse: (List<S>) -> R,
     ): Mono<R> {
@@ -147,28 +147,32 @@ class V3MutationService(
             }
         val (_, label, _, tableBinding, _, _) = ctx
 
-        return executeMutationPipeline(
+        // req → events → WAL
+        val events = createEventFlux(ctx, mutations, tableBinding.schema)
+
+        // group → (queue | mutate → CDC) → response
+        return groupAndMutate(
             ctx = ctx,
             label = label,
-            events = createEventFlux(ctx, mutations, tableBinding.schema),
-            queuedStatus = queuedStatus,
-            mutate = { key, events -> mutate(tableBinding, key, events) },
+            events = events,
+            mutate = { key, eventList -> mutate(tableBinding, key, eventList) },
             stateToV2HashEdge = stateToV2HashEdge,
+            queuedStatus = queuedStatus,
             errorStatus = errorStatus,
-            toResponse = toResponse,
-        )
+        ).map(toResponse)
+            .timeout(Duration.ofMillis(graph.mutationRequestTimeout))
+            .runEvenIfCancelled()
     }
 
-    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus, R> executeMutationPipeline(
+    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> groupAndMutate(
         ctx: MutationContext,
         label: HBaseIndexedLabel,
         events: Flux<E>,
-        queuedStatus: (K, Int) -> S,
         mutate: (K, List<Event>) -> Mono<S>,
         stateToV2HashEdge: (State, K) -> HashEdge?,
+        queuedStatus: (K, Int) -> S,
         errorStatus: (K) -> S,
-        toResponse: (List<S>) -> R,
-    ): Mono<R> =
+    ): Mono<List<S>> =
         events
             .groupBy { it.id }
             .flatMap { groupedFlux ->
@@ -201,9 +205,6 @@ class V3MutationService(
                         }.subscribeOn(Schedulers.boundedElastic())
                 }
             }.collectList()
-            .map(toResponse)
-            .timeout(Duration.ofMillis(graph.mutationRequestTimeout))
-            .runEvenIfCancelled()
 
     private fun <E : MutationEvent<K>, K : Any> createEventFlux(
         ctx: MutationContext,
