@@ -68,24 +68,18 @@ class V3MutationService(
         lock: Boolean = true,
         sync: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
-    ): Mono<EdgeMutationResponse> {
-        val ctx =
-            try {
-                resolveMutationContext(database, alias, sync, requestContext)
-            } catch (e: UnsupportedOperationException) {
-                return Mono.error(e)
-            }
-        val (_, label, _, tableBinding, _, _) = ctx
-
-        return executeMutationPipeline(
-            ctx = ctx,
-            label = label,
-            events = createEventFlux(ctx, request.mutations, tableBinding.schema),
+    ): Mono<EdgeMutationResponse> =
+        executeMutation(
+            database = database,
+            alias = alias,
+            sync = sync,
+            requestContext = requestContext,
+            mutations = request.mutations,
             queuedStatus = { key, count ->
                 EdgeMutationStatus(key.first, key.second, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
             },
-            mutate = { key, events ->
-                tableBinding.mutateEdge(key, events, lock, encoder, tableBinding.schema.codeToName)
+            mutate = { tb, key, events ->
+                tb.mutateEdge(key, events, lock, encoder, tb.schema.codeToName)
             },
             stateToHashEdge = { state, key -> state.toHashEdge(key.first, key.second) },
             errorStatus = { key ->
@@ -99,7 +93,6 @@ class V3MutationService(
                 )
             },
         )
-    }
 
     fun mutateMultiEdge(
         database: String,
@@ -108,24 +101,18 @@ class V3MutationService(
         lock: Boolean = true,
         sync: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
-    ): Mono<MultiEdgeMutationResponse> {
-        val ctx =
-            try {
-                resolveMutationContext(database, alias, sync, requestContext)
-            } catch (e: UnsupportedOperationException) {
-                return Mono.error(e)
-            }
-        val (_, label, _, tableBinding, _, _) = ctx
-
-        return executeMutationPipeline(
-            ctx = ctx,
-            label = label,
-            events = createEventFlux(ctx, request.mutations, tableBinding.schema),
+    ): Mono<MultiEdgeMutationResponse> =
+        executeMutation(
+            database = database,
+            alias = alias,
+            sync = sync,
+            requestContext = requestContext,
+            mutations = request.mutations,
             queuedStatus = { key, count ->
                 MultiEdgeMutationStatus(key, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
             },
-            mutate = { key, events ->
-                tableBinding.mutateMultiEdge(key, events, lock, encoder, tableBinding.schema.codeToName)
+            mutate = { tb, key, events ->
+                tb.mutateMultiEdge(key, events, lock, encoder, tb.schema.codeToName)
             },
             stateToHashEdge = { state, _ -> state.toHashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
             errorStatus = { key ->
@@ -138,6 +125,37 @@ class V3MutationService(
                         .sortedBy { it.toString() },
                 )
             },
+        )
+
+    private fun <E : MutationEvent<K>, K : Any, S : MutationStatus, R> executeMutation(
+        database: String,
+        alias: String,
+        sync: MutationMode?,
+        requestContext: RequestContext,
+        mutations: List<MutationEvent.Source<E>>,
+        queuedStatus: (K, Int) -> S,
+        mutate: (V3CompatibleTableBinding, K, List<Event>) -> Mono<S>,
+        stateToHashEdge: (State, K) -> HashEdge?,
+        errorStatus: (K) -> S,
+        toResponse: (List<S>) -> R,
+    ): Mono<R> {
+        val ctx =
+            try {
+                resolveMutationContext(database, alias, sync, requestContext)
+            } catch (e: UnsupportedOperationException) {
+                return Mono.error(e)
+            }
+        val (_, label, _, tableBinding, _, _) = ctx
+
+        return executeMutationPipeline(
+            ctx = ctx,
+            label = label,
+            events = createEventFlux(ctx, mutations, tableBinding.schema),
+            queuedStatus = queuedStatus,
+            mutate = { key, events -> mutate(tableBinding, key, events) },
+            stateToHashEdge = stateToHashEdge,
+            errorStatus = errorStatus,
+            toResponse = toResponse,
         )
     }
 
