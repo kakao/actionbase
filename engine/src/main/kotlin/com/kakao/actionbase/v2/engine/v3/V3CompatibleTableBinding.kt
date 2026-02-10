@@ -43,7 +43,7 @@ class V3CompatibleTableBinding(
             "mutateEdge is only supported for Edge schema, but got ${schema::class.java.simpleName}"
         }
         val (source, target) = key
-        return mutateInternal(
+        return mutate(
             source = source,
             target = target,
             events = events,
@@ -70,7 +70,7 @@ class V3CompatibleTableBinding(
         require(schema is ModelSchema.MultiEdge) {
             "mutateMultiEdge is only supported for MultiEdge schema, but got ${schema::class.java.simpleName}"
         }
-        return mutateInternal(
+        return mutate(
             source = key,
             target = key,
             events = events,
@@ -86,7 +86,7 @@ class V3CompatibleTableBinding(
         )
     }
 
-    private fun <S : Any> mutateInternal(
+    private fun <S : Any> mutate(
         source: Any,
         target: Any,
         events: List<Event>,
@@ -104,10 +104,14 @@ class V3CompatibleTableBinding(
             val bulk = !acquireLock
             return acquireLock(eventId, encodedLockEdge, bulk)
                 .flatMap {
+                    // v2
                     findHashEdge(encodedHashEdgeKey)
-                }.map { decodeCurrentState(it, mapper, codeToFieldNameMap) }
-                .switchIfEmpty(Mono.defer { Mono.just(State.initial) })
+                }.map {
+                    // v2 -> v3
+                    decodeV2HashEdgeToState(it, mapper, codeToFieldNameMap)
+                }.switchIfEmpty(Mono.defer { Mono.just(State.initial) })
                 .map { before ->
+                    // v3
                     val after =
                         events.fold(before) { acc, event ->
                             acc.transit(event, descriptor.schema)
@@ -130,7 +134,7 @@ class V3CompatibleTableBinding(
         }
     }
 
-    private fun decodeCurrentState(
+    private fun decodeV2HashEdgeToState(
         encodedValue: ByteArray,
         mapper: EdgeRecordMapper,
         codeToFieldNameMap: Map<Int, String>,
