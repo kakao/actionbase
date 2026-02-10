@@ -139,21 +139,8 @@ class V3MutationService(
         toResponse: (List<S>) -> R,
     ): Mono<R> =
         Mono
-            .fromCallable {
-                val aliasEntityName = EntityName(database, alias)
-                val label = graph.getLabel(aliasEntityName)
-                if (label !is HBaseIndexedLabel) {
-                    throw UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation")
-                }
-                MutationContext(
-                    aliasEntityName = aliasEntityName,
-                    label = label,
-                    mutationMode = MutationModeContext.of(label.entity.mode, sync),
-                    tableBinding = label.v3TableBinding,
-                    audit = Audit(requestContext.actor),
-                    requestId = requestContext.requestId,
-                )
-            }.flatMap { ctx ->
+            .fromCallable { resolveMutationContext(database, alias, sync, requestContext) }
+            .flatMap { ctx ->
                 val tb = ctx.tableBinding
                 Flux
                     .fromIterable(mutations)
@@ -203,6 +190,27 @@ class V3MutationService(
                         Mono.just(errorStatus(key))
                     }
             }.subscribeOn(Schedulers.boundedElastic())
+
+    private fun resolveMutationContext(
+        database: String,
+        alias: String,
+        sync: MutationMode?,
+        requestContext: RequestContext,
+    ): MutationContext {
+        val aliasEntityName = EntityName(database, alias)
+        val label = graph.getLabel(aliasEntityName)
+        if (label !is HBaseIndexedLabel) {
+            throw UnsupportedOperationException("This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation")
+        }
+        return MutationContext(
+            aliasEntityName = aliasEntityName,
+            label = label,
+            mutationMode = MutationModeContext.of(label.entity.mode, sync),
+            tableBinding = label.v3TableBinding,
+            audit = Audit(requestContext.actor),
+            requestId = requestContext.requestId,
+        )
+    }
 
     private fun <E : MutationEvent<*>> writeWal(
         ctx: MutationContext,
