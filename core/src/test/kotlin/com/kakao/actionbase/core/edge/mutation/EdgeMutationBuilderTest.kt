@@ -1,6 +1,7 @@
 package com.kakao.actionbase.core.edge.mutation
 
-import com.kakao.actionbase.core.edge.record.EdgeStateRecord
+import com.kakao.actionbase.core.edge.mutation.EdgeMutationTestFixtures.edgeRecord
+import com.kakao.actionbase.core.edge.mutation.EdgeMutationTestFixtures.multiEdgeRecord
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
@@ -8,7 +9,6 @@ import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.Index
 import com.kakao.actionbase.core.metadata.common.IndexField
-import com.kakao.actionbase.core.state.StateValue
 
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -17,54 +17,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class EdgeMutationBuilderTest {
-    private val tableCode = 100
-    private val version = 1L
-
-    private fun edgeRecord(
-        source: Any,
-        target: Any,
-        active: Boolean,
-        version: Long = this.version,
-        properties: Map<Int, StateValue> = emptyMap(),
-    ): EdgeStateRecord =
-        EdgeStateRecord(
-            key = EdgeStateRecord.Key.of(source = source, tableCode = tableCode, target = target),
-            value =
-                EdgeStateRecord.Value(
-                    active = active,
-                    version = version,
-                    createdAt = if (active) version else null,
-                    deletedAt = if (!active && version > 0) version else null,
-                    properties = properties,
-                ),
-        )
-
-    private fun multiEdgeRecord(
-        id: Any,
-        source: Any,
-        target: Any,
-        active: Boolean,
-        version: Long = this.version,
-        properties: Map<Int, StateValue> = emptyMap(),
-    ): EdgeStateRecord {
-        val multiEdgeProperties =
-            mapOf(
-                EdgeMutationBuilder.MULTI_EDGE_SOURCE_CODE to StateValue(version, source),
-                EdgeMutationBuilder.MULTI_EDGE_TARGET_CODE to StateValue(version, target),
-            ) + properties
-        return EdgeStateRecord(
-            key = EdgeStateRecord.Key.of(source = id, tableCode = tableCode, target = id),
-            value =
-                EdgeStateRecord.Value(
-                    active = active,
-                    version = version,
-                    createdAt = if (active) version else null,
-                    deletedAt = if (!active && version > 0) version else null,
-                    properties = multiEdgeProperties,
-                ),
-        )
-    }
-
     private val versionIndex =
         Index(
             index = "version_idx",

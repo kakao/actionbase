@@ -49,68 +49,60 @@ object EdgeMutationBuilder {
         val beforeActive = before.value.active
         val afterActive = after.value.active
 
-        var createIndexRecords: List<EdgeIndexRecord> = emptyList()
-        var deleteIndexRecordKeys: List<EdgeIndexRecord.Key> = emptyList()
-        var countRecords: List<EdgeCountRecord> = emptyList()
-        var groupRecords: List<EdgeGroupRecord> = emptyList()
+        return when {
+            before == after -> {
+                EdgeMutationRecords(status = "IDLE", acc = 0L, stateRecord = after)
+            }
 
-        val (status, acc) =
-            when {
-                before == after -> {
-                    "IDLE" to 0L
-                }
+            !beforeActive && afterActive -> {
+                EdgeMutationRecords(
+                    status = "CREATED",
+                    acc = 1L,
+                    stateRecord = after,
+                    createIndexRecords = buildIndexRecords(strategy, after, directionType, indexes),
+                    countRecords = buildCountRecords(strategy, after, directionType, 1L),
+                    groupRecords = buildGroupRecords(strategy, after, groups, 1L),
+                )
+            }
 
-                !beforeActive && afterActive -> {
-                    createIndexRecords = buildIndexRecords(strategy, after, directionType, indexes)
-                    countRecords = buildCountRecords(strategy, after, directionType, 1L)
-                    groupRecords = buildGroupRecords(strategy, after, groups, 1L)
-                    "CREATED" to 1L
-                }
+            beforeActive && !afterActive -> {
+                val countSource = strategy.countRecordOnDelete(before, after)
+                EdgeMutationRecords(
+                    status = "DELETED",
+                    acc = -1L,
+                    stateRecord = after,
+                    deleteIndexRecordKeys = buildIndexRecords(strategy, before, directionType, indexes).map { it.key },
+                    countRecords = buildCountRecords(strategy, countSource, directionType, -1L),
+                    groupRecords = buildGroupRecords(strategy, before, groups, -1L),
+                )
+            }
 
-                beforeActive && !afterActive -> {
-                    val countSource = strategy.countRecordOnDelete(before, after)
-                    deleteIndexRecordKeys = buildIndexRecords(strategy, before, directionType, indexes).map { it.key }
-                    countRecords = buildCountRecords(strategy, countSource, directionType, -1L)
-                    groupRecords = buildGroupRecords(strategy, before, groups, -1L)
-                    "DELETED" to -1L
-                }
-
-                beforeActive && afterActive -> {
-                    createIndexRecords = buildIndexRecords(strategy, after, directionType, indexes)
-
-                    val willBeUpdated = createIndexRecords.map { it.key }.toSet()
-
+            beforeActive && afterActive -> {
+                val newIndexRecords = buildIndexRecords(strategy, after, directionType, indexes)
+                val willBeUpdated = newIndexRecords.map { it.key }.toSet()
+                EdgeMutationRecords(
+                    status = "UPDATED",
+                    acc = 0L,
+                    stateRecord = after,
+                    createIndexRecords = newIndexRecords,
                     deleteIndexRecordKeys =
                         buildIndexRecords(strategy, before, directionType, indexes)
                             .map { it.key }
-                            .filter { it !in willBeUpdated }
-
+                            .filter { it !in willBeUpdated },
                     countRecords =
                         strategy.countRecordsOnUpdate(before, after, directionType) { record, dt, acc ->
                             buildCountRecords(strategy, record, dt, acc)
-                        }
-
-                    val decrementGroupRecords = buildGroupRecords(strategy, before, groups, -1L)
-                    val incrementGroupRecords = buildGroupRecords(strategy, after, groups, 1L)
-                    groupRecords = decrementGroupRecords + incrementGroupRecords
-
-                    "UPDATED" to 0L
-                }
-
-                else -> {
-                    "IDLE" to 0L
-                }
+                        },
+                    groupRecords =
+                        buildGroupRecords(strategy, before, groups, -1L) +
+                            buildGroupRecords(strategy, after, groups, 1L),
+                )
             }
 
-        return EdgeMutationRecords(
-            status = status,
-            acc = acc,
-            stateRecord = after,
-            createIndexRecords = createIndexRecords,
-            deleteIndexRecordKeys = deleteIndexRecordKeys,
-            countRecords = countRecords,
-            groupRecords = groupRecords,
-        )
+            else -> {
+                EdgeMutationRecords(status = "IDLE", acc = 0L, stateRecord = after)
+            }
+        }
     }
 
     private fun buildIndexRecords(

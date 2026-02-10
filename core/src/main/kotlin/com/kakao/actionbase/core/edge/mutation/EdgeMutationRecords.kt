@@ -9,8 +9,8 @@ data class EdgeMutationRecords(
     val status: String,
     val acc: Long,
     val stateRecord: EdgeStateRecord,
-    val createIndexRecords: List<EdgeIndexRecord>,
-    val deleteIndexRecordKeys: List<EdgeIndexRecord.Key>,
-    val countRecords: List<EdgeCountRecord>,
-    val groupRecords: List<EdgeGroupRecord>,
+    val createIndexRecords: List<EdgeIndexRecord> = emptyList(),
+    val deleteIndexRecordKeys: List<EdgeIndexRecord.Key> = emptyList(),
+    val countRecords: List<EdgeCountRecord> = emptyList(),
+    val groupRecords: List<EdgeGroupRecord> = emptyList(),
 )
