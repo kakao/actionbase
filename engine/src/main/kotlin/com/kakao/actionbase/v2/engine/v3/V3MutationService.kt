@@ -68,30 +68,29 @@ class V3MutationService(
         sync: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<EdgeMutationResponse> =
-        executeMutation(
-            database = database,
-            alias = alias,
-            sync = sync,
-            requestContext = requestContext,
-            mutations = request.mutations,
-            mutate = { tb, key, events ->
-                tb.mutateEdge(key, events, lock, encoder, tb.schema.codeToName)
-            },
-            stateToV2HashEdge = { state, key -> state.toV2HashEdge(key.first, key.second) },
-            queuedStatus = { key, count ->
-                EdgeMutationStatus(key.first, key.second, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
-            },
-            errorStatus = { key ->
-                EdgeMutationStatus(key.first, key.second, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
-            },
-            toResponse = { statuses ->
-                EdgeMutationResponse(
-                    statuses
-                        .map { EdgeMutationResponse.Item(source = it.source, target = it.target, count = it.count, status = it.status) }
-                        .sortedBy { "${it.source}:${it.target}" },
-                )
-            },
-        )
+        Mono.fromCallable { resolveMutationContext(database, alias, sync, requestContext) }.flatMap { ctx ->
+            executeMutation(
+                ctx = ctx,
+                mutations = request.mutations,
+                mutate = { tb, key, events ->
+                    tb.mutateEdge(key, events, lock, encoder, tb.schema.codeToName)
+                },
+                stateToV2HashEdge = { state, key -> state.toV2HashEdge(key.first, key.second) },
+                queuedStatus = { key, count ->
+                    EdgeMutationStatus(key.first, key.second, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
+                },
+                errorStatus = { key ->
+                    EdgeMutationStatus(key.first, key.second, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
+                },
+                toResponse = { statuses ->
+                    EdgeMutationResponse(
+                        statuses
+                            .map { EdgeMutationResponse.Item(source = it.source, target = it.target, count = it.count, status = it.status) }
+                            .sortedBy { "${it.source}:${it.target}" },
+                    )
+                },
+            )
+        }
 
     fun mutateMultiEdge(
         database: String,
@@ -101,63 +100,57 @@ class V3MutationService(
         sync: MutationMode? = null,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<MultiEdgeMutationResponse> =
-        executeMutation(
-            database = database,
-            alias = alias,
-            sync = sync,
-            requestContext = requestContext,
-            mutations = request.mutations,
-            mutate = { tb, key, events ->
-                tb.mutateMultiEdge(key, events, lock, encoder, tb.schema.codeToName)
-            },
-            stateToV2HashEdge = { state, _ -> state.toV2HashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
-            queuedStatus = { key, count ->
-                MultiEdgeMutationStatus(key, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
-            },
-            errorStatus = { key ->
-                MultiEdgeMutationStatus(key, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
-            },
-            toResponse = { statuses ->
-                MultiEdgeMutationResponse(
-                    statuses
-                        .map { MultiEdgeMutationResponse.Item(id = it.id, count = it.count, status = it.status) }
-                        .sortedBy { it.toString() },
-                )
-            },
-        )
+        Mono.fromCallable { resolveMutationContext(database, alias, sync, requestContext) }.flatMap { ctx ->
+            executeMutation(
+                ctx = ctx,
+                mutations = request.mutations,
+                mutate = { tb, key, events ->
+                    tb.mutateMultiEdge(key, events, lock, encoder, tb.schema.codeToName)
+                },
+                stateToV2HashEdge = { state, _ -> state.toV2HashEdge(state.getMultiEdgeSource(), state.getMultiEdgeTarget()) },
+                queuedStatus = { key, count ->
+                    MultiEdgeMutationStatus(key, count, EdgeOperationStatus.QUEUED.name, State.initial, State.initial, 0)
+                },
+                errorStatus = { key ->
+                    MultiEdgeMutationStatus(key, 0, EdgeOperationStatus.ERROR.name, State.initial, State.initial, 0)
+                },
+                toResponse = { statuses ->
+                    MultiEdgeMutationResponse(
+                        statuses
+                            .map { MultiEdgeMutationResponse.Item(id = it.id, count = it.count, status = it.status) }
+                            .sortedBy { it.toString() },
+                    )
+                },
+            )
+        }
 
     private fun <E : MutationEvent<K>, K : Any, S : MutationStatus, R> executeMutation(
-        database: String,
-        alias: String,
-        sync: MutationMode?,
-        requestContext: RequestContext,
+        ctx: MutationContext,
         mutations: List<MutationEvent.Source<E>>,
         mutate: (V3CompatibleTableBinding, K, List<Event>) -> Mono<S>,
         stateToV2HashEdge: (State, K) -> HashEdge?,
         queuedStatus: (K, Int) -> S,
         errorStatus: (K) -> S,
         toResponse: (List<S>) -> R,
-    ): Mono<R> =
-        Mono
-            .fromCallable { resolveMutationContext(database, alias, sync, requestContext) }
-            .flatMap { ctx ->
-                val tb = ctx.tableBinding
-                Flux
-                    .fromIterable(mutations)
-                    .map { it.createEvent(tb.schema) }
-                    .flatMap { writeWal(ctx, it) }
-                    .groupBy { it.id }
-                    .flatMap { groupedFlux ->
-                        val key = groupedFlux.key()
-                        if (ctx.mutationMode.queue) {
-                            enqueueGroup(groupedFlux, key, queuedStatus)
-                        } else {
-                            mutateGroup(groupedFlux, ctx, tb, key, mutate, stateToV2HashEdge, errorStatus)
-                        }
-                    }.collectList()
-                    .map(toResponse)
-            }.timeout(Duration.ofMillis(graph.mutationRequestTimeout))
+    ): Mono<R> {
+        val tb = ctx.tableBinding
+        return Flux
+            .fromIterable(mutations)
+            .map { it.createEvent(tb.schema) }
+            .flatMap { writeWal(ctx, it) }
+            .groupBy { it.id }
+            .flatMap { groupedFlux ->
+                val key = groupedFlux.key()
+                if (ctx.mutationMode.queue) {
+                    enqueueGroup(groupedFlux, key, queuedStatus)
+                } else {
+                    mutateGroup(groupedFlux, ctx, tb, key, mutate, stateToV2HashEdge, errorStatus)
+                }
+            }.collectList()
+            .map(toResponse)
+            .timeout(Duration.ofMillis(graph.mutationRequestTimeout))
             .runEvenIfCancelled()
+    }
 
     private fun <E : MutationEvent<K>, K : Any, S : MutationStatus> enqueueGroup(
         groupedFlux: Flux<E>,
