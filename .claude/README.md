@@ -2,32 +2,47 @@
 
 This directory contains Claude Code configuration for Actionbase.
 
-## Important: Contributing Changes
+## Structure
 
-Changes to `.claude/` and `CLAUDE.md` are tracked on the **`exp/claude-code-setup`** branch, not `main`.
+```
+.claude/
+├── agents/          # Custom agent definitions
+├── codemaps/        # Architecture documentation
+├── commands/        # Slash commands (/build, /test, /develop, etc.)
+├── rules/           # Auto-loaded guidelines (coding, security, refactoring, etc.)
+├── skills/          # Skill definitions (skill-name/SKILL.md)
+├── settings.json    # Shared settings (permissions, hooks)
+└── settings.local.json.template  # Local settings template
+```
 
-### To contribute changes:
+## Key Rules
+
+| Rule | Purpose |
+|------|---------|
+| `refactoring.md` | One chain, one read. No 3-jump splits. Minimal diff. |
+| `coding-standards.md` | File/function size limits, immutability, patterns |
+| `coding-style.md` | Kotlin/Java/Go language-specific patterns |
+| `performance.md` | Storage, messaging, reactive performance |
+| `security.md` | Secret management, input validation |
+| `testing-guide.md` | Data-driven E2E tests, TDD, @ObjectSource |
+
+## Branch Policy
+
+Changes to `.claude/` and `CLAUDE.md` are tracked on **`exp/claude-code-setup`** branch, not `main`.
+
+### To contribute:
 
 ```bash
-# 1. Create worktree for the exp branch
 git worktree add ../actionbase-claude-config exp/claude-code-setup
-
-# 2. Copy your changes
 cp -r .claude/* ../actionbase-claude-config/.claude/
-cp CLAUDE.md ../actionbase-claude-config/
-
-# 3. Commit and push from the worktree
 cd ../actionbase-claude-config
 git add .claude/ CLAUDE.md
 git commit -m "chore(claude): update configuration"
 git push
-
-# 4. Clean up worktree (optional)
-cd -
 git worktree remove ../actionbase-claude-config
 ```
 
-### To get latest configuration:
+### To get latest:
 
 ```bash
 git fetch origin

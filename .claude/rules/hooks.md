@@ -40,7 +40,7 @@ All hooks are configured as **advisory** (warn only, don't block).
 
 ## Configuration Location
 
-Hooks are configured in `.claude/settings.local.json`
+Hooks are configured in `.claude/settings.json`
 
 ## Adding Custom Hooks
 
@@ -60,6 +60,6 @@ Hooks are configured in `.claude/settings.local.json`
 ## Troubleshooting
 
 If hooks cause issues:
-1. Check `.claude/settings.local.json`
+1. Check `.claude/settings.json`
 2. Temporarily disable problematic hooks
 3. Report issues to maintainers

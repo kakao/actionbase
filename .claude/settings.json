@@ -1,12 +1,95 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(wc:*)",
+      "Bash(diff:*)",
+
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)",
+      "Bash(git merge:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git fetch:*)",
+
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh api:*)",
+      "Bash(gh repo view:*)",
+
+      "Bash(./gradlew:*)",
+      "Bash(make:*)",
+      "Bash(go build:*)",
+      "Bash(go test:*)",
+      "Bash(go fmt:*)",
+
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(cd website:*)",
+
+      "Bash(docker ps:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker compose up:*)",
+      "Bash(docker compose down:*)",
+      "Bash(docker compose ps:*)",
+
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:actionbase.io)",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ],
+    "deny": [],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git push)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr create)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr merge)",
+      "Bash(gh pr close:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue create)",
+      "Bash(gh issue close:*)",
+      "Bash(gh release create:*)",
+      "Bash(docker push:*)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if [ -n \"$file\" ] && [ -f \"$file\" ]; then if grep -qE '(API_KEY|SECRET|PASSWORD|TOKEN|PRIVATE_KEY)\\s*=\\s*.[^\"]+.' \"$file\" 2>/dev/null; then echo 'BLOCK: Hardcoded secret detected in file. Use environment variables instead.' >&2; exit 1; fi; fi"
+          }
+        ]
+      },
       {
         "matcher": "Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.kt ]] || [[ \"$file\" == *.java ]] || [[ \"$file\" == *.go ]]; then echo '[Advisory] Remember to run build after changes: ./gradlew build (Kotlin/Java) or make build (Go)'; fi"
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.kt ]] || [[ \"$file\" == *.java ]] || [[ \"$file\" == *.go ]]; then echo '[Advisory] Remember to run build after changes: ./gradlew build (Kotlin/Java) or go build ./... (Go)'; fi"
           }
         ]
       },
@@ -26,7 +109,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.kt ]]; then echo '[Advisory] Run ./gradlew spotlessApply to format Kotlin code'; fi"
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.kt ]]; then echo '[Advisory] Run ./gradlew spotlessApply to format Kotlin code'; elif [[ \"$file\" == */website/* ]]; then echo '[Advisory] Run: (cd website && npm run format && npm run lint)'; fi"
           }
         ]
       },
@@ -35,7 +118,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "file=\"$CLAUDE_FILE_PATH\"; if [[ \"$file\" == *.kt ]] || [[ \"$file\" == *.java ]]; then if grep -q 'println\\|System.out' \"$file\" 2>/dev/null; then echo '[Advisory] Found println/System.out statements. Consider using proper logging (SLF4J/Logback)'; fi; elif [[ \"$file\" == *.go ]]; then if grep -q 'fmt.Print' \"$file\" 2>/dev/null; then echo '[Advisory] Found fmt.Print statements. Consider using proper logging'; fi; fi"
+            "command": "file=\"$CLAUDE_FILE_PATH\"; if [ -n \"$file\" ] && [ -f \"$file\" ]; then if [[ \"$file\" == *.kt ]] || [[ \"$file\" == *.java ]]; then if grep -qE 'println|System\\.out' \"$file\" 2>/dev/null; then echo '[Advisory] Found println/System.out statements. Use proper logging (SLF4J/Logback)'; fi; elif [[ \"$file\" == *.go ]]; then if grep -qE 'fmt\\.Print' \"$file\" 2>/dev/null; then echo '[Advisory] Found fmt.Print statements. Use proper logging'; fi; fi; fi"
           }
         ]
       }

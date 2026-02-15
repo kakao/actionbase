@@ -1,14 +1,7 @@
 ---
 name: maintainer
 description: Open source maintainer agent for GitHub issue/PR management and community interaction.
-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Grep
-  - Glob
-  - WebFetch
+tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch
 ---
 
 # Maintainer Agent

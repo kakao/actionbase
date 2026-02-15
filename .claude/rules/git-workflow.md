@@ -1,6 +1,4 @@
-# Git Workflow Guidelines
-
-See `CLAUDE.md` for commit format and workflow details.
+# Git Workflow
 
 ## Branch Naming
 
@@ -10,13 +8,17 @@ fix/null-userid-validation
 refactor/simplify-query-builder
 ```
 
-## Pull Request Workflow
+## Commit Format
 
-1. Create feature branch from main
-2. Make changes with meaningful commits
-3. Push and create PR
-4. Wait for review approval
-5. Merge to main
+```
+type(scope): description
+
+feat(core): add bookmark schema support
+fix(server): validate userId before processing
+refactor(engine): simplify query builder logic
+test(core): add mutation processing tests
+docs(readme): update build instructions
+```
 
 ## Rules
 
@@ -24,30 +26,29 @@ refactor/simplify-query-builder
 - Require PR review before merge
 - Ensure CI passes before merge
 - Keep PRs focused and small
+- Commit frequently with clear messages
 
-## Multi-Agent Parallel Work
+## Performance Guidelines
 
-Use **git worktree** to run multiple agents on different branches simultaneously:
+### Storage
+```kotlin
+// GOOD: Bounded scan
+val scan = Scan().setPrefix(prefix).setLimit(100)
 
-```bash
-# Create worktrees for parallel work
-git worktree add ../actionbase-feature-a feature/branch-a
-git worktree add ../actionbase-feature-b feature/branch-b
-
-# List worktrees
-git worktree list
-
-# Remove when done
-git worktree remove ../actionbase-feature-a
+// BAD: Unbounded scan
+val scan = Scan()  // Full table scan!
 ```
 
-Benefits:
-- Same repo, separate directories, separate branches
-- No branch conflicts between agents
-- Shared `.git` saves disk space
+### Batch Operations
+```kotlin
+// GOOD: Batch writes
+storage.putAll(listOfPuts)  // Single RPC
 
-## Templates
+// BAD: Individual writes
+puts.forEach { storage.put(it) }  // N RPCs
+```
 
-See `CLAUDE.md` for template locations:
-- PR: `.github/PULL_REQUEST_TEMPLATE.md`
-- Issues: `.github/ISSUE_TEMPLATE/`
+### Reactive Code
+- Never block in reactive pipeline
+- Use `Schedulers.boundedElastic()` for blocking calls
+- Avoid N+1 queries
