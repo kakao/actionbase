@@ -1,0 +1,29 @@
+---
+title: Stories
+description: 카카오 프로덕션 배포 사례
+sidebar:
+  label: Overview
+  order: 0
+tableOfContents: false
+---
+
+import CategoryDirectoryList from '../../../../components/CategoryDirectoryList.astro';
+
+Actionbase는 카카오 서비스 전반에서 수천만 사용자의 인터랙션을 처리합니다. 프로덕션에서 적용한 패턴과 앞으로의 비전을 소개합니다.
+
+<CategoryDirectoryList
+  dir="ko/stories"
+  categories={[
+    {
+      name: 'Use Cases',
+      description: '위시리스트부터 친구 그래프까지, Actionbase가 프로덕션에서 동작하는 방식.',
+    },
+    { name: 'Engineering', description: 'Actionbase 내부: 동작 원리와 운영 방법.' },
+    {
+      name: 'How We Survived',
+      description:
+        '데이터베이스로서 신뢰를 얻기까지: 계약으로서의 테스트, 데이터 정합성, 그리고 힘들게 배운 교훈들.',
+    },
+    { name: 'Vision', description: '우리가 향하는 방향과 꿈.' },
+  ]}
+/>

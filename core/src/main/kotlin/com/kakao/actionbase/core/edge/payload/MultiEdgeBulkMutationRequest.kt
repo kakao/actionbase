@@ -2,6 +2,7 @@ package com.kakao.actionbase.core.edge.payload
 
 import com.kakao.actionbase.core.edge.MultiEdge
 import com.kakao.actionbase.core.edge.MultiEdgeEvent
+import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.Event
 import com.kakao.actionbase.core.state.EventType
@@ -12,8 +13,9 @@ data class MultiEdgeBulkMutationRequest(
     data class MutationItem(
         val type: EventType,
         val edge: MultiEdge,
-    ) {
-        fun createEvent(schema: ModelSchema.MultiEdge): MultiEdgeEvent {
+    ) : MutationEvent.Source<MultiEdgeEvent> {
+        override fun createEvent(schema: ModelSchema): MultiEdgeEvent {
+            require(schema is ModelSchema.MultiEdge) { "Expected ModelSchema.MultiEdge, but got ${schema::class.simpleName}" }
             val id = schema.id.type.cast(edge.id)
             val additionalProperties =
                 listOfNotNull(

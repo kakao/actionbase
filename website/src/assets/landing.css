@@ -59,6 +59,27 @@
   margin-bottom: 0;
 }
 
+/* Hide empty social-icons separator when social config is empty */
+.social-icons:not(:has(a))::after {
+  display: none;
+}
+
+/* Align nav links vertically when shields.io badge is present */
+ul:has(.nav-external) {
+  align-items: center;
+}
+
+.gh-badge {
+  height: 1.35rem;
+  display: block;
+  position: relative;
+  top: 1px;
+}
+
+:root[data-theme='light'] .gh-badge {
+  filter: invert(0.88);
+}
+
 /* WIP items in sidebar */
 .sidebar-wip {
   opacity: 0.5;

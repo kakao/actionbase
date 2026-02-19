@@ -6,8 +6,6 @@ import org.gradle.api.Project
 
 class JibConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        println("🐳Applying jib conventions...")
-
         // Apply Jib plugin
         project.pluginManager.apply("com.google.cloud.tools.jib")
 

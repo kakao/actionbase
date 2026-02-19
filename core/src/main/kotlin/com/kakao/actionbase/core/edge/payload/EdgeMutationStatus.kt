@@ -6,8 +6,16 @@ data class EdgeMutationStatus(
     val source: Any,
     val target: Any,
     val count: Int,
-    val status: String, // CREATED, IDLE ...
-    val before: State,
-    val after: State,
-    val acc: Long,
-)
+    override val status: String, // CREATED, IDLE ...
+    override val before: State,
+    override val after: State,
+    override val acc: Long,
+) : MutationStatus {
+    companion object {
+        fun of(
+            key: Pair<Any, Any>,
+            count: Int,
+            status: String,
+        ) = EdgeMutationStatus(key.first, key.second, count, status, State.initial, State.initial, 0)
+    }
+}

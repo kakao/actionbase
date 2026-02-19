@@ -5,7 +5,6 @@ import com.kakao.actionbase.core.edge.record.EdgeCountRecord
 import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
 import com.kakao.actionbase.core.edge.record.EdgeIndexRecord
 import com.kakao.actionbase.core.edge.record.EdgeStateRecord
-import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
@@ -23,73 +22,13 @@ object EdgeMutationBuilder {
     val MULTI_EDGE_SOURCE_CODE = XXHash32Wrapper.default.stringHash(MULTI_EDGE_SOURCE_FIELD_NAME)
     val MULTI_EDGE_TARGET_CODE = XXHash32Wrapper.default.stringHash(MULTI_EDGE_TARGET_FIELD_NAME)
 
-    fun build(
+    fun buildForUniqueEdge(
         before: EdgeStateRecord,
         after: EdgeStateRecord,
         directionType: DirectionType,
         indexes: List<Index>,
         groups: List<Group>,
-    ): EdgeMutationRecords {
-        val beforeActive = before.value.active
-        val afterActive = after.value.active
-
-        var createIndexRecords: List<EdgeIndexRecord> = emptyList()
-        var deleteIndexRecordKeys: List<EdgeIndexRecord.Key> = emptyList()
-        var countRecords: List<EdgeCountRecord> = emptyList()
-        var groupRecords: List<EdgeGroupRecord> = emptyList()
-
-        val (status, acc) =
-            when {
-                before == after -> {
-                    "IDLE" to 0L
-                }
-
-                !beforeActive && afterActive -> {
-                    createIndexRecords = buildIndexRecords(after, directionType, indexes)
-                    countRecords = buildCountRecords(after, directionType, 1L)
-                    groupRecords = buildGroupRecords(after, groups, 1L)
-                    "CREATED" to 1L
-                }
-
-                beforeActive && !afterActive -> {
-                    deleteIndexRecordKeys = buildIndexRecords(before, directionType, indexes).map { it.key }
-                    countRecords = buildCountRecords(after, directionType, -1L)
-                    groupRecords = buildGroupRecords(before, groups, -1L)
-                    "DELETED" to -1L
-                }
-
-                beforeActive && afterActive -> {
-                    createIndexRecords = buildIndexRecords(after, directionType, indexes)
-
-                    val willBeUpdated = createIndexRecords.map { it.key }.toSet()
-
-                    deleteIndexRecordKeys =
-                        buildIndexRecords(before, directionType, indexes)
-                            .map { it.key }
-                            .filter { it !in willBeUpdated }
-
-                    val decrementGroupRecords = buildGroupRecords(before, groups, -1L)
-                    val incrementGroupRecords = buildGroupRecords(after, groups, 1L)
-                    groupRecords = decrementGroupRecords + incrementGroupRecords
-
-                    "UPDATED" to 0L
-                }
-
-                else -> {
-                    "IDLE" to 0L
-                }
-            }
-
-        return EdgeMutationRecords(
-            status = status,
-            acc = acc,
-            stateRecord = after,
-            createIndexRecords = createIndexRecords,
-            deleteIndexRecordKeys = deleteIndexRecordKeys,
-            countRecords = countRecords,
-            groupRecords = groupRecords,
-        )
-    }
+    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.Edge, before, after, directionType, indexes, groups)
 
     fun buildForMultiEdge(
         before: EdgeStateRecord,
@@ -97,79 +36,77 @@ object EdgeMutationBuilder {
         directionType: DirectionType,
         indexes: List<Index>,
         groups: List<Group>,
+    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.MultiEdge, before, after, directionType, indexes, groups)
+
+    private fun buildWith(
+        strategy: EdgeMutationStrategy,
+        before: EdgeStateRecord,
+        after: EdgeStateRecord,
+        directionType: DirectionType,
+        indexes: List<Index>,
+        groups: List<Group>,
     ): EdgeMutationRecords {
         val beforeActive = before.value.active
         val afterActive = after.value.active
 
-        var createIndexRecords: List<EdgeIndexRecord> = emptyList()
-        var deleteIndexRecordKeys: List<EdgeIndexRecord.Key> = emptyList()
-        var countRecords: List<EdgeCountRecord> = emptyList()
-        var groupRecords: List<EdgeGroupRecord> = emptyList()
+        return when {
+            before == after -> {
+                EdgeMutationRecords(status = "IDLE", acc = 0L, stateRecord = after)
+            }
 
-        val (status, acc) =
-            when {
-                before == after -> {
-                    "IDLE" to 0L
-                }
+            !beforeActive && afterActive -> {
+                EdgeMutationRecords(
+                    status = "CREATED",
+                    acc = 1L,
+                    stateRecord = after,
+                    createIndexRecords = buildIndexRecords(strategy, after, directionType, indexes),
+                    countRecords = buildCountRecords(strategy, after, directionType, 1L),
+                    groupRecords = buildGroupRecords(strategy, after, groups, 1L),
+                )
+            }
 
-                !beforeActive && afterActive -> {
-                    createIndexRecords = buildIndexRecordsForMultiEdge(after, directionType, indexes)
-                    countRecords = buildCountRecordsForMultiEdge(after, directionType, 1L)
-                    groupRecords = buildGroupRecordsForMultiEdge(after, groups, 1L)
-                    "CREATED" to 1L
-                }
+            beforeActive && !afterActive -> {
+                val countSource = strategy.countRecordOnDelete(before, after)
+                EdgeMutationRecords(
+                    status = "DELETED",
+                    acc = -1L,
+                    stateRecord = after,
+                    deleteIndexRecordKeys = buildIndexRecords(strategy, before, directionType, indexes).map { it.key },
+                    countRecords = buildCountRecords(strategy, countSource, directionType, -1L),
+                    groupRecords = buildGroupRecords(strategy, before, groups, -1L),
+                )
+            }
 
-                beforeActive && !afterActive -> {
-                    deleteIndexRecordKeys = buildIndexRecordsForMultiEdge(before, directionType, indexes).map { it.key }
-                    countRecords = buildCountRecordsForMultiEdge(before, directionType, -1L)
-                    groupRecords = buildGroupRecordsForMultiEdge(before, groups, -1L)
-                    "DELETED" to -1L
-                }
-
-                beforeActive && afterActive -> {
-                    createIndexRecords = buildIndexRecordsForMultiEdge(after, directionType, indexes)
-
-                    val willBeUpdated = createIndexRecords.map { it.key }.toSet()
-
+            beforeActive && afterActive -> {
+                val newIndexRecords = buildIndexRecords(strategy, after, directionType, indexes)
+                val willBeUpdated = newIndexRecords.map { it.key }.toSet()
+                EdgeMutationRecords(
+                    status = "UPDATED",
+                    acc = 0L,
+                    stateRecord = after,
+                    createIndexRecords = newIndexRecords,
                     deleteIndexRecordKeys =
-                        buildIndexRecordsForMultiEdge(before, directionType, indexes)
+                        buildIndexRecords(strategy, before, directionType, indexes)
                             .map { it.key }
-                            .filter { it !in willBeUpdated }
-
-                    // If the source or target is changed, update the count records.
-                    val sourceOrTargetChanged =
-                        before.sourceForKeyEdgeTable() != after.sourceForKeyEdgeTable() ||
-                            before.targetForKeyEdgeTable() != after.targetForKeyEdgeTable()
-                    if (sourceOrTargetChanged) {
-                        countRecords =
-                            buildCountRecordsForMultiEdge(before, directionType, -1L) +
-                            buildCountRecordsForMultiEdge(after, directionType, 1L)
-                    }
-
-                    val decrementGroupRecords = buildGroupRecordsForMultiEdge(before, groups, -1L)
-                    val incrementGroupRecords = buildGroupRecordsForMultiEdge(after, groups, 1L)
-                    groupRecords = decrementGroupRecords + incrementGroupRecords
-
-                    "UPDATED" to 0L
-                }
-
-                else -> {
-                    "IDLE" to 0L
-                }
+                            .filter { it !in willBeUpdated },
+                    countRecords =
+                        strategy.countRecordsOnUpdate(before, after, directionType) { record, dt, acc ->
+                            buildCountRecords(strategy, record, dt, acc)
+                        },
+                    groupRecords =
+                        buildGroupRecords(strategy, before, groups, -1L) +
+                            buildGroupRecords(strategy, after, groups, 1L),
+                )
             }
 
-        return EdgeMutationRecords(
-            status = status,
-            acc = acc,
-            stateRecord = after,
-            createIndexRecords = createIndexRecords,
-            deleteIndexRecordKeys = deleteIndexRecordKeys,
-            countRecords = countRecords,
-            groupRecords = groupRecords,
-        )
+            else -> {
+                EdgeMutationRecords(status = "IDLE", acc = 0L, stateRecord = after)
+            }
+        }
     }
 
-    fun buildIndexRecords(
+    private fun buildIndexRecords(
+        strategy: EdgeMutationStrategy,
         record: EdgeStateRecord,
         directionType: DirectionType,
         indexes: List<Index>,
@@ -193,7 +130,7 @@ object EdgeMutationBuilder {
                             prefix =
                                 EdgeIndexRecord.Key.Prefix.of(
                                     tableCode = record.key.tableCode,
-                                    directedSource = record.directedSource(direction),
+                                    directedSource = strategy.directedSource(record, direction),
                                     direction = direction,
                                     indexCode = index.code,
                                     indexValues = indexValues,
@@ -201,7 +138,7 @@ object EdgeMutationBuilder {
                             suffix =
                                 EdgeIndexRecord.Key.Suffix(
                                     restIndexValues = emptyList(),
-                                    directedTarget = record.directedTarget(direction),
+                                    directedTarget = strategy.directedTarget(record, direction),
                                 ),
                         ),
                     value =
@@ -214,66 +151,18 @@ object EdgeMutationBuilder {
         }
     }
 
-    fun buildIndexRecordsForMultiEdge(
-        record: EdgeStateRecord,
-        directionType: DirectionType,
-        indexes: List<Index>,
-    ): List<EdgeIndexRecord> {
-        val id = record.key.source
-        val properties: Map<Int, Any?> = record.value.properties.mapValues { (_, stateValue) -> stateValue.value }
-
-        val directions = directionType.directions()
-        return indexes.flatMap { index ->
-            directions.map { direction ->
-                val directedSource = record.directedSourceForMultiEdge(direction)
-
-                val indexValues =
-                    index.fields.map { field ->
-                        val value = record.indexValueOf(properties, field.field)
-                        EdgeIndexRecord.Key.IndexValue(
-                            value = value,
-                            order = field.order,
-                        )
-                    }
-                EdgeIndexRecord(
-                    key =
-                        EdgeIndexRecord.Key(
-                            prefix =
-                                EdgeIndexRecord.Key.Prefix.of(
-                                    tableCode = record.key.tableCode,
-                                    directedSource = directedSource,
-                                    direction = direction,
-                                    indexCode = index.code,
-                                    indexValues = indexValues,
-                                ),
-                            suffix =
-                                EdgeIndexRecord.Key.Suffix(
-                                    restIndexValues = emptyList(),
-                                    directedTarget = id,
-                                ),
-                        ),
-                    value =
-                        EdgeIndexRecord.Value(
-                            version = record.value.version,
-                            properties = properties,
-                        ),
-                )
-            }
-        }
-    }
-
-    fun buildCountRecords(
+    private fun buildCountRecords(
+        strategy: EdgeMutationStrategy,
         record: EdgeStateRecord,
         directionType: DirectionType,
         accumulator: Long,
     ): List<EdgeCountRecord> {
         val directions = directionType.directions()
         return directions.map { direction ->
-
             EdgeCountRecord(
                 key =
                     EdgeCountRecord.Key.of(
-                        directedSource = record.directedSource(direction),
+                        directedSource = strategy.directedSource(record, direction),
                         tableCode = record.key.tableCode,
                         direction = direction,
                     ),
@@ -282,7 +171,8 @@ object EdgeMutationBuilder {
         }
     }
 
-    fun buildGroupRecords(
+    private fun buildGroupRecords(
+        strategy: EdgeMutationStrategy,
         record: EdgeStateRecord,
         groups: List<Group>,
         weight: Long,
@@ -312,7 +202,7 @@ object EdgeMutationBuilder {
                 EdgeGroupRecord(
                     key =
                         EdgeGroupRecord.Key.of(
-                            directedSource = record.directedSource(direction),
+                            directedSource = strategy.directedSource(record, direction),
                             tableCode = record.key.tableCode,
                             direction = direction,
                             groupCode = group.code,
@@ -321,69 +211,6 @@ object EdgeMutationBuilder {
                     value = weight * value,
                 )
             }
-        }
-    }
-
-    fun buildGroupRecordsForMultiEdge(
-        record: EdgeStateRecord,
-        groups: List<Group>,
-        weight: Long,
-    ): List<EdgeGroupRecord> {
-        val properties: Map<Int, Any?> = record.value.properties.mapValues { (_, stateValue) -> stateValue.value }
-
-        return groups.flatMap { group ->
-            group.directionType.directions().map { direction ->
-                val value =
-                    when (group.type) {
-                        GroupType.COUNT -> 1L
-                        GroupType.SUM -> {
-                            val anyValue = record.indexValueOf(properties, group.valueField)
-                            requireNotNull(anyValue) { "The value field ${group.valueField} is not found." }
-                            PrimitiveType.LONG.cast(anyValue) as Long
-                        }
-                    }
-                val groupValues =
-                    group.fields.map { field ->
-                        val value = record.indexValueOf(properties, field.name)
-                        if (field.bucket != null) {
-                            field.bucket.apply(value)
-                        } else {
-                            value
-                        }
-                    }
-                EdgeGroupRecord(
-                    key =
-                        EdgeGroupRecord.Key.of(
-                            directedSource = record.directedSourceForMultiEdge(direction),
-                            tableCode = record.key.tableCode,
-                            direction = direction,
-                            groupCode = group.code,
-                        ),
-                    qualifier = EdgeGroupRecord.Qualifier(groupValues),
-                    value = weight * value,
-                )
-            }
-        }
-    }
-
-    fun buildCountRecordsForMultiEdge(
-        record: EdgeStateRecord,
-        directionType: DirectionType,
-        accumulator: Long,
-    ): List<EdgeCountRecord> {
-        val directions = directionType.directions()
-        return directions.map { direction ->
-            val directedSource = record.directedSourceForMultiEdge(direction)
-
-            EdgeCountRecord(
-                key =
-                    EdgeCountRecord.Key.of(
-                        directedSource = directedSource,
-                        tableCode = record.key.tableCode,
-                        direction = direction,
-                    ),
-                value = accumulator,
-            )
         }
     }
 
@@ -401,29 +228,4 @@ object EdgeMutationBuilder {
             }
         }
     }
-
-    fun EdgeStateRecord.directedSource(direction: Direction): Any =
-        when (direction) {
-            Direction.OUT -> key.source
-            Direction.IN -> key.target
-        }
-
-    fun EdgeStateRecord.directedTarget(direction: Direction): Any =
-        when (direction) {
-            Direction.OUT -> key.target
-            Direction.IN -> key.source
-        }
-
-    fun EdgeStateRecord.sourceForKeyEdgeTable(): Any = directedSourceForMultiEdge(Direction.OUT)
-
-    fun EdgeStateRecord.targetForKeyEdgeTable(): Any = directedSourceForMultiEdge(Direction.IN)
-
-    /**
-     * The source and target are non-nullable.
-     */
-    fun EdgeStateRecord.directedSourceForMultiEdge(direction: Direction): Any =
-        when (direction) {
-            Direction.OUT -> value.properties[MULTI_EDGE_SOURCE_CODE]?.value!!
-            Direction.IN -> value.properties[MULTI_EDGE_TARGET_CODE]?.value!!
-        }
 }
