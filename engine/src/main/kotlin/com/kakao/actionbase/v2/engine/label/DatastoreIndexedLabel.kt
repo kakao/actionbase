@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.label
 
+import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.engine.GraphDefaults
@@ -15,7 +16,9 @@ class DatastoreIndexedLabel(
     indices: List<Index>,
     indexNameToIndex: Map<String, Index>,
     tables: Mono<HBaseTables>,
-) : HBaseIndexedLabel(entity, coder, indices, indexNameToIndex, tables) {
+    edgeRecordMapper: EdgeRecordMapper,
+    lockTimeout: Long,
+) : HBaseIndexedLabel(entity, coder, indices, indexNameToIndex, tables, edgeRecordMapper, lockTimeout) {
     companion object {
         fun create(
             entity: LabelEntity,
@@ -31,6 +34,8 @@ class DatastoreIndexedLabel(
                 indices = indices,
                 indexNameToIndex = indexNameToIndex,
                 tables = tables,
+                edgeRecordMapper = graph.edgeRecordMapper,
+                lockTimeout = graph.lockTimeout,
             ).apply(initialize)
         }
     }

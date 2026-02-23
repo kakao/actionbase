@@ -3,6 +3,7 @@ package com.kakao.actionbase.engine.util
 import java.time.Duration
 
 import reactor.core.publisher.Flux
+import reactor.core.publisher.GroupedFlux
 import reactor.core.publisher.Mono
 
 /**
@@ -12,3 +13,7 @@ import reactor.core.publisher.Mono
 fun <T> Mono<T>.runEvenIfCancelled(): Mono<T> = this.cache(Duration.ZERO)
 
 fun <T> Flux<T>.runEvenIfCancelled(): Flux<T> = this.cache(Duration.ZERO)
+
+operator fun <K, V> GroupedFlux<K, V>.component1(): K = key()
+
+operator fun <K, V> GroupedFlux<K, V>.component2(): Mono<MutableList<V>> = collectList()

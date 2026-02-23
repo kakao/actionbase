@@ -5,8 +5,8 @@ import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.core.state.StateValue
-import com.kakao.actionbase.v2.engine.v3.V3CompatibleTableBinding.Companion.mergeQualifiers
-import com.kakao.actionbase.v2.engine.v3.V3CompatibleTableBinding.Companion.specialStateValueToNull
+import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.mergeQualifiers
+import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.specialStateValueToNull
 
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class V3CompatibleTableBindingTest {
+class V2BackedTableBindingTest {
     @Nested
     inner class MergeQualifiers {
         private fun groupRecord(
