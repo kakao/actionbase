@@ -166,12 +166,13 @@ class V3MutationService(
         return MutationContext(
             aliasEntityName = aliasEntityName,
             label = label,
-            mutationMode = MutationModeContext.of(
-                table = label.entity.mode,
-                request = mode,
-                global = graph.globalMutationMode,
-                internal = internal,
-            ),
+            mutationMode =
+                MutationModeContext.of(
+                    table = label.entity.mode,
+                    request = mode,
+                    global = graph.globalMutationMode,
+                    internal = internal,
+                ),
             tableBinding = label.v3TableBinding,
             audit = Audit(requestContext.actor),
             requestId = requestContext.requestId,
