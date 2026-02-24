@@ -60,7 +60,7 @@ jobs:
 
       - name: Build translations
         if: steps.trigger.outputs.build == 'true'
-        run: python scripts/translation-memory.py --lang "$TARGET_LANG" build
+        run: python website/i18n/scripts/translation-memory.py --lang "$TARGET_LANG" build
 
       - name: Create translation PR
         if: steps.trigger.outputs.build == 'true'
@@ -77,7 +77,7 @@ jobs:
 
       - name: Validate translations
         if: steps.trigger.outputs.build == 'false'
-        run: python scripts/translation-memory.py --lang "$TARGET_LANG" validate
+        run: python website/i18n/scripts/translation-memory.py --lang "$TARGET_LANG" validate
 
       - name: Translation status (affected docs)
         if: steps.trigger.outputs.build == 'false'
@@ -86,13 +86,13 @@ jobs:
 
           # Glossary change → show all docs
           if git diff --name-only "origin/$BASE_REF"...HEAD -- "website/i18n/glossary/" | grep -q .; then
-            python scripts/translation-memory.py --lang "$TARGET_LANG" status | tee /tmp/translation-status.txt
+            python website/i18n/scripts/translation-memory.py --lang "$TARGET_LANG" status | tee /tmp/translation-status.txt
           else
             # Map changed TM paths to doc-relative paths
             DOCS=$(git diff --name-only "origin/$BASE_REF"...HEAD -- "website/i18n/tm/$TARGET_LANG/" \
               | sed "s|^website/i18n/tm/$TARGET_LANG/||;s|\.yaml$|.mdx|")
             if [ -n "$DOCS" ]; then
-              python scripts/translation-memory.py --lang "$TARGET_LANG" status --docs $DOCS | tee /tmp/translation-status.txt
+              python website/i18n/scripts/translation-memory.py --lang "$TARGET_LANG" status --docs $DOCS | tee /tmp/translation-status.txt
             else
               echo "No affected documents." | tee /tmp/translation-status.txt
             fi

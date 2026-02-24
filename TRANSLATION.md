@@ -13,7 +13,7 @@ website/i18n/
 website/src/content/docs/
   *.mdx                        # English source (authoritative)
   ko/*.mdx                     # Generated from TM — do not edit directly
-scripts/translation-memory.py  # TM tool (init / update / build / validate / status)
+website/i18n/scripts/translation-memory.py  # TM tool (init / update / build / validate / status)
 TRANSLATION.md                 # This file
 ```
 
@@ -21,22 +21,22 @@ TRANSLATION.md                 # This file
 
 ```bash
 # Create empty TM files for new EN docs
-python scripts/translation-memory.py init
+python website/i18n/scripts/translation-memory.py init
 
 # Sync existing TM with updated EN source
-python scripts/translation-memory.py update
+python website/i18n/scripts/translation-memory.py update
 
 # Rebuild translated docs from TM
-python scripts/translation-memory.py build
+python website/i18n/scripts/translation-memory.py build
 
 # Validate TM without writing files (exit 1 on errors)
-python scripts/translation-memory.py validate
+python website/i18n/scripts/translation-memory.py validate
 
 # Check current translation coverage
-python scripts/translation-memory.py status
+python website/i18n/scripts/translation-memory.py status
 
 # Target a different language (default: ko)
-python scripts/translation-memory.py --lang ko status
+python website/i18n/scripts/translation-memory.py --lang ko status
 ```
 
 ## How it works
@@ -118,7 +118,7 @@ will be overwritten on the next build.
 ## Updating TM after EN source changes
 
 ```bash
-python scripts/translation-memory.py update
+python website/i18n/scripts/translation-memory.py update
 ```
 
 The `update` command syncs existing TM files with updated English source docs:

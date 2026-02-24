@@ -33,8 +33,8 @@ import yaml
 # Constants
 # ---------------------------------------------------------------------------
 
-OSS_ROOT = Path(__file__).resolve().parent.parent
-DOCS_DIR = OSS_ROOT / "website" / "src" / "content" / "docs"
+I18N_DIR = Path(__file__).resolve().parent.parent
+DOCS_DIR = I18N_DIR.parent / "src" / "content" / "docs"
 
 # All known translation target languages (used to exclude from EN doc scan)
 KNOWN_LANGS = ("ko", "zh", "ja", "es", "fr", "de")
@@ -45,11 +45,11 @@ def _target_docs_dir(lang: str) -> Path:
 
 
 def _tm_dir(lang: str) -> Path:
-    return OSS_ROOT / "website" / "i18n" / "tm" / lang
+    return I18N_DIR / "tm" / lang
 
 
 def _glossary_path(lang: str) -> Path:
-    return OSS_ROOT / "website" / "i18n" / "glossary" / f"{lang}.yaml"
+    return I18N_DIR / "glossary" / f"{lang}.yaml"
 
 
 # ---------------------------------------------------------------------------
