@@ -3,13 +3,14 @@
 translation-memory.py — Translation Memory (TM) tool for Actionbase docs.
 
 Usage:
-  python translation-memory.py [--lang LANG] {init,update,build,status}
+  python translation-memory.py [--lang LANG] {init,update,build,validate,status}
 
 Subcommands:
-  init   — Create empty TM files for EN docs that don't have one yet
-  update — Sync existing TM files with updated EN source docs
-  build  — Build {lang}/*.mdx from en/*.mdx using TM lookup (exact string match)
-  status — Show translation status (HIT/MISS counts per document)
+  init     — Create empty TM files for EN docs that don't have one yet
+  update   — Sync existing TM files with updated EN source docs
+  build    — Build {lang}/*.mdx from en/*.mdx using TM lookup (exact string match)
+  validate — Validate TM build without writing files (exit 1 on errors)
+  status   — Show translation status (HIT/MISS counts per document)
 
 The --lang flag (default: ko) determines TM, glossary, and output paths.
 """
@@ -44,11 +45,11 @@ def _target_docs_dir(lang: str) -> Path:
 
 
 def _tm_dir(lang: str) -> Path:
-    return OSS_ROOT / "tm" / lang
+    return OSS_ROOT / "website" / "i18n" / "tm" / lang
 
 
 def _glossary_path(lang: str) -> Path:
-    return OSS_ROOT / "glossary" / f"{lang}.yaml"
+    return OSS_ROOT / "website" / "i18n" / "glossary" / f"{lang}.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -971,6 +972,43 @@ def cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_validate(args: argparse.Namespace) -> int:
+    """Validate that all TM entries produce a successful build (no file writes)."""
+    lang = args.lang
+    glossary_preserve = load_glossary(lang)
+    en_docs = _find_en_docs()
+    validated = 0
+    skipped = 0
+    errors: list[str] = []
+
+    for doc_rel in sorted(en_docs):
+        en_path = DOCS_DIR / doc_rel
+        tm, contributors = load_tm(doc_rel, lang)
+        if not tm:
+            skipped += 1
+            continue
+
+        en_content = en_path.read_text(encoding="utf-8")
+        try:
+            build_translated_doc(en_content, tm, glossary_preserve, lang, contributors)
+        except Exception as e:
+            errors.append(f"{doc_rel}: {e}")
+            continue
+
+        validated += 1
+        print(f"  ok: {doc_rel}")
+
+    print(f"\nValidated {validated} files, skipped {skipped} (no TM).")
+
+    if errors:
+        print(f"\nERRORS ({len(errors)}):")
+        for err in errors:
+            print(f"  {err}")
+        return 1
+
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Subcommand: status
 # ---------------------------------------------------------------------------
@@ -978,7 +1016,10 @@ def cmd_build(args: argparse.Namespace) -> int:
 def cmd_status(args: argparse.Namespace) -> int:
     """Show translation status (HIT/MISS counts per document)."""
     lang = args.lang
+    filter_docs = set(args.docs) if getattr(args, "docs", None) else None
     en_docs = _find_en_docs()
+    if filter_docs:
+        en_docs = [d for d in en_docs if d in filter_docs]
     total_hits = 0
     total_misses = 0
     total_segments = 0
@@ -1044,7 +1085,9 @@ def main() -> int:
     subparsers.add_parser("init", help="Create empty TM files for EN docs without one")
     subparsers.add_parser("update", help="Sync existing TM files with updated EN source docs")
     subparsers.add_parser("build", help="Build {lang}/*.mdx from en/*.mdx using TM lookup")
-    subparsers.add_parser("status", help="Show translation status (HIT/MISS counts)")
+    subparsers.add_parser("validate", help="Validate TM build without writing files")
+    status_parser = subparsers.add_parser("status", help="Show translation status (HIT/MISS counts)")
+    status_parser.add_argument("--docs", nargs="+", metavar="DOC", help="Filter to specific doc-relative paths (e.g., faq.mdx design/query.mdx)")
 
     args = parser.parse_args()
 
@@ -1052,6 +1095,7 @@ def main() -> int:
         "init": cmd_init,
         "update": cmd_update,
         "build": cmd_build,
+        "validate": cmd_validate,
         "status": cmd_status,
     }
 

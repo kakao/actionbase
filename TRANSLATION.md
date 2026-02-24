@@ -7,13 +7,14 @@ applying exact-match TM lookups to the English MDX files.
 ## File structure
 
 ```
-tm/ko/{doc-path}.yaml          # Translation Memory per document
-glossary/ko.yaml               # Glossary (translated terms + preserve list)
-scripts/translation-memory.py       # TM tool (init / update / build / status)
-TRANSLATION.md                 # This file
+website/i18n/
+  tm/ko/{doc-path}.yaml        # Translation Memory per document
+  glossary/ko.yaml             # Glossary (translated terms + preserve list)
 website/src/content/docs/
   *.mdx                        # English source (authoritative)
   ko/*.mdx                     # Generated from TM — do not edit directly
+scripts/translation-memory.py  # TM tool (init / update / build / validate / status)
+TRANSLATION.md                 # This file
 ```
 
 ## Quick start
@@ -27,6 +28,9 @@ python scripts/translation-memory.py update
 
 # Rebuild translated docs from TM
 python scripts/translation-memory.py build
+
+# Validate TM without writing files (exit 1 on errors)
+python scripts/translation-memory.py validate
 
 # Check current translation coverage
 python scripts/translation-memory.py status
@@ -57,7 +61,7 @@ glossary ───┘   └──────────────┘   │ H
 
 ## TM format
 
-Each document has a YAML file at `tm/{lang}/{doc-path}.yaml`:
+Each document has a YAML file at `website/i18n/tm/{lang}/{doc-path}.yaml`:
 
 ```yaml
 meta:
@@ -83,7 +87,7 @@ entries:
 ## Glossary format
 
 ```yaml
-# glossary/ko.yaml
+# website/i18n/glossary/ko.yaml
 version: v1
 terms:
   Edge: "엣지"
@@ -101,7 +105,7 @@ does not auto-apply glossary substitutions — it only reads the `preserve` list
 
 ## Contributing translations
 
-Edit `tm/{lang}/{doc-path}.yaml` directly:
+Edit `website/i18n/tm/{lang}/{doc-path}.yaml` directly:
 
 1. Find a MISS entry (or add a new one) in the TM file.
 2. Write the `target` translation.
@@ -126,8 +130,8 @@ Run `update` whenever English source docs change, then fill in empty targets.
 
 ## Script architecture
 
-`translation-memory.py` (~1000 lines) is a single-file CLI with four
-subcommands: `init`, `update`, `build`, `status`.
+`translation-memory.py` (~1000 lines) is a single-file CLI with five
+subcommands: `init`, `update`, `build`, `validate`, `status`.
 
 ### MDX parser
 
@@ -142,6 +146,18 @@ recognizes:
 - Aside/details/summary JSX blocks
 - Import/export statements, images, self-closing JSX (skipped)
 - Blockquotes (`>` lines)
+
+### Validate
+
+`validate` runs the full build pipeline (`build_translated_doc()`) for every
+document that has a TM file, but **writes no files**. It verifies:
+
+- TM YAML files parse without errors.
+- Every TM entry can be applied to its source document without exceptions
+  (e.g., malformed regex, encoding issues, broken frontmatter).
+
+If any document fails, the command prints the error list and exits with code 1.
+This is used in CI to gate PRs that touch TM or source docs.
 
 ### Two walkers
 
@@ -169,13 +185,13 @@ can be understood independently.
 
 All paths are parameterized by `--lang`:
 
-- TM: `tm/{lang}/`
-- Glossary: `glossary/{lang}.yaml`
+- TM: `website/i18n/tm/{lang}/`
+- Glossary: `website/i18n/glossary/{lang}.yaml`
 - Output: `website/src/content/docs/{lang}/`
 - Links: `/{lang}/foo/` prefix
 
 Currently only `ko` has TM data. Adding a new language requires creating
-`tm/{lang}/` YAML files and `glossary/{lang}.yaml`.
+`website/i18n/tm/{lang}/` YAML files and `website/i18n/glossary/{lang}.yaml`.
 
 ## Known limitations
 
