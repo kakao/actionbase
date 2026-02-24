@@ -38,13 +38,13 @@ python scripts/translation-memory.py --lang ko status
 ## How it works
 
 ```
-en/*.mdx ──┐
-            │   ┌──────────────┐   ┌────────────┐   ┌──────────┐
-tm/*.yaml ──┼──▶│ Parse MDX    │──▶│ TM Lookup  │──▶│ Generate │──▶ ko/*.mdx
-            │   │ (segments)   │   │ exact match│   │ output   │
-glossary ───┘   └──────────────┘   │ HIT→target │   └──────────┘
+en/*.mdx ───┐
+            │   ┌──────────────┐   ┌─────────────┐   ┌──────────┐
+tm/*.yaml ──┼──▶│ Parse MDX    │──▶│ TM Lookup   │──▶│ Generate │──▶ ko/*.mdx
+            │   │ (segments)   │   │ exact match │   │ output   │
+glossary ───┘   └──────────────┘   │ HIT→target  │   └──────────┘
                                    │ MISS→source │
-                                   └────────────┘
+                                   └─────────────┘
 ```
 
 1. `translation-memory.py build` parses each English MDX into **segments**
