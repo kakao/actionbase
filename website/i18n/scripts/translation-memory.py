@@ -1016,16 +1016,13 @@ def cmd_validate(args: argparse.Namespace) -> int:
 def cmd_status(args: argparse.Namespace) -> int:
     """Show translation status (HIT/MISS counts per document)."""
     lang = args.lang
+    output_format = getattr(args, "format", "table")
     filter_docs = set(args.docs) if getattr(args, "docs", None) else None
     en_docs = _find_en_docs()
     if filter_docs:
         en_docs = [d for d in en_docs if d in filter_docs]
-    total_hits = 0
-    total_misses = 0
-    total_segments = 0
 
-    print(f"[{lang}] {'Document':<55} {'Segments':>8} {'HIT':>6} {'MISS':>6} {'Coverage':>9}")
-    print("-" * 92)
+    rows: list[tuple[str, int, int, int]] = []
 
     for doc_rel in sorted(en_docs):
         en_path = DOCS_DIR / doc_rel
@@ -1033,23 +1030,74 @@ def cmd_status(args: argparse.Namespace) -> int:
         segments = extract_segments(en_content)
         tm, _ = load_tm(doc_rel, lang)
 
-        hits = sum(1 for s in segments if s.text in tm)
-        misses = len(segments) - hits
+        hits = sum(1 for s in segments if s.text in tm and tm[s.text].target)
         total = len(segments)
-        coverage = f"{hits / total * 100:.0f}%" if total > 0 else "N/A"
-
-        total_hits += hits
-        total_misses += misses
-        total_segments += total
+        misses = total - hits
 
         if total > 0:
-            print(f"  {doc_rel:<53} {total:>8} {hits:>6} {misses:>6} {coverage:>9}")
+            rows.append((doc_rel, total, hits, misses))
+
+    total_segments = sum(r[1] for r in rows)
+    total_hits = sum(r[2] for r in rows)
+    total_misses = sum(r[3] for r in rows)
+
+    if output_format == "summary":
+        _print_summary(lang, rows, total_segments, total_hits, total_misses, filter_docs)
+    else:
+        _print_table(lang, rows, total_segments, total_hits, total_misses)
+
+    return 0
+
+
+def _print_table(
+    lang: str,
+    rows: list[tuple[str, int, int, int]],
+    total_segments: int,
+    total_hits: int,
+    total_misses: int,
+) -> None:
+    """Print plain-text table format (original output)."""
+    print(f"[{lang}] {'Document':<55} {'Segments':>8} {'HIT':>6} {'MISS':>6} {'Coverage':>9}")
+    print("-" * 92)
+
+    for doc_rel, total, hits, misses in rows:
+        coverage = f"{hits / total * 100:.0f}%" if total > 0 else "N/A"
+        print(f"  {doc_rel:<53} {total:>8} {hits:>6} {misses:>6} {coverage:>9}")
 
     print("-" * 92)
     overall = f"{total_hits / total_segments * 100:.0f}%" if total_segments > 0 else "N/A"
     print(f"  {'TOTAL':<53} {total_segments:>8} {total_hits:>6} {total_misses:>6} {overall:>9}")
 
-    return 0
+
+def _print_summary(
+    lang: str,
+    rows: list[tuple[str, int, int, int]],
+    total_segments: int,
+    total_hits: int,
+    total_misses: int,
+    filter_docs: set[str] | None,
+) -> None:
+    """Print markdown summary format for CI Job Summary."""
+    doc_count = len(rows)
+    scope = "affected" if filter_docs else "total"
+    print(f"## Translation Status ({lang})\n")
+    print(f"Your changes affect **{doc_count} document{'s' if doc_count != 1 else ''}** ({scope}).\n")
+
+    print("| Document | Segments | Translated | Coverage |")
+    print("|---|---|---|---|")
+
+    for doc_rel, total, hits, misses in rows:
+        coverage = f"{hits / total * 100:.0f}%" if total > 0 else "N/A"
+        print(f"| {doc_rel} | {total} | {hits}/{total} | {coverage} |")
+
+    overall = f"{total_hits / total_segments * 100:.0f}%" if total_segments > 0 else "N/A"
+    print(f"| **Total** | **{total_segments}** | **{total_hits}/{total_segments}** | **{overall}** |")
+
+    print()
+    if total_misses == 0:
+        print("All segments are translated!")
+    else:
+        print(f"To find remaining untranslated segments, look for `target: \"\"` in the TM files above.")
 
 
 # ---------------------------------------------------------------------------
@@ -1088,6 +1136,7 @@ def main() -> int:
     subparsers.add_parser("validate", help="Validate TM build without writing files")
     status_parser = subparsers.add_parser("status", help="Show translation status (HIT/MISS counts)")
     status_parser.add_argument("--docs", nargs="+", metavar="DOC", help="Filter to specific doc-relative paths (e.g., faq.mdx design/query.mdx)")
+    status_parser.add_argument("--format", choices=["table", "summary"], default="table", help="Output format: table (default) or summary (markdown for CI)")
 
     args = parser.parse_args()
 
