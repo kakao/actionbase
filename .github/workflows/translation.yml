@@ -8,6 +8,7 @@ on:
       - '!website/src/content/docs/ko/**'
       - 'website/i18n/tm/**'
       - 'website/i18n/glossary/**'
+      - '.github/workflows/translation.yml'
 
   pull_request:
     paths:
@@ -15,6 +16,7 @@ on:
       - '!website/src/content/docs/ko/**'
       - 'website/i18n/tm/**'
       - 'website/i18n/glossary/**'
+      - '.github/workflows/translation.yml'
 
   workflow_dispatch:
 
