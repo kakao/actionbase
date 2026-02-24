@@ -2,7 +2,7 @@ name: Translation
 
 on:
   push:
-    branches: [ main ]
+    branches: [ '**' ]
     paths:
       - 'website/src/content/docs/**'
       - '!website/src/content/docs/ko/**'
