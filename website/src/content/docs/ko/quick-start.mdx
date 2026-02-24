@@ -10,11 +10,11 @@ import { User, Package, ArrowRight, ArrowLeft } from '@lucide/astro';
 
 <img src="/images/quick-start/quickstart.svg" alt="Actionbase Quick Start Demo" />
 
-## 사전 요구사항 {#prerequisites}
+## 사전 요구사항
 
 - Docker
 
-## Actionbase 실행 {#start-actionbase}
+## Actionbase 실행
 
 ```bash
 docker run -it ghcr.io/kakao/actionbase:standalone
@@ -26,12 +26,9 @@ docker run -it ghcr.io/kakao/actionbase:standalone
 actionbase>
 ```
 
-<Aside>
-  CLI는 내부적으로 REST API를 호출합니다. 명령 실행 시 만들어지는 HTTP 요청도 함께 확인할 수
-  있습니다.
-</Aside>
+<Aside>CLI는 내부적으로 REST API를 호출합니다. 명령 실행 시 만들어지는 HTTP 요청도 함께 확인할 수 있습니다.</Aside>
 
-## 데이터 쓰기 {#write-data}
+## 데이터 쓰기
 
 미리 준비된 샘플 데이터를 다음 프롬프트(`actionbase>`)에서 불러옵니다:
 
@@ -62,12 +59,10 @@ Bob ----- likes ----> +--------+
 
 <div class="icon-rows">
   <div class="icon-row">
-    "Bob이 좋아한 것은?" <User size={18} /> <ArrowRight size={18} /> <Package size={18} />{' '}
-    (direction: OUT)
+"Bob이 좋아한 것은?" <User size={18} /> <ArrowRight size={18} /> <Package size={18} />{' '} (direction: OUT)
   </div>
   <div class="icon-row">
-    "Phone을 좋아한 사람은?" <Package size={18} /> <ArrowLeft size={18} /> <User size={18} /> (방향:
-    IN)
+"Phone을 좋아한 사람은?" <Package size={18} /> <ArrowLeft size={18} /> <User size={18} /> (방향: IN)
   </div>
 </div>
 
@@ -109,7 +104,7 @@ curl -X POST "http://localhost:8080/graph/v2/service/likes/label/likes" \
   }'
 ```
 
-엣지 삽입
+**엣지 삽입**
 
 ```bash
 curl -X POST "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges" \
@@ -125,9 +120,9 @@ curl -X POST "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges"
 
 </details>
 
-## 데이터 읽기 {#read-data}
+## 데이터 읽기
 
-### 조회 {#get}
+### 조회
 
 특정 엣지가 존재하는지 확인:
 
@@ -145,7 +140,7 @@ get --source Alice --target Phone
 ```
 
 <details>
-<summary>REST API 대응</summary>
+<summary>REST API 예시</summary>
 
 ```bash
 curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/get?source=Alice&target=Phone"
@@ -153,7 +148,7 @@ curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/get?sour
 
 </details>
 
-### 스캔 {#scan}
+### 스캔
 
 <div class="icon-row">
   <strong>What did Bob like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
@@ -176,7 +171,7 @@ scan --index recent --start Bob --direction OUT
 
 <div class="icon-row">
   <strong>Who liked Phone?</strong> <Package size={18} /> <ArrowLeft size={18} /> <User size={18} />{' '}
-  (direction: IN)
+(direction: IN)
 </div>
 
 ```
@@ -194,23 +189,23 @@ scan --index recent --start Phone --direction IN
 ```
 
 <Aside type="note">
-  두 방향 모두 쓰기 시점에 미리 계산됩니다. 추가 인덱스나 쿼리 오버헤드가 없습니다.**
+  두 방향 모두 쓰기 시점에 미리 계산됩니다. 추가 인덱스나 쿼리 오버헤드가 없습니다.
 </Aside>
 
 <details>
-<summary>REST API 대응</summary>
+<summary>REST API 예시</summary>
 
 ```bash
-# OUT {#out}
+# OUT
 curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/recent?start=Bob&direction=OUT"
 
-# IN {#in}
+# IN
 curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/scan/recent?start=Phone&direction=IN"
 ```
 
 </details>
 
-### 카운트 {#count}
+### 카운트
 
 <div class="icon-row">
   <strong>How many items did Alice like?</strong> <User size={18} /> <ArrowRight size={18} />{' '}
@@ -249,19 +244,19 @@ count --start Phone --direction IN
 <Aside type="note">카운트는 쓰기 시점에 미리 계산됩니다. 집계가 필요하지 않습니다.</Aside>
 
 <details>
-<summary>REST API 대응</summary>
+<summary>REST API 예시</summary>
 
 ```bash
-# OUT {#out}
+# OUT
 curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/count?start=Alice&direction=OUT"
 
-# IN {#in}
+# IN
 curl "http://localhost:8080/graph/v3/databases/likes/tables/likes/edges/count?start=Phone&direction=IN"
 ```
 
 </details>
 
-## 다음 단계 {#next-steps}
+## 다음 단계
 
 - [핵심 개념](/ko/design/concepts/) — Actionbase 동작 방식
 - [소셜 미디어 앱 만들기](/ko/guides/build-your-social-media-app/) — 실습 가이드

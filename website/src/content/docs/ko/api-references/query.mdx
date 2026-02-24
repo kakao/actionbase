@@ -10,7 +10,7 @@ tableOfContents:
 import { Aside } from '@astrojs/starlight/components';
 
 <Aside type="caution">
-  인증이 적용되지 않습니다. [API 레퍼런스](/ko/api-references/#인증)를 참고하세요.
+  인증이 적용되지 않습니다. [API 레퍼런스](/ko/api-references/#authentication)를 참고하세요.
 </Aside>
 
 엣지 쿼리 API (유니크 엣지). 유니크 엣지와 멀티 엣지의 차이는 [FAQ](/ko/faq/#what-is-the-difference-between-unique-edge-and-multi-edge)를 참고하세요. 개념적 배경은 [쿼리](/ko/design/query/)를 참고하세요.
@@ -27,14 +27,14 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/count
 
 ### 파라미터
 
-| 위치   | 파라미터      | 필수 여부           | 설명                                  |
-| ------ | ------------- | ------------------- | ------------------------------------- |
-| Header | Authorization | 선택                | 인증 키 (향후 사용을 위해 예약됨)     |
-| Path   | database      | 필수                | 타겟 데이터베이스 이름                |
-| Path   | table         | 필수                | 타겟 테이블 이름                      |
-| Query  | start         | 필수                | 시작 노드 ID                          |
-| Query  | direction     | 필수                | [쿼리 방향](#쿼리-방향) (OUT 또는 IN) |
-| Query  | ranges        | 선택 (기본값: null) | [스캔 범위](#인덱스-범위)             |
+| 위치   | 파라미터      | 필수 여부           | 설명                                        |
+| ------ | ------------- | ------------------- | ------------------------------------------- |
+| Header | Authorization | 선택                | 인증 키 (향후 사용을 위해 예약됨)           |
+| Path   | database      | 필수                | 타겟 데이터베이스 이름                      |
+| Path   | table         | 필수                | 타겟 테이블 이름                            |
+| Query  | start         | 필수                | 시작 노드 ID                                |
+| Query  | direction     | 필수                | [쿼리 방향](#query-direction) (OUT 또는 IN) |
+| Query  | ranges        | 선택 (기본값: null) | [스캔 범위](#index-ranges)                  |
 
 ### 응답 타입
 
@@ -87,7 +87,7 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/get
 | Path   | table         | 필수                | 타겟 테이블 이름                  |
 | Query  | source        | 필수                | 소스 노드 ID 목록 (쉼표로 구분)   |
 | Query  | target        | 필수                | 타겟 노드 ID 목록 (쉼표로 구분)   |
-| Query  | filters       | 선택 (기본값: null) | [필터링 조건](#필터)              |
+| Query  | filters       | 선택 (기본값: null) | [필터링 조건](#filters)           |
 
 여러 소스 또는 타겟 ID를 지정하면 **mget**으로 동작하여 여러 엣지를 조회합니다. 이 경우 API 요청당 최대 **25개의 엣지**를 조회할 수 있습니다. 더 많은 엣지를 조회하려면 여러 API 요청을 보내세요.
 
@@ -309,7 +309,116 @@ curl -X GET \
 }
 ```
 
-## 3. Scan
+## 3. Get (Multi-Edge)
+
+Retrieve multiple multi-edges by their IDs. For unique-edge vs multi-edge, see [FAQ](/ko/faq/#what-is-the-difference-between-unique-edge-and-multi-edge).
+
+### 엔드포인트
+
+```
+GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids
+```
+
+### 파라미터
+
+| 위치   | 파라미터      | 필수 여부                | 설명                                         |
+| ------ | ------------- | ------------------------ | -------------------------------------------- |
+| Header | Authorization | 선택                     | 인증 키 (향후 사용을 위해 예약됨)            |
+| Path   | database      | 필수                     | 타겟 데이터베이스 이름                       |
+| Path   | table         | 필수                     | 타겟 테이블 이름 (멀티 엣지 테이블이어야 함) |
+| Query  | ids           | 필수                     | 엣지 ID 목록 (쉼표로 구분)                   |
+| Query  | filters       | 선택 (기본값: null)      | [필터링 조건](#filters)                      |
+| Query  | features      | 선택 (기본값: 빈 리스트) | 포함할 기능 목록                             |
+
+A maximum of **25 edges** can be retrieved per API request. To retrieve more edges, make multiple API requests.
+
+### 응답 타입
+
+[EdgeFrame](#edgeframe-응답) - 엣지 데이터를 포함한 페이로드
+
+### 요청 예시 (GET)
+
+| 파라미터      | 값            |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| ids           | id1,id2,id3   |
+
+```bash
+# multi-edges/ids?ids=id1,id2,id3
+curl -X GET \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/multi-edges/ids?ids=id1,id2,id3" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### 응답 예시
+
+```json
+{
+  "edges": [
+    {
+      "version": 1,
+      "source": "id1",
+      "target": "id1",
+      "properties": {
+        "amount": 1000,
+        "paidAt": 1609459200000
+      },
+      "context": {}
+    },
+    {
+      "version": 1,
+      "source": "id3",
+      "target": "id3",
+      "properties": {
+        "amount": 3000,
+        "paidAt": 1609545600000
+      },
+      "context": {}
+    }
+  ],
+  "count": 2,
+  "total": 2,
+  "offset": null,
+  "hasNext": false,
+  "context": {}
+}
+```
+
+### 요청 예시 (POST)
+
+For requests with many IDs, use the POST endpoint with a JSON body.
+
+```
+POST /graph/v3/databases/{database}/tables/{table}/multi-edges/ids
+```
+
+| 파라미터      | 값            |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+
+**Request Body:**
+
+```json
+{
+  "ids": ["id1", "id2", "id3"],
+  "filters": "amount:gte:1000",
+  "features": []
+}
+```
+
+```bash
+curl -X POST \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/multi-edges/ids" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"ids": ["id1", "id2", "id3"], "filters": "amount:gte:1000"}'
+```
+
+## 4. Scan
 
 인덱스를 사용하여 엣지를 스캔합니다.
 
@@ -328,11 +437,11 @@ GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
 | Path   | table         | 필수                     | 타겟 테이블 이름                              |
 | Path   | index         | 필수                     | 사용할 인덱스 이름                            |
 | Query  | start         | 필수                     | 시작 노드 ID                                  |
-| Query  | direction     | 필수                     | [쿼리 방향](#쿼리-방향) (OUT 또는 IN)         |
+| Query  | direction     | 필수                     | [쿼리 방향](#query-direction) (OUT 또는 IN)   |
 | Query  | limit         | 선택                     | 반환할 최대 결과 수; 프로덕션에서는 25 권장   |
-| Query  | offset        | 선택 (기본값: null)      | [페이지네이션](#페이지네이션) 오프셋          |
-| Query  | ranges        | 선택 (기본값: null)      | [스캔 범위](#인덱스-범위)                     |
-| Query  | filters       | 선택 (기본값: null)      | [필터링 조건](#필터)                          |
+| Query  | offset        | 선택 (기본값: null)      | [페이지네이션](#pagination) 오프셋            |
+| Query  | ranges        | 선택 (기본값: null)      | [스캔 범위](#index-ranges)                    |
+| Query  | filters       | 선택 (기본값: null)      | [필터링 조건](#filters)                       |
 | Query  | features      | 선택 (기본값: 빈 리스트) | 포함할 기능 목록 (예: `total`로 전체 값 계산) |
 
 ### 응답 타입
@@ -393,15 +502,15 @@ curl -X GET \
 
 **요청 예시**
 
-| 파라미터      | 값            | 설명    |
-| ------------- | ------------- | ------- |
-| Authorization | YOUR_API_KEY  |         |
-| database      | your_database |         |
-| table         | your_table    |         |
-| index         | your_index    |         |
-| start         | source1       |         |
-| direction     | OUT           |         |
-| limit         |               | 25 권장 |
+| 파라미터      | 값            | 설명 |
+| ------------- | ------------- | ---- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| index         | your_index    |
+| start         | source1       |
+| direction     | OUT           |
+| limit         | 25 권장       |
 
 ```bash
 # scan/your_index?start=source1&direction=OUT
@@ -443,14 +552,14 @@ curl -X GET \
 
 | 파라미터      | 값             | 설명                  |
 | ------------- | -------------- | --------------------- |
-| Authorization | YOUR_API_KEY   |                       |
-| database      | your_database  |                       |
-| table         | your_table     |                       |
-| index         | your_index     |                       |
-| start         | source1        |                       |
-| direction     | OUT            |                       |
+| Authorization | YOUR_API_KEY   |
+| database      | your_database  |
+| table         | your_table     |
+| index         | your_index     |
+| start         | source1        |
+| direction     | OUT            |
 | offset        | string_encoded | 이전 응답에서 받은 값 |
-| limit         |                | 25 권장               |
+| limit         | 25 권장        |
 
 ```bash
 # scan/your_index?start=source1&direction=OUT&offset=string_encoded
@@ -494,8 +603,8 @@ curl -X GET \
 
 1. **인덱스 의존성:** `ranges`에 사용되는 필드는 인덱스가 있어야 합니다. 인덱스가 없는 필드에 범위를 지정하면 예상치 못한 결과가 반환됩니다.
 2. **연산자 의미:** `eq`, `gt(e)`, `lt(e)`, `between` 연산자는 실제 스토리지 스캔의 시작점과 끝점을 결정합니다. 인덱스 속성에 맞게 적절히 사용해야 합니다.
-   - 인덱스가 `DESC` (내림차순)으로 설정된 경우: `lt`가 시작점, `gt`가 끝점이 됩니다.
-   - 인덱스가 `ASC` (오름차순)으로 설정된 경우: `gt`가 시작점, `lt`가 끝점이 됩니다.
+- 인덱스가 `DESC` (내림차순)으로 설정된 경우: `lt`가 시작점, `gt`가 끝점이 됩니다.
+- 인덱스가 `ASC` (오름차순)으로 설정된 경우: `gt`가 시작점, `lt`가 끝점이 됩니다.
 3. **복합 범위:** 범위는 인덱스가 정의된 필드 조합의 순서대로 사용할 수 있습니다. 범위는 인덱스에 정의된 필드 순서대로 적용해야 합니다.
 
 ### 범위 구문
@@ -564,9 +673,9 @@ GET .../scan/your_index?start=10&direction=OUT&ranges=createdAt:bt:1000000,20000
 
 ## 필터
 
-`filters` 파라미터를 사용하면 get/scan 쿼리에서 데이터(엣지)를 필터링할 수 있습니다. [범위](#인덱스-범위)와 동일한 형식을 사용합니다.
+`filters` 파라미터를 사용하면 get/scan 쿼리에서 데이터(엣지)를 필터링할 수 있습니다. [범위](#index-ranges)와 동일한 형식을 사용합니다.
 
-**범위와의 차이점:** [범위](#인덱스-범위)는 쿼리 범위를 사전에 지정하며 인덱스로 설정된 필드만 사용할 수 있는 반면, `filters`는 쿼리 결과를 필터링하며 인덱스로 설정되지 않은 필드도 사용할 수 있습니다.
+**범위와의 차이점:** [범위](#index-ranges)는 쿼리 범위를 사전에 지정하며 인덱스로 설정된 필드만 사용할 수 있는 반면, `filters`는 쿼리 결과를 필터링하며 인덱스로 설정되지 않은 필드도 사용할 수 있습니다.
 
 ### 필터 예시
 
@@ -588,10 +697,10 @@ GET .../scan/your_index?start=1&direction=OUT&ranges=createdAt:gte:1000000&filte
 
 ```kotlin
 data class Count(
-  val start: Any,                 // 시작 노드 ID
-  val direction: Direction,       // 방향 (IN, OUT)
-  val count: Long,                // 엣지 카운트
-  val context: Map<String, Any?>, // 컨텍스트 정보
+  val start: Any,                 // Starting node ID
+  val direction: Direction,       // Direction (IN, OUT)
+  val count: Long,                // Edge count
+  val context: Map<String, Any?>, // Context information
 )
 ```
 
@@ -601,12 +710,12 @@ Get 및 scan 쿼리 응답. 엣지 데이터를 포함한 페이로드.
 
 ```kotlin
 data class EdgeFrame(
-  val edges: List<Edge>,          // 엣지 목록
-  val count: Int,                 // 현재 반환된 엣지 수
-  val total: Long,                // 전체 엣지 카운트 (-1은 계산되지 않음을 의미)
-  val offset: String?,            // 페이지네이션 오프셋
-  val hasNext: Boolean,           // 다음 페이지 존재 여부
-  val context: Map<String, Any?>, // 컨텍스트 정보
+  val edges: List<Edge>,          // Edge list
+  val count: Int,                 // Number of edges currently returned
+  val total: Long,                // Total edge count (-1 means not calculated)
+  val offset: String?,            // Pagination offset
+  val hasNext: Boolean,           // Whether next page exists
+  val context: Map<String, Any?>, // Context information
 )
 ```
 
@@ -616,10 +725,10 @@ data class EdgeFrame(
 
 ```kotlin
 data class Edge(
-  val version: Long,                 // 엣지 버전
-  val source: Any,                   // 소스 노드 ID
-  val target: Any,                   // 타겟 노드 ID
-  val properties: Map<String, Any?>, // 엣지 프로퍼티
-  val context: Map<String, Any?>,    // 컨텍스트 정보
+  val version: Long,                 // Edge version
+  val source: Any,                   // Source node ID
+  val target: Any,                   // Target node ID
+  val properties: Map<String, Any?>, // Edge properties
+  val context: Map<String, Any?>,    // Context information
 )
 ```

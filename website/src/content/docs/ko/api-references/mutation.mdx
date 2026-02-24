@@ -10,7 +10,7 @@ tableOfContents:
 import { Aside } from '@astrojs/starlight/components';
 
 <Aside type="caution">
-  인증이 적용되지 않습니다. [API 레퍼런스](/ko/api-references/#인증)를 참고하세요.
+  인증이 적용되지 않습니다. [API 레퍼런스](/ko/api-references/#authentication)를 참고하세요.
 </Aside>
 
 엣지 뮤테이션 API. 개념적 배경은 [뮤테이션](/ko/design/mutation/)을 참고하세요.
@@ -343,11 +343,11 @@ curl -X POST \
 
 ```kotlin
 data class EdgeBulkMutationRequest(
-  val mutations: List<MutationItem>, // 뮤테이션 항목 목록
+  val mutations: List<MutationItem>, // List of mutation items
 ) {
   data class MutationItem(
-    val type: EventType,        // 이벤트 타입 (INSERT, UPDATE, DELETE)
-    val edge: Edge,             // 엣지 데이터
+    val type: EventType,        // Event type (INSERT, UPDATE, DELETE)
+    val edge: Edge,             // Edge data
   )
 }
 ```
@@ -358,11 +358,11 @@ data class EdgeBulkMutationRequest(
 
 ```kotlin
 data class MultiEdgeBulkMutationRequest(
-  val mutations: List<MutationItem>, // 뮤테이션 항목 목록
+  val mutations: List<MutationItem>, // List of mutation items
 ) {
   data class MutationItem(
-    val type: EventType,        // 이벤트 타입 (INSERT, UPDATE, DELETE)
-    val edge: MultiEdge,        // 멀티 엣지 데이터
+    val type: EventType,        // Event type (INSERT, UPDATE, DELETE)
+    val edge: MultiEdge,        // Multi-edge data
   )
 }
 ```
@@ -373,13 +373,13 @@ data class MultiEdgeBulkMutationRequest(
 
 ```kotlin
 data class EdgeMutationResponse(
-  val results: List<Item>,      // 뮤테이션 결과 목록
+  val results: List<Item>,      // List of mutation results
 ) {
   data class Item(
-    val source: Any,            // 소스 노드 ID
-    val target: Any,            // 타겟 노드 ID
-    val status: String,         // 뮤테이션 상태 (예: CREATED, UPDATED, DELETED)
-    val count: Int,             // 영향받은 엣지 수
+    val source: Any,            // Source node ID
+    val target: Any,            // Target node ID
+    val status: String,         // Mutation status (e.g., CREATED, UPDATED, DELETED)
+    val count: Int,             // Number of edges affected
   )
 }
 ```
@@ -390,12 +390,12 @@ data class EdgeMutationResponse(
 
 ```kotlin
 data class MultiEdgeMutationResponse(
-  val results: List<Item>,      // 뮤테이션 결과 목록
+  val results: List<Item>,      // List of mutation results
 ) {
   data class Item(
-    val id: Any,               // 엣지 ID
-    val status: String,         // 뮤테이션 상태 (예: CREATED, UPDATED, DELETED)
-    val count: Int,             // 영향받은 엣지 수
+    val id: Any,               // Edge ID
+    val status: String,         // Mutation status (e.g., CREATED, UPDATED, DELETED)
+    val count: Int,             // Number of edges affected
   )
 }
 ```
@@ -406,10 +406,10 @@ data class MultiEdgeMutationResponse(
 
 ```kotlin
 data class Edge(
-  val version: Long,                 // 엣지 버전
-  val source: Any,                   // 소스 노드 ID
-  val target: Any,                   // 타겟 노드 ID
-  val properties: Map<String, Any?>, // 엣지 프로퍼티
+  val version: Long,                 // Edge version
+  val source: Any,                   // Source node ID
+  val target: Any,                   // Target node ID
+  val properties: Map<String, Any?>, // Edge properties
 )
 ```
 
@@ -419,10 +419,10 @@ data class Edge(
 
 ```kotlin
 data class MultiEdge(
-  val version: Long,                 // 엣지 버전
-  val id: Any,                       // 엣지 ID
-  val source: Any? = null,           // 소스 노드 ID (선택)
-  val target: Any? = null,           // 타겟 노드 ID (선택)
-  val properties: Map<String, Any?>,  // 엣지 프로퍼티
+  val version: Long,                 // Edge version
+  val id: Any,                       // Edge ID
+  val source: Any? = null,           // Source node ID (optional)
+  val target: Any? = null,           // Target node ID (optional)
+  val properties: Map<String, Any?>,  // Edge properties
 )
 ```

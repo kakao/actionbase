@@ -13,12 +13,12 @@ Actionbase는 "완성"되기 전에 프로덕션에 배포되었습니다. 프�
 
 ## 검증 계층 {#verification-layers}
 
-| 단계         | 검증 방법                                                           | 목적                                    |
-| ------------ | ------------------------------------------------------------------- | --------------------------------------- |
-| 개발         | [Tests as Contracts](/ko/stories/how-we-survived/contracts/)        | 약속된 동작 정의 및 보호                |
-| 배포 전      | [Shadow Testing](/ko/stories/how-we-survived/shadow-testing/)       | 프로덕션 트래픽으로 신규 버전 검증      |
-| 마이그레이션 | [비교 검증](/ko/stories/how-we-survived/migration-verification/)    | Source DB와 Actionbase 데이터 일치 확인 |
-| 운영 중      | [HBase 정합성 검증](/ko/stories/how-we-survived/hbase-consistency/) | State, Index, Count 간 정합성 유지      |
+| 단계       | 검증 방법                                                                   | 목적                                             |
+| ---------- | --------------------------------------------------------------------------- | ------------------------------------------------ |
+| Dev        | [Tests as Contracts](/stories/how-we-survived/contracts/)                   | Define and protect promised behaviors            |
+| Pre-Deploy | [Shadow Testing](/stories/how-we-survived/shadow-testing/)                  | Verify new versions with production traffic      |
+| Migration  | [Comparison Verification](/stories/how-we-survived/migration-verification/) | Confirm Source DB and Actionbase data match      |
+| Runtime    | [HBase Consistency](/stories/how-we-survived/hbase-consistency/)            | Maintain consistency between State, Index, Count |
 
 각 계층은 다른 종류의 문제를 잡습니다. 한 계층으로는 충분하지 않습니다.
 
