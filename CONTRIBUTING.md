@@ -8,7 +8,9 @@ New to open source? Look for issues labeled **[good first issue](https://github.
 
 ## Translations
 
-We welcome documentation translations. When submitting translation PRs, please submit **one section (folder) per PR** rather than translating all pages at once. This makes reviews manageable and allows incremental progress.
+We welcome documentation translations. See [TRANSLATION.md](TRANSLATION.md) for the full workflow, file structure, and how to contribute translations.
+
+When submitting translation PRs, please submit **one section (folder) per PR** rather than translating all pages at once. This makes reviews manageable and allows incremental progress.
 
 ## How we collaborate
 

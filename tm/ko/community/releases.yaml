@@ -1,0 +1,109 @@
+meta:
+  contributors:
+  - erish
+entries:
+- source: Release Policy
+  target: 릴리스 정책
+  context: frontmatter:title
+- source: Versioning scheme and support policy for Actionbase
+  target: Actionbase의 버전 관리 체계와 지원 정책
+  context: frontmatter:description
+- source: Actionbase follows [Semantic Versioning](https://semver.org/) (SemVer) to communicate changes clearly.
+  target: Actionbase는 변경 사항을 명확하게 전달하기 위해 [유의적 버전](https://semver.org/) (SemVer)을 따릅니다.
+  context: paragraph
+- source: Version scheme
+  target: 버전 체계
+  context: heading
+- source: 'Versions follow the format `MAJOR.MINOR.PATCH`:'
+  target: '버전은 `MAJOR.MINOR.PATCH` 형식을 따릅니다:'
+  context: paragraph
+- source: '**MAJOR**: Incompatible API changes'
+  target: '**MAJOR**: 호환되지 않는 API 변경'
+  context: list_item
+- source: '**MINOR**: New features, backward compatible'
+  target: '**MINOR**: 하위 호환되는 새로운 기능'
+  context: list_item
+- source: '**PATCH**: Bug fixes, backward compatible'
+  target: '**PATCH**: 하위 호환되는 버그 수정'
+  context: list_item
+- source: 'Example: `1.2.3` → Major 1, Minor 2, Patch 3'
+  target: '예시: `1.2.3` → Major 1, Minor 2, Patch 3'
+  context: paragraph
+- source: Current stage (0.x.x)
+  target: 현재 단계 (0.x.x)
+  context: heading
+- source: 'Actionbase has been running in production internally at Kakao. The open-source release is in preparation. During the `0.x.x` phase:'
+  target: 'Actionbase는 카카오 내부에서 프로덕션 환경으로 운영되고 있습니다. 오픈소스 릴리스를 준비 중입니다. `0.x.x` 단계에서는:'
+  context: paragraph
+- source: APIs may change between releases
+  target: 릴리스 간 API가 변경될 수 있습니다
+  context: list_item
+- source: Installation and operations guides are being prepared
+  target: 설치 및 운영 가이드가 준비 중입니다
+  context: list_item
+- source: Feedback and experimentation are welcome
+  target: 피드백과 실험을 환영합니다
+  context: list_item
+- source: The `1.0.0` release will mark the point where external users can deploy Actionbase in production environments.
+  target: '`1.0.0` 릴리스는 외부 사용자가 프로덕션 환경에서 Actionbase를 배포할 수 있는 시점을 의미합니다.'
+  context: paragraph
+- source: Compatibility promise
+  target: 호환성 약속
+  context: heading
+- source: 'The following applies **after 1.0.0**:'
+  target: '다음은 **1.0.0 이후**에 적용됩니다:'
+  context: paragraph
+- source: '**PATCH** releases are always safe to upgrade'
+  target: '**PATCH** 릴리스는 항상 안전하게 업그레이드할 수 있습니다'
+  context: list_item
+- source: '**MINOR** releases add features without breaking existing functionality'
+  target: '**MINOR** 릴리스는 기존 기능을 깨뜨리지 않고 기능을 추가합니다'
+  context: list_item
+- source: '**MAJOR** releases may include breaking changes; migration guides will be provided'
+  target: '**MAJOR** 릴리스는 호환되지 않는 변경을 포함할 수 있으며, 마이그레이션 가이드가 제공됩니다'
+  context: list_item
+- source: Release candidates
+  target: 릴리스 후보
+  context: heading
+- source: Before a release, one or more release candidates (`-rc.N`) may be published for community testing and feedback.
+  target: 릴리스 전에 커뮤니티 테스트와 피드백을 위해 하나 이상의 릴리스 후보 (`-rc.N`)가 게시될 수 있습니다.
+  context: paragraph
+- source: 'To participate:'
+  target: '참여하려면:'
+  context: paragraph
+- source: Test RC versions in non-production environments
+  target: 비프로덕션 환경에서 RC 버전을 테스트하세요
+  context: list_item
+- source: Report issues on [GitHub Issues](https://github.com/kakao/actionbase/issues)
+  target: '[GitHub Issues](https://github.com/kakao/actionbase/issues)에 이슈를 보고하세요'
+  context: list_item
+- source: Share feedback on [GitHub Discussions](https://github.com/kakao/actionbase/discussions)
+  target: '[GitHub Discussions](https://github.com/kakao/actionbase/discussions)에서 피드백을 공유하세요'
+  context: list_item
+- source: Support policy
+  target: 지원 정책
+  context: heading
+- source: Currently, only the **latest release** is actively supported with bug fixes and security patches.
+  target: 현재 **최신 릴리스**만 버그 수정 및 보안 패치로 적극 지원됩니다.
+  context: paragraph
+- source: As the project matures, we may introduce Long-Term Support (LTS) releases with extended maintenance windows.
+  target: 프로젝트가 성숙해지면 유지보수 기간이 연장된 장기 지원(LTS) 릴리스를 도입할 수 있습니다.
+  context: paragraph
+- source: Release artifacts
+  target: 릴리스 산출물
+  context: heading
+- source: All modules share the same version and are released together.
+  target: 모든 모듈은 동일한 버전을 공유하며 함께 릴리스됩니다.
+  context: paragraph
+- source: Module | Artifact | Distribution
+  target: 모듈 | 산출물 | 배포
+  context: table
+- source: '**server** | Docker image | `ghcr.io/kakao/actionbase`'
+  target: '**server** | Docker 이미지 | `ghcr.io/kakao/actionbase`'
+  context: table
+- source: '**cli** | Binary | GitHub Releases'
+  target: '**cli** | 바이너리 | GitHub Releases'
+  context: table
+- source: Release announcements are posted in [GitHub Releases](https://github.com/kakao/actionbase/releases).
+  target: 릴리스 공지는 [GitHub Releases](https://github.com/kakao/actionbase/releases)에 게시됩니다.
+  context: paragraph

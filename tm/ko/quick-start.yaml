@@ -1,0 +1,92 @@
+meta:
+  contributors:
+  - eazyhozy
+  - kanana-2
+entries:
+- source: Quick Start
+  target: 빠른 시작
+  context: frontmatter:title
+- source: Run Actionbase and try core operations in minutes.
+  target: Actionbase를 실행하고 몇 분 만에 핵심 작업을 체험해보세요.
+  context: frontmatter:description
+- source: Prerequisites
+  target: 사전 요구사항
+  context: heading
+- source: Start Actionbase
+  target: Actionbase 실행
+  context: heading
+- source: This runs the server in the background (port 8080) and the CLI in the foreground.
+  target: 이 명령은 서버를 백그라운드(port 8080)에서 실행하고, CLI는 포그라운드에서 실행합니다.
+  context: paragraph
+- source: The CLI calls REST API internally. Commands show the HTTP requests being made.
+  target: CLI는 내부적으로 REST API를 호출합니다. 명령 실행 시 만들어지는 HTTP 요청도 함께 확인할 수 있습니다.
+  context: paragraph
+- source: Write Data
+  target: 데이터 쓰기
+  context: heading
+- source: 'Load sample data using a preset (at `actionbase>` prompt):'
+  target: '미리 준비된 샘플 데이터를 다음 프롬프트(`actionbase>`)에서 불러옵니다:'
+  context: paragraph
+- source: 'This creates a `likes` database/table and inserts 3 edges:'
+  target: '이 명령은 `likes` 데이터베이스/테이블을 생성하고 3개의 엣지를 삽입합니다:'
+  context: paragraph
+- source: 'At write time, Actionbase **precomputes everything** for reads—counts, indexes, ordering for **both directions**. This means you can instantly query:'
+  target: 쓰기 시점에 Actionbase는 **모든 것을 미리 계산**합니다. 읽기용 카운트, 인덱스, 정렬 정보를 **양방향 모두** 미리 준비해두므로, 즉시 다음 쿼리를 실행할 수 있습니다.
+  context: paragraph
+- source: '"What did Bob like?" <User size={18} /> <ArrowRight size={18} /> <Package size={18} />{'' ''} (direction: OUT)'
+  target: '"Bob이 좋아한 것은?" <User size={18} /> <ArrowRight size={18} /> <Package size={18} />{'' ''} (direction: OUT)'
+  context: paragraph
+- source: '"Who liked Phone?" <Package size={18} /> <ArrowLeft size={18} /> <User size={18} /> (direction: IN)'
+  target: '"Phone을 좋아한 사람은?" <Package size={18} /> <ArrowLeft size={18} /> <User size={18} /> (방향: IN)'
+  context: paragraph
+- source: Counts and indexes ready at write time—no computation at query time.
+  target: 카운트와 인덱스가 쓰기 시점에 이미 준비되어 있으므로, 쿼리 시점에는 추가 계산이 필요 없습니다.
+  context: paragraph
+- source: REST API equivalent
+  target: REST API 예시
+  context: summary
+- source: 'To use curl, run with `-p 8080:8080` and use another terminal:'
+  target: 'curl을 사용하려면 `-p 8080:8080` 옵션으로 실행하고, 다른 터미널에서 다음 명령을 실행하세요:'
+  context: blockquote
+- source: '**Create service (database)**'
+  target: '**서비스(데이터베이스) 생성**'
+  context: paragraph
+- source: '**Create label (table)**'
+  target: '**레이블(테이블) 생성**'
+  context: paragraph
+- source: '**Insert edges**'
+  target: '**엣지 삽입**'
+  context: paragraph
+- source: Read Data
+  target: 데이터 읽기
+  context: heading
+- source: Get
+  target: 조회
+  context: heading
+- source: 'Check if a specific edge exists:'
+  target: '특정 엣지가 존재하는지 확인:'
+  context: paragraph
+- source: Scan
+  target: 스캔
+  context: heading
+- source: Both directions are precomputed at write time. No additional indexing or query overhead.
+  target: 두 방향 모두 쓰기 시점에 미리 계산됩니다. 추가 인덱스나 쿼리 오버헤드가 없습니다.
+  context: paragraph
+- source: Count
+  target: 카운트
+  context: heading
+- source: Counts are precomputed at write time. No aggregation needed.
+  target: 카운트는 쓰기 시점에 미리 계산됩니다. 집계가 필요하지 않습니다.
+  context: paragraph
+- source: Next Steps
+  target: 다음 단계
+  context: heading
+- source: '[Core Concepts](/design/concepts/) — How Actionbase works'
+  target: '[핵심 개념](/ko/design/concepts/) — Actionbase 동작 방식'
+  context: list_item
+- source: '[Build Your Social Media App](/guides/build-your-social-media-app/) — Hands-on guide'
+  target: '[소셜 미디어 앱 만들기](/ko/guides/build-your-social-media-app/) — 실습 가이드'
+  context: list_item
+- source: '[CLI Reference](/operations/cli/) — Full CLI documentation'
+  target: '[CLI 참조](/ko/operations/cli/) — 전체 CLI 문서'
+  context: list_item

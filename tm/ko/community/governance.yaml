@@ -1,0 +1,37 @@
+meta:
+  contributors:
+  - erish
+entries:
+- source: Roles
+  target: 역할
+  context: heading
+- source: Role Progression and Evolution
+  target: 역할 발전 및 진화
+  context: heading
+- source: Project Voice
+  target: 프로젝트 목소리
+  context: heading
+- source: Governance
+  target: 거버넌스
+  context: frontmatter:title
+- source: Overview of Actionbase's governance model and roles
+  target: Actionbase의 거버넌스 모델 및 역할 개요
+  context: frontmatter:description
+- source: Actionbase is in its early open-source stage. Our governance structure is transparent and flexible.
+  target: Actionbase는 초기 오픈소스 단계에 있습니다. 거버넌스 구조는 투명하고 유연합니다.
+  context: paragraph
+- source: For practical guidance on how to contribute — see [Contributing](/community/contributing/).
+  target: 기여 방법에 대한 실질적인 안내는 [기여하기](/ko/community/contributing/)를 참고하세요.
+  context: paragraph
+- source: '**Maintainer**: Oversees project direction, ensures quality, and manages [releases](/community/releases/). Maintainers have final decision-making authority. Under the current governance model, Maintainers are Kakao employees.'
+  target: '**Maintainer**: 프로젝트 방향을 감독하고, 품질을 보장하며, [릴리스](/ko/community/releases/)를 관리합니다. Maintainer는 최종 의사 결정 권한을 가집니다. 현재 거버넌스 모델에서 Maintainer는 카카오 직원입니다.'
+  context: list_item
+- source: '**Contributor**: Participates through code, documentation, issue reporting, or discussions. Welcome from anywhere, regardless of affiliation.'
+  target: '**Contributor**: 코드, 문서, 이슈 보고 또는 토론을 통해 참여합니다. 소속에 관계없이 누구나 환영합니다.'
+  context: list_item
+- source: Under the current model, Maintainers are limited to Kakao employees. Governance structure may change if the project moves to a foundation or adopts a neutral governance model.
+  target: 현재 모델에서 Maintainer는 카카오 직원으로 제한됩니다. 프로젝트가 재단으로 이전되거나 중립적인 거버넌스 모델을 채택할 경우 거버넌스 구조가 변경될 수 있습니다.
+  context: paragraph
+- source: In project communications, "we" refers to Actionbase maintainers and contributors, not any company or organization.
+  target: 프로젝트 커뮤니케이션에서 "우리"는 Actionbase의 maintainer와 contributor를 의미하며, 특정 회사나 조직을 의미하지 않습니다.
+  context: paragraph

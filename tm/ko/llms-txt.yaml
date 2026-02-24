@@ -1,0 +1,53 @@
+meta:
+  contributors:
+  - eazyhozy
+  - kanana-2
+entries:
+- source: Using Actionbase documentation with LLMs
+  target: Actionbase 문서를 LLM과 함께 사용하는 방법
+  context: frontmatter:description
+- source: Copy and paste to start asking questions about Actionbase.
+  target: Actionbase에 대한 질문을 시작하려면 복사해서 붙여넣으세요.
+  context: paragraph
+- source: Chat
+  target: 채팅
+  context: heading
+- source: '**1. Overview**'
+  target: '**1. 개요**'
+  context: paragraph
+- source: '**2. Full documentation**'
+  target: '**2. 전체 문서**'
+  context: paragraph
+- source: '**3. Full documentation with API reference**'
+  target: '**3. API 참조가 포함된 전체 문서**'
+  context: paragraph
+- source: Source
+  target: 소스
+  context: heading
+- source: 'Add as source:'
+  target: '소스로 추가:'
+  context: paragraph
+- source: Files
+  target: 파일
+  context: heading
+- source: File | Description
+  target: 파일 | 설명
+  context: table
+- source: '[`/llms-small.txt`](/llms-small.txt) | Overview'
+  target: '[`/llms-small.txt`](/llms-small.txt) | 개요'
+  context: table
+- source: '[`/_llms-txt/core.txt`](/_llms-txt/core.txt) | Full documentation (without API)'
+  target: '[`/_llms-txt/core.txt`](/_llms-txt/core.txt) | 문서 전체 (API 제외)'
+  context: table
+- source: '[`/_llms-txt/api.txt`](/_llms-txt/api.txt) | API reference only'
+  target: '[`/_llms-txt/api.txt`](/_llms-txt/api.txt) | API 참조만'
+  context: table
+- source: '[`/llms-full.txt`](/llms-full.txt) | Everything'
+  target: '[`/llms-full.txt`](/llms-full.txt) | 전체 내용'
+  context: table
+- source: Feedback
+  target: 피드백
+  context: heading
+- source: Have tips for better prompts, questions, or suggestions? Share them in our [llms.txt discussion](https://github.com/kakao/actionbase/discussions/61).
+  target: 더 나은 프롬프트, 질문 또는 제안 사항이 있으신가요? [llms.txt 토론](https://github.com/kakao/actionbase/discussions/61)에서 공유해 주세요.
+  context: paragraph

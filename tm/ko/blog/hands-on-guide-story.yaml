@@ -1,0 +1,61 @@
+meta:
+  contributors:
+  - zipdoki
+entries:
+- source: The Beginning
+  target: 시작
+  context: heading
+- source: It Started as a Small Task
+  target: 처음 시작은 작은 일이었어요
+  context: heading
+- source: Instead of the Visible Work
+  target: 빛나는 일 대신
+  context: heading
+- source: Closing
+  target: 마무리
+  context: heading
+- source: Good Code Doesn't Speak for Itself
+  target: 잘 만든 걸 잘 전달하는 건 또 다른 일이었습니다
+  context: frontmatter:title
+- source: 'What the hands-on guide taught me: even the best code needs a voice'
+  target: 핸즈온 가이드가 가르쳐 준 것, 최고의 코드에도 목소리가 필요하다
+  context: frontmatter:description
+- source: '"I''ll give the hands-on guide a try."'
+  target: '"핸즈온 가이드 제가 한 번 만들어볼게요."'
+  context: blockquote
+- source: I said this casually while we were working on making Actionbase open source.
+  target: 이 말은 제가 액션베이스(Actionbase)를 오픈소스로 만드는 과정에서 가볍게 꺼낸 말이었습니다.
+  context: paragraph
+- source: I experienced Actionbase first as a user. I watched people around me struggle to understand it when they first encountered it. That's when I first thought—this good technology might get buried. So I decided to create a guide that would help anyone understand the value of Actionbase.
+  target: 저는 사용자로서 액션베이스를 먼저 경험했습니다. 주변에서 액션베이스를 처음 접하고 이해하기 어려워하는 걸 지켜봤습니다. 그때 좋은 기술이 묻힐 수도 있겠다고 처음 생각했습니다. 그래서 액션베이스의 가치를 누구나 이해할 수 있도록 가이드를 잘 만들어야겠다고 마음먹었습니다.
+  context: paragraph
+- source: Actionbase was already battle-tested in production. What we needed was a way to bring it to the world.
+  target: 액션베이스는 이미 프로덕션에서 검증된 기술이었습니다. 필요한 건 어떻게 세상에 꺼내놓느냐의 일이었습니다.
+  context: paragraph
+- source: I thought a simple Instagram-like app example would be enough—follows, likes, and feeds. But reality was different. Making code open source and making it easy to try firsthand are entirely different things.
+  target: 팔로우 하기, 좋아요 누르기, 피드까지 포함한 간단한 인스타그램 앱 예제면 될 거라고 생각했습니다. 하지만 현실은 그게 아니었습니다. 코드를 공개하는 것과 직접 해볼 수 있게 하는 건 전혀 다른 차원의 일이었습니다.
+  context: paragraph
+- source: So I built a guide you can run immediately. No environment setup, no copy-pasting—just click and see the results. Commits piled up. And at the end of it all, I opened my first PR.
+  target: 그래서 바로 실행할 수 있는 가이드를 만들었습니다. 별도의 환경 설정, 복사/붙여넣기 없이도 클릭 한 번에 결과가 보이도록 했습니다. 수많은 commits가 쌓였습니다. 그리고 그 끝에 첫 PR을 열 수 있었습니다.
+  context: paragraph
+- source: Some might ask—isn't working on the core the more visible work? But I chose the guide.
+  target: 누군가에겐 코어 개발이 더 빛나는 일이지 않느냐고 할 수 있습니다. 하지만 저는 가이드를 선택했습니다.
+  context: paragraph
+- source: I think of this project as my own. I've felt that way ever since I first experienced it as a user. So whether it's core development or not stopped mattering. If it's work that can share the value of Actionbase, it's valuable work in itself.
+  target: 저는 이 프로젝트를 제 것처럼 생각합니다. 처음 사용자로 경험하면서부터 그랬습니다. 그래서 코어 개발이냐 아니냐는 더 이상 중요하지 않았습니다. 액션베이스의 가치를 알릴 수 있는 일이라면, 그 자체로 가치 있는 일이라고 생각했습니다.
+  context: paragraph
+- source: 'When I opened the first guide PR, em3s said:'
+  target: 처음 가이드 PR을 열었을 때 em3s가 말했습니다.
+  context: paragraph
+- source: I believe Actionbase is good technology in its own right. But communicating that value requires a different kind of effort than writing good code. It's not something you can solve by just being good at your job—it's about helping others understand. Good technology needs good communication to shine. I hope this guide is the start of that.
+  target: 액션베이스는 그 자체로 좋은 기술이라 믿습니다. 다만 그 가치를 전달하려면 코드를 잘 짜는 것과는 다른 노력이 필요합니다. 내가 잘하면 되는 일이 아니라, 남을 이해시키는 일이니까요. 좋은 기술도 잘 전해져야 빛납니다. 이 가이드가 그 시작이길 바랍니다.
+  context: paragraph
+- source: '"The hands-on guide makes things look better than they are."'
+  target: '"핸즈온 가이드 덕분에 실제보다 더 좋아 보인다."'
+  context: blockquote
+- source: 'Try the hands-on guide: https://actionbase.io/guides/build-your-social-media-app/'
+  target: 'hands-on guide 시작하기: https://actionbase.io/guides/build-your-social-media-app/'
+  context: list_item
+- source: 'Share your feedback: https://github.com/kakao/actionbase/discussions/94'
+  target: '피드백 공유하기: https://github.com/kakao/actionbase/discussions/94'
+  context: list_item

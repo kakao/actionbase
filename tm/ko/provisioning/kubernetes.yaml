@@ -1,0 +1,22 @@
+meta:
+  contributors:
+  - erish
+entries:
+- source: Kubernetes Provisioning
+  target: Kubernetes 프로비저닝
+  context: frontmatter:title
+- source: Kubernetes-based deployment guide for Actionbase
+  target: Actionbase의 Kubernetes 기반 배포 가이드
+  context: frontmatter:description
+- source: This guide is being prepared.
+  target: 이 가이드는 준비 중입니다.
+  context: paragraph
+- source: At Kakao, Actionbase is currently provisioned using Kubernetes. This documentation will include deployment manifests, high availability configurations, performance tuning, monitoring setup, and security best practices.
+  target: 카카오에서 Actionbase는 현재 Kubernetes를 사용하여 프로비저닝되고 있습니다. 이 문서에는 배포 매니페스트, 고가용성 구성, 성능 튜닝, 모니터링 설정, 보안 모범 사례가 포함될 예정입니다.
+  context: paragraph
+- source: To try Actionbase, see [Quick Start](/quick-start/)
+  target: Actionbase를 체험하려면 [빠른 시작](/ko/quick-start/)을 참고하세요
+  context: list_item
+- source: To contribute, see [Development Setup](/community/development/)
+  target: 기여하려면 [개발 환경 설정](/ko/community/development/)을 참고하세요
+  context: list_item

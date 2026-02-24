@@ -1,0 +1,173 @@
+meta:
+  contributors:
+  - eazyhozy
+  - kanana-2
+entries:
+- source: Encoding
+  target: 인코딩
+  context: frontmatter:title
+- source: Internal data encoding and storage details
+  target: 내부 데이터 인코딩 및 저장 상세 정보
+  context: frontmatter:description
+- source: This document describes how Actionbase encodes and stores data internally. This information is primarily for contributors and those who need to understand the low-level storage format.
+  target: 이 문서는 Actionbase가 내부적으로 데이터를 인코딩하고 저장하는 방법을 설명합니다. 이 정보는 주로 기여자와 저수준 저장 포맷을 이해해야 하는 사용자를 위한 것입니다.
+  context: paragraph
+- source: For high-level concepts, see [Core Concepts](/design/concepts/).
+  target: 고수준 개념은 [핵심 개념](/ko/design/concepts/)을 참조하세요.
+  context: paragraph
+- source: Row Types
+  target: 행 타입
+  context: heading
+- source: Actionbase stores edge data using multiple row types in the storage backend. Each row type serves a specific query purpose.
+  target: Actionbase는 스토리지 백엔드에서 여러 행 타입을 사용하여 엣지 데이터를 저장합니다. 각 행 타입은 특정 쿼리 목적에 맞게 설계되었습니다.
+  context: paragraph
+- source: Row Type | Type Code | Purpose | Query Type
+  target: 행 타입 | 타입 코드 | 목적 | 쿼리 타입
+  context: table
+- source: Edge State | -3 | Current edge state | Get
+  target: 엣지 상태 | -3 | 현재 엣지 상태 | Get
+  context: table
+- source: Edge Index | -4 | Index entries | Scan
+  target: 엣지 인덱스 | -4 | 인덱스 항목 | Scan
+  context: table
+- source: Edge Count | -2 | Edge counts | Count
+  target: 엣지 카운트 | -2 | 엣지 카운트 | Count
+  context: table
+- source: 'Edge State (Type Code: -3)'
+  target: '엣지 상태(타입 코드: -3)'
+  context: heading
+- source: Stores the current state of edges for Get queries.
+  target: Get 쿼리를 위한 엣지의 현재 상태를 저장합니다.
+  context: paragraph
+- source: Key Structure
+  target: 키 구조
+  context: heading
+- source: Value Structure
+  target: 값 구조
+  context: heading
+- source: Field | Type | Description
+  target: 필드 | 타입 | 설명
+  context: table
+- source: active | Boolean | Edge active status
+  target: active | Boolean | 엣지 활성 상태
+  context: table
+- source: version | Long | Edge version
+  target: version | Long | 엣지 버전
+  context: table
+- source: properties | Map | Property values with version per property
+  target: properties | Map | 프로퍼티별 버전 정보를 포함한 프로퍼티 값
+  context: table
+- source: createdAt | Long | Creation timestamp
+  target: createdAt | Long | 생성 타임스탬프
+  context: table
+- source: deletedAt | Long | Deletion timestamp
+  target: deletedAt | Long | 삭제 타임스탬프
+  context: table
+- source: 'Edge Index (Type Code: -4)'
+  target: '엣지 인덱스 (타입 코드: -4)'
+  context: heading
+- source: Stores index entries for Scan queries. Uses **Narrow Row** format for high-cardinality indexes.
+  target: Scan 쿼리의 인덱스 엔트리를 저장합니다. 고카디널리티 인덱스를 위해 **내로우 로우** 포맷을 사용합니다.
+  context: paragraph
+- source: properties | Map | Property values
+  target: properties | Map | 프로퍼티 값
+  context: table
+- source: 'Edge Count (Type Code: -2)'
+  target: '엣지 카운트 (타입 코드: -2)'
+  context: heading
+- source: Stores counters for Count queries. Uses the storage backend's `increment` operation.
+  target: 카운트 쿼리의 카운터를 저장합니다. 스토리지 백엔드의 `increment` 연산을 사용합니다.
+  context: paragraph
+- source: count | Long | Edge count
+  target: count | Long | 엣지 카운트
+  context: table
+- source: Row Key Encoding
+  target: 로우 키 인코딩
+  context: heading
+- source: 'All row keys follow a common pattern:'
+  target: '모든 로우 키는 공통 패턴을 따릅니다:'
+  context: paragraph
+- source: Component | Size | Purpose
+  target: 컴포넌트 | 크기 | 목적
+  context: table
+- source: The hash prefix ensures even distribution across HBase regions, preventing hotspots.
+  target: 해시 프리픽스는 HBase region 전체에 고르게 분산되도록 하여 핫스팟을 방지합니다.
+  context: paragraph
+- source: Value Encoding
+  target: 값 인코딩
+  context: heading
+- source: 'Actionbase uses byte headers to maintain type information:'
+  target: 'Actionbase는 타입 정보를 유지하기 위해 바이트 헤더를 사용합니다:'
+  context: paragraph
+- source: Format
+  target: 형식
+  context: heading
+- source: Type Information
+  target: 타입 정보
+  context: heading
+- source: Aspect | Description
+  target: 측면 | 설명
+  context: table
+- source: Version Tracking
+  target: 버전 추적
+  context: heading
+- source: Row Type | Version Scope
+  target: 행 타입 | 버전 범위
+  context: table
+- source: EdgeState | Version per property
+  target: EdgeState | 속성별 버전
+  context: table
+- source: EdgeIndex | Version per edge
+  target: EdgeIndex | 엣지별 버전
+  context: table
+- source: Key Design Principles
+  target: 키 설계 원칙
+  context: heading
+- source: Hash Prefix
+  target: 해시 프리픽스
+  context: heading
+- source: 'The 4-byte xxhash32 prefix ensures:'
+  target: '4바이트 xxhash32 프리픽스는 다음을 보장합니다:'
+  context: paragraph
+- source: Even distribution across storage regions
+  target: 스토리지 영역 전반에 걸친 균일한 분배
+  context: list_item
+- source: Prevention of write hotspots
+  target: 쓰기 핫스팟 방지
+  context: list_item
+- source: Balanced read/write load
+  target: 균형 잡힌 읽기/쓰기 부하
+  context: list_item
+- source: Negative Type Codes
+  target: 음수 타입 코드
+  context: heading
+- source: 'Type codes use negative values (-2, -3, -4) to:'
+  target: '타입 코드는 음수 값(-2, -3, -4)을 사용하여:'
+  context: paragraph
+- source: Separate from user data
+  target: 사용자 데이터와 분리
+  context: list_item
+- source: Enable efficient key range scanning
+  target: 효율적인 키 범위 스캔 가능
+  context: list_item
+- source: Provide clear type identification
+  target: 명확한 타입 식별 제공
+  context: list_item
+- source: Length-Prefixed Strings
+  target: 길이 접두사 문자열
+  context: heading
+- source: 'All variable-length fields use 1-byte length prefix:'
+  target: '모든 가변 길이 필드는 1바이트 길이 접두사를 사용합니다:'
+  context: paragraph
+- source: Enables efficient parsing
+  target: 효율적인 파싱 지원
+  context: list_item
+- source: Supports binary-safe encoding
+  target: 바이너리 안전 인코딩 지원
+  context: list_item
+- source: Allows prefix-based scanning
+  target: 접두사 기반 스캔 허용
+  context: list_item
+- source: '[//]: # ''TODO: Add related documents when available'' [//]: # ''## Related Documents'' [//]: # ''- [How Both-Directed Edges Work](/internals/explained/edge-both-directed/)'' [//]: # ''- [How Out-Directed Edges Work](/internals/explained/edge-out-directed/)'' [//]: # ''- [How Multi-Edges Work](/internals/explained/multi-edge/)'' [//]: # ''- [How Aggregation Works](/internals/explained/aggregation/)'''
+  target: '[//]: # ''TODO: Add related documents when available'' [//]: # ''## Related Documents'' [//]: # ''- [How Both-Directed Edges Work](/ko/internals/explained/edge-both-directed/)'' [//]: # ''- [How Out-Directed Edges Work](/ko/internals/explained/edge-out-directed/)'' [//]: # ''- [How Multi-Edges Work](/ko/internals/explained/multi-edge/)'' [//]: # ''- [How Aggregation Works](/ko/internals/explained/aggregation/)'''
+  context: paragraph

@@ -1,0 +1,26 @@
+meta:
+  contributors:
+  - em3s
+  - kanana-2
+entries:
+- source: Actionbase
+  target: Actionbase
+  context: frontmatter:title
+- source: A database for serving user interactions at scale.
+  target: 대규모 사용자 상호작용을 서빙하는 데이터베이스.
+  context: frontmatter:description
+- source: Writes do the work. Reads return what's already computed.
+  target: 쓰기가 일하고, 읽기는 계산된 결과를 그대로 반환.
+  context: paragraph
+- source: One model for common user interactions.
+  target: 주요 사용자 인터랙션을 하나의 모델로.
+  context: paragraph
+- source: Simple writes, fast reads — all via HTTP.
+  target: 간단한 쓰기, 빠른 읽기 — 모두 HTTP로.
+  context: paragraph
+- source: Stream changes for downstream pipelines.
+  target: 변경 사항을 다운스트림 파이프라인으로 스트리밍.
+  context: paragraph
+- source: Serving over a million requests per minute at Kakao.
+  target: 카카오에서 분당 백만 건 이상의 요청 처리 중.
+  context: paragraph
