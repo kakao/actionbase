@@ -8,7 +8,18 @@ New to open source? Look for issues labeled **[good first issue](https://github.
 
 ## Translations
 
-We welcome documentation translations. See [TRANSLATION.md](TRANSLATION.md) for the full workflow, file structure, and how to contribute translations.
+We welcome documentation translations! The easiest way to start:
+
+1. Find a TM (Translation Memory) file in `website/i18n/tm/{lang}/` (e.g. `ko`) and look for entries with empty `target: ""` — these are untranslated segments.
+2. Fill in the translations, add your GitHub username to `meta.contributors`, and open a PR.
+
+To find documents that need the most help, run:
+
+```bash
+python website/i18n/scripts/translation-memory.py status
+```
+
+See [TRANSLATION.md](TRANSLATION.md) for the full workflow, step-by-step examples, and TM format details.
 
 When submitting translation PRs, please submit **one section (folder) per PR** rather than translating all pages at once. This makes reviews manageable and allows incremental progress.
 
