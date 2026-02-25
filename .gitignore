@@ -5,9 +5,6 @@
 .env
 *.env
 
-# Python
-__pycache__/
-
 # Java / Kotlin
 *.class
 *.log
