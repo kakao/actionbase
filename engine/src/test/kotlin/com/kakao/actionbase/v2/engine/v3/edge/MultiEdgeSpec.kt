@@ -1,6 +1,8 @@
 package com.kakao.actionbase.v2.engine.v3.edge
 
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
+import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
+import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -8,7 +10,7 @@ import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
-import com.kakao.actionbase.v2.engine.v3.V3MutationService
+import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
 import com.kakao.actionbase.v2.engine.v3.V3QueryService
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -28,7 +30,7 @@ class MultiEdgeSpec :
 
         lateinit var graph: Graph
         lateinit var cdc: InMemoryCdc
-        lateinit var v3MutationService: V3MutationService
+        lateinit var mutationService: MutationService
         lateinit var v3QueryService: V3QueryService
 
         val labelDefinition =
@@ -91,7 +93,7 @@ class MultiEdgeSpec :
             cdc = graph.cdc as InMemoryCdc
             val request = mapper.readValue<LabelCreateRequest>(labelDefinition)
             graph.labelDdl.create(keyEdgeLabelName, request).block()
-            v3MutationService = V3MutationService(graph)
+            mutationService = MutationService(V2BackedEngine(graph))
             v3QueryService = V3QueryService(graph)
         }
 
@@ -127,8 +129,9 @@ class MultiEdgeSpec :
                     """.trimIndent()
                 val request = mapper.readValue<MultiEdgeBulkMutationRequest>(requestAsString)
 
-                v3MutationService
-                    .mutateMultiEdge(database, table, request)
+                mutationService
+                    .mutate(database, table, request.mutations)
+                    .map { MultiEdgeMutationResponse.from(it) }
                     .test()
                     .assertNext { result ->
                         val expected =
@@ -329,8 +332,9 @@ class MultiEdgeSpec :
                     """.trimIndent()
                 val request = mapper.readValue<MultiEdgeBulkMutationRequest>(requestAsString)
 
-                v3MutationService
-                    .mutateMultiEdge(database, table, request)
+                mutationService
+                    .mutate(database, table, request.mutations)
+                    .map { MultiEdgeMutationResponse.from(it) }
                     .test()
                     .assertNext { result ->
                         val expected =
@@ -598,11 +602,11 @@ class MultiEdgeSpec :
                 .forEach {
                     StepVerifier
                         .create(
-                            v3MutationService
-                                .mutateMultiEdge(
+                            mutationService
+                                .mutate(
                                     database,
                                     table,
-                                    request = mapper.readValue<MultiEdgeBulkMutationRequest>(it),
+                                    mapper.readValue<MultiEdgeBulkMutationRequest>(it).mutations,
                                 ),
                         ).expectNextCount(1)
                         .verifyComplete()
@@ -652,11 +656,11 @@ class MultiEdgeSpec :
                 """.trimIndent()
             val request = mapper.readValue<MultiEdgeBulkMutationRequest>(requestAsString)
 
-            v3MutationService
-                .mutateMultiEdge(database, table, request)
+            mutationService
+                .mutate(database, table, request.mutations)
                 .test()
                 .assertNext { result ->
-                    result.results.size shouldBe 3
+                    result.size shouldBe 3
                 }.verifyComplete()
 
             // Query multiple ids at once
@@ -704,11 +708,11 @@ class MultiEdgeSpec :
                 """.trimIndent()
             val request = mapper.readValue<MultiEdgeBulkMutationRequest>(requestAsString)
 
-            v3MutationService
-                .mutateMultiEdge(database, table, request)
+            mutationService
+                .mutate(database, table, request.mutations)
                 .test()
                 .assertNext { result ->
-                    result.results.size shouldBe 1
+                    result.size shouldBe 1
                 }.verifyComplete()
 
             // Query with mix of existing and non-existing ids
@@ -751,11 +755,11 @@ class MultiEdgeSpec :
                 """.trimIndent()
             val request = mapper.readValue<MultiEdgeBulkMutationRequest>(requestAsString)
 
-            v3MutationService
-                .mutateMultiEdge(database, table, request)
+            mutationService
+                .mutate(database, table, request.mutations)
                 .test()
                 .assertNext { result ->
-                    result.results.size shouldBe 2
+                    result.size shouldBe 2
                 }.verifyComplete()
 
             // Query with filter
@@ -787,11 +791,11 @@ class MultiEdgeSpec :
                 }
                 """.trimIndent()
 
-            v3MutationService
-                .mutateMultiEdge(database, table, mapper.readValue<MultiEdgeBulkMutationRequest>(insertRequest))
+            mutationService
+                .mutate(database, table, mapper.readValue<MultiEdgeBulkMutationRequest>(insertRequest).mutations)
                 .test()
                 .assertNext { result ->
-                    result.results.size shouldBe 2
+                    result.size shouldBe 2
                 }.verifyComplete()
 
             // Delete one edge
@@ -807,11 +811,11 @@ class MultiEdgeSpec :
                 }
                 """.trimIndent()
 
-            v3MutationService
-                .mutateMultiEdge(database, table, mapper.readValue<MultiEdgeBulkMutationRequest>(deleteRequest))
+            mutationService
+                .mutate(database, table, mapper.readValue<MultiEdgeBulkMutationRequest>(deleteRequest).mutations)
                 .test()
                 .assertNext { result ->
-                    result.results.size shouldBe 1
+                    result.size shouldBe 1
                 }.verifyComplete()
 
             // Query both ids - only non-deleted one should be returned

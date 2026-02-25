@@ -1,5 +1,7 @@
 package com.kakao.actionbase.core.edge.payload
 
+import com.kakao.actionbase.core.edge.MutationKey
+
 data class EdgeMutationResponse(
     val results: List<Item>,
 ) {
@@ -11,11 +13,15 @@ data class EdgeMutationResponse(
     )
 
     companion object {
-        fun from(statuses: List<EdgeMutationStatus>) =
+        fun from(results: List<MutationResult>) =
             EdgeMutationResponse(
-                statuses
-                    .map { Item(source = it.source, target = it.target, count = it.count, status = it.status) }
-                    .sortedBy { "${it.source}:${it.target}" },
+                results
+                    .map {
+                        val key =
+                            it.key as? MutationKey.SourceTarget
+                                ?: error("EdgeMutationResponse requires SourceTarget key, got ${it.key::class.simpleName}")
+                        Item(source = key.source, target = key.target, count = it.count, status = it.status)
+                    }.sortedBy { "${it.source}:${it.target}" },
             )
     }
 }

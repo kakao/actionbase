@@ -3,6 +3,8 @@ package com.kakao.actionbase.core.edge
 import com.kakao.actionbase.core.state.Event
 
 data class MultiEdgeEvent(
-    override val id: Any,
+    val id: Any,
     override val event: Event,
-) : MutationEvent<Any>
+) : MutationEvent {
+    override val key: MutationKey = MutationKey.Id(id)
+}

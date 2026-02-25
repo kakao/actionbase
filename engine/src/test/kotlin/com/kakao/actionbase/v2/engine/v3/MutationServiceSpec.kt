@@ -3,6 +3,7 @@ package com.kakao.actionbase.v2.engine.v3
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
+import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
@@ -21,16 +22,16 @@ import io.kotest.matchers.shouldBe
 import reactor.core.publisher.Mono
 import reactor.kotlin.test.test
 
-class V3MutationServiceSpec :
+class MutationServiceSpec :
     StringSpec({
 
         lateinit var graph: Graph
-        lateinit var v3MutationService: V3MutationService
+        lateinit var mutationService: MutationService
         lateinit var v3QueryService: V3QueryService
 
         beforeTest {
             graph = GraphFixtures.create()
-            v3MutationService = V3MutationService(graph)
+            mutationService = MutationService(V2BackedEngine(graph))
             v3QueryService = V3QueryService(graph)
         }
 
@@ -53,8 +54,9 @@ class V3MutationServiceSpec :
                 }
                 """.trimIndent().toEdgeBulkMutationRequest()
 
-            v3MutationService
-                .mutateEdge(database, table, insertRequest)
+            mutationService
+                .mutate(database, table, insertRequest.mutations)
+                .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext { actualObject ->
                     val expected =
@@ -144,8 +146,9 @@ class V3MutationServiceSpec :
                 }
                 """.trimIndent().toEdgeBulkMutationRequest()
 
-            v3MutationService
-                .mutateEdge(database, table, insertRequest2)
+            mutationService
+                .mutate(database, table, insertRequest2.mutations)
+                .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext { actualObject ->
                     val expected =
@@ -272,8 +275,8 @@ class V3MutationServiceSpec :
                 }
                 """.trimIndent().toEdgeBulkMutationRequest()
 
-            v3MutationService
-                .mutateEdge(database, table, insertRequest1)
+            mutationService
+                .mutate(database, table, insertRequest1.mutations)
                 .block()
 
             val insertRequest2 =
@@ -285,8 +288,8 @@ class V3MutationServiceSpec :
                 }
                 """.trimIndent().toEdgeBulkMutationRequest()
 
-            v3MutationService
-                .mutateEdge(database, table, insertRequest2)
+            mutationService
+                .mutate(database, table, insertRequest2.mutations)
                 .block()
 
             v3QueryService
@@ -328,7 +331,7 @@ class V3MutationServiceSpec :
             val result =
                 Mono
                     .delay(Duration.ofMillis(2000))
-                    .then(v3MutationService.mutateEdge(database, table, insertRequest))
+                    .then(mutationService.mutate(database, table, insertRequest.mutations).map { EdgeMutationResponse.from(it) })
                     .doOnSuccess { executionCompleted.set(true) }
                     .runEvenIfCancelled()
 

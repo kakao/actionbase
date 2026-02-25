@@ -1,7 +1,12 @@
 package com.kakao.actionbase.v2.engine.v3.edge
 
+import com.kakao.actionbase.engine.metadata.MutationMode as EngineMutationMode
+
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
+import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
+import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
+import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.GraphConfig
@@ -12,7 +17,7 @@ import com.kakao.actionbase.v2.engine.service.ddl.ServiceCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
 import com.kakao.actionbase.v2.engine.test.wal.InMemoryWal
-import com.kakao.actionbase.v2.engine.v3.V3MutationService
+import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
 import com.kakao.actionbase.v2.engine.v3.V3QueryService
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -23,7 +28,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import reactor.kotlin.test.test
 
-class V3MutationServiceGlobalAsyncSpec :
+class MutationServiceGlobalAsyncSpec :
     StringSpec({
 
         val database = GraphFixtures.serviceName
@@ -39,7 +44,7 @@ class V3MutationServiceGlobalAsyncSpec :
         lateinit var asyncMultiEdgeTable: Label
 
         lateinit var graph: Graph
-        lateinit var v3MutationService: V3MutationService
+        lateinit var mutationService: MutationService
         lateinit var v3QueryService: V3QueryService
 
         beforeTest {
@@ -62,7 +67,7 @@ class V3MutationServiceGlobalAsyncSpec :
             asyncEdgeTable = graph.getLabel(EntityName(database, asyncEdgeTableName))
             asyncMultiEdgeTable = graph.getLabel(EntityName(database, asyncMultiEdgeTableName))
 
-            v3MutationService = V3MutationService(graph)
+            mutationService = MutationService(V2BackedEngine(graph))
             v3QueryService = V3QueryService(graph)
         }
 
@@ -110,8 +115,9 @@ class V3MutationServiceGlobalAsyncSpec :
                     """.trimIndent(),
                 )
 
-            v3MutationService
-                .mutateEdge(database, syncEdgeTableName, request)
+            mutationService
+                .mutate(database, syncEdgeTableName, request.mutations)
+                .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"QUEUED","count":1}]}"""
@@ -139,8 +145,9 @@ class V3MutationServiceGlobalAsyncSpec :
                     """.trimIndent(),
                 )
 
-            v3MutationService
-                .mutateMultiEdge(database, syncMultiEdgeTableName, request)
+            mutationService
+                .mutate(database, syncMultiEdgeTableName, request.mutations)
+                .map { MultiEdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"QUEUED","count":1}]}"""
@@ -170,8 +177,9 @@ class V3MutationServiceGlobalAsyncSpec :
                     """.trimIndent(),
                 )
 
-            v3MutationService
-                .mutateEdge(database, asyncEdgeTableName, request, mode = MutationMode.SYNC)
+            mutationService
+                .mutate(database, asyncEdgeTableName, request.mutations, syncMode = EngineMutationMode.SYNC)
+                .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"QUEUED","count":1}]}"""
@@ -199,8 +207,9 @@ class V3MutationServiceGlobalAsyncSpec :
                     """.trimIndent(),
                 )
 
-            v3MutationService
-                .mutateMultiEdge(database, asyncMultiEdgeTableName, request, mode = MutationMode.SYNC)
+            mutationService
+                .mutate(database, asyncMultiEdgeTableName, request.mutations, syncMode = EngineMutationMode.SYNC)
+                .map { MultiEdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"QUEUED","count":1}]}"""
@@ -230,8 +239,9 @@ class V3MutationServiceGlobalAsyncSpec :
                     """.trimIndent(),
                 )
 
-            v3MutationService
-                .internalMutateEdge(database, asyncEdgeTableName, request, internal = MutationMode.SYNC)
+            mutationService
+                .internalMutate(database, asyncEdgeTableName, request.mutations, internalMode = EngineMutationMode.SYNC)
+                .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"CREATED","count":1}]}"""
@@ -259,8 +269,9 @@ class V3MutationServiceGlobalAsyncSpec :
                     """.trimIndent(),
                 )
 
-            v3MutationService
-                .internalMutateMultiEdge(database, asyncMultiEdgeTableName, request, internal = MutationMode.SYNC)
+            mutationService
+                .internalMutate(database, asyncMultiEdgeTableName, request.mutations, internalMode = EngineMutationMode.SYNC)
+                .map { MultiEdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1}]}"""
