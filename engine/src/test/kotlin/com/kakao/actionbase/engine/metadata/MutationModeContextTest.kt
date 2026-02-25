@@ -99,4 +99,169 @@ class MutationModeContextTest {
             assertTrue(ex.message!!.contains("SYNC"))
         }
     }
+
+    @Nested
+    @DisplayName("of with global and internal")
+    inner class OfWithGlobalAndInternalTest {
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            # internal overrides everything — SYNC
+            - label: SYNC
+              global: ASYNC
+              internal: SYNC
+              queue: false
+
+            - label: ASYNC
+              global: ASYNC
+              internal: SYNC
+              queue: false
+
+            - label: IGNORE
+              global: ASYNC
+              internal: SYNC
+              queue: false
+
+            - label: SYNC
+              global: null
+              internal: SYNC
+              queue: false
+
+            # internal overrides everything — ASYNC
+            - label: SYNC
+              global: SYNC
+              internal: ASYNC
+              queue: true
+
+            - label: SYNC
+              global: null
+              internal: ASYNC
+              queue: true
+
+            # internal overrides everything — IGNORE
+            - label: SYNC
+              global: SYNC
+              internal: IGNORE
+              queue: true
+
+            # global overrides request and table — SYNC
+            - label: ASYNC
+              global: SYNC
+              internal: null
+              queue: false
+
+            - label: IGNORE
+              global: SYNC
+              internal: null
+              queue: false
+
+            # global overrides request and table — ASYNC
+            - label: SYNC
+              global: ASYNC
+              internal: null
+              queue: true
+
+            # global overrides request and table — IGNORE
+            - label: SYNC
+              global: IGNORE
+              internal: null
+              queue: true
+
+            # no global, no internal — falls back to request/label
+            - label: SYNC
+              global: null
+              internal: null
+              queue: false
+
+            - label: ASYNC
+              global: null
+              internal: null
+              queue: true
+
+            - label: IGNORE
+              global: null
+              internal: null
+              queue: true
+            """,
+        )
+        fun `returns correct queue flag with global and internal`(
+            label: String,
+            global: String?,
+            internal: String?,
+            queue: Boolean,
+        ) {
+            val result =
+                MutationModeContext.of(
+                    label = MutationMode.valueOf(label),
+                    request = null,
+                    global = global?.let { MutationMode.valueOf(it) },
+                    internal = internal?.let { MutationMode.valueOf(it) },
+                )
+            assertEquals(queue, result.queue)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            # global=ASYNC overrides request=SYNC
+            - label: SYNC
+              request: SYNC
+              global: ASYNC
+              queue: true
+
+            - label: ASYNC
+              request: SYNC
+              global: ASYNC
+              queue: true
+
+            # global=SYNC overrides request=ASYNC
+            - label: ASYNC
+              request: ASYNC
+              global: SYNC
+              queue: false
+            """,
+        )
+        fun `global overrides request`(
+            label: String,
+            request: String,
+            global: String,
+            queue: Boolean,
+        ) {
+            val result =
+                MutationModeContext.of(
+                    label = MutationMode.valueOf(label),
+                    request = MutationMode.valueOf(request),
+                    global = MutationMode.valueOf(global),
+                    internal = null,
+                )
+            assertEquals(queue, result.queue)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - request: SYNC
+              internal: SYNC
+
+            - request: SYNC
+              internal: ASYNC
+
+            - request: ASYNC
+              internal: SYNC
+            """,
+        )
+        fun `request and internal are mutually exclusive`(
+            request: String,
+            internal: String,
+        ) {
+            assertThrows<IllegalArgumentException> {
+                MutationModeContext.of(
+                    label = MutationMode.SYNC,
+                    request = MutationMode.valueOf(request),
+                    global = null,
+                    internal = MutationMode.valueOf(internal),
+                )
+            }
+        }
+    }
 }
