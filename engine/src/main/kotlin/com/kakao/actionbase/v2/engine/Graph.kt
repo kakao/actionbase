@@ -1,5 +1,13 @@
 package com.kakao.actionbase.v2.engine
 
+import com.kakao.actionbase.core.Constants
+import com.kakao.actionbase.core.codec.ByteArrayBufferPool
+import com.kakao.actionbase.core.edge.mapper.EdgeCountRecordMapper
+import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
+import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
+import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
+import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
+import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
@@ -92,6 +100,7 @@ class Graph(
     override val metastore: Database,
     override val metadataTable: MetadataTable,
     override val edgeEncoderFactory: EdgeEncoderFactory,
+    override val edgeRecordMapper: EdgeRecordMapper,
     override val datastore: DefaultHBaseCluster,
     private val systemStorages: Map<EntityName, StorageEntity>,
     config: GraphConfig,
@@ -116,7 +125,7 @@ class Graph(
 
     private val artifactInfo: String = config.artifactInfo ?: "no artifact info"
 
-    internal val lockTimeout: Long = config.lockTimeout
+    override val lockTimeout: Long = config.lockTimeout
 
     private val warmUpConfig = config.warmUp
 
@@ -966,6 +975,18 @@ class Graph(
                     EdgeEncoderFactory()
                 }
 
+            val edgeRecordMapper =
+                run {
+                    val pool = ByteArrayBufferPool.create(config.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
+                    EdgeRecordMapper(
+                        state = EdgeStateRecordMapper.create(pool),
+                        index = EdgeIndexRecordMapper.create(pool),
+                        count = EdgeCountRecordMapper.create(pool),
+                        lock = EdgeLockRecordMapper.create(pool),
+                        group = EdgeGroupRecordMapper.create(pool),
+                    )
+                }
+
             val metadataTable = config.metastoreTable?.let { MetadataTable.get(it) } ?: MetadataTable.legacy
             val localMetastore: Database = createDatabase(config, "local", metadataTable)
             val metastore: Database = createDatabase(config, "global", metadataTable)
@@ -998,6 +1019,8 @@ class Graph(
                     metastore,
                     metadataTable,
                     edgeEncoderFactory,
+                    edgeRecordMapper,
+                    config.lockTimeout,
                     storageEntities,
                     DefaultHBaseCluster.INSTANCE,
                 )
@@ -1061,6 +1084,7 @@ class Graph(
                 defaults.metastore,
                 defaults.metadataTable,
                 defaults.edgeEncoderFactory,
+                defaults.edgeRecordMapper,
                 defaults.datastore,
                 defaults.storages,
                 config,

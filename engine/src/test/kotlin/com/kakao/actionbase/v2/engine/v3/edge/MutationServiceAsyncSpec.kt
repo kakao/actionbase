@@ -1,7 +1,12 @@
 package com.kakao.actionbase.v2.engine.v3.edge
 
+import com.kakao.actionbase.engine.metadata.MutationMode as EngineMutationMode
+
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
+import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
+import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
+import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -9,7 +14,7 @@ import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
 import com.kakao.actionbase.v2.engine.test.wal.InMemoryWal
-import com.kakao.actionbase.v2.engine.v3.V3MutationService
+import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
 import com.kakao.actionbase.v2.engine.v3.V3QueryService
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -20,7 +25,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import reactor.kotlin.test.test
 
-class V3MutationServiceAsyncSpec :
+class MutationServiceAsyncSpec :
     StringSpec({
 
         val multiEdgeTableName = EntityName(GraphFixtures.serviceName, "edge_table_async_multi_edge")
@@ -29,7 +34,7 @@ class V3MutationServiceAsyncSpec :
         lateinit var graph: Graph
         lateinit var wal: InMemoryWal
         lateinit var cdc: InMemoryCdc
-        lateinit var v3MutationService: V3MutationService
+        lateinit var mutationService: MutationService
         lateinit var v3QueryService: V3QueryService
 
         val multiEdgeRequestString =
@@ -167,7 +172,7 @@ class V3MutationServiceAsyncSpec :
 
             val request2 = mapper.readValue<LabelCreateRequest>(edgeDescriptor)
             graph.labelDdl.create(edgeTableName, request2).block()
-            v3MutationService = V3MutationService(graph)
+            mutationService = MutationService(V2BackedEngine(graph))
             v3QueryService = V3QueryService(graph)
         }
 
@@ -217,8 +222,9 @@ class V3MutationServiceAsyncSpec :
         "ASYNC MULTI_EDGE table with sync request produces WAL and CDC" {
             val request = mapper.readValue<MultiEdgeBulkMutationRequest>(multiEdgeRequestString)
 
-            v3MutationService
-                .mutateMultiEdge(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, request, sync = MutationMode.SYNC)
+            mutationService
+                .mutate(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, request.mutations, syncMode = EngineMutationMode.SYNC)
+                .map { MultiEdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1},{"id":100001,"status":"CREATED","count":1},{"id":100002,"status":"CREATED","count":1}]}"""
@@ -237,8 +243,9 @@ class V3MutationServiceAsyncSpec :
         "ASYNC MULTI_EDGE table produces WAL but not CDC" {
             val request = mapper.readValue<MultiEdgeBulkMutationRequest>(multiEdgeRequestString)
 
-            v3MutationService
-                .mutateMultiEdge(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, request)
+            mutationService
+                .mutate(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, request.mutations)
+                .map { MultiEdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"QUEUED","count":1},{"id":100001,"status":"QUEUED","count":1},{"id":100002,"status":"QUEUED","count":1}]}"""
@@ -252,8 +259,9 @@ class V3MutationServiceAsyncSpec :
         "ASYNC EDGE table produces WAL but not CDC" {
             val request = mapper.readValue<EdgeBulkMutationRequest>(edgeRequestString)
 
-            v3MutationService
-                .mutateEdge(edgeTableName.service, edgeTableName.nameNotNull, request)
+            mutationService
+                .mutate(edgeTableName.service, edgeTableName.nameNotNull, request.mutations)
+                .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"QUEUED","count":1},{"source":1,"target":2,"status":"QUEUED","count":2}]}"""
@@ -267,8 +275,9 @@ class V3MutationServiceAsyncSpec :
         "ASYNC EDGE table with sync request produces WAL and CDC" {
             val request = mapper.readValue<EdgeBulkMutationRequest>(edgeRequestString)
 
-            v3MutationService
-                .mutateEdge(edgeTableName.service, edgeTableName.nameNotNull, request, sync = MutationMode.SYNC)
+            mutationService
+                .mutate(edgeTableName.service, edgeTableName.nameNotNull, request.mutations, syncMode = EngineMutationMode.SYNC)
+                .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
                     mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1,"target":0,"status":"CREATED","count":1},{"source":1,"target":2,"status":"CREATED","count":2}]}"""
