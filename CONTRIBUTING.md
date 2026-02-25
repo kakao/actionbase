@@ -19,7 +19,7 @@ To find documents that need the most help, run:
 cd website && npm run translate -- status
 ```
 
-See [TRANSLATION.md](TRANSLATION.md) for the full workflow, step-by-step examples, and TM format details.
+See [TRANSLATION.md](TRANSLATION.md) for technical details and TM format.
 
 When submitting translation PRs, please submit **one section (folder) per PR** rather than translating all pages at once. This makes reviews manageable and allows incremental progress.
 

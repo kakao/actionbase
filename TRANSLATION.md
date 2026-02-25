@@ -6,72 +6,32 @@ applying exact-match TM lookups to the English MDX files.
 
 Translation Memory (TM) is a key-value store that maps English source
 segments to their translations. Each document has its own TM file,
-managed at the document level. When building translated output, the tool
-looks up each segment by exact string match — a **HIT** replaces the
-English text with the translation, and a **MISS** keeps the English
-text as-is.
+managed at the document level.
 
-## Contributing translations
+## How it works
 
-### Step-by-step example
-
-To translate a missing entry (using `{lang}` as your target language,
-e.g. `ko`):
-
-1. **Find the TM file**: Open `website/i18n/tm/{lang}/faq.yaml`.
-   If the file does not exist, create it:
-   ```bash
-   cd website && npm run translate -- --lang {lang} init
-   ```
-2. **Look for empty targets**: Search for `target: ""` — these are
-   untranslated segments.
-   ```yaml
-   - source: "Why is it called Actionbase?"
-     target: ""
-     context: heading
-   ```
-3. **Add the translation**: Fill in the `target` field.
-   ```yaml
-   - source: "Why is it called Actionbase?"
-     target: "Your translation here"
-     context: heading
-   ```
-4. **Add yourself to contributors**: In the `meta` section, add your
-   GitHub username.
-   ```yaml
-   meta:
-     contributors:
-     - your-github-username
-   ```
-5. **Preview locally**:
-   ```bash
-   cd website
-
-   # Validate — catches YAML errors (no files written)
-   npm run translate -- --lang {lang} validate
-
-   # Build — generates {lang}/*.mdx from TM
-   npm run translate -- --lang {lang} build
-
-   # Start the dev server and open http://localhost:4321/{lang}/
-   npm run dev
-   ```
-6. **Open a PR**: CI validates your changes and rebuilds translated docs
-   automatically.
-
-> Do not edit `{lang}/*.mdx` files directly — they are generated from TM
-> and will be overwritten on the next build.
-
-### Finding documents that need translation
-
-```bash
-cd website && npm run translate -- --lang {lang} status
+```
+en/*.mdx ───┐
+            │   ┌──────────────┐   ┌─────────────┐   ┌──────────┐
+tm/*.yaml ──┼──▶│ Parse MDX    │──▶│ TM Lookup   │──▶│ Generate │──▶ {lang}/*.mdx
+            │   │ (segments)   │   │ exact match │   │ output   │
+glossary ───┘   └──────────────┘   │ HIT→target  │   └──────────┘
+                                   │ MISS→source │
+                                   └─────────────┘
 ```
 
-Look for documents with low coverage or high MISS counts. `{lang}`
-defaults to `ko` if omitted.
+The build command parses each English MDX into **segments** (title,
+description, headings, paragraphs, tables, list items). Each segment is
+looked up by exact string match — a **HIT** replaces the English text
+with the translation, and a **MISS** keeps the English text as-is.
+Non-translatable content (code blocks, imports, JSX, images) passes
+through unchanged.
 
-### TM format
+Translated headings receive an explicit `{#english-slug}` anchor derived
+from the English source heading, ensuring cross-page links remain valid
+regardless of the translated heading text.
+
+## TM format
 
 Each document has a YAML file at `website/i18n/tm/{lang}/{doc-path}.yaml`:
 
@@ -88,62 +48,16 @@ entries:
   context: paragraph
 ```
 
-- **`meta.contributors`** — who contributed translations (human usernames
-  or model identifiers like `kanana-2`).
-- **`entries[].source`** — English text (exact match key).
-- **`entries[].target`** — translated text. Empty string (`""`) means
-  untranslated.
-- **`entries[].context`** — segment type: `frontmatter:title`,
-  `frontmatter:description`, `heading`, `paragraph`, `table`,
-  `list_item`, `summary`, `blockquote`.
+| Field | Description |
+|---|---|
+| `meta.contributors` | Who contributed translations (usernames or model identifiers) |
+| `entries[].source` | English text (exact match key) |
+| `entries[].target` | Translated text. Empty string (`""`) = untranslated |
+| `entries[].context` | Segment type: `frontmatter:title`, `frontmatter:description`, `heading`, `paragraph`, `table`, `list_item`, `summary`, `blockquote` |
 
-### Glossary
-
-Check the glossary at `website/i18n/glossary/{lang}.yaml` for canonical
-translations and terms that must remain in English.
-
-```yaml
-version: v1
-terms:
-  Edge: "translated term"
-  Query: "translated term"
-preserve:
-  - Actionbase
-  - HBase
-```
-
-The glossary is a reference for translators. The build script reads only
-the `preserve` list; it does not auto-apply term substitutions.
-
-### After your PR
-
-When a PR touches TM files, CI:
-
-1. **Validates** — runs `npm run translate -- validate` to ensure all
-   entries produce a successful build.
-2. **Reports status** — shows a coverage table in the Job Summary.
-3. **On merge** — rebuilds `{lang}/*.mdx` and opens an automated PR
-   with the updated translated docs.
-
-## How it works
-
-```
-en/*.mdx ───┐
-            │   ┌──────────────┐   ┌─────────────┐   ┌──────────┐
-tm/*.yaml ──┼──▶│ Parse MDX    │──▶│ TM Lookup   │──▶│ Generate │──▶ {lang}/*.mdx
-            │   │ (segments)   │   │ exact match │   │ output   │
-glossary ───┘   └──────────────┘   │ HIT→target  │   └──────────┘
-                                   │ MISS→source │
-                                   └─────────────┘
-```
-
-1. The build command parses each English MDX into **segments** (title,
-   description, headings, paragraphs, tables, list items).
-2. Each segment is looked up in the document's TM file by exact match.
-3. **HIT** — the translated text replaces the English segment.
-4. **MISS** — the English text is kept as-is.
-5. Non-translatable content (code blocks, imports, JSX, images) passes
-   through unchanged.
+A glossary at `website/i18n/glossary/{lang}.yaml` defines canonical
+translations and terms that must remain in English. The build script
+reads the `preserve` list; it does not auto-apply term substitutions.
 
 ## File structure
 
@@ -158,29 +72,29 @@ website/src/content/docs/
 TRANSLATION.md                         # This file
 ```
 
-## Quick reference
+## CLI reference
+
+All commands run from the `website/` directory.
 
 ```bash
-cd website
-
 npm run translate -- init              # Create empty TM files for new EN docs
-npm run translate -- update            # Sync existing TM with updated EN source
+npm run translate -- update            # Sync TM with updated EN source
 npm run translate -- build             # Rebuild translated docs from TM
 npm run translate -- validate          # Validate TM without writing files
-npm run translate -- status            # Check current translation coverage
+npm run translate -- status            # Translation coverage (table)
+npm run translate -- status --format=summary   # Coverage (markdown)
 npm run translate -- --lang ko status  # Target a specific language (default: ko)
 ```
 
-## Updating TM after EN source changes
+| Command | Purpose |
+|---|---|
+| `init` | Create empty TM entries for documents that have no TM file yet |
+| `update` | Add new segments (empty target), remove stale entries, preserve existing translations |
+| `build` | Generate `{lang}/*.mdx` from TM lookups |
+| `validate` | Dry-run build to catch YAML or segment errors |
+| `status` | Show per-document HIT/MISS counts and coverage percentage |
 
-```bash
-cd website && npm run translate -- update
-```
-
-The `update` command syncs existing TM files with updated English source:
-- New segments are added with empty `target` (ready for translation).
-- Stale entries (source text no longer in EN) are removed.
-- Existing translations are preserved.
+CI runs `validate` on pull requests and `build` on merge to main.
 
 ## Known limitations
 
