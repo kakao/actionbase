@@ -84,8 +84,8 @@ class V2BackedMessageBinding(
             V2MutationModeContext.of(
                 table = V2MutationMode.valueOf(label.name),
                 request = request?.let { V2MutationMode.valueOf(it.name) },
-                global = global?.let { V2MutationMode.valueOf(it.name) },
-                internal = internal?.let { V2MutationMode.valueOf(it.name) },
+                system = system?.let { V2MutationMode.valueOf(it.name) },
+                force = force,
             )
 
         private fun stateToHashEdge(

@@ -28,10 +28,10 @@ class StartUpTest : E2ETestBase() {
     }
 }
 
-@TestPropertySource(properties = ["kc.graph.global-mutation-mode=SYNC"])
-class StartUpWithGlobalMutationModeSyncTest : E2ETestBase() {
+@TestPropertySource(properties = ["kc.graph.system-mutation-mode=SYNC"])
+class StartUpWithSystemMutationModeSyncTest : E2ETestBase() {
     @Test
-    fun `server boots with globalMutationMode=SYNC`() {
+    fun `server boots with systemMutationMode=SYNC`() {
         client
             .get()
             .uri("/graph/v2")
@@ -41,10 +41,10 @@ class StartUpWithGlobalMutationModeSyncTest : E2ETestBase() {
     }
 }
 
-@TestPropertySource(properties = ["kc.graph.global-mutation-mode=ASYNC"])
-class StartUpWithGlobalMutationModeAsyncTest : E2ETestBase() {
+@TestPropertySource(properties = ["kc.graph.system-mutation-mode=ASYNC"])
+class StartUpWithSystemMutationModeAsyncTest : E2ETestBase() {
     @Test
-    fun `server boots with globalMutationMode=ASYNC`() {
+    fun `server boots with systemMutationMode=ASYNC`() {
         client
             .get()
             .uri("/graph/v2")

@@ -1127,10 +1127,10 @@ class DdlServiceSpec :
             cdcQueue[0].audit shouldBe auditLog
         }
 
-        "DDL operations should be synchronous even with globalMutationMode=ASYNC" {
+        "DDL operations should be synchronous even with systemMutationMode=ASYNC" {
             val graphGlobalAsync =
                 GraphFixtures.create(
-                    GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC),
+                    GraphConfig.Builder().withSystemMutationMode(MutationMode.ASYNC),
                     withTestData = false,
                 )
 

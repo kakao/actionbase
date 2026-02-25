@@ -32,7 +32,7 @@ data class GraphConfig(
     // Aligned with nginx.conf proxy_read_timeout 300
     val mutationRequestTimeout: Long = 300_000,
     val hbase: Map<String, String> = emptyMap(),
-    val globalMutationMode: MutationMode? = null,
+    val systemMutationMode: MutationMode? = null,
 ) {
     companion object {
         val builder: Builder
@@ -60,7 +60,7 @@ data class GraphConfig(
         private var warmUp: WarmUpConfig = WarmUpConfig()
         private var artifactInfo: String? = null
         private var hbase: Map<String, String> = emptyMap()
-        private var globalMutationMode: MutationMode? = null
+        private var systemMutationMode: MutationMode? = null
 
         // Aligned with nginx.conf proxy_read_timeout 300
         private var mutationRequestTimeout: Long = 300_000
@@ -113,7 +113,7 @@ data class GraphConfig(
 
         fun withHBase(hbase: Map<String, String>) = apply { this.hbase = hbase }
 
-        fun withGlobalMutationMode(globalMutationMode: MutationMode?) = apply { this.globalMutationMode = globalMutationMode }
+        fun withSystemMutationMode(systemMutationMode: MutationMode?) = apply { this.systemMutationMode = systemMutationMode }
 
         fun build(): GraphConfig =
             GraphConfig(
@@ -138,7 +138,7 @@ data class GraphConfig(
                 artifactInfo = artifactInfo,
                 mutationRequestTimeout = mutationRequestTimeout,
                 hbase = hbase,
-                globalMutationMode = globalMutationMode,
+                systemMutationMode = systemMutationMode,
             )
     }
 }

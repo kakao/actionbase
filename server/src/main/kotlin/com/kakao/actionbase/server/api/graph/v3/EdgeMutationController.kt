@@ -28,7 +28,7 @@ class EdgeMutationController(
         requestContext: RequestContext,
     ): Mono<ResponseEntity<EdgeMutationResponse>> =
         mutationService
-            .mutate(database, table, request.mutations, lock, syncMode = null, requestContext)
+            .mutate(database, table, request.mutations, lock, syncMode = null, requestContext = requestContext)
             .map { ResponseEntity.ok(EdgeMutationResponse.from(it)) }
 
     @PostMapping("/graph/v3/databases/{database}/tables/{table}/edges/sync")
@@ -40,7 +40,7 @@ class EdgeMutationController(
         requestContext: RequestContext,
     ): Mono<ResponseEntity<EdgeMutationResponse>> =
         mutationService
-            .mutate(database, table, request.mutations, lock, syncMode = MutationMode.SYNC, requestContext)
+            .mutate(database, table, request.mutations, lock, syncMode = MutationMode.SYNC, requestContext = requestContext)
             .map { ResponseEntity.ok(EdgeMutationResponse.from(it)) }
 
     @PostMapping("/graph/v3/databases/{database}/tables/{table}/edges/internal/sync")
@@ -52,6 +52,6 @@ class EdgeMutationController(
         requestContext: RequestContext,
     ): Mono<ResponseEntity<EdgeMutationResponse>> =
         mutationService
-            .internalMutate(database, table, request.mutations, lock, internalMode = MutationMode.SYNC, requestContext)
+            .mutate(database, table, request.mutations, lock, syncMode = MutationMode.SYNC, force = true, requestContext = requestContext)
             .map { ResponseEntity.ok(EdgeMutationResponse.from(it)) }
 }

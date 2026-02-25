@@ -40,6 +40,6 @@ interface MutationEngine {
     /** Mutation request timeout (millis). */
     val mutationRequestTimeout: Long
 
-    /** Global mutation mode override from configuration. */
-    val globalMutationMode: MutationMode?
+    /** System-level mutation mode override from configuration. */
+    val systemMutationMode: MutationMode?
 }

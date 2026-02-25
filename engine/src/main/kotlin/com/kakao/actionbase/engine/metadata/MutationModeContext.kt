@@ -7,37 +7,65 @@ import com.kakao.actionbase.engine.metadata.MutationMode.SYNC
 data class MutationModeContext private constructor(
     val label: MutationMode,
     val request: MutationMode?,
-    val global: MutationMode?,
-    val internal: MutationMode?,
+    val system: MutationMode?,
+    val force: Boolean,
     val queue: Boolean,
 ) {
     companion object {
         /**
-         * Priority: internal > global > request > label (table)
+         * Priority: request(force=true) > system > request(force=false) > label (table)
          *
-         * mode  = internal ?: global ?: request ?: label
+         * mode = when {
+         *     force   -> request          // force requires non-null request
+         *     system != null -> system
+         *     request != null -> request
+         *     else           -> label
+         * }
          * queue = mode == ASYNC || mode == IGNORE
+         *
+         * Constraints:
+         *   - force==true && request==null -> IllegalArgumentException
+         *   - force==false && system==null && request==SYNC && label==IGNORE -> IllegalArgumentException
+         *
+         * | force(request) | system | request | label  | mode   | queue   |
+         * | -------------- | ------ | ------- | ------ | ------ | ------- |
+         * | true           | *      | SYNC    | *      | SYNC   | false   |
+         * | true           | *      | ASYNC   | *      | ASYNC  | true    |
+         * | true           | *      | N/A     | *      | —      | Invalid |
+         * | false          | SYNC   | *       | *      | SYNC   | false   |
+         * | false          | ASYNC  | *       | *      | ASYNC  | true    |
+         * | false          | IGNORE | *       | *      | IGNORE | true    |
+         * | false          | N/A    | SYNC    | SYNC   | SYNC   | false   |
+         * | false          | N/A    | SYNC    | ASYNC  | SYNC   | false   |
+         * | false          | N/A    | SYNC    | IGNORE | —      | Invalid |
+         * | false          | N/A    | ASYNC   | *      | ASYNC  | true    |
+         * | false          | N/A    | IGNORE  | *      | IGNORE | true    |
+         * | false          | N/A    | N/A     | SYNC   | SYNC   | false   |
+         * | false          | N/A    | N/A     | ASYNC  | ASYNC  | true    |
+         * | false          | N/A    | N/A     | IGNORE | IGNORE | true    |
          */
         fun of(
             label: MutationMode,
             request: MutationMode?,
-        ): MutationModeContext = of(label, request, global = null, internal = null)
-
-        fun of(
-            label: MutationMode,
-            request: MutationMode?,
-            global: MutationMode?,
-            internal: MutationMode?,
+            system: MutationMode? = null,
+            force: Boolean = false,
         ): MutationModeContext {
-            require(request == null || internal == null) {
-                "request and internal are mutually exclusive. request=$request, internal=$internal"
+            require(!(force && request == null)) {
+                "force requires a non-null request. force=$force, request=$request"
             }
-            val mode = internal ?: global ?: request ?: label
-            require(!(internal == null && global == null && request == SYNC && label == IGNORE)) {
-                "SYNC is not allowed when table mode is IGNORE."
+            val isSyncOnIgnoreTable = !force && system == null && request == SYNC && label == IGNORE
+            require(!isSyncOnIgnoreTable) {
+                "SYNC request is not allowed when table mode is IGNORE without force or system override."
             }
+            val mode =
+                when {
+                    force -> request!!
+                    system != null -> system
+                    request != null -> request
+                    else -> label
+                }
             val queue = mode == ASYNC || mode == IGNORE
-            return MutationModeContext(label, request, global, internal, queue)
+            return MutationModeContext(label, request, system, force, queue)
         }
     }
 }

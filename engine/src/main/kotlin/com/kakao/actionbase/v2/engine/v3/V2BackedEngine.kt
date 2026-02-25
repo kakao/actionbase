@@ -51,6 +51,6 @@ class V2BackedEngine(
     override val mutationRequestTimeout: Long
         get() = graph.mutationRequestTimeout
 
-    override val globalMutationMode: MutationMode?
-        get() = graph.globalMutationMode?.let { MutationMode.valueOf(it.name) }
+    override val systemMutationMode: MutationMode?
+        get() = graph.systemMutationMode?.let { MutationMode.valueOf(it.name) }
 }

@@ -10,58 +10,65 @@ import com.kakao.actionbase.v2.core.metadata.MutationMode.SYNC
 data class MutationModeContext private constructor(
     val l: MutationMode, // label (table)
     val r: MutationMode?, // request
-    val g: MutationMode?, // global
-    val i: MutationMode?, // internal
+    val s: MutationMode?, // system
+    val f: Boolean, // force
     val queue: Boolean,
 ) {
     companion object {
         /**
-         * Priority: i(nternal) > g(lobal) > r(equest) > t(able)
+         * Priority: request(force=true) > system > request(force=false) > label (table)
          *
-         * mode  = internal ?: global ?: request ?: table
+         * mode = when {
+         *     force   -> request          // force requires non-null request
+         *     system != null -> system
+         *     request != null -> request
+         *     else           -> table
+         * }
          * queue = mode == ASYNC || mode == IGNORE
          *
          * Constraints:
-         *   - internal!=null && request!=null -> IllegalArgumentException
-         *   - internal==null && global==null && request==SYNC && table==IGNORE -> IllegalArgumentException
+         *   - force==true && request==null -> IllegalArgumentException
+         *   - force==false && system==null && request==SYNC && table==IGNORE -> IllegalArgumentException
          *
-         * | internal | global | request | table  | mode   | queue   |
-         * | -------- | ------ | ------- | ------ | ------ | ------- |
-         * | SYNC     | *      | *       | *      | SYNC   | false   |
-         * | ASYNC    | *      | *       | *      | ASYNC  | true    |
-         * | IGNORE   | *      | *       | *      | IGNORE | true    |
-         * | N/A      | SYNC   | *       | *      | SYNC   | false   |
-         * | N/A      | ASYNC  | *       | *      | ASYNC  | true    |
-         * | N/A      | IGNORE | *       | *      | IGNORE | true    |
-         * | N/A      | N/A    | SYNC    | SYNC   | SYNC   | false   |
-         * | N/A      | N/A    | SYNC    | ASYNC  | SYNC   | false   |
-         * | N/A      | N/A    | SYNC    | IGNORE | SYNC   | Invalid |
-         * | N/A      | N/A    | ASYNC   | *      | ASYNC  | true    |
-         * | N/A      | N/A    | IGNORE  | *      | IGNORE | true    |
-         * | N/A      | N/A    | N/A     | SYNC   | SYNC   | false   |
-         * | N/A      | N/A    | N/A     | ASYNC  | ASYNC  | true    |
-         * | N/A      | N/A    | N/A     | IGNORE | IGNORE | true    |
+         * | force(request) | system | request | table  | mode   | queue   |
+         * | -------------- | ------ | ------- | ------ | ------ | ------- |
+         * | true           | *      | SYNC    | *      | SYNC   | false   |
+         * | true           | *      | ASYNC   | *      | ASYNC  | true    |
+         * | true           | *      | N/A     | *      | —      | Invalid |
+         * | false          | SYNC   | *       | *      | SYNC   | false   |
+         * | false          | ASYNC  | *       | *      | ASYNC  | true    |
+         * | false          | IGNORE | *       | *      | IGNORE | true    |
+         * | false          | N/A    | SYNC    | SYNC   | SYNC   | false   |
+         * | false          | N/A    | SYNC    | ASYNC  | SYNC   | false   |
+         * | false          | N/A    | SYNC    | IGNORE | —      | Invalid |
+         * | false          | N/A    | ASYNC   | *      | ASYNC  | true    |
+         * | false          | N/A    | IGNORE  | *      | IGNORE | true    |
+         * | false          | N/A    | N/A     | SYNC   | SYNC   | false   |
+         * | false          | N/A    | N/A     | ASYNC  | ASYNC  | true    |
+         * | false          | N/A    | N/A     | IGNORE | IGNORE | true    |
          */
         fun of(
             table: MutationMode,
             request: MutationMode?,
-        ): MutationModeContext = of(table, request, global = null, internal = null)
-
-        fun of(
-            table: MutationMode,
-            request: MutationMode?,
-            global: MutationMode?,
-            internal: MutationMode?,
+            system: MutationMode? = null,
+            force: Boolean = false,
         ): MutationModeContext {
-            require(request == null || internal == null) {
-                "request and internal are mutually exclusive. request=$request, internal=$internal"
+            require(!(force && request == null)) {
+                "force requires a non-null request. force=$force, request=$request"
             }
-            val mode = internal ?: global ?: request ?: table
-            require(!(internal == null && global == null && request == SYNC && table == IGNORE)) {
-                "SYNC is not allowed when table mode is IGNORE."
+            val isSyncOnIgnoreTable = !force && system == null && request == SYNC && table == IGNORE
+            require(!isSyncOnIgnoreTable) {
+                "SYNC request is not allowed when table mode is IGNORE without force or system override."
             }
+            val mode =
+                when {
+                    force -> request!!
+                    system != null -> system
+                    request != null -> request
+                    else -> table
+                }
             val queue = mode == ASYNC || mode == IGNORE
-            return MutationModeContext(l = table, r = request, g = global, i = internal, queue = queue)
+            return MutationModeContext(l = table, r = request, s = system, f = force, queue = queue)
         }
     }
 }

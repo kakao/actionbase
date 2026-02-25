@@ -33,7 +33,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
         request: Create,
     ): Mono<MutationResult> {
         val edge = request.toEdge(name)
-        return graph.internalMutate(label.name, label, listOf(edge), EdgeOperation.INSERT, internal = MutationMode.SYNC)
+        return graph.mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, mode = MutationMode.SYNC, force = true)
     }
 
     fun create(
@@ -46,13 +46,14 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                     val edge = request.toEdge(name)
                     // mutate should call to write WAL
                     graph
-                        .internalMutate(
+                        .mutate(
                             label.name,
                             label,
                             listOf(edge),
                             EdgeOperation.INSERT,
                             audit = request.audit,
-                            internal = MutationMode.SYNC,
+                            mode = MutationMode.SYNC,
+                            force = true,
                             failOnExist = true,
                         ).map {
                             val result = it.result.first()
@@ -85,13 +86,14 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                 if (it.isEmpty()) {
                     val edge = request.toEdge(name)
                     graph
-                        .internalMutate(
+                        .mutate(
                             label.name,
                             label,
                             listOf(edge),
                             EdgeOperation.UPDATE,
                             audit = request.audit,
-                            internal = MutationMode.SYNC,
+                            mode = MutationMode.SYNC,
+                            force = true,
                         ).map {
                             val result = it.result.first()
                             DdlStatus.fromEdgeOperationStatus(
@@ -123,13 +125,14 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
         return checkDeletePrecondition(name, request).flatMap {
             if (it.isEmpty()) {
                 graph
-                    .internalMutate(
+                    .mutate(
                         label.name,
                         label,
                         listOf(edge),
                         EdgeOperation.DELETE,
                         audit = request.audit,
-                        internal = MutationMode.SYNC,
+                        mode = MutationMode.SYNC,
+                        force = true,
                     ).map {
                         val result = it.result.first()
                         DdlStatus.fromEdgeOperationStatus(
@@ -168,7 +171,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                         fromEdge.props + props,
                     ).toTraceEdge()
                 graph
-                    .internalMutate(label.name, label, listOf(edge), EdgeOperation.INSERT, internal = MutationMode.SYNC)
+                    .mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, mode = MutationMode.SYNC, force = true)
                     .map {
                         val result = it.result.first()
                         DdlStatus.fromEdgeOperationStatus(

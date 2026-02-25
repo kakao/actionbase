@@ -174,7 +174,7 @@ class Graph(
 
     val encoderPoolSize = config.encoderPoolSize
 
-    val globalMutationMode = config.globalMutationMode
+    val systemMutationMode = config.systemMutationMode
 
     init {
         if (config.metastoreReloadInitialDelay != null && config.metastoreReloadInterval != null) {
@@ -273,6 +273,7 @@ class Graph(
             } + aliases.map { it.key.toString() to "Alias(${it.value})" }
         ).toMap()
 
+    @Suppress("LongMethod")
     fun mutate(
         alias: EntityName,
         label: Label,
@@ -282,40 +283,15 @@ class Graph(
         requestId: String = "",
         bulk: Boolean = false,
         mode: MutationMode? = null,
-        failOnExist: Boolean = false,
-    ): Mono<MutationResult> = mutate(alias, label, edges, operation, audit, requestId, bulk, mode = mode, internal = null, failOnExist)
-
-    fun internalMutate(
-        alias: EntityName,
-        label: Label,
-        edges: List<TraceEdge>,
-        operation: EdgeOperation,
-        audit: Audit = Audit.default,
-        requestId: String = "",
-        bulk: Boolean = false,
-        internal: MutationMode? = null,
-        failOnExist: Boolean = false,
-    ): Mono<MutationResult> = mutate(alias, label, edges, operation, audit, requestId, bulk, mode = null, internal = internal, failOnExist)
-
-    @Suppress("LongMethod")
-    private fun mutate(
-        alias: EntityName,
-        label: Label,
-        edges: List<TraceEdge>,
-        operation: EdgeOperation,
-        audit: Audit = Audit.default,
-        requestId: String = "",
-        bulk: Boolean = false,
-        mode: MutationMode? = null,
-        internal: MutationMode? = null,
+        force: Boolean = false,
         failOnExist: Boolean = false,
     ): Mono<MutationResult> {
         val mutationModeContext =
             MutationModeContext.of(
                 table = label.entity.mode,
                 request = mode,
-                global = globalMutationMode,
-                internal = internal,
+                system = systemMutationMode,
+                force = force,
             )
 
         return Flux

@@ -30,25 +30,7 @@ class MutationService(
         unresolvedEvents: List<UnresolvedEvent>,
         acquireLock: Boolean = true,
         syncMode: MutationMode? = null,
-        requestContext: RequestContext = RequestContext.DEFAULT,
-    ): Mono<List<MutationResult>> = mutate(database, alias, unresolvedEvents, acquireLock, syncMode, internalMode = null, requestContext)
-
-    fun internalMutate(
-        database: String,
-        alias: String,
-        unresolvedEvents: List<UnresolvedEvent>,
-        acquireLock: Boolean = true,
-        internalMode: MutationMode? = null,
-        requestContext: RequestContext = RequestContext.DEFAULT,
-    ): Mono<List<MutationResult>> = mutate(database, alias, unresolvedEvents, acquireLock, syncMode = null, internalMode = internalMode, requestContext)
-
-    private fun mutate(
-        database: String,
-        alias: String,
-        unresolvedEvents: List<UnresolvedEvent>,
-        acquireLock: Boolean = true,
-        syncMode: MutationMode? = null,
-        internalMode: MutationMode? = null,
+        force: Boolean = false,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<List<MutationResult>> =
         Mono
@@ -59,7 +41,7 @@ class MutationService(
                         database = database,
                         alias = alias,
                         table = tb.table,
-                        mutationMode = MutationModeContext.of(tb.mutationMode, syncMode, engine.globalMutationMode, internalMode),
+                        mutationMode = MutationModeContext.of(tb.mutationMode, syncMode, engine.systemMutationMode, force),
                         audit = Audit(requestContext.actor),
                         requestId = requestContext.requestId,
                     )

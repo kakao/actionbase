@@ -31,5 +31,5 @@ data class GraphProperties(
     val allowMirror: Boolean = false,
     val mutationRequestTimeout: Long?,
     val hbase: Map<String, String> = emptyMap(),
-    val globalMutationMode: MutationMode? = null,
+    val systemMutationMode: MutationMode? = null,
 )

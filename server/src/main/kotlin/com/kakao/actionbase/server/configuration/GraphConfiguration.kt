@@ -81,7 +81,7 @@ class GraphConfiguration {
                         .of(infoEndpoint)
                 withArtifactInfo(artifactInfo.toString())
                 withHBase(properties.hbase)
-                properties.globalMutationMode?.let { withGlobalMutationMode(it) }
+                properties.systemMutationMode?.let { withSystemMutationMode(it) }
             }
         return builder.build()
     }

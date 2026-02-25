@@ -28,7 +28,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import reactor.kotlin.test.test
 
-class MutationServiceGlobalAsyncSpec :
+class MutationServiceSystemAsyncSpec :
     StringSpec({
 
         val database = GraphFixtures.serviceName
@@ -50,7 +50,7 @@ class MutationServiceGlobalAsyncSpec :
         beforeTest {
             graph =
                 GraphFixtures.create(
-                    configBuilder = GraphConfig.Builder().withGlobalMutationMode(MutationMode.ASYNC),
+                    configBuilder = GraphConfig.Builder().withSystemMutationMode(MutationMode.ASYNC),
                     withTestData = false,
                 )
 
@@ -101,9 +101,9 @@ class MutationServiceGlobalAsyncSpec :
             }
         }
 
-        // ---- scenario 1: global=ASYNC overrides table ----
+        // ---- scenario 1: system=ASYNC overrides table ----
 
-        "global=ASYNC overrides SYNC EDGE table" {
+        "system=ASYNC overrides SYNC EDGE table" {
             val request =
                 mapper.readValue<EdgeBulkMutationRequest>(
                     """
@@ -133,7 +133,7 @@ class MutationServiceGlobalAsyncSpec :
                 .verifyComplete()
         }
 
-        "global=ASYNC overrides SYNC MULTI_EDGE table" {
+        "system=ASYNC overrides SYNC MULTI_EDGE table" {
             val request =
                 mapper.readValue<MultiEdgeBulkMutationRequest>(
                     """
@@ -163,9 +163,9 @@ class MutationServiceGlobalAsyncSpec :
                 .verifyComplete()
         }
 
-        // ---- scenario 2: global=ASYNC overrides request=SYNC ----
+        // ---- scenario 2: system=ASYNC overrides request=SYNC ----
 
-        "global=ASYNC overrides request=SYNC on ASYNC EDGE table" {
+        "system=ASYNC overrides request=SYNC on ASYNC EDGE table" {
             val request =
                 mapper.readValue<EdgeBulkMutationRequest>(
                     """
@@ -195,7 +195,7 @@ class MutationServiceGlobalAsyncSpec :
                 .verifyComplete()
         }
 
-        "global=ASYNC overrides request=SYNC on ASYNC MULTI_EDGE table" {
+        "system=ASYNC overrides request=SYNC on ASYNC MULTI_EDGE table" {
             val request =
                 mapper.readValue<MultiEdgeBulkMutationRequest>(
                     """
@@ -225,9 +225,9 @@ class MutationServiceGlobalAsyncSpec :
                 .verifyComplete()
         }
 
-        // ---- scenario 3: internal=SYNC overrides global=ASYNC ----
+        // ---- scenario 3: force=true request=SYNC overrides system=ASYNC ----
 
-        "internal=SYNC overrides global=ASYNC on ASYNC EDGE table" {
+        "force=true request=SYNC overrides system=ASYNC on ASYNC EDGE table" {
             val request =
                 mapper.readValue<EdgeBulkMutationRequest>(
                     """
@@ -240,7 +240,7 @@ class MutationServiceGlobalAsyncSpec :
                 )
 
             mutationService
-                .internalMutate(database, asyncEdgeTableName, request.mutations, internalMode = EngineMutationMode.SYNC)
+                .mutate(database, asyncEdgeTableName, request.mutations, syncMode = EngineMutationMode.SYNC, force = true)
                 .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
@@ -257,7 +257,7 @@ class MutationServiceGlobalAsyncSpec :
                 .verifyComplete()
         }
 
-        "internal=SYNC overrides global=ASYNC on ASYNC MULTI_EDGE table" {
+        "force=true request=SYNC overrides system=ASYNC on ASYNC MULTI_EDGE table" {
             val request =
                 mapper.readValue<MultiEdgeBulkMutationRequest>(
                     """
@@ -270,7 +270,7 @@ class MutationServiceGlobalAsyncSpec :
                 )
 
             mutationService
-                .internalMutate(database, asyncMultiEdgeTableName, request.mutations, internalMode = EngineMutationMode.SYNC)
+                .mutate(database, asyncMultiEdgeTableName, request.mutations, syncMode = EngineMutationMode.SYNC, force = true)
                 .map { MultiEdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
