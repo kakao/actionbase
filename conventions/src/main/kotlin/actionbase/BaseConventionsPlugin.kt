@@ -24,6 +24,7 @@ class BaseConventionsPlugin : Plugin<Project> {
         project.version = project.rootProject.version
 
         // Configure repositories
+        project.repositories.mavenLocal()
         project.repositories.mavenCentral()
 
         // Configure dependencies

@@ -41,6 +41,9 @@ dependencies {
     implementation(Dependencies.Logging.SLF4J_API)
     implementation(Dependencies.Logging.LOGBACK_CLASSIC)
 
+    // SlateDB
+    implementation("io.slatedb:slatedb:0.1.0-SNAPSHOT")
+
     // HBase
     implementation(Dependencies.HBase.CLIENT)
     implementation(Dependencies.HBase.MAPREDUCE)
