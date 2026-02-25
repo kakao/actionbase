@@ -4,60 +4,60 @@ version: v1
 # Extracted from existing en/ko translation pairs and website/i18n/glossary.json.
 terms:
   # Data Model
-  Edge: "엣지"
-  Vertex: "버텍스"
-  Node: "노드"
-  Source: "소스"
-  Target: "타겟"
-  Property: "프로퍼티"
-  Properties: "프로퍼티"
-  Property Graph: "프로퍼티 그래프"
-  Label: "레이블"
-  Alias: "별칭"
-  Service: "서비스"
-  Database: "데이터베이스"
-  Table: "테이블"
-  Direction: "방향"
-  Unique-edge: "유니크 엣지"
-  Multi-edge: "멀티 엣지"
-  Interaction: "인터랙션"
+  Edge: '엣지'
+  Vertex: '버텍스'
+  Node: '노드'
+  Source: '소스'
+  Target: '타겟'
+  Property: '프로퍼티'
+  Properties: '프로퍼티'
+  Property Graph: '프로퍼티 그래프'
+  Label: '레이블'
+  Alias: '별칭'
+  Service: '서비스'
+  Database: '데이터베이스'
+  Table: '테이블'
+  Direction: '방향'
+  Unique-edge: '유니크 엣지'
+  Multi-edge: '멀티 엣지'
+  Interaction: '인터랙션'
 
   # Query and Mutation
-  Query: "쿼리"
-  Mutation: "뮤테이션"
-  Schema: "스키마"
-  Index: "인덱스"
-  Counter: "카운터"
-  Parameter: "파라미터"
-  Filter: "필터"
-  Range: "범위"
-  Offset: "오프셋"
-  Version: "버전"
-  Comment: "코멘트"
+  Query: '쿼리'
+  Mutation: '뮤테이션'
+  Schema: '스키마'
+  Index: '인덱스'
+  Counter: '카운터'
+  Parameter: '파라미터'
+  Filter: '필터'
+  Range: '범위'
+  Offset: '오프셋'
+  Version: '버전'
+  Comment: '코멘트'
 
   # Infrastructure
-  Storage: "스토리지"
-  Backend: "백엔드"
-  Datastore: "데이터스토어"
-  Pipeline: "파이프라인"
-  Timestamp: "타임스탬프"
-  Hash: "해시"
+  Storage: '스토리지'
+  Backend: '백엔드'
+  Datastore: '데이터스토어'
+  Pipeline: '파이프라인'
+  Timestamp: '타임스탬프'
+  Hash: '해시'
 
   # Optimization
-  Write-time: "쓰기 시점"
-  Write-Time: "쓰기 시점"
-  In-Memory: "인메모리"
-  in-memory: "인메모리"
+  Write-time: '쓰기 시점'
+  Write-Time: '쓰기 시점'
+  In-Memory: '인메모리'
+  in-memory: '인메모리'
 
   # Brand
-  Kakao: "카카오"
-  KakaoTalk: "카카오톡"
-  Kakao Shopping: "카카오쇼핑"
-  Kakao Gift: "카카오 선물하기"
+  Kakao: '카카오'
+  KakaoTalk: '카카오톡'
+  Kakao Shopping: '카카오쇼핑'
+  Kakao Gift: '카카오 선물하기'
 
   # General
-  Format: "형식"
-  Example: "예시"
+  Format: '형식'
+  Example: '예시'
 
 # Terms that must remain in English without translation.
 preserve:
