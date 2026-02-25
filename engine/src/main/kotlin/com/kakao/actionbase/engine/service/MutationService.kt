@@ -30,7 +30,7 @@ class MutationService(
         unresolvedEvents: List<UnresolvedEvent>,
         acquireLock: Boolean = true,
         syncMode: MutationMode? = null,
-        force: Boolean = false,
+        forceSyncMode: Boolean = false,
         requestContext: RequestContext = RequestContext.DEFAULT,
     ): Mono<List<MutationResult>> =
         Mono
@@ -41,7 +41,7 @@ class MutationService(
                         database = database,
                         alias = alias,
                         table = tb.table,
-                        mutationMode = MutationModeContext.of(tb.mutationMode, syncMode, engine.systemMutationMode, force),
+                        mutationMode = MutationModeContext.of(tb.mutationMode, syncMode, engine.systemMutationMode, forceSyncMode),
                         audit = Audit(requestContext.actor),
                         requestId = requestContext.requestId,
                     )

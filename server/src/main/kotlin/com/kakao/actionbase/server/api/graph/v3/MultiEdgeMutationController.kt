@@ -39,21 +39,10 @@ class MultiEdgeMutationController(
         @PathVariable table: String,
         @RequestBody request: MultiEdgeBulkMutationRequest,
         @RequestParam(required = false) lock: Boolean = true,
+        @RequestParam(required = false) force: Boolean = false,
         requestContext: RequestContext,
     ): Mono<ResponseEntity<MultiEdgeMutationResponse>> =
         mutationService
-            .mutate(database, table, request.mutations, lock, syncMode = MutationMode.SYNC, requestContext = requestContext)
-            .map { ResponseEntity.ok(MultiEdgeMutationResponse.from(it)) }
-
-    @PostMapping("/graph/v3/databases/{database}/tables/{table}/multi-edges/internal/sync")
-    fun mutateMultiEdgeInternalSync(
-        @PathVariable database: String,
-        @PathVariable table: String,
-        @RequestBody request: MultiEdgeBulkMutationRequest,
-        @RequestParam(required = false) lock: Boolean = true,
-        requestContext: RequestContext,
-    ): Mono<ResponseEntity<MultiEdgeMutationResponse>> =
-        mutationService
-            .mutate(database, table, request.mutations, lock, syncMode = MutationMode.SYNC, force = true, requestContext = requestContext)
+            .mutate(database, table, request.mutations, lock, syncMode = MutationMode.SYNC, forceSyncMode = force, requestContext = requestContext)
             .map { ResponseEntity.ok(MultiEdgeMutationResponse.from(it)) }
 }

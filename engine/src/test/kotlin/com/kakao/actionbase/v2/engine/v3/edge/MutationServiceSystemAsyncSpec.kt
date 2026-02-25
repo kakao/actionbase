@@ -240,7 +240,7 @@ class MutationServiceSystemAsyncSpec :
                 )
 
             mutationService
-                .mutate(database, asyncEdgeTableName, request.mutations, syncMode = EngineMutationMode.SYNC, force = true)
+                .mutate(database, asyncEdgeTableName, request.mutations, syncMode = EngineMutationMode.SYNC, forceSyncMode = true)
                 .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
@@ -270,7 +270,7 @@ class MutationServiceSystemAsyncSpec :
                 )
 
             mutationService
-                .mutate(database, asyncMultiEdgeTableName, request.mutations, syncMode = EngineMutationMode.SYNC, force = true)
+                .mutate(database, asyncMultiEdgeTableName, request.mutations, syncMode = EngineMutationMode.SYNC, forceSyncMode = true)
                 .map { MultiEdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
