@@ -616,11 +616,21 @@ function emitTableBlock(tableLines: string[], tm: Map<string, TMEntry>): string[
   return result;
 }
 
-function addHeadingAnchor(translatedHeading: string, explicitId: string): string {
-  if (!explicitId) {
-    return translatedHeading;
-  }
-  return `${translatedHeading} {#${explicitId}}`;
+function githubSlug(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, '')
+    .replace(/ /g, '-');
+}
+
+function addHeadingAnchor(
+  translatedHeading: string,
+  explicitId: string,
+  sourceText: string
+): string {
+  const id = explicitId || githubSlug(sourceText);
+  return `${translatedHeading} {#${id}}`;
 }
 
 function updateLinksForLang(text: string, lang: string): string {
@@ -862,7 +872,7 @@ function buildTranslatedDoc(
       const hashes = '#'.repeat(level);
       if (tm.has(text)) {
         let translated = tm.get(text)!.target;
-        translated = addHeadingAnchor(translated, explicitId);
+        translated = addHeadingAnchor(translated, explicitId, text);
         outputParts.push(`${hashes} ${translated}`);
       } else {
         outputParts.push(line);
