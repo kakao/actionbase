@@ -3,6 +3,9 @@ meta:
     - eazyhozy
     - kanana-2
 entries:
+  - source: FAQ
+    target: FAQ
+    context: frontmatter:title
   - source: Frequently asked questions about Actionbase
     target: Actionbase에 관한 자주 묻는 질문
     context: frontmatter:description
@@ -339,6 +342,9 @@ entries:
   - source: '**Local (development)** — see [Quick Start](/quick-start/)'
     target: '**로컬(개발용)** — [빠른 시작](/ko/quick-start/)을 참고하세요.'
     context: paragraph
+  - source: Java 17
+    target: Java 17
+    context: list_item
   - source: In-memory storage, no external dependencies
     target: 인메모리 저장소, 외부 의존성 없음
     context: list_item
