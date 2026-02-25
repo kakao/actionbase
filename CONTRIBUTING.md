@@ -8,7 +8,7 @@ New to open source? Look for issues labeled **[good first issue](https://github.
 
 ## Translations
 
-We welcome documentation translations! The easiest way to start:
+Documentation translations are welcome. The easiest way to start:
 
 1. Find a TM (Translation Memory) file in `website/i18n/tm/{lang}/` (e.g. `ko`) and look for entries with empty `target: ""` — these are untranslated segments.
 2. Fill in the translations, add your GitHub username to `meta.contributors`, and open a PR.
@@ -16,7 +16,7 @@ We welcome documentation translations! The easiest way to start:
 To find documents that need the most help, run:
 
 ```bash
-python website/i18n/scripts/translation-memory.py status
+cd website && npm run translate -- status
 ```
 
 See [TRANSLATION.md](TRANSLATION.md) for the full workflow, step-by-step examples, and TM format details.
