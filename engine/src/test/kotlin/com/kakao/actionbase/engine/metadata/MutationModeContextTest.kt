@@ -101,138 +101,56 @@ class MutationModeContextTest {
     }
 
     @Nested
-    @DisplayName("of with global and internal")
-    inner class OfWithGlobalAndInternalTest {
+    @DisplayName("of with system and force")
+    inner class OfWithSystemAndForceTest {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            # internal overrides everything — SYNC
-            - label: SYNC
-              global: ASYNC
-              internal: SYNC
-              queue: false
-
+            # system > label
             - label: ASYNC
-              global: ASYNC
-              internal: SYNC
+              system: SYNC
+              request: null
               queue: false
 
             - label: IGNORE
-              global: ASYNC
-              internal: SYNC
+              system: SYNC
+              request: null
               queue: false
 
             - label: SYNC
-              global: null
-              internal: SYNC
-              queue: false
-
-            # internal overrides everything — ASYNC
-            - label: SYNC
-              global: SYNC
-              internal: ASYNC
+              system: ASYNC
+              request: null
               queue: true
 
             - label: SYNC
-              global: null
-              internal: ASYNC
+              system: IGNORE
+              request: null
               queue: true
 
-            # internal overrides everything — IGNORE
+            # system > request
             - label: SYNC
-              global: SYNC
-              internal: IGNORE
-              queue: true
-
-            # global overrides request and table — SYNC
-            - label: ASYNC
-              global: SYNC
-              internal: null
-              queue: false
-
-            - label: IGNORE
-              global: SYNC
-              internal: null
-              queue: false
-
-            # global overrides request and table — ASYNC
-            - label: SYNC
-              global: ASYNC
-              internal: null
-              queue: true
-
-            # global overrides request and table — IGNORE
-            - label: SYNC
-              global: IGNORE
-              internal: null
-              queue: true
-
-            # no global, no internal — falls back to request/label
-            - label: SYNC
-              global: null
-              internal: null
-              queue: false
-
-            - label: ASYNC
-              global: null
-              internal: null
-              queue: true
-
-            - label: IGNORE
-              global: null
-              internal: null
-              queue: true
-            """,
-        )
-        fun `returns correct queue flag with global and internal`(
-            label: String,
-            global: String?,
-            internal: String?,
-            queue: Boolean,
-        ) {
-            val result =
-                MutationModeContext.of(
-                    label = MutationMode.valueOf(label),
-                    request = null,
-                    global = global?.let { MutationMode.valueOf(it) },
-                    internal = internal?.let { MutationMode.valueOf(it) },
-                )
-            assertEquals(queue, result.queue)
-        }
-
-        @ObjectSourceParameterizedTest
-        @ObjectSource(
-            """
-            # global=ASYNC overrides request=SYNC
-            - label: SYNC
+              system: ASYNC
               request: SYNC
-              global: ASYNC
               queue: true
 
             - label: ASYNC
-              request: SYNC
-              global: ASYNC
-              queue: true
-
-            # global=SYNC overrides request=ASYNC
-            - label: ASYNC
+              system: SYNC
               request: ASYNC
-              global: SYNC
               queue: false
             """,
         )
-        fun `global overrides request`(
+        fun `system takes priority when force is false`(
             label: String,
-            request: String,
-            global: String,
+            system: String,
+            request: String?,
             queue: Boolean,
         ) {
             val result =
                 MutationModeContext.of(
                     label = MutationMode.valueOf(label),
-                    request = MutationMode.valueOf(request),
-                    global = MutationMode.valueOf(global),
-                    internal = null,
+                    request = request?.let { MutationMode.valueOf(it) },
+                    system = MutationMode.valueOf(system),
+                    force = false,
                 )
             assertEquals(queue, result.queue)
         }
@@ -240,28 +158,81 @@ class MutationModeContextTest {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - request: SYNC
-              internal: SYNC
+            - label: SYNC
+              system: ASYNC
+              request: SYNC
+              queue: false
 
-            - request: SYNC
-              internal: ASYNC
+            - label: SYNC
+              system: SYNC
+              request: ASYNC
+              queue: true
 
-            - request: ASYNC
-              internal: SYNC
+            - label: SYNC
+              system: SYNC
+              request: IGNORE
+              queue: true
             """,
         )
-        fun `request and internal are mutually exclusive`(
+        fun `request takes priority when force is true`(
+            label: String,
+            system: String,
             request: String,
-            internal: String,
+            queue: Boolean,
         ) {
-            assertThrows<IllegalArgumentException> {
+            val result =
                 MutationModeContext.of(
-                    label = MutationMode.SYNC,
+                    label = MutationMode.valueOf(label),
                     request = MutationMode.valueOf(request),
-                    global = null,
-                    internal = MutationMode.valueOf(internal),
+                    system = MutationMode.valueOf(system),
+                    force = true,
                 )
-            }
+            assertEquals(queue, result.queue)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            # force=true bypasses IGNORE table constraint
+            - label: IGNORE
+              request: SYNC
+              force: true
+              queue: false
+            """,
+        )
+        fun `force=true allows SYNC request on IGNORE table`(
+            label: String,
+            request: String,
+            force: Boolean,
+            queue: Boolean,
+        ) {
+            val result =
+                MutationModeContext.of(
+                    label = MutationMode.valueOf(label),
+                    request = MutationMode.valueOf(request),
+                    force = force,
+                )
+            assertEquals(queue, result.queue)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - label: SYNC
+            - label: ASYNC
+            - label: IGNORE
+            """,
+        )
+        fun `force=true with null request throws`(label: String) {
+            val ex =
+                assertThrows<IllegalArgumentException> {
+                    MutationModeContext.of(
+                        label = MutationMode.valueOf(label),
+                        request = null,
+                        force = true,
+                    )
+                }
+            assertTrue(ex.message!!.contains("force"))
         }
     }
 }
