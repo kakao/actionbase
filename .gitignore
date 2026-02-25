@@ -81,7 +81,6 @@ CLAUDE.md
 !**/.cursor/rules/**
 engine/target/
 
-# Native library build artifacts (slatedb)
-native/slatedb/
-native/lib/
-!native/lib/.gitkeep
+# Native library build artifacts
+native/src/c/*.dylib
+native/src/c/*.so

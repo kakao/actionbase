@@ -1,6 +1,5 @@
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-
 import actionbase.dependencies.Dependencies
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     id("actionbase.kotlin-conventions")
@@ -30,9 +29,6 @@ dependencies {
     implementation(Dependencies.LZ4.LZ4)
     implementation(Dependencies.Cache.CAFFEINE)
     implementation(Dependencies.Validation.JAKARTA_VALIDATION_API)
-
-    // SlateDB Java bindings (built from native/build-slatedb.sh)
-    implementation(files("${rootProject.projectDir}/native/lib/slatedb.jar"))
 
     // reactor
     implementation(Dependencies.Reactor.CORE)
