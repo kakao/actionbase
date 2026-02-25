@@ -45,6 +45,11 @@ data class MutationModeContext private constructor(
         fun of(
             table: MutationMode,
             request: MutationMode?,
+        ): MutationModeContext = of(table, request, global = null, internal = null)
+
+        fun of(
+            table: MutationMode,
+            request: MutationMode?,
             global: MutationMode?,
             internal: MutationMode?,
         ): MutationModeContext {
