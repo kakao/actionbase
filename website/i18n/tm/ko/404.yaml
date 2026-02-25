@@ -1,7 +1,0 @@
-meta:
-  contributors:
-  - kanana-2
-entries:
-- source: Not found
-  target: 페이지를 찾을 수 없습니다.
-  context: frontmatter:title
