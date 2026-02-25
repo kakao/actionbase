@@ -24,11 +24,12 @@ data class MutationModeContext private constructor(
          *     request != null -> request
          *     else           -> table
          * }
-         * queue = mode == ASYNC || mode == IGNORE
          *
          * Constraints:
          *   - force==true && request==null -> IllegalArgumentException
          *   - force==false && system==null && request==SYNC && table==IGNORE -> IllegalArgumentException
+         *
+         * queue = mode == ASYNC || mode == IGNORE
          *
          * | force(request) | system | request | table  | mode   | queue   |
          * | -------------- | ------ | ------- | ------ | ------ | ------- |
@@ -56,8 +57,8 @@ data class MutationModeContext private constructor(
             require(!(force && request == null)) {
                 "force requires a non-null request. force=$force, request=$request"
             }
-            val isSyncOnIgnoreTable = !force && system == null && request == SYNC && table == IGNORE
-            require(!isSyncOnIgnoreTable) {
+            val isSyncRequestOnIgnoreTable = !force && system == null && request == SYNC && table == IGNORE
+            require(!isSyncRequestOnIgnoreTable) {
                 "SYNC request is not allowed when table mode is IGNORE without force or system override."
             }
             val mode =

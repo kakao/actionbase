@@ -141,8 +141,8 @@ class MutationModeContextTest {
         )
         fun `system takes priority when force is false`(
             label: String,
-            system: String,
             request: String?,
+            system: String,
             queue: Boolean,
         ) {
             val result =
@@ -176,8 +176,8 @@ class MutationModeContextTest {
         )
         fun `request takes priority when force is true`(
             label: String,
-            system: String,
             request: String,
+            system: String,
             queue: Boolean,
         ) {
             val result =
