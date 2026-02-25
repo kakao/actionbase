@@ -89,8 +89,6 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
             languageVersion.set(JavaLanguageVersion.of(25))
         }
     )
-    // Set working directory to project root for SlateDB native library path resolution
-    workingDir = rootProject.projectDir
 }
 
 jib {

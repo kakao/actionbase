@@ -28,7 +28,6 @@ import java.nio.file.Path
 import java.util.UUID
 
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -47,14 +46,6 @@ class SlateDbIndexedLabelTest {
     private val storageName = "slatedb_indexed_storage"
     private val labelName = "slatedb_indexed_label"
 
-    private fun findLibraryPath(): Path {
-        var dir = Path.of(System.getProperty("user.dir"))
-        while (!dir.resolve("settings.gradle.kts").toFile().exists() && dir.parent != null) {
-            dir = dir.parent
-        }
-        return dir.resolve("native/lib/libslatedb_c.dylib")
-    }
-
     private fun createGraph(): Graph {
         val config =
             GraphConfig
@@ -66,9 +57,6 @@ class SlateDbIndexedLabelTest {
 
     @BeforeEach
     fun setUp() {
-        // Skip test if native library not found
-        assumeTrue(findLibraryPath().toFile().exists(), "SlateDB native library not found")
-
         graph = createGraph()
         graph.updateAllMetadata().block()
 
@@ -84,7 +72,6 @@ class SlateDbIndexedLabelTest {
             jacksonObjectMapper().createObjectNode().apply {
                 put("path", "test-data")
                 put("url", "file://${tempDir.toAbsolutePath()}")
-                put("libraryPath", findLibraryPath().toString())
             }
 
         graph.storageDdl

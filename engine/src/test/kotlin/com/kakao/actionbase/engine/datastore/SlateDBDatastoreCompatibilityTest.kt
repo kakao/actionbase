@@ -14,12 +14,12 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.io.TempDir
 
 import io.slatedb.SlateDb
+import io.slatedb.SlateDbConfig
 
 /**
  * SlateDB compatibility test.
  *
  * Disabled by default. Set SLATEDB_TEST=true to run.
- * Requires native library: native/lib/libslatedb_c.dylib (macOS) or libslatedb_c.so (Linux)
  *
  * To run:
  *   SLATEDB_TEST=true ./gradlew :engine:test --tests "*SlateDBDatastoreCompatibilityTest*"
@@ -37,7 +37,7 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
     ) {
         assumeTrue(enabled, "SLATEDB_TEST=true not set")
         tempDir = dir
-        SlateDb.loadLibrary(findLibraryPath())
+        SlateDb.initLogging(SlateDbConfig.LogLevel.INFO)
         val db = SlateDb.open("data", "file://${tempDir.toAbsolutePath()}", null)
         table = SlateDbTable.create(db)
     }
@@ -57,20 +57,6 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
                 t.delete(key).block()
             }
         }
-    }
-
-    private fun findLibraryPath(): String {
-        var dir = Path.of(System.getProperty("user.dir"))
-        while (!dir.resolve("settings.gradle.kts").toFile().exists() && dir.parent != null) {
-            dir = dir.parent
-        }
-        val libName =
-            if (System.getProperty("os.name").lowercase().contains("linux")) {
-                "libslatedb_c.so"
-            } else {
-                "libslatedb_c.dylib"
-            }
-        return dir.resolve("native/lib/$libName").toAbsolutePath().toString()
     }
 
     private class SlateDBOperations(

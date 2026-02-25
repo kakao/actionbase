@@ -49,7 +49,6 @@ class SlateDbStorageTest {
             jacksonObjectMapper().createObjectNode().apply {
                 put("path", "test-data")
                 put("url", "file:///tmp/slatedb-test")
-                put("libraryPath", "native/lib/libslatedb_c.dylib")
             }
 
         GraphFixtures.createStorage(graph, "slatedb_test", StorageType.SLATEDB, conf)

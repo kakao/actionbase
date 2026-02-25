@@ -8,10 +8,9 @@ import reactor.core.publisher.Mono
 data class SlateDbOptions(
     val path: String = "data",
     val url: String = "",
-    val libraryPath: String = "",
 ) {
     fun checkConnection(): Mono<Boolean> =
-        if (url.isBlank() || libraryPath.isBlank()) {
+        if (url.isBlank()) {
             Mono.just(false)
         } else {
             Mono.just(true)
@@ -21,6 +20,5 @@ data class SlateDbOptions(
         SlateDbConnections.getConnection(
             dbPath = path,
             url = url,
-            libraryPath = libraryPath,
         )
 }

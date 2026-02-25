@@ -6,34 +6,33 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 import io.slatedb.SlateDb
+import io.slatedb.SlateDbConfig
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
 object SlateDbConnections {
     private val logger = getLogger()
 
-    private val libraryLoaded = AtomicBoolean(false)
+    private val initialized = AtomicBoolean(false)
     private val connections: ConcurrentHashMap<String, Mono<SlateDbTable>> = ConcurrentHashMap()
 
-    fun loadLibrary(libraryPath: String) {
-        if (libraryLoaded.compareAndSet(false, true)) {
-            logger.info("Loading SlateDB native library from: {}", libraryPath)
-            SlateDb.loadLibrary(libraryPath)
-            SlateDb.initLogging("info")
+    fun ensureInitialized() {
+        if (initialized.compareAndSet(false, true)) {
+            logger.info("Initializing SlateDB (native library loaded from JAR classpath)")
+            SlateDb.initLogging(SlateDbConfig.LogLevel.INFO)
         }
     }
 
     fun getConnection(
         dbPath: String,
         url: String,
-        libraryPath: String,
     ): Mono<SlateDbTable> {
         val cacheKey = getCacheKey(dbPath, url)
 
         return connections.computeIfAbsent(cacheKey) { key ->
             Mono
                 .fromCallable {
-                    loadLibrary(libraryPath)
+                    ensureInitialized()
                     val db = SlateDb.open(dbPath, url, null)
                     SlateDbTable.create(db)
                 }.subscribeOn(Schedulers.boundedElastic())
