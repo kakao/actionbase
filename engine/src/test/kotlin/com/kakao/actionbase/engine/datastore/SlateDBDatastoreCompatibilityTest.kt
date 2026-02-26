@@ -2,9 +2,10 @@ package com.kakao.actionbase.engine.datastore
 
 import com.kakao.actionbase.v2.engine.storage.slatedb.BatchOperation
 import com.kakao.actionbase.v2.engine.storage.slatedb.SlateDbTable
+import com.kakao.actionbase.v2.engine.storage.slatedb.incrementMergeOperator
+import com.kakao.actionbase.v2.engine.storage.slatedb.toLong
+import com.kakao.actionbase.v2.engine.storage.slatedb.toSlateBytes
 
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.nio.file.Path
 
 import org.junit.jupiter.api.AfterAll
@@ -38,7 +39,11 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
         assumeTrue(enabled, "SLATEDB_TEST=true not set")
         tempDir = dir
         SlateDb.initLogging(SlateDbConfig.LogLevel.INFO)
-        val db = SlateDb.open("data", "file://${tempDir.toAbsolutePath()}", null)
+        val db =
+            SlateDb.builder("data", "file://${tempDir.toAbsolutePath()}", null).use { builder ->
+                builder.withMergeOperator(incrementMergeOperator)
+                builder.build()
+            }
         table = SlateDbTable.create(db)
     }
 
@@ -86,19 +91,8 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
             key: ByteArray,
             delta: Long,
         ): Long {
-            val current =
-                table.get(key).block()?.let {
-                    ByteBuffer.wrap(it).order(ByteOrder.BIG_ENDIAN).long
-                } ?: 0L
-            val newValue = current + delta
-            val bytes =
-                ByteBuffer
-                    .allocate(8)
-                    .order(ByteOrder.BIG_ENDIAN)
-                    .putLong(newValue)
-                    .array()
-            table.put(key, bytes).block()
-            return newValue
+            table.merge(key, delta.toSlateBytes()).block()
+            return table.get(key).block()?.toLong() ?: 0L
         }
 
         override fun batch(mutations: List<Mutation>) {

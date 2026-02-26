@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.storage.slatedb
 
-import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
@@ -23,9 +22,11 @@ class SlateDbTableTest {
     fun setUp() {
         SlateDb.initLogging(SlateDbConfig.LogLevel.INFO)
 
-        val fileUrl = "file://${tempDir.toAbsolutePath()}"
-        val dbPath = "data"
-        val db = SlateDb.open(dbPath, fileUrl, null)
+        val db =
+            SlateDb.builder("data", "file://${tempDir.toAbsolutePath()}", null).use { builder ->
+                builder.withMergeOperator(incrementMergeOperator)
+                builder.build()
+            }
         table = SlateDbTable.create(db)
     }
 
@@ -147,6 +148,57 @@ class SlateDbTableTest {
             .verifyComplete()
     }
 
+    // -- merge operator tests (degree counting use case) --
+
+    @Test
+    fun `merge on non-existent key initializes from zero`() {
+        val key = "degree:user:1".toByteArray(StandardCharsets.UTF_8)
+
+        StepVerifier
+            .create(
+                table.merge(key, 1L.toSlateBytes()).then(table.get(key)),
+            ).expectNextMatches { it.toLong() == 1L }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `sequential merges accumulate — edge insert and delete`() {
+        val key = "degree:user:2".toByteArray(StandardCharsets.UTF_8)
+
+        // 3 edges inserted
+        StepVerifier
+            .create(
+                table
+                    .merge(key, 1L.toSlateBytes())
+                    .then(table.merge(key, 1L.toSlateBytes()))
+                    .then(table.merge(key, 1L.toSlateBytes()))
+                    .then(table.get(key)),
+            ).expectNextMatches { it.toLong() == 3L }
+            .verifyComplete()
+
+        // 1 edge deleted
+        StepVerifier
+            .create(
+                table.merge(key, (-1L).toSlateBytes()).then(table.get(key)),
+            ).expectNextMatches { it.toLong() == 2L }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `merge survives flush — degree persists across memtable rotation`() {
+        val key = "degree:user:3".toByteArray(StandardCharsets.UTF_8)
+
+        StepVerifier
+            .create(
+                table
+                    .merge(key, 5L.toSlateBytes())
+                    .then(table.flush())
+                    .then(table.merge(key, 3L.toSlateBytes()))
+                    .then(table.get(key)),
+            ).expectNextMatches { it.toLong() == 8L }
+            .verifyComplete()
+    }
+
     @Test
     fun `batch increment adds delta to value`() {
         val key = "counter".toByteArray(StandardCharsets.UTF_8)
@@ -157,7 +209,7 @@ class SlateDbTableTest {
                 table
                     .batch(listOf(BatchOperation.Increment(key, 5)))
                     .then(table.get(key)),
-            ).expectNextMatches { ByteBuffer.wrap(it).long == 5L }
+            ).expectNextMatches { it.toLong() == 5L }
             .verifyComplete()
 
         // Increment existing key
@@ -166,7 +218,7 @@ class SlateDbTableTest {
                 table
                     .batch(listOf(BatchOperation.Increment(key, 3)))
                     .then(table.get(key)),
-            ).expectNextMatches { ByteBuffer.wrap(it).long == 8L }
+            ).expectNextMatches { it.toLong() == 8L }
             .verifyComplete()
     }
 }

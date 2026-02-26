@@ -1,11 +1,29 @@
 package com.kakao.actionbase.v2.engine.storage.slatedb
 
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 import io.slatedb.SlateDb
 import io.slatedb.SlateDbKeyValue
+import io.slatedb.SlateDbMergeOperator
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
+
+fun Long.toSlateBytes(): ByteArray =
+    ByteBuffer
+        .allocate(Long.SIZE_BYTES)
+        .order(ByteOrder.BIG_ENDIAN)
+        .putLong(this)
+        .array()
+
+fun ByteArray.toLong(): Long = ByteBuffer.wrap(this).order(ByteOrder.BIG_ENDIAN).long
+
+val incrementMergeOperator =
+    SlateDbMergeOperator { _, existingValue, operand ->
+        val current = existingValue?.toLong() ?: 0L
+        val delta = operand.toLong()
+        (current + delta).toSlateBytes()
+    }
 
 sealed class BatchOperation {
     data class Put(
@@ -17,7 +35,6 @@ sealed class BatchOperation {
         val key: ByteArray,
     ) : BatchOperation()
 
-    /** Not yet supported - waiting for merge operator in slatedb-c (#1250) */
     data class Increment(
         val key: ByteArray,
         val delta: Long,
@@ -33,6 +50,11 @@ interface SlateDbTable : AutoCloseable {
     ): Mono<Void>
 
     fun delete(key: ByteArray): Mono<Void>
+
+    fun merge(
+        key: ByteArray,
+        value: ByteArray,
+    ): Mono<Void>
 
     fun flush(): Mono<Void>
 
@@ -72,6 +94,15 @@ internal class SlateDbTableImpl(
             .subscribeOn(Schedulers.boundedElastic())
             .then()
 
+    override fun merge(
+        key: ByteArray,
+        value: ByteArray,
+    ): Mono<Void> =
+        Mono
+            .fromCallable { db.merge(key, value) }
+            .subscribeOn(Schedulers.boundedElastic())
+            .then()
+
     override fun flush(): Mono<Void> =
         Mono
             .fromCallable { db.flush() }
@@ -105,13 +136,7 @@ internal class SlateDbTableImpl(
                         when (op) {
                             is BatchOperation.Put -> batch.put(op.key, op.value)
                             is BatchOperation.Delete -> batch.delete(op.key)
-                            is BatchOperation.Increment -> {
-                                // TODO: Replace with batch.merge() once slatedb#1250 is resolved
-                                // WARNING: This is NOT atomic - race condition possible
-                                val currentValue = db.get(op.key)?.let { ByteBuffer.wrap(it).long } ?: 0L
-                                val newBytes = ByteBuffer.allocate(Long.SIZE_BYTES).putLong(currentValue + op.delta).array()
-                                batch.put(op.key, newBytes)
-                            }
+                            is BatchOperation.Increment -> batch.merge(op.key, op.delta.toSlateBytes())
                         }
                     }
                     db.write(batch)

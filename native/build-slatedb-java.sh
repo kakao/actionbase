@@ -2,7 +2,7 @@
 #
 # Build slatedb-java from source and publish to Maven local.
 #
-# This script clones the slatedb repository (java-include-libs branch),
+# This script clones the slatedb repository (java-merge-op branch),
 # builds the Java JAR with bundled native libraries, and publishes to
 # ~/.m2/repository so Gradle can resolve it as a local dependency.
 #
@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SLATEDB_DIR="${SCRIPT_DIR}/slatedb"
 SLATEDB_JAVA_DIR="${SLATEDB_DIR}/slatedb-java"
 REPO_URL="https://github.com/slatedb/slatedb.git"
-BRANCH="java-include-libs"
+BRANCH="java-merge-op"
 
 # --- Parse arguments ---
 

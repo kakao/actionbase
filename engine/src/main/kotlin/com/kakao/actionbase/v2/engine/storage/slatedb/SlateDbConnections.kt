@@ -33,7 +33,11 @@ object SlateDbConnections {
             Mono
                 .fromCallable {
                     ensureInitialized()
-                    val db = SlateDb.open(dbPath, url, null)
+                    val db =
+                        SlateDb.builder(dbPath, url, null).use { builder ->
+                            builder.withMergeOperator(incrementMergeOperator)
+                            builder.build()
+                        }
                     SlateDbTable.create(db)
                 }.subscribeOn(Schedulers.boundedElastic())
                 .doOnSuccess {

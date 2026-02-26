@@ -19,8 +19,9 @@ import com.kakao.actionbase.v2.engine.sql.Row
 import com.kakao.actionbase.v2.engine.sql.StatKey
 import com.kakao.actionbase.v2.engine.storage.slatedb.SlateDbStorage
 import com.kakao.actionbase.v2.engine.storage.slatedb.SlateDbTable
+import com.kakao.actionbase.v2.engine.storage.slatedb.toLong
+import com.kakao.actionbase.v2.engine.storage.slatedb.toSlateBytes
 
-import java.nio.ByteBuffer
 import java.util.Arrays
 
 import reactor.core.publisher.Mono
@@ -104,14 +105,7 @@ open class SlateDbHashLabel(
         acc: Long,
     ): Mono<List<Any>> =
         table.flatMap { tbl ->
-            tbl
-                .get(key)
-                .map { bytes -> ByteBuffer.wrap(bytes).getLong() }
-                .defaultIfEmpty(0L)
-                .flatMap { current ->
-                    val newValue = ByteBuffer.allocate(8).putLong(current + acc).array()
-                    tbl.put(key, newValue).thenReturn(emptyList<Any>())
-                }
+            tbl.merge(key, acc.toSlateBytes()).thenReturn(emptyList())
         }
 
     override fun scanStorage(
@@ -262,7 +256,7 @@ open class SlateDbHashLabel(
                     srcAndKeys.map { (src, key) ->
                         tbl
                             .get(key)
-                            .map { bytes -> ByteBuffer.wrap(bytes).getLong() }
+                            .map { bytes -> bytes.toLong() }
                             .defaultIfEmpty(0L)
                             .map { count -> Row(arrayOf(src, count, dir)) }
                     },
