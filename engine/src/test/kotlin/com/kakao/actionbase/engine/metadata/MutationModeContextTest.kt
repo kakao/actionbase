@@ -108,34 +108,34 @@ class MutationModeContextTest {
             """
             # system > label
             - label: ASYNC
-              system: SYNC
               request: null
+              system: SYNC
               queue: false
 
             - label: IGNORE
-              system: SYNC
               request: null
+              system: SYNC
               queue: false
 
             - label: SYNC
-              system: ASYNC
               request: null
+              system: ASYNC
               queue: true
 
             - label: SYNC
-              system: IGNORE
               request: null
+              system: IGNORE
               queue: true
 
             # system > request
             - label: SYNC
-              system: ASYNC
               request: SYNC
+              system: ASYNC
               queue: true
 
             - label: ASYNC
-              system: SYNC
               request: ASYNC
+              system: SYNC
               queue: false
             """,
         )
@@ -159,18 +159,18 @@ class MutationModeContextTest {
         @ObjectSource(
             """
             - label: SYNC
-              system: ASYNC
               request: SYNC
+              system: ASYNC
               queue: false
 
             - label: SYNC
-              system: SYNC
               request: ASYNC
+              system: SYNC
               queue: true
 
             - label: SYNC
-              system: SYNC
               request: IGNORE
+              system: SYNC
               queue: true
             """,
         )
