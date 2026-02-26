@@ -8,20 +8,42 @@ New to open source? Look for issues labeled **[good first issue](https://github.
 
 ## Translations
 
-Documentation translations are welcome. The easiest way to start:
+Translations are managed through Translation Memory (TM) files. Here's how to contribute:
 
-1. Find a TM (Translation Memory) file in `website/i18n/tm/{lang}/` (e.g. `ko`) and look for entries with empty `target: ""` — these are untranslated segments.
-2. Fill in the translations, add your GitHub username to `meta.contributors`, and open a PR.
+1. **Find documents that need translation.** Run the status command to see coverage:
 
-To find documents that need the most help, run:
+   ```bash
+   cd website && npm run translate -- status
+   ```
 
-```bash
-cd website && npm run translate -- status
-```
+2. **Pick a TM file** in `website/i18n/tm/{lang}/` (e.g. `ko`) and open it in your editor. Each TM file looks like this:
+
+   ```yaml
+   meta:
+     contributors:
+       - alice
+   entries:
+     - source: "What is Actionbase?"
+       target: "" # ← fill in your translation here
+       context: heading
+     - source: "Actionbase is a database for serving user interactions."
+       target: "" # ← and here
+       context: paragraph
+   ```
+
+3. **Fill in translations.** Find entries with `target: ""` and add the translated text.
+
+4. **Add your GitHub username** to `meta.contributors`.
+
+5. **(Optional) Preview locally.** Build the translated docs and check the output:
+
+   ```bash
+   cd website && npm run translate -- build
+   ```
+
+6. **Open a PR.** Please submit **one section (folder) per PR** rather than translating all pages at once — this keeps reviews manageable and allows incremental progress.
 
 See [TRANSLATION.md](TRANSLATION.md) for technical details and TM format.
-
-When submitting translation PRs, please submit **one section (folder) per PR** rather than translating all pages at once. This makes reviews manageable and allows incremental progress.
 
 ## How we collaborate
 

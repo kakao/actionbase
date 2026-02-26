@@ -11,13 +11,11 @@ managed at the document level.
 ## How it works
 
 ```
-en/*.mdx ───┐
-            │   ┌──────────────┐   ┌─────────────┐   ┌──────────┐
-tm/*.yaml ──┼──▶│ Parse MDX    │──▶│ TM Lookup   │──▶│ Generate │──▶ {lang}/*.mdx
-            │   │ (segments)   │   │ exact match │   │ output   │
-glossary ───┘   └──────────────┘   │ HIT→target  │   └──────────┘
-                                   │ MISS→source │
-                                   └─────────────┘
+en/*.mdx ──┐   ┌──────────────┐   ┌─────────────┐   ┌──────────┐
+           ├──▶│ Parse MDX    │──▶│ TM Lookup   │──▶│ Generate │──▶ {lang}/*.mdx
+tm/*.yaml ─┘   │ (segments)   │   │ HIT→target  │   │ output   │
+               └──────────────┘   │ MISS→source │   └──────────┘
+                                  └─────────────┘
 ```
 
 The build command parses each English MDX into **segments** (title,
@@ -38,33 +36,28 @@ Each document has a YAML file at `website/i18n/tm/{lang}/{doc-path}.yaml`:
 ```yaml
 meta:
   contributors:
-  - alice          # GitHub username or model identifier
+    - alice # GitHub username of human contributor
 entries:
-- source: "Core Concepts"
-  target: "Translated text"
-  context: heading
-- source: "Actionbase is a database for serving user interactions."
-  target: "Translated text for the paragraph"
-  context: paragraph
+  - source: "Core Concepts"
+    target: "Translated text"
+    context: heading
+  - source: "Actionbase is a database for serving user interactions."
+    target: "Translated text for the paragraph"
+    context: paragraph
 ```
 
-| Field | Description |
-|---|---|
-| `meta.contributors` | Who contributed translations (usernames or model identifiers) |
-| `entries[].source` | English text (exact match key) |
-| `entries[].target` | Translated text. Empty string (`""`) = untranslated |
+| Field               | Description                                                                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `meta.contributors` | GitHub usernames of human contributors                                                                                              |
+| `entries[].source`  | English text (exact match key)                                                                                                      |
+| `entries[].target`  | Translated text. Empty string (`""`) = untranslated                                                                                 |
 | `entries[].context` | Segment type: `frontmatter:title`, `frontmatter:description`, `heading`, `paragraph`, `table`, `list_item`, `summary`, `blockquote` |
-
-A glossary at `website/i18n/glossary/{lang}.yaml` defines canonical
-translations and terms that must remain in English. The build script
-reads the `preserve` list; it does not auto-apply term substitutions.
 
 ## File structure
 
 ```
 website/i18n/
   tm/{lang}/{doc-path}.yaml            # Translation Memory per document
-  glossary/{lang}.yaml                 # Glossary
   scripts/translation-memory.ts        # TM tool
 website/src/content/docs/
   *.mdx                                # English source (authoritative)
@@ -80,19 +73,20 @@ All commands run from the `website/` directory.
 npm run translate -- init              # Create empty TM files for new EN docs
 npm run translate -- update            # Sync TM with updated EN source
 npm run translate -- build             # Rebuild translated docs from TM
+npm run translate -- build --model kanana-2  # Build with translated-by frontmatter
 npm run translate -- validate          # Validate TM without writing files
 npm run translate -- status            # Translation coverage (table)
 npm run translate -- status --format=summary   # Coverage (markdown)
 npm run translate -- --lang ko status  # Target a specific language (default: ko)
 ```
 
-| Command | Purpose |
-|---|---|
-| `init` | Create empty TM entries for documents that have no TM file yet |
-| `update` | Add new segments (empty target), remove stale entries, preserve existing translations |
-| `build` | Generate `{lang}/*.mdx` from TM lookups |
-| `validate` | Dry-run build to catch YAML or segment errors |
-| `status` | Show per-document HIT/MISS counts and coverage percentage |
+| Command    | Purpose                                                                               |
+| ---------- | ------------------------------------------------------------------------------------- |
+| `init`     | Create empty TM entries for documents that have no TM file yet                        |
+| `update`   | Add new segments (empty target), remove stale entries, preserve existing translations |
+| `build`    | Generate `{lang}/*.mdx` from TM lookups                                               |
+| `validate` | Dry-run build to catch YAML or segment errors                                         |
+| `status`   | Show per-document HIT/MISS counts and coverage percentage                             |
 
 CI runs `validate` on pull requests and `build` on merge to main.
 

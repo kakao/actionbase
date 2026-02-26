@@ -12,7 +12,7 @@
  *   validate — Validate TM build without writing files (exit 1 on errors)
  *   status   — Show translation status (HIT/MISS counts per document)
  *
- * The --lang flag (default: ko) determines TM, glossary, and output paths.
+ * The --lang flag (default: ko) determines TM and output paths.
  */
 
 import * as fs from 'node:fs';
@@ -38,10 +38,6 @@ function targetDocsDir(lang: string): string {
 
 function tmDir(lang: string): string {
   return path.join(I18N_DIR, 'tm', lang);
-}
-
-function glossaryPath(lang: string): string {
-  return path.join(I18N_DIR, 'glossary', `${lang}.yaml`);
 }
 
 // ---------------------------------------------------------------------------
@@ -99,14 +95,6 @@ function saveYamlFile(filePath: string, data: Record<string, unknown> | unknown[
     quotingType: '"',
   });
   fs.writeFileSync(filePath, text, 'utf-8');
-}
-
-function loadGlossary(lang: string): string[] {
-  const data = loadYamlFile(glossaryPath(lang)) as Record<string, unknown> | null;
-  if (!data || !('preserve' in data)) {
-    return [];
-  }
-  return data.preserve as string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -473,7 +461,8 @@ function loadTm(docRel: string, lang: string): [Map<string, TMEntry>, string[]] 
   if (typeof data === 'object' && !Array.isArray(data)) {
     const d = data as Record<string, unknown>;
     entries = (d.entries as Record<string, unknown>[]) || [];
-    contributors = ((d.meta as Record<string, unknown>)?.contributors as string[]) || [];
+    const meta = d.meta as Record<string, unknown> | undefined;
+    contributors = (meta?.contributors as string[]) || [];
   } else {
     entries = data as Record<string, unknown>[];
     contributors = [];
@@ -658,8 +647,8 @@ function updateLinksForLang(text: string, lang: string): string {
 function buildTranslatedDoc(
   enContent: string,
   tm: Map<string, TMEntry>,
-  _glossaryPreserve: string[],
   lang: string,
+  model?: string,
   contributors?: string[]
 ): string {
   const [fm, body] = parseFrontmatter(enContent);
@@ -676,8 +665,8 @@ function buildTranslatedDoc(
     if (tm.has(descKey)) {
       translatedFm.description = tm.get(descKey)!.target;
     }
-    if (contributors && contributors.includes('kanana-2')) {
-      translatedFm['translated-by-kanana-2'] = true;
+    if (model && (!contributors || contributors.length === 0)) {
+      translatedFm[`translated-by-${model}`] = true;
     }
     outputParts.push('---');
     const fmText = yaml
@@ -1112,9 +1101,8 @@ function cmdUpdate(lang: string): number {
 // Subcommand: build
 // ---------------------------------------------------------------------------
 
-function cmdBuild(lang: string): number {
+function cmdBuild(lang: string, model?: string): number {
   const targetDir = targetDocsDir(lang);
-  const glossaryPreserve = loadGlossary(lang);
   const enDocs = findEnDocs();
   let built = 0;
   let skipped = 0;
@@ -1128,7 +1116,7 @@ function cmdBuild(lang: string): number {
     }
 
     const enContent = fs.readFileSync(enPath, 'utf-8');
-    const translated = buildTranslatedDoc(enContent, tm, glossaryPreserve, lang, contributors);
+    const translated = buildTranslatedDoc(enContent, tm, lang, model, contributors);
 
     const targetPath = path.join(targetDir, docRel);
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -1145,8 +1133,7 @@ function cmdBuild(lang: string): number {
 // Subcommand: validate
 // ---------------------------------------------------------------------------
 
-function cmdValidate(lang: string): number {
-  const glossaryPreserve = loadGlossary(lang);
+function cmdValidate(lang: string, model?: string): number {
   const enDocs = findEnDocs();
   let validated = 0;
   let skipped = 0;
@@ -1162,7 +1149,7 @@ function cmdValidate(lang: string): number {
 
     const enContent = fs.readFileSync(enPath, 'utf-8');
     try {
-      buildTranslatedDoc(enContent, tm, glossaryPreserve, lang, contributors);
+      buildTranslatedDoc(enContent, tm, lang, model, contributors);
     } catch (e) {
       errors.push(`${docRel}: ${e}`);
       continue;
@@ -1323,11 +1310,13 @@ function parseArgs(argv: string[]): {
   command: string;
   format: 'table' | 'summary';
   docs: string[] | null;
+  model: string | undefined;
 } {
   let lang = 'ko';
   let command = '';
   let format: 'table' | 'summary' = 'table';
   let docs: string[] | null = null;
+  let model: string | undefined;
 
   const args = argv.slice(2); // skip node + script path
   let i = 0;
@@ -1355,6 +1344,11 @@ function parseArgs(argv: string[]): {
       i += 2;
       continue;
     }
+    if (arg === '--model' && i + 1 < args.length) {
+      model = args[i + 1];
+      i += 2;
+      continue;
+    }
     if (arg === '--docs' && i + 1 < args.length) {
       docs = [];
       i++;
@@ -1370,11 +1364,11 @@ function parseArgs(argv: string[]): {
     i++;
   }
 
-  return { lang, command, format, docs };
+  return { lang, command, format, docs, model };
 }
 
 function main(): number {
-  const { lang, command, format, docs } = parseArgs(process.argv);
+  const { lang, command, format, docs, model } = parseArgs(process.argv);
 
   switch (command) {
     case 'init':
@@ -1382,9 +1376,9 @@ function main(): number {
     case 'update':
       return cmdUpdate(lang);
     case 'build':
-      return cmdBuild(lang);
+      return cmdBuild(lang, model);
     case 'validate':
-      return cmdValidate(lang);
+      return cmdValidate(lang, model);
     case 'status':
       return cmdStatus(lang, format, docs);
     default:
