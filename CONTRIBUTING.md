@@ -10,10 +10,10 @@ New to open source? Look for issues labeled **[good first issue](https://github.
 
 Translations are managed through Translation Memory (TM) files. Here's how to contribute:
 
-1. **Find documents that need translation.** Run the status command to see coverage:
+1. **Find documents that need translation.** Run the status command to see coverage (`--lang` defaults to `ko`):
 
    ```bash
-   cd website && npm run translate -- status
+   cd website && npm run translate -- --lang ko status
    ```
 
 2. **Pick a TM file** in `website/i18n/tm/{lang}/` (e.g. `ko`) and open it in your editor. Each TM file looks like this:
@@ -38,7 +38,7 @@ Translations are managed through Translation Memory (TM) files. Here's how to co
 5. **(Optional) Preview locally.** Build the translated docs and check the output:
 
    ```bash
-   cd website && npm run translate -- build
+   cd website && npm run translate -- --lang ko build
    ```
 
 6. **Open a PR.** Please submit **one section (folder) per PR** rather than translating all pages at once — this keeps reviews manageable and allows incremental progress.

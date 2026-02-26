@@ -2,26 +2,24 @@ name: Translation
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'website/src/content/docs/**'
-      - '!website/src/content/docs/ko/**'
-      - 'website/i18n/tm/**'
-      - 'website/i18n/glossary/**'
-      - '.github/workflows/translation.yml'
+      - "website/src/content/docs/**"
+      - "!website/src/content/docs/ko/**"
+      - "website/i18n/tm/**"
+      - ".github/workflows/translation.yml"
 
   pull_request:
     paths:
-      - 'website/src/content/docs/**'
-      - '!website/src/content/docs/ko/**'
-      - 'website/i18n/tm/**'
-      - 'website/i18n/glossary/**'
-      - '.github/workflows/translation.yml'
+      - "website/src/content/docs/**"
+      - "!website/src/content/docs/ko/**"
+      - "website/i18n/tm/**"
+      - ".github/workflows/translation.yml"
 
   workflow_dispatch:
     inputs:
       build:
-        description: 'Build and create translation PR (false = validate only)'
+        description: "Build and create translation PR (false = validate only)"
         type: boolean
         default: true
 
@@ -49,7 +47,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install dependencies
         run: npm ci
@@ -76,8 +74,8 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           branch: i18n/${{ env.TARGET_LANG }}/update-translations
-          commit-message: 'docs(i18n): update ${{ env.TARGET_LANG }} translations'
-          title: 'docs(i18n): update ${{ env.TARGET_LANG }} translations'
+          commit-message: "docs(i18n): update ${{ env.TARGET_LANG }} translations"
+          title: "docs(i18n): update ${{ env.TARGET_LANG }} translations"
           body: |
             Automated ${{ env.TARGET_LANG }} translation update from TM-based pipeline.
 
@@ -99,9 +97,6 @@ jobs:
 
           if [ -z "$BASE_REF" ]; then
             # Manual dispatch — show all docs
-            npm run translate -- --lang "$TARGET_LANG" status --format=summary | tee /tmp/translation-status.txt
-          elif git diff --name-only "origin/$BASE_REF"...HEAD -- "website/i18n/glossary/" | grep -q .; then
-            # Glossary change → show all docs
             npm run translate -- --lang "$TARGET_LANG" status --format=summary | tee /tmp/translation-status.txt
           else
             # Map changed TM paths to doc-relative paths

@@ -67,13 +67,13 @@ TRANSLATION.md                         # This file
 
 ## CLI reference
 
-All commands run from the `website/` directory.
+All commands run from the `website/` directory. The `--lang` flag defaults
+to `ko` and can be changed to target other languages.
 
 ```bash
 npm run translate -- init              # Create empty TM files for new EN docs
 npm run translate -- update            # Sync TM with updated EN source
 npm run translate -- build             # Rebuild translated docs from TM
-npm run translate -- build --model kanana-2  # Build with translated-by frontmatter
 npm run translate -- validate          # Validate TM without writing files
 npm run translate -- status            # Translation coverage (table)
 npm run translate -- status --format=summary   # Coverage (markdown)
@@ -87,6 +87,11 @@ npm run translate -- --lang ko status  # Target a specific language (default: ko
 | `build`    | Generate `{lang}/*.mdx` from TM lookups                                               |
 | `validate` | Dry-run build to catch YAML or segment errors                                         |
 | `status`   | Show per-document HIT/MISS counts and coverage percentage                             |
+
+| Flag      | Description                                                                                                                                                                                            |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--lang`  | Target language (default: `ko`)                                                                                                                                                                        |
+| `--model` | LLM model identifier. When set and a document has no human contributors, `translated-by-{model}: true` is added to the output frontmatter. Useful for external workflows that auto-generate TM via LLM |
 
 CI runs `validate` on pull requests and `build` on merge to main.
 
