@@ -18,13 +18,6 @@ data class MutationModeContext private constructor(
         /**
          * Priority: request(force=true) > system > request(force=false) > label (table)
          *
-         * mode = when {
-         *     force   -> request          // force requires non-null request
-         *     system != null -> system
-         *     request != null -> request
-         *     else           -> table
-         * }
-         *
          * Constraints:
          *   - force==true && request==null -> IllegalArgumentException
          *   - force==false && system==null && request==SYNC && table==IGNORE -> IllegalArgumentException
