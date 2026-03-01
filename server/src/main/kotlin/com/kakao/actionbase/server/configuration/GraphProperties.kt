@@ -30,5 +30,5 @@ data class GraphProperties(
     val allowMirror: Boolean = false,
     val mutationRequestTimeout: Long?,
     val hbase: Map<String, String> = emptyMap(),
-    val ddlFetchLimit: Int?,
+    val metadataFetchLimit: Int?,
 )

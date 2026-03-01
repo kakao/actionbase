@@ -174,7 +174,7 @@ class Graph(
 
     val encoderPoolSize = config.encoderPoolSize
 
-    val ddlFetchLimit = config.ddlFetchLimit
+    val metadataFetchLimit = config.metadataFetchLimit
 
     init {
         if (config.metastoreReloadInitialDelay != null && config.metastoreReloadInterval != null) {
@@ -845,7 +845,7 @@ class Graph(
                 name = Metadata.onlineMetadataLabelV2Entity.name,
                 srcSet = setOf(MetadataSyncEntity.Src(phase, type).toCompositeKey()),
                 indexName = Metadata.onlineMetadataLabelV2Entity.indices[0].name,
-                limit = ddlFetchLimit,
+                limit = metadataFetchLimit,
             )
 
         return singleStepQuery(scanFilter, emptySet())

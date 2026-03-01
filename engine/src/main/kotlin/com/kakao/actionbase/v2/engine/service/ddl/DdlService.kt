@@ -170,7 +170,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
             ScanFilter(
                 name = label.name,
                 srcSet = setOf(name.phaseServiceName),
-                limit = graph.ddlFetchLimit,
+                limit = graph.metadataFetchLimit,
             )
         return label
             .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)

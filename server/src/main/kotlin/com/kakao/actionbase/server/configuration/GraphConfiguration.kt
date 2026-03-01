@@ -81,7 +81,7 @@ class GraphConfiguration {
                         .of(infoEndpoint)
                 withArtifactInfo(artifactInfo.toString())
                 withHBase(properties.hbase)
-                properties.ddlFetchLimit?.let { withDdlFetchLimit(it) }
+                properties.metadataFetchLimit?.let { withMetadataFetchLimit(it) }
             }
         return builder.build()
     }
