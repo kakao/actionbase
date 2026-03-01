@@ -113,10 +113,11 @@ data class GraphConfig(
 
         fun withHBase(hbase: Map<String, String>) = apply { this.hbase = hbase }
 
-        fun withDdlFetchLimit(limit: Int) = apply {
-            require(limit > 0) { "ddlFetchLimit must be positive, got $limit" }
-            this.ddlFetchLimit = limit
-        }
+        fun withDdlFetchLimit(limit: Int) =
+            apply {
+                require(limit > 0) { "ddlFetchLimit must be positive, got $limit" }
+                this.ddlFetchLimit = limit
+            }
 
         fun build(): GraphConfig =
             GraphConfig(
