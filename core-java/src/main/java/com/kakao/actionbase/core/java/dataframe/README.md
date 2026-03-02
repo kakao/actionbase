@@ -106,4 +106,4 @@ DataFrame emptyDataFrame = DataFrameConverter.emptyDataFrame(YourModel.class, sc
 
 1. Row and DataFrame are immutable objects, so you must create a new instance when modification is needed.
 2. Be careful as exceptions may occur if schema and data types do not match.
-3. Pay attention to memory usage when processing large amounts of data. 
+3. Pay attention to memory usage when processing large amounts of data.
