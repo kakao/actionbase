@@ -47,8 +47,8 @@ entries:
   - source: Storage Backend
     target: 기본 스토리지 백엔드
     context: heading
-  - source: Actionbase currently uses HBase as its primary storage backend. Lighter backends are [planned](/community/roadmap/#exploring) for smaller deployments.
-    target: Actionbase는 현재 HBase를 기본 스토리지 백엔드로 사용합니다. 더 가벼운 백엔드는 [계획](/ko/community/roadmap/#탐색-중) 중이며, 소규모 배포를 위한 옵션도 준비 중입니다.
+  - source: Actionbase currently uses HBase as its primary storage backend. Lighter backends are [planned](https://github.com/kakao/actionbase/blob/main/ROADMAP.md#exploring) for smaller deployments.
+    target: Actionbase는 현재 HBase를 기본 스토리지 백엔드로 사용합니다. 더 가벼운 백엔드는 [계획](https://github.com/kakao/actionbase/blob/main/ROADMAP.md#exploring) 중이며, 소규모 배포를 위한 옵션도 준비 중입니다.
     context: paragraph
   - source: Production Usage
     target: 프로덕션 사용 사례

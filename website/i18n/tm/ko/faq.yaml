@@ -347,8 +347,8 @@ entries:
   - source: In-memory storage, no external dependencies
     target: 인메모리 저장소, 외부 의존성 없음
     context: list_item
-  - source: '**Production** — documentation in progress, see [Roadmap](/community/roadmap/)'
-    target: '**프로덕션** — 문서는 개발 중이며, [로드맵](/ko/community/roadmap/)을 참고하세요.'
+  - source: '**Production** — documentation in progress, see [Roadmap](https://github.com/kakao/actionbase/blob/main/ROADMAP.md)'
+    target: '**프로덕션** — 문서는 개발 중이며, [로드맵](https://github.com/kakao/actionbase/blob/main/ROADMAP.md)을 참고하세요.'
     context: paragraph
   - source: 4 GB+ memory recommended (scales out horizontally)
     target: 4 GB 이상의 메모리 권장(수평 확장 가능)
@@ -365,8 +365,8 @@ entries:
   - source: Do I need to set up HBase separately?
     target: HBase를 별도로 설정해야 하나요?
     context: heading
-  - source: Yes — documentation in progress, see [Roadmap](/community/roadmap/).
-    target: 네 — 문서는 개발 중이며, [로드맵](/ko/community/roadmap/)을 참고하세요.
+  - source: Yes — documentation in progress, see [Roadmap](https://github.com/kakao/actionbase/blob/main/ROADMAP.md).
+    target: 네 — 문서는 개발 중이며, [로드맵](https://github.com/kakao/actionbase/blob/main/ROADMAP.md)을 참고하세요.
     context: paragraph
   - source: Lighter backends are planned for future releases.
     target: 더 가벼운 백엔드는 향후 릴리스에서 제공될 예정입니다.
@@ -383,6 +383,6 @@ entries:
   - source: How can I contribute?
     target: 어떻게 기여할 수 있나요?
     context: heading
-  - source: '[Contributing](/community/contributing/).'
-    target: '[기여 방법](/ko/community/contributing/).'
+  - source: '[Contributing](https://github.com/kakao/actionbase/blob/main/CONTRIBUTING.md).'
+    target: '[기여 방법](https://github.com/kakao/actionbase/blob/main/CONTRIBUTING.md).'
     context: paragraph

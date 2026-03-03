@@ -6,6 +6,78 @@ Thank you for your interest in Actionbase. Any form of participation—using the
 
 New to open source? Look for issues labeled **[good first issue](https://github.com/kakao/actionbase/labels/good%20first%20issue)**.
 
+## Development setup
+
+### Prerequisites
+
+- Java 17+
+- IntelliJ IDEA (Community or Ultimate)
+
+### Setup
+
+```bash
+git clone https://github.com/kakao/actionbase.git
+cd actionbase
+```
+
+Open in IntelliJ: **File > Open** → select project root.
+
+IntelliJ will auto-import Gradle. Wait for indexing to complete.
+
+### Build
+
+```bash
+./gradlew build
+```
+
+Or in IntelliJ: **Gradle panel > actionbase > Tasks > build > build**
+
+### Format
+
+Run before committing:
+
+```bash
+./gradlew spotlessApply
+```
+
+This formats Kotlin/Java code according to project style.
+
+### Run
+
+```bash
+./gradlew :server:bootRun
+```
+
+Server starts at `http://localhost:8080`.
+
+### Test
+
+```bash
+# All tests
+./gradlew test
+
+# Specific module
+./gradlew :core:test
+./gradlew :engine:test
+./gradlew :server:test
+```
+
+## PR workflow
+
+Fork [kakao/actionbase](https://github.com/kakao/actionbase) on GitHub, then set up remotes:
+
+```bash
+git remote rename origin upstream
+git remote add origin https://github.com/YOUR_USERNAME/actionbase.git
+```
+
+1. Create branch: `git checkout -b feature/your-feature`
+2. Make changes
+3. Format: `./gradlew spotlessApply`
+4. Test: `./gradlew test`
+5. Commit: `git commit -m "feat(scope): description"`
+6. Push & create PR
+
 ## Translations
 
 Translations are managed through Translation Memory (TM) files. Here's how to contribute:
@@ -67,4 +139,4 @@ Report security vulnerabilities through [GitHub Security Advisories](https://git
 
 All contributors are expected to follow the **[Code of Conduct](https://github.com/kakao/actionbase/blob/main/CODE_OF_CONDUCT.md)**.
 
-For project roles, see [Governance](https://actionbase.io/community/governance/).
+For project roles, see [Governance](GOVERNANCE.md).
