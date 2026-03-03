@@ -174,6 +174,8 @@ class Graph(
 
     val encoderPoolSize = config.encoderPoolSize
 
+    val metadataFetchLimit = config.metadataFetchLimit
+
     val systemMutationMode = config.systemMutationMode
 
     init {
@@ -283,16 +285,9 @@ class Graph(
         requestId: String = "",
         bulk: Boolean = false,
         mode: MutationMode? = null,
-        force: Boolean = false,
         failOnExist: Boolean = false,
     ): Mono<MutationResult> {
-        val mutationModeContext =
-            MutationModeContext.of(
-                table = label.entity.mode,
-                request = mode,
-                system = systemMutationMode,
-                force = force,
-            )
+        val mutationModeContext = MutationModeContext.of(label.entity.mode, mode)
 
         return Flux
             .fromIterable(edges)

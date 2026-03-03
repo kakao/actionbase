@@ -1,9 +1,4 @@
----
-title: Release Policy
-description: Versioning scheme and support policy for Actionbase
-sidebar:
-  order: 3
----
+# Release Policy
 
 Actionbase follows [Semantic Versioning](https://semver.org/) (SemVer) to communicate changes clearly.
 

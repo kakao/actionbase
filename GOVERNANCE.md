@@ -1,18 +1,13 @@
----
-title: Governance
-description: Overview of Actionbase's governance model and roles
-sidebar:
-  order: 2
----
+# Governance
 
 Actionbase is in its early open-source stage.
 Our governance structure is transparent and flexible.
 
-For practical guidance on how to contribute — see [Contributing](/community/contributing/).
+For practical guidance on how to contribute — see [Contributing](CONTRIBUTING.md).
 
 ## Roles
 
-- **Maintainer**: Oversees project direction, ensures quality, and manages [releases](/community/releases/).
+- **Maintainer**: Oversees project direction, ensures quality, and manages [releases](RELEASES.md).
   Maintainers have final decision-making authority.
   Under the current governance model, Maintainers are Kakao employees.
 

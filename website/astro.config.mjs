@@ -171,10 +171,7 @@ export default defineConfig({
               label: 'Project',
               autogenerate: { directory: 'project' },
             },
-            {
-              label: 'Community',
-              autogenerate: { directory: 'community' },
-            },
+            'community',
           ],
         },
         {
@@ -242,7 +239,7 @@ export default defineConfig({
                 'provisioning/**',
                 'operations/**',
                 'guides/**',
-                'community/**',
+                'community',
                 'project/**',
               ],
               description: 'Core documentation without API reference',
