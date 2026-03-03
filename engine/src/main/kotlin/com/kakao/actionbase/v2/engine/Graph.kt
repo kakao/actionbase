@@ -285,9 +285,10 @@ class Graph(
         requestId: String = "",
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        force: Boolean = false,
         failOnExist: Boolean = false,
     ): Mono<MutationResult> {
-        val mutationModeContext = MutationModeContext.of(label.entity.mode, mode)
+        val mutationModeContext = MutationModeContext.of(label.entity.mode, mode, systemMutationMode, force)
 
         return Flux
             .fromIterable(edges)
