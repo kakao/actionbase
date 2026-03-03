@@ -839,10 +839,7 @@ class Graph(
         return onlineMetadataLabel.mutate(edges, EdgeOperation.INSERT, bulk = true).then()
     }
 
-    @Suppress("ForbiddenComment")
     private fun getOnlineMetadata(type: MetadataType): Mono<List<RowWithSchema>> {
-        // TODO: use configuration or pagination
-        val sufficientFetchSize = 1000
         val bound = Duration.ofMinutes(2)
         val lastTs = System.currentTimeMillis() - bound.toMillis()
 
@@ -851,7 +848,7 @@ class Graph(
                 name = Metadata.onlineMetadataLabelV2Entity.name,
                 srcSet = setOf(MetadataSyncEntity.Src(phase, type).toCompositeKey()),
                 indexName = Metadata.onlineMetadataLabelV2Entity.indices[0].name,
-                limit = sufficientFetchSize,
+                limit = metadataFetchLimit,
             )
 
         return singleStepQuery(scanFilter, emptySet())
