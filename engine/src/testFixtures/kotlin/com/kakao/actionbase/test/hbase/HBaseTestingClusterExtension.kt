@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.api.extension.ParameterContext
 import org.junit.jupiter.api.extension.ParameterResolver
+import org.opentest4j.TestAbortedException
 
 import reactor.core.publisher.Mono
 
@@ -25,6 +26,14 @@ class HBaseTestingClusterExtension :
     }
 
     override fun beforeAll(context: ExtensionContext) {
+        // Subject.getSubject(AccessControlContext) was removed in Java 18, breaking the HBase
+        // mini cluster's Hadoop UserGroupInformation initialization. Skip on Java 18+.
+        if (Runtime.version().feature() >= 18) {
+            throw TestAbortedException(
+                "HBase mini cluster requires Java 17 or earlier: " +
+                    "Subject.getSubject(AccessControlContext) was removed in Java 18",
+            )
+        }
         HBaseTestingCluster.startIfNeeded()
         DefaultHBaseCluster.initialize(Mono.just(HBaseTestingCluster.asyncConnection), "ab_test", HBaseTestingCluster.hbaseConfiguration)
     }

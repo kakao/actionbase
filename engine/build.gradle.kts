@@ -104,4 +104,8 @@ tasks.withType<Test>().all {
     if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {
         jvmArgs("-XX:+AllowRedefinitionToAddDeleteMethods")
     }
+
+    // BlockHound uses Byte Buddy which does not officially support Java 25.
+    // The experimental flag allows it to run on unsupported JVM versions.
+    systemProperty("reactor.blockhound.shaded.net.bytebuddy.experimental", "true")
 }
