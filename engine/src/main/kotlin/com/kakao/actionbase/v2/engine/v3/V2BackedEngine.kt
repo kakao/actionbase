@@ -1,5 +1,7 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
+
 import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.MutationContext
@@ -52,5 +54,9 @@ class V2BackedEngine(
         get() = graph.mutationRequestTimeout
 
     override val systemMutationMode: MutationMode?
-        get() = graph.systemMutationMode?.let { MutationMode.valueOf(it.name) }
+        get() = graph.systemMutationMode?.toV3()
+
+    companion object {
+        private fun V2MutationMode.toV3(): MutationMode = MutationMode.valueOf(name)
+    }
 }
