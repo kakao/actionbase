@@ -113,9 +113,17 @@ tasks.withType<Test>().all {
             "--add-opens=java.base/java.util=ALL-UNNAMED",
             "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
             "--enable-native-access=ALL-UNNAMED",
+            // Hadoop UserGroupInformation calls Subject.getSubject() which was removed in Java 18.
+            // This flag restores the legacy AccessController-based Subject lookup.
+            "-Djava.security.auth.login.config=",
+            "--add-exports=java.base/sun.security.util=ALL-UNNAMED",
         )
 
     if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {
         jvmArgs("-XX:+AllowRedefinitionToAddDeleteMethods")
     }
+
+    // BlockHound uses Byte Buddy which does not officially support Java 25.
+    // The experimental flag allows it to run on unsupported JVM versions.
+    systemProperty("reactor.blockhound.shaded.net.bytebuddy.experimental", "true")
 }
