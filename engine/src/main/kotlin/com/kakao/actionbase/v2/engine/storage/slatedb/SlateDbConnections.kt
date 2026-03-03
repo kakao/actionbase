@@ -10,6 +10,13 @@ import io.slatedb.SlateDbConfig
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
+// The SlateDB C library uses a single global Tokio runtime that does not support
+// concurrent block_on calls from multiple threads. All native FFI calls are routed
+// through this global single-thread scheduler to prevent concurrent runtime entries.
+object SlateDbScheduler {
+    val INSTANCE: reactor.core.scheduler.Scheduler = Schedulers.newSingle("slatedb-worker")
+}
+
 object SlateDbConnections {
     private val logger = getLogger()
 

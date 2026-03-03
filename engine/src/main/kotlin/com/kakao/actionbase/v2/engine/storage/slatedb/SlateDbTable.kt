@@ -7,7 +7,6 @@ import io.slatedb.SlateDb
 import io.slatedb.SlateDbKeyValue
 import io.slatedb.SlateDbMergeOperator
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 
 fun Long.toSlateBytes(): ByteArray =
     ByteBuffer
@@ -73,11 +72,16 @@ interface SlateDbTable : AutoCloseable {
 internal class SlateDbTableImpl(
     private val db: SlateDb,
 ) : SlateDbTable {
+    // The SlateDB C library uses a single global Tokio runtime with block_on, which
+    // does not support concurrent calls from multiple threads. The global single-thread
+    // scheduler serializes all native FFI calls across all database instances.
+    private val scheduler = SlateDbScheduler.INSTANCE
+
     override fun get(key: ByteArray): Mono<ByteArray> =
         Mono
             .fromCallable { db.get(key) }
             .flatMap { Mono.justOrEmpty(it) }
-            .subscribeOn(Schedulers.boundedElastic())
+            .subscribeOn(scheduler)
 
     override fun put(
         key: ByteArray,
@@ -85,13 +89,13 @@ internal class SlateDbTableImpl(
     ): Mono<Void> =
         Mono
             .fromCallable { db.put(key, value) }
-            .subscribeOn(Schedulers.boundedElastic())
+            .subscribeOn(scheduler)
             .then()
 
     override fun delete(key: ByteArray): Mono<Void> =
         Mono
             .fromCallable { db.delete(key) }
-            .subscribeOn(Schedulers.boundedElastic())
+            .subscribeOn(scheduler)
             .then()
 
     override fun merge(
@@ -100,13 +104,13 @@ internal class SlateDbTableImpl(
     ): Mono<Void> =
         Mono
             .fromCallable { db.merge(key, value) }
-            .subscribeOn(Schedulers.boundedElastic())
+            .subscribeOn(scheduler)
             .then()
 
     override fun flush(): Mono<Void> =
         Mono
             .fromCallable { db.flush() }
-            .subscribeOn(Schedulers.boundedElastic())
+            .subscribeOn(scheduler)
             .then()
 
     override fun scanPrefix(
@@ -126,7 +130,7 @@ internal class SlateDbTableImpl(
                     }
                 }
                 results.toList()
-            }.subscribeOn(Schedulers.boundedElastic())
+            }.subscribeOn(scheduler)
 
     override fun batch(operations: List<BatchOperation>): Mono<Void> =
         Mono
@@ -141,7 +145,7 @@ internal class SlateDbTableImpl(
                     }
                     db.write(batch)
                 }
-            }.subscribeOn(Schedulers.boundedElastic())
+            }.subscribeOn(scheduler)
             .then()
 
     override fun close() {
