@@ -1,5 +1,7 @@
-import actionbase.dependencies.Dependencies
+import org.gradle.api.attributes.java.TargetJvmVersion
 import org.gradle.jvm.toolchain.JavaLanguageVersion
+
+import actionbase.dependencies.Dependencies
 
 plugins {
     id("actionbase.kotlin-conventions")
@@ -11,6 +13,14 @@ plugins {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
+// The kotlin-conventions plugin sets targetCompatibility=17, which sets org.gradle.jvm.version=17
+// on all configurations. Any dependency requiring JVM 24+ needs this override.
+configurations.matching { it.isCanBeResolved }.configureEach {
+    attributes {
+        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
     }
 }
 
@@ -107,4 +117,8 @@ tasks.withType<Test>().all {
     if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {
         jvmArgs("-XX:+AllowRedefinitionToAddDeleteMethods")
     }
+
+    // BlockHound uses Byte Buddy which does not officially support Java 25.
+    // The experimental flag allows it to run on unsupported JVM versions.
+    systemProperty("reactor.blockhound.shaded.net.bytebuddy.experimental", "true")
 }

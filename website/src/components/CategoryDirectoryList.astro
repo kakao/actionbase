@@ -26,9 +26,7 @@ const allPages = await getCollection('docs');
 
 const childPages = allPages.filter((p) => {
   const slug = getSlug(p);
-  if (!slug.startsWith(dir + '/')) return false;
-  const rest = slug.slice(dir.length + 1);
-  return rest && !rest.includes('/');
+  return slug.startsWith(dir + '/');
 });
 
 // Group by category

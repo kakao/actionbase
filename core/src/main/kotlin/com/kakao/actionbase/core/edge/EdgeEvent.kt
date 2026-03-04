@@ -5,5 +5,7 @@ import com.kakao.actionbase.core.state.Event
 data class EdgeEvent(
     val source: Any,
     val target: Any,
-    val event: Event,
-)
+    override val event: Event,
+) : MutationEvent {
+    override val key: MutationKey = MutationKey.SourceTarget(source, target)
+}

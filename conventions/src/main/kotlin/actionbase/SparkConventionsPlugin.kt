@@ -7,8 +7,6 @@ import actionbase.dependencies.Dependencies
 
 class SparkConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        println("🟣Applying scala conventions...")
-
         // Apply plugins
         project.pluginManager.apply("actionbase.base-conventions")
         project.pluginManager.apply("actionbase.java8-conventions")

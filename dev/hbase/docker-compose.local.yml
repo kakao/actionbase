@@ -1,0 +1,34 @@
+services:
+  hbase:
+    build: .
+    image: hbase-actionbase-dev:2.5.13
+    container_name: hbase-actionbase-dev
+    hostname: hbase
+    ports:
+      - "16000:16000"
+      - "16010:16010"
+      - "16020:16020"
+      - "16030:16030"
+      - "2181:2181"
+    volumes:
+      - ./data/hbase:/data/hbase
+      - ./data/zookeeper:/data/zookeeper
+      - ./data/logs:/opt/hbase/logs
+      - ./conf/hbase-site.local.xml:/opt/hbase/conf/hbase-site.xml:ro
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+        reservations:
+          memory: 2g
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'echo "exists ''ab_local:ab_local_default''" | hbase shell 2>/dev/null | grep -q ''true''',
+        ]
+      interval: 10s
+      timeout: 30s
+      retries: 12
+      start_period: 60s

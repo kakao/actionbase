@@ -7,7 +7,7 @@ import org.springframework.boot.info.GitProperties
 import org.springframework.http.HttpHeaders
 
 class ResponseMetaFactory(
-    private val gitProperties: GitProperties,
+    private val gitProperties: GitProperties?,
     private val buildProperties: BuildProperties,
 ) {
     companion object {
@@ -51,12 +51,12 @@ class ResponseMetaFactory(
         val baseVersion =
             listOf(
                 buildVersion,
-                gitProperties.shortCommitId ?: UNKNOWN,
-                gitProperties.branch ?: UNKNOWN,
+                gitProperties?.shortCommitId ?: UNKNOWN,
+                gitProperties?.branch ?: UNKNOWN,
             ).joinToString(":")
 
         // Check dirty state
-        val isDirty = gitProperties.get("dirty")?.toBooleanStrictOrNull() ?: false
+        val isDirty = gitProperties?.get("dirty")?.toBooleanStrictOrNull() ?: false
         return if (isDirty) "$baseVersion(dirty)" else baseVersion
     }
 }

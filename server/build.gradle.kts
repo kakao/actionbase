@@ -9,7 +9,7 @@ plugins {
     id("actionbase.jib-conventions")
     `java-test-fixtures`
 
-    id("com.gorylenko.gradle-git-properties") version "2.5.4"
+    id("com.gorylenko.gradle-git-properties") version "2.5.5"
 }
 
 dependencyManagement {
@@ -57,6 +57,9 @@ dependencies {
     testFixturesApi(Dependencies.Testing.JUPITER_API)
     testFixturesApi(Dependencies.Spring.BOOT_STARTER_TEST)
     testFixturesApi(Dependencies.Spring.BOOT_STARTER_WEBFLUX)
+
+    // test
+    testImplementation(testFixtures(project(":core")))
 }
 
 gitProperties {
@@ -84,6 +87,12 @@ springBoot {
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
+    // Use Java 25 for SlateDB FFI support
+    javaLauncher.set(
+        javaToolchains.launcherFor {
+            languageVersion.set(JavaLanguageVersion.of(25))
+        }
+    )
 }
 
 jib {

@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine
 
+import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.engine.EngineConstants
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
@@ -16,6 +17,8 @@ interface GraphDefaults {
     val metadataTable: MetadataTable
     val storages: Map<EntityName, StorageEntity>
     val edgeEncoderFactory: EdgeEncoderFactory
+    val edgeRecordMapper: EdgeRecordMapper
+    val lockTimeout: Long
     val datastore: DefaultHBaseCluster
 
     fun getStorage(uri: String): StorageEntity? =
@@ -34,6 +37,8 @@ data class AbstractGraphDefaults(
     override val metastore: Database,
     override val metadataTable: MetadataTable,
     override val edgeEncoderFactory: EdgeEncoderFactory,
+    override val edgeRecordMapper: EdgeRecordMapper,
+    override val lockTimeout: Long,
     override val storages: Map<EntityName, StorageEntity>,
     override val datastore: DefaultHBaseCluster,
 ) : GraphDefaults
