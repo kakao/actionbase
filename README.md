@@ -107,7 +107,7 @@ Early open-source preparation phase. The first release focuses on introducing co
 
 ## Contribute
 
-We welcome contributions. See our [Contributing Guide](https://actionbase.io/community/contributing/).
+We welcome contributions. See our [Contributing Guide](CONTRIBUTING.md).
 
 For questions, ideas, or feedback, join us on [GitHub Discussions](https://github.com/kakao/actionbase/discussions/).
 
@@ -116,10 +116,6 @@ For questions, ideas, or feedback, join us on [GitHub Discussions](https://githu
 * [Documentation](https://actionbase.io/)
 * [Roadmap](ROADMAP.md)
 * [Actionbase at if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE) (YouTube, Korean)
-
-## Contributors
-
-[![][contributors_img]][contributors]
 
 ## License
 
@@ -137,5 +133,3 @@ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
 
-[contributors]: https://github.com/kakao/actionbase/graphs/contributors
-[contributors_img]: https://contrib.rocks/image?repo=kakao/actionbase&v=2

@@ -68,6 +68,7 @@ class DefaultHBaseCluster private constructor(
     companion object {
         const val DEFAULT_HBASE_NAMESPACE = "default"
         const val DEFAULT_HBASE_CLUSTER_NAME = "__DEFAULT_HBASE_CLUSTER__"
+        const val LEGACY_DEFAULT_KERBEROS_REALM = "KAKAO.HADOOP"
 
         private val logger = LoggerFactory.getLogger(DefaultHBaseCluster::class.java)
 
@@ -84,9 +85,11 @@ class DefaultHBaseCluster private constructor(
          *   hbase.client.bootstrap.servers: host1:16000,host2:16000,host3:16000
          *
          * # for secure cluster
-         *   krb5ConfPath: (optional) /path/to/krb5.conf
-         *   keytabPath: e.g. /path/to/hadoop-cdl-write.keytab
-         *   principal: e.g. hadoop-cdl-write@KAKAO.HADOOP
+         *   kerberos.realm: e.g. EXAMPLE.COM (or env AB_KERBEROS_REALM)
+         *     - If missing, defaults to KAKAO.HADOOP for backward compatibility (deprecated)
+         *   krb5ConfPath: /path/to/krb5.conf (or env AB_KRB5_CONF_PATH)
+         *   keytabPath: e.g. /path/to/hadoop-cdl-write.keytab (or env AB_KEYTAB_PATH)
+         *   principal: e.g. hadoop-cdl-write@EXAMPLE.COM (or env AB_PRINCIPAL)
          */
         fun initialize(properties: Map<String, String>) {
             logger.info("KerberosHelper is being initialized.")
@@ -124,13 +127,14 @@ class DefaultHBaseCluster private constructor(
                 val krb5ConfPath = krb5ConfPathOpt ?: throw IllegalStateException("Kerberos krb5.conf path is not set")
                 val principal = principalOpt ?: throw IllegalStateException("Kerberos principal is not set")
                 val keytabPath = keytabPathOpt ?: throw IllegalStateException("Kerberos keytab path is not set")
+                val kerberosRealm = resolveKerberosRealm(properties)
 
                 System.setProperty("java.security.krb5.conf", krb5ConfPath)
 
                 config["hadoop.security.authentication"] = "kerberos"
                 config["hbase.security.authentication"] = "kerberos"
-                config["hbase.master.kerberos.principal"] = "hbase/_HOST@KAKAO.HADOOP"
-                config["hbase.regionserver.kerberos.principal"] = "hbase/_HOST@KAKAO.HADOOP"
+                config["hbase.master.kerberos.principal"] = "hbase/_HOST@$kerberosRealm"
+                config["hbase.regionserver.kerberos.principal"] = "hbase/_HOST@$kerberosRealm"
 
                 config["hbase.client.keytab.principal"] = principal
                 config["hbase.client.keytab.file"] = keytabPath
@@ -185,6 +189,25 @@ class DefaultHBaseCluster private constructor(
                     }.cache()
 
             initialize(connectionMono, namespace, config)
+        }
+
+        internal fun resolveKerberosRealm(
+            properties: Map<String, String>,
+            envKerberosRealm: String? = System.getenv("AB_KERBEROS_REALM"),
+        ): String {
+            val kerberosRealm = (properties["kerberos.realm"] ?: envKerberosRealm)?.trim()
+
+            if (kerberosRealm == null) {
+                logger.warn(
+                    "`kerberos.realm` is not set; falling back to legacy default realm `{}` for backward compatibility. This fallback is deprecated and will be removed in a future release.",
+                    LEGACY_DEFAULT_KERBEROS_REALM,
+                )
+                // TODO(ab#180): Remove legacy fallback and require explicit kerberos.realm after migration period.
+                return LEGACY_DEFAULT_KERBEROS_REALM
+            }
+
+            require(kerberosRealm.isNotEmpty()) { "Kerberos realm must not be blank" }
+            return kerberosRealm
         }
 
         fun initialize(

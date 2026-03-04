@@ -14,8 +14,6 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
 
 class BaseConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        println("🔴Applying base conventions...")
-
         // Apply plugins
         project.pluginManager.apply("java")
         project.pluginManager.apply("com.diffplug.spotless")
@@ -58,8 +56,12 @@ class BaseConventionsPlugin : Plugin<Project> {
 
     private fun configureJava(project: Project) {
         project.extensions.configure(JavaPluginExtension::class.java) {
-            withSourcesJar()
-            withJavadocJar()
+            // Sources and Javadoc JARs are only needed for CI/publishing.
+            // Skipping locally saves ~seconds per module during compilation.
+            if (System.getenv("CI") != null) {
+                withSourcesJar()
+                withJavadocJar()
+            }
         }
     }
 
@@ -72,14 +74,9 @@ class BaseConventionsPlugin : Plugin<Project> {
             useJUnitPlatform()
 
             testLogging {
-                events =
-                    setOf(
-                        TestLogEvent.PASSED,
-                        TestLogEvent.SKIPPED,
-                        TestLogEvent.FAILED,
-                    )
+                events = setOf(TestLogEvent.FAILED, TestLogEvent.SKIPPED)
                 exceptionFormat = TestExceptionFormat.FULL
-                showStandardStreams = true
+                showStandardStreams = false
             }
 
             maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).takeIf { cores -> cores > 0 } ?: 1
@@ -95,9 +92,13 @@ class BaseConventionsPlugin : Plugin<Project> {
 
     private fun configureSpotless(project: Project) {
         project.extensions.configure(SpotlessExtension::class.java) {
-            // Java formatting disabled for Java 25 compatibility
-            // google-java-format uses internal JDK APIs not accessible in Java 25
-            // TODO: Re-enable when a compatible formatter is available
+            // Decouple spotlessCheck from the build lifecycle.
+            // Run ./gradlew spotlessApply before pushing. CI enforces via spotlessCheck.
+            setEnforceCheck(false)
+
+            // Java formatting disabled for Java 25 compatibility.
+            // google-java-format uses internal JDK APIs not accessible in Java 25.
+            // TODO: Re-enable when a compatible formatter is available.
 
             kotlin {
                 ktlint()

@@ -6,8 +6,6 @@ import org.gradle.api.plugins.JavaPlatformExtension
 
 class PlatformConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        println("🟡Applying platform conventions...")
-
         // Apply plugins
         project.pluginManager.apply("java-platform")
         project.pluginManager.apply("maven-publish")

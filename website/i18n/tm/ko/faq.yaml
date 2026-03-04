@@ -1,0 +1,388 @@
+meta:
+  contributors:
+    - eazyhozy
+entries:
+  - source: FAQ
+    target: FAQ
+    context: frontmatter:title
+  - source: Frequently asked questions about Actionbase
+    target: Actionbase에 관한 자주 묻는 질문
+    context: frontmatter:description
+  - source: General Questions
+    target: 일반 질문
+    context: heading
+  - source: What is Actionbase?
+    target: Actionbase란 무엇인가요?
+    context: heading
+  - source: Actionbase is a database for serving user interactions—likes, recent views, follows, reactions.
+    target: Actionbase는 사용자 인터랙션—좋아요, 최근 조회, 팔로우, 반응—을 제공하는 데이터베이스입니다.
+    context: paragraph
+  - source: It models interactions as **who** did **what** to which **target**, and materializes read-optimized structures at write time. Reads use bounded access patterns (GET, SCAN, COUNT).
+    target: 사용자 인터랙션을 **누가** **무엇을** **어떤 대상**에 했는지로 모델링하며, 쓰기 시점에 읽기 최적화 구조를 미리 만듭니다. 읽기 작업은 제한된 접근 패턴(GET, SCAN, COUNT)을 사용합니다.
+    context: paragraph
+  - source: Actionbase is not a general-purpose graph database. It focuses on serving user interactions with predictable read patterns.
+    target: Actionbase는 범용 그래프 데이터베이스가 아닙니다. 예측 가능한 읽기 패턴으로 사용자 인터랙션을 제공하는 데 집중합니다.
+    context: paragraph
+  - source: Why is it called Actionbase?
+    target: 왜 Actionbase라는 이름인가요?
+    context: heading
+  - source: 'The name reflects what it stores: user actions, modeled as interactions.'
+    target: 이름에 담긴 의미는 저장하는 데이터가 바로 사용자 액션, 즉 인터랙션이기 때문입니다.
+    context: paragraph
+  - source: What do "interactions" and "activities" mean in Actionbase?
+    target: Actionbase에서 "인터랙션"과 "액티비티"는 무엇을 의미하나요?
+    context: heading
+  - source: An interaction captures a user action (like, view, follow) as an explicit **who → what → target** relationship with schema-defined properties.
+    target: 인터랙션은 사용자 액션(좋아요, 조회, 팔로우)을 **누가 → 무엇을 → 대상**의 명시적 관계로, 스키마에 정의된 프로퍼티와 함께 캡처합니다.
+    context: paragraph
+  - source: Internally, interactions are represented as edges in a graph. The terms "interaction" and "activity" are used interchangeably.
+    target: 내부적으로는 인터랙션이 그래프의 엣지로 표현됩니다. "인터랙션"과 "액티비티"라는 용어는 서로 바꿔 쓸 수 있습니다.
+    context: paragraph
+  - source: What problems does Actionbase solve?
+    target: Actionbase가 해결하는 문제는 무엇인가요?
+    context: heading
+  - source: Storing and querying recent views
+    target: 최근 조회 저장 및 조회
+    context: list_item
+  - source: Managing likes, reactions, and their counts
+    target: 좋아요, 반응 및 그 개수 관리
+    context: list_item
+  - source: Handling follow relationships
+    target: 팔로우 관계 처리
+    context: list_item
+  - source: Instead of reimplementing indexing, ordering, and counting logic per service, Actionbase pre-computes these at write time.
+    target: 각 서비스마다 인덱스, 정렬, 카운팅 로직을 다시 구현하지 않고, Actionbase가 쓰기 시점에 미리 계산합니다.
+    context: paragraph
+  - source: When should I NOT use Actionbase?
+    target: 언제 Actionbase를 사용하지 않아야 하나요?
+    context: heading
+  - source: A single database instance handles your workload
+    target: 단일 데이터베이스 인스턴스가 워크로드를 처리할 수 있을 때
+    context: list_item
+  - source: You need general-purpose graph queries or traversals
+    target: 범용 그래프 쿼리 또는 탐색이 필요할 때
+    context: list_item
+  - source: Your team doesn't have HBase operational experience
+    target: 팀에 HBase 운영 경험이 없을 때
+    context: list_item
+  - source: You're not hitting scaling walls yet
+    target: 아직 확장성 문제를 겪고 있지 않을 때
+    context: list_item
+  - source: Is Actionbase production-ready?
+    target: Actionbase는 프로덕션 환경에 적합한가요?
+    context: heading
+  - source: Actionbase has been running in production at Kakao for years—serving Kakao services, primarily KakaoTalk Gift—handling over a million requests per minute.
+    target: Actionbase는 수년간 카카오에서 프로덕션 환경에서 운영되어 왔으며, 주로 카카오톡 선물하기 서비스를 제공하고 있으며, 분당 100만 건 이상의 요청을 처리합니다.
+    context: paragraph
+  - source: However, as an open source project, Actionbase is just getting started. Documentation for production deployment (Kubernetes, HBase operations) is still in progress. Early adopters should expect some rough edges.
+    target: 그러나 오픈 소스 프로젝트로서 Actionbase는 이제 막 시작 단계입니다. 프로덕션 배포(Kubernetes, HBase 운영)에 대한 문서는 아직 준비 중입니다. 초기 채택자는 일부 불안정성을 예상해야 합니다.
+    context: paragraph
+  - source: What is the history of Actionbase?
+    target: Actionbase의 역사는 무엇인가요?
+    context: heading
+  - source: Development started at Kakao in 2023. After deployment to KakaoTalk Gift, it was open-sourced in January 2026 — see [Path to Open Source](/project/path-to-open-source/).
+    target: 개발은 2023년 카카오에서 시작되었습니다. 카카오톡 선물하기에 배포된 후, 2026년 1월에 오픈 소스로 공개되었습니다 — [오픈 소스로의 경로](/ko/project/path-to-open-source/)를 참조하세요.
+    context: paragraph
+  - source: Data Model
+    target: 데이터 모델
+    context: heading
+  - source: What data model does Actionbase use?
+    target: Actionbase는 어떤 데이터 모델을 사용하나요?
+    context: heading
+  - source: 'Actionbase uses a property graph model:'
+    target: 'Actionbase는 프로퍼티 그래프 모델을 사용합니다:'
+    context: paragraph
+  - source: '**Source**: who (e.g., user)'
+    target: '**소스**: 누구(예: 사용자)'
+    context: list_item
+  - source: '**Target**: what (e.g., product, content)'
+    target: '**타겟**: 무엇(예: 상품, 콘텐츠)'
+    context: list_item
+  - source: '**Properties**: schema-defined attributes (e.g., `created_at`, `reaction_type`)'
+    target: '**프로퍼티**: 스키마로 정의된 속성(예: `created_at`, `reaction_type`)'
+    context: list_item
+  - source: Each interaction type (likes, views, follows) is defined as a separate table with its own schema.
+    target: 각 인터랙션 유형(좋아요, 조회, 팔로우)은 자체 스키마를 가진 별도의 테이블로 정의됩니다.
+    context: paragraph
+  - source: What is the difference between unique-edge and multi-edge?
+    target: unique-edge와 multi-edge의 차이점은 무엇인가요?
+    context: heading
+  - source: '**Unique-edge**: One edge per (source, target) pair. Identified by source and target.'
+    target: '**Unique-edge**: (소스, 타겟) 쌍당 하나의 엣지만 존재합니다. 소스와 타겟으로 식별됩니다.'
+    context: list_item
+  - source: '**Multi-edge**: Multiple edges per (source, target) pair. Each edge has a unique `id`.'
+    target: '**Multi-edge**: (소스, 타겟) 쌍당 여러 엣지가 존재할 수 있습니다. 각 엣지는 고유한 `id`를 가집니다.'
+    context: list_item
+  - source: Unique-edge fits likes, follows, recent views. Multi-edge fits cases like gift records where the same user can send multiple gifts to the same recipient.
+    target: Unique-edge는 좋아요, 팔로우, 최근 조회에 적합합니다. Multi-edge는 동일한 사용자가 동일한 수신자에게 여러 번 선물을 보낼 수 있는 선물 기록과 같은 경우에 적합합니다.
+    context: paragraph
+  - source: '**Note:** Current documentation focuses on unique-edge. Multi-edge documentation will be expanded later.'
+    target: '**참고:** 현재 문서는 unique-edge에 중점을 두고 있습니다. Multi-edge 문서는 나중에 확장될 예정입니다.'
+    context: blockquote
+  - source: Does Actionbase support vertices (entity data)?
+    target: Actionbase는 버텍스(엔터티 데이터)를 지원하나요?
+    context: heading
+  - source: Currently, Actionbase focuses on edges (interactions). Entity data like user profiles or product information is typically stored elsewhere (e.g., RDB).
+    target: '현재 Actionbase는 엣지(상호작용)에 집중하고 있습니다. 사용자 프로필이나 상품 정보와 같은 엔티티 데이터는 일반적으로 다른 곳(예: RDB)에 저장됩니다.'
+    context: paragraph
+  - source: Vertex support is planned for future releases. In the meantime, self-edges (source = target) can be used as a workaround for simple entity storage.
+    target: 버텍스 지원은 향후 릴리스에서 계획되어 있습니다. 그동안에는 소스 = 타겟인 자체 엣지를 간단한 엔티티 저장 방식으로 활용할 수 있습니다.
+    context: paragraph
+  - source: Does Actionbase support schemas?
+    target: Actionbase에서 스키마를 지원하나요?
+    context: heading
+  - source: 'Yes. Schemas define:'
+    target: '네. 스키마는 다음과 같이 정의합니다:'
+    context: paragraph
+  - source: Source and target identifier types (int, long, string, etc.)
+    target: 소스와 타겟 식별자 타입(int, long, string 등)
+    context: list_item
+  - source: Interaction properties and their types
+    target: 인터랙션 프로퍼티와 해당 타입
+    context: list_item
+  - source: Schemas determine which read-optimized structures (indexes, counts) are built at write time — see [Schema](/design/schema/) and [Metadata API](/api-references/metadata/).
+    target: 스키마는 쓰기 시점에 어떤 읽기 최적화 구조(인덱스, 카운터 등)를 생성할지 결정합니다. 자세한 내용은 [스키마](/ko/design/schema/)와 [메타데이터 API](/ko/api-references/metadata/)를 참고하세요.
+    context: paragraph
+  - source: What are some example interaction models?
+    target: 몇 가지 인터랙션 모델 예시는 무엇인가요?
+    context: heading
+  - source: '**Recent views**'
+    target: '**최근 조회**'
+    context: paragraph
+  - source: 'Source: `user_id`'
+    target: '소스: `user_id`'
+    context: list_item
+  - source: 'Target: `product_id`'
+    target: '타겟: `product_id`'
+    context: list_item
+  - source: 'Properties: `created_at`'
+    target: '프로퍼티: `created_at`'
+    context: list_item
+  - source: '**Reactions**'
+    target: '**반응**'
+    context: paragraph
+  - source: 'Target: `content_id`'
+    target: '타겟: `content_id`'
+    context: list_item
+  - source: 'Properties: `created_at`, `reaction_type`'
+    target: '프로퍼티: `created_at`, `reaction_type`'
+    context: list_item
+  - source: Architecture
+    target: 아키텍처
+    context: heading
+  - source: How does Actionbase handle writes?
+    target: Actionbase는 쓰기를 어떻게 처리하나요?
+    context: heading
+  - source: 'Actionbase processes interactions using a state-based [mutation](/design/mutation/) model:'
+    target: 'Actionbase는 상태 기반 [뮤테이션](/ko/design/mutation/) 모델을 사용하여 인터랙션을 처리합니다:'
+    context: paragraph
+  - source: Read current state
+    target: 현재 상태를 읽습니다.
+    context: list_item
+  - source: Apply incoming interaction as a state transition
+    target: 들어오는 인터랙션을 상태 전이로 적용합니다.
+    context: list_item
+  - source: Persist resulting state and read-optimized structures
+    target: 결과 상태와 읽기 최적화 구조를 영속화합니다.
+    context: list_item
+  - source: Even if events arrive out of order, the final state remains consistent.
+    target: 이벤트가 순서가 뒤섞여 도착하더라도 최종 상태는 일관성을 유지합니다.
+    context: paragraph
+  - source: What is write-time optimization?
+    target: 쓰기 시점 최적화란 무엇인가요?
+    context: heading
+  - source: Actionbase pre-computes State, Index, and Count structures when edges are written. This enables simple GET, COUNT, SCAN reads without query-time computation.
+    target: Actionbase는 엣지가 기록될 때 State, Index, Count 구조를 미리 계산합니다. 이를 통해 쿼리 시점의 계산 없이 간단한 GET, COUNT, SCAN 읽기가 가능합니다.
+    context: paragraph
+  - source: '**State** — current relationship between source and target'
+    target: '**State** — 소스와 타겟 간의 현재 관계'
+    context: list_item
+  - source: '**Index** — ordered structures based on properties (e.g., `created_at DESC`)'
+    target: '**Index** — 프로퍼티(예: `created_at DESC`)를 기준으로 한 정렬된 구조'
+    context: list_item
+  - source: '**Count** — counters (e.g., number of likes per item)'
+    target: '**Count** — 카운터(예: 아이템별 좋아요 수)'
+    context: list_item
+  - source: '[Core Concepts](/design/concepts/#write-time-optimization).'
+    target: '[핵심 개념](/ko/design/concepts/#write-time-optimization).'
+    context: paragraph
+  - source: How does Actionbase handle out-of-order events?
+    target: Actionbase는 순서가 뒤섞인 이벤트를 어떻게 처리하나요?
+    context: heading
+  - source: Clients attach timestamps to events. Actionbase uses these timestamps to compute the correct final state, regardless of arrival order — see [Mutation](/design/mutation/).
+    target: 클라이언트가 이벤트에 타임스탬프를 부여합니다. Actionbase는 이 타임스탬프를 사용하여 도착 순서와 상관없이 올바른 최종 상태를 계산합니다. 자세한 내용은 [뮤테이션](/ko/design/mutation/)을 참고하세요.
+    context: paragraph
+  - source: Storage and Infrastructure
+    target: 스토리지 및 인프라
+    context: heading
+  - source: What storage backends does Actionbase support?
+    target: Actionbase는 어떤 스토리지 백엔드를 지원하나요?
+    context: heading
+  - source: Storage is abstracted in Actionbase. Any backend that meets the interface requirements can be plugged in. HBase is the current implementation; lighter backends are planned — see [Storage Backends](/design/storage-backends/).
+    target: 스토리지는 Actionbase에서 추상화되어 있습니다. 인터페이스 요구사항을 충족하는 모든 백엔드를 연결할 수 있습니다. 현재 구현은 HBase이며, 더 가벼운 백엔드도 계획 중입니다. 자세한 내용은 [스토리지 백엔드](/ko/design/storage-backends/)를 참고하세요.
+    context: paragraph
+  - source: What HBase versions are supported?
+    target: 어떤 HBase 버전을 지원하나요?
+    context: heading
+  - source: Tested with HBase 2.4 and 2.5. No strict version requirements.
+    target: HBase 2.4 및 2.5에서 테스트되었습니다. 엄격한 버전 요구사항은 없습니다.
+    context: paragraph
+  - source: Why use HBase?
+    target: 왜 HBase를 사용하나요?
+    context: heading
+  - source: "At Kakao, two storage options met the interface requirements at this scale: HBase and Redicoke (Kakao's distributed KV store with Redis protocol)."
+    target: 카카오에서는 이 규모에 맞는 인터페이스 요구사항을 충족하는 두 가지 스토리지 옵션(HBase와 Redis 프로토콜 기반 카카오 분산 KV 스토어인 Redicoke)이 있었습니다.
+    context: paragraph
+  - source: Both provide horizontal scalability, durability, and low-latency random reads/writes. We chose HBase because it was better suited for large data migrations via bulk loading.
+    target: 두 옵션 모두 수평 확장성, 내구성, 저지연 랜덤 읽기/쓰기를 제공합니다. 대량 로딩 기반의 대규모 데이터 마이그레이션에 더 적합했기 때문에 HBase를 선택했습니다.
+    context: paragraph
+  - source: '**Note:** Bulk loading is part of the pipeline component. The initial open source release focused on Actionbase core; pipeline release is in progress.'
+    target: '**참고:** 대량 로딩은 파이프라인 컴포넌트의 일부입니다. 최초 오픈소스 릴리스는 Actionbase 코어에 집중했으며, 파이프라인 릴리스는 진행 중입니다.'
+    context: blockquote
+  - source: Streaming and Data Pipelines
+    target: 스트리밍 및 데이터 파이프라인
+    context: heading
+  - source: What are WAL and CDC?
+    target: WAL과 CDC란 무엇인가요?
+    context: heading
+  - source: '**WAL (Write-Ahead Log)** — records incoming events as-is for replay and recovery'
+    target: '**WAL(Write-Ahead Log)** — 들어오는 이벤트를 그대로 기록하여 재생 및 복구에 사용합니다'
+    context: list_item
+  - source: '**CDC (Change Data Capture)** — records resulting state after mutation for downstream sync'
+    target: '**CDC(Change Data Capture)** — 변경 후 상태를 기록하여 다운스트림 동기화에 사용합니다'
+    context: list_item
+  - source: Both are accessible via Kafka consumers.
+    target: 두 가지 모두 Kafka 컨슈머를 통해 접근할 수 있습니다.
+    context: paragraph
+  - source: How does Actionbase support analytics and pipelines?
+    target: Actionbase는 어떻게 분석 및 파이프라인을 지원하나요?
+    context: heading
+  - source: WAL and CDC streams can feed analytics systems, async processors, background jobs, or data migrations.
+    target: WAL 및 CDC 스트림은 분석 시스템, 비동기 프로세서, 백그라운드 작업 또는 데이터 마이그레이션에 공급할 수 있습니다
+    context: paragraph
+  - source: Can Actionbase handle high write throughput?
+    target: Actionbase는 높은 쓰기 처리량을 처리할 수 있나요?
+    context: heading
+  - source: 'For high-frequency interactions (e.g., [recent views](/stories/use-cases/kakaotalk-gift-recent-views/)), Actionbase uses async processing via Spark Streaming:'
+    target: '고빈도 인터랙션(예: [최근 조회](/ko/stories/use-cases/kakaotalk-gift-recent-views/))의 경우 Actionbase는 Spark Streaming을 통한 비동기 처리를 사용합니다:'
+    context: paragraph
+  - source: Request queued to WAL, response returned immediately
+    target: 요청이 WAL에 큐에 등록되고, 응답이 즉시 반환됩니다
+    context: list_item
+  - source: Async processor (Spark Streaming) consumes queued WAL entries and sends mutations back to Actionbase
+    target: 비동기 프로세서(Spark Streaming)가 큐에 쌓인 WAL 항목을 소비하여 Actionbase로 다시 변경을 전송합니다
+    context: list_item
+  - source: Mutations are throttled and applied in background
+    target: 변경 사항은 백그라운드에서 제한(throttle) 및 적용됩니다
+    context: list_item
+  - source: This minimizes latency while sustaining throughput. Data is typically reflected within tens of milliseconds. Designed to remain stable even when traffic exceeds normal capacity.
+    target: 이렇게 하면 지연 시간을 최소화하면서 처리량을 유지할 수 있습니다. 데이터는 일반적으로 수십 밀리초 이내에 반영됩니다. 정상 용량을 초과하는 트래픽 상황에서도 안정적으로 유지되도록 설계되었습니다
+    context: paragraph
+  - source: '**Note:** The pipeline component is currently internal. Open source release is in progress.'
+    target: '**참고:** 파이프라인 구성 요소는 현재 내부용입니다. 오픈 소스 릴리스는 진행 중입니다'
+    context: blockquote
+  - source: Comparison
+    target: 비교
+    context: heading
+  - source: How does Actionbase compare to Neo4j?
+    target: Actionbase는 Neo4j와 어떻게 비교되나요?
+    context: heading
+  - source: Actionbase is not a general-purpose graph database.
+    target: Actionbase는 범용 그래프 데이터베이스가 아닙니다
+    context: paragraph
+  - source: '**Neo4j** — general-purpose graph queries, traversals'
+    target: '**Neo4j** — 범용 그래프 쿼리, 탐색'
+    context: list_item
+  - source: '**Actionbase** — bounded access patterns (GET, SCAN, COUNT) for user interactions'
+    target: '**Actionbase** — 사용자 인터랙션에 대해 제한된 접근 패턴(GET, SCAN, COUNT) 제공'
+    context: list_item
+  - source: How does Actionbase compare to traditional RDBMS?
+    target: Actionbase는 기존 RDBMS와 어떻게 비교되나요?
+    context: heading
+  - source: Actionbase is not a replacement for RDBMS.
+    target: Actionbase는 RDBMS의 대체재가 아닙니다.
+    context: paragraph
+  - source: '**RDBMS** — general-purpose, transactional'
+    target: '**RDBMS** — 범용적이고 트랜잭션 처리용'
+    context: list_item
+  - source: '**Actionbase** — specialized for user interactions at scale, with write-time materialization'
+    target: '**Actionbase** — 대규모 사용자 인터랙션에 특화되어 있으며, 쓰기 시점의 머티리얼라이제이션 지원'
+    context: list_item
+  - source: For most teams, a well-tuned RDBMS handles this fine. Actionbase exists for cases where that stopped being true.
+    target: 대부분의 팀에서는 잘 튜닝된 RDBMS로 충분합니다. Actionbase는 더 이상 RDBMS로 처리가 어려울 때 존재합니다.
+    context: paragraph
+  - source: Use Cases
+    target: 사용 사례
+    context: heading
+  - source: What are typical use cases for Actionbase?
+    target: Actionbase의 일반적인 사용 사례는 무엇인가요?
+    context: heading
+  - source: Like buttons and reaction counts
+    target: 좋아요 버튼 및 반응 수 집계
+    context: list_item
+  - source: '"Recently viewed" lists'
+    target: '"최근 본 항목" 목록'
+    context: list_item
+  - source: Follow/following feeds
+    target: 팔로우/팔로잉 피드
+    context: list_item
+  - source: Per-user interaction histories
+    target: 사용자별 인터랙션 이력
+    context: list_item
+  - source: When these outgrow your RDBMS—sharding gets painful, caches drift—Actionbase can take over.
+    target: 이러한 데이터가 RDBMS의 한계를 넘어섰을 때—샤딩이 복잡해지거나 캐시가 불일치할 때—Actionbase가 이를 대신할 수 있습니다.
+    context: paragraph
+  - source: Getting Started
+    target: 시작하기
+    context: heading
+  - source: What are the system requirements?
+    target: 시스템 요구 사항은 무엇인가요?
+    context: heading
+  - source: '**Local (development)** — see [Quick Start](/quick-start/)'
+    target: '**로컬(개발용)** — [빠른 시작](/ko/quick-start/)을 참고하세요.'
+    context: paragraph
+  - source: Java 17
+    target: Java 17
+    context: list_item
+  - source: In-memory storage, no external dependencies
+    target: 인메모리 저장소, 외부 의존성 없음
+    context: list_item
+  - source: '**Production** — documentation in progress, see [Roadmap](https://github.com/kakao/actionbase/blob/main/ROADMAP.md)'
+    target: '**프로덕션** — 문서는 개발 중이며, [로드맵](https://github.com/kakao/actionbase/blob/main/ROADMAP.md)을 참고하세요.'
+    context: paragraph
+  - source: 4 GB+ memory recommended (scales out horizontally)
+    target: 4 GB 이상의 메모리 권장(수평 확장 가능)
+    context: list_item
+  - source: 'Requires: HBase, Kafka, JDBC-compatible database for metadata (to be consolidated)'
+    target: '필요 사항: HBase, Kafka, 메타데이터용 JDBC 호환 데이터베이스(통합 예정)'
+    context: list_item
+  - source: How do I get started?
+    target: 어떻게 시작할 수 있나요?
+    context: heading
+  - source: '[Quick Start](/quick-start/).'
+    target: '[빠른 시작](/ko/quick-start/).'
+    context: paragraph
+  - source: Do I need to set up HBase separately?
+    target: HBase를 별도로 설정해야 하나요?
+    context: heading
+  - source: Yes — documentation in progress, see [Roadmap](https://github.com/kakao/actionbase/blob/main/ROADMAP.md).
+    target: 네 — 문서는 개발 중이며, [로드맵](https://github.com/kakao/actionbase/blob/main/ROADMAP.md)을 참고하세요.
+    context: paragraph
+  - source: Lighter backends are planned for future releases.
+    target: 더 가벼운 백엔드는 향후 릴리스에서 제공될 예정입니다.
+    context: paragraph
+  - source: What programming languages are supported?
+    target: 어떤 프로그래밍 언어를 지원하나요?
+    context: heading
+  - source: Actionbase provides a REST API. Any language that supports HTTP works — see [Query API](/api-references/query/) and [Mutation API](/api-references/mutation/).
+    target: Actionbase는 REST API를 제공합니다. HTTP를 지원하는 모든 언어가 사용 가능하며, [쿼리 API](/ko/api-references/query/)와 [뮤테이션 API](/ko/api-references/mutation/)를 참고하세요.
+    context: paragraph
+  - source: Contributing
+    target: 기여하기
+    context: heading
+  - source: How can I contribute?
+    target: 어떻게 기여할 수 있나요?
+    context: heading
+  - source: '[Contributing](https://github.com/kakao/actionbase/blob/main/CONTRIBUTING.md).'
+    target: '[기여 방법](https://github.com/kakao/actionbase/blob/main/CONTRIBUTING.md).'
+    context: paragraph

@@ -1,6 +1,8 @@
 package com.kakao.actionbase.v2.engine
 
+import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.entity.DefaultStorageEntity
+import com.kakao.actionbase.v2.engine.service.ddl.DdlService
 import com.kakao.actionbase.v2.engine.warmup.WarmUpConfig
 
 import java.net.InetAddress
@@ -31,6 +33,8 @@ data class GraphConfig(
     // Aligned with nginx.conf proxy_read_timeout 300
     val mutationRequestTimeout: Long = 300_000,
     val hbase: Map<String, String> = emptyMap(),
+    val metadataFetchLimit: Int = DdlService.DEFAULT_METADATA_LIMIT,
+    val systemMutationMode: MutationMode? = null,
 ) {
     companion object {
         val builder: Builder
@@ -58,6 +62,8 @@ data class GraphConfig(
         private var warmUp: WarmUpConfig = WarmUpConfig()
         private var artifactInfo: String? = null
         private var hbase: Map<String, String> = emptyMap()
+        private var metadataFetchLimit: Int = DdlService.DEFAULT_METADATA_LIMIT
+        private var systemMutationMode: MutationMode? = null
 
         // Aligned with nginx.conf proxy_read_timeout 300
         private var mutationRequestTimeout: Long = 300_000
@@ -110,6 +116,14 @@ data class GraphConfig(
 
         fun withHBase(hbase: Map<String, String>) = apply { this.hbase = hbase }
 
+        fun withMetadataFetchLimit(limit: Int) =
+            apply {
+                require(limit > 0) { "ddlFetchLimit must be positive, got $limit" }
+                this.metadataFetchLimit = limit
+            }
+
+        fun withSystemMutationMode(systemMutationMode: MutationMode?) = apply { this.systemMutationMode = systemMutationMode }
+
         fun build(): GraphConfig =
             GraphConfig(
                 phase = phase,
@@ -133,6 +147,8 @@ data class GraphConfig(
                 artifactInfo = artifactInfo,
                 mutationRequestTimeout = mutationRequestTimeout,
                 hbase = hbase,
+                metadataFetchLimit = metadataFetchLimit,
+                systemMutationMode = systemMutationMode,
             )
     }
 }

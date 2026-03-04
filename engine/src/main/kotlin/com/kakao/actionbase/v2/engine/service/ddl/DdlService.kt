@@ -5,6 +5,7 @@ import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Active
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
+import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.edge.HashEdge
 import com.kakao.actionbase.v2.engine.edge.MutationResult
@@ -25,14 +26,13 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
     protected val graph: Graph,
     private val label: Label,
     private val factory: EntityFactory<Entity>,
-    private val limit: Int = DEFAULT_METADATA_LIMIT,
 ) {
     fun createMetadataOnlyForTest(
         name: EntityName,
         request: Create,
     ): Mono<MutationResult> {
         val edge = request.toEdge(name)
-        return graph.mutate(label.name, label, listOf(edge), EdgeOperation.INSERT)
+        return graph.mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, mode = MutationMode.SYNC, force = true)
     }
 
     fun create(
@@ -51,6 +51,8 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                             listOf(edge),
                             EdgeOperation.INSERT,
                             audit = request.audit,
+                            mode = MutationMode.SYNC,
+                            force = true,
                             failOnExist = true,
                         ).map {
                             val result = it.result.first()
@@ -83,8 +85,15 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                 if (it.isEmpty()) {
                     val edge = request.toEdge(name)
                     graph
-                        .mutate(label.name, label, listOf(edge), EdgeOperation.UPDATE, audit = request.audit)
-                        .map {
+                        .mutate(
+                            label.name,
+                            label,
+                            listOf(edge),
+                            EdgeOperation.UPDATE,
+                            audit = request.audit,
+                            mode = MutationMode.SYNC,
+                            force = true,
+                        ).map {
                             val result = it.result.first()
                             DdlStatus.fromEdgeOperationStatus(
                                 result.status,
@@ -115,8 +124,15 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
         return checkDeletePrecondition(name, request).flatMap {
             if (it.isEmpty()) {
                 graph
-                    .mutate(label.name, label, listOf(edge), EdgeOperation.DELETE, audit = request.audit)
-                    .map {
+                    .mutate(
+                        label.name,
+                        label,
+                        listOf(edge),
+                        EdgeOperation.DELETE,
+                        audit = request.audit,
+                        mode = MutationMode.SYNC,
+                        force = true,
+                    ).map {
                         val result = it.result.first()
                         DdlStatus.fromEdgeOperationStatus(
                             result.status,
@@ -154,7 +170,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                         fromEdge.props + props,
                     ).toTraceEdge()
                 graph
-                    .mutate(label.name, label, listOf(edge), EdgeOperation.INSERT)
+                    .mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, mode = MutationMode.SYNC, force = true)
                     .map {
                         val result = it.result.first()
                         DdlStatus.fromEdgeOperationStatus(
@@ -171,7 +187,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
             ScanFilter(
                 name = label.name,
                 srcSet = setOf(name.phaseServiceName),
-                limit = limit,
+                limit = graph.metadataFetchLimit,
             )
         return label
             .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
