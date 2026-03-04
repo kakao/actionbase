@@ -1,7 +1,5 @@
-import org.gradle.api.attributes.java.TargetJvmVersion
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-
 import actionbase.dependencies.Dependencies
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     id("actionbase.kotlin-conventions")
@@ -13,15 +11,6 @@ plugins {
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(25))
-    }
-}
-
-// The kotlin-conventions plugin sets targetCompatibility=17, which sets org.gradle.jvm.version=17
-// on all configurations. SlateDB requires JVM 24+, so we override the attribute on resolvable
-// configurations to match the actual Java 25 toolchain used at runtime.
-configurations.matching { it.isCanBeResolved }.configureEach {
-    attributes {
-        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 25)
     }
 }
 
