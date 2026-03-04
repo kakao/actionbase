@@ -3,6 +3,7 @@ package com.kakao.actionbase.v2.engine.storage.slatedb
 import com.kakao.actionbase.v2.engine.util.getLogger
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 import io.slatedb.SlateDb
@@ -13,8 +14,16 @@ import reactor.core.scheduler.Schedulers
 // The SlateDB C library uses a single global Tokio runtime that does not support
 // concurrent block_on calls from multiple threads. All native FFI calls are routed
 // through this global single-thread scheduler to prevent concurrent runtime entries.
+//
+// Uses Schedulers.fromExecutorService rather than Schedulers.newSingle to avoid
+// marking the worker thread as Reactor NonBlocking. NonBlocking threads are
+// monitored by BlockHound, which conflicts with the intentional blocking FFI calls.
 object SlateDbScheduler {
-    val INSTANCE: reactor.core.scheduler.Scheduler = Schedulers.newSingle("slatedb-worker")
+    val INSTANCE: reactor.core.scheduler.Scheduler =
+        Schedulers.fromExecutorService(
+            Executors.newSingleThreadExecutor { r -> Thread(r, "slatedb-worker") },
+            "slatedb-worker",
+        )
 }
 
 object SlateDbConnections {
@@ -74,7 +83,9 @@ object SlateDbConnections {
                                 } catch (e: Exception) {
                                     logger.error("Error closing SlateDB connection for cacheKey: {}", key, e)
                                 }
-                            }.subscribeOn(Schedulers.boundedElastic())
+                            // Close on the same single-thread scheduler so it is enqueued
+                            // after all pending FFI operations, preventing use-after-close.
+                            }.subscribeOn(SlateDbScheduler.INSTANCE)
                     }
             }
         return Mono.`when`(closeMonos).doFinally { connections.clear() }
