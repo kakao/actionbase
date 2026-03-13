@@ -27,7 +27,7 @@ class NilTableBinding(
         key: MutationKey,
         before: State,
         after: State,
-    ): Mono<MutationRecordsSummary> = Mono.just(MutationRecordsSummary(IDLE, 0, before, after))
+    ): Mono<MutationRecordsSummary> = Mono.just(MutationRecordsSummary(IDLE, 0, State.initial, State.initial))
 
     override fun handleMutationError(error: Throwable) {}
 
