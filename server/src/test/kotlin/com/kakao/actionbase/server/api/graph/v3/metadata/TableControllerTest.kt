@@ -646,6 +646,16 @@ class TableControllerTest : E2ETestBase() {
         }
 
         @Test
+        fun `lowercase status value returns 400`() {
+            client
+                .get()
+                .uri("$baseUri?status=active")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
         fun `get non-existent table returns 404`() {
             client
                 .get()

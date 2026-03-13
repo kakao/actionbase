@@ -362,6 +362,16 @@ class DatabaseControllerTest : E2ETestBase() {
         }
 
         @Test
+        fun `lowercase status value returns 400`() {
+            client
+                .get()
+                .uri("/graph/v3/databases?status=active")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
         fun `get non-existent database returns 404`() {
             client
                 .get()

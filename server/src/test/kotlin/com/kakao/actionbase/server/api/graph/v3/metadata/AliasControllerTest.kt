@@ -411,6 +411,16 @@ class AliasControllerTest : E2ETestBase() {
         }
 
         @Test
+        fun `lowercase status value returns 400`() {
+            client
+                .get()
+                .uri("$baseUri?status=active")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
         fun `get non-existent alias returns 404`() {
             client
                 .get()
