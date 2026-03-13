@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 import jakarta.validation.Valid
@@ -25,9 +26,10 @@ class TableController(
     @GetMapping("/graph/v3/databases/{database}/tables")
     fun listTables(
         @PathVariable database: String,
+        @RequestParam(required = false, defaultValue = "ACTIVE") status: MetadataStatus,
     ): Mono<ResponseEntity<List<TableDescriptor<*>>>> =
         v3CompatService
-            .getTables(V3NameValidator.validateDatabase(database))
+            .getTables(V3NameValidator.validateDatabase(database), status)
             .map { ResponseEntity.ok(it) }
 
     @GetMapping("/graph/v3/databases/{database}/tables/{table}")

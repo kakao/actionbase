@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 import jakarta.validation.Valid
@@ -25,9 +26,11 @@ class DatabaseController(
     private val v3CompatService: V3CompatService,
 ) {
     @GetMapping("/graph/v3/databases")
-    fun listDatabases(): Mono<ResponseEntity<List<DatabaseDescriptor>>> =
+    fun listDatabases(
+        @RequestParam(required = false, defaultValue = "ACTIVE") status: MetadataStatus,
+    ): Mono<ResponseEntity<List<DatabaseDescriptor>>> =
         v3CompatService
-            .getDatabases()
+            .getDatabases(status)
             .map { ResponseEntity.ok(it) }
 
     @GetMapping("/graph/v3/databases/{database}")

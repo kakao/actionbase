@@ -320,7 +320,96 @@ class AliasControllerTest : E2ETestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class StatusFilterTest {
+        private val aliasName = "v3-alias-status-filter"
+
+        @BeforeAll
+        fun setup() {
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"alias": "$aliasName", "table": "$table", "comment": "status filter test"}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("$baseUri/$aliasName")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"active": false}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+        }
+
+        @Test
+        fun `default status excludes inactive aliases`() {
+            client
+                .get()
+                .uri(baseUri)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.alias == '$aliasName')]")
+                .doesNotExist()
+        }
+
+        @Test
+        fun `status=ACTIVE excludes inactive aliases`() {
+            client
+                .get()
+                .uri("$baseUri?status=ACTIVE")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.alias == '$aliasName')]")
+                .doesNotExist()
+        }
+
+        @Test
+        fun `status=INACTIVE returns only inactive aliases`() {
+            client
+                .get()
+                .uri("$baseUri?status=INACTIVE")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.alias == '$aliasName')]")
+                .exists()
+        }
+
+        @Test
+        fun `status=ALL returns both active and inactive aliases`() {
+            client
+                .get()
+                .uri("$baseUri?status=ALL")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.alias == '$aliasName')]")
+                .exists()
+        }
+    }
+
+    @Nested
     inner class ValidationTest {
+        @Test
+        fun `invalid status value returns 400`() {
+            client
+                .get()
+                .uri("$baseUri?status=BOGUS")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
         @Test
         fun `get non-existent alias returns 404`() {
             client

@@ -538,7 +538,113 @@ class TableControllerTest : E2ETestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class StatusFilterTest {
+        private val tableName = "v3-tbl-status-filter"
+
+        @BeforeAll
+        fun setup() {
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    """
+                    {
+                      "table": "$tableName",
+                      "schema": {
+                        "type": "EDGE",
+                        "source": {"type": "string", "comment": "src"},
+                        "target": {"type": "string", "comment": "tgt"},
+                        "properties": [],
+                        "direction": "OUT",
+                        "indexes": [],
+                        "groups": []
+                      },
+                      "storage": "datastore://test_namespace/v3_tbl_status_filter",
+                      "mode": "SYNC",
+                      "comment": "status filter test"
+                    }
+                    """.trimIndent(),
+                ).exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("$baseUri/$tableName")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"active": false}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+        }
+
+        @Test
+        fun `default status excludes inactive tables`() {
+            client
+                .get()
+                .uri(baseUri)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.table == '$tableName')]")
+                .doesNotExist()
+        }
+
+        @Test
+        fun `status=ACTIVE excludes inactive tables`() {
+            client
+                .get()
+                .uri("$baseUri?status=ACTIVE")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.table == '$tableName')]")
+                .doesNotExist()
+        }
+
+        @Test
+        fun `status=INACTIVE returns only inactive tables`() {
+            client
+                .get()
+                .uri("$baseUri?status=INACTIVE")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.table == '$tableName')]")
+                .exists()
+        }
+
+        @Test
+        fun `status=ALL returns both active and inactive tables`() {
+            client
+                .get()
+                .uri("$baseUri?status=ALL")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.table == '$tableName')]")
+                .exists()
+        }
+    }
+
+    @Nested
     inner class ValidationTest {
+        @Test
+        fun `invalid status value returns 400`() {
+            client
+                .get()
+                .uri("$baseUri?status=BOGUS")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
         @Test
         fun `get non-existent table returns 404`() {
             client

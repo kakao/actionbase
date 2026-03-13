@@ -4,6 +4,7 @@ import com.kakao.actionbase.server.test.E2ETestBase
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -269,7 +270,97 @@ class DatabaseControllerTest : E2ETestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class StatusFilterTest {
+        private val dbName = "v3-db-status-filter"
+
+        @BeforeAll
+        fun setup() {
+            // create and deactivate a database
+            client
+                .post()
+                .uri("/graph/v3/databases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"database": "$dbName", "comment": "status filter test"}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            client
+                .put()
+                .uri("/graph/v3/databases/$dbName")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"active": false}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+        }
+
+        @Test
+        fun `default status excludes inactive databases`() {
+            client
+                .get()
+                .uri("/graph/v3/databases")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.database == '$dbName')]")
+                .doesNotExist()
+        }
+
+        @Test
+        fun `status=ACTIVE excludes inactive databases`() {
+            client
+                .get()
+                .uri("/graph/v3/databases?status=ACTIVE")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.database == '$dbName')]")
+                .doesNotExist()
+        }
+
+        @Test
+        fun `status=INACTIVE returns only inactive databases`() {
+            client
+                .get()
+                .uri("/graph/v3/databases?status=INACTIVE")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.database == '$dbName')]")
+                .exists()
+        }
+
+        @Test
+        fun `status=ALL returns both active and inactive databases`() {
+            client
+                .get()
+                .uri("/graph/v3/databases?status=ALL")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$[?(@.database == '$dbName')]")
+                .exists()
+        }
+    }
+
+    @Nested
     inner class ValidationTest {
+        @Test
+        fun `invalid status value returns 400`() {
+            client
+                .get()
+                .uri("/graph/v3/databases?status=BOGUS")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
         @Test
         fun `get non-existent database returns 404`() {
             client

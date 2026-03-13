@@ -41,12 +41,12 @@ class V3CompatService(
             .getSingle(EntityName.fromOrigin(database))
             .map { it.toV3DatabaseDescriptor(tenant) }
 
-    fun getDatabases(): Mono<List<DatabaseDescriptor>> =
+    fun getDatabases(status: MetadataStatus = MetadataStatus.ACTIVE): Mono<List<DatabaseDescriptor>> =
         graph.serviceDdl
             .getAll(EntityName.origin)
             .map { page ->
                 page.content
-                    .filter { it.active }
+                    .filter { status.matches(it.active) }
                     .map { it.toV3DatabaseDescriptor(tenant) }
             }
 
@@ -91,12 +91,12 @@ class V3CompatService(
             .getSingle(EntityName(database, table))
             .map { it.toV3TableDescriptor(tenant) }
 
-    fun getTables(database: String): Mono<List<TableDescriptor<*>>> =
+    fun getTables(database: String, status: MetadataStatus = MetadataStatus.ACTIVE): Mono<List<TableDescriptor<*>>> =
         graph.labelDdl
             .getAll(EntityName(database))
             .map { page ->
                 page.content
-                    .filter { it.active }
+                    .filter { status.matches(it.active) }
                     .map { it.toV3TableDescriptor(tenant) }
             }
 
@@ -170,12 +170,12 @@ class V3CompatService(
             .getSingle(EntityName(database, alias))
             .map { it.toV3AliasDescriptor(tenant) }
 
-    fun getAliases(database: String): Mono<List<AliasDescriptor>> =
+    fun getAliases(database: String, status: MetadataStatus = MetadataStatus.ACTIVE): Mono<List<AliasDescriptor>> =
         graph.aliasDdl
             .getAll(EntityName(database))
             .map { page ->
                 page.content
-                    .filter { it.active }
+                    .filter { status.matches(it.active) }
                     .map { it.toV3AliasDescriptor(tenant) }
             }
 
