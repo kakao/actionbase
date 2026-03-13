@@ -11,6 +11,7 @@ import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
+import com.kakao.actionbase.v2.engine.label.nil.NilLabel
 
 import reactor.core.publisher.Mono
 
@@ -26,6 +27,9 @@ class V2BackedEngine(
         alias: String,
     ): TableBinding {
         val label = graph.getLabel(EntityName(database, alias))
+        if (label is NilLabel) {
+            return NilTableBinding(V3TableDescriptor.create(label.entity))
+        }
         if (label !is HBaseIndexedLabel) {
             throw UnsupportedOperationException(
                 "This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation",

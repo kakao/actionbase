@@ -8,6 +8,7 @@ import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
+import com.kakao.actionbase.v2.engine.metadata.Metadata
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 
@@ -310,6 +311,35 @@ class MutationServiceSpec :
                           "context": {}
                         }
                         """.trimIndent().toDataFrameEdgePayload().toNormalizedString()
+                    actualObject.toNormalizedString() shouldBe expected
+                }.verifyComplete()
+        }
+
+        "NilLabel mutation should return IDLE" {
+            val database = Metadata.sysServiceName
+            val table = Metadata.sysNilLabelName
+            val insertRequest =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000"}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+
+            mutationService
+                .mutate(database, table, insertRequest.mutations)
+                .map { EdgeMutationResponse.from(it) }
+                .test()
+                .assertNext { actualObject ->
+                    val expected =
+                        """
+                        {
+                          "results": [
+                            {"status": "IDLE", "source": "1000", "target": "9000", "count": 1}
+                          ]
+                        }
+                        """.trimIndent().toEdgeMutationResponse().toNormalizedString()
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
         }
