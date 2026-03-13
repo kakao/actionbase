@@ -6,9 +6,10 @@ enum class MetadataStatus {
     ALL,
     ;
 
-    fun matches(active: Boolean): Boolean = when (this) {
-        ACTIVE -> active
-        INACTIVE -> !active
-        ALL -> true
-    }
+    fun matches(active: Boolean): Boolean =
+        when (this) {
+            ACTIVE -> active
+            INACTIVE -> !active
+            ALL -> true
+        }
 }

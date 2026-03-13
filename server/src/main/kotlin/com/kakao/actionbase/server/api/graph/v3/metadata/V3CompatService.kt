@@ -91,7 +91,10 @@ class V3CompatService(
             .getSingle(EntityName(database, table))
             .map { it.toV3TableDescriptor(tenant) }
 
-    fun getTables(database: String, status: MetadataStatus = MetadataStatus.ACTIVE): Mono<List<TableDescriptor<*>>> =
+    fun getTables(
+        database: String,
+        status: MetadataStatus = MetadataStatus.ACTIVE,
+    ): Mono<List<TableDescriptor<*>>> =
         graph.labelDdl
             .getAll(EntityName(database))
             .map { page ->
@@ -170,7 +173,10 @@ class V3CompatService(
             .getSingle(EntityName(database, alias))
             .map { it.toV3AliasDescriptor(tenant) }
 
-    fun getAliases(database: String, status: MetadataStatus = MetadataStatus.ACTIVE): Mono<List<AliasDescriptor>> =
+    fun getAliases(
+        database: String,
+        status: MetadataStatus = MetadataStatus.ACTIVE,
+    ): Mono<List<AliasDescriptor>> =
         graph.aliasDdl
             .getAll(EntityName(database))
             .map { page ->
