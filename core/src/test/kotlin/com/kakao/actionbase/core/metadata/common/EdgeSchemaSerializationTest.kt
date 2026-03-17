@@ -141,7 +141,8 @@ class EdgeSchemaSerializationTest {
                   "batch": 0
                 }
               ],
-              "groups": []
+              "groups": [],
+              "caches": []
             }
             """.trimIndent()
         assertEquals(expected, actual)

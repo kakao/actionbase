@@ -98,7 +98,7 @@ class V2BackedTableBinding(
         val schema = descriptor.schema
         return when (schema) {
             is ModelSchema.Edge ->
-                EdgeMutationBuilder.buildForUniqueEdge(before, after, schema.direction, schema.indexes, schema.groups)
+                EdgeMutationBuilder.buildForUniqueEdge(before, after, schema.direction, schema.indexes, schema.groups) // TODO Phase 2: pass schema.caches
             is ModelSchema.MultiEdge ->
                 EdgeMutationBuilder.buildForMultiEdge(before, after, schema.direction, schema.indexes, schema.groups)
         }
@@ -142,6 +142,7 @@ class V2BackedTableBinding(
                 val key = mapper.index.encoder.encodeKey(it)
                 Delete(key)
             }
+        // TODO Phase 2: build cache mutations from mutationRecords.createCacheRecords / deleteCacheRecordKeys
         mutations +=
             mutationRecords.groupRecords.groupBy { it.key to it.ttl }.map { (groupKey, records) ->
                 val (key, ttl) = groupKey

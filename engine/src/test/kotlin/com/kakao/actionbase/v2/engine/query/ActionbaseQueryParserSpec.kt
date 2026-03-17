@@ -71,6 +71,21 @@ class ActionbaseQueryParserSpec :
                           "type": "VALUE",
                           "value": [1, 2, 3]
                       }
+                    },
+                    {
+                      "type": "CACHE",
+                      "name": "f",
+                      "service": "{service}",
+                      "label": "{label}",
+                      "src": {
+                        "type": "REF",
+                        "ref": "a",
+                        "field": "tgt"
+                      },
+                      "dir": "OUT",
+                      "cacheName": "recent_wishlist",
+                      "limit": 10,
+                      "include": true
                     }
                   ]
                 }
@@ -78,7 +93,7 @@ class ActionbaseQueryParserSpec :
 
             val actionBaseQuery = ActionbaseQuery.from(json)
 
-            actionBaseQuery.query.size shouldBe 4
+            actionBaseQuery.query.size shouldBe 5
             actionBaseQuery.query[0] shouldBe
                 ActionbaseQuery.Item.Scan(
                     name = "a",
@@ -116,6 +131,17 @@ class ActionbaseQueryParserSpec :
                     label = "{label}",
                     src = ActionbaseQuery.Vertex.Value(listOf(1, 2, 3)),
                     include = false,
+                )
+            actionBaseQuery.query[4] shouldBe
+                ActionbaseQuery.Item.Cache(
+                    name = "f",
+                    service = "{service}",
+                    label = "{label}",
+                    src = ActionbaseQuery.Vertex.Ref("a", "tgt"),
+                    dir = Direction.OUT,
+                    cacheName = "recent_wishlist",
+                    limit = 10,
+                    include = true,
                 )
 
             // serialize and deserialize
