@@ -38,7 +38,8 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""{"database": "$db", "comment": "test db"}""")
                 .exchange()
-                .expectStatus().isOk
+                .expectStatus()
+                .isOk
         }
 
         // hop1 table: EDGE with index
@@ -68,9 +69,9 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                   "comment": "hop1"
                 }
                 """.trimIndent(),
-            )
-            .exchange()
-            .expectStatus().isOk
+            ).exchange()
+            .expectStatus()
+            .isOk
 
         // hop2 table: EDGE with index + cache
         client
@@ -106,9 +107,9 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                   "comment": "hop2 with cache"
                 }
                 """.trimIndent(),
-            )
-            .exchange()
-            .expectStatus().isOk
+            ).exchange()
+            .expectStatus()
+            .isOk
 
         // ── Step 2: Data insertion ────────────────────────────────────
 
@@ -126,9 +127,9 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                   ]
                 }
                 """.trimIndent(),
-            )
-            .exchange()
-            .expectStatus().isOk
+            ).exchange()
+            .expectStatus()
+            .isOk
 
         // hop2 edges: 2000 wishlists [3000, 3001], 2001 wishlists [3002]
         client
@@ -145,16 +146,15 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                   ]
                 }
                 """.trimIndent(),
-            )
-            .exchange()
-            .expectStatus().isOk
+            ).exchange()
+            .expectStatus()
+            .isOk
     }
 
     // ── Step 3: Multi-hop query via ActionbaseQuery ─────────────────────
 
     @Nested
     inner class MultihopQuery {
-
         @Test
         fun `multihop scan+cache query via ActionbaseQuery`() {
             // hop1: SCAN follows index → hop2: CACHE wishlist using hop1 targets
@@ -192,15 +192,20 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                       ]
                     }
                     """.trimIndent(),
-                )
-                .exchange()
-                .expectStatus().isOk
+                ).exchange()
+                .expectStatus()
+                .isOk
                 .expectBody()
-                .jsonPath("$.items.length()").isEqualTo(2)
-                .jsonPath("$.items[0].name").isEqualTo("hop1")
-                .jsonPath("$.items[0].rows").isEqualTo(2)
-                .jsonPath("$.items[1].name").isEqualTo("hop2")
-                .jsonPath("$.items[1].rows").isEqualTo(0) // cache stub returns empty
+                .jsonPath("$.items.length()")
+                .isEqualTo(2)
+                .jsonPath("$.items[0].name")
+                .isEqualTo("hop1")
+                .jsonPath("$.items[0].rows")
+                .isEqualTo(2)
+                .jsonPath("$.items[1].name")
+                .isEqualTo("hop2")
+                .jsonPath("$.items[1].rows")
+                .isEqualTo(0) // cache stub returns empty
         }
 
         @Test
@@ -227,13 +232,16 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                       ]
                     }
                     """.trimIndent(),
-                )
-                .exchange()
-                .expectStatus().isOk
+                ).exchange()
+                .expectStatus()
+                .isOk
                 .expectBody()
-                .jsonPath("$.items.length()").isEqualTo(1)
-                .jsonPath("$.items[0].name").isEqualTo("follows_scan")
-                .jsonPath("$.items[0].data.length()").isEqualTo(2)
+                .jsonPath("$.items.length()")
+                .isEqualTo(1)
+                .jsonPath("$.items[0].name")
+                .isEqualTo("follows_scan")
+                .jsonPath("$.items[0].data.length()")
+                .isEqualTo(2)
         }
     }
 }
