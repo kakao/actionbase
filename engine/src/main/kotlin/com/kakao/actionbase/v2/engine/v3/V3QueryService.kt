@@ -18,6 +18,7 @@ import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
+import com.kakao.actionbase.v2.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
@@ -363,6 +364,8 @@ class V3QueryService(
                 DataFrameEdgeAggPayload(items, items.size, rootContext)
             }
     }
+
+    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = graph.query(request)
 
     private fun encodeAggRanges(
         values: List<Any>,

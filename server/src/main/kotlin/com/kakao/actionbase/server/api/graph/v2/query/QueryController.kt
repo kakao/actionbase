@@ -5,7 +5,6 @@ import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.sql.QueryResult
 import com.kakao.actionbase.v2.engine.sql.toJsonFormat
-import com.kakao.actionbase.v2.engine.sql.toNamedJsonFormat
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -28,17 +27,6 @@ class QueryController(
                 val items = it.map { entry -> NamedQueryResultV2Item(entry.key, entry.value.toJsonFormat()) }
                 NamedQueryResultV2(items)
             }.mapToResponseEntity()
-
-    @PostMapping("/graph/v3/query")
-    fun queryV3(
-        @RequestBody actionBaseQuery: ActionbaseQuery,
-    ): Mono<out ResponseEntity<out NamedQueryResultV3>> =
-        graph
-            .query(actionBaseQuery)
-            .map {
-                val items = it.map { entry -> entry.value.toNamedJsonFormat(entry.key) }
-                NamedQueryResultV3(items)
-            }.mapToResponseEntity()
 }
 
 data class NamedQueryResultV2(
@@ -48,8 +36,4 @@ data class NamedQueryResultV2(
 data class NamedQueryResultV2Item(
     val name: String,
     val data: QueryResult.OutputFormat,
-)
-
-data class NamedQueryResultV3(
-    val items: List<QueryResult.NamedJsonFormat>,
 )
