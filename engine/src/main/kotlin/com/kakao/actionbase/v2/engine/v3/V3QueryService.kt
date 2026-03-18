@@ -258,9 +258,7 @@ class V3QueryService(
         start: Any,
         direction: Direction,
         limit: Int = ScanFilter.defaultLimit,
-    ): Mono<DataFrameEdgePayload> {
-        return emptyDataFrameEdgePayload
-    }
+    ): Mono<DataFrameEdgePayload> = emptyDataFrameEdgePayload
 
     fun agg(
         database: String,
