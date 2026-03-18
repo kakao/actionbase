@@ -250,6 +250,18 @@ class V3QueryService(
             }.switchIfEmpty(emptyDataFrameEdgePayload)
     }
 
+    @Suppress("UnusedParameter")
+    fun cache(
+        database: String,
+        table: String,
+        cache: String,
+        start: Any,
+        direction: Direction,
+        limit: Int = ScanFilter.defaultLimit,
+    ): Mono<DataFrameEdgePayload> {
+        return emptyDataFrameEdgePayload
+    }
+
     fun agg(
         database: String,
         table: String,
