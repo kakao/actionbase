@@ -97,13 +97,16 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
         }
 
         @Test
-        fun `cache query with unknown table returns error`() {
+        fun `cache query with unknown table returns empty stub`() {
             client
                 .get()
                 .uri("/graph/v3/databases/$db/tables/nonexistent/edges/cache/recent_wishlist?start=1000&direction=OUT")
                 .exchange()
                 .expectStatus()
-                .isNotFound
+                .isOk
+                .expectBody()
+                .jsonPath("$.count")
+                .isEqualTo(0)
         }
     }
 }
