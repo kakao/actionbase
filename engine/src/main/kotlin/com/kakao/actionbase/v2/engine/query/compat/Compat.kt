@@ -8,7 +8,7 @@ fun ActionbaseQuery.Item.Scan.toScanFilter(srcSet: Set<Any>): ScanFilter =
     ScanFilter(
         name = EntityName(service, label),
         srcSet = srcSet,
-        dir = dir,
+        dir = direction,
         limit = limit,
         offset = offset,
         indexName = index,

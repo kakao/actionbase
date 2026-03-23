@@ -84,8 +84,8 @@ class ActionbaseQueryParserSpec :
                     name = "a",
                     service = "{service}",
                     label = "{label}",
-                    src = ActionbaseQuery.Vertex.Value(listOf(1)),
-                    dir = Direction.OUT,
+                    source = ActionbaseQuery.Vertex.Value(listOf(1)),
+                    direction = Direction.OUT,
                     index = "created_at_desc",
                     limit = 100,
                     predicates = listOf(WherePredicate.Eq("name", "Alice")),
@@ -96,8 +96,8 @@ class ActionbaseQueryParserSpec :
                     name = "b",
                     service = "{service}",
                     label = "{label}",
-                    src = ActionbaseQuery.Vertex.Ref("a", "tgt"),
-                    tgt = ActionbaseQuery.Vertex.Value(listOf(1)),
+                    source = ActionbaseQuery.Vertex.Ref("a", "tgt"),
+                    target = ActionbaseQuery.Vertex.Value(listOf(1)),
                     include = false,
                 )
             actionBaseQuery.query[2] shouldBe
@@ -105,8 +105,8 @@ class ActionbaseQueryParserSpec :
                     name = "d",
                     service = "{service}",
                     label = "{label}",
-                    src = ActionbaseQuery.Vertex.Value(listOf(1)),
-                    dir = Direction.OUT,
+                    source = ActionbaseQuery.Vertex.Value(listOf(1)),
+                    direction = Direction.OUT,
                     include = true,
                 )
             actionBaseQuery.query[3] shouldBe
@@ -114,7 +114,7 @@ class ActionbaseQueryParserSpec :
                     name = "e",
                     service = "{service}",
                     label = "{label}",
-                    src = ActionbaseQuery.Vertex.Value(listOf(1, 2, 3)),
+                    source = ActionbaseQuery.Vertex.Value(listOf(1, 2, 3)),
                     include = false,
                 )
 
