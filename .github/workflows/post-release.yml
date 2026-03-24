@@ -1,0 +1,58 @@
+name: Post Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  release:
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract version
+        run: |
+          version=$(grep '^version=' gradle.properties | cut -d= -f2)
+          major=${version%%.*}
+          rest=${version#*.}
+          minor=${rest%%.*}
+          patch=${version##*.}
+
+          echo "version=$version" >> $GITHUB_ENV
+          echo "release_branch=${major}.${minor}.x" >> $GITHUB_ENV
+          echo "next_minor=${major}.$((minor + 1)).0-SNAPSHOT" >> $GITHUB_ENV
+          echo "next_patch=${major}.${minor}.$((patch + 1))-SNAPSHOT" >> $GITHUB_ENV
+
+      - name: Create tag
+        run: |
+          git tag "v${{ env.version }}"
+          git push origin "v${{ env.version }}"
+
+      - name: Create release branch
+        run: |
+          git checkout -b "${{ env.release_branch }}" "v${{ env.version }}"
+          sed -i "s/^version=.*/version=${{ env.next_patch }}/" gradle.properties
+          git add gradle.properties
+          git commit -m "Bump version to ${{ env.next_patch }}"
+          git push origin "${{ env.release_branch }}"
+
+      - name: Bump main to next SNAPSHOT
+        run: |
+          git checkout main
+          sed -i "s/^version=.*/version=${{ env.next_minor }}/" gradle.properties
+          git add gradle.properties
+          git commit -m "Bump version to ${{ env.next_minor }}"
+          git push origin main
