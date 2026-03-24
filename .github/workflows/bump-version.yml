@@ -48,6 +48,6 @@ jobs:
 
             After merging, the following will happen automatically:
             - Tag `v${{ inputs.version }}` will be created
-            - Release branch will be created
-            - Main will be bumped to the next SNAPSHOT version
+            - Release branch will be created with the next patch SNAPSHOT
+            - A follow-up PR will be opened to bump main to the next minor SNAPSHOT
           labels: release
