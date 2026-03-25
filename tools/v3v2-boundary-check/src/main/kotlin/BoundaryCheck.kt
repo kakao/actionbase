@@ -152,7 +152,10 @@ fun report(edges: List<Edge>, verbose: Boolean) {
     println("=== V2 Direct-Call Report ===\n")
     println("  Leaks: ${leaks.size} edges, ${grouped.size} classes\n")
 
-    if (leaks.isEmpty()) { println("  No leaks found."); return }
+    if (leaks.isEmpty()) {
+        println("  No leaks found. Consider reverting #221.")
+        return
+    }
 
     grouped.entries.forEachIndexed { i, (src, targets) ->
         val n = targets.values.sumOf { it.size }
