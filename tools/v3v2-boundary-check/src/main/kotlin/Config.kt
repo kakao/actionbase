@@ -63,5 +63,6 @@ object Config {
     /** Class exclude: adapter classes (prefix match on simple class name). */
     val EXCLUDED_CLASS_PREFIXES = listOf(
         "V2Backed",
+        "V2Compat",
     )
 }
