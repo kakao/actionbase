@@ -156,8 +156,7 @@ fun report(edges: List<Edge>, verbose: Boolean) {
 
     grouped.entries.forEachIndexed { i, (src, targets) ->
         val n = targets.values.sumOf { it.size }
-        val simple = src.substringAfterLast('.')
-        println("  [${i + 1}] $simple ($n edges)")
+        println("  [${i + 1}] $src ($n edges)")
         if (verbose) {
             targets.forEach { (tgt, methods) ->
                 println("      → $tgt")
