@@ -18,5 +18,6 @@ application {
 
 tasks.named<JavaExec>("run") {
     dependsOn(":server:classes", ":engine:classes", ":core:classes", ":core-java:classes")
-    args = listOf(rootProject.projectDir.absolutePath)
+    args = listOf(rootProject.projectDir.absolutePath) +
+        (project.findProperty("verbose")?.let { listOf("--verbose") } ?: emptyList())
 }

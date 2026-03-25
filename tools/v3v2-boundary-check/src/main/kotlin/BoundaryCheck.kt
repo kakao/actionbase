@@ -4,14 +4,13 @@ import java.nio.file.*
 import kotlin.io.path.*
 
 fun main(args: Array<String>) {
-    val root = args.firstOrNull() ?: "../.."
+    val verbose = "--verbose" in args
+    val root = args.firstOrNull { !it.startsWith("--") } ?: "../.."
     val graph = CallGraph()
     Config.CLASS_DIRS.map { Path(root, it) }.filter { it.exists() }.forEach(graph::load)
-    println("Classes: ${graph.classes.size}")
     graph.buildHierarchy()
     val edges = graph.extractCallsToTarget()
-    println("Calls to V2 targets: ${edges.size}\n")
-    report(edges)
+    report(edges, verbose)
 }
 
 // ── Call graph extraction ──
@@ -140,7 +139,7 @@ fun isExcluded(callerFqcn: String): Boolean {
     return false
 }
 
-fun report(edges: List<Edge>) {
+fun report(edges: List<Edge>, verbose: Boolean) {
     val leaks = edges.filterNot { isExcluded(it.callerCls) }
 
     val grouped = leaks.groupBy { it.callerCls }
@@ -151,20 +150,20 @@ fun report(edges: List<Edge>) {
         }
 
     println("=== V2 Direct-Call Report ===\n")
-    println("  Targets:  ${Config.TARGET_CLASSES.size} V2 classes")
-    println("  Total callers: ${edges.map { it.callerCls }.toSet().size}")
-    println("  Excluded: ${edges.count { isExcluded(it.callerCls) }} edges")
-    println("  Leaks:    ${leaks.size} edges, ${grouped.size} classes\n")
+    println("  Leaks: ${leaks.size} edges, ${grouped.size} classes\n")
 
     if (leaks.isEmpty()) { println("  No leaks found."); return }
 
     grouped.entries.forEachIndexed { i, (src, targets) ->
         val n = targets.values.sumOf { it.size }
-        println("  [${i + 1}] $src ($n edges)")
-        targets.forEach { (tgt, methods) ->
-            println("      → $tgt")
-            methods.forEach { println("          $it") }
+        val simple = src.substringAfterLast('.')
+        println("  [${i + 1}] $simple ($n edges)")
+        if (verbose) {
+            targets.forEach { (tgt, methods) ->
+                println("      → $tgt")
+                methods.forEach { println("          $it") }
+            }
+            println()
         }
-        println()
     }
 }
