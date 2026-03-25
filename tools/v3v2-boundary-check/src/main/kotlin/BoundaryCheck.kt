@@ -10,7 +10,7 @@ fun main(args: Array<String>) {
     println("Classes: ${graph.classes.size}")
     graph.buildHierarchy()
     val edges = graph.extractCallsToTarget()
-    println("Calls to Graph: ${edges.size}\n")
+    println("Calls to V2 targets: ${edges.size}\n")
     report(edges)
 }
 
@@ -57,7 +57,7 @@ class CallGraph {
     }
 
     fun extractCallsToTarget(): List<Edge> {
-        val targetInternal = Config.TARGET_CLASS.replace('.', '/')
+        val targets = Config.TARGET_CLASSES.map { it.replace('.', '/') }.toSet()
         val edges = mutableListOf<Edge>()
 
         for (cn in classes.values)
@@ -67,7 +67,7 @@ class CallGraph {
                 for (insn in mn.instructions) {
                     if (insn !is MethodInsnNode || !insn.owner.startsWith(Config.SCOPE)) continue
                     for ((cls, mtd) in resolve(insn)) {
-                        if (cls != targetInternal) continue
+                        if (cls !in targets) continue
                         if (mtd.startsWith("<init>") || mtd.startsWith("access$")) continue
                         val (cCls, cMtd) = collapse(cls, mtd)
                         if (callerCls != cCls)
@@ -137,20 +137,25 @@ fun report(edges: List<Edge>) {
     val grouped = leaks.groupBy { it.callerCls }
         .toSortedMap()
         .mapValues { (_, v) ->
-            v.map { "${it.callerMtd} → ${it.calleeMtd}" }.toSortedSet()
+            v.groupBy { it.calleeCls }.toSortedMap()
+                .mapValues { (_, v2) -> v2.map { "${it.callerMtd} → ${it.calleeMtd}" }.toSortedSet() }
         }
 
-    println("=== Graph Direct-Call Report ===\n")
-    println("  Target:   ${Config.TARGET_CLASS}")
+    println("=== V2 Direct-Call Report ===\n")
+    println("  Targets:  ${Config.TARGET_CLASSES.size} V2 classes")
     println("  Total callers: ${edges.map { it.callerCls }.toSet().size}")
     println("  Excluded: ${edges.count { isExcluded(it.callerCls) }} edges")
     println("  Leaks:    ${leaks.size} edges, ${grouped.size} classes\n")
 
     if (leaks.isEmpty()) { println("  No leaks found."); return }
 
-    grouped.entries.forEachIndexed { i, (src, methods) ->
-        println("  [${i + 1}] $src (${methods.size} edges)")
-        methods.forEach { println("          $it") }
+    grouped.entries.forEachIndexed { i, (src, targets) ->
+        val n = targets.values.sumOf { it.size }
+        println("  [${i + 1}] $src ($n edges)")
+        targets.forEach { (tgt, methods) ->
+            println("      → $tgt")
+            methods.forEach { println("          $it") }
+        }
         println()
     }
 }

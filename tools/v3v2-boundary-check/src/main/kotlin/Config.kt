@@ -17,8 +17,37 @@ object Config {
         "core-java/build/classes/java/main",
     )
 
-    /** Target V2 class — direct calls to this are leaks unless excluded. */
-    const val TARGET_CLASS = "com.kakao.actionbase.v2.engine.Graph"
+    /** Target V2 classes — direct references to these are leaks unless excluded. */
+    val TARGET_CLASSES = listOf(
+        // God object
+        "com.kakao.actionbase.v2.engine.Graph",
+
+        // V2 entities
+        "com.kakao.actionbase.v2.engine.entity.LabelEntity",
+        "com.kakao.actionbase.v2.engine.entity.ServiceEntity",
+        "com.kakao.actionbase.v2.engine.entity.StorageEntity",
+        "com.kakao.actionbase.v2.engine.entity.AliasEntity",
+        "com.kakao.actionbase.v2.engine.entity.EntityName",
+        "com.kakao.actionbase.v2.engine.entity.EdgeEntity",
+        "com.kakao.actionbase.v2.engine.entity.QueryEntity",
+
+        // V2 DDL requests
+        "com.kakao.actionbase.v2.engine.service.ddl.ServiceCreateRequest",
+        "com.kakao.actionbase.v2.engine.service.ddl.ServiceUpdateRequest",
+        "com.kakao.actionbase.v2.engine.service.ddl.ServiceDeleteRequest",
+        "com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest",
+        "com.kakao.actionbase.v2.engine.service.ddl.LabelUpdateRequest",
+        "com.kakao.actionbase.v2.engine.service.ddl.LabelDeleteRequest",
+        "com.kakao.actionbase.v2.engine.service.ddl.AliasCreateRequest",
+        "com.kakao.actionbase.v2.engine.service.ddl.AliasUpdateRequest",
+        "com.kakao.actionbase.v2.engine.service.ddl.AliasDeleteRequest",
+
+        // V2 metadata
+        "com.kakao.actionbase.v2.engine.metadata.StorageType",
+
+        // V2 query
+        "com.kakao.actionbase.v2.engine.sql.ScanFilter",
+    )
 
     /** Package exclude: V2 internals (prefix match, includes sub-packages). */
     val EXCLUDED_PACKAGES = listOf(
