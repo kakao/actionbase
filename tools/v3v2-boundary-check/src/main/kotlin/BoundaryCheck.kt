@@ -58,6 +58,7 @@ class CallGraph {
 
     fun extractCallsToTarget(): List<Edge> {
         val targets = Config.TARGET_CLASSES.map { it.replace('.', '/') }.toSet()
+        val targetSet = Config.TARGET_CLASSES.toSet()
         val edges = mutableListOf<Edge>()
 
         for (cn in classes.values)
@@ -65,10 +66,18 @@ class CallGraph {
                 if (mn.name == "<clinit>" || mn.instructions == null) continue
                 val (callerCls, callerMtd) = collapse(cn.name, mn.name)
                 for (insn in mn.instructions) {
+                    // Field access (GETSTATIC, GETFIELD, PUTSTATIC, PUTFIELD)
+                    if (insn is FieldInsnNode && insn.owner.replace('/', '.') in targetSet) {
+                        val (cCls, _) = collapse(insn.owner, insn.name)
+                        if (callerCls != cCls)
+                            edges += Edge(callerCls, callerMtd, cCls, insn.name)
+                        continue
+                    }
+                    // Method calls
                     if (insn !is MethodInsnNode || !insn.owner.startsWith(Config.SCOPE)) continue
                     for ((cls, mtd) in resolve(insn)) {
                         if (cls !in targets) continue
-                        if (mtd.startsWith("<init>") || mtd.startsWith("access$")) continue
+                        if (mtd.startsWith("access$")) continue
                         val (cCls, cMtd) = collapse(cls, mtd)
                         if (callerCls != cCls)
                             edges += Edge(callerCls, callerMtd, cCls, cMtd)

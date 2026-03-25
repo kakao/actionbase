@@ -47,11 +47,25 @@ object Config {
 
         // V2 query
         "com.kakao.actionbase.v2.engine.sql.ScanFilter",
+
+        // V2 core types
+        "com.kakao.actionbase.v2.core.metadata.Direction",
+        "com.kakao.actionbase.v2.core.metadata.DirectionType",
+        "com.kakao.actionbase.v2.core.metadata.MutationMode",
+        "com.kakao.actionbase.v2.core.metadata.LabelType",
+        "com.kakao.actionbase.v2.core.types.DataType",
+        "com.kakao.actionbase.v2.core.types.Field",
+        "com.kakao.actionbase.v2.core.types.EdgeSchema",
+        "com.kakao.actionbase.v2.core.types.VertexField",
+        "com.kakao.actionbase.v2.core.types.VertexType",
+        "com.kakao.actionbase.v2.core.code.Index",
+        "com.kakao.actionbase.v2.core.code.hbase.Order",
     )
 
     /** Package exclude: V2 internals (prefix match, includes sub-packages). */
     val EXCLUDED_PACKAGES = listOf(
         "com.kakao.actionbase.v2.engine",
+        "com.kakao.actionbase.v2.core",
         "com.kakao.actionbase.server.api.graph.v2",
     )
 
