@@ -2,7 +2,6 @@ import org.objectweb.asm.*
 import org.objectweb.asm.tree.*
 import java.nio.file.*
 import kotlin.io.path.*
-import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     val root = args.firstOrNull() ?: "../.."
@@ -10,12 +9,14 @@ fun main(args: Array<String>) {
     Config.CLASS_DIRS.map { Path(root, it) }.filter { it.exists() }.forEach(graph::load)
     println("Classes: ${graph.classes.size}")
     graph.buildHierarchy()
-    val edges = graph.extractEdges()
-    println("Edges: ${edges.size}\n")
+    val edges = graph.extractCallsToTarget()
+    println("Calls to Graph: ${edges.size}\n")
     report(edges)
 }
 
 // ── Call graph extraction ──
+
+data class Edge(val callerCls: String, val callerMtd: String, val calleeCls: String, val calleeMtd: String)
 
 class CallGraph {
     val classes = linkedMapOf<String, ClassNode>()
@@ -55,27 +56,31 @@ class CallGraph {
         }
     }
 
-    fun extractEdges(): Set<String> {
-        val edges = linkedSetOf<String>()
+    fun extractCallsToTarget(): List<Edge> {
+        val targetInternal = Config.TARGET_CLASS.replace('.', '/')
+        val edges = mutableListOf<Edge>()
+
         for (cn in classes.values)
             for (mn in cn.methods) {
                 if (mn.name == "<clinit>" || mn.instructions == null) continue
-                val caller = collapse(cn.name, mn.name)
+                val (callerCls, callerMtd) = collapse(cn.name, mn.name)
                 for (insn in mn.instructions) {
                     if (insn !is MethodInsnNode || !insn.owner.startsWith(Config.SCOPE)) continue
                     for ((cls, mtd) in resolve(insn)) {
-                        val callee = collapse(cls, mtd)
-                        if (caller != callee && !mtd.startsWith("<init>") && !mtd.startsWith("access$"))
-                            edges += "$caller\t$callee"
+                        if (cls != targetInternal) continue
+                        if (mtd.startsWith("<init>") || mtd.startsWith("access$")) continue
+                        val (cCls, cMtd) = collapse(cls, mtd)
+                        if (callerCls != cCls)
+                            edges += Edge(callerCls, callerMtd, cCls, cMtd)
                     }
                 }
             }
         return edges
     }
 
-    private fun collapse(cls: String, method: String): String {
-        val (outer, enclosing) = innerToOuter[cls] ?: return "${cls.dotted}.$method"
-        return "${outer.dotted}.${enclosing ?: method}"
+    private fun collapse(cls: String, method: String): Pair<String, String> {
+        val (outer, enclosing) = innerToOuter[cls] ?: return cls.dotted to method
+        return outer.dotted to (enclosing ?: method)
     }
 
     private fun resolve(call: MethodInsnNode): List<Pair<String, String>> {
@@ -113,73 +118,39 @@ class CallGraph {
     private val String.dotted get() = replace('/', '.')
 }
 
-// ── Classification ──
-
-fun classify(fqcn: String): String? {
-    val pkg = fqcn.substringBeforeLast('.')
-    return Config.VERSIONS.entries.firstOrNull { (_, pkgs) -> pkg in pkgs }?.key
-}
-
 // ── Report ──
 
-fun report(edges: Set<String>) {
-    val versions = hashMapOf<String, String?>()
-    val unclassified = sortedSetOf<String>()
+fun isExcluded(callerFqcn: String): Boolean {
+    // class exclude always wins (adapter classes)
+    val simpleName = callerFqcn.substringAfterLast('.')
+    if (Config.EXCLUDED_CLASS_PREFIXES.any { simpleName.startsWith(it) }) return true
+    // include overrides package exclude
+    val pkg = callerFqcn.substringBeforeLast('.')
+    if (Config.INCLUDED_PACKAGES.any { pkg == it || pkg.startsWith("$it.") }) return false
+    if (Config.EXCLUDED_PACKAGES.any { pkg == it || pkg.startsWith("$it.") }) return true
+    return false
+}
 
-    for (e in edges) for (id in e.split("\t")) {
-        val cls = id.substringBeforeLast('.')
-        versions.getOrPut(cls) {
-            classify(cls).also { if (it == null) unclassified += cls.substringBeforeLast('.') }
-        }
-    }
+fun report(edges: List<Edge>) {
+    val leaks = edges.filterNot { isExcluded(it.callerCls) }
 
-    if (unclassified.isNotEmpty()) {
-        System.err.println("ERROR: Unclassified packages. Add to Config.kt.\n")
-        unclassified.forEach { System.err.println("    $it") }
-        exitProcess(1)
-    }
-
-    data class Leak(val srcCls: String, val tgtCls: String, val srcMtd: String, val tgtMtd: String)
-
-    val leaks = mutableListOf<Leak>()
-    var bridges = 0L
-
-    for (e in edges) {
-        val (from, to) = e.split("\t")
-        val sv = versions[from.substringBeforeLast('.')] ?: continue
-        val tv = versions[to.substringBeforeLast('.')] ?: continue
-        if (sv == tv) continue
-        for ((f, t, _) in Config.LEAKS)
-            if (f == sv && t == tv) leaks += Leak(from.className, to.className, from.methodName, to.methodName)
-        for ((f, t) in Config.BRIDGES)
-            if (f == sv && t == tv) { bridges++; break }
-    }
-
-    // Group: source class → target class → methods
-    val grouped = leaks.groupBy { it.srcCls }
+    val grouped = leaks.groupBy { it.callerCls }
         .toSortedMap()
         .mapValues { (_, v) ->
-            v.groupBy { it.tgtCls }.toSortedMap()
-                .mapValues { (_, v2) -> v2.map { "${it.srcMtd} → ${it.tgtMtd}" }.toSortedSet() }
+            v.map { "${it.callerMtd} → ${it.calleeMtd}" }.toSortedSet()
         }
 
-    println("=== LEAK REPORT ===\n")
-    Config.LEAKS.forEach { (f, t, desc) -> println("  Rule: $f → $t ($desc)") }
-    println("\n  Leaks:   ${leaks.size} edges, ${grouped.size} source classes")
-    println("  Bridges: $bridges edges\n")
+    println("=== Graph Direct-Call Report ===\n")
+    println("  Target:   ${Config.TARGET_CLASS}")
+    println("  Total callers: ${edges.map { it.callerCls }.toSet().size}")
+    println("  Excluded: ${edges.count { isExcluded(it.callerCls) }} edges")
+    println("  Leaks:    ${leaks.size} edges, ${grouped.size} classes\n")
 
     if (leaks.isEmpty()) { println("  No leaks found."); return }
 
-    grouped.entries.forEachIndexed { i, (src, targets) ->
-        val n = targets.values.sumOf { it.size }
-        println("  [${i + 1}] $src ($n edges)")
-        targets.forEach { (tgt, methods) ->
-            println("      → $tgt")
-            methods.forEach { println("          $it") }
-        }
+    grouped.entries.forEachIndexed { i, (src, methods) ->
+        println("  [${i + 1}] $src (${methods.size} edges)")
+        methods.forEach { println("          $it") }
         println()
     }
 }
-
-private val String.className get() = split('.').let { it[it.size - 2] }
-private val String.methodName get() = substringAfterLast('.')
