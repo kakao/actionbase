@@ -1,10 +1,9 @@
-package com.kakao.actionbase.server.api.graph.v2.query
+package com.kakao.actionbase.server.api.graph.v3
 
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.sql.QueryResult
-import com.kakao.actionbase.v2.engine.sql.toJsonFormat
 import com.kakao.actionbase.v2.engine.sql.toNamedJsonFormat
 
 import org.springframework.http.ResponseEntity
@@ -18,38 +17,18 @@ import reactor.core.publisher.Mono
 class QueryController(
     val graph: Graph,
 ) {
-    @PostMapping("/graph/v2/query")
-    fun queryV2(
-        @RequestBody actionBaseQuery: ActionbaseQuery,
-    ): Mono<out ResponseEntity<out NamedQueryResultV2>> =
-        graph
-            .query(actionBaseQuery)
-            .map {
-                val items = it.map { entry -> NamedQueryResultV2Item(entry.key, entry.value.toJsonFormat()) }
-                NamedQueryResultV2(items)
-            }.mapToResponseEntity()
-
     @PostMapping("/graph/v3/query")
-    fun queryV3(
+    fun query(
         @RequestBody actionBaseQuery: ActionbaseQuery,
-    ): Mono<out ResponseEntity<out NamedQueryResultV3>> =
+    ): Mono<out ResponseEntity<out NamedQueryResult>> =
         graph
             .query(actionBaseQuery)
             .map {
                 val items = it.map { entry -> entry.value.toNamedJsonFormat(entry.key) }
-                NamedQueryResultV3(items)
+                NamedQueryResult(items)
             }.mapToResponseEntity()
 }
 
-data class NamedQueryResultV2(
-    val result: List<NamedQueryResultV2Item>,
-)
-
-data class NamedQueryResultV2Item(
-    val name: String,
-    val data: QueryResult.OutputFormat,
-)
-
-data class NamedQueryResultV3(
+data class NamedQueryResult(
     val items: List<QueryResult.NamedJsonFormat>,
 )
