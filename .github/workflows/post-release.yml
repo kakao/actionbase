@@ -50,6 +50,11 @@ jobs:
           git commit -m "Bump version to ${{ env.next_patch }}"
           git push origin "${{ env.release_branch }}"
 
+      - name: Prepare main for next SNAPSHOT
+        run: |
+          git checkout main
+          sed -i "s/^version=.*/version=${{ env.next_minor }}/" gradle.properties
+
       - name: Create PR to bump main to next SNAPSHOT
         uses: peter-evans/create-pull-request@v7
         with:
