@@ -5,9 +5,9 @@ import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.StructType
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.Label
-import com.kakao.actionbase.v2.engine.query.ActionbaseQuery
-import com.kakao.actionbase.v2.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.v2.engine.query.LabelProvider
+import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
+import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
 

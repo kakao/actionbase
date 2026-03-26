@@ -1,10 +1,10 @@
-package com.kakao.actionbase.v2.engine.query
+package com.kakao.actionbase.engine.query
 
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.StructType
-import com.kakao.actionbase.v2.engine.query.compat.toScanFilter
+import com.kakao.actionbase.engine.query.compat.toScanFilter
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
 

@@ -51,9 +51,9 @@ import com.kakao.actionbase.v2.engine.metadata.sync.MetadataSyncStatus
 import com.kakao.actionbase.v2.engine.metadata.sync.MetadataType
 import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.migration.Migration
-import com.kakao.actionbase.v2.engine.query.ActionbaseQuery
-import com.kakao.actionbase.v2.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.v2.engine.query.LabelProvider
+import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
+import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.v2.engine.service.ddl.AliasDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.LabelDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.QueryDdlService

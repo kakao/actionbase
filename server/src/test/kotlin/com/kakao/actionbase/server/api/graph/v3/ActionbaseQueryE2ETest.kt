@@ -20,7 +20,7 @@ import org.springframework.http.MediaType
  * Step 3: Multi-hop query via /graph/v3/query using ActionbaseQuery format
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ActionbaseQueryCacheE2ETest : E2ETestBase() {
+class ActionbaseQueryE2ETest : E2ETestBase() {
     private val db1 = "multihop-db1"
     private val db2 = "multihop-db2"
     private val hop1Table = "follows"

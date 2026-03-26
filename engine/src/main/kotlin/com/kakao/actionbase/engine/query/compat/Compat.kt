@@ -1,7 +1,7 @@
-package com.kakao.actionbase.v2.engine.query.compat
+package com.kakao.actionbase.engine.query.compat
 
 import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 
 fun ActionbaseQuery.Item.Scan.toScanFilter(srcSet: Set<Any>): ScanFilter =
