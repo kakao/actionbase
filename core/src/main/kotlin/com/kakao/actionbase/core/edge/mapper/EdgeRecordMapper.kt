@@ -6,4 +6,5 @@ data class EdgeRecordMapper(
     val count: EdgeCountRecordMapper,
     val lock: EdgeLockRecordMapper,
     val group: EdgeGroupRecordMapper,
+    val cache: EdgeCacheRecordMapper,
 )

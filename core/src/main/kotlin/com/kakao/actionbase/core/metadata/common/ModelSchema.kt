@@ -40,6 +40,7 @@ sealed class ModelSchema : AbstractSchema {
         val direction: DirectionType,
         val indexes: List<Index> = emptyList(),
         val groups: List<Group> = emptyList(),
+        val caches: List<Cache> = emptyList(),
     ) : ModelSchema(),
         AbstractSchema by Schema(properties.associate { it.name to it.nullable } + listOf("_source" to false, "_target" to false))
 }

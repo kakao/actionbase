@@ -10,6 +10,7 @@ enum class EdgeRecordType(
     EDGE_STATE(-3),
     EDGE_INDEX(-4),
     EDGE_GROUP(-5),
+    EDGE_CACHE(-6),
     ;
 
     companion object {

@@ -2,6 +2,7 @@ package com.kakao.actionbase.v2.engine.v3
 
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.ByteArrayBufferPool
+import com.kakao.actionbase.core.edge.mapper.EdgeCacheRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
@@ -9,9 +10,12 @@ import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.EdgePayload
+import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
+import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.storage.HBaseRecord
+import com.kakao.actionbase.v2.core.code.CryptoUtils
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.LabelType
@@ -33,6 +37,7 @@ class V3QueryService(
     private val byteArrayBufferPool = ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
 
     private val groupRecordMapper = EdgeGroupRecordMapper.create(byteArrayBufferPool)
+    private val cacheRecordMapper = EdgeCacheRecordMapper.create(byteArrayBufferPool)
 
     @Suppress("UnusedParameter")
     fun count(
@@ -250,15 +255,103 @@ class V3QueryService(
             }.switchIfEmpty(emptyDataFrameEdgePayload)
     }
 
-    @Suppress("UnusedParameter")
-    fun cache(
+    fun seek(
         database: String,
         table: String,
         cache: String,
         start: Any,
         direction: Direction,
         limit: Int = ScanFilter.defaultLimit,
-    ): Mono<DataFrameEdgePayload> = emptyDataFrameEdgePayload
+        offset: String? = null,
+    ): Mono<DataFrameEdgePayload> {
+        val name = EntityName(database, table)
+        val label = graph.getLabel(name)
+
+        require(label is HBaseHashLabel) {
+            "cache query is only supported for HBaseHashLabel, but got ${label::class.java.simpleName}."
+        }
+
+        val cacheEntity = label.entity.caches.find { it.cache == cache }
+        requireNotNull(cacheEntity) { "cache `$cache` is not found in label `${label.entity.name}`." }
+
+        val order = cacheEntity.fields.first().order
+        val casted =
+            if (direction == Direction.OUT) {
+                label.entity.schema.src.type.type
+                    .cast(start)
+            } else {
+                label.entity.schema.tgt.type.type
+                    .cast(start)
+            }
+        val key =
+            EdgeCacheRecord.Key.of(
+                directedSource = casted,
+                tableCode = label.entity.id,
+                direction = direction.toV3(),
+                cacheCode = cacheEntity.code,
+            )
+        val encodedKey = cacheRecordMapper.encoder.encodeKey(key)
+
+        // Offset-based pagination: qualifier + 0x00 = "start after this qualifier"
+        val offsetNext =
+            offset?.let {
+                val decoded = CryptoUtils.decodeAndDecryptUrlSafe(it)
+                decoded + 0x00.toByte()
+            }
+        // offsetNext maps to ColumnRangeFilter min (ascending byte order start)
+        val (from, to) =
+            if (offsetNext == null) {
+                null to null
+            } else if (order == Order.DESC) {
+                null to offsetNext
+            } else {
+                offsetNext to null
+            }
+
+        return label
+            .hbaseGetWideRow(listOf(encodedKey), from, to, order, limit = limit + 1)
+            .map { records ->
+                val hasNext = records.size > limit
+                val results = if (hasNext) records.dropLast(1) else records
+                val fieldNameMap = label.entity.schema.hashToFieldNameMap
+                val edges =
+                    results.map { record ->
+                        val decoded = cacheRecordMapper.decoder.decode(record.key, record.qualifier, record.value)
+                        val (source, target) =
+                            when (direction) {
+                                Direction.OUT -> decoded.key.directedSource to decoded.qualifier.directedTarget
+                                Direction.IN -> decoded.qualifier.directedTarget to decoded.key.directedSource
+                            }
+                        EdgePayload(
+                            version = decoded.value.version,
+                            source = source,
+                            target = target,
+                            properties =
+                                decoded.value.properties
+                                    .mapNotNull { (code, value) ->
+                                        fieldNameMap[code]?.let { it to value }
+                                    }.toMap(),
+                            context = emptyMap(),
+                        )
+                    }
+                val nextOffset =
+                    if (hasNext) {
+                        results.lastOrNull()?.qualifier?.let {
+                            CryptoUtils.encryptAndEncodeUrlSafe(it)
+                        }
+                    } else {
+                        null
+                    }
+                DataFrameEdgePayload(
+                    edges = edges,
+                    count = edges.size,
+                    total = edges.size.toLong(),
+                    offset = nextOffset,
+                    hasNext = hasNext,
+                    context = emptyMap(),
+                )
+            }.switchIfEmpty(emptyDataFrameEdgePayload)
+    }
 
     fun agg(
         database: String,

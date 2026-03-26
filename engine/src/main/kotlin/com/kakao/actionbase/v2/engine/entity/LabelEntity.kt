@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.entity
 
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.code.hbase.ValueUtils
@@ -49,6 +50,7 @@ data class LabelEntity(
     val storage: String,
     val indices: List<Index> = emptyList(),
     val groups: List<Group> = emptyList(),
+    val caches: List<Cache> = emptyList(),
     val event: Boolean = false,
     val readOnly: Boolean = false,
     val mode: MutationMode = MutationMode.SYNC,
@@ -135,6 +137,7 @@ data class LabelEntity(
                     "event" to event,
                     "groups" to objectMapper.writeValueAsString(groups),
                     "indices" to objectMapper.writeValueAsString(indices),
+                    "caches" to objectMapper.writeValueAsString(caches),
                     "readOnly" to readOnly,
                     "mode" to mode.name,
                 ),
@@ -186,6 +189,7 @@ data class LabelEntity(
                 storage = edge.props["storage"].toString(),
                 groups = objectMapper.readValue(edge.props["groups"]?.toString() ?: "[]"),
                 indices = objectMapper.readValue(edge.props["indices"].toString()),
+                caches = objectMapper.readValue(edge.props["caches"]?.toString() ?: "[]"),
                 event = edge.props["event"].toString().toBoolean(),
                 readOnly = edge.props["readOnly"].toString().toBoolean(),
                 mode =
@@ -211,6 +215,7 @@ data class LabelEntity(
                 storage = row.getString("storage"),
                 groups = objectMapper.readValue(row.getOrNull("groups")?.toString() ?: "[]"),
                 indices = objectMapper.readValue(row.getString("indices")),
+                caches = objectMapper.readValue(row.getOrNull("caches")?.toString() ?: "[]"),
                 event = DataType.BOOLEAN.cast(row.getOrNull("event"))?.let { it as Boolean } ?: false,
                 readOnly = row.getBoolean("readOnly"),
                 mode = MutationMode.valueOf((row.getOrNull("mode") ?: MutationMode.SYNC.name).toString()),
@@ -228,6 +233,7 @@ data class LabelEntity(
             @JsonProperty("storage") storage: String,
             @JsonProperty("groups", required = false) groups: List<Group> = emptyList(),
             @JsonProperty("indices", required = false) indices: List<Index> = emptyList(),
+            @JsonProperty("caches", required = false) caches: List<Cache> = emptyList(),
             @JsonProperty("event", required = false) event: Boolean = false,
             @JsonProperty("readOnly", required = false) readOnly: Boolean = false,
             @JsonProperty("mode", required = false) mode: MutationMode = MutationMode.SYNC,
@@ -242,6 +248,7 @@ data class LabelEntity(
                 storage,
                 indices,
                 groups,
+                caches,
                 event,
                 readOnly,
                 mode,

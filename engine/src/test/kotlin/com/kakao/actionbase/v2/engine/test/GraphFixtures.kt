@@ -470,4 +470,5 @@ fun LabelEntity.toRequest(): LabelCreateRequest =
         dirType = dirType,
         storage = storage,
         indices = indices,
+        caches = caches,
     )

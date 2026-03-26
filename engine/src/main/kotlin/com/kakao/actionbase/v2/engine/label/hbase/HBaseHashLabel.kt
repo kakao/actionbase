@@ -35,6 +35,8 @@ import org.apache.hadoop.hbase.client.Increment
 import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.filter.BinaryComparator
+import org.apache.hadoop.hbase.filter.ColumnCountGetFilter
+import org.apache.hadoop.hbase.filter.ColumnRangeFilter
 import org.apache.hadoop.hbase.filter.FilterList
 import org.apache.hadoop.hbase.filter.PageFilter
 import org.apache.hadoop.hbase.filter.QualifierFilter
@@ -430,6 +432,62 @@ open class HBaseHashLabel(
         } else {
             Mono.zip(orderedMonos) { results ->
                 results.flatMap { it as List<HBaseRecord> }
+            }
+        }
+    }
+
+    fun hbaseGetWideRow(
+        rows: List<ByteArray>,
+        from: ByteArray?,
+        to: ByteArray?,
+        order: Order,
+        limit: Int,
+    ): Mono<List<HBaseRecord>> {
+        // ColumnRangeFilter requires minColumn <= maxColumn in byte order.
+        // DESC encoding flips bytes, so from > to; swap to restore byte order.
+        val (min, max) =
+            if (order == Order.DESC) to to from else from to to
+
+        val gets =
+            rows.map {
+                val get =
+                    Get(it)
+                        .addFamily(Constants.DEFAULT_COLUMN_FAMILY)
+
+                val filters = FilterList(FilterList.Operator.MUST_PASS_ALL)
+
+                if (min != null || max != null) {
+                    filters.addFilter(
+                        ColumnRangeFilter(
+                            min,
+                            true,
+                            max,
+                            false,
+                        ),
+                    )
+                }
+
+                // Exclude empty values (tombstones)
+                filters.addFilter(
+                    ValueFilter(
+                        CompareOperator.NOT_EQUAL,
+                        BinaryComparator(Bytes.toBytes("")),
+                    ),
+                )
+
+                filters.addFilter(ColumnCountGetFilter(limit))
+
+                get.setFilter(filters)
+            }
+        return tables.flatMap { it.edge.get(gets) }.map {
+            it.flatMap { result ->
+                val cells = result.listCells() ?: return@flatMap emptyList()
+                cells.map { cell ->
+                    val row = CellUtil.cloneRow(cell)
+                    val qualifier = CellUtil.cloneQualifier(cell)
+                    val value = CellUtil.cloneValue(cell)
+                    HBaseRecord(row, qualifier, value)
+                }
             }
         }
     }

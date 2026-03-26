@@ -1,12 +1,6 @@
 package com.kakao.actionbase.core.metadata.common
 
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
-import com.kakao.actionbase.core.metadata.common.DirectionType
-import com.kakao.actionbase.core.metadata.common.Field
-import com.kakao.actionbase.core.metadata.common.Index
-import com.kakao.actionbase.core.metadata.common.IndexField
-import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.test.json.PrettyObjectWriter
 
@@ -77,6 +71,60 @@ class EdgeSchemaSerializationTest {
                             index = "updated_at_desc",
                             fields = listOf(IndexField(field = "version", order = Order.DESC)),
                             comment = "recent updates",
+                        ),
+                    ),
+            )
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `deserialize edge schema with caches`() {
+        val schemaJson =
+            """
+            {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [],
+              "direction": "OUT",
+              "indexes": [
+                {
+                  "index": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}]
+                }
+              ],
+              "groups": [],
+              "caches": [
+                {
+                  "cache": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}],
+                  "limit": 1
+                }
+              ]
+            }
+            """.trimIndent()
+
+        val actual = objectMapper.readValue<ModelSchema>(schemaJson)
+
+        val expected =
+            ModelSchema.Edge(
+                source = Field(type = PrimitiveType.LONG, comment = "Source node ID"),
+                target = Field(type = PrimitiveType.LONG, comment = "Target node ID"),
+                properties = emptyList(),
+                direction = DirectionType.OUT,
+                indexes =
+                    listOf(
+                        Index(
+                            index = "created_at_desc",
+                            fields = listOf(IndexField(field = "version", order = Order.DESC)),
+                        ),
+                    ),
+                caches =
+                    listOf(
+                        Cache(
+                            cache = "created_at_desc",
+                            fields = listOf(IndexField(field = "version", order = Order.DESC)),
+                            limit = 1,
                         ),
                     ),
             )

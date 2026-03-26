@@ -114,6 +114,11 @@ class V3CompatService(
                 is ModelSchema.Edge -> s.groups
                 is ModelSchema.MultiEdge -> s.groups
             }
+        val caches =
+            when (val s = request.schema) {
+                is ModelSchema.Edge -> s.caches
+                is ModelSchema.MultiEdge -> s.caches
+            }
         val v2Request =
             V2LabelCreateRequest(
                 desc = request.comment,
@@ -123,6 +128,7 @@ class V3CompatService(
                 storage = request.storage,
                 groups = groups,
                 indices = request.toV2Indices(),
+                caches = caches,
                 event = false,
                 readOnly = isMultiEdge,
                 mode = request.mode.toV2MutationMode(),

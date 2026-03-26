@@ -98,9 +98,9 @@ class V2BackedTableBinding(
         val schema = descriptor.schema
         return when (schema) {
             is ModelSchema.Edge ->
-                EdgeMutationBuilder.buildForUniqueEdge(before, after, schema.direction, schema.indexes, schema.groups)
+                EdgeMutationBuilder.buildForUniqueEdge(before, after, schema.direction, schema.indexes, schema.groups, schema.caches)
             is ModelSchema.MultiEdge ->
-                EdgeMutationBuilder.buildForMultiEdge(before, after, schema.direction, schema.indexes, schema.groups)
+                EdgeMutationBuilder.buildForMultiEdge(before, after, schema.direction, schema.indexes, schema.groups, schema.caches)
         }
     }
 
@@ -155,6 +155,19 @@ class V2BackedTableBinding(
                     increment.ttl = ttl
                 }
                 increment
+            }
+        mutations +=
+            mutationRecords.createCacheRecords.map {
+                val encoded = mapper.cache.encoder.encode(it)
+                Put(encoded.key)
+                    .addColumn(Constants.DEFAULT_COLUMN_FAMILY, encoded.qualifier, encoded.value)
+            }
+        mutations +=
+            mutationRecords.deleteCacheRecordQualifiers.map { (key, qualifier) ->
+                val encodedKey = mapper.cache.encoder.encodeKey(key)
+                val encodedQualifier = mapper.cache.encoder.encodeQualifier(qualifier)
+                Delete(encodedKey)
+                    .addColumns(Constants.DEFAULT_COLUMN_FAMILY, encodedQualifier)
             }
         return mutations
     }

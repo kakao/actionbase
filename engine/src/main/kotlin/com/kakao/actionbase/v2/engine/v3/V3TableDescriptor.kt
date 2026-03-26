@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.Index
@@ -54,6 +55,7 @@ sealed class V3TableDescriptor {
                         direction = entity.dirType.toV3(),
                         groups = entity.groups.map { it.toV3() },
                         indexes = entity.indices.map { it.toV3() },
+                        caches = entity.caches.map { it.toV3() },
                     )
                 MultiEdge(
                     database = database,
@@ -72,6 +74,7 @@ sealed class V3TableDescriptor {
                         direction = entity.dirType.toV3(),
                         groups = entity.groups.map { it.toV3() },
                         indexes = entity.indices.map { it.toV3() },
+                        caches = entity.caches.map { it.toV3() },
                     )
                 Edge(
                     database = database,
@@ -157,5 +160,7 @@ sealed class V3TableDescriptor {
         private fun Group.toV3(): Group = copy(fields = fields.map { it.toV3() })
 
         private fun Group.Field.toV3(): Group.Field = copy(name = name.toV3FieldName())
+
+        private fun Cache.toV3(): Cache = copy(fields = fields.map { it.copy(field = it.field.toV3FieldName()) })
     }
 }

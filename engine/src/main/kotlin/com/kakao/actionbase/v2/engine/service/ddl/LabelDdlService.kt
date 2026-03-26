@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.service.ddl
 
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.engine.EngineConstants
 import com.kakao.actionbase.v2.core.code.Index
@@ -90,6 +91,7 @@ data class LabelCreateRequest(
     val storage: String,
     val groups: List<Group> = emptyList(),
     val indices: List<Index> = emptyList(),
+    val caches: List<Cache> = emptyList(),
     val event: Boolean = false,
     val readOnly: Boolean = false,
     val mode: MutationMode = MutationMode.SYNC,
@@ -106,6 +108,7 @@ data class LabelCreateRequest(
             storage = storage,
             groups = groups,
             indices = indices,
+            caches = caches,
             event = event,
             readOnly = readOnly,
             mode = mode,

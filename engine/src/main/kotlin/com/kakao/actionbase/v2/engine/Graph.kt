@@ -2,6 +2,7 @@ package com.kakao.actionbase.v2.engine
 
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.ByteArrayBufferPool
+import com.kakao.actionbase.core.edge.mapper.EdgeCacheRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeCountRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
@@ -986,6 +987,7 @@ class Graph(
                         count = EdgeCountRecordMapper.create(pool),
                         lock = EdgeLockRecordMapper.create(pool),
                         group = EdgeGroupRecordMapper.create(pool),
+                        cache = EdgeCacheRecordMapper.create(pool),
                     )
                 }
 

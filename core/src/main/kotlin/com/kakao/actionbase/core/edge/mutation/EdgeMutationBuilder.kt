@@ -1,10 +1,12 @@
 package com.kakao.actionbase.core.edge.mutation
 
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
+import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeCountRecord
 import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
 import com.kakao.actionbase.core.edge.record.EdgeIndexRecord
 import com.kakao.actionbase.core.edge.record.EdgeStateRecord
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
@@ -28,7 +30,8 @@ object EdgeMutationBuilder {
         directionType: DirectionType,
         indexes: List<Index>,
         groups: List<Group>,
-    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.Edge, before, after, directionType, indexes, groups)
+        caches: List<Cache>,
+    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.Edge, before, after, directionType, indexes, groups, caches)
 
     fun buildForMultiEdge(
         before: EdgeStateRecord,
@@ -36,7 +39,8 @@ object EdgeMutationBuilder {
         directionType: DirectionType,
         indexes: List<Index>,
         groups: List<Group>,
-    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.MultiEdge, before, after, directionType, indexes, groups)
+        caches: List<Cache>,
+    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.MultiEdge, before, after, directionType, indexes, groups, caches)
 
     private fun buildWith(
         strategy: EdgeMutationStrategy,
@@ -45,6 +49,7 @@ object EdgeMutationBuilder {
         directionType: DirectionType,
         indexes: List<Index>,
         groups: List<Group>,
+        caches: List<Cache>,
     ): EdgeMutationRecords {
         val beforeActive = before.value.active
         val afterActive = after.value.active
@@ -62,6 +67,7 @@ object EdgeMutationBuilder {
                     createIndexRecords = buildIndexRecords(strategy, after, directionType, indexes),
                     countRecords = buildCountRecords(strategy, after, directionType, 1L),
                     groupRecords = buildGroupRecords(strategy, after, groups, 1L),
+                    createCacheRecords = buildCacheRecords(strategy, after, directionType, caches),
                 )
             }
 
@@ -74,12 +80,17 @@ object EdgeMutationBuilder {
                     deleteIndexRecordKeys = buildIndexRecords(strategy, before, directionType, indexes).map { it.key },
                     countRecords = buildCountRecords(strategy, countSource, directionType, -1L),
                     groupRecords = buildGroupRecords(strategy, before, groups, -1L),
+                    deleteCacheRecordQualifiers =
+                        buildCacheRecords(strategy, before, directionType, caches)
+                            .map { it.key to it.qualifier },
                 )
             }
 
             beforeActive && afterActive -> {
                 val newIndexRecords = buildIndexRecords(strategy, after, directionType, indexes)
                 val willBeUpdated = newIndexRecords.map { it.key }.toSet()
+                val newCacheRecords = buildCacheRecords(strategy, after, directionType, caches)
+                val willBeUpdatedCache = newCacheRecords.map { it.key to it.qualifier }.toSet()
                 EdgeMutationRecords(
                     status = "UPDATED",
                     acc = 0L,
@@ -96,6 +107,11 @@ object EdgeMutationBuilder {
                     groupRecords =
                         buildGroupRecords(strategy, before, groups, -1L) +
                             buildGroupRecords(strategy, after, groups, 1L),
+                    createCacheRecords = newCacheRecords,
+                    deleteCacheRecordQualifiers =
+                        buildCacheRecords(strategy, before, directionType, caches)
+                            .map { it.key to it.qualifier }
+                            .filter { it !in willBeUpdatedCache },
                 )
             }
 
@@ -168,6 +184,50 @@ object EdgeMutationBuilder {
                     ),
                 value = accumulator,
             )
+        }
+    }
+
+    private fun buildCacheRecords(
+        strategy: EdgeMutationStrategy,
+        record: EdgeStateRecord,
+        directionType: DirectionType,
+        caches: List<Cache>,
+    ): List<EdgeCacheRecord> {
+        if (caches.isEmpty()) return emptyList()
+
+        val properties: Map<Int, Any?> = record.value.properties.mapValues { (_, stateValue) -> stateValue.value }
+
+        val directions = directionType.directions()
+        return caches.flatMap { cache ->
+            directions.map { direction ->
+                val cacheValues =
+                    cache.fields.map { field ->
+                        val value = record.indexValueOf(properties, field.field)
+                        EdgeCacheRecord.Qualifier.CacheValue(
+                            value = value,
+                            order = field.order,
+                        )
+                    }
+                EdgeCacheRecord(
+                    key =
+                        EdgeCacheRecord.Key.of(
+                            directedSource = strategy.directedSource(record, direction),
+                            tableCode = record.key.tableCode,
+                            direction = direction,
+                            cacheCode = cache.code,
+                        ),
+                    qualifier =
+                        EdgeCacheRecord.Qualifier(
+                            cacheValues = cacheValues,
+                            directedTarget = strategy.directedTarget(record, direction),
+                        ),
+                    value =
+                        EdgeCacheRecord.Value(
+                            version = record.value.version,
+                            properties = properties,
+                        ),
+                )
+            }
         }
     }
 
