@@ -76,14 +76,14 @@ class ActionbaseQueryParserSpec :
                     {
                       "type": "CACHE",
                       "name": "f",
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                         "type": "REF",
                         "ref": "a",
                         "field": "tgt"
                       },
-                      "dir": "OUT",
+                      "direction": "OUT",
                       "cacheName": "recent_wishlist",
                       "limit": 10,
                       "include": true
@@ -136,10 +136,10 @@ class ActionbaseQueryParserSpec :
             actionBaseQuery.query[4] shouldBe
                 ActionbaseQuery.Item.Cache(
                     name = "f",
-                    service = "{service}",
-                    label = "{label}",
-                    src = ActionbaseQuery.Vertex.Ref("a", "tgt"),
-                    dir = Direction.OUT,
+                    database = "{database}",
+                    table = "{table}",
+                    source = ActionbaseQuery.Vertex.Ref("a", "tgt"),
+                    direction = Direction.OUT,
                     cacheName = "recent_wishlist",
                     limit = 10,
                     include = true,

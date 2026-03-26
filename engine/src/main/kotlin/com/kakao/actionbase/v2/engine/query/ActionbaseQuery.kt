@@ -77,10 +77,10 @@ data class ActionbaseQuery(
 
         data class Cache(
             override val name: String,
-            val service: String,
-            val label: String,
-            val src: Vertex,
-            val dir: Direction,
+            val database: String,
+            val table: String,
+            val source: Vertex,
+            val direction: Direction,
             val cacheName: String,
             val limit: Int,
             override val include: Boolean = false,
