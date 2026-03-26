@@ -1,8 +1,9 @@
-package com.kakao.actionbase.v2.engine.query
+package com.kakao.actionbase.v2.engine.v3.query
 
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.Label
+import com.kakao.actionbase.v2.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 
 import io.kotest.core.spec.style.StringSpec

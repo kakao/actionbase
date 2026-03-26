@@ -1,6 +1,7 @@
-package com.kakao.actionbase.v2.engine.query
+package com.kakao.actionbase.v2.engine.v3.query
 
 import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.query.ActionbaseQuery.Companion.toJson
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
 
