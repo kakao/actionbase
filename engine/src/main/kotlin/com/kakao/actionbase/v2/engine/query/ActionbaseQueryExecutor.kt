@@ -101,7 +101,7 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.service, queryItem.label)
+        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
         val src = resolveVertex(queryItem.source, context).toList()
         return label.getSelf(src, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
     }
@@ -111,7 +111,7 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.service, queryItem.label)
+        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
         val src = resolveVertex(queryItem.source, context).toList()
         val tgt = resolveVertex(queryItem.target, context).toList()
         return label.get(src, tgt, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
@@ -121,7 +121,7 @@ class ActionbaseQueryExecutor(
         queryItem: ActionbaseQuery.Item.Count,
         context: Map<String, DataFrame>,
     ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.service, queryItem.label)
+        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
         val src = resolveVertex(queryItem.source, context)
         return label.count(src, Direction.OUT)
     }
@@ -131,7 +131,7 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.service, queryItem.label)
+        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
         val src = resolveVertex(queryItem.source, context)
         val scanFilter = queryItem.toScanFilter(src)
         return label.scan(scanFilter, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)

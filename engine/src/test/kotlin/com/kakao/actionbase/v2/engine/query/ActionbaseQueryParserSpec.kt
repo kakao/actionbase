@@ -18,13 +18,13 @@ class ActionbaseQueryParserSpec :
                     {
                       "type": "SCAN",
                       "name": "a",
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                         "type": "VALUE",
                         "value": [1]
                       },
-                      "dir": "OUT",
+                      "direction": "OUT",
                       "index": "created_at_desc",
                       "limit": 100,
                       "predicates": [
@@ -38,14 +38,14 @@ class ActionbaseQueryParserSpec :
                     {
                       "type": "GET",
                       "name": "b",
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                         "type": "REF",
                         "ref": "a",
-                        "field": "tgt"
+                        "field": "target"
                       },
-                      "tgt": {
+                      "target": {
                         "type": "VALUE",
                         "value": [1]
                       }
@@ -54,20 +54,20 @@ class ActionbaseQueryParserSpec :
                       "type": "COUNT",
                       "name": "d",
                       "include": true,
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                         "type": "VALUE",
                         "value": [1]
                       },
-                      "dir": "OUT"
+                      "direction": "OUT"
                     },
                     {
                       "type": "SELF",
                       "name": "e",
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                           "type": "VALUE",
                           "value": [1, 2, 3]
                       }
@@ -82,8 +82,8 @@ class ActionbaseQueryParserSpec :
             actionBaseQuery.query[0] shouldBe
                 ActionbaseQuery.Item.Scan(
                     name = "a",
-                    service = "{service}",
-                    label = "{label}",
+                    database = "{database}",
+                    table = "{table}",
                     source = ActionbaseQuery.Vertex.Value(listOf(1)),
                     direction = Direction.OUT,
                     index = "created_at_desc",
@@ -94,17 +94,17 @@ class ActionbaseQueryParserSpec :
             actionBaseQuery.query[1] shouldBe
                 ActionbaseQuery.Item.Get(
                     name = "b",
-                    service = "{service}",
-                    label = "{label}",
-                    source = ActionbaseQuery.Vertex.Ref("a", "tgt"),
+                    database = "{database}",
+                    table = "{table}",
+                    source = ActionbaseQuery.Vertex.Ref("a", "target"),
                     target = ActionbaseQuery.Vertex.Value(listOf(1)),
                     include = false,
                 )
             actionBaseQuery.query[2] shouldBe
                 ActionbaseQuery.Item.Count(
                     name = "d",
-                    service = "{service}",
-                    label = "{label}",
+                    database = "{database}",
+                    table = "{table}",
                     source = ActionbaseQuery.Vertex.Value(listOf(1)),
                     direction = Direction.OUT,
                     include = true,
@@ -112,8 +112,8 @@ class ActionbaseQueryParserSpec :
             actionBaseQuery.query[3] shouldBe
                 ActionbaseQuery.Item.Self(
                     name = "e",
-                    service = "{service}",
-                    label = "{label}",
+                    database = "{database}",
+                    table = "{table}",
                     source = ActionbaseQuery.Vertex.Value(listOf(1, 2, 3)),
                     include = false,
                 )

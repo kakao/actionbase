@@ -6,7 +6,7 @@ import com.kakao.actionbase.v2.engine.sql.ScanFilter
 
 fun ActionbaseQuery.Item.Scan.toScanFilter(srcSet: Set<Any>): ScanFilter =
     ScanFilter(
-        name = EntityName(service, label),
+        name = EntityName(database, table),
         srcSet = srcSet,
         dir = direction,
         limit = limit,

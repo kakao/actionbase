@@ -29,8 +29,8 @@ data class ActionbaseQuery(
 
         data class Self(
             override val name: String,
-            val service: String,
-            val label: String,
+            val database: String,
+            val table: String,
             val source: Vertex,
             override val include: Boolean = false,
             override val cache: Boolean = false,
@@ -39,8 +39,8 @@ data class ActionbaseQuery(
 
         data class Get(
             override val name: String,
-            val service: String,
-            val label: String,
+            val database: String,
+            val table: String,
             val source: Vertex,
             val target: Vertex,
             override val include: Boolean = false,
@@ -50,8 +50,8 @@ data class ActionbaseQuery(
 
         data class Count(
             override val name: String,
-            val service: String,
-            val label: String,
+            val database: String,
+            val table: String,
             val source: Vertex,
             val direction: Direction,
             override val include: Boolean = false,
@@ -61,8 +61,8 @@ data class ActionbaseQuery(
 
         data class Scan(
             override val name: String,
-            val service: String,
-            val label: String,
+            val database: String,
+            val table: String,
             val source: Vertex,
             val direction: Direction,
             val index: String,

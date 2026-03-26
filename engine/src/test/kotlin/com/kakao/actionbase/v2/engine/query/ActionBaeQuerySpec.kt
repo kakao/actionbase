@@ -23,8 +23,8 @@ class ActionBaeQuerySpec :
         }
 
         "ActionbaseQuery.Item.Self" {
-            val service = hbase.name.service
-            val label = hbase.name.nameNotNull
+            val database = hbase.name.service
+            val table = hbase.name.nameNotNull
             val queryName = "get_query_result"
 
             // language=json
@@ -35,9 +35,9 @@ class ActionBaeQuerySpec :
                     {
                       "type": "SELF",
                       "name": "$queryName",
-                      "service": "$service",
-                      "label": "$label",
-                      "src": {
+                      "database": "$database",
+                      "table": "$table",
+                      "source": {
                         "type": "VALUE",
                         "value": [100]
                       },
@@ -64,8 +64,8 @@ class ActionBaeQuerySpec :
          * [ActionbaseQuery.Item.Get]
          */
         "ActionbaseQuery.Item.Get" {
-            val service = hbase.name.service
-            val label = hbase.name.nameNotNull
+            val database = hbase.name.service
+            val table = hbase.name.nameNotNull
             val queryName = "get_query_result"
 
             // language=json
@@ -76,13 +76,13 @@ class ActionBaeQuerySpec :
                     {
                       "type": "GET",
                       "name": "$queryName",
-                      "service": "$service",
-                      "label": "$label",
-                      "src": {
+                      "database": "$database",
+                      "table": "$table",
+                      "source": {
                         "type": "VALUE",
                         "value": [100]
                       },
-                      "tgt": {
+                      "target": {
                         "type": "VALUE",
                         "value": [1000, 1001]
                       },
@@ -110,8 +110,8 @@ class ActionBaeQuerySpec :
          * [ActionbaseQuery.Item.Count]
          */
         "ActionbaseQuery.Item.Count" {
-            val service = hbase.name.service
-            val label = hbase.name.nameNotNull
+            val database = hbase.name.service
+            val table = hbase.name.nameNotNull
             val queryName = "get_query_result"
 
             // language=json
@@ -122,13 +122,13 @@ class ActionBaeQuerySpec :
                     {
                       "type": "COUNT",
                       "name": "$queryName",
-                      "service": "$service",
-                      "label": "$label",
-                      "src": {
+                      "database": "$database",
+                      "table": "$table",
+                      "source": {
                         "type": "VALUE",
                         "value": [100]
                       },
-                      "dir": "OUT",
+                      "direction": "OUT",
                       "include": true
                     }
                   ]
@@ -153,8 +153,8 @@ class ActionBaeQuerySpec :
          * [ActionbaseQuery.Item.Scan]
          */
         "ActionbaseQuery.Item.Scan" {
-            val service = hbase.name.service
-            val label = hbase.name.nameNotNull
+            val database = hbase.name.service
+            val table = hbase.name.nameNotNull
             val queryName = "get_query_result"
 
             // language=json
@@ -165,13 +165,13 @@ class ActionBaeQuerySpec :
                     {
                       "type": "SCAN",
                       "name": "$queryName",
-                      "service": "$service",
-                      "label": "$label",
-                      "src": {
+                      "database": "$database",
+                      "table": "$table",
+                      "source": {
                         "type": "VALUE",
                         "value": [100]
                       },
-                      "dir": "OUT",
+                      "direction": "OUT",
                       "index": "permission_created_at_desc",
                       "limit": 10,
                       "include": true
@@ -203,8 +203,8 @@ class ActionBaeQuerySpec :
         }
 
         "Complex Query 1" {
-            val service = hbase.name.service
-            val label = hbase.name.nameNotNull
+            val database = hbase.name.service
+            val table = hbase.name.nameNotNull
 
             val srcUser = 100
 
@@ -216,13 +216,13 @@ class ActionBaeQuerySpec :
                     {
                       "type": "SCAN",
                       "name": "step1",
-                      "service": "$service",
-                      "label": "$label",
-                      "src": {
+                      "database": "$database",
+                      "table": "$table",
+                      "source": {
                         "type": "VALUE",
                         "value": [$srcUser]
                       },
-                      "dir": "OUT",
+                      "direction": "OUT",
                       "index": "created_at_desc",
                       "limit": 10,
                       "include": true
@@ -230,14 +230,14 @@ class ActionBaeQuerySpec :
                     {
                       "type": "SCAN",
                       "name": "step2",
-                      "service": "$service",
-                      "label": "$label",
-                      "src": {
+                      "database": "$database",
+                      "table": "$table",
+                      "source": {
                         "type": "REF",
                         "ref": "step1",
                         "field": "tgt"
                       },
-                      "dir": "IN",
+                      "direction": "IN",
                       "index": "created_at_desc",
                       "limit": 10,
                       "include": true
