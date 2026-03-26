@@ -124,7 +124,7 @@ class ActionbaseQueryExecutor(
     ): Mono<DataFrame> {
         val label = labelProvider.getLabel(queryItem.database, queryItem.table)
         val src = resolveVertex(queryItem.source, context)
-        return label.count(src, Direction.OUT)
+        return label.count(src, queryItem.direction)
     }
 
     private fun processScan(
@@ -144,7 +144,7 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
     ): Mono<DataFrame> =
         // TODO Phase 3: resolve src via resolveVertex(), look up label via labelProvider,
-        //  perform EdgeCache multi-get using cacheName and limit from queryItem,
+        //  perform EdgeCache multi-get using cache and limit from queryItem,
         //  validate limit > 0 from user input
         Mono.just(DataFrame(emptyList(), StructType(emptyArray())))
 
