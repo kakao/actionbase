@@ -94,6 +94,19 @@ class EdgeQueryController(
             .scan(database, table, index, start, direction, limit, offset, ranges, filters, features)
             .mapToResponseEntity()
 
+    @GetMapping("/graph/v3/databases/{database}/tables/{table}/edges/cache/{cache}")
+    fun cache(
+        @PathVariable database: String,
+        @PathVariable table: String,
+        @PathVariable cache: String,
+        @RequestParam start: String,
+        @RequestParam direction: Direction,
+        @RequestParam limit: Int = ScanFilter.Companion.defaultLimit,
+    ): Mono<ResponseEntity<DataFrameEdgePayload>> =
+        v3QueryService
+            .cache(database, table, cache, start, direction, limit)
+            .mapToResponseEntity()
+
     @GetMapping("/graph/v3/databases/{database}/tables/{table}/edges/agg/{group}")
     fun agg(
         @PathVariable database: String,

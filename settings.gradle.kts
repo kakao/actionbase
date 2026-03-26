@@ -12,4 +12,6 @@ include(
     "core",
     "engine",
     "server",
+
+    "tools:v3v2-boundary-check",
 )

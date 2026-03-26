@@ -77,6 +77,7 @@ class ActionbaseQueryExecutor(
             is ActionbaseQuery.Item.Get -> processGet(queryItem, context, actionBaseQuery)
             is ActionbaseQuery.Item.Count -> processCount(queryItem, context)
             is ActionbaseQuery.Item.Scan -> processScan(queryItem, context, actionBaseQuery)
+            is ActionbaseQuery.Item.Cache -> processCache(queryItem, context)
         }
 
     private fun applyPostProcessors(
@@ -136,6 +137,16 @@ class ActionbaseQueryExecutor(
         val scanFilter = queryItem.toScanFilter(src)
         return label.scan(scanFilter, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
     }
+
+    @Suppress("UnusedParameter")
+    private fun processCache(
+        queryItem: ActionbaseQuery.Item.Cache,
+        context: Map<String, DataFrame>,
+    ): Mono<DataFrame> =
+        // TODO Phase 3: resolve src via resolveVertex(), look up label via labelProvider,
+        //  perform EdgeCache multi-get using cacheName and limit from queryItem,
+        //  validate limit > 0 from user input
+        Mono.just(DataFrame(emptyList(), StructType(emptyArray())))
 
     internal fun postProcessJsonObject(
         df: DataFrame,

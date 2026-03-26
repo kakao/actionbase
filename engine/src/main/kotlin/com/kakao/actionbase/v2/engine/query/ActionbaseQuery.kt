@@ -20,6 +20,7 @@ data class ActionbaseQuery(
         JsonSubTypes.Type(value = Item.Get::class, name = "GET"),
         JsonSubTypes.Type(value = Item.Count::class, name = "COUNT"),
         JsonSubTypes.Type(value = Item.Scan::class, name = "SCAN"),
+        JsonSubTypes.Type(value = Item.Cache::class, name = "CACHE"),
     )
     sealed class Item {
         abstract val name: String
@@ -69,6 +70,19 @@ data class ActionbaseQuery(
             val limit: Int,
             val offset: String? = null,
             val predicates: List<WherePredicate>? = null,
+            override val include: Boolean = false,
+            override val cache: Boolean = false,
+            override val post: List<PostProcessor> = emptyList(),
+        ) : Item()
+
+        data class Cache(
+            override val name: String,
+            val service: String,
+            val label: String,
+            val src: Vertex,
+            val dir: Direction,
+            val cacheName: String,
+            val limit: Int,
             override val include: Boolean = false,
             override val cache: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),

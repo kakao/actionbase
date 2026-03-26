@@ -135,7 +135,8 @@ class TableSerializationTest {
                     "directionType": "BOTH",
                     "ttl": 691200000
                   }
-                ]
+                ],
+                "caches": []
               },
               "mode": "SYNC",
               "storage": "datastore://test_namespace/test_tenant:test_table",

@@ -1,0 +1,70 @@
+name: Post Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  release:
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract version
+        run: |
+          version=$(grep '^version=' gradle.properties | cut -d= -f2)
+          major=${version%%.*}
+          rest=${version#*.}
+          minor=${rest%%.*}
+          patch=${version##*.}
+
+          echo "version=$version" >> $GITHUB_ENV
+          echo "release_branch=${major}.${minor}.x" >> $GITHUB_ENV
+          echo "next_minor=${major}.$((minor + 1)).0-SNAPSHOT" >> $GITHUB_ENV
+          echo "next_patch=${major}.${minor}.$((patch + 1))-SNAPSHOT" >> $GITHUB_ENV
+
+      - name: Create tag
+        run: |
+          git tag "v${{ env.version }}"
+          git push origin "v${{ env.version }}"
+
+      - name: Create release branch
+        run: |
+          git checkout -b "${{ env.release_branch }}" "v${{ env.version }}"
+          sed -i "s/^version=.*/version=${{ env.next_patch }}/" gradle.properties
+          git add gradle.properties
+          git commit -m "Bump version to ${{ env.next_patch }}"
+          git push origin "${{ env.release_branch }}"
+
+      - name: Prepare main for next SNAPSHOT
+        run: |
+          git checkout main
+          sed -i "s/^version=.*/version=${{ env.next_minor }}/" gradle.properties
+
+      - name: Create PR to bump main to next SNAPSHOT
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bump-main/v${{ env.version }}
+          commit-message: "Bump version to ${{ env.next_minor }}"
+          title: "Bump version to ${{ env.next_minor }}"
+          body: |
+            Post-release version bump from `${{ env.version }}` to `${{ env.next_minor }}`.
+
+            Released:
+            - Tag `v${{ env.version }}` created
+            - Branch `${{ env.release_branch }}` created with `${{ env.next_patch }}`
+          labels: release
