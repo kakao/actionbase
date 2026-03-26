@@ -44,7 +44,7 @@ class ActionbaseQueryParserSpec :
                       "source": {
                         "type": "REF",
                         "ref": "a",
-                        "field": "target"
+                        "field": "tgt"
                       },
                       "target": {
                         "type": "VALUE",
@@ -112,7 +112,7 @@ class ActionbaseQueryParserSpec :
                     name = "b",
                     database = "{database}",
                     table = "{table}",
-                    source = ActionbaseQuery.Vertex.Ref("a", "target"),
+                    source = ActionbaseQuery.Vertex.Ref("a", "tgt"),
                     target = ActionbaseQuery.Vertex.Value(listOf(1)),
                     include = false,
                 )
