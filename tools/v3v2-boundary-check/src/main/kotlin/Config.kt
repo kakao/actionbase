@@ -1,7 +1,7 @@
 /**
- * Boundary check configuration.
+ * V3→V2 dependency check configuration.
  *
- * Detect all callers of Graph class, then exclude known-OK callers.
+ * Detect V3 code that directly depends on V2 types (not via adapters).
  * Include overrides exclude (more specific wins).
  */
 object Config {
@@ -17,7 +17,7 @@ object Config {
         "core-java/build/classes/java/main",
     )
 
-    /** Target V2 classes — direct references to these are leaks unless excluded. */
+    /** V2 types — direct references to these from V3 code are dependencies to track. */
     val TARGET_CLASSES = listOf(
         // God object
         "com.kakao.actionbase.v2.engine.Graph",
@@ -74,7 +74,7 @@ object Config {
         "com.kakao.actionbase.v2.engine.v3",
     )
 
-    /** Class exclude: adapter classes (prefix match on simple class name). */
+    /** Adapter classes — stop BFS here (prefix match on simple class name). */
     val EXCLUDED_CLASS_PREFIXES = listOf(
         "V2Backed",
         "V2Compat",
