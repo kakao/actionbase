@@ -8,6 +8,9 @@ import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
+import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
+import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
@@ -51,9 +54,6 @@ import com.kakao.actionbase.v2.engine.metadata.sync.MetadataSyncStatus
 import com.kakao.actionbase.v2.engine.metadata.sync.MetadataType
 import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.migration.Migration
-import com.kakao.actionbase.engine.query.ActionbaseQuery
-import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.v2.engine.service.ddl.AliasDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.LabelDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.QueryDdlService
