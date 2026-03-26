@@ -65,7 +65,7 @@ class ActionbaseQueryExecutor(
     ): Mono<DataFrame> =
         processQueryItem(queryItem, context, actionBaseQuery)
             .flatMap { applyPostProcessors(it, queryItem.post) }
-            .let { if (queryItem.cache) it.cache() else it }
+            .let { if (queryItem.memoize) it.cache() else it }
 
     private fun processQueryItem(
         queryItem: ActionbaseQuery.Item,

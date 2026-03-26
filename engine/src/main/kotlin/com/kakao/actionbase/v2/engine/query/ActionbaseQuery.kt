@@ -25,7 +25,7 @@ data class ActionbaseQuery(
     sealed class Item {
         abstract val name: String
         abstract val include: Boolean
-        abstract val cache: Boolean
+        abstract val memoize: Boolean
         abstract val post: List<PostProcessor>
 
         data class Self(
@@ -34,7 +34,7 @@ data class ActionbaseQuery(
             val table: String,
             val source: Vertex,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
 
@@ -45,7 +45,7 @@ data class ActionbaseQuery(
             val source: Vertex,
             val target: Vertex,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
 
@@ -56,7 +56,7 @@ data class ActionbaseQuery(
             val source: Vertex,
             val direction: Direction,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
 
@@ -71,7 +71,7 @@ data class ActionbaseQuery(
             val offset: String? = null,
             val predicates: List<WherePredicate>? = null,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
 
@@ -81,10 +81,10 @@ data class ActionbaseQuery(
             val table: String,
             val source: Vertex,
             val direction: Direction,
-            val cacheName: String,
+            val cache: String,
             val limit: Int,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
     }

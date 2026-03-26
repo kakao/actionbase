@@ -84,7 +84,7 @@ class ActionbaseQueryParserSpec :
                         "field": "tgt"
                       },
                       "direction": "OUT",
-                      "cacheName": "recent_wishlist",
+                      "cache": "recent_wishlist",
                       "limit": 10,
                       "include": true
                     }
@@ -140,7 +140,7 @@ class ActionbaseQueryParserSpec :
                     table = "{table}",
                     source = ActionbaseQuery.Vertex.Ref("a", "tgt"),
                     direction = Direction.OUT,
-                    cacheName = "recent_wishlist",
+                    cache = "recent_wishlist",
                     limit = 10,
                     include = true,
                 )

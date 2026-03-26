@@ -185,7 +185,7 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                           "table": "$hop2Table",
                           "source": {"type": "REF", "ref": "hop1", "field": "target"},
                           "direction": "OUT",
-                          "cacheName": "recent_wishlist",
+                          "cache": "recent_wishlist",
                           "limit": 10,
                           "include": true
                         }
