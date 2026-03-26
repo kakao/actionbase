@@ -10,7 +10,7 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import reactor.kotlin.test.test
 
-class ActionBaeQuerySpec :
+class ActionbaseQuerySpec :
     StringSpec({
 
         lateinit var graph: Graph
