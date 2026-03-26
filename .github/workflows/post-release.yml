@@ -3,7 +3,9 @@ name: Post Release
 on:
   pull_request:
     types: [closed]
-    branches: [main]
+    branches:
+      - main
+      - '*.x'
 
 jobs:
   release:
@@ -31,8 +33,11 @@ jobs:
           rest=${version#*.}
           minor=${rest%%.*}
           patch=${version##*.}
+          base=${{ github.event.pull_request.base.ref }}
 
           echo "version=$version" >> $GITHUB_ENV
+          echo "base_branch=$base" >> $GITHUB_ENV
+          echo "is_patch=$([[ "$base" != "main" ]] && echo true || echo false)" >> $GITHUB_ENV
           echo "release_branch=${major}.${minor}.x" >> $GITHUB_ENV
           echo "next_minor=${major}.$((minor + 1)).0-SNAPSHOT" >> $GITHUB_ENV
           echo "next_patch=${major}.${minor}.$((patch + 1))-SNAPSHOT" >> $GITHUB_ENV
@@ -42,7 +47,8 @@ jobs:
           git tag "v${{ env.version }}"
           git push origin "v${{ env.version }}"
 
-      - name: Create release branch
+      - name: Create release branch (minor release only)
+        if: env.is_patch == 'false'
         run: |
           git checkout -b "${{ env.release_branch }}" "v${{ env.version }}"
           sed -i "s/^version=.*/version=${{ env.next_patch }}/" gradle.properties
@@ -50,12 +56,23 @@ jobs:
           git commit -m "Bump version to ${{ env.next_patch }}"
           git push origin "${{ env.release_branch }}"
 
-      - name: Prepare main for next SNAPSHOT
+      - name: Bump release branch (patch release only)
+        if: env.is_patch == 'true'
+        run: |
+          git checkout "${{ env.base_branch }}"
+          sed -i "s/^version=.*/version=${{ env.next_patch }}/" gradle.properties
+          git add gradle.properties
+          git commit -m "Bump version to ${{ env.next_patch }}"
+          git push origin "${{ env.base_branch }}"
+
+      - name: Prepare main for next SNAPSHOT (minor release only)
+        if: env.is_patch == 'false'
         run: |
           git checkout main
           sed -i "s/^version=.*/version=${{ env.next_minor }}/" gradle.properties
 
-      - name: Create PR to bump main to next SNAPSHOT
+      - name: Create PR to bump main (minor release only)
+        if: env.is_patch == 'false'
         uses: peter-evans/create-pull-request@v7
         with:
           branch: bump-main/v${{ env.version }}
