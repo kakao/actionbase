@@ -10,40 +10,43 @@ import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
+import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.storage.HBaseRecord
+import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.core.edge.Edge
-import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
+import com.kakao.actionbase.v2.engine.sql.QueryResult
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.sql.toJsonFormat
+import com.kakao.actionbase.v2.engine.sql.toNamedJsonFormat
 
 import org.apache.hadoop.hbase.client.Get
 
 import reactor.core.publisher.Mono
 
-class V3QueryService(
+class V2BackedQueryEngine(
     private val graph: Graph,
-) {
+) : QueryEngine {
     private val byteArrayBufferPool = ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
 
     private val groupRecordMapper = EdgeGroupRecordMapper.create(byteArrayBufferPool)
 
     @Suppress("UnusedParameter")
-    fun count(
+    override fun count(
         database: String,
         table: String,
         start: Any,
         direction: Direction,
-        ranges: String? = null,
-        filters: String? = null,
-        features: List<String> = emptyList(),
+        ranges: String?,
+        filters: String?,
+        features: List<String>,
     ): Mono<EdgeCountPayload> =
         counts(database, table, listOf(start), direction, ranges, filters, features)
             .map {
@@ -55,15 +58,16 @@ class V3QueryService(
             }
 
     @Suppress("UnusedParameter")
-    fun counts(
+    override fun counts(
         database: String,
         table: String,
         start: List<Any>,
         direction: Direction,
-        ranges: String? = null,
-        filters: String? = null,
-        features: List<String> = emptyList(),
+        ranges: String?,
+        filters: String?,
+        features: List<String>,
     ): Mono<DataFrameEdgeCountPayload> {
+        val v2Direction = direction.toV2()
         val name = EntityName(database, table)
         val label = graph.getLabel(name)
 
@@ -72,7 +76,7 @@ class V3QueryService(
         require(features.isEmpty()) { "`features` ${features.joinToString(", ")} are not supported in get query." }
 
         return label
-            .count(start.toSet(), direction)
+            .count(start.toSet(), v2Direction)
             .map {
                 val jsonFormat = it.toJsonFormat()
                 DataFrameEdgeCountPayload(
@@ -80,7 +84,7 @@ class V3QueryService(
                         jsonFormat.data.map { row ->
                             EdgeCountPayload(
                                 start = row[SRC_FIELD] as Any,
-                                direction = direction.toV3(),
+                                direction = direction,
                                 count = row[SELECT_COUNT_FIELD] as Long,
                                 context = emptyMap(),
                             )
@@ -92,14 +96,14 @@ class V3QueryService(
     }
 
     @Suppress("UnusedParameter")
-    fun gets(
+    override fun gets(
         database: String,
         table: String,
         source: List<Any>,
         target: List<Any>,
-        ranges: String? = null,
-        filters: String? = null,
-        features: List<String> = emptyList(),
+        ranges: String?,
+        filters: String?,
+        features: List<String>,
     ): Mono<DataFrameEdgePayload> {
         require(ranges == null) { "`ranges` is not supported in get query." }
 
@@ -114,15 +118,15 @@ class V3QueryService(
     /**
      * Overloaded gets for multi-edge tables using ids.
      * Multi-edge stores edge state with source=id, target=id, so this method
-     * provides an optimized lookup by ids instead of source×target combinations.
+     * provides an optimized lookup by ids instead of source x target combinations.
      */
     @Suppress("UnusedParameter")
-    fun gets(
+    override fun gets(
         database: String,
         table: String,
         ids: List<Any>,
-        filters: String? = null,
-        features: List<String> = emptyList(),
+        filters: String?,
+        features: List<String>,
     ): Mono<DataFrameEdgePayload> {
         val name = EntityName(database, table)
         val label = graph.getLabel(name)
@@ -168,18 +172,19 @@ class V3QueryService(
             }.switchIfEmpty(emptyDataFrameEdgePayload)
     }
 
-    fun scan(
+    override fun scan(
         database: String,
         table: String,
         index: String,
         start: Any,
         direction: Direction,
-        limit: Int = ScanFilter.defaultLimit,
-        offset: String? = null,
-        ranges: String? = null,
-        filters: String? = null,
-        features: List<String> = emptyList(),
+        limit: Int,
+        offset: String?,
+        ranges: String?,
+        filters: String?,
+        features: List<String>,
     ): Mono<DataFrameEdgePayload> {
+        val v2Direction = direction.toV2()
         val name = EntityName(database, table)
         val label = graph.getLabel(name)
 
@@ -221,7 +226,7 @@ class V3QueryService(
             ScanFilter(
                 name = name,
                 srcSet = setOf(start),
-                dir = direction,
+                dir = v2Direction,
                 limit = limit,
                 offset = offset,
                 indexName = index,
@@ -231,7 +236,7 @@ class V3QueryService(
         val totalMono =
             if (FEATURE_TOTAL in features) {
                 label
-                    .count(setOf(start), direction)
+                    .count(setOf(start), v2Direction)
                     .map {
                         val jsonFormat = it.toJsonFormat()
                         jsonFormat.data.first()[SELECT_COUNT_FIELD] as Long
@@ -246,32 +251,33 @@ class V3QueryService(
             .map { tuple ->
                 val df = tuple.t1
                 val total = tuple.t2
-                val flip = direction == Direction.IN
+                val flip = v2Direction == com.kakao.actionbase.v2.core.metadata.Direction.IN
                 df.applyPredicates(postPredicates).toDataFrameEdgePayload(flip, total)
             }.switchIfEmpty(emptyDataFrameEdgePayload)
     }
 
     @Suppress("UnusedParameter")
-    fun cache(
+    override fun cache(
         database: String,
         table: String,
         cache: String,
         start: Any,
         direction: Direction,
-        limit: Int = ScanFilter.defaultLimit,
+        limit: Int,
     ): Mono<DataFrameEdgePayload> = emptyDataFrameEdgePayload
 
-    fun agg(
+    override fun agg(
         database: String,
         table: String,
         group: String,
         start: List<Any>,
         direction: Direction,
         ranges: String,
-        filters: String? = null,
-        features: List<String> = emptyList(),
-        ttl: Long? = null,
+        filters: String?,
+        features: List<String>,
+        ttl: Long?,
     ): Mono<DataFrameEdgeAggPayload> {
+        val v2Direction = direction.toV2()
         val name = EntityName(database, table)
         val label = graph.getLabel(name)
 
@@ -313,7 +319,7 @@ class V3QueryService(
         val keys =
             start.distinct().map {
                 val casted =
-                    if (direction == Direction.OUT) {
+                    if (v2Direction == com.kakao.actionbase.v2.core.metadata.Direction.OUT) {
                         label.entity.schema.src.type.type
                             .cast(it)
                     } else {
@@ -325,7 +331,7 @@ class V3QueryService(
                     EdgeGroupRecord.Key.of(
                         directedSource = casted,
                         tableCode = label.entity.id,
-                        direction = direction.toV3(),
+                        direction = direction,
                         groupCode = groupEntity.code,
                     )
                 groupRecordMapper.encoder.encodeKey(key)
@@ -375,7 +381,11 @@ class V3QueryService(
             }
     }
 
-    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = graph.query(request)
+    override fun query(request: ActionbaseQuery): Mono<List<QueryResult.NamedJsonFormat>> =
+        graph.query(request)
+            .map { dataFrameMap ->
+                dataFrameMap.map { entry -> entry.value.toNamedJsonFormat(entry.key) }
+            }
 
     private fun encodeAggRanges(
         values: List<Any>,
@@ -529,7 +539,7 @@ class V3QueryService(
         private val emptyEdgeCountPayloadOut: EdgeCountPayload =
             EdgeCountPayload(
                 start = "",
-                direction = Direction.OUT.toV3(),
+                direction = Direction.OUT,
                 count = 0L,
                 context = emptyMap(),
             )
@@ -537,15 +547,15 @@ class V3QueryService(
         private val emptyEdgeCountPayloadIn: EdgeCountPayload =
             EdgeCountPayload(
                 start = "",
-                direction = Direction.IN.toV3(),
+                direction = Direction.IN,
                 count = 0L,
                 context = emptyMap(),
             )
 
-        private fun Direction.toV3(): com.kakao.actionbase.core.metadata.common.Direction =
+        private fun Direction.toV2(): com.kakao.actionbase.v2.core.metadata.Direction =
             when (this) {
-                Direction.OUT -> com.kakao.actionbase.core.metadata.common.Direction.OUT
-                Direction.IN -> com.kakao.actionbase.core.metadata.common.Direction.IN
+                Direction.OUT -> com.kakao.actionbase.v2.core.metadata.Direction.OUT
+                Direction.IN -> com.kakao.actionbase.v2.core.metadata.Direction.IN
             }
     }
 }

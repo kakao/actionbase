@@ -5,7 +5,7 @@ import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
-import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.metadata.Metadata
@@ -28,12 +28,12 @@ class MutationServiceSpec :
 
         lateinit var graph: Graph
         lateinit var mutationService: MutationService
-        lateinit var v3QueryService: V3QueryService
+        lateinit var v3QueryService: V2BackedQueryEngine
 
         beforeTest {
             graph = GraphFixtures.create()
             mutationService = MutationService(V2BackedEngine(graph))
-            v3QueryService = V3QueryService(graph)
+            v3QueryService = V2BackedQueryEngine(graph)
         }
 
         afterTest {

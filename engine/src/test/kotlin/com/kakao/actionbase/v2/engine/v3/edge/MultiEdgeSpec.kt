@@ -3,7 +3,7 @@ package com.kakao.actionbase.v2.engine.v3.edge
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
 import com.kakao.actionbase.engine.service.MutationService
-import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus
@@ -11,7 +11,7 @@ import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
-import com.kakao.actionbase.v2.engine.v3.V3QueryService
+import com.kakao.actionbase.v2.engine.v3.V2BackedQueryEngine
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -31,7 +31,7 @@ class MultiEdgeSpec :
         lateinit var graph: Graph
         lateinit var cdc: InMemoryCdc
         lateinit var mutationService: MutationService
-        lateinit var v3QueryService: V3QueryService
+        lateinit var v3QueryService: V2BackedQueryEngine
 
         val labelDefinition =
             """
@@ -94,7 +94,7 @@ class MultiEdgeSpec :
             val request = mapper.readValue<LabelCreateRequest>(labelDefinition)
             graph.labelDdl.create(keyEdgeLabelName, request).block()
             mutationService = MutationService(V2BackedEngine(graph))
-            v3QueryService = V3QueryService(graph)
+            v3QueryService = V2BackedQueryEngine(graph)
         }
 
         afterTest {

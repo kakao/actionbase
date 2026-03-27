@@ -18,7 +18,7 @@ import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
 import com.kakao.actionbase.v2.engine.test.wal.InMemoryWal
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
-import com.kakao.actionbase.v2.engine.v3.V3QueryService
+import com.kakao.actionbase.v2.engine.v3.V2BackedQueryEngine
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -45,7 +45,7 @@ class MutationServiceSystemAsyncSpec :
 
         lateinit var graph: Graph
         lateinit var mutationService: MutationService
-        lateinit var v3QueryService: V3QueryService
+        lateinit var v3QueryService: V2BackedQueryEngine
 
         beforeTest {
             graph =
@@ -68,7 +68,7 @@ class MutationServiceSystemAsyncSpec :
             asyncMultiEdgeTable = graph.getLabel(EntityName(database, asyncMultiEdgeTableName))
 
             mutationService = MutationService(V2BackedEngine(graph))
-            v3QueryService = V3QueryService(graph)
+            v3QueryService = V2BackedQueryEngine(graph)
         }
 
         afterTest {
