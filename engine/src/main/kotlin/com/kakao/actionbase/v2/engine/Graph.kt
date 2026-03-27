@@ -10,7 +10,6 @@ import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.v2.engine.v3.V2BackedQueryBinding
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
@@ -71,6 +70,7 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseOptions
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 import com.kakao.actionbase.v2.engine.util.getLogger
+import com.kakao.actionbase.v2.engine.v3.V2BackedQueryBinding
 import com.kakao.actionbase.v2.engine.wal.Wal
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 import com.kakao.actionbase.v2.engine.wal.WalLog

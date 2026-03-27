@@ -11,10 +11,10 @@ import com.kakao.actionbase.v2.core.types.StructType
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
 import com.kakao.actionbase.v2.engine.sql.StatKey
-import reactor.core.publisher.Mono
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 
 class ActionbaseQueryExecutorPostProcessJsonObjectSpec :
@@ -22,10 +22,34 @@ class ActionbaseQueryExecutorPostProcessJsonObjectSpec :
 
         val queryBinding =
             object : QueryBinding {
-                override fun getSelf(database: String, table: String, src: List<Any>, stats: Set<StatKey>): Mono<DataFrame> = throw NotImplementedError()
-                override fun get(database: String, table: String, src: List<Any>, tgt: List<Any>, stats: Set<StatKey>): Mono<DataFrame> = throw NotImplementedError()
-                override fun count(database: String, table: String, src: Set<Any>, direction: Direction): Mono<DataFrame> = throw NotImplementedError()
-                override fun scan(database: String, table: String, filter: QueryScanFilter, stats: Set<StatKey>): Mono<DataFrame> = throw NotImplementedError()
+                override fun getSelf(
+                    database: String,
+                    table: String,
+                    src: List<Any>,
+                    stats: Set<StatKey>,
+                ): Mono<DataFrame> = throw NotImplementedError()
+
+                override fun get(
+                    database: String,
+                    table: String,
+                    src: List<Any>,
+                    tgt: List<Any>,
+                    stats: Set<StatKey>,
+                ): Mono<DataFrame> = throw NotImplementedError()
+
+                override fun count(
+                    database: String,
+                    table: String,
+                    src: Set<Any>,
+                    direction: Direction,
+                ): Mono<DataFrame> = throw NotImplementedError()
+
+                override fun scan(
+                    database: String,
+                    table: String,
+                    filter: QueryScanFilter,
+                    stats: Set<StatKey>,
+                ): Mono<DataFrame> = throw NotImplementedError()
             }
         val executor = ActionbaseQueryExecutor(queryBinding)
 

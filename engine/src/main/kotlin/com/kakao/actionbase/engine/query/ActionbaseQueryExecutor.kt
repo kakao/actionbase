@@ -127,14 +127,15 @@ class ActionbaseQueryExecutor(
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
         val src = resolveVertex(queryItem.source, context)
-        val filter = QueryScanFilter(
-            srcSet = src,
-            direction = queryItem.direction,
-            limit = queryItem.limit,
-            offset = queryItem.offset,
-            indexName = queryItem.index,
-            predicates = queryItem.predicates?.toSet() ?: emptySet(),
-        )
+        val filter =
+            QueryScanFilter(
+                srcSet = src,
+                direction = queryItem.direction,
+                limit = queryItem.limit,
+                offset = queryItem.offset,
+                indexName = queryItem.index,
+                predicates = queryItem.predicates?.toSet() ?: emptySet(),
+            )
         return queryBinding.scan(queryItem.database, queryItem.table, filter, actionBaseQuery.stats)
     }
 
