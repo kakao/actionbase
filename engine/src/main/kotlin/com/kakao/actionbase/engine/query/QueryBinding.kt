@@ -13,25 +13,18 @@ import reactor.core.publisher.Mono
  * (Label, EntityName, EmptyEdgeIdEncoder).
  */
 interface QueryBinding {
-    fun getSelf(
-        database: String,
-        table: String,
-        src: List<Any>,
-        stats: Set<StatKey>,
-    ): Mono<DataFrame>
-
     fun get(
         database: String,
         table: String,
-        src: List<Any>,
-        tgt: List<Any>,
+        source: List<Any>,
+        target: List<Any>,
         stats: Set<StatKey>,
     ): Mono<DataFrame>
 
     fun count(
         database: String,
         table: String,
-        src: Set<Any>,
+        source: Set<Any>,
         direction: Direction,
     ): Mono<DataFrame>
 

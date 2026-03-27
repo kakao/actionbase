@@ -22,35 +22,29 @@ import reactor.core.publisher.Mono
 class V2BackedQueryBinding(
     private val graph: Graph,
 ) : QueryBinding {
-    override fun getSelf(
-        database: String,
-        table: String,
-        src: List<Any>,
-        stats: Set<StatKey>,
-    ): Mono<DataFrame> {
-        val label = graph.getLabel(EntityName(database, table))
-        return label.getSelf(src, stats, EmptyEdgeIdEncoder.INSTANCE)
-    }
-
     override fun get(
         database: String,
         table: String,
-        src: List<Any>,
-        tgt: List<Any>,
+        source: List<Any>,
+        target: List<Any>,
         stats: Set<StatKey>,
     ): Mono<DataFrame> {
         val label = graph.getLabel(EntityName(database, table))
-        return label.get(src, tgt, stats, EmptyEdgeIdEncoder.INSTANCE)
+        return if (source === target) {
+            label.getSelf(source, stats, EmptyEdgeIdEncoder.INSTANCE)
+        } else {
+            label.get(source, target, stats, EmptyEdgeIdEncoder.INSTANCE)
+        }
     }
 
     override fun count(
         database: String,
         table: String,
-        src: Set<Any>,
+        source: Set<Any>,
         direction: Direction,
     ): Mono<DataFrame> {
         val label = graph.getLabel(EntityName(database, table))
-        return label.count(src, direction)
+        return label.count(source, direction)
     }
 
     override fun scan(
@@ -62,7 +56,7 @@ class V2BackedQueryBinding(
         val scanFilter =
             ScanFilter(
                 name = EntityName(database, table),
-                srcSet = filter.srcSet,
+                srcSet = filter.sourceSet,
                 dir = filter.direction,
                 limit = filter.limit,
                 offset = filter.offset,

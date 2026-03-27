@@ -22,25 +22,18 @@ class ActionbaseQueryExecutorPostProcessSplitExplodeSpec :
 
         val queryBinding =
             object : QueryBinding {
-                override fun getSelf(
-                    database: String,
-                    table: String,
-                    src: List<Any>,
-                    stats: Set<StatKey>,
-                ): Mono<DataFrame> = throw NotImplementedError()
-
                 override fun get(
                     database: String,
                     table: String,
-                    src: List<Any>,
-                    tgt: List<Any>,
+                    source: List<Any>,
+                    target: List<Any>,
                     stats: Set<StatKey>,
                 ): Mono<DataFrame> = throw NotImplementedError()
 
                 override fun count(
                     database: String,
                     table: String,
-                    src: Set<Any>,
+                    source: Set<Any>,
                     direction: Direction,
                 ): Mono<DataFrame> = throw NotImplementedError()
 

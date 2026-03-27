@@ -99,8 +99,8 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
-        val src = resolveVertex(queryItem.source, context).toList()
-        return queryBinding.getSelf(queryItem.database, queryItem.table, src, actionBaseQuery.stats)
+        val source = resolveVertex(queryItem.source, context).toList()
+        return queryBinding.get(queryItem.database, queryItem.table, source, source, actionBaseQuery.stats)
     }
 
     private fun processGet(
@@ -108,17 +108,17 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
-        val src = resolveVertex(queryItem.source, context).toList()
-        val tgt = resolveVertex(queryItem.target, context).toList()
-        return queryBinding.get(queryItem.database, queryItem.table, src, tgt, actionBaseQuery.stats)
+        val source = resolveVertex(queryItem.source, context).toList()
+        val target = resolveVertex(queryItem.target, context).toList()
+        return queryBinding.get(queryItem.database, queryItem.table, source, target, actionBaseQuery.stats)
     }
 
     private fun processCount(
         queryItem: ActionbaseQuery.Item.Count,
         context: Map<String, DataFrame>,
     ): Mono<DataFrame> {
-        val src = resolveVertex(queryItem.source, context)
-        return queryBinding.count(queryItem.database, queryItem.table, src, queryItem.direction)
+        val source = resolveVertex(queryItem.source, context)
+        return queryBinding.count(queryItem.database, queryItem.table, source, queryItem.direction)
     }
 
     private fun processScan(
@@ -126,10 +126,10 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
-        val src = resolveVertex(queryItem.source, context)
+        val source = resolveVertex(queryItem.source, context)
         val filter =
             QueryScanFilter(
-                srcSet = src,
+                sourceSet = source,
                 direction = queryItem.direction,
                 limit = queryItem.limit,
                 offset = queryItem.offset,
