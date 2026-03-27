@@ -15,13 +15,13 @@ import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.storage.HBaseRecord
 import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.NamedQueryItem
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
-import com.kakao.actionbase.v2.engine.sql.QueryResult
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.sql.toJsonFormat
@@ -251,7 +251,7 @@ class V2BackedQueryEngine(
             .map { tuple ->
                 val df = tuple.t1
                 val total = tuple.t2
-                val flip = v2Direction == com.kakao.actionbase.v2.core.metadata.Direction.IN
+                val flip = v2Direction == V2Direction.IN
                 df.applyPredicates(postPredicates).toDataFrameEdgePayload(flip, total)
             }.switchIfEmpty(emptyDataFrameEdgePayload)
     }
@@ -319,7 +319,7 @@ class V2BackedQueryEngine(
         val keys =
             start.distinct().map {
                 val casted =
-                    if (v2Direction == com.kakao.actionbase.v2.core.metadata.Direction.OUT) {
+                    if (v2Direction == V2Direction.OUT) {
                         label.entity.schema.src.type.type
                             .cast(it)
                     } else {
@@ -381,11 +381,21 @@ class V2BackedQueryEngine(
             }
     }
 
-    override fun query(request: ActionbaseQuery): Mono<List<QueryResult.NamedJsonFormat>> =
+    override fun query(request: ActionbaseQuery): Mono<List<NamedQueryItem>> =
         graph
             .query(request)
             .map { dataFrameMap ->
-                dataFrameMap.map { entry -> entry.value.toNamedJsonFormat(entry.key) }
+                dataFrameMap.map { (name, df) ->
+                    val v2 = df.toNamedJsonFormat(name)
+                    NamedQueryItem(
+                        name = v2.name,
+                        data = v2.data,
+                        rows = v2.rows,
+                        stats = v2.stats,
+                        offset = v2.offset,
+                        hasNext = v2.hasNext,
+                    )
+                }
             }
 
     private fun encodeAggRanges(
@@ -553,10 +563,12 @@ class V2BackedQueryEngine(
                 context = emptyMap(),
             )
 
-        private fun Direction.toV2(): com.kakao.actionbase.v2.core.metadata.Direction =
+        private fun Direction.toV2(): V2Direction =
             when (this) {
-                Direction.OUT -> com.kakao.actionbase.v2.core.metadata.Direction.OUT
-                Direction.IN -> com.kakao.actionbase.v2.core.metadata.Direction.IN
+                Direction.OUT -> V2Direction.OUT
+                Direction.IN -> V2Direction.IN
             }
     }
 }
+
+private typealias V2Direction = com.kakao.actionbase.v2.core.metadata.Direction

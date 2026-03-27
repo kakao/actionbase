@@ -6,7 +6,7 @@ import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.engine.query.ActionbaseQuery
-import com.kakao.actionbase.v2.engine.sql.QueryResult
+import com.kakao.actionbase.engine.query.NamedQueryItem
 
 import reactor.core.publisher.Mono
 
@@ -90,7 +90,7 @@ interface QueryEngine {
         ttl: Long? = null,
     ): Mono<DataFrameEdgeAggPayload>
 
-    fun query(request: ActionbaseQuery): Mono<List<QueryResult.NamedJsonFormat>>
+    fun query(request: ActionbaseQuery): Mono<List<NamedQueryItem>>
 
     companion object {
         const val DEFAULT_LIMIT: Int = 10
