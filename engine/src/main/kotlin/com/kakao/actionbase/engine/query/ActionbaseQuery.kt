@@ -1,4 +1,4 @@
-package com.kakao.actionbase.v2.engine.query
+package com.kakao.actionbase.engine.query
 
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.types.DataType
@@ -25,66 +25,66 @@ data class ActionbaseQuery(
     sealed class Item {
         abstract val name: String
         abstract val include: Boolean
-        abstract val cache: Boolean
+        abstract val memoize: Boolean
         abstract val post: List<PostProcessor>
 
         data class Self(
             override val name: String,
-            val service: String,
-            val label: String,
-            val src: Vertex,
+            val database: String,
+            val table: String,
+            val source: Vertex,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
 
         data class Get(
             override val name: String,
-            val service: String,
-            val label: String,
-            val src: Vertex,
-            val tgt: Vertex,
+            val database: String,
+            val table: String,
+            val source: Vertex,
+            val target: Vertex,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
 
         data class Count(
             override val name: String,
-            val service: String,
-            val label: String,
-            val src: Vertex,
-            val dir: Direction,
+            val database: String,
+            val table: String,
+            val source: Vertex,
+            val direction: Direction,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
 
         data class Scan(
             override val name: String,
-            val service: String,
-            val label: String,
-            val src: Vertex,
-            val dir: Direction,
+            val database: String,
+            val table: String,
+            val source: Vertex,
+            val direction: Direction,
             val index: String,
             val limit: Int,
             val offset: String? = null,
             val predicates: List<WherePredicate>? = null,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
 
         data class Cache(
             override val name: String,
-            val service: String,
-            val label: String,
-            val src: Vertex,
-            val dir: Direction,
-            val cacheName: String,
+            val database: String,
+            val table: String,
+            val source: Vertex,
+            val direction: Direction,
+            val cache: String,
             val limit: Int,
             override val include: Boolean = false,
-            override val cache: Boolean = false,
+            override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
         ) : Item()
     }

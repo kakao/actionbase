@@ -1,7 +1,8 @@
-package com.kakao.actionbase.v2.engine.query
+package com.kakao.actionbase.v2.engine.v3.query
 
+import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQuery.Companion.toJson
 import com.kakao.actionbase.v2.core.metadata.Direction
-import com.kakao.actionbase.v2.engine.query.ActionbaseQuery.Companion.toJson
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
 
 import io.kotest.core.spec.style.StringSpec
@@ -18,13 +19,13 @@ class ActionbaseQueryParserSpec :
                     {
                       "type": "SCAN",
                       "name": "a",
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                         "type": "VALUE",
                         "value": [1]
                       },
-                      "dir": "OUT",
+                      "direction": "OUT",
                       "index": "created_at_desc",
                       "limit": 100,
                       "predicates": [
@@ -38,14 +39,14 @@ class ActionbaseQueryParserSpec :
                     {
                       "type": "GET",
                       "name": "b",
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                         "type": "REF",
                         "ref": "a",
                         "field": "tgt"
                       },
-                      "tgt": {
+                      "target": {
                         "type": "VALUE",
                         "value": [1]
                       }
@@ -54,20 +55,20 @@ class ActionbaseQueryParserSpec :
                       "type": "COUNT",
                       "name": "d",
                       "include": true,
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                         "type": "VALUE",
                         "value": [1]
                       },
-                      "dir": "OUT"
+                      "direction": "OUT"
                     },
                     {
                       "type": "SELF",
                       "name": "e",
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                           "type": "VALUE",
                           "value": [1, 2, 3]
                       }
@@ -75,15 +76,15 @@ class ActionbaseQueryParserSpec :
                     {
                       "type": "CACHE",
                       "name": "f",
-                      "service": "{service}",
-                      "label": "{label}",
-                      "src": {
+                      "database": "{database}",
+                      "table": "{table}",
+                      "source": {
                         "type": "REF",
                         "ref": "a",
                         "field": "tgt"
                       },
-                      "dir": "OUT",
-                      "cacheName": "recent_wishlist",
+                      "direction": "OUT",
+                      "cache": "recent_wishlist",
                       "limit": 10,
                       "include": true
                     }
@@ -97,10 +98,10 @@ class ActionbaseQueryParserSpec :
             actionBaseQuery.query[0] shouldBe
                 ActionbaseQuery.Item.Scan(
                     name = "a",
-                    service = "{service}",
-                    label = "{label}",
-                    src = ActionbaseQuery.Vertex.Value(listOf(1)),
-                    dir = Direction.OUT,
+                    database = "{database}",
+                    table = "{table}",
+                    source = ActionbaseQuery.Vertex.Value(listOf(1)),
+                    direction = Direction.OUT,
                     index = "created_at_desc",
                     limit = 100,
                     predicates = listOf(WherePredicate.Eq("name", "Alice")),
@@ -109,37 +110,37 @@ class ActionbaseQueryParserSpec :
             actionBaseQuery.query[1] shouldBe
                 ActionbaseQuery.Item.Get(
                     name = "b",
-                    service = "{service}",
-                    label = "{label}",
-                    src = ActionbaseQuery.Vertex.Ref("a", "tgt"),
-                    tgt = ActionbaseQuery.Vertex.Value(listOf(1)),
+                    database = "{database}",
+                    table = "{table}",
+                    source = ActionbaseQuery.Vertex.Ref("a", "tgt"),
+                    target = ActionbaseQuery.Vertex.Value(listOf(1)),
                     include = false,
                 )
             actionBaseQuery.query[2] shouldBe
                 ActionbaseQuery.Item.Count(
                     name = "d",
-                    service = "{service}",
-                    label = "{label}",
-                    src = ActionbaseQuery.Vertex.Value(listOf(1)),
-                    dir = Direction.OUT,
+                    database = "{database}",
+                    table = "{table}",
+                    source = ActionbaseQuery.Vertex.Value(listOf(1)),
+                    direction = Direction.OUT,
                     include = true,
                 )
             actionBaseQuery.query[3] shouldBe
                 ActionbaseQuery.Item.Self(
                     name = "e",
-                    service = "{service}",
-                    label = "{label}",
-                    src = ActionbaseQuery.Vertex.Value(listOf(1, 2, 3)),
+                    database = "{database}",
+                    table = "{table}",
+                    source = ActionbaseQuery.Vertex.Value(listOf(1, 2, 3)),
                     include = false,
                 )
             actionBaseQuery.query[4] shouldBe
                 ActionbaseQuery.Item.Cache(
                     name = "f",
-                    service = "{service}",
-                    label = "{label}",
-                    src = ActionbaseQuery.Vertex.Ref("a", "tgt"),
-                    dir = Direction.OUT,
-                    cacheName = "recent_wishlist",
+                    database = "{database}",
+                    table = "{table}",
+                    source = ActionbaseQuery.Vertex.Ref("a", "tgt"),
+                    direction = Direction.OUT,
+                    cache = "recent_wishlist",
                     limit = 10,
                     include = true,
                 )

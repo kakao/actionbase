@@ -1,10 +1,9 @@
-package com.kakao.actionbase.v2.engine.query
+package com.kakao.actionbase.engine.query
 
+import com.kakao.actionbase.engine.query.compat.toScanFilter
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
-import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.StructType
-import com.kakao.actionbase.v2.engine.query.compat.toScanFilter
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
 
@@ -65,7 +64,7 @@ class ActionbaseQueryExecutor(
     ): Mono<DataFrame> =
         processQueryItem(queryItem, context, actionBaseQuery)
             .flatMap { applyPostProcessors(it, queryItem.post) }
-            .let { if (queryItem.cache) it.cache() else it }
+            .let { if (queryItem.memoize) it.cache() else it }
 
     private fun processQueryItem(
         queryItem: ActionbaseQuery.Item,
@@ -102,8 +101,8 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.service, queryItem.label)
-        val src = resolveVertex(queryItem.src, context).toList()
+        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
+        val src = resolveVertex(queryItem.source, context).toList()
         return label.getSelf(src, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
     }
 
@@ -112,9 +111,9 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.service, queryItem.label)
-        val src = resolveVertex(queryItem.src, context).toList()
-        val tgt = resolveVertex(queryItem.tgt, context).toList()
+        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
+        val src = resolveVertex(queryItem.source, context).toList()
+        val tgt = resolveVertex(queryItem.target, context).toList()
         return label.get(src, tgt, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
     }
 
@@ -122,9 +121,9 @@ class ActionbaseQueryExecutor(
         queryItem: ActionbaseQuery.Item.Count,
         context: Map<String, DataFrame>,
     ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.service, queryItem.label)
-        val src = resolveVertex(queryItem.src, context)
-        return label.count(src, Direction.OUT)
+        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
+        val src = resolveVertex(queryItem.source, context)
+        return label.count(src, queryItem.direction)
     }
 
     private fun processScan(
@@ -132,8 +131,8 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.service, queryItem.label)
-        val src = resolveVertex(queryItem.src, context)
+        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
+        val src = resolveVertex(queryItem.source, context)
         val scanFilter = queryItem.toScanFilter(src)
         return label.scan(scanFilter, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
     }
@@ -144,7 +143,7 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
     ): Mono<DataFrame> =
         // TODO Phase 3: resolve src via resolveVertex(), look up label via labelProvider,
-        //  perform EdgeCache multi-get using cacheName and limit from queryItem,
+        //  perform EdgeCache multi-get using cache and limit from queryItem,
         //  validate limit > 0 from user input
         Mono.just(DataFrame(emptyList(), StructType(emptyArray())))
 

@@ -20,7 +20,7 @@ import org.springframework.http.MediaType
  * Step 3: Multi-hop query via /graph/v3/query using ActionbaseQuery format
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ActionbaseQueryCacheE2ETest : E2ETestBase() {
+class ActionbaseQueryE2ETest : E2ETestBase() {
     private val db1 = "multihop-db1"
     private val db2 = "multihop-db2"
     private val hop1Table = "follows"
@@ -53,8 +53,8 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                   "table": "$hop1Table",
                   "schema": {
                     "type": "EDGE",
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
+                    "source": {"type": "long", "comment": "source"},
+                    "target": {"type": "long", "comment": "target"},
                     "properties": [
                       {"name": "createdAt", "type": "long", "comment": "ts", "nullable": true}
                     ],
@@ -84,8 +84,8 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                   "table": "$hop2Table",
                   "schema": {
                     "type": "EDGE",
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
+                    "source": {"type": "long", "comment": "source"},
+                    "target": {"type": "long", "comment": "target"},
                     "properties": [
                       {"name": "createdAt", "type": "long", "comment": "ts", "nullable": true}
                     ],
@@ -170,10 +170,10 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                         {
                           "type": "SCAN",
                           "name": "hop1",
-                          "service": "$db1",
-                          "label": "$hop1Table",
-                          "src": {"type": "VALUE", "value": [1000]},
-                          "dir": "OUT",
+                          "database": "$db1",
+                          "table": "$hop1Table",
+                          "source": {"type": "VALUE", "value": [1000]},
+                          "direction": "OUT",
                           "index": "created_at_desc",
                           "limit": 100,
                           "include": true
@@ -181,11 +181,11 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                         {
                           "type": "CACHE",
                           "name": "hop2",
-                          "service": "$db2",
-                          "label": "$hop2Table",
-                          "src": {"type": "REF", "ref": "hop1", "field": "tgt"},
-                          "dir": "OUT",
-                          "cacheName": "recent_wishlist",
+                          "database": "$db2",
+                          "table": "$hop2Table",
+                          "source": {"type": "REF", "ref": "hop1", "field": "tgt"},
+                          "direction": "OUT",
+                          "cache": "recent_wishlist",
                           "limit": 10,
                           "include": true
                         }
@@ -221,10 +221,10 @@ class ActionbaseQueryCacheE2ETest : E2ETestBase() {
                         {
                           "type": "SCAN",
                           "name": "follows_scan",
-                          "service": "$db1",
-                          "label": "$hop1Table",
-                          "src": {"type": "VALUE", "value": [1000]},
-                          "dir": "OUT",
+                          "database": "$db1",
+                          "table": "$hop1Table",
+                          "source": {"type": "VALUE", "value": [1000]},
+                          "direction": "OUT",
                           "index": "created_at_desc",
                           "limit": 100,
                           "include": true

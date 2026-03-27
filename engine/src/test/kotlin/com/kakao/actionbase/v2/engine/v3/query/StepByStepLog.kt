@@ -1,4 +1,4 @@
-package com.kakao.actionbase.v2.engine.query
+package com.kakao.actionbase.v2.engine.v3.query
 
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName

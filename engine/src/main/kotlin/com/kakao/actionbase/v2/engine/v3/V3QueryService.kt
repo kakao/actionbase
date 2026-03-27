@@ -15,6 +15,7 @@ import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.storage.HBaseRecord
+import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.core.code.CryptoUtils
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -466,6 +467,8 @@ class V3QueryService(
                 DataFrameEdgeAggPayload(items, items.size, rootContext)
             }
     }
+
+    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = graph.query(request)
 
     private fun encodeAggRanges(
         values: List<Any>,

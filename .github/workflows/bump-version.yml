@@ -7,6 +7,11 @@ on:
         description: 'Release version (e.g., 0.2.0)'
         required: true
         type: string
+      branch:
+        description: 'Target branch (default: main, e.g., 0.2.x for patch release)'
+        required: false
+        default: 'main'
+        type: string
 
 jobs:
   bump:
@@ -16,6 +21,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
       - name: Validate version format
         env:
@@ -44,14 +51,15 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
         with:
+          base: ${{ inputs.branch }}
           branch: release/v${{ inputs.version }}
           commit-message: "Bump version to ${{ inputs.version }}"
           title: "Bump version to ${{ inputs.version }}"
           body: |
-            Bump version from `${{ env.current_version }}` to `${{ inputs.version }}` for release.
+            Bump version from `${{ env.current_version }}` to `${{ inputs.version }}`.
+            Target: `${{ inputs.branch }}`
 
             After merging, the following will happen automatically:
             - Tag `v${{ inputs.version }}` will be created
-            - Release branch will be created with the next patch SNAPSHOT
-            - A follow-up PR will be opened to bump main to the next minor SNAPSHOT
+            - Version will be bumped to the next SNAPSHOT
           labels: release

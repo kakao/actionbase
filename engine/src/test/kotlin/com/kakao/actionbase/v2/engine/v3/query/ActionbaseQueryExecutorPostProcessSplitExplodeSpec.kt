@@ -1,5 +1,8 @@
-package com.kakao.actionbase.v2.engine.query
+package com.kakao.actionbase.v2.engine.v3.query
 
+import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
+import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.StructType
