@@ -10,7 +10,7 @@ import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.engine.query.LabelProvider
+import com.kakao.actionbase.v2.engine.v3.V2BackedQueryBinding
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
@@ -113,7 +113,6 @@ class Graph(
     onlineMetadataLabel: Label,
     private val nilLabel: Label,
 ) : GraphDefaults,
-    LabelProvider,
     AutoCloseable {
     internal val mutationRequestTimeout = config.mutationRequestTimeout
 
@@ -168,7 +167,7 @@ class Graph(
 
     fun isReady(): Boolean = metadataInitialized
 
-    private val queryExecutor = ActionbaseQueryExecutor(this)
+    private val queryExecutor = ActionbaseQueryExecutor(V2BackedQueryBinding(this))
 
     val metastoreInspector = MetastoreInspector(this.metastore, this.metadataTable)
 
@@ -231,7 +230,7 @@ class Graph(
 
     // -- mutation
 
-    override fun getLabel(name: EntityName): Label =
+    fun getLabel(name: EntityName): Label =
         if (aliases.containsKey(name)) {
             labels[aliases[name]] ?: throw UnsupportedOperationException("No such label ${aliases[name]} of the alias $name.")
         } else {
