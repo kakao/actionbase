@@ -2,6 +2,7 @@ package com.kakao.actionbase.server.configuration
 
 import com.kakao.actionbase.server.filter.CustomTokenFilter
 import com.kakao.actionbase.server.filter.MirrorRequestFilter
+import com.kakao.actionbase.server.filter.ReadOnlyRequestFilter
 import com.kakao.actionbase.server.filter.ResponseMetaFactory
 import com.kakao.actionbase.server.filter.ResponseMetaFilter
 import com.kakao.actionbase.server.filter.TokenAuthenticationFilter
@@ -17,6 +18,7 @@ import org.springframework.web.server.WebFilter
 @Configuration
 class WebFilterConfig(
     private val properties: GraphProperties,
+    private val serverProperties: ServerProperties,
     private val gitProperties: GitProperties?,
     private val buildProperties: BuildProperties,
 ) {
@@ -29,6 +31,15 @@ class WebFilterConfig(
 
     @Bean
     @Order(1)
+    fun readOnlyRequestFilter(): WebFilter? =
+        if (serverProperties.readOnly) {
+            ReadOnlyRequestFilter()
+        } else {
+            null
+        }
+
+    @Bean
+    @Order(2)
     fun mirrorRequestFilter(): WebFilter? =
         if (properties.allowMirror) {
             MirrorRequestFilter()
@@ -37,7 +48,7 @@ class WebFilterConfig(
         }
 
     @Bean("tokenAuthenticationFilter")
-    @Order(2)
+    @Order(3)
     fun tokenAuthenticationFilter(customTokenFilterProvider: ObjectProvider<CustomTokenFilter>): WebFilter {
         val customTokenFilter = customTokenFilterProvider.getIfAvailable()
         return TokenAuthenticationFilter(

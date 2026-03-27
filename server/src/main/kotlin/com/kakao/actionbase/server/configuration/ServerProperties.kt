@@ -11,6 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class ServerProperties(
     val tenant: String,
     val datastore: DatastoreProperties,
+    val readOnly: Boolean = false,
 ) {
     data class DatastoreProperties(
         val type: DatastoreType,
