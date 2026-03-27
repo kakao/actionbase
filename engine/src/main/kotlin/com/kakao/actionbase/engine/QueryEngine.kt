@@ -15,7 +15,6 @@ import reactor.core.publisher.Mono
  * Uses V3 types in the public API to decouple controllers from V2 internals.
  */
 interface QueryEngine {
-
     fun count(
         database: String,
         table: String,

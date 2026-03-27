@@ -382,7 +382,8 @@ class V2BackedQueryEngine(
     }
 
     override fun query(request: ActionbaseQuery): Mono<List<QueryResult.NamedJsonFormat>> =
-        graph.query(request)
+        graph
+            .query(request)
             .map { dataFrameMap ->
                 dataFrameMap.map { entry -> entry.value.toNamedJsonFormat(entry.key) }
             }

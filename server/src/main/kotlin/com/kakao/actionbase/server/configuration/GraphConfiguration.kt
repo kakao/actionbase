@@ -1,6 +1,7 @@
 package com.kakao.actionbase.server.configuration
 
 import com.kakao.actionbase.engine.MutationEngine
+import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.server.client.kafka.SpringKafkaClientFactory
 import com.kakao.actionbase.server.client.web.SpringWebClientFactory
@@ -12,7 +13,6 @@ import com.kakao.actionbase.v2.engine.client.kafka.KafkaClientFactory
 import com.kakao.actionbase.v2.engine.client.web.WebClientFactory
 import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.util.getLogger
-import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
 import com.kakao.actionbase.v2.engine.v3.V2BackedQueryEngine
 import com.kakao.actionbase.v2.engine.wal.DefaultWalFactory

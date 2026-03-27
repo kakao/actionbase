@@ -2,8 +2,8 @@ package com.kakao.actionbase.v2.engine.v3.edge
 
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
-import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.core.metadata.common.Direction
+import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus

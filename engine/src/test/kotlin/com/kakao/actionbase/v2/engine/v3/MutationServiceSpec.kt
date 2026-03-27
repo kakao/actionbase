@@ -3,9 +3,9 @@ package com.kakao.actionbase.v2.engine.v3
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
+import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
-import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.metadata.Metadata
