@@ -460,7 +460,7 @@ open class HBaseHashLabel(
                     filters.addFilter(
                         ColumnRangeFilter(
                             min,
-                            true,
+                            false,
                             max,
                             false,
                         ),

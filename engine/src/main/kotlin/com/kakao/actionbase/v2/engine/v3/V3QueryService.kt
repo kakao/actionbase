@@ -293,11 +293,9 @@ class V3QueryService(
             )
         val encodedKey = cacheRecordMapper.encoder.encodeKey(key)
 
-        // Offset-based pagination: qualifier + 0x00 = "start after this qualifier"
         val offsetNext =
             offset?.let {
-                val decoded = CryptoUtils.decodeAndDecryptUrlSafe(it)
-                decoded + 0x00.toByte()
+                CryptoUtils.decodeAndDecryptUrlSafe(it)
             }
         // offsetNext maps to ColumnRangeFilter min (ascending byte order start)
         val (from, to) =
