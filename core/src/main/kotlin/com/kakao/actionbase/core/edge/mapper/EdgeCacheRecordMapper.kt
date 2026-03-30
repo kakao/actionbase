@@ -147,11 +147,11 @@ class EdgeCacheRecordMapper private constructor(
             val buffer = value.buffer()
             val version: Long = buffer.getValue()
 
-            val properties = mutableMapOf<Int, Any>()
+            val properties = mutableMapOf<Int, Any?>()
 
             while (buffer.hasRemaining()) {
                 val propertyHashKey: Int = buffer.getValue()
-                val propertyValue: Any = buffer.getValue()
+                val propertyValue: Any? = buffer.getValueOrNull()
 
                 properties[propertyHashKey] = propertyValue
             }
