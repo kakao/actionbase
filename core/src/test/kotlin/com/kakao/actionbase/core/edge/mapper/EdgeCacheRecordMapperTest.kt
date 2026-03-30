@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * EdgeCache (Wide Row):
+ * EdgeCache (Wide Row) layout:
  *
  * |                                  row key                                |            qualifier           |        value         |
  * |-------------------------------------------------------------------------|--------------------------------|----------------------|
