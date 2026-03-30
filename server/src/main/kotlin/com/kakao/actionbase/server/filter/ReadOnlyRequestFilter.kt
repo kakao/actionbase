@@ -9,14 +9,14 @@ import org.springframework.web.server.WebFilterChain
 
 import reactor.core.publisher.Mono
 
+// Rejects non-GET methods on graph path prefixes with 403.
+// Exceptions: read-only POST endpoints matched by readSuffixes.
 class ReadOnlyRequestFilter : WebFilter {
     private val log = LoggerFactory.getLogger(ReadOnlyRequestFilter::class.java)
 
-    private val protectedPaths = setOf("/graph/v2", "/graph/v3")
-    private val mutatingMethods = setOf(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.PATCH)
-
-    // POST endpoints that are read-only queries (use POST for complex request bodies)
-    private val readOnlyPostSuffixes =
+    private val paths = setOf("/graph/v2", "/graph/v3")
+    private val readMethods = setOf(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS)
+    private val readSuffixes =
         setOf(
             "/edges/get",
             "/multi-edges/ids",
@@ -24,7 +24,7 @@ class ReadOnlyRequestFilter : WebFilter {
         )
 
     init {
-        log.info("ReadOnlyRequestFilter is active. Write operations on {} will be rejected.", protectedPaths)
+        log.info("ReadOnlyRequestFilter is active. Write operations on {} will be rejected.", paths)
     }
 
     override fun filter(
@@ -34,22 +34,19 @@ class ReadOnlyRequestFilter : WebFilter {
         val method = exchange.request.method
         val path = exchange.request.uri.path
 
-        if (method in mutatingMethods && protectedPaths.any { path.startsWith(it) }) {
-            if (method == HttpMethod.POST && isReadOnlyPost(path)) {
-                return chain.filter(exchange)
-            }
-            log.warn("Blocked write request in read-only mode: {} {}", method, path)
-            val bufferFactory = exchange.response.bufferFactory()
-            val messageBuffer =
-                bufferFactory.wrap(
-                    """{"message":"Write operation not allowed in read-only mode: $method $path"}""".toByteArray(),
-                )
-            exchange.response.statusCode = HttpStatus.FORBIDDEN
-            return exchange.response.writeWith(Mono.just(messageBuffer))
+        if (method in readMethods || !paths.any { path.startsWith(it) } || isRead(path)) {
+            return chain.filter(exchange)
         }
 
-        return chain.filter(exchange)
+        log.warn("Blocked write request in read-only mode: {} {}", method, path)
+        val bufferFactory = exchange.response.bufferFactory()
+        val messageBuffer =
+            bufferFactory.wrap(
+                """{"message":"Write operation not allowed in read-only mode: $method $path"}""".toByteArray(),
+            )
+        exchange.response.statusCode = HttpStatus.FORBIDDEN
+        return exchange.response.writeWith(Mono.just(messageBuffer))
     }
 
-    private fun isReadOnlyPost(path: String): Boolean = readOnlyPostSuffixes.any { path.endsWith(it) }
+    private fun isRead(path: String): Boolean = readSuffixes.any { path.endsWith(it) }
 }
