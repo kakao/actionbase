@@ -70,7 +70,7 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseOptions
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 import com.kakao.actionbase.v2.engine.util.getLogger
-import com.kakao.actionbase.v2.engine.v3.V2BackedQueryBinding
+import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
 import com.kakao.actionbase.v2.engine.wal.Wal
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 import com.kakao.actionbase.v2.engine.wal.WalLog
@@ -167,7 +167,7 @@ class Graph(
 
     fun isReady(): Boolean = metadataInitialized
 
-    private val queryExecutor = ActionbaseQueryExecutor(V2BackedQueryBinding(this))
+    private val queryExecutor = ActionbaseQueryExecutor(V2BackedEngine(this)::getTableBinding)
 
     val metastoreInspector = MetastoreInspector(this.metastore, this.metadataTable)
 

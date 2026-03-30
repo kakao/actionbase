@@ -10,12 +10,18 @@ import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.binding.MutationRecordsSummary
+import com.kakao.actionbase.engine.binding.ScanFilter
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
+import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.hbase.Constants
 import com.kakao.actionbase.v2.core.edge.Edge
+import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.LockAcquisitionFailedException
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
+import com.kakao.actionbase.v2.engine.sql.DataFrame
+import com.kakao.actionbase.v2.engine.sql.StatKey
 
 import org.apache.hadoop.hbase.client.Delete
 import org.apache.hadoop.hbase.client.Increment
@@ -89,6 +95,41 @@ class V2BackedTableBinding(
                 .subscribeOn(Schedulers.boundedElastic())
                 .subscribe({}, { log.error("Stale lock clear failed", it) })
         }
+    }
+
+    // -- query --
+
+    override fun get(
+        source: List<Any>,
+        target: List<Any>,
+        stats: Set<StatKey>,
+    ): Mono<DataFrame> =
+        if (source === target) {
+            label.getSelf(source, stats, EmptyEdgeIdEncoder.INSTANCE)
+        } else {
+            label.get(source, target, stats, EmptyEdgeIdEncoder.INSTANCE)
+        }
+
+    override fun count(
+        source: Set<Any>,
+        direction: Direction,
+    ): Mono<DataFrame> = label.count(source, direction)
+
+    override fun scan(
+        filter: ScanFilter,
+        stats: Set<StatKey>,
+    ): Mono<DataFrame> {
+        val scanFilter =
+            com.kakao.actionbase.v2.engine.sql.ScanFilter(
+                name = EntityName(descriptor.database, descriptor.table),
+                srcSet = filter.sourceSet,
+                dir = filter.direction,
+                limit = filter.limit,
+                offset = filter.offset,
+                indexName = filter.indexName,
+                otherPredicates = filter.predicates,
+            )
+        return label.scan(scanFilter, stats, EmptyEdgeIdEncoder.INSTANCE)
     }
 
     private fun buildMutationRecords(

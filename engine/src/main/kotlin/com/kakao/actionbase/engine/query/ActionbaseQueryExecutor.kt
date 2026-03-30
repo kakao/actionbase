@@ -1,5 +1,7 @@
 package com.kakao.actionbase.engine.query
 
+import com.kakao.actionbase.engine.binding.ScanFilter
+import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.StructType
 import com.kakao.actionbase.v2.engine.sql.DataFrame
@@ -23,7 +25,7 @@ import reactor.core.publisher.Mono
  * @see ActionbaseQuery
  */
 class ActionbaseQueryExecutor(
-    private val queryBinding: QueryBinding,
+    private val resolveTableBinding: (database: String, table: String) -> TableBinding,
 ) {
     private val objectMapper = jacksonObjectMapper()
 
@@ -100,7 +102,8 @@ class ActionbaseQueryExecutor(
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> {
         val source = resolveVertex(queryItem.source, context).toList()
-        return queryBinding.get(queryItem.database, queryItem.table, source, source, actionBaseQuery.stats)
+        val tb = resolveTableBinding(queryItem.database, queryItem.table)
+        return tb.get(source, source, actionBaseQuery.stats)
     }
 
     private fun processGet(
@@ -110,7 +113,8 @@ class ActionbaseQueryExecutor(
     ): Mono<DataFrame> {
         val source = resolveVertex(queryItem.source, context).toList()
         val target = resolveVertex(queryItem.target, context).toList()
-        return queryBinding.get(queryItem.database, queryItem.table, source, target, actionBaseQuery.stats)
+        val tb = resolveTableBinding(queryItem.database, queryItem.table)
+        return tb.get(source, target, actionBaseQuery.stats)
     }
 
     private fun processCount(
@@ -118,7 +122,8 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
     ): Mono<DataFrame> {
         val source = resolveVertex(queryItem.source, context)
-        return queryBinding.count(queryItem.database, queryItem.table, source, queryItem.direction)
+        val tb = resolveTableBinding(queryItem.database, queryItem.table)
+        return tb.count(source, queryItem.direction)
     }
 
     private fun processScan(
@@ -128,7 +133,7 @@ class ActionbaseQueryExecutor(
     ): Mono<DataFrame> {
         val source = resolveVertex(queryItem.source, context)
         val filter =
-            QueryScanFilter(
+            ScanFilter(
                 sourceSet = source,
                 direction = queryItem.direction,
                 limit = queryItem.limit,
@@ -136,7 +141,8 @@ class ActionbaseQueryExecutor(
                 indexName = queryItem.index,
                 predicates = queryItem.predicates?.toSet() ?: emptySet(),
             )
-        return queryBinding.scan(queryItem.database, queryItem.table, filter, actionBaseQuery.stats)
+        val tb = resolveTableBinding(queryItem.database, queryItem.table)
+        return tb.scan(filter, actionBaseQuery.stats)
     }
 
     @Suppress("UnusedParameter")

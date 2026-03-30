@@ -2,49 +2,20 @@ package com.kakao.actionbase.v2.engine.v3.query
 
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.engine.query.QueryBinding
-import com.kakao.actionbase.engine.query.QueryScanFilter
-import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.StructType
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
-import com.kakao.actionbase.v2.engine.sql.StatKey
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 
 class ActionbaseQueryExecutorPostProcessJsonObjectSpec :
     StringSpec({
 
-        val queryBinding =
-            object : QueryBinding {
-                override fun get(
-                    database: String,
-                    table: String,
-                    source: List<Any>,
-                    target: List<Any>,
-                    stats: Set<StatKey>,
-                ): Mono<DataFrame> = throw NotImplementedError()
-
-                override fun count(
-                    database: String,
-                    table: String,
-                    source: Set<Any>,
-                    direction: Direction,
-                ): Mono<DataFrame> = throw NotImplementedError()
-
-                override fun scan(
-                    database: String,
-                    table: String,
-                    filter: QueryScanFilter,
-                    stats: Set<StatKey>,
-                ): Mono<DataFrame> = throw NotImplementedError()
-            }
-        val executor = ActionbaseQueryExecutor(queryBinding)
+        val executor = ActionbaseQueryExecutor { _, _ -> throw NotImplementedError() }
 
         "should extract JSON fields correctly" {
             val df =
