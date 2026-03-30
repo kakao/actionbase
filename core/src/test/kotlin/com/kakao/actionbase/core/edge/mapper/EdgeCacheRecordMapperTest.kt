@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * EdgeCache (Wide Row) HBase layout:
+ * EdgeCache (Wide Row):
  *
  * |                                  row key                                |            qualifier           |        value         |
  * |-------------------------------------------------------------------------|--------------------------------|----------------------|
