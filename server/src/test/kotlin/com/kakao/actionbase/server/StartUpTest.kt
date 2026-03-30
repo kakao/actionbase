@@ -1,6 +1,8 @@
 package com.kakao.actionbase.server
 
 import com.kakao.actionbase.server.test.E2ETestBase
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
 import kotlin.test.Test
 
@@ -63,5 +65,91 @@ class StartUpWithSystemMutationModeAsyncTest : E2ETestBase() {
             .exchange()
             .expectStatus()
             .isOk
+    }
+}
+
+@TestPropertySource(properties = ["actionbase.read-only=true"])
+class StartUpWithReadOnlyEnabledTest : E2ETestBase() {
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - method: GET
+          uri: /graph/v2
+          blocked: false
+        - method: GET
+          uri: /graph/v3
+          blocked: false
+        - method: POST
+          uri: /graph/v3/databases
+          blocked: true
+        - method: PUT
+          uri: /graph/v3/databases/db/tables/t
+          blocked: true
+        - method: DELETE
+          uri: /graph/v2/admin/service/test
+          blocked: true
+        - method: POST
+          uri: /graph/v2/query
+          blocked: false
+        - method: POST
+          uri: /graph/v3/query
+          blocked: false
+        - method: POST
+          uri: /graph/v3/databases/db/tables/t/edges/get
+          blocked: false
+        - method: POST
+          uri: /actuator/health
+          blocked: false
+        """,
+    )
+    fun `verify read-only filter`(
+        method: String,
+        uri: String,
+        blocked: Boolean,
+    ) {
+        val request =
+            client
+                .method(
+                    org.springframework.http.HttpMethod
+                        .valueOf(method),
+                ).uri(uri)
+                .exchange()
+        if (blocked) {
+            request.expectStatus().isForbidden
+        } else {
+            request.expectStatus().value { status ->
+                assert(status != 403) { "Expected non-403 for $method $uri, got $status" }
+            }
+        }
+    }
+}
+
+@TestPropertySource(properties = ["actionbase.read-only=false"])
+class StartUpWithReadOnlyDisabledTest : E2ETestBase() {
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - method: POST
+          uri: /graph/v3/databases
+        - method: PUT
+          uri: /graph/v3/databases/db/tables/t
+        - method: DELETE
+          uri: /graph/v2/admin/service/test
+        """,
+    )
+    fun `write is not blocked when read-only is disabled`(
+        method: String,
+        uri: String,
+    ) {
+        client
+            .method(
+                org.springframework.http.HttpMethod
+                    .valueOf(method),
+            ).uri(uri)
+            .exchange()
+            .expectStatus()
+            .value { status ->
+                assert(status != 403) { "Expected non-403 for $method $uri, got $status" }
+            }
     }
 }
