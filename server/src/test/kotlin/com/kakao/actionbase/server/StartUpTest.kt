@@ -26,6 +26,18 @@ class StartUpTest : E2ETestBase() {
             .expectStatus()
             .isOk
     }
+
+    @Test
+    fun `POST is not rejected as 403 when read-only is not configured`() {
+        client
+            .post()
+            .uri("/graph/v3/databases")
+            .exchange()
+            .expectStatus()
+            .value { status ->
+                assert(status != 403) { "Expected non-403, got $status" }
+            }
+    }
 }
 
 @TestPropertySource(properties = ["kc.graph.system-mutation-mode=SYNC"])
