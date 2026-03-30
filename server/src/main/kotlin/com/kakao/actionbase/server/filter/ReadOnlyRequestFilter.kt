@@ -51,6 +51,5 @@ class ReadOnlyRequestFilter : WebFilter {
         return chain.filter(exchange)
     }
 
-    private fun isReadOnlyPost(path: String): Boolean =
-        readOnlyPostSuffixes.any { path.endsWith(it) }
+    private fun isReadOnlyPost(path: String): Boolean = readOnlyPostSuffixes.any { path.endsWith(it) }
 }
