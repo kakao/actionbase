@@ -15,7 +15,7 @@ class ReadOnlyRequestFilter : WebFilter {
     private val log = LoggerFactory.getLogger(ReadOnlyRequestFilter::class.java)
 
     private val paths = setOf("/graph/v2", "/graph/v3")
-    private val readMethods = setOf(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS)
+    private val readMethod = HttpMethod.GET
     private val readSuffixes =
         setOf(
             "/edges/get",
@@ -34,7 +34,7 @@ class ReadOnlyRequestFilter : WebFilter {
         val method = exchange.request.method
         val path = exchange.request.uri.path
 
-        if (method in readMethods || !paths.any { path.startsWith(it) } || isRead(path)) {
+        if (method == readMethod || !paths.any { path.startsWith(it) } || isRead(path)) {
             return chain.filter(exchange)
         }
 

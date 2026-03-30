@@ -30,27 +30,16 @@ class ReadOnlyRequestFilterTest {
     @ObjectSourceParameterizedTest
     @ObjectSource(
         """
-        - method: GET
-          path: /graph/v2/service/s/label/l/edge
-        - method: GET
-          path: /graph/v3/databases/db/tables
-        - method: POST
-          path: /graph/v2/query
-        - method: POST
-          path: /graph/v3/query
-        - method: POST
-          path: /graph/v3/databases/db/tables/t/edges/get
-        - method: POST
-          path: /graph/v3/databases/db/tables/t/multi-edges/ids
-        - method: POST
-          path: /actuator/health
+        - path: /graph/v2/service/s/label/l/edge
+        - path: /graph/v3/databases/db/tables
+        - path: /graph/v3/databases/db/tables/t/edges/scan/ts_desc
+        - path: /graph/v3/databases/db/tables/t/edges/count
+        - path: /graph/v3/databases/db/tables/t/edges/counts
+        - path: /graph/v3/databases/db/tables/t/edges/agg/group
         """,
     )
-    fun `should allow read and non-graph requests`(
-        method: String,
-        path: String,
-    ) {
-        val exchange = buildExchange(method, path)
+    fun `should allow GET requests on graph paths`(path: String) {
+        val exchange = buildExchange("GET", path)
         val chainCalled = AtomicBoolean(false)
         val chain =
             WebFilterChain {
@@ -60,7 +49,31 @@ class ReadOnlyRequestFilterTest {
 
         filter.filter(exchange, chain).block()
 
-        assertTrue(chainCalled.get(), "Expected $method $path to be allowed")
+        assertTrue(chainCalled.get(), "Expected GET $path to be allowed")
+    }
+
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - path: /graph/v2/query
+        - path: /graph/v3/query
+        - path: /graph/v3/databases/db/tables/t/edges/get
+        - path: /graph/v3/databases/db/tables/t/multi-edges/ids
+        - path: /actuator/health
+        """,
+    )
+    fun `should allow read-only POST requests`(path: String) {
+        val exchange = buildExchange("POST", path)
+        val chainCalled = AtomicBoolean(false)
+        val chain =
+            WebFilterChain {
+                chainCalled.set(true)
+                Mono.empty()
+            }
+
+        filter.filter(exchange, chain).block()
+
+        assertTrue(chainCalled.get(), "Expected POST $path to be allowed")
     }
 
     @ObjectSourceParameterizedTest
@@ -68,12 +81,12 @@ class ReadOnlyRequestFilterTest {
         """
         - method: POST
           path: /graph/v3/databases
+        - method: POST
+          path: /graph/v3/databases/db/tables/t/edges
         - method: PUT
           path: /graph/v3/databases/db/tables/t
         - method: DELETE
           path: /graph/v2/admin/service/test
-        - method: PATCH
-          path: /graph/v3/databases/db
         """,
     )
     fun `should block write requests on graph paths`(
@@ -118,7 +131,6 @@ class ReadOnlyRequestFilterTest {
                 HttpMethod.POST -> MockServerHttpRequest.post(path)
                 HttpMethod.PUT -> MockServerHttpRequest.put(path)
                 HttpMethod.DELETE -> MockServerHttpRequest.delete(path)
-                HttpMethod.PATCH -> MockServerHttpRequest.patch(path)
                 else -> throw IllegalArgumentException("Unsupported method: $method")
             }
         return MockServerWebExchange.from(request)
@@ -129,19 +141,22 @@ class ReadOnlyRequestFilterTest {
             listOf(
                 "/graph/v2/service/s/label/l/edge",
                 "/graph/v3/databases/db/tables",
+                "/graph/v3/databases/db/tables/t/edges/scan/ts_desc",
+                "/graph/v3/databases/db/tables/t/edges/count",
+                "/graph/v3/databases/db/tables/t/edges/counts",
+                "/graph/v3/databases/db/tables/t/edges/agg/group",
                 "/graph/v2/query",
                 "/graph/v3/query",
                 "/graph/v3/databases/db/tables/t/edges/get",
                 "/graph/v3/databases/db/tables/t/multi-edges/ids",
-                "/actuator/health",
             )
 
         val WRITE_PATHS =
             listOf(
                 "/graph/v3/databases",
                 "/graph/v3/databases/db/tables/t",
+                "/graph/v3/databases/db/tables/t/edges",
                 "/graph/v2/admin/service/test",
-                "/graph/v3/databases/db",
             )
     }
 }
