@@ -3,6 +3,7 @@ package com.kakao.actionbase.server.filter
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebFilterChain
@@ -45,6 +46,7 @@ class ReadOnlyRequestFilter : WebFilter {
                 """{"message":"Write operation not allowed in read-only mode: $method $path"}""".toByteArray(),
             )
         exchange.response.statusCode = HttpStatus.FORBIDDEN
+        exchange.response.headers.contentType = MediaType.APPLICATION_JSON
         return exchange.response.writeWith(Mono.just(messageBuffer))
     }
 

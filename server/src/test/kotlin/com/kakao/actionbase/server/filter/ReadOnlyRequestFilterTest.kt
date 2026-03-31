@@ -1,9 +1,8 @@
 package com.kakao.actionbase.server.filter
 
-import com.kakao.actionbase.test.documentations.params.ObjectSource
-import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+import com.kakao.actionbase.server.test.EndpointScanner
 
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.stream.Stream
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,6 +10,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest
@@ -19,6 +21,11 @@ import org.springframework.web.server.WebFilterChain
 
 import reactor.core.publisher.Mono
 
+// Test strategy:
+// 1. Scan all @RestController endpoints via reflection at test time.
+// 2. Compare scanned set against READ/WRITE/NON_GRAPH constants — any mismatch fails the build.
+// 3. Run each endpoint through the filter: READ → allowed, WRITE → 403, NON_GRAPH → allowed.
+// Adding a new endpoint without classifying it here will break the exhaustiveness check.
 class ReadOnlyRequestFilterTest {
     private lateinit var filter: ReadOnlyRequestFilter
 
@@ -27,289 +34,270 @@ class ReadOnlyRequestFilterTest {
         filter = ReadOnlyRequestFilter()
     }
 
-    // -- GET requests: always allowed --
+    @Test
+    fun `declared endpoints must match scanned controller annotations`() {
+        val scanned = EndpointScanner.scan("com.kakao.actionbase.server.api").map { (m, p) -> "$m $p" }.toSet()
+        val declared = READ_ENDPOINTS + WRITE_ENDPOINTS + NON_GRAPH_ENDPOINTS
 
-    @ObjectSourceParameterizedTest
-    @ObjectSource(
-        """
-        - path: /graph/v2
-        - path: /graph/v3
-        - path: /graph/v2/service/s
-        - path: /graph/v2/service
-        - path: /graph/v2/service/s/label/l
-        - path: /graph/v2/service/s/label
-        - path: /graph/v2/service/s/label/l/status
-        - path: /graph/v2/service/s/label/l/edge
-        - path: /graph/v2/service/s/label/l/edge/id/e1
-        - path: /graph/v2/service/s/alias/a
-        - path: /graph/v2/service/s/alias
-        - path: /graph/v2/service/s/query/q
-        - path: /graph/v2/service/s/query
-        - path: /graph/v2/storage/st
-        - path: /graph/v2/storage
-        - path: /graph/v2/metastore/global
-        - path: /graph/v2/metastore/local
-        - path: /graph/v2/admin/labels
-        - path: /graph/v2/admin/dump
-        - path: /graph/v2/admin/metadata/service
-        - path: /graph/v2/admin/metadata/storage
-        - path: /graph/v2/admin/metadata/service/s/label
-        - path: /graph/v2/admin/metadata/service/s/alias
-        - path: /graph/v2/admin/metadata/service/s/query
-        - path: /graph/v2/admin/hbase/cluster
-        - path: /graph/v2/admin/hbase/cluster/c1
-        - path: /graph/v2/admin/hbase/cluster/c1/table
-        - path: /graph/v2/admin/hbase/cluster/c1/table/t1
-        - path: /graph/v2/admin/hbase/cluster/c1/table/t1/metric
-        - path: /graph/v2/admin/hbase/cluster/c1/replication
-        - path: /graph/v3/databases
-        - path: /graph/v3/databases/db
-        - path: /graph/v3/databases/db/tables
-        - path: /graph/v3/databases/db/tables/t
-        - path: /graph/v3/databases/db/aliases
-        - path: /graph/v3/databases/db/aliases/a
-        - path: /graph/v3/databases/db/tables/t/edges/get
-        - path: /graph/v3/databases/db/tables/t/edges/count
-        - path: /graph/v3/databases/db/tables/t/edges/counts
-        - path: /graph/v3/databases/db/tables/t/edges/scan/ts_desc
-        - path: /graph/v3/databases/db/tables/t/edges/agg/group
-        - path: /graph/v3/databases/db/tables/t/multi-edges/ids
-        - path: /graph/v3/datastore
-        - path: /graph/v3/datastore/hbase/namespaces
-        - path: /graph/v3/datastore/hbase/tables
-        - path: /graph/v3/datastore/hbase/tables/t1
-        - path: /graph/v3/datastore/hbase/tables/t1/metric
-        - path: /graph/health
-        - path: /graph/health/readiness
-        - path: /graph/health/liveness
-        """,
-    )
-    fun `should allow GET requests`(path: String) {
-        val exchange = buildExchange("GET", path)
-        val chainCalled = AtomicBoolean(false)
-        val chain =
-            WebFilterChain {
-                chainCalled.set(true)
-                Mono.empty()
-            }
+        val missing = scanned - declared
+        val stale = declared - scanned
 
-        filter.filter(exchange, chain).block()
-
-        assertTrue(chainCalled.get(), "Expected GET $path to be allowed")
+        assertTrue(missing.isEmpty(), "Not declared:\n${missing.joinToString("\n") { "  + $it" }}")
+        assertTrue(stale.isEmpty(), "Stale:\n${stale.joinToString("\n") { "  - $it" }}")
     }
 
-    // -- Read-only POST requests: allowed (query endpoints that use POST for complex request bodies) --
-
-    @ObjectSourceParameterizedTest
-    @ObjectSource(
-        """
-        - path: /graph/v2/query
-        - path: /graph/v3/query
-        - path: /graph/v3/databases/db/tables/t/edges/get
-        - path: /graph/v3/databases/db/tables/t/multi-edges/ids
-        """,
-    )
-    fun `should allow read-only POST requests on graph paths`(path: String) {
-        val exchange = buildExchange("POST", path)
-        val chainCalled = AtomicBoolean(false)
-        val chain =
-            WebFilterChain {
-                chainCalled.set(true)
-                Mono.empty()
-            }
-
-        filter.filter(exchange, chain).block()
-
-        assertTrue(chainCalled.get(), "Expected POST $path to be allowed")
-    }
-
-    // -- Write requests outside protected path prefixes (/graph/v2, /graph/v3): always allowed --
-
-    @ObjectSourceParameterizedTest
-    @ObjectSource(
-        """
-        - method: PUT
-          path: /graph/health/readiness
-        """,
-    )
-    fun `should allow write requests outside protected path prefixes`(
+    @ParameterizedTest
+    @MethodSource("readEndpoints")
+    fun `should allow read requests on graph paths`(
         method: String,
         path: String,
     ) {
-        val exchange = buildExchange(method, path)
-        val chainCalled = AtomicBoolean(false)
-        val chain =
-            WebFilterChain {
-                chainCalled.set(true)
-                Mono.empty()
-            }
-
-        filter.filter(exchange, chain).block()
-
-        assertTrue(chainCalled.get(), "Expected $method $path to be allowed (non-graph)")
+        assertAllowed(method, path)
     }
 
-    // -- Write requests on graph paths: blocked --
-
-    @ObjectSourceParameterizedTest
-    @ObjectSource(
-        """
-        - method: POST
-          path: /graph/v2/service/s
-        - method: PUT
-          path: /graph/v2/service/s
-        - method: POST
-          path: /graph/v2/service/s/label/l
-        - method: PUT
-          path: /graph/v2/service/s/label/l
-        - method: POST
-          path: /graph/v2/service/s/label/l/copy
-        - method: POST
-          path: /graph/v2/service/s/label/l/edge
-        - method: PUT
-          path: /graph/v2/service/s/label/l/edge
-        - method: DELETE
-          path: /graph/v2/service/s/label/l/edge
-        - method: POST
-          path: /graph/v2/service/s/label/l/edge/id/e1
-        - method: PUT
-          path: /graph/v2/service/s/label/l/edge/id/e1
-        - method: DELETE
-          path: /graph/v2/service/s/label/l/edge/id/e1
-        - method: POST
-          path: /graph/v2/service/s/label/l/edge/delete
-        - method: POST
-          path: /graph/v2/service/s/label/l/edge/delete/id/e1
-        - method: POST
-          path: /graph/v2/service/s/label/l/edge/sync
-        - method: PUT
-          path: /graph/v2/service/s/label/l/edge/sync
-        - method: DELETE
-          path: /graph/v2/service/s/label/l/edge/sync
-        - method: DELETE
-          path: /graph/v2/service/s/label/l/edge/purge
-        - method: POST
-          path: /graph/v2/service/s/label/l/edge/purge
-        - method: POST
-          path: /graph/v2/service/s/alias/a
-        - method: PUT
-          path: /graph/v2/service/s/alias/a
-        - method: DELETE
-          path: /graph/v2/service/s/alias/a
-        - method: POST
-          path: /graph/v2/service/s/alias/a/new-label
-        - method: POST
-          path: /graph/v2/service/s/query/q
-        - method: PUT
-          path: /graph/v2/service/s/query/q
-        - method: POST
-          path: /graph/v2/storage/st
-        - method: PUT
-          path: /graph/v2/storage/st
-        - method: POST
-          path: /graph/v2/edge
-        - method: PUT
-          path: /graph/v2/edge
-        - method: DELETE
-          path: /graph/v2/edge
-        - method: POST
-          path: /graph/v2/edge/id
-        - method: PUT
-          path: /graph/v2/edge/id
-        - method: DELETE
-          path: /graph/v2/edge/id
-        - method: DELETE
-          path: /graph/v2/admin/service/s/label/l
-        - method: DELETE
-          path: /graph/v2/admin/service/s/alias/a
-        - method: DELETE
-          path: /graph/v2/admin/storage/st
-        - method: DELETE
-          path: /graph/v2/admin/service/s
-        - method: DELETE
-          path: /graph/v2/admin/hbase/cluster/c1/table/t1
-        - method: PUT
-          path: /graph/v2/admin/hbase/cluster/c1/table/t1
-        - method: POST
-          path: /graph/v2/admin/hbase/cluster/c1/table/t1
-        - method: POST
-          path: /graph/v3/databases
-        - method: PUT
-          path: /graph/v3/databases/db
-        - method: DELETE
-          path: /graph/v3/databases/db
-        - method: POST
-          path: /graph/v3/databases/db/tables
-        - method: PUT
-          path: /graph/v3/databases/db/tables/t
-        - method: DELETE
-          path: /graph/v3/databases/db/tables/t
-        - method: POST
-          path: /graph/v3/databases/db/aliases
-        - method: PUT
-          path: /graph/v3/databases/db/aliases/a
-        - method: DELETE
-          path: /graph/v3/databases/db/aliases/a
-        - method: POST
-          path: /graph/v3/databases/db/tables/t/edges
-        - method: POST
-          path: /graph/v3/databases/db/tables/t/edges/sync
-        - method: POST
-          path: /graph/v3/databases/db/tables/t/multi-edges
-        - method: POST
-          path: /graph/v3/databases/db/tables/t/multi-edges/sync
-        - method: POST
-          path: /graph/v3/datastore/hbase/tables/t1
-        - method: PUT
-          path: /graph/v3/datastore/hbase/tables/t1
-        - method: DELETE
-          path: /graph/v3/datastore/hbase/tables/t1
-        """,
-    )
+    @ParameterizedTest
+    @MethodSource("writeEndpoints")
     fun `should block write requests on graph paths`(
         method: String,
         path: String,
     ) {
-        val exchange = buildExchange(method, path)
-        val chainCalled = AtomicBoolean(false)
-        val chain =
-            WebFilterChain {
-                chainCalled.set(true)
-                Mono.empty()
-            }
+        assertBlocked(method, path)
+    }
 
-        filter.filter(exchange, chain).block()
-
-        assertFalse(chainCalled.get(), "Expected $method $path to be blocked")
-        assertEquals(HttpStatus.FORBIDDEN, exchange.response.statusCode)
+    @ParameterizedTest
+    @MethodSource("nonGraphEndpoints")
+    fun `should allow requests outside graph path prefixes`(
+        method: String,
+        path: String,
+    ) {
+        assertAllowed(method, path)
     }
 
     @Test
     fun `should include method and path in error response body`() {
         val path = "/graph/v3/databases"
         val exchange = buildExchange("POST", path)
-        val chain = WebFilterChain { Mono.empty() }
-
-        filter.filter(exchange, chain).block()
+        filter.filter(exchange, WebFilterChain { Mono.empty() }).block()
 
         val body = exchange.response.bodyAsString.block() ?: ""
-        assertTrue(body.contains("POST"), "Response body should contain HTTP method")
-        assertTrue(body.contains(path), "Response body should contain request path")
-        assertTrue(body.contains("read-only"), "Response body should mention read-only mode")
+        assertTrue(body.contains("POST"))
+        assertTrue(body.contains(path))
+        assertTrue(body.contains("read-only"))
+    }
+
+    private fun assertAllowed(
+        method: String,
+        path: String,
+    ) {
+        val exchange = buildExchange(method, path)
+        var passed = false
+        filter
+            .filter(
+                exchange,
+                WebFilterChain {
+                    passed = true
+                    Mono.empty()
+                },
+            ).block()
+        assertTrue(passed, "Expected $method $path to be allowed")
+    }
+
+    private fun assertBlocked(
+        method: String,
+        path: String,
+    ) {
+        val exchange = buildExchange(method, path)
+        var passed = false
+        filter
+            .filter(
+                exchange,
+                WebFilterChain {
+                    passed = true
+                    Mono.empty()
+                },
+            ).block()
+        assertFalse(passed, "Expected $method $path to be blocked")
+        assertEquals(HttpStatus.FORBIDDEN, exchange.response.statusCode)
+        assertEquals(org.springframework.http.MediaType.APPLICATION_JSON, exchange.response.headers.contentType)
     }
 
     private fun buildExchange(
         method: String,
         path: String,
-    ): MockServerWebExchange {
-        val request =
-            when (HttpMethod.valueOf(method)) {
-                HttpMethod.GET -> MockServerHttpRequest.get(path)
-                HttpMethod.POST -> MockServerHttpRequest.post(path)
-                HttpMethod.PUT -> MockServerHttpRequest.put(path)
-                HttpMethod.DELETE -> MockServerHttpRequest.delete(path)
-                else -> throw IllegalArgumentException("Unsupported method: $method")
+    ): MockServerWebExchange = MockServerWebExchange.from(MockServerHttpRequest.method(HttpMethod.valueOf(method), path))
+
+    companion object {
+        val READ_ENDPOINTS =
+            setOf(
+                // v2 GET
+                "GET /graph/v2",
+                "GET /graph/v2/admin/dump",
+                "GET /graph/v2/admin/hbase/cluster",
+                "GET /graph/v2/admin/hbase/cluster/{cluster}",
+                "GET /graph/v2/admin/hbase/cluster/{cluster}/replication",
+                "GET /graph/v2/admin/hbase/cluster/{cluster}/table",
+                "GET /graph/v2/admin/hbase/cluster/{cluster}/table/{tableFullName}",
+                "GET /graph/v2/admin/hbase/cluster/{cluster}/table/{tableFullName}/metric",
+                "GET /graph/v2/admin/labels",
+                "GET /graph/v2/admin/metadata/service",
+                "GET /graph/v2/admin/metadata/service/{service}/alias",
+                "GET /graph/v2/admin/metadata/service/{service}/label",
+                "GET /graph/v2/admin/metadata/service/{service}/query",
+                "GET /graph/v2/admin/metadata/storage",
+                "GET /graph/v2/admin//migration/{name}",
+                "GET /graph/v2/metastore/global",
+                "GET /graph/v2/metastore/local",
+                "GET /graph/v2/service",
+                "GET /graph/v2/service/{service}",
+                "GET /graph/v2/service/{service}/alias",
+                "GET /graph/v2/service/{service}/alias/{alias}",
+                "GET /graph/v2/service/{service}/label",
+                "GET /graph/v2/service/{service}/label/{label}",
+                "GET /graph/v2/service/{service}/label/{label}/edge",
+                "GET /graph/v2/service/{service}/label/{label}/edge/id/{edgeId}",
+                "GET /graph/v2/service/{service}/label/{label}/status",
+                "GET /graph/v2/service/{service}/query",
+                "GET /graph/v2/service/{service}/query/{query}",
+                "GET /graph/v2/storage",
+                "GET /graph/v2/storage/{storage}",
+                // v3 GET
+                "GET /graph/v3",
+                "GET /graph/v3/databases",
+                "GET /graph/v3/databases/{database}",
+                "GET /graph/v3/databases/{database}/aliases",
+                "GET /graph/v3/databases/{database}/aliases/{alias}",
+                "GET /graph/v3/databases/{database}/tables",
+                "GET /graph/v3/databases/{database}/tables/{table}",
+                "GET /graph/v3/databases/{database}/tables/{table}/edges/agg/{group}",
+                "GET /graph/v3/databases/{database}/tables/{table}/edges/count",
+                "GET /graph/v3/databases/{database}/tables/{table}/edges/counts",
+                "GET /graph/v3/databases/{database}/tables/{table}/edges/get",
+                "GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
+                "GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
+                "GET /graph/v3/datastore",
+                // read-only POST
+                "POST /graph/v2/query",
+                "POST /graph/v3/query",
+                "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
+                "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
+            )
+
+        val WRITE_ENDPOINTS =
+            setOf(
+                // v2 mutation
+                "DELETE /graph/v2/admin/hbase/cluster/{cluster}/table/{tableFullName}",
+                "DELETE /graph/v2/admin/service/{service}",
+                "DELETE /graph/v2/admin/service/{service}/alias/{alias}",
+                "DELETE /graph/v2/admin/service/{service}/label/{label}",
+                "DELETE /graph/v2/admin/storage/{storage}",
+                "DELETE /graph/v2/edge",
+                "DELETE /graph/v2/edge/id",
+                "DELETE /graph/v2/service/{service}/alias/{alias}",
+                "DELETE /graph/v2/service/{service}/label/{label}/edge",
+                "DELETE /graph/v2/service/{service}/label/{label}/edge/id/{edgeId}",
+                "DELETE /graph/v2/service/{service}/label/{label}/edge/purge",
+                "DELETE /graph/v2/service/{service}/label/{label}/edge/sync",
+                "POST /graph/v2/admin/hbase/cluster/{cluster}/table/{tableFullName}",
+                "POST /graph/v2/edge",
+                "POST /graph/v2/edge/id",
+                "POST /graph/v2/service/{service}",
+                "POST /graph/v2/service/{service}/alias/{alias}",
+                "POST /graph/v2/service/{service}/alias/{alias}/new-label",
+                "POST /graph/v2/service/{service}/label/{label}",
+                "POST /graph/v2/service/{service}/label/{label}/copy",
+                "POST /graph/v2/service/{service}/label/{label}/edge",
+                "POST /graph/v2/service/{service}/label/{label}/edge/delete",
+                "POST /graph/v2/service/{service}/label/{label}/edge/delete/id/{edgeId}",
+                "POST /graph/v2/service/{service}/label/{label}/edge/id/{edgeId}",
+                "POST /graph/v2/service/{service}/label/{label}/edge/purge",
+                "POST /graph/v2/service/{service}/label/{label}/edge/sync",
+                "POST /graph/v2/service/{service}/query/{query}",
+                "POST /graph/v2/storage/{storage}",
+                "PUT /graph/v2/admin/hbase/cluster/{cluster}/table/{tableFullName}",
+                "PUT /graph/v2/edge",
+                "PUT /graph/v2/edge/id",
+                "PUT /graph/v2/service/{service}",
+                "PUT /graph/v2/service/{service}/alias/{alias}",
+                "PUT /graph/v2/service/{service}/label/{label}",
+                "PUT /graph/v2/service/{service}/label/{label}/edge",
+                "PUT /graph/v2/service/{service}/label/{label}/edge/id/{edgeId}",
+                "PUT /graph/v2/service/{service}/label/{label}/edge/sync",
+                "PUT /graph/v2/service/{service}/query/{query}",
+                "PUT /graph/v2/storage/{storage}",
+                // v3 mutation
+                "DELETE /graph/v3/databases/{database}",
+                "DELETE /graph/v3/databases/{database}/aliases/{alias}",
+                "DELETE /graph/v3/databases/{database}/tables/{table}",
+                "POST /graph/v3/databases",
+                "POST /graph/v3/databases/{database}/aliases",
+                "POST /graph/v3/databases/{database}/tables",
+                "POST /graph/v3/databases/{database}/tables/{table}/edges",
+                "POST /graph/v3/databases/{database}/tables/{table}/edges/sync",
+                "POST /graph/v3/databases/{database}/tables/{table}/multi-edges",
+                "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/sync",
+                "PUT /graph/v3/databases/{database}",
+                "PUT /graph/v3/databases/{database}/aliases/{alias}",
+                "PUT /graph/v3/databases/{database}/tables/{table}",
+            )
+
+        val NON_GRAPH_ENDPOINTS =
+            setOf(
+                "GET /",
+                "GET /graph",
+                "GET /graph/check/delay_with_cache",
+                "GET /graph/check/delay_without_cache",
+                "GET /graph/check/emoji",
+                "GET /graph/check/error",
+                "GET /graph/check/mono",
+                "GET /graph/check/response-meta",
+                "GET /graph/check/sentry",
+                "GET /graph/health",
+                "GET /graph/health/liveness",
+                "GET /graph/health/readiness",
+                "PUT /graph/health/readiness",
+            )
+
+        @JvmStatic
+        fun readEndpoints(): Stream<Arguments> = READ_ENDPOINTS.sorted().map { it.toTestArgs() }.stream()
+
+        @JvmStatic
+        fun writeEndpoints(): Stream<Arguments> = WRITE_ENDPOINTS.sorted().map { it.toTestArgs() }.stream()
+
+        @JvmStatic
+        fun nonGraphEndpoints(): Stream<Arguments> =
+            NON_GRAPH_ENDPOINTS
+                .filter { !it.startsWith("GET ") }
+                .sorted()
+                .map { it.toTestArgs() }
+                .stream()
+
+        private fun String.toTestArgs(): Arguments {
+            val (method, path) = split(" ", limit = 2)
+            return Arguments.of(method, resolvePath(path))
+        }
+
+        private val PATH_VARS =
+            mapOf(
+                "alias" to "a",
+                "cluster" to "c",
+                "database" to "db",
+                "edgeId" to "e",
+                "group" to "g",
+                "index" to "idx",
+                "label" to "l",
+                "name" to "n",
+                "query" to "q",
+                "service" to "s",
+                "storage" to "st",
+                "table" to "t",
+                "tableFullName" to "t",
+                "tableName" to "t",
+            )
+
+        private fun resolvePath(template: String): String =
+            template.replace(Regex("\\{([^}]+)\\}")) {
+                PATH_VARS[it.groupValues[1]]
+                    ?: error("Unknown path variable '${it.groupValues[1]}' in $template. Add it to PATH_VARS.")
             }
-        return MockServerWebExchange.from(request)
     }
 }
