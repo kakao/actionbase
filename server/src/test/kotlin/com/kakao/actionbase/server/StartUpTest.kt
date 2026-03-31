@@ -73,54 +73,59 @@ class StartUpWithReadOnlyEnabledTest : E2ETestBase() {
     @ObjectSourceParameterizedTest
     @ObjectSource(
         """
-        - method: GET
-          uri: /graph/v2
-          blocked: false
-        - method: GET
-          uri: /graph/v3
-          blocked: false
         - method: POST
           uri: /graph/v3/databases
-          blocked: true
         - method: PUT
           uri: /graph/v3/databases/db/tables/t
-          blocked: true
         - method: DELETE
           uri: /graph/v2/admin/service/test
-          blocked: true
-        - method: POST
-          uri: /graph/v2/query
-          blocked: false
-        - method: POST
-          uri: /graph/v3/query
-          blocked: false
-        - method: POST
-          uri: /graph/v3/databases/db/tables/t/edges/get
-          blocked: false
-        - method: POST
-          uri: /actuator/health
-          blocked: false
         """,
     )
-    fun `verify read-only filter`(
+    fun `should block write requests`(
         method: String,
         uri: String,
-        blocked: Boolean,
     ) {
-        val request =
-            client
-                .method(
-                    org.springframework.http.HttpMethod
-                        .valueOf(method),
-                ).uri(uri)
-                .exchange()
-        if (blocked) {
-            request.expectStatus().isForbidden
-        } else {
-            request.expectStatus().value { status ->
+        client
+            .method(
+                org.springframework.http.HttpMethod
+                    .valueOf(method),
+            ).uri(uri)
+            .exchange()
+            .expectStatus()
+            .isForbidden
+    }
+
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - method: GET
+          uri: /graph/v2
+        - method: GET
+          uri: /graph/v3
+        - method: POST
+          uri: /graph/v2/query
+        - method: POST
+          uri: /graph/v3/query
+        - method: POST
+          uri: /graph/v3/databases/db/tables/t/edges/get
+        - method: POST
+          uri: /actuator/health
+        """,
+    )
+    fun `should allow read requests`(
+        method: String,
+        uri: String,
+    ) {
+        client
+            .method(
+                org.springframework.http.HttpMethod
+                    .valueOf(method),
+            ).uri(uri)
+            .exchange()
+            .expectStatus()
+            .value { status ->
                 assert(status != 403) { "Expected non-403 for $method $uri, got $status" }
             }
-        }
     }
 }
 
@@ -129,6 +134,10 @@ class StartUpWithReadOnlyDisabledTest : E2ETestBase() {
     @ObjectSourceParameterizedTest
     @ObjectSource(
         """
+        - method: GET
+          uri: /graph/v2/service
+        - method: GET
+          uri: /graph/v3/databases
         - method: POST
           uri: /graph/v3/databases
         - method: PUT
@@ -137,7 +146,7 @@ class StartUpWithReadOnlyDisabledTest : E2ETestBase() {
           uri: /graph/v2/admin/service/test
         """,
     )
-    fun `write is not blocked when read-only is disabled`(
+    fun `no request is blocked when read-only is disabled`(
         method: String,
         uri: String,
     ) {
