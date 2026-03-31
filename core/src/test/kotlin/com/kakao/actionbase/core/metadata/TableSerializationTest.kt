@@ -127,7 +127,8 @@ class TableSerializationTest {
                           "unit": "MILLISECOND",
                           "timezone": "+09:00",
                           "format": "yyyy-MM-dd"
-                        }
+                        },
+                        "type": null
                       }
                     ],
                     "valueField": "-",
@@ -201,7 +202,8 @@ class TableSerializationTest {
                           "unit": "MILLISECOND",
                           "timezone": "+09:00",
                           "format": "yyyy-MM-dd"
-                        }
+                        },
+                        "type": null
                       }
                     ],
                     "comment": "group by day"

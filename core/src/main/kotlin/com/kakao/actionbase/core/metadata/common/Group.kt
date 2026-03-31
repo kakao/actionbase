@@ -2,6 +2,7 @@ package com.kakao.actionbase.core.metadata.common
 
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
+import com.kakao.actionbase.core.types.PrimitiveType
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 
@@ -20,10 +21,14 @@ data class Group(
     data class Field(
         val name: String,
         val bucket: Bucket? = null,
+        val type: PrimitiveType? = null,
     ) {
         fun bucketOrGet(
             value: Any,
             ceil: Boolean,
-        ): Any = bucket?.handleQueryValue(value, ceil)?.toString() ?: value
+        ): Any =
+            bucket?.handleQueryValue(value, ceil)?.toString()
+                ?: type?.cast(value)
+                ?: value
     }
 }

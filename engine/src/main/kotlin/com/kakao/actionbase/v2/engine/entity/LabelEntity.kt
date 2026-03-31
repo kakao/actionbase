@@ -1,6 +1,7 @@
 package com.kakao.actionbase.v2.engine.entity
 
 import com.kakao.actionbase.core.metadata.common.Group
+import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.code.hbase.ValueUtils
 import com.kakao.actionbase.v2.core.edge.TraceEdge
@@ -169,8 +170,10 @@ data class LabelEntity(
                 objectMapper.readValue<DeprecatedEdgeSchema>(schemaString).toEdgeSchema()
             }
 
-        override fun toEntity(edge: HashEdge): LabelEntity =
-            LabelEntity(
+        override fun toEntity(edge: HashEdge): LabelEntity {
+            val schema = tryParseSchema(edge.props["schema"].toString())
+            val groups = objectMapper.readValue<List<Group>>(edge.props["groups"]?.toString() ?: "[]")
+            return LabelEntity(
                 active = (edge.props.getOrDefault("props_active", null) ?: true).toString().toBoolean(),
                 name = EntityName.withPhase(edge.src.toString(), edge.tgt.toString()),
                 desc = edge.props["desc"].toString(),
@@ -178,13 +181,13 @@ data class LabelEntity(
                     LabelType.of(edge.props["type"].toString()) ?: LabelType.NIL.also {
                         logger.warn("Unknown label type: {}", edge.props["type"])
                     },
-                schema = tryParseSchema(edge.props["schema"].toString()),
+                schema = schema,
                 dirType =
                     DirectionType.of(edge.props["dirType"].toString()) ?: DirectionType.BOTH.also {
                         logger.warn("Unknown direction type: {}", edge.props["dirType"])
                     },
                 storage = edge.props["storage"].toString(),
-                groups = objectMapper.readValue(edge.props["groups"]?.toString() ?: "[]"),
+                groups = groups.resolveFieldTypes(schema),
                 indices = objectMapper.readValue(edge.props["indices"].toString()),
                 event = edge.props["event"].toString().toBoolean(),
                 readOnly = edge.props["readOnly"].toString().toBoolean(),
@@ -193,9 +196,12 @@ data class LabelEntity(
                         edge.props.getOrDefault("mode", MutationMode.SYNC.name).toString(),
                     ),
             )
+        }
 
-        override fun toEntity(row: RowWithSchema): LabelEntity =
-            LabelEntity(
+        override fun toEntity(row: RowWithSchema): LabelEntity {
+            val schema = tryParseSchema(row.getString("schema"))
+            val groups = objectMapper.readValue<List<Group>>(row.getOrNull("groups")?.toString() ?: "[]")
+            return LabelEntity(
                 active = (row.getOrNull("props_active") ?: true).toString().toBoolean(),
                 name = EntityName.withPhase(row.getString("src"), row.getString("tgt")),
                 desc = row.getString("desc"),
@@ -203,18 +209,19 @@ data class LabelEntity(
                     LabelType.of(row.getString("type")) ?: LabelType.NIL.also {
                         logger.warn("Unknown label type: {}", row.getString("type"))
                     },
-                schema = tryParseSchema(row.getString("schema")),
+                schema = schema,
                 dirType =
                     DirectionType.of(row.getString("dirType")) ?: DirectionType.BOTH.also {
                         logger.warn("Unknown direction type: {}", row.getString("dirType"))
                     },
                 storage = row.getString("storage"),
-                groups = objectMapper.readValue(row.getOrNull("groups")?.toString() ?: "[]"),
+                groups = groups.resolveFieldTypes(schema),
                 indices = objectMapper.readValue(row.getString("indices")),
                 event = DataType.BOOLEAN.cast(row.getOrNull("event"))?.let { it as Boolean } ?: false,
                 readOnly = row.getBoolean("readOnly"),
                 mode = MutationMode.valueOf((row.getOrNull("mode") ?: MutationMode.SYNC.name).toString()),
             )
+        }
 
         @JvmStatic
         @JsonCreator
@@ -241,11 +248,40 @@ data class LabelEntity(
                 dirType,
                 storage,
                 indices,
-                groups,
+                groups.resolveFieldTypes(schema),
                 event,
                 readOnly,
                 mode,
             )
+
+        private fun List<Group>.resolveFieldTypes(schema: EdgeSchema): List<Group> =
+            map { group ->
+                group.copy(
+                    fields =
+                        group.fields.map { field ->
+                            if (field.bucket != null) {
+                                field
+                            } else {
+                                val primitiveType = schema.getField(field.name)?.type?.toPrimitiveType()
+                                field.copy(type = primitiveType ?: field.type)
+                            }
+                        },
+                )
+            }
+
+        private fun DataType.toPrimitiveType(): PrimitiveType =
+            when (this) {
+                DataType.BYTE -> PrimitiveType.BYTE
+                DataType.SHORT -> PrimitiveType.SHORT
+                DataType.INT -> PrimitiveType.INT
+                DataType.LONG -> PrimitiveType.LONG
+                DataType.BOOLEAN -> PrimitiveType.BOOLEAN
+                DataType.FLOAT -> PrimitiveType.FLOAT
+                DataType.DOUBLE -> PrimitiveType.DOUBLE
+                DataType.STRING -> PrimitiveType.STRING
+                DataType.JSON -> PrimitiveType.OBJECT
+                DataType.DECIMAL -> error("DECIMAL is not supported as a group field type. Use a supported type instead.")
+            }
     }
 
     override fun toString(): String = "LabelEntity(name=$name, desc='$desc', type=$type, schema=$schema, dirType=$dirType, storage='$storage', indices=$indices, event=$event, readOnly=$readOnly, mode=$mode)"
