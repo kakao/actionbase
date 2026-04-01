@@ -14,8 +14,8 @@ import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
 import com.kakao.actionbase.v2.engine.test.wal.InMemoryWal
+import com.kakao.actionbase.v2.engine.v3.QueryService
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
-import com.kakao.actionbase.v2.engine.v3.V3QueryService
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -35,7 +35,7 @@ class MutationServiceAsyncSpec :
         lateinit var wal: InMemoryWal
         lateinit var cdc: InMemoryCdc
         lateinit var mutationService: MutationService
-        lateinit var v3QueryService: V3QueryService
+        lateinit var queryService: QueryService
 
         val multiEdgeRequestString =
             """
@@ -173,7 +173,7 @@ class MutationServiceAsyncSpec :
             val request2 = mapper.readValue<LabelCreateRequest>(edgeDescriptor)
             graph.labelDdl.create(edgeTableName, request2).block()
             mutationService = MutationService(V2BackedEngine(graph))
-            v3QueryService = V3QueryService(graph)
+            queryService = QueryService(graph)
         }
 
         afterTest {
@@ -212,7 +212,7 @@ class MutationServiceAsyncSpec :
             sources: List<Long>,
             targets: List<Long>,
         ) {
-            v3QueryService
+            queryService
                 .gets(tableName.service, tableName.nameNotNull, sources, targets)
                 .test()
                 .assertNext { it.edges.size shouldBe 0 }
@@ -233,7 +233,7 @@ class MutationServiceAsyncSpec :
             verifyWal(multiEdgeTableName, 3, queue = false, MutationMode.SYNC)
             verifyCdc(multiEdgeTableName, 3)
 
-            v3QueryService
+            queryService
                 .gets(multiEdgeTableName.service, multiEdgeTableName.nameNotNull, listOf(100000L), listOf(100000L))
                 .test()
                 .assertNext { it.edges.size shouldBe 1 }
@@ -286,13 +286,13 @@ class MutationServiceAsyncSpec :
             verifyWal(edgeTableName, 3, queue = false, MutationMode.SYNC)
             verifyCdc(edgeTableName, 2)
 
-            v3QueryService
+            queryService
                 .gets(edgeTableName.service, edgeTableName.nameNotNull, listOf(1L), listOf(2L))
                 .test()
                 .assertNext { it.edges.size shouldBe 1 }
                 .verifyComplete()
 
-            v3QueryService
+            queryService
                 .gets(edgeTableName.service, edgeTableName.nameNotNull, listOf(1L), listOf(0L))
                 .test()
                 .assertNext { it.edges.size shouldBe 1 }

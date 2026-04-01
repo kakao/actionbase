@@ -28,12 +28,12 @@ class MutationServiceSpec :
 
         lateinit var graph: Graph
         lateinit var mutationService: MutationService
-        lateinit var v3QueryService: V3QueryService
+        lateinit var queryService: QueryService
 
         beforeTest {
             graph = GraphFixtures.create()
             mutationService = MutationService(V2BackedEngine(graph))
-            v3QueryService = V3QueryService(graph)
+            queryService = QueryService(graph)
         }
 
         afterTest {
@@ -74,7 +74,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .gets(database, table, listOf("1000"), listOf("9000"))
                 .test()
                 .assertNext { actualObject ->
@@ -94,7 +94,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .scan(database, table, GraphFixtures.index2, "1000", Direction.OUT, limit = 10)
                 .test()
                 .assertNext { actualObject ->
@@ -115,7 +115,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .count(database, table, "1000", Direction.OUT)
                 .test()
                 .assertNext {
@@ -123,7 +123,7 @@ class MutationServiceSpec :
                     it.count shouldBe 2L
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .scan(database, table, GraphFixtures.index1, "1000", Direction.OUT, limit = 10, ranges = "permission:eq:me")
                 .test()
                 .assertNext { actualObject ->
@@ -165,7 +165,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .gets(database, table, listOf("1000"), listOf("9000"))
                 .test()
                 .assertNext { actualObject ->
@@ -185,7 +185,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .scan(database, table, GraphFixtures.index2, "1000", Direction.OUT, limit = 10)
                 .test()
                 .assertNext { actualObject ->
@@ -206,7 +206,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .count(database, table, "1000", Direction.OUT)
                 .test()
                 .assertNext {
@@ -214,7 +214,7 @@ class MutationServiceSpec :
                     it.count shouldBe 2L
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .scan(database, table, GraphFixtures.index1, "1000", Direction.OUT, limit = 10, ranges = "permission:eq:me")
                 .test()
                 .assertNext { actualObject ->
@@ -293,7 +293,7 @@ class MutationServiceSpec :
                 .mutate(database, table, insertRequest2.mutations)
                 .block()
 
-            v3QueryService
+            queryService
                 .scan(database, table, index, "1", Direction.OUT, limit = 10)
                 .test()
                 .assertNext { actualObject ->

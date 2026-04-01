@@ -12,8 +12,8 @@ import com.kakao.actionbase.v2.engine.client.kafka.KafkaClientFactory
 import com.kakao.actionbase.v2.engine.client.web.WebClientFactory
 import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.util.getLogger
+import com.kakao.actionbase.v2.engine.v3.QueryService
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
-import com.kakao.actionbase.v2.engine.v3.V3QueryService
 import com.kakao.actionbase.v2.engine.wal.DefaultWalFactory
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 
@@ -132,7 +132,7 @@ class GraphConfiguration {
     fun provideLocalMetastoreInspector(graph: Graph): MetastoreInspector = MetastoreInspector.createLocal(graph)
 
     @Bean
-    fun provideV3QueryService(graph: Graph): V3QueryService = V3QueryService(graph)
+    fun provideQueryService(graph: Graph): QueryService = QueryService(graph)
 
     @Bean
     fun provideMutationEngine(graph: Graph): MutationEngine = V2BackedEngine(graph)

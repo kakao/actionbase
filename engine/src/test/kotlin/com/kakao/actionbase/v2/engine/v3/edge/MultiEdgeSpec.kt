@@ -10,8 +10,8 @@ import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
+import com.kakao.actionbase.v2.engine.v3.QueryService
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
-import com.kakao.actionbase.v2.engine.v3.V3QueryService
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -31,7 +31,7 @@ class MultiEdgeSpec :
         lateinit var graph: Graph
         lateinit var cdc: InMemoryCdc
         lateinit var mutationService: MutationService
-        lateinit var v3QueryService: V3QueryService
+        lateinit var queryService: QueryService
 
         val labelDefinition =
             """
@@ -94,7 +94,7 @@ class MultiEdgeSpec :
             val request = mapper.readValue<LabelCreateRequest>(labelDefinition)
             graph.labelDdl.create(keyEdgeLabelName, request).block()
             mutationService = MutationService(V2BackedEngine(graph))
-            v3QueryService = V3QueryService(graph)
+            queryService = QueryService(graph)
         }
 
         afterTest {
@@ -140,7 +140,7 @@ class MultiEdgeSpec :
                     }.verifyComplete()
 
                 // same as EdgeState
-                v3QueryService
+                queryService
                     .gets(database, table, listOf(100000L), listOf(100000L))
                     .test()
                     .assertNext { result ->
@@ -169,7 +169,7 @@ class MultiEdgeSpec :
                         result.edges.size shouldBe 1
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .scan(database, table, "paid_at_desc", 100000L, Direction.OUT, limit = 10)
                     .test()
                     .assertNext { result ->
@@ -177,7 +177,7 @@ class MultiEdgeSpec :
                     }.verifyComplete()
 
                 // but indexes are made based on multiEdge
-                v3QueryService
+                queryService
                     .count(database, table, 1, Direction.OUT)
                     .test()
                     .assertNext { result ->
@@ -194,7 +194,7 @@ class MultiEdgeSpec :
                         result.count shouldBe 3L
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .count(database, table, 2, Direction.IN)
                     .test()
                     .assertNext { result ->
@@ -211,7 +211,7 @@ class MultiEdgeSpec :
                         result.count shouldBe 2L
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .scan(database, table, "paid_at_desc", 1, Direction.OUT, limit = 10)
                     .test()
                     .assertNext { result ->
@@ -266,7 +266,7 @@ class MultiEdgeSpec :
                         result.edges.size shouldBe 3
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .scan(database, table, "paid_at_desc", 2, Direction.IN, limit = 10)
                     .test()
                     .assertNext { result ->
@@ -343,7 +343,7 @@ class MultiEdgeSpec :
                     }.verifyComplete()
 
                 // same as EdgeState
-                v3QueryService
+                queryService
                     .gets(database, table, listOf(100000L), listOf(100000L))
                     .test()
                     .assertNext { result ->
@@ -372,7 +372,7 @@ class MultiEdgeSpec :
                         result.edges.size shouldBe 1
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .scan(database, table, "paid_at_desc", 100000L, Direction.OUT, limit = 10)
                     .test()
                     .assertNext { result ->
@@ -380,7 +380,7 @@ class MultiEdgeSpec :
                     }.verifyComplete()
 
                 // but indexes are made based on multiEdge
-                v3QueryService
+                queryService
                     .count(database, table, 1, Direction.OUT)
                     .test()
                     .assertNext { result ->
@@ -397,7 +397,7 @@ class MultiEdgeSpec :
                         result.count shouldBe 3L
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .count(database, table, 2, Direction.IN)
                     .test()
                     .assertNext { result ->
@@ -414,7 +414,7 @@ class MultiEdgeSpec :
                         result.count shouldBe 2L
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .count(database, table, 3, Direction.IN)
                     .test()
                     .assertNext { result ->
@@ -431,7 +431,7 @@ class MultiEdgeSpec :
                         result.count shouldBe 1L
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .scan(database, table, "paid_at_desc", 1, Direction.OUT, limit = 10)
                     .test()
                     .assertNext { result ->
@@ -480,7 +480,7 @@ class MultiEdgeSpec :
                         result.edges.size shouldBe 3
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .scan(database, table, "paid_at_desc", 2, Direction.IN, limit = 10)
                     .test()
                     .assertNext { result ->
@@ -519,7 +519,7 @@ class MultiEdgeSpec :
                         result.edges.size shouldBe 2
                     }.verifyComplete()
 
-                v3QueryService
+                queryService
                     .scan(database, table, "paid_at_desc", 3, Direction.IN, limit = 10)
                     .test()
                     .assertNext { result ->
@@ -664,7 +664,7 @@ class MultiEdgeSpec :
                 }.verifyComplete()
 
             // Query multiple ids at once
-            v3QueryService
+            queryService
                 .gets(database, table, listOf(100000L, 100001L, 100002L))
                 .test()
                 .assertNext { result ->
@@ -716,7 +716,7 @@ class MultiEdgeSpec :
                 }.verifyComplete()
 
             // Query with mix of existing and non-existing ids
-            v3QueryService
+            queryService
                 .gets(database, table, listOf(200000L, 999999L))
                 .test()
                 .assertNext { result ->
@@ -727,7 +727,7 @@ class MultiEdgeSpec :
         }
 
         "ids query should return empty result for non-existing ids" {
-            v3QueryService
+            queryService
                 .gets(database, table, listOf(888888L, 999999L))
                 .test()
                 .assertNext { result ->
@@ -763,7 +763,7 @@ class MultiEdgeSpec :
                 }.verifyComplete()
 
             // Query with filter
-            v3QueryService
+            queryService
                 .gets(database, table, listOf(300000L, 300001L), filters = "paidAt:gt:1500")
                 .test()
                 .assertNext { result ->
@@ -819,7 +819,7 @@ class MultiEdgeSpec :
                 }.verifyComplete()
 
             // Query both ids - only non-deleted one should be returned
-            v3QueryService
+            queryService
                 .gets(database, table, listOf(400000L, 400001L))
                 .test()
                 .assertNext { result ->

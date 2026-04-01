@@ -32,7 +32,7 @@ import org.apache.hadoop.hbase.client.Get
 
 import reactor.core.publisher.Mono
 
-class V3QueryService(
+class QueryService(
     private val graph: Graph,
 ) {
     private val byteArrayBufferPool = ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)

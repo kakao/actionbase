@@ -8,7 +8,7 @@ import com.kakao.actionbase.server.payload.EdgeQueryGetRequest
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
-import com.kakao.actionbase.v2.engine.v3.V3QueryService
+import com.kakao.actionbase.v2.engine.v3.QueryService
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -27,7 +27,7 @@ import reactor.core.publisher.Mono
  */
 @RestController
 class EdgeQueryController(
-    private val v3QueryService: V3QueryService,
+    private val queryService: QueryService,
 ) {
     @GetMapping("/graph/v3/databases/{database}/tables/{table}/edges/count")
     fun count(
@@ -39,7 +39,7 @@ class EdgeQueryController(
         @RequestParam filters: String? = null,
         @RequestParam features: List<String> = emptyList(),
     ): Mono<ResponseEntity<EdgeCountPayload>> =
-        v3QueryService
+        queryService
             .count(database, table, start, direction, ranges, filters, features)
             .mapToResponseEntity()
 
@@ -53,7 +53,7 @@ class EdgeQueryController(
         @RequestParam filters: String? = null,
         @RequestParam features: List<String> = emptyList(),
     ): Mono<ResponseEntity<DataFrameEdgeCountPayload>> =
-        v3QueryService
+        queryService
             .counts(database, table, start, direction, ranges, filters, features)
             .mapToResponseEntity()
 
@@ -63,7 +63,7 @@ class EdgeQueryController(
         @PathVariable table: String,
         @ModelAttribute request: EdgeQueryGetRequest,
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
-        v3QueryService
+        queryService
             .gets(database, table, request.source, request.target, request.ranges, request.filters, request.features)
             .mapToResponseEntity()
 
@@ -73,7 +73,7 @@ class EdgeQueryController(
         @PathVariable table: String,
         @RequestBody request: EdgeQueryGetRequest,
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
-        v3QueryService
+        queryService
             .gets(database, table, request.source, request.target, request.ranges, request.filters, request.features)
             .mapToResponseEntity()
 
@@ -90,7 +90,7 @@ class EdgeQueryController(
         @RequestParam filters: String? = null,
         @RequestParam features: List<String> = emptyList(),
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
-        v3QueryService
+        queryService
             .scan(database, table, index, start, direction, limit, offset, ranges, filters, features)
             .mapToResponseEntity()
 
@@ -104,7 +104,7 @@ class EdgeQueryController(
         @RequestParam limit: Int = ScanFilter.Companion.defaultLimit,
         @RequestParam offset: String? = null,
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
-        v3QueryService
+        queryService
             .seek(database, table, cache, start, direction, limit, offset)
             .mapToResponseEntity()
 
@@ -120,7 +120,7 @@ class EdgeQueryController(
         @RequestParam features: List<String> = emptyList(),
         @RequestParam ttl: Long? = null,
     ): Mono<ResponseEntity<DataFrameEdgeAggPayload>> =
-        v3QueryService
+        queryService
             .agg(database, table, group, start, direction, ranges, filters, features, ttl)
             .mapToResponseEntity()
 }
