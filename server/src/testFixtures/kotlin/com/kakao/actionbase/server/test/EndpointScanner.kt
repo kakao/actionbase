@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 object EndpointScanner {
-    private val MAPPING_ANNOTATIONS =
-        mapOf<Class<out Annotation>, (Annotation) -> Pair<String, Array<String>>>(
-            GetMapping::class.java to { a -> "GET" to (a as GetMapping).value },
-            PostMapping::class.java to { a -> "POST" to (a as PostMapping).value },
-            PutMapping::class.java to { a -> "PUT" to (a as PutMapping).value },
-            DeleteMapping::class.java to { a -> "DELETE" to (a as DeleteMapping).value },
-            PatchMapping::class.java to { a -> "PATCH" to (a as PatchMapping).value },
+    private val MAPPING_ANNOTATIONS: Map<Class<out Annotation>, (Annotation) -> Pair<String, Array<String>>> =
+        mapOf(
+            GetMapping::class.java to { "GET" to (it as GetMapping).value },
+            PostMapping::class.java to { "POST" to (it as PostMapping).value },
+            PutMapping::class.java to { "PUT" to (it as PutMapping).value },
+            DeleteMapping::class.java to { "DELETE" to (it as DeleteMapping).value },
+            PatchMapping::class.java to { "PATCH" to (it as PatchMapping).value },
         )
 
     fun scan(basePackage: String): List<Pair<String, String>> {
