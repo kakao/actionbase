@@ -169,7 +169,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables",
                 "GET /graph/v3/databases/{database}/tables/{table}",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/agg/{group}",
-                "GET /graph/v3/databases/{database}/tables/{table}/edges/cache/{cache}",
+                "GET /graph/v3/databases/{database}/tables/{table}/edges/seek/{cache}",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/count",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/counts",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/get",
