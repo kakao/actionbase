@@ -169,6 +169,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables",
                 "GET /graph/v3/databases/{database}/tables/{table}",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/agg/{group}",
+                "GET /graph/v3/databases/{database}/tables/{table}/edges/cache/{cache}",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/count",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/counts",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/get",
@@ -176,7 +177,6 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
                 "GET /graph/v3/datastore",
                 // read-only POST
-                "POST /graph/v2/query",
                 "POST /graph/v3/query",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
@@ -279,6 +279,7 @@ class ReadOnlyRequestFilterTest {
         private val PATH_VARS =
             mapOf(
                 "alias" to "a",
+                "cache" to "c",
                 "cluster" to "c",
                 "database" to "db",
                 "edgeId" to "e",
