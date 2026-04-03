@@ -44,7 +44,10 @@ class V2BackedEngine(
         return label.tableBinding
     }
 
-    override fun getLabel(name: EntityName): Label = graph.getLabel(name)
+    override fun getLabel(
+        database: String,
+        alias: String,
+    ): Label = graph.getLabel(EntityName(database, alias))
 
     override fun singleStepQuery(scanFilter: ScanFilter): Mono<DataFrame> = graph.singleStepQuery(scanFilter)
 

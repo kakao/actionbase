@@ -2,7 +2,6 @@ package com.kakao.actionbase.engine
 
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.query.ActionbaseQuery
-import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
@@ -22,7 +21,10 @@ interface QueryEngine {
         alias: String,
     ): TableBinding
 
-    fun getLabel(name: EntityName): Label
+    fun getLabel(
+        database: String,
+        alias: String,
+    ): Label
 
     fun singleStepQuery(scanFilter: ScanFilter): Mono<DataFrame>
 

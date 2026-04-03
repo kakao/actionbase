@@ -69,8 +69,7 @@ class QueryService(
         filters: String? = null,
         features: List<String> = emptyList(),
     ): Mono<DataFrameEdgeCountPayload> {
-        val name = EntityName(database, table)
-        val label = engine.getLabel(name)
+        val label = engine.getLabel(database, table)
 
         require(ranges == null) { "`ranges` is not yet supported in count query." }
         require(filters == null) { "`filters` is not yet supported in count query." }
@@ -129,8 +128,7 @@ class QueryService(
         filters: String? = null,
         features: List<String> = emptyList(),
     ): Mono<DataFrameEdgePayload> {
-        val name = EntityName(database, table)
-        val label = engine.getLabel(name)
+        val label = engine.getLabel(database, table)
 
         require(label.entity.type == LabelType.MULTI_EDGE) {
             "get query with ids is only supported for multi-edge tables."
@@ -148,8 +146,7 @@ class QueryService(
         filters: String? = null,
         features: List<String> = emptyList(),
     ): Mono<DataFrameEdgePayload> {
-        val name = EntityName(database, table)
-        val label = engine.getLabel(name)
+        val label = engine.getLabel(database, table)
 
         require(label is HBaseHashLabel) {
             "get query is only supported for HBaseHashLabel, but got ${label::class.java.simpleName}."
@@ -186,7 +183,7 @@ class QueryService(
         features: List<String> = emptyList(),
     ): Mono<DataFrameEdgePayload> {
         val name = EntityName(database, table)
-        val label = engine.getLabel(name)
+        val label = engine.getLabel(database, table)
 
         val indexFieldNames =
             label.entity.indices
@@ -265,8 +262,7 @@ class QueryService(
         limit: Int = ScanFilter.defaultLimit,
         offset: String? = null,
     ): Mono<DataFrameEdgePayload> {
-        val name = EntityName(database, table)
-        val label = engine.getLabel(name)
+        val label = engine.getLabel(database, table)
 
         require(label is HBaseHashLabel) {
             "cache query is only supported for HBaseHashLabel, but got ${label::class.java.simpleName}."
@@ -363,8 +359,7 @@ class QueryService(
         features: List<String> = emptyList(),
         ttl: Long? = null,
     ): Mono<DataFrameEdgeAggPayload> {
-        val name = EntityName(database, table)
-        val label = engine.getLabel(name)
+        val label = engine.getLabel(database, table)
 
         require(label is HBaseHashLabel) {
             "group query is only supported for HBaseHashLabel, but got ${label::class.java.simpleName}."
