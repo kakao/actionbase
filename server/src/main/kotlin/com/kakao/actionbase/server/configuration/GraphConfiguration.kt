@@ -1,6 +1,7 @@
 package com.kakao.actionbase.server.configuration
 
 import com.kakao.actionbase.engine.MutationEngine
+import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.client.kafka.SpringKafkaClientFactory
@@ -136,6 +137,9 @@ class GraphConfiguration {
 
     @Bean
     fun provideMutationEngine(graph: Graph): MutationEngine = V2BackedEngine(graph)
+
+    @Bean
+    fun provideQueryEngine(graph: Graph): QueryEngine = V2BackedEngine(graph)
 
     @Bean
     fun provideMutationService(engine: MutationEngine): MutationService = MutationService(engine)
