@@ -3,9 +3,7 @@ package com.kakao.actionbase.v2.engine.v3
 import com.kakao.actionbase.v2.core.code.hbase.Constants as HBaseConstants
 
 import com.kakao.actionbase.core.Constants
-import com.kakao.actionbase.core.codec.ByteArrayBufferPool
 import com.kakao.actionbase.core.edge.MutationKey
-import com.kakao.actionbase.core.edge.mapper.EdgeCacheRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationBuilder
@@ -53,14 +51,13 @@ class V2BackedTableBinding(
     private val label: HBaseIndexedLabel,
     private val mapper: EdgeRecordMapper,
     private val lockTimeout: Long,
-    private val byteArrayBufferPool: ByteArrayBufferPool = ByteArrayBufferPool.create(0, Constants.Codec.DEFAULT_BUFFER_SIZE),
 ) : TableBinding {
     override val table: String = descriptor.table
     override val schema: ModelSchema = descriptor.schema
     override val mutationMode: MutationMode = MutationMode.valueOf(label.entity.mode.name)
 
-    private val groupRecordMapper = EdgeGroupRecordMapper.create(byteArrayBufferPool)
-    private val cacheRecordMapper = EdgeCacheRecordMapper.create(byteArrayBufferPool)
+    private val groupRecordMapper = mapper.group
+    private val cacheRecordMapper = mapper.cache
 
     // -- mutation
 
