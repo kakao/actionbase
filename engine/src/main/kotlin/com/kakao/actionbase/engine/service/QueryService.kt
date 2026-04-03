@@ -1,4 +1,4 @@
-package com.kakao.actionbase.v2.engine.v3
+package com.kakao.actionbase.engine.service
 
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.ByteArrayBufferPool
@@ -608,7 +608,14 @@ class QueryService(
                 ),
             )
 
-        val emptyDataFrameCountPayload: Mono<DataFrameEdgeCountPayload> = Mono.just(DataFrameEdgeCountPayload(emptyList(), 0, emptyMap()))
+        val emptyDataFrameCountPayload: Mono<DataFrameEdgeCountPayload> =
+            Mono.just(
+                DataFrameEdgeCountPayload(
+                    emptyList(),
+                    0,
+                    emptyMap(),
+                ),
+            )
 
         fun empty(direction: Direction): EdgeCountPayload =
             if (direction == Direction.OUT) {

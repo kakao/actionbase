@@ -1,9 +1,9 @@
 package com.kakao.actionbase.server.api.graph.v3
 
 import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.sql.toNamedJsonFormat
-import com.kakao.actionbase.v2.engine.v3.QueryService
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping

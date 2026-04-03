@@ -7,6 +7,7 @@ import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.engine.service.MutationService
+import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.LabelType
@@ -32,12 +33,12 @@ class EdgeCacheQuerySpec :
 
         lateinit var graph: Graph
         lateinit var mutationService: MutationService
-        lateinit var queryService: V3QueryService
+        lateinit var queryService: QueryService
 
         beforeTest {
             graph = GraphFixtures.create()
             mutationService = MutationService(V2BackedEngine(graph))
-            queryService = V3QueryService(graph)
+            queryService = QueryService(graph)
         }
 
         afterTest {

@@ -1,6 +1,7 @@
 package com.kakao.actionbase.v2.engine.v3
 
 import com.kakao.actionbase.core.edge.payload.EdgePayload
+import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.test.GraphFixtures

@@ -7,6 +7,7 @@ import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
 import com.kakao.actionbase.engine.service.MutationService
+import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -14,7 +15,6 @@ import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
 import com.kakao.actionbase.v2.engine.test.wal.InMemoryWal
-import com.kakao.actionbase.v2.engine.v3.QueryService
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper

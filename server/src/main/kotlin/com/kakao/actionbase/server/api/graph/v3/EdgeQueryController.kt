@@ -4,11 +4,11 @@ import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
+import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.payload.EdgeQueryGetRequest
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
-import com.kakao.actionbase.v2.engine.v3.QueryService
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -84,7 +84,7 @@ class EdgeQueryController(
         @PathVariable index: String,
         @RequestParam start: String,
         @RequestParam direction: Direction,
-        @RequestParam limit: Int = ScanFilter.Companion.defaultLimit,
+        @RequestParam limit: Int = ScanFilter.defaultLimit,
         @RequestParam offset: String? = null,
         @RequestParam ranges: String? = null,
         @RequestParam filters: String? = null,
@@ -101,7 +101,7 @@ class EdgeQueryController(
         @PathVariable cache: String,
         @RequestParam start: String,
         @RequestParam direction: Direction,
-        @RequestParam limit: Int = ScanFilter.Companion.defaultLimit,
+        @RequestParam limit: Int = ScanFilter.defaultLimit,
         @RequestParam offset: String? = null,
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
         queryService
