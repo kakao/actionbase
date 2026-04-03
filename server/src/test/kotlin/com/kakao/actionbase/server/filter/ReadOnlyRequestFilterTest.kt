@@ -74,6 +74,13 @@ class ReadOnlyRequestFilterTest {
     }
 
     @Test
+    fun `should allow system metadata init path in read-only mode`() {
+        assertAllowed("POST", "/graph/v2/service/sys/label/info/edge")
+        assertAllowed("PUT", "/graph/v2/service/sys/label/info/edge")
+        assertAllowed("DELETE", "/graph/v2/service/sys/label/info/edge")
+    }
+
+    @Test
     fun `should include method and path in error response body`() {
         val path = "/graph/v3/databases"
         val exchange = buildExchange("POST", path)

@@ -11,7 +11,8 @@ import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
 
 // Rejects non-GET methods on graph path prefixes with 403.
-// Exceptions: read-only POST endpoints matched by readSuffixes.
+// Exceptions: read-only POST endpoints matched by readSuffixes,
+// and the system metadata init path required for app startup.
 class ReadOnlyRequestFilter : WebFilter {
     private val log = LoggerFactory.getLogger(ReadOnlyRequestFilter::class.java)
 
@@ -23,6 +24,7 @@ class ReadOnlyRequestFilter : WebFilter {
             "/multi-edges/ids",
             "/query",
         )
+    private val systemInitPath = "/graph/v2/service/sys/label/info/edge"
 
     init {
         log.info("ReadOnlyRequestFilter is active. Write operations on {} will be rejected.", paths)
@@ -35,7 +37,7 @@ class ReadOnlyRequestFilter : WebFilter {
         val method = exchange.request.method
         val path = exchange.request.uri.path
 
-        if (method == readMethod || !paths.any { path.startsWith(it) } || isRead(path)) {
+        if (method == readMethod || !paths.any { path.startsWith(it) } || isRead(path) || isSystemInit(path)) {
             return chain.filter(exchange)
         }
 
@@ -51,4 +53,6 @@ class ReadOnlyRequestFilter : WebFilter {
     }
 
     private fun isRead(path: String): Boolean = readSuffixes.any { path.endsWith(it) }
+
+    private fun isSystemInit(path: String): Boolean = path == systemInitPath
 }
