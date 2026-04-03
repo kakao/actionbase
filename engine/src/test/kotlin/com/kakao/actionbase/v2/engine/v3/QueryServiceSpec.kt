@@ -20,7 +20,7 @@ class QueryServiceSpec :
 
         beforeTest {
             graph = GraphFixtures.create()
-            queryService = QueryService(graph)
+            queryService = QueryService(V2BackedEngine(graph))
         }
 
         afterTest {

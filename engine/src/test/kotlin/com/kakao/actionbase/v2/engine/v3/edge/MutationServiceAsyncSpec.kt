@@ -172,8 +172,9 @@ class MutationServiceAsyncSpec :
 
             val request2 = mapper.readValue<LabelCreateRequest>(edgeDescriptor)
             graph.labelDdl.create(edgeTableName, request2).block()
-            mutationService = MutationService(V2BackedEngine(graph))
-            queryService = QueryService(graph)
+            val engine = V2BackedEngine(graph)
+            mutationService = MutationService(engine)
+            queryService = QueryService(engine)
         }
 
         afterTest {

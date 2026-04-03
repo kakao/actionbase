@@ -1,7 +1,5 @@
 package com.kakao.actionbase.server.configuration
 
-import com.kakao.actionbase.engine.MutationEngine
-import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.client.kafka.SpringKafkaClientFactory
@@ -133,14 +131,11 @@ class GraphConfiguration {
     fun provideLocalMetastoreInspector(graph: Graph): MetastoreInspector = MetastoreInspector.createLocal(graph)
 
     @Bean
-    fun provideQueryService(graph: Graph): QueryService = QueryService(graph)
+    fun provideV2BackedEngine(graph: Graph): V2BackedEngine = V2BackedEngine(graph)
 
     @Bean
-    fun provideMutationEngine(graph: Graph): MutationEngine = V2BackedEngine(graph)
+    fun provideQueryService(engine: V2BackedEngine): QueryService = QueryService(engine)
 
     @Bean
-    fun provideQueryEngine(graph: Graph): QueryEngine = V2BackedEngine(graph)
-
-    @Bean
-    fun provideMutationService(engine: MutationEngine): MutationService = MutationService(engine)
+    fun provideMutationService(engine: V2BackedEngine): MutationService = MutationService(engine)
 }

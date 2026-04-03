@@ -93,8 +93,9 @@ class MultiEdgeSpec :
             cdc = graph.cdc as InMemoryCdc
             val request = mapper.readValue<LabelCreateRequest>(labelDefinition)
             graph.labelDdl.create(keyEdgeLabelName, request).block()
-            mutationService = MutationService(V2BackedEngine(graph))
-            queryService = QueryService(graph)
+            val engine = V2BackedEngine(graph)
+            mutationService = MutationService(engine)
+            queryService = QueryService(engine)
         }
 
         afterTest {

@@ -33,8 +33,9 @@ class MutationServiceSpec :
 
         beforeTest {
             graph = GraphFixtures.create()
-            mutationService = MutationService(V2BackedEngine(graph))
-            queryService = QueryService(graph)
+            val engine = V2BackedEngine(graph)
+            mutationService = MutationService(engine)
+            queryService = QueryService(engine)
         }
 
         afterTest {

@@ -67,8 +67,9 @@ class MutationServiceSystemAsyncSpec :
             asyncEdgeTable = graph.getLabel(EntityName(database, asyncEdgeTableName))
             asyncMultiEdgeTable = graph.getLabel(EntityName(database, asyncMultiEdgeTableName))
 
-            mutationService = MutationService(V2BackedEngine(graph))
-            queryService = QueryService(graph)
+            val engine = V2BackedEngine(graph)
+            mutationService = MutationService(engine)
+            queryService = QueryService(engine)
         }
 
         afterTest {

@@ -15,12 +15,12 @@ import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.storage.HBaseRecord
+import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.core.code.CryptoUtils
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.LabelType
-import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
@@ -33,9 +33,9 @@ import org.apache.hadoop.hbase.client.Get
 import reactor.core.publisher.Mono
 
 class QueryService(
-    private val graph: Graph,
+    private val engine: QueryEngine,
 ) {
-    private val byteArrayBufferPool = ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
+    private val byteArrayBufferPool = ByteArrayBufferPool.create(engine.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
 
     private val groupRecordMapper = EdgeGroupRecordMapper.create(byteArrayBufferPool)
     private val cacheRecordMapper = EdgeCacheRecordMapper.create(byteArrayBufferPool)
@@ -70,7 +70,7 @@ class QueryService(
         features: List<String> = emptyList(),
     ): Mono<DataFrameEdgeCountPayload> {
         val name = EntityName(database, table)
-        val label = graph.getLabel(name)
+        val label = engine.getLabel(name)
 
         require(ranges == null) { "`ranges` is not yet supported in count query." }
         require(filters == null) { "`filters` is not yet supported in count query." }
@@ -130,7 +130,7 @@ class QueryService(
         features: List<String> = emptyList(),
     ): Mono<DataFrameEdgePayload> {
         val name = EntityName(database, table)
-        val label = graph.getLabel(name)
+        val label = engine.getLabel(name)
 
         require(label.entity.type == LabelType.MULTI_EDGE) {
             "get query with ids is only supported for multi-edge tables."
@@ -149,7 +149,7 @@ class QueryService(
         features: List<String> = emptyList(),
     ): Mono<DataFrameEdgePayload> {
         val name = EntityName(database, table)
-        val label = graph.getLabel(name)
+        val label = engine.getLabel(name)
 
         require(label is HBaseHashLabel) {
             "get query is only supported for HBaseHashLabel, but got ${label::class.java.simpleName}."
@@ -186,7 +186,7 @@ class QueryService(
         features: List<String> = emptyList(),
     ): Mono<DataFrameEdgePayload> {
         val name = EntityName(database, table)
-        val label = graph.getLabel(name)
+        val label = engine.getLabel(name)
 
         val indexFieldNames =
             label.entity.indices
@@ -244,7 +244,7 @@ class QueryService(
             } else {
                 DEFAULT_TOTAL_VALUE_MONO
             }
-        val dfMono = graph.singleStepQuery(scanFilter)
+        val dfMono = engine.singleStepQuery(scanFilter)
 
         return dfMono
             .zipWith(totalMono)
@@ -266,7 +266,7 @@ class QueryService(
         offset: String? = null,
     ): Mono<DataFrameEdgePayload> {
         val name = EntityName(database, table)
-        val label = graph.getLabel(name)
+        val label = engine.getLabel(name)
 
         require(label is HBaseHashLabel) {
             "cache query is only supported for HBaseHashLabel, but got ${label::class.java.simpleName}."
@@ -364,7 +364,7 @@ class QueryService(
         ttl: Long? = null,
     ): Mono<DataFrameEdgeAggPayload> {
         val name = EntityName(database, table)
-        val label = graph.getLabel(name)
+        val label = engine.getLabel(name)
 
         require(label is HBaseHashLabel) {
             "group query is only supported for HBaseHashLabel, but got ${label::class.java.simpleName}."
@@ -466,7 +466,7 @@ class QueryService(
             }
     }
 
-    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = graph.query(request)
+    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = engine.query(request)
 
     private fun encodeAggRanges(
         values: List<Any>,
