@@ -30,8 +30,8 @@ open class HBaseIndexedLabel(
     override val indices: List<Index>,
     override val indexNameToIndex: Map<String, Index>,
     tables: Mono<HBaseTables>,
-    val edgeRecordMapper: EdgeRecordMapper,
-    val lockTimeout: Long,
+    edgeRecordMapper: EdgeRecordMapper,
+    lockTimeout: Long,
 ) : HBaseHashLabel(
         entity = entity,
         coder = coder,
