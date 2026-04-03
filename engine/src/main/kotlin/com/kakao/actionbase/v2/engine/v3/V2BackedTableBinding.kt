@@ -1,23 +1,46 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.v2.core.code.hbase.Constants as HBaseConstants
+
+import com.kakao.actionbase.core.Constants
+import com.kakao.actionbase.core.codec.ByteArrayBufferPool
 import com.kakao.actionbase.core.edge.MutationKey
+import com.kakao.actionbase.core.edge.mapper.EdgeCacheRecordMapper
+import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationBuilder
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationRecords
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
+import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
+import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
+import com.kakao.actionbase.core.edge.payload.EdgePayload
+import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
 import com.kakao.actionbase.core.edge.record.EdgeStateRecord
+import com.kakao.actionbase.core.java.codec.common.hbase.Order
+import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
+import com.kakao.actionbase.core.storage.HBaseRecord
 import com.kakao.actionbase.engine.binding.MutationRecordsSummary
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
-import com.kakao.actionbase.v2.core.code.hbase.Constants
+import com.kakao.actionbase.v2.core.code.CryptoUtils
+import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.edge.Edge
+import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.LockAcquisitionFailedException
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
+import com.kakao.actionbase.v2.engine.sql.ScanFilter
+import com.kakao.actionbase.v2.engine.sql.WherePredicate
+import com.kakao.actionbase.v2.engine.sql.toJsonFormat
 
 import org.apache.hadoop.hbase.client.Delete
+import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Increment
 import org.apache.hadoop.hbase.client.Mutation
 import org.apache.hadoop.hbase.client.Put
@@ -31,10 +54,17 @@ class V2BackedTableBinding(
     private val label: HBaseIndexedLabel,
     private val mapper: EdgeRecordMapper,
     private val lockTimeout: Long,
+    private val byteArrayBufferPool: ByteArrayBufferPool,
+    private val idEdgeEncoder: IdEdgeEncoder,
 ) : TableBinding {
     override val table: String = descriptor.table
     override val schema: ModelSchema = descriptor.schema
     override val mutationMode: MutationMode = MutationMode.valueOf(label.entity.mode.name)
+
+    private val groupRecordMapper = EdgeGroupRecordMapper.create(byteArrayBufferPool)
+    private val cacheRecordMapper = EdgeCacheRecordMapper.create(byteArrayBufferPool)
+
+    // -- mutation
 
     override fun <T> withLock(
         key: MutationKey,
@@ -91,6 +121,307 @@ class V2BackedTableBinding(
         }
     }
 
+    // -- query
+
+    override fun count(
+        sources: Set<Any>,
+        direction: Direction,
+    ): Mono<DataFrameEdgeCountPayload> =
+        label
+            .count(sources, direction)
+            .map {
+                val jsonFormat = it.toJsonFormat()
+                DataFrameEdgeCountPayload(
+                    counts =
+                        jsonFormat.data.map { row ->
+                            EdgeCountPayload(
+                                start = row[SRC_FIELD] as Any,
+                                direction = direction.toV3(),
+                                count = row[SELECT_COUNT_FIELD] as Long,
+                                context = emptyMap(),
+                            )
+                        },
+                    count = jsonFormat.rows,
+                    context = emptyMap(),
+                )
+            }.switchIfEmpty(EMPTY_COUNT_PAYLOAD)
+
+    override fun gets(
+        keys: List<Pair<Any, Any>>,
+        filters: String?,
+    ): Mono<DataFrameEdgePayload> {
+        val postPredicates = filters?.let { WherePredicate.parse(it, label.entity.schema) }?.toSet() ?: emptySet()
+
+        val hbaseGets =
+            keys.map { (s, t) ->
+                val edge = Edge(0L, s, t).ensureType(label.entity.schema)
+                val key = label.coder.encodeHashEdgeKey(edge, label.entity.id)
+                Get(key.key)
+                    .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER)
+            }
+
+        return label
+            .getActiveStates(hbaseGets)
+            .map {
+                it.applyPredicates(postPredicates).toDataFrameEdgePayload(flip = false)
+            }.switchIfEmpty(EMPTY_EDGE_PAYLOAD)
+    }
+
+    override fun scan(
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        offset: String?,
+        ranges: String?,
+        filters: String?,
+        features: List<String>,
+    ): Mono<DataFrameEdgePayload> {
+        val indexFieldNames =
+            label.entity.indices
+                .find { it.name == index }
+                ?.let { it.fields.map { field -> field.name } }
+        requireNotNull(indexFieldNames) { "index `$index` is not found in label `${label.entity.name}`." }
+
+        val indexPredicates = ranges?.let { WherePredicate.parse(it) }?.toSet() ?: emptySet()
+        val indexPredicateKeys = indexPredicates.map { it.key }
+
+        val lazyIndexMismatchErrorMessage: () -> String = {
+            "valid `ranges` order for the index `$index` is $indexFieldNames. input was: $indexPredicateKeys."
+        }
+        require(indexPredicateKeys.size <= indexFieldNames.size, lazyIndexMismatchErrorMessage)
+        indexPredicateKeys.zip(indexFieldNames).forEach { (predicateFieldName, indexFieldName) ->
+            require(predicateFieldName == indexFieldName, lazyIndexMismatchErrorMessage)
+        }
+
+        val postPredicates = filters?.let { WherePredicate.parse(it, label.entity.schema) }?.toSet() ?: emptySet()
+
+        if (FEATURE_TOTAL in features) {
+            require(indexPredicates.isEmpty() && postPredicates.isEmpty()) {
+                "total count does not support with `ranges` or `filters`."
+            }
+        }
+        val invalidFeatures = features - AVAILABLE_SCAN_FEATURES
+        require(invalidFeatures.isEmpty()) { "`features` ${invalidFeatures.joinToString(", ")} are not supported in get query." }
+
+        val name = EntityName(descriptor.database, descriptor.table)
+        val scanFilter =
+            ScanFilter(
+                name = name,
+                srcSet = setOf(start),
+                dir = direction,
+                limit = limit,
+                offset = offset,
+                indexName = index,
+                otherPredicates = indexPredicates,
+            )
+
+        val totalMono =
+            if (FEATURE_TOTAL in features) {
+                label
+                    .count(setOf(start), direction)
+                    .map {
+                        val jsonFormat = it.toJsonFormat()
+                        jsonFormat.data.first()[SELECT_COUNT_FIELD] as Long
+                    }
+            } else {
+                DEFAULT_TOTAL_VALUE_MONO
+            }
+        val dfMono = label.scan(scanFilter, emptySet(), idEdgeEncoder)
+
+        return dfMono
+            .zipWith(totalMono)
+            .map { tuple ->
+                val df = tuple.t1
+                val total = tuple.t2
+                val flip = direction == Direction.IN
+                df.applyPredicates(postPredicates).toDataFrameEdgePayload(flip, total)
+            }.switchIfEmpty(EMPTY_EDGE_PAYLOAD)
+    }
+
+    override fun seek(
+        cache: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        offset: String?,
+    ): Mono<DataFrameEdgePayload> {
+        val cacheEntity = label.entity.caches.find { it.cache == cache }
+        requireNotNull(cacheEntity) { "cache `$cache` is not found in label `${label.entity.name}`." }
+
+        val order = cacheEntity.fields.first().order
+        val casted =
+            if (direction == Direction.OUT) {
+                label.entity.schema.src.type.type
+                    .cast(start)
+            } else {
+                label.entity.schema.tgt.type.type
+                    .cast(start)
+            }
+        val key =
+            EdgeCacheRecord.Key.of(
+                directedSource = casted,
+                tableCode = label.entity.id,
+                direction = direction.toV3(),
+                cacheCode = cacheEntity.code,
+            )
+        val encodedKey = cacheRecordMapper.encoder.encodeKey(key)
+
+        val offsetNext = offset?.let { CryptoUtils.decodeAndDecryptUrlSafe(it) }
+        val (from, to) =
+            if (offsetNext == null) {
+                null to null
+            } else if (order == Order.DESC) {
+                null to offsetNext
+            } else {
+                offsetNext to null
+            }
+
+        return label
+            .hbaseGetWideRow(listOf(encodedKey), from, to, order, limit = limit + 1)
+            .map { records ->
+                val hasNext = records.size > limit
+                val results = if (hasNext) records.dropLast(1) else records
+                val fieldNameMap = label.entity.schema.hashToFieldNameMap
+                val edges =
+                    results.map { record ->
+                        val decoded = cacheRecordMapper.decoder.decode(record.key, record.qualifier, record.value)
+                        val (source, target) =
+                            when (direction) {
+                                Direction.OUT -> decoded.key.directedSource to decoded.qualifier.directedTarget
+                                Direction.IN -> decoded.qualifier.directedTarget to decoded.key.directedSource
+                            }
+                        EdgePayload(
+                            version = decoded.value.version,
+                            source = source,
+                            target = target,
+                            properties =
+                                decoded.value.properties
+                                    .mapNotNull { (code, value) ->
+                                        fieldNameMap[code]?.let { it to value }
+                                    }.toMap(),
+                            context = emptyMap(),
+                        )
+                    }
+                val nextOffset =
+                    if (hasNext) {
+                        results.lastOrNull()?.qualifier?.let {
+                            CryptoUtils.encryptAndEncodeUrlSafe(it)
+                        }
+                    } else {
+                        null
+                    }
+                DataFrameEdgePayload(
+                    edges = edges,
+                    count = edges.size,
+                    total = edges.size.toLong(),
+                    offset = nextOffset,
+                    hasNext = hasNext,
+                    context = emptyMap(),
+                )
+            }.switchIfEmpty(EMPTY_EDGE_PAYLOAD)
+    }
+
+    override fun agg(
+        group: String,
+        start: List<Any>,
+        direction: Direction,
+        ranges: String,
+        filters: String?,
+        features: List<String>,
+        ttl: Long?,
+    ): Mono<DataFrameEdgeAggPayload> {
+        val groupEntity = label.entity.groups.find { it.group == group }
+        val groupFieldNames = groupEntity?.fields?.map { field -> field.bucket?.name ?: field.name }
+        requireNotNull(groupFieldNames) { "group `$group` is not found in label `${label.entity.name}`." }
+        require(filters == null) { "`filters` is not yet supported in count query." }
+
+        val ffs = features.toSet()
+        val ffAccumulators = ffs.contains("accumulators")
+        val ffCached = ffs.contains("cachedRecords")
+        require((ffs - setOf("accumulators", "trends", "cachedRecords")).isEmpty()) {
+            "`features` ${features.joinToString(", ")} are not supported in agg query. only `accumulators` and `trends` are supported."
+        }
+
+        val groupPredicates = WherePredicate.parse(ranges).toSet()
+        val groupPredicateKeys = groupPredicates.map { it.key }
+
+        val lazyGroupFieldMismatchErrorMessage: () -> String = {
+            "valid `ranges` order for the index `$group` is $groupFieldNames. input was: $groupPredicateKeys."
+        }
+
+        require(groupPredicateKeys.size <= groupFieldNames.size, lazyGroupFieldMismatchErrorMessage)
+        groupPredicateKeys.zip(groupFieldNames).forEach { (predicateFieldName, groupFieldName) ->
+            require(predicateFieldName == groupFieldName, lazyGroupFieldMismatchErrorMessage)
+        }
+
+        val keys =
+            start.distinct().map {
+                val casted =
+                    if (direction == Direction.OUT) {
+                        label.entity.schema.src.type.type
+                            .cast(it)
+                    } else {
+                        label.entity.schema.tgt.type.type
+                            .cast(it)
+                    }
+
+                val key =
+                    EdgeGroupRecord.Key.of(
+                        directedSource = casted,
+                        tableCode = label.entity.id,
+                        direction = direction.toV3(),
+                        groupCode = groupEntity.code,
+                    )
+                groupRecordMapper.encoder.encodeKey(key)
+            }
+        require(groupPredicates.isNotEmpty()) {
+            "group query requires at least one group predicate, but got none."
+        }
+
+        val fieldPredicatePairs = groupEntity.fields.zip(groupPredicates)
+        val (firstPairs, lastPair) = fieldPredicatePairs.dropLast(1) to fieldPredicatePairs.last()
+        val (lastField, lastPredicate) = lastPair
+
+        val eqValues =
+            firstPairs.map { (field, predicate) ->
+                require(predicate is WherePredicate.Eq) {
+                    "only `Eq` predicate is allowed for the first ${firstPairs.size} group fields, but got $predicate."
+                }
+                field.bucketOrGet(predicate.value, ceil = false)
+            }
+
+        val (from, to) = encodeAggRanges(eqValues, lastField, lastPredicate)
+
+        return label
+            .hbaseGet(keys, from, to, EdgeGroupRecordMapper.GROUP_RECORD_ORDER, ttl)
+            .map { (records, cached) ->
+                val items =
+                    records
+                        .map { record -> createEdgeAggPayload(record, ffAccumulators) }
+                        .groupingBy { it.start to it.direction }
+                        .aggregate { _, accumulator: EdgeAggPayload?, element, first ->
+                            if (first || accumulator == null) {
+                                element
+                            } else {
+                                mergeEdgeAggPayloads(accumulator, element, ffAccumulators)
+                            }
+                        }.values
+                        .toList()
+
+                val rootContext =
+                    if (ffCached) {
+                        mapOf("cachedRecords" to cached)
+                    } else {
+                        emptyMap()
+                    }
+
+                DataFrameEdgeAggPayload(items, items.size, rootContext)
+            }
+    }
+
+    // -- mutation helpers
+
     private fun buildMutationRecords(
         before: EdgeStateRecord,
         after: EdgeStateRecord,
@@ -124,18 +455,18 @@ class V2BackedTableBinding(
         val record = mapper.state.encoder.encode(mutationRecords.stateRecord)
         mutations +=
             Put(record.key)
-                .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, record.value)
+                .addColumn(HBaseConstants.DEFAULT_COLUMN_FAMILY, HBaseConstants.DEFAULT_QUALIFIER, record.value)
         mutations +=
             mutationRecords.createIndexRecords.map {
                 val record = mapper.index.encoder.encode(it)
                 Put(record.key)
-                    .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, record.value)
+                    .addColumn(HBaseConstants.DEFAULT_COLUMN_FAMILY, HBaseConstants.DEFAULT_QUALIFIER, record.value)
             }
         mutations +=
             mutationRecords.countRecords.map {
                 val key = mapper.count.encoder.encodeKey(it.key)
                 Increment(key)
-                    .addColumn(Constants.DEFAULT_COLUMN_FAMILY, Constants.DEFAULT_QUALIFIER, it.value)
+                    .addColumn(HBaseConstants.DEFAULT_COLUMN_FAMILY, HBaseConstants.DEFAULT_QUALIFIER, it.value)
             }
         mutations +=
             mutationRecords.deleteIndexRecordKeys.map {
@@ -149,7 +480,7 @@ class V2BackedTableBinding(
                 val increment = Increment(encodedKey)
                 records.mergeQualifiers().forEach { (mergedQualifier, mergedValue) ->
                     val qualifier = mapper.group.encoder.encodeQualifier(mergedQualifier)
-                    increment.addColumn(Constants.DEFAULT_COLUMN_FAMILY, qualifier, mergedValue)
+                    increment.addColumn(HBaseConstants.DEFAULT_COLUMN_FAMILY, qualifier, mergedValue)
                 }
                 if (ttl != null && ttl != Long.MAX_VALUE && ttl > 0) {
                     increment.ttl = ttl
@@ -160,20 +491,154 @@ class V2BackedTableBinding(
             mutationRecords.createCacheRecords.map {
                 val encoded = mapper.cache.encoder.encode(it)
                 Put(encoded.key)
-                    .addColumn(Constants.DEFAULT_COLUMN_FAMILY, encoded.qualifier, encoded.value)
+                    .addColumn(HBaseConstants.DEFAULT_COLUMN_FAMILY, encoded.qualifier, encoded.value)
             }
         mutations +=
             mutationRecords.deleteCacheRecordQualifiers.map { (key, qualifier) ->
                 val encodedKey = mapper.cache.encoder.encodeKey(key)
                 val encodedQualifier = mapper.cache.encoder.encodeQualifier(qualifier)
                 Delete(encodedKey)
-                    .addColumns(Constants.DEFAULT_COLUMN_FAMILY, encodedQualifier)
+                    .addColumns(HBaseConstants.DEFAULT_COLUMN_FAMILY, encodedQualifier)
             }
         return mutations
     }
 
+    // -- query helpers
+
+    private fun encodeAggRanges(
+        values: List<Any>,
+        lastField: Group.Field,
+        lastPredicate: WherePredicate,
+    ): Pair<ByteArray, ByteArray> {
+        fun encode(vararg additionalValues: Any) =
+            groupRecordMapper.encoder.encodeQualifier(
+                EdgeGroupRecord.Qualifier(groupValues = values + additionalValues.toList()),
+            )
+
+        return when (lastPredicate) {
+            is WherePredicate.Eq -> {
+                val parsed = lastField.bucketOrGet(lastPredicate.value, ceil = false)
+                encode(parsed).let { it to it }
+            }
+            is WherePredicate.Between -> {
+                val from = encode(lastField.bucketOrGet(lastPredicate.from, ceil = false))
+                val to = encode(lastField.bucketOrGet(lastPredicate.to, ceil = true))
+                from to to
+            }
+            else -> throw IllegalArgumentException(
+                "only `Eq` or `Between` predicate is allowed for group query, but got $lastPredicate.",
+            )
+        }
+    }
+
+    private fun createEdgeAggPayload(
+        record: HBaseRecord,
+        ffAccumulators: Boolean,
+    ): EdgeAggPayload {
+        val decodedRecord = groupRecordMapper.decoder.decode(record.key, record.qualifier, record.value)
+
+        return EdgeAggPayload(
+            start = decodedRecord.key.directedSource,
+            direction = decodedRecord.key.direction,
+            value = decodedRecord.value,
+            context =
+                buildMap {
+                    if (ffAccumulators) {
+                        put(
+                            "accumulators",
+                            listOf(
+                                mapOf(
+                                    "groupValues" to decodedRecord.qualifier.groupValues,
+                                    "value" to decodedRecord.value,
+                                ),
+                            ),
+                        )
+                    }
+                },
+        )
+    }
+
+    private fun mergeEdgeAggPayloads(
+        accumulator: EdgeAggPayload,
+        element: EdgeAggPayload,
+        ffAccumulators: Boolean,
+    ): EdgeAggPayload =
+        EdgeAggPayload(
+            start = element.start,
+            direction = element.direction,
+            value = accumulator.value + element.value,
+            context =
+                buildMap {
+                    if (ffAccumulators) {
+                        put(
+                            "accumulators",
+                            (accumulator.context["accumulators"] as? List<*> ?: emptyList<Any>()) +
+                                (element.context["accumulators"] as? List<*> ?: emptyList<Any>()),
+                        )
+                    }
+                },
+        )
+
+    private fun com.kakao.actionbase.v2.engine.sql.DataFrame.applyPredicates(predicates: Set<WherePredicate>): com.kakao.actionbase.v2.engine.sql.DataFrame =
+        if (predicates.isEmpty()) {
+            this
+        } else {
+            this.where(predicates)
+        }
+
+    private fun com.kakao.actionbase.v2.engine.sql.DataFrame.toDataFrameEdgePayload(
+        flip: Boolean,
+        total: Long? = null,
+    ): DataFrameEdgePayload {
+        val jsonFormat = toJsonFormat()
+        val edges =
+            jsonFormat.data.map { row ->
+                EdgePayload(
+                    version = row[TS_FIELD] as Long,
+                    source = if (!flip) row[SRC_FIELD]!! else row[TGT_FIELD]!!,
+                    target = if (!flip) row[TGT_FIELD]!! else row[SRC_FIELD]!!,
+                    properties = row.filterKeys { it !in EDGE_FIELDS },
+                    context = emptyMap(),
+                )
+            }
+        return DataFrameEdgePayload(
+            edges = edges,
+            count = jsonFormat.rows,
+            total = total ?: rows.size.toLong(),
+            offset = if (jsonFormat.hasNext) jsonFormat.offset else null,
+            hasNext = jsonFormat.hasNext,
+            context = emptyMap(),
+        )
+    }
+
     companion object {
         private val log = LoggerFactory.getLogger(V2BackedTableBinding::class.java)
+
+        private const val SELECT_COUNT_FIELD = "COUNT(1)"
+        private const val TS_FIELD = "ts"
+        private const val SRC_FIELD = "src"
+        private const val TGT_FIELD = "tgt"
+        private const val DIR_FIELD = "dir"
+        private val EDGE_FIELDS = setOf(TS_FIELD, SRC_FIELD, TGT_FIELD, DIR_FIELD)
+        private const val FEATURE_TOTAL = "total"
+        private const val DEFAULT_TOTAL_VALUE = -1L
+        private val DEFAULT_TOTAL_VALUE_MONO = Mono.just(DEFAULT_TOTAL_VALUE)
+        private val AVAILABLE_SCAN_FEATURES = setOf(FEATURE_TOTAL)
+
+        val EMPTY_EDGE_PAYLOAD: Mono<DataFrameEdgePayload> =
+            Mono.just(
+                DataFrameEdgePayload(
+                    edges = emptyList(),
+                    count = 0,
+                    total = 0L,
+                    offset = null,
+                    hasNext = false,
+                    context = emptyMap(),
+                ),
+            )
+
+        val EMPTY_COUNT_PAYLOAD: Mono<DataFrameEdgeCountPayload> =
+            Mono.just(DataFrameEdgeCountPayload(emptyList(), 0, emptyMap()))
 
         private fun MutationKey.toSourceTarget(): Pair<Any, Any> =
             when (this) {
@@ -202,5 +667,11 @@ class V2BackedTableBinding(
                 .groupingBy { it.qualifier }
                 .fold(0L) { acc, record -> acc + record.value }
                 .filterValues { it != 0L }
+
+        private fun Direction.toV3(): com.kakao.actionbase.core.metadata.common.Direction =
+            when (this) {
+                Direction.OUT -> com.kakao.actionbase.core.metadata.common.Direction.OUT
+                Direction.IN -> com.kakao.actionbase.core.metadata.common.Direction.IN
+            }
     }
 }

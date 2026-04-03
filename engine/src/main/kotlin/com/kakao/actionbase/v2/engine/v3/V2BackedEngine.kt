@@ -2,6 +2,8 @@ package com.kakao.actionbase.v2.engine.v3
 
 import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
 
+import com.kakao.actionbase.core.Constants
+import com.kakao.actionbase.core.codec.ByteArrayBufferPool
 import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.MutationContext
@@ -12,11 +14,9 @@ import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.nil.NilLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
-import com.kakao.actionbase.v2.engine.sql.ScanFilter
 
 import reactor.core.publisher.Mono
 
@@ -28,6 +28,9 @@ class V2BackedEngine(
     private val graph: Graph,
 ) : MutationEngine,
     QueryEngine {
+    private val byteArrayBufferPool =
+        ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
+
     override fun getTableBinding(
         database: String,
         alias: String,
@@ -41,17 +44,17 @@ class V2BackedEngine(
                 "This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation",
             )
         }
-        return label.tableBinding
+        return V2BackedTableBinding(
+            descriptor = V3TableDescriptor.create(label.entity),
+            label = label,
+            mapper = label.edgeRecordMapper,
+            lockTimeout = label.lockTimeout,
+            byteArrayBufferPool = byteArrayBufferPool,
+            idEdgeEncoder = graph.idEdgeEncoder,
+        )
     }
 
-    override fun getLabel(name: EntityName): Label = graph.getLabel(name)
-
-    override fun singleStepQuery(scanFilter: ScanFilter): Mono<DataFrame> = graph.singleStepQuery(scanFilter)
-
     override fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = graph.query(request)
-
-    override val encoderPoolSize: Int
-        get() = graph.encoderPoolSize
 
     private val messaging = V2BackedMessageBinding(wal = graph.wal, cdc = graph.cdc)
 

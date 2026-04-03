@@ -1,9 +1,13 @@
 package com.kakao.actionbase.engine.binding
 
 import com.kakao.actionbase.core.edge.MutationKey
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.metadata.MutationMode
+import com.kakao.actionbase.v2.core.metadata.Direction
 
 import reactor.core.publisher.Mono
 
@@ -11,6 +15,8 @@ interface TableBinding {
     val table: String
     val schema: ModelSchema
     val mutationMode: MutationMode
+
+    // -- mutation
 
     fun <T> withLock(
         key: MutationKey,
@@ -26,6 +32,47 @@ interface TableBinding {
     ): Mono<MutationRecordsSummary>
 
     fun handleMutationError(error: Throwable)
+
+    // -- query
+
+    fun count(
+        sources: Set<Any>,
+        direction: Direction,
+    ): Mono<DataFrameEdgeCountPayload>
+
+    fun gets(
+        keys: List<Pair<Any, Any>>,
+        filters: String?,
+    ): Mono<DataFrameEdgePayload>
+
+    fun scan(
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        offset: String?,
+        ranges: String?,
+        filters: String?,
+        features: List<String>,
+    ): Mono<DataFrameEdgePayload>
+
+    fun seek(
+        cache: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        offset: String?,
+    ): Mono<DataFrameEdgePayload>
+
+    fun agg(
+        group: String,
+        start: List<Any>,
+        direction: Direction,
+        ranges: String,
+        filters: String?,
+        features: List<String>,
+        ttl: Long?,
+    ): Mono<DataFrameEdgeAggPayload>
 }
 
 data class MutationRecordsSummary(
