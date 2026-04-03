@@ -2,8 +2,6 @@ package com.kakao.actionbase.v2.engine.v3
 
 import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
 
-import com.kakao.actionbase.core.Constants
-import com.kakao.actionbase.core.codec.ByteArrayBufferPool
 import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.MutationContext
@@ -28,9 +26,6 @@ class V2BackedEngine(
     private val graph: Graph,
 ) : MutationEngine,
     QueryEngine {
-    private val byteArrayBufferPool =
-        ByteArrayBufferPool.create(graph.encoderPoolSize, Constants.Codec.DEFAULT_BUFFER_SIZE)
-
     override fun getTableBinding(
         database: String,
         alias: String,
@@ -44,14 +39,7 @@ class V2BackedEngine(
                 "This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation",
             )
         }
-        return V2BackedTableBinding(
-            descriptor = V3TableDescriptor.create(label.entity),
-            label = label,
-            mapper = label.edgeRecordMapper,
-            lockTimeout = label.lockTimeout,
-            byteArrayBufferPool = byteArrayBufferPool,
-            idEdgeEncoder = graph.idEdgeEncoder,
-        )
+        return label.tableBinding
     }
 
     override fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = graph.query(request)

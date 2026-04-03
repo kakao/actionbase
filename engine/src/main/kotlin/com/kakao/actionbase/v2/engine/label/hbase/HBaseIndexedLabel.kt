@@ -1,6 +1,7 @@
 package com.kakao.actionbase.v2.engine.label.hbase
 
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
+import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.Index
@@ -15,6 +16,8 @@ import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
+import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding
+import com.kakao.actionbase.v2.engine.v3.V3TableDescriptor
 
 import reactor.core.publisher.Mono
 
@@ -35,6 +38,14 @@ open class HBaseIndexedLabel(
         tables = tables,
     ),
     IndexedLabelMixin<ByteArray> {
+    val tableBinding: TableBinding =
+        V2BackedTableBinding(
+            descriptor = V3TableDescriptor.create(entity),
+            label = this,
+            mapper = edgeRecordMapper,
+            lockTimeout = lockTimeout,
+        )
+
     override val self: AbstractLabel<ByteArray> = this
 
     override fun finalizeEdgeMutationUnderLock(context: CdcContext): Mono<List<Any>> = mutateIndexedEdges(context)

@@ -29,7 +29,6 @@ import com.kakao.actionbase.engine.binding.MutationRecordsSummary
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.v2.core.code.CryptoUtils
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -54,8 +53,7 @@ class V2BackedTableBinding(
     private val label: HBaseIndexedLabel,
     private val mapper: EdgeRecordMapper,
     private val lockTimeout: Long,
-    private val byteArrayBufferPool: ByteArrayBufferPool,
-    private val idEdgeEncoder: IdEdgeEncoder,
+    private val byteArrayBufferPool: ByteArrayBufferPool = ByteArrayBufferPool.create(0, Constants.Codec.DEFAULT_BUFFER_SIZE),
 ) : TableBinding {
     override val table: String = descriptor.table
     override val schema: ModelSchema = descriptor.schema
@@ -227,7 +225,9 @@ class V2BackedTableBinding(
             } else {
                 DEFAULT_TOTAL_VALUE_MONO
             }
-        val dfMono = label.scan(scanFilter, emptySet(), idEdgeEncoder)
+
+        @Suppress("UNCHECKED_CAST")
+        val dfMono = label.scan(scanFilter, emptySet(), label.coder as com.kakao.actionbase.v2.core.code.IdEdgeEncoder)
 
         return dfMono
             .zipWith(totalMono)
