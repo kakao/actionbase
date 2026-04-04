@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.configuration
 
+import com.kakao.actionbase.server.filter.ReadOnlyRequestFilter
 import com.kakao.actionbase.server.filter.TokenAuthenticationFilter
 import com.kakao.actionbase.server.payload.EdgesRequest
 import com.kakao.actionbase.v2.core.edge.Edge
@@ -24,6 +25,7 @@ class ServiceLabelEdgeControllerWarmUp(
     @Value("\${server.port:8080}") private val serverPort: Int,
     graphProperties: GraphProperties,
     @Qualifier("tokenAuthenticationFilter") private val tokenAuthenticationFilter: WebFilter,
+    private val readOnlyRequestFilter: ReadOnlyRequestFilter?,
 ) : ApplicationListener<ApplicationReadyEvent> {
     private val log: Logger = LoggerFactory.getLogger(ServiceLabelEdgeControllerWarmUp::class.java)
     private val warmUpConfig = graphProperties.warmUp
@@ -98,6 +100,7 @@ class ServiceLabelEdgeControllerWarmUp(
                     .bodyToMono(String::class.java)
                     .map {
                         log.info("💚 readiness UP  💚")
+                        readOnlyRequestFilter?.activate()
                     }.doOnError { ex ->
                         log.error("💔 readiness DOWN  💔", ex)
                     }.thenReturn(it)

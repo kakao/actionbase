@@ -8,8 +8,11 @@ import com.kakao.actionbase.server.filter.ResponseMetaFilter
 import com.kakao.actionbase.server.filter.TokenAuthenticationFilter
 
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.boot.info.BuildProperties
 import org.springframework.boot.info.GitProperties
+import org.springframework.context.ApplicationListener
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
@@ -31,7 +34,7 @@ class WebFilterConfig(
 
     @Bean
     @Order(1)
-    fun readOnlyRequestFilter(): WebFilter? =
+    fun readOnlyRequestFilter(): ReadOnlyRequestFilter? =
         if (serverProperties.readOnly) {
             ReadOnlyRequestFilter()
         } else {
@@ -57,4 +60,13 @@ class WebFilterConfig(
             customTokenFilter,
         )
     }
+
+    // Activate ReadOnlyRequestFilter after ApplicationReadyEvent when warmup is disabled.
+    // When warmup is enabled, ServiceLabelEdgeControllerWarmUp activates it after warmup completes.
+    @Bean
+    @ConditionalOnProperty(name = ["kc.graph.warmup.enabled"], havingValue = "false", matchIfMissing = true)
+    fun readOnlyFilterActivator(filterProvider: ObjectProvider<ReadOnlyRequestFilter>): ApplicationListener<ApplicationReadyEvent> =
+        ApplicationListener {
+            filterProvider.ifAvailable { it.activate() }
+        }
 }
