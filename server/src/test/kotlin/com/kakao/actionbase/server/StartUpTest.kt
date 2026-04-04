@@ -68,6 +68,40 @@ class StartUpWithSystemMutationModeAsyncTest : E2ETestBase() {
     }
 }
 
+@TestPropertySource(properties = ["actionbase.read-only=false"])
+class StartUpWithReadOnlyDisabledTest : E2ETestBase() {
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - method: GET
+          uri: /graph/v2/service
+        - method: GET
+          uri: /graph/v3/databases
+        - method: POST
+          uri: /graph/v3/databases
+        - method: PUT
+          uri: /graph/v3/databases/db/tables/t
+        - method: DELETE
+          uri: /graph/v2/admin/service/test
+        """,
+    )
+    fun `no request is blocked when read-only is disabled`(
+        method: String,
+        uri: String,
+    ) {
+        client
+            .method(
+                org.springframework.http.HttpMethod
+                    .valueOf(method),
+            ).uri(uri)
+            .exchange()
+            .expectStatus()
+            .value { status ->
+                assert(status != 403) { "Expected non-403 for $method $uri, got $status" }
+            }
+    }
+}
+
 @TestPropertySource(properties = ["actionbase.read-only=true"])
 class StartUpWithReadOnlyEnabledTest : E2ETestBase() {
     @ObjectSourceParameterizedTest
@@ -129,8 +163,21 @@ class StartUpWithReadOnlyEnabledTest : E2ETestBase() {
     }
 }
 
+@TestPropertySource(properties = ["actionbase.read-only=true", "kc.graph.warmup.enabled=false"])
+class StartUpWithReadOnlyAndWarmUpDisabledTest : E2ETestBase() {
+    @Test
+    fun `server boots with read-only and warmup explicitly disabled`() {
+        client
+            .post()
+            .uri("/graph/v3/databases")
+            .exchange()
+            .expectStatus()
+            .isForbidden
+    }
+}
+
 @TestPropertySource(properties = ["actionbase.read-only=true", "kc.graph.warmup.enabled=true", "kc.graph.warmup.count=1"])
-class StartUpWithReadOnlyAndWarmUpTest : E2ETestBase() {
+class StartUpWithReadOnlyAndWarmUpEnabledTest : E2ETestBase() {
     @Test
     fun `server boots with read-only and warmup enabled`() {
         client
@@ -139,39 +186,5 @@ class StartUpWithReadOnlyAndWarmUpTest : E2ETestBase() {
             .exchange()
             .expectStatus()
             .isOk
-    }
-}
-
-@TestPropertySource(properties = ["actionbase.read-only=false"])
-class StartUpWithReadOnlyDisabledTest : E2ETestBase() {
-    @ObjectSourceParameterizedTest
-    @ObjectSource(
-        """
-        - method: GET
-          uri: /graph/v2/service
-        - method: GET
-          uri: /graph/v3/databases
-        - method: POST
-          uri: /graph/v3/databases
-        - method: PUT
-          uri: /graph/v3/databases/db/tables/t
-        - method: DELETE
-          uri: /graph/v2/admin/service/test
-        """,
-    )
-    fun `no request is blocked when read-only is disabled`(
-        method: String,
-        uri: String,
-    ) {
-        client
-            .method(
-                org.springframework.http.HttpMethod
-                    .valueOf(method),
-            ).uri(uri)
-            .exchange()
-            .expectStatus()
-            .value { status ->
-                assert(status != 403) { "Expected non-403 for $method $uri, got $status" }
-            }
     }
 }
