@@ -1,7 +1,5 @@
 package com.kakao.actionbase.server.filter
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
@@ -14,10 +12,8 @@ import reactor.core.publisher.Mono
 
 // Rejects non-GET methods on graph path prefixes with 403.
 // Exceptions: read-only POST endpoints matched by readSuffixes.
-// The filter starts inactive and must be activated after warmup completes.
 class ReadOnlyRequestFilter : WebFilter {
     private val log = LoggerFactory.getLogger(ReadOnlyRequestFilter::class.java)
-    private val activated = AtomicBoolean(false)
 
     private val paths = setOf("/graph/v2", "/graph/v3")
     private val readMethod = HttpMethod.GET
@@ -29,23 +25,13 @@ class ReadOnlyRequestFilter : WebFilter {
         )
 
     init {
-        log.info("ReadOnlyRequestFilter is registered (inactive until warmup completes).")
-    }
-
-    fun activate() {
-        if (activated.compareAndSet(false, true)) {
-            log.info("ReadOnlyRequestFilter activated. Write operations on {} will be rejected.", paths)
-        }
+        log.info("ReadOnlyRequestFilter is active. Write operations on {} will be rejected.", paths)
     }
 
     override fun filter(
         exchange: ServerWebExchange,
         chain: WebFilterChain,
     ): Mono<Void> {
-        if (!activated.get()) {
-            return chain.filter(exchange)
-        }
-
         val method = exchange.request.method
         val path = exchange.request.uri.path
 

@@ -32,7 +32,6 @@ class ReadOnlyRequestFilterTest {
     @BeforeEach
     fun setup() {
         filter = ReadOnlyRequestFilter()
-        filter.activate()
     }
 
     @Test
@@ -72,40 +71,6 @@ class ReadOnlyRequestFilterTest {
         path: String,
     ) {
         assertAllowed(method, path)
-    }
-
-    @Test
-    fun `should allow all requests before activation`() {
-        val inactiveFilter = ReadOnlyRequestFilter()
-        val exchange = buildExchange("POST", "/graph/v3/databases")
-        var passed = false
-        inactiveFilter
-            .filter(
-                exchange,
-                WebFilterChain {
-                    passed = true
-                    Mono.empty()
-                },
-            ).block()
-        assertTrue(passed, "Expected inactive filter to allow all requests")
-    }
-
-    @Test
-    fun `should block write requests after activation`() {
-        val activatedFilter = ReadOnlyRequestFilter()
-        activatedFilter.activate()
-        val exchange = buildExchange("POST", "/graph/v3/databases")
-        var passed = false
-        activatedFilter
-            .filter(
-                exchange,
-                WebFilterChain {
-                    passed = true
-                    Mono.empty()
-                },
-            ).block()
-        assertFalse(passed, "Expected activated filter to block write requests")
-        assertEquals(HttpStatus.FORBIDDEN, exchange.response.statusCode)
     }
 
     @Test
