@@ -84,6 +84,13 @@ interface Label : AutoCloseable {
             .filter { it.rows.isNotEmpty() }
             .reduce { a, b -> a + b }
 
+    fun cache(
+        sources: List<Any>,
+        cacheName: String,
+        direction: Direction,
+        limit: Int,
+    ): Mono<DataFrame> = Mono.error(UnsupportedOperationException("cache is not supported for ${this::class.simpleName}"))
+
     fun count(
         srcSet: Set<Any>,
         dir: Direction,

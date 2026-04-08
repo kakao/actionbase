@@ -665,7 +665,7 @@ class V2BackedTableBinding(
                 .fold(0L) { acc, record -> acc + record.value }
                 .filterValues { it != 0L }
 
-        private fun Direction.toV3(): com.kakao.actionbase.core.metadata.common.Direction =
+        fun Direction.toV3(): com.kakao.actionbase.core.metadata.common.Direction =
             when (this) {
                 Direction.OUT -> com.kakao.actionbase.core.metadata.common.Direction.OUT
                 Direction.IN -> com.kakao.actionbase.core.metadata.common.Direction.IN

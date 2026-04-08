@@ -1,10 +1,17 @@
 package com.kakao.actionbase.v2.engine.label.hbase
 
+import com.kakao.actionbase.core.edge.Edge
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
+import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.Index
+import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.core.types.DataType
+import com.kakao.actionbase.v2.core.types.EdgeSchema
+import com.kakao.actionbase.v2.core.types.Field
+import com.kakao.actionbase.v2.core.types.StructType
 import com.kakao.actionbase.v2.engine.GraphDefaults
 import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
@@ -12,11 +19,13 @@ import com.kakao.actionbase.v2.engine.label.AbstractLabel
 import com.kakao.actionbase.v2.engine.label.LabelFactory
 import com.kakao.actionbase.v2.engine.label.mixin.IndexedLabelMixin
 import com.kakao.actionbase.v2.engine.sql.DataFrame
+import com.kakao.actionbase.v2.engine.sql.Row
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding
+import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.toV3
 import com.kakao.actionbase.v2.engine.v3.V3TableDescriptor
 
 import reactor.core.publisher.Mono
@@ -30,7 +39,7 @@ open class HBaseIndexedLabel(
     override val indices: List<Index>,
     override val indexNameToIndex: Map<String, Index>,
     tables: Mono<HBaseTables>,
-    edgeRecordMapper: EdgeRecordMapper,
+    private val edgeRecordMapper: EdgeRecordMapper,
     lockTimeout: Long,
 ) : HBaseHashLabel(
         entity = entity,
@@ -59,6 +68,77 @@ open class HBaseIndexedLabel(
             scanFilter,
             stats,
             idEdgeEncoder,
+        )
+
+    override fun cache(
+        sources: List<Any>,
+        cacheName: String,
+        direction: Direction,
+        limit: Int,
+    ): Mono<DataFrame> {
+        val cache =
+            entity.caches.find { it.cache == cacheName }
+                ?: return Mono.error(IllegalArgumentException("Cache not found: $cacheName"))
+
+        val order = cache.fields.first().order
+        val source =
+            when (direction) {
+                Direction.OUT -> entity.schema.src.type.type
+                Direction.IN -> entity.schema.tgt.type.type
+            }
+
+        val cacheMapper = edgeRecordMapper.cache
+        val keys =
+            sources.distinct().map { vertex ->
+                cacheMapper.encoder.encodeKey(
+                    EdgeCacheRecord.Key.of(
+                        directedSource = source.cast(vertex),
+                        tableCode = entity.id,
+                        direction = direction.toV3(),
+                        cacheCode = cache.code,
+                    ),
+                )
+            }
+
+        val descriptor = V3TableDescriptor.create(entity)
+        val schema = buildSchema()
+
+        return hbaseGetWideRow(keys, from = null, to = null, order, limit)
+            .map { records ->
+                val rows =
+                    records.map { record ->
+                        val decoded = cacheMapper.decoder.decode(record.key, record.qualifier, record.value)
+                        val edge = decoded.toEdge(descriptor.schema)
+                        toRow(edge, schema)
+                    }
+                DataFrame(rows, schema)
+            }
+    }
+
+    private fun toRow(
+        edge: Edge,
+        schema: StructType,
+    ): Row {
+        val array = arrayOfNulls<Any?>(schema.fields.size)
+        array[0] = edge.version
+        array[1] = edge.source
+        array[2] = edge.target
+        entity.schema.fields.forEachIndexed { i, field ->
+            array[3 + i] = edge.properties[field.name]
+        }
+        return Row(array)
+    }
+
+    private fun buildSchema(): StructType =
+        StructType(
+            arrayOf(
+                Field(EdgeSchema.Fields.TS, DataType.LONG, false),
+                Field(EdgeSchema.Fields.SRC, entity.schema.src.type.type, false),
+                Field(EdgeSchema.Fields.TGT, entity.schema.tgt.type.type, false),
+            ) +
+                entity.schema.fields.map {
+                    Field(it.name, it.type, it.isNullable)
+                },
         )
 
     companion object : LabelFactory<HBaseIndexedLabel, HBaseStorage> {

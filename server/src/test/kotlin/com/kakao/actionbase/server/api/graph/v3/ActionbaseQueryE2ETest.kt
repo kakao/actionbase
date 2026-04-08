@@ -205,7 +205,7 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                 .jsonPath("$.items[1].name")
                 .isEqualTo("hop2")
                 .jsonPath("$.items[1].rows")
-                .isEqualTo(0) // cache stub returns empty
+                .isEqualTo(3)
         }
 
         @Test
