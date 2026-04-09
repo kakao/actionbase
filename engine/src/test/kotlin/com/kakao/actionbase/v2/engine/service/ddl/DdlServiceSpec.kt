@@ -159,6 +159,7 @@ class DdlServiceSpec :
                     schema = null,
                     groups = null,
                     indices = null,
+                    caches = null,
                 )
 
             graph.labelDdl
@@ -200,6 +201,7 @@ class DdlServiceSpec :
                     schema = null,
                     groups = null,
                     indices = null,
+                    caches = null,
                 )
 
             graph.labelDdl
@@ -241,6 +243,7 @@ class DdlServiceSpec :
                     schema = null,
                     groups = null,
                     indices = null,
+                    caches = null,
                 )
 
             graph.labelDdl
@@ -285,6 +288,7 @@ class DdlServiceSpec :
                     schema = null,
                     groups = null,
                     indices = null,
+                    caches = null,
                 )
 
             graph.labelDdl
@@ -481,6 +485,7 @@ class DdlServiceSpec :
                     schema = null,
                     groups = null,
                     indices = null,
+                    caches = null,
                 )
 
             graph.labelDdl
@@ -653,6 +658,7 @@ class DdlServiceSpec :
                     schema = null,
                     groups = null,
                     indices = null,
+                    caches = null,
                 )
             graph.labelDdl
                 .update(labelName, labelUpdateRequest)
@@ -711,7 +717,17 @@ class DdlServiceSpec :
             graph.labelDdl
                 .update(
                     EntityName("test", "some_label"),
-                    LabelUpdateRequest(false, null, null, null, null, null, null, null),
+                    LabelUpdateRequest(
+                        active = false,
+                        desc = null,
+                        type = null,
+                        schema = null,
+                        groups = null,
+                        indices = null,
+                        readOnly = null,
+                        mode = null,
+                        caches = null,
+                    ),
                 ).test()
                 .assertNext { ddlResult ->
                     ddlResult.status shouldBe DdlStatus.Status.UPDATED
@@ -784,6 +800,7 @@ class DdlServiceSpec :
                         schema = newSchema,
                         groups = null,
                         indices = null,
+                        caches = null,
                     ),
                 ).test()
                 .assertNext { ddlResult ->
@@ -864,6 +881,7 @@ class DdlServiceSpec :
                         schema = newSchema,
                         groups = null,
                         indices = null,
+                        caches = null,
                     ),
                 ).test()
                 .assertNext { ddlResult ->
@@ -968,6 +986,7 @@ class DdlServiceSpec :
                         schema = null,
                         groups = null,
                         indices = newIndices,
+                        caches = null,
                     ),
                 ).test()
                 .assertNext { ddlResult ->
@@ -1066,6 +1085,7 @@ class DdlServiceSpec :
                         schema = newSchema,
                         groups = null,
                         indices = null,
+                        caches = null,
                     ),
                 ).test()
                 .verifyError(IllegalArgumentException::class.java)
@@ -1180,6 +1200,7 @@ class DdlServiceSpec :
                         schema = null,
                         groups = null,
                         indices = null,
+                        caches = null,
                     )
 
                 graph.labelDdl
@@ -1199,6 +1220,7 @@ class DdlServiceSpec :
                         schema = null,
                         groups = null,
                         indices = null,
+                        caches = null,
                     )
 
                 graph.labelDdl

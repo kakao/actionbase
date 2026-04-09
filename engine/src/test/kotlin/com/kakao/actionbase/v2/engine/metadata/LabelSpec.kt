@@ -79,6 +79,7 @@ class LabelSpec :
                     schema = null,
                     groups = null,
                     indices = null,
+                    caches = null,
                 )
 
             graph.labelDdl
@@ -107,6 +108,7 @@ class LabelSpec :
                     schema = null,
                     groups = null,
                     indices = null,
+                    caches = null,
                 )
 
             graph.labelDdl
@@ -128,6 +130,7 @@ class LabelSpec :
                     schema = null,
                     groups = null,
                     indices = null,
+                    caches = null,
                 )
 
             graph.labelDdl
@@ -183,6 +186,7 @@ class LabelSpec :
                     schema = schema,
                     groups = null,
                     indices = indices,
+                    caches = null,
                 )
 
             graph.labelDdl

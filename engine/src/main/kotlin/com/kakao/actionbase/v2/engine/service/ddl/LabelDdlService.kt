@@ -126,6 +126,7 @@ data class LabelUpdateRequest(
     val indices: List<Index>?,
     val readOnly: Boolean?,
     val mode: MutationMode?,
+    val caches: List<Cache>?,
     override val audit: Audit = Audit.default,
 ) : DdlRequest {
     private fun toNotNullMap(): Map<String, Any> =
@@ -138,6 +139,7 @@ data class LabelUpdateRequest(
             schema?.let { put("schema", objectMapper.writeValueAsString(it)) }
             groups?.let { put("groups", objectMapper.writeValueAsString(it)) }
             indices?.let { put("indices", objectMapper.writeValueAsString(it)) }
+            caches?.let { put("caches", objectMapper.writeValueAsString(it)) }
         }
 
     override fun toEdge(name: EntityName): TraceEdge = name.toTraceEdge(props = toNotNullMap())
