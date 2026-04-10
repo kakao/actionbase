@@ -31,7 +31,7 @@ class WebFilterConfig(
 
     @Bean
     @Order(1)
-    fun readOnlyRequestFilter(): ReadOnlyRequestFilter? =
+    fun readOnlyRequestFilter(): WebFilter? =
         if (serverProperties.readOnly) {
             ReadOnlyRequestFilter()
         } else {

@@ -17,14 +17,12 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.server.WebFilter
 
 import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 
 @Component
 @ConditionalOnProperty(name = ["kc.graph.warmup.enabled"], havingValue = "true")
 class ServiceLabelEdgeControllerWarmUp(
     @Value("\${server.port:8080}") private val serverPort: Int,
     graphProperties: GraphProperties,
-    private val serverProperties: ServerProperties,
     @Qualifier("tokenAuthenticationFilter") private val tokenAuthenticationFilter: WebFilter,
 ) : ApplicationListener<ApplicationReadyEvent> {
     private val log: Logger = LoggerFactory.getLogger(ServiceLabelEdgeControllerWarmUp::class.java)
@@ -45,7 +43,7 @@ class ServiceLabelEdgeControllerWarmUp(
         log.info("WarmUp is added. serverPort: $serverPort, config: $warmUpConfig")
     }
 
-    private val writeMethods = listOf(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE)
+    private val allMethods = listOf(HttpMethod.POST, HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE)
 
     fun warmUpInfo(
         i: Int,
@@ -59,60 +57,40 @@ class ServiceLabelEdgeControllerWarmUp(
         )
 
     override fun onApplicationEvent(event: ApplicationReadyEvent) {
-        val writeWarmUp =
-            Flux
-                .range(0, warmUpConfig.count)
-                .flatMap({ i ->
-                    if (tokenAuthenticationFilter is TokenAuthenticationFilter) {
-                        tokenAuthenticationFilter.warmUp()
-                    }
-                    val method = writeMethods.random()
-                    val uri = "/graph/v2/service/sys/label/info/edge"
-                    webClient
-                        .method(method)
-                        .uri(uri)
-                        .apply {
-                            when (method) {
-                                HttpMethod.POST, HttpMethod.PUT -> {
-                                    bodyValue(EdgesRequest(listOf(warmUpInfo(i, props = true))))
-                                }
-                                HttpMethod.DELETE -> {
-                                    bodyValue(EdgesRequest(listOf(warmUpInfo(i, props = false))))
-                                }
-                                else -> {}
-                            }
-                        }.retrieve()
-                        .bodyToMono(String::class.java)
-                }, warmUpConfig.concurrency)
-                .count()
-
-        val readWarmUp =
-            Flux
-                .range(0, warmUpConfig.count)
-                .flatMap({ i ->
-                    if (tokenAuthenticationFilter is TokenAuthenticationFilter) {
-                        tokenAuthenticationFilter.warmUp()
-                    }
-                    webClient
-                        .get()
-                        .uri("/graph/v2/service/sys/label/info/edge?src=origin&tgt=warmup")
-                        .retrieve()
-                        .bodyToMono(String::class.java)
-                }, warmUpConfig.concurrency)
-                .count()
-
-        log.info("ServiceLabelEdgeControllerWarmUp is started")
-
-        Mono
-            .defer {
-                if (serverProperties.readOnly) {
-                    log.info("Skipping write warm-up (read-only mode)")
-                    Mono.empty()
-                } else {
-                    writeWarmUp.then()
+        Flux
+            .range(0, warmUpConfig.count)
+            .flatMap({ i ->
+                if (tokenAuthenticationFilter is TokenAuthenticationFilter) {
+                    tokenAuthenticationFilter.warmUp()
                 }
-            }.then(Mono.defer { readWarmUp.then() })
-            .then(
+                if (i == 0) {
+                    log.info("ServiceLabelEdgeControllerWarmUp is started")
+                }
+                val method = allMethods.random()
+                val uri =
+                    if (method != HttpMethod.GET) {
+                        "/graph/v2/service/sys/label/info/edge"
+                    } else {
+                        "/graph/v2/service/sys/label/info/edge?src=origin&tgt=warmup"
+                    }
+                webClient
+                    .method(method)
+                    .uri(uri)
+                    .apply {
+                        when (method) {
+                            HttpMethod.POST, HttpMethod.PUT -> {
+                                bodyValue(EdgesRequest(listOf(warmUpInfo(i, props = true))))
+                            }
+                            HttpMethod.DELETE -> {
+                                bodyValue(EdgesRequest(listOf(warmUpInfo(i, props = false))))
+                            }
+                            else -> {}
+                        }
+                    }.retrieve()
+                    .bodyToMono(String::class.java)
+            }, warmUpConfig.concurrency)
+            .count()
+            .flatMap {
                 webClient
                     .put()
                     .uri("/graph/health/readiness")
@@ -122,9 +100,9 @@ class ServiceLabelEdgeControllerWarmUp(
                         log.info("💚 readiness UP  💚")
                     }.doOnError { ex ->
                         log.error("💔 readiness DOWN  💔", ex)
-                    },
-            ).subscribe {
-                log.info("Warm-up is completed.")
+                    }.thenReturn(it)
+            }.subscribe {
+                log.info("Warm-up is completed: $it tires.")
             }
     }
 }
