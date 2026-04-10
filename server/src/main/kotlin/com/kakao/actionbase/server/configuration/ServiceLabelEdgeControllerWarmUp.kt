@@ -23,6 +23,7 @@ import reactor.core.publisher.Flux
 class ServiceLabelEdgeControllerWarmUp(
     @Value("\${server.port:8080}") private val serverPort: Int,
     graphProperties: GraphProperties,
+    serverProperties: ServerProperties,
     @Qualifier("tokenAuthenticationFilter") private val tokenAuthenticationFilter: WebFilter,
 ) : ApplicationListener<ApplicationReadyEvent> {
     private val log: Logger = LoggerFactory.getLogger(ServiceLabelEdgeControllerWarmUp::class.java)
@@ -43,7 +44,12 @@ class ServiceLabelEdgeControllerWarmUp(
         log.info("WarmUp is added. serverPort: $serverPort, config: $warmUpConfig")
     }
 
-    private val allMethods = listOf(HttpMethod.POST, HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE)
+    private val allMethods =
+        if (serverProperties.readOnly) {
+            listOf(HttpMethod.GET)
+        } else {
+            listOf(HttpMethod.POST, HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE)
+        }
 
     fun warmUpInfo(
         i: Int,
