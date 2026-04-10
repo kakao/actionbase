@@ -162,3 +162,16 @@ class StartUpWithReadOnlyDisabledTest : E2ETestBase() {
             }
     }
 }
+
+@TestPropertySource(properties = ["actionbase.read-only=true", "kc.graph.warmup.enabled=true", "kc.graph.warmup.count=1"])
+class StartUpWithReadOnlyAndWarmUpEnabledTest : E2ETestBase() {
+    @Test
+    fun `server boots with read-only and warmup enabled`() {
+        client
+            .get()
+            .uri("/graph/v2")
+            .exchange()
+            .expectStatus()
+            .isOk
+    }
+}

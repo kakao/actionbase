@@ -35,6 +35,7 @@ data class GraphConfig(
     val hbase: Map<String, String> = emptyMap(),
     val metadataFetchLimit: Int = DdlService.DEFAULT_METADATA_LIMIT,
     val systemMutationMode: MutationMode? = null,
+    val readOnly: Boolean = false,
 ) {
     companion object {
         val builder: Builder
@@ -64,6 +65,7 @@ data class GraphConfig(
         private var hbase: Map<String, String> = emptyMap()
         private var metadataFetchLimit: Int = DdlService.DEFAULT_METADATA_LIMIT
         private var systemMutationMode: MutationMode? = null
+        private var readOnly: Boolean = false
 
         // Aligned with nginx.conf proxy_read_timeout 300
         private var mutationRequestTimeout: Long = 300_000
@@ -124,6 +126,8 @@ data class GraphConfig(
 
         fun withSystemMutationMode(systemMutationMode: MutationMode?) = apply { this.systemMutationMode = systemMutationMode }
 
+        fun withReadOnly(readOnly: Boolean) = apply { this.readOnly = readOnly }
+
         fun build(): GraphConfig =
             GraphConfig(
                 phase = phase,
@@ -149,6 +153,7 @@ data class GraphConfig(
                 hbase = hbase,
                 metadataFetchLimit = metadataFetchLimit,
                 systemMutationMode = systemMutationMode,
+                readOnly = readOnly,
             )
     }
 }
