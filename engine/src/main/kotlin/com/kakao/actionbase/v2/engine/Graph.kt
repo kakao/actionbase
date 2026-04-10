@@ -11,7 +11,6 @@ import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
@@ -72,6 +71,7 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseOptions
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 import com.kakao.actionbase.v2.engine.util.getLogger
+import com.kakao.actionbase.v2.engine.v3.V2BackedTableProvider
 import com.kakao.actionbase.v2.engine.wal.Wal
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 import com.kakao.actionbase.v2.engine.wal.WalLog
@@ -114,7 +114,6 @@ class Graph(
     onlineMetadataLabel: Label,
     private val nilLabel: Label,
 ) : GraphDefaults,
-    LabelProvider,
     AutoCloseable {
     internal val mutationRequestTimeout = config.mutationRequestTimeout
 
@@ -169,7 +168,7 @@ class Graph(
 
     fun isReady(): Boolean = metadataInitialized
 
-    private val queryExecutor = ActionbaseQueryExecutor(this)
+    private val queryExecutor = ActionbaseQueryExecutor(V2BackedTableProvider(this))
 
     val metastoreInspector = MetastoreInspector(this.metastore, this.metadataTable)
 
@@ -232,7 +231,19 @@ class Graph(
 
     // -- mutation
 
-    override fun getLabel(name: EntityName): Label =
+    /**
+     * Resolves a [Label] by entity name, applying alias redirection when present.
+     *
+     * This is v2 direct-label access. Used internally by metadata/DDL services
+     * and by the v2→v3 bridge classes in `v2/engine/v3/` (e.g.
+     * `V2BackedEngine.getTableBinding`, `V2BackedTableProvider.getTable`).
+     * v3 code must not call this directly — it should route through
+     * [com.kakao.actionbase.engine.binding.TableBinding] for REST-facing
+     * single-edge APIs, or
+     * [com.kakao.actionbase.engine.query.TableProvider] for `ActionbaseQuery`
+     * execution (which covers both single-item and multi-hop queries).
+     */
+    fun getLabel(name: EntityName): Label =
         if (aliases.containsKey(name)) {
             labels[aliases[name]] ?: throw UnsupportedOperationException("No such label ${aliases[name]} of the alias $name.")
         } else {

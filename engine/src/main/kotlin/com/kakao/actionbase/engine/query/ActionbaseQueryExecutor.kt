@@ -1,8 +1,7 @@
 package com.kakao.actionbase.engine.query
 
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
-import com.kakao.actionbase.engine.query.compat.toScanFilter
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
+import com.kakao.actionbase.engine.query.TableProvider
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.StructType
@@ -27,7 +26,7 @@ import reactor.core.publisher.Mono
  * @see ActionbaseQuery
  */
 class ActionbaseQueryExecutor(
-    private val labelProvider: LabelProvider,
+    private val tableProvider: TableProvider,
 ) {
     private val objectMapper = jacksonObjectMapper()
 
@@ -127,8 +126,9 @@ class ActionbaseQueryExecutor(
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> =
         resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
-            val table = labelProvider.getLabel(queryItem.database, queryItem.table)
-            table.getSelf(source.toList(), actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
+            tableProvider
+                .getTable(queryItem.database, queryItem.table)
+                .getSelf(source.toList(), actionBaseQuery.stats)
         }
 
     private fun processGet(
@@ -139,10 +139,9 @@ class ActionbaseQueryExecutor(
         resolveVertex(queryItem.source, context, actionBaseQuery)
             .zipWith(resolveVertex(queryItem.target, context, actionBaseQuery))
             .flatMap { tuple ->
-                val source = tuple.t1
-                val target = tuple.t2
-                val table = labelProvider.getLabel(queryItem.database, queryItem.table)
-                table.get(source.toList(), target.toList(), actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
+                tableProvider
+                    .getTable(queryItem.database, queryItem.table)
+                    .get(tuple.t1.toList(), tuple.t2.toList(), actionBaseQuery.stats)
             }
 
     private fun processCount(
@@ -151,8 +150,9 @@ class ActionbaseQueryExecutor(
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> =
         resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
-            val table = labelProvider.getLabel(queryItem.database, queryItem.table)
-            table.count(source, queryItem.direction)
+            tableProvider
+                .getTable(queryItem.database, queryItem.table)
+                .count(source, queryItem.direction)
         }
 
     private fun processScan(
@@ -161,9 +161,17 @@ class ActionbaseQueryExecutor(
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> =
         resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
-            val table = labelProvider.getLabel(queryItem.database, queryItem.table)
-            val scanFilter = queryItem.toScanFilter(source)
-            table.scan(scanFilter, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
+            tableProvider
+                .getTable(queryItem.database, queryItem.table)
+                .scan(
+                    sources = source,
+                    direction = queryItem.direction,
+                    index = queryItem.index,
+                    limit = queryItem.limit,
+                    offset = queryItem.offset,
+                    predicates = queryItem.predicates,
+                    stats = actionBaseQuery.stats,
+                )
         }
 
     private fun processCache(
@@ -172,8 +180,14 @@ class ActionbaseQueryExecutor(
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> =
         resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
-            val table = labelProvider.getLabel(queryItem.database, queryItem.table)
-            table.cache(sources = source.toList(), cacheName = queryItem.cache, direction = queryItem.direction, limit = queryItem.limit)
+            tableProvider
+                .getTable(queryItem.database, queryItem.table)
+                .cache(
+                    sources = source.toList(),
+                    cacheName = queryItem.cache,
+                    direction = queryItem.direction,
+                    limit = queryItem.limit,
+                )
         }
 
     // region Aggregators

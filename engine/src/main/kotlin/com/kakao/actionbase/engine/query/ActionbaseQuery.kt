@@ -1,7 +1,7 @@
 package com.kakao.actionbase.engine.query
 
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
-import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.engine.sql.StatKey
 import com.kakao.actionbase.v2.engine.sql.WherePredicate

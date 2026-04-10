@@ -3,12 +3,12 @@ package com.kakao.actionbase.v2.engine.v3.query
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.engine.query.LabelProvider
+import com.kakao.actionbase.engine.query.Table
+import com.kakao.actionbase.engine.query.TableProvider
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.StructType
 import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
 
@@ -20,11 +20,11 @@ import reactor.test.StepVerifier
 class ActionbaseQueryExecutorAggregatorSpec :
     StringSpec({
 
-        val labelProvider =
-            object : LabelProvider {
-                override fun getLabel(name: EntityName): Label = throw NotImplementedError()
+        val tableProvider =
+            object : TableProvider {
+                override fun getTable(name: EntityName): Table = throw NotImplementedError()
             }
-        val executor = ActionbaseQueryExecutor(labelProvider)
+        val executor = ActionbaseQueryExecutor(tableProvider)
 
         val categorySchema =
             StructType(

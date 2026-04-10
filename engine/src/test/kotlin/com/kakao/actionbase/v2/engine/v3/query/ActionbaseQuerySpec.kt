@@ -236,7 +236,7 @@ class ActionbaseQuerySpec :
                       "source": {
                         "type": "REF",
                         "ref": "step1",
-                        "field": "tgt"
+                        "field": "target"
                       },
                       "direction": "IN",
                       "index": "created_at_desc",
