@@ -1,6 +1,6 @@
 package com.kakao.actionbase.server.configuration
 
-import com.kakao.actionbase.engine.runtime.Engine
+import com.kakao.actionbase.engine.Engine
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

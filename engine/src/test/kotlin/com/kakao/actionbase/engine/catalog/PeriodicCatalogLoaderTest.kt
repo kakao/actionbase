@@ -1,4 +1,6 @@
-package com.kakao.actionbase.engine.runtime
+package com.kakao.actionbase.engine.catalog
+
+import com.kakao.actionbase.engine.Engine
 
 import java.time.Duration
 

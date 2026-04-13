@@ -1,4 +1,6 @@
-package com.kakao.actionbase.engine.runtime
+package com.kakao.actionbase.engine
+
+import com.kakao.actionbase.engine.catalog.CatalogLoader
 
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
