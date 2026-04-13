@@ -2,30 +2,27 @@ package com.kakao.actionbase.engine.runtime
 
 import java.time.Duration
 
-/**
- * V3-native engine. Composition root and lifecycle handle for the runtime.
- * See #247.
- */
 class Engine(
-    private val loader: MetadataLoader,
+    private val metadataLoader: MetadataLoader,
 ) : AutoCloseable {
     init {
-        loader.bind(this)
+        metadataLoader.bind(this)
     }
 
     override fun close() {
-        loader.close()
+        metadataLoader.close()
     }
 
     companion object {
         fun create(
             metastoreReloadInitialDelay: Duration = Duration.ZERO,
             metastoreReloadInterval: Duration? = null,
-        ): Engine = Engine(
-            PeriodicMetadataLoader(
+        ): Engine {
+            val metadataLoader = PeriodicMetadataLoader(
                 metastoreReloadInitialDelay,
                 metastoreReloadInterval,
-            ),
-        )
+            )
+            return Engine(metadataLoader)
+        }
     }
 }
