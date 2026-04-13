@@ -1,6 +1,6 @@
 package com.kakao.actionbase.engine
 
-import com.kakao.actionbase.engine.catalog.CatalogLoader
+import com.kakao.actionbase.engine.catalog.Catalog
 
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -36,7 +36,7 @@ class EngineTest {
         Engine.create().close()
     }
 
-    private class FakeLoader : CatalogLoader {
+    private class FakeLoader : Catalog {
         var bound: Engine? = null
         var bindCount = 0
         var closeCount = 0

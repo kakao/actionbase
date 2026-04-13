@@ -12,10 +12,10 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
-class PeriodicCatalogLoader(
+class PeriodicCatalog(
     private val catalogReloadInitialDelay: Duration,
     private val catalogReloadInterval: Duration?,
-) : CatalogLoader {
+) : Catalog {
     @Volatile private var reloadCount: Long = 0
 
     @Volatile private var lastReloadAt: Instant? = null
@@ -26,7 +26,7 @@ class PeriodicCatalogLoader(
     @Synchronized
     override fun bind(engine: Engine) {
         if (bound) {
-            log.warn("PeriodicCatalogLoader already bound")
+            log.warn("PeriodicCatalog already bound")
             return
         }
         this.engine = engine
@@ -70,7 +70,7 @@ class PeriodicCatalogLoader(
     @Synchronized
     override fun close() {
         if (!bound) return
-        log.info("PeriodicCatalogLoader closing after {} reloads", reloadCount)
+        log.info("PeriodicCatalog closing after {} reloads", reloadCount)
         disposable?.dispose()
         disposable = null
         engine = null
@@ -91,6 +91,6 @@ class PeriodicCatalogLoader(
     }
 
     companion object {
-        private val log = LoggerFactory.getLogger(PeriodicCatalogLoader::class.java)
+        private val log = LoggerFactory.getLogger(PeriodicCatalog::class.java)
     }
 }

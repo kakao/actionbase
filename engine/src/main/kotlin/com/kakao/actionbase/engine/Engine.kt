@@ -1,19 +1,19 @@
 package com.kakao.actionbase.engine
 
-import com.kakao.actionbase.engine.catalog.CatalogLoader
-import com.kakao.actionbase.engine.catalog.PeriodicCatalogLoader
+import com.kakao.actionbase.engine.catalog.Catalog
+import com.kakao.actionbase.engine.catalog.PeriodicCatalog
 
 import java.time.Duration
 
 class Engine(
-    private val catalogLoader: CatalogLoader,
+    private val catalog: Catalog,
 ) : AutoCloseable {
     init {
-        catalogLoader.bind(this)
+        catalog.bind(this)
     }
 
     override fun close() {
-        catalogLoader.close()
+        catalog.close()
     }
 
     companion object {
@@ -21,12 +21,12 @@ class Engine(
             catalogReloadInitialDelay: Duration = Duration.ZERO,
             catalogReloadInterval: Duration? = null,
         ): Engine {
-            val catalogLoader =
-                PeriodicCatalogLoader(
+            val catalog =
+                PeriodicCatalog(
                     catalogReloadInitialDelay,
                     catalogReloadInterval,
                 )
-            return Engine(catalogLoader)
+            return Engine(catalog)
         }
     }
 }
