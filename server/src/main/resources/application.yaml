@@ -16,6 +16,11 @@ actionbase:
   tenant: ${AB_TENANT:ab-none}
   datastore:
     type: memory
+  metastore:
+    # Phase 1 of #247 — runs alongside kc.graph.metastoreReloadInterval
+    # until the v3 engine takes over the query path.
+    reload-initial-delay: 0s
+    reload-interval: 1m
 
 kc:
   graph:

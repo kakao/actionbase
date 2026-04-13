@@ -3,6 +3,8 @@ package com.kakao.actionbase.server.configuration
 import com.kakao.actionbase.core.metadata.DatastoreDescriptor
 import com.kakao.actionbase.core.metadata.common.DatastoreType
 
+import java.time.Duration
+
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 // NOTE: If DatastoreProperties is placed in a submodule, IntelliJ's application.yaml -> code navigation does not work.
@@ -12,7 +14,13 @@ data class ServerProperties(
     val tenant: String,
     val datastore: DatastoreProperties,
     val readOnly: Boolean = false,
+    val metastore: MetastoreProperties = MetastoreProperties(),
 ) {
+    data class MetastoreProperties(
+        val reloadInitialDelay: Duration = Duration.ZERO,
+        val reloadInterval: Duration? = null,
+    )
+
     data class DatastoreProperties(
         val type: DatastoreType,
         val configuration: Map<String, String> = emptyMap(),
