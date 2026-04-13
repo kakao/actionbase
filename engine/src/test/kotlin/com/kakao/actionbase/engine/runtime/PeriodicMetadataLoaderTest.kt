@@ -11,10 +11,11 @@ import org.junit.jupiter.api.Test
 class PeriodicMetadataLoaderTest {
     @Test
     fun `periodic loop fires on schedule`() {
-        val loader = PeriodicMetadataLoader(
-            metastoreReloadInitialDelay = Duration.ZERO,
-            metastoreReloadInterval = Duration.ofMillis(20),
-        )
+        val loader =
+            PeriodicMetadataLoader(
+                metastoreReloadInitialDelay = Duration.ZERO,
+                metastoreReloadInterval = Duration.ofMillis(20),
+            )
         Engine(loader).use {
             waitUntil(Duration.ofSeconds(2)) { loader.reloadCount() >= 3 }
             assertTrue(loader.reloadCount() >= 3)
@@ -24,10 +25,11 @@ class PeriodicMetadataLoaderTest {
 
     @Test
     fun `close halts the loop`() {
-        val loader = PeriodicMetadataLoader(
-            metastoreReloadInitialDelay = Duration.ZERO,
-            metastoreReloadInterval = Duration.ofMillis(20),
-        )
+        val loader =
+            PeriodicMetadataLoader(
+                metastoreReloadInitialDelay = Duration.ZERO,
+                metastoreReloadInterval = Duration.ofMillis(20),
+            )
         val engine = Engine(loader)
         waitUntil(Duration.ofSeconds(1)) { loader.reloadCount() >= 1 }
         engine.close()
@@ -40,10 +42,11 @@ class PeriodicMetadataLoaderTest {
     @Test
     fun `bind triggers exactly one reload before the periodic loop kicks in`() {
         // A long interval lets us observe the initial reload alone.
-        val loader = PeriodicMetadataLoader(
-            metastoreReloadInitialDelay = Duration.ZERO,
-            metastoreReloadInterval = Duration.ofMinutes(10),
-        )
+        val loader =
+            PeriodicMetadataLoader(
+                metastoreReloadInitialDelay = Duration.ZERO,
+                metastoreReloadInterval = Duration.ofMinutes(10),
+            )
         Engine(loader).use {
             waitUntil(Duration.ofSeconds(1)) { loader.reloadCount() == 1L }
             // Window between the initial reload and the next periodic tick
@@ -55,10 +58,11 @@ class PeriodicMetadataLoaderTest {
 
     @Test
     fun `null interval still runs the initial reload`() {
-        val loader = PeriodicMetadataLoader(
-            metastoreReloadInitialDelay = Duration.ZERO,
-            metastoreReloadInterval = null,
-        )
+        val loader =
+            PeriodicMetadataLoader(
+                metastoreReloadInitialDelay = Duration.ZERO,
+                metastoreReloadInterval = null,
+            )
         Engine(loader).use {
             waitUntil(Duration.ofSeconds(1)) { loader.reloadCount() == 1L }
             // No periodic loop, so the count must stay at 1 forever.
@@ -69,10 +73,11 @@ class PeriodicMetadataLoaderTest {
 
     @Test
     fun `initial delay defers the first reload`() {
-        val loader = PeriodicMetadataLoader(
-            metastoreReloadInitialDelay = Duration.ofMillis(300),
-            metastoreReloadInterval = null,
-        )
+        val loader =
+            PeriodicMetadataLoader(
+                metastoreReloadInitialDelay = Duration.ofMillis(300),
+                metastoreReloadInterval = null,
+            )
         Engine(loader).use {
             // Before the delay expires, the reload has not fired yet.
             Thread.sleep(100)
@@ -82,7 +87,10 @@ class PeriodicMetadataLoaderTest {
         }
     }
 
-    private fun waitUntil(timeout: Duration, condition: () -> Boolean) {
+    private fun waitUntil(
+        timeout: Duration,
+        condition: () -> Boolean,
+    ) {
         val deadline = System.currentTimeMillis() + timeout.toMillis()
         while (System.currentTimeMillis() < deadline) {
             if (condition()) return

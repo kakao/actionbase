@@ -1,18 +1,21 @@
 package com.kakao.actionbase.engine.runtime
 
+import java.time.Duration
+import java.time.Instant
+
 import org.slf4j.LoggerFactory
+
 import reactor.core.Disposable
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
-import java.time.Duration
-import java.time.Instant
 
 class PeriodicMetadataLoader(
     private val metastoreReloadInitialDelay: Duration,
     private val metastoreReloadInterval: Duration?,
 ) : MetadataLoader {
     @Volatile private var reloadCount: Long = 0
+
     @Volatile private var lastReloadAt: Instant? = null
     private var engine: Engine? = null
     private var bound = false
@@ -41,24 +44,25 @@ class PeriodicMetadataLoader(
             )
         }
 
-        val source: Flux<Long> = if (interval == null) {
-            Mono.delay(metastoreReloadInitialDelay).flux()
-        } else {
-            Flux.interval(metastoreReloadInitialDelay, interval)
-        }
-
-        disposable = source
-            .onBackpressureDrop { log.warn("backpressure drop {}", it) }
-            .doOnNext { reload() }
-            .subscribeOn(Schedulers.boundedElastic())
-            .onErrorContinue { error, _ ->
-                log.error(
-                    "Error occurred during metastore reload or unexpected error: {}. Continuing with next interval.",
-                    error.message,
-                    error,
-                )
+        val source: Flux<Long> =
+            if (interval == null) {
+                Mono.delay(metastoreReloadInitialDelay).flux()
+            } else {
+                Flux.interval(metastoreReloadInitialDelay, interval)
             }
-            .subscribe()
+
+        disposable =
+            source
+                .onBackpressureDrop { log.warn("backpressure drop {}", it) }
+                .doOnNext { reload() }
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorContinue { error, _ ->
+                    log.error(
+                        "Error occurred during metastore reload or unexpected error: {}. Continuing with next interval.",
+                        error.message,
+                        error,
+                    )
+                }.subscribe()
     }
 
     @Synchronized

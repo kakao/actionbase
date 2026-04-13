@@ -18,10 +18,11 @@ class Engine(
             metastoreReloadInitialDelay: Duration = Duration.ZERO,
             metastoreReloadInterval: Duration? = null,
         ): Engine {
-            val metadataLoader = PeriodicMetadataLoader(
-                metastoreReloadInitialDelay,
-                metastoreReloadInterval,
-            )
+            val metadataLoader =
+                PeriodicMetadataLoader(
+                    metastoreReloadInitialDelay,
+                    metastoreReloadInterval,
+                )
             return Engine(metadataLoader)
         }
     }
