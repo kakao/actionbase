@@ -1,5 +1,5 @@
 package com.kakao.actionbase.engine.runtime
 
-interface MetadataLoader : AutoCloseable {
+interface CatalogLoader : AutoCloseable {
     fun bind(engine: Engine)
 }

@@ -34,7 +34,7 @@ class EngineTest {
         Engine.create().close()
     }
 
-    private class FakeLoader : MetadataLoader {
+    private class FakeLoader : CatalogLoader {
         var bound: Engine? = null
         var bindCount = 0
         var closeCount = 0

@@ -10,10 +10,10 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
-class PeriodicMetadataLoader(
-    private val metastoreReloadInitialDelay: Duration,
-    private val metastoreReloadInterval: Duration?,
-) : MetadataLoader {
+class PeriodicCatalogLoader(
+    private val catalogReloadInitialDelay: Duration,
+    private val catalogReloadInterval: Duration?,
+) : CatalogLoader {
     @Volatile private var reloadCount: Long = 0
 
     @Volatile private var lastReloadAt: Instant? = null
@@ -24,31 +24,31 @@ class PeriodicMetadataLoader(
     @Synchronized
     override fun bind(engine: Engine) {
         if (bound) {
-            log.warn("PeriodicMetadataLoader already bound")
+            log.warn("PeriodicCatalogLoader already bound")
             return
         }
         this.engine = engine
         bound = true
 
-        val interval = metastoreReloadInterval
+        val interval = catalogReloadInterval
         if (interval == null) {
             log.info(
-                "metastore periodic reload disabled; one-shot reload after {} ms.",
-                metastoreReloadInitialDelay.toMillis(),
+                "catalog periodic reload disabled; one-shot reload after {} ms.",
+                catalogReloadInitialDelay.toMillis(),
             )
         } else {
             log.info(
-                "Starting Flux.interval for reloading metastore every {} ms after {} ms delay.",
+                "Starting Flux.interval for reloading catalog every {} ms after {} ms delay.",
                 interval.toMillis(),
-                metastoreReloadInitialDelay.toMillis(),
+                catalogReloadInitialDelay.toMillis(),
             )
         }
 
         val source: Flux<Long> =
             if (interval == null) {
-                Mono.delay(metastoreReloadInitialDelay).flux()
+                Mono.delay(catalogReloadInitialDelay).flux()
             } else {
-                Flux.interval(metastoreReloadInitialDelay, interval)
+                Flux.interval(catalogReloadInitialDelay, interval)
             }
 
         disposable =
@@ -58,7 +58,7 @@ class PeriodicMetadataLoader(
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorContinue { error, _ ->
                     log.error(
-                        "Error occurred during metastore reload or unexpected error: {}. Continuing with next interval.",
+                        "Error occurred during catalog reload or unexpected error: {}. Continuing with next interval.",
                         error.message,
                         error,
                     )
@@ -68,7 +68,7 @@ class PeriodicMetadataLoader(
     @Synchronized
     override fun close() {
         if (!bound) return
-        log.info("PeriodicMetadataLoader closing after {} reloads", reloadCount)
+        log.info("PeriodicCatalogLoader closing after {} reloads", reloadCount)
         disposable?.dispose()
         disposable = null
         engine = null
@@ -80,15 +80,15 @@ class PeriodicMetadataLoader(
 
     private fun reload() {
         // Guards against an in-flight tick that fires after `close()`
-        // nulled out `engine`. Phase 2 will read metadata through `engine`
-        // here, which makes this null check load-bearing.
+        // nulled out `engine`. Phase 2 will read the catalog through
+        // `engine` here, which makes this null check load-bearing.
         if (engine == null) return
-        log.debug("reloading metastore")
+        log.debug("reloading catalog")
         reloadCount++
         lastReloadAt = Instant.now()
     }
 
     companion object {
-        private val log = LoggerFactory.getLogger(PeriodicMetadataLoader::class.java)
+        private val log = LoggerFactory.getLogger(PeriodicCatalogLoader::class.java)
     }
 }

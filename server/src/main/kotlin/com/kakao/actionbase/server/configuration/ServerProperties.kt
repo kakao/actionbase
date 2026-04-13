@@ -14,9 +14,9 @@ data class ServerProperties(
     val tenant: String,
     val datastore: DatastoreProperties,
     val readOnly: Boolean = false,
-    val metastore: MetastoreProperties = MetastoreProperties(),
+    val catalog: CatalogProperties = CatalogProperties(),
 ) {
-    data class MetastoreProperties(
+    data class CatalogProperties(
         val reloadInitialDelay: Duration = Duration.ZERO,
         val reloadInterval: Duration? = null,
     )

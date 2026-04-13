@@ -3,27 +3,27 @@ package com.kakao.actionbase.engine.runtime
 import java.time.Duration
 
 class Engine(
-    private val metadataLoader: MetadataLoader,
+    private val catalogLoader: CatalogLoader,
 ) : AutoCloseable {
     init {
-        metadataLoader.bind(this)
+        catalogLoader.bind(this)
     }
 
     override fun close() {
-        metadataLoader.close()
+        catalogLoader.close()
     }
 
     companion object {
         fun create(
-            metastoreReloadInitialDelay: Duration = Duration.ZERO,
-            metastoreReloadInterval: Duration? = null,
+            catalogReloadInitialDelay: Duration = Duration.ZERO,
+            catalogReloadInterval: Duration? = null,
         ): Engine {
-            val metadataLoader =
-                PeriodicMetadataLoader(
-                    metastoreReloadInitialDelay,
-                    metastoreReloadInterval,
+            val catalogLoader =
+                PeriodicCatalogLoader(
+                    catalogReloadInitialDelay,
+                    catalogReloadInterval,
                 )
-            return Engine(metadataLoader)
+            return Engine(catalogLoader)
         }
     }
 }

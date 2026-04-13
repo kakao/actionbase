@@ -10,7 +10,7 @@ class EngineConfiguration {
     @Bean(destroyMethod = "close")
     fun engine(properties: ServerProperties): Engine =
         Engine.create(
-            metastoreReloadInitialDelay = properties.metastore.reloadInitialDelay,
-            metastoreReloadInterval = properties.metastore.reloadInterval,
+            catalogReloadInitialDelay = properties.catalog.reloadInitialDelay,
+            catalogReloadInterval = properties.catalog.reloadInterval,
         )
 }
