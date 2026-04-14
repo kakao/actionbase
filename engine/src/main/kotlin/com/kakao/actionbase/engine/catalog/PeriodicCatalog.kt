@@ -21,18 +21,21 @@ class PeriodicCatalog(
     private val catalogReloadInitialDelay: Duration,
     private val catalogReloadInterval: Duration?,
 ) : Catalog {
+    // --- state ---
     @Volatile private var snapshot: Snapshot = Snapshot.EMPTY
-
-    override val databases: Map<DatabaseId, DatabaseDescriptor> get() = snapshot.databases
-    override val tables: Map<TableId, TableDescriptor<*>> get() = snapshot.tables
-    override val aliases: Map<TableId, AliasDescriptor> get() = snapshot.aliases
 
     @Volatile private var reloadCount: Long = 0
 
     @Volatile private var lastReloadAt: Instant? = null
-    private var engine: Engine? = null
+
+    @Volatile private var engine: Engine? = null
     private var bound = false
     private var disposable: Disposable? = null
+
+    // --- public views ---
+    override val databases: Map<DatabaseId, DatabaseDescriptor> get() = snapshot.databases
+    override val tables: Map<TableId, TableDescriptor<*>> get() = snapshot.tables
+    override val aliases: Map<TableId, AliasDescriptor> get() = snapshot.aliases
 
     @Synchronized
     override fun bind(engine: Engine) {
@@ -93,8 +96,9 @@ class PeriodicCatalog(
 
     private fun reload() {
         // Guards against an in-flight tick that fires after `close()`
-        // nulled out `engine`. Phase 2 will read the catalog through
-        // `engine` here and swap `snapshot` atomically.
+        // nulled out `engine`. `engine` is @Volatile so this read has a
+        // happens-before with close()'s write. Phase 2 will read the
+        // catalog through `engine` here and swap `snapshot` atomically.
         if (engine == null) return
         log.debug("reloading catalog")
         // Phase 2: snapshot = Snapshot(loadedDbs, loadedTables, loadedAliases)
