@@ -1,5 +1,10 @@
 package com.kakao.actionbase.engine.catalog
 
+import com.kakao.actionbase.core.metadata.AliasDescriptor
+import com.kakao.actionbase.core.metadata.DatabaseDescriptor
+import com.kakao.actionbase.core.metadata.DatabaseId
+import com.kakao.actionbase.core.metadata.TableDescriptor
+import com.kakao.actionbase.core.metadata.TableId
 import com.kakao.actionbase.engine.Engine
 
 import java.time.Duration
@@ -16,6 +21,12 @@ class PeriodicCatalog(
     private val catalogReloadInitialDelay: Duration,
     private val catalogReloadInterval: Duration?,
 ) : Catalog {
+    @Volatile private var snapshot: Snapshot = Snapshot.EMPTY
+
+    override val databases: Map<DatabaseId, DatabaseDescriptor> get() = snapshot.databases
+    override val tables: Map<TableId, TableDescriptor<*>> get() = snapshot.tables
+    override val aliases: Map<TableId, AliasDescriptor> get() = snapshot.aliases
+
     @Volatile private var reloadCount: Long = 0
 
     @Volatile private var lastReloadAt: Instant? = null
@@ -83,11 +94,22 @@ class PeriodicCatalog(
     private fun reload() {
         // Guards against an in-flight tick that fires after `close()`
         // nulled out `engine`. Phase 2 will read the catalog through
-        // `engine` here, which makes this null check load-bearing.
+        // `engine` here and swap `snapshot` atomically.
         if (engine == null) return
         log.debug("reloading catalog")
+        // Phase 2: snapshot = Snapshot(loadedDbs, loadedTables, loadedAliases)
         reloadCount++
         lastReloadAt = Instant.now()
+    }
+
+    private data class Snapshot(
+        val databases: Map<DatabaseId, DatabaseDescriptor>,
+        val tables: Map<TableId, TableDescriptor<*>>,
+        val aliases: Map<TableId, AliasDescriptor>,
+    ) {
+        companion object {
+            val EMPTY = Snapshot(emptyMap(), emptyMap(), emptyMap())
+        }
     }
 
     companion object {

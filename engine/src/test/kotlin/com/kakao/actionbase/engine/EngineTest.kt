@@ -1,5 +1,10 @@
 package com.kakao.actionbase.engine
 
+import com.kakao.actionbase.core.metadata.AliasDescriptor
+import com.kakao.actionbase.core.metadata.DatabaseDescriptor
+import com.kakao.actionbase.core.metadata.DatabaseId
+import com.kakao.actionbase.core.metadata.TableDescriptor
+import com.kakao.actionbase.core.metadata.TableId
 import com.kakao.actionbase.engine.catalog.Catalog
 
 import kotlin.test.assertEquals
@@ -40,6 +45,10 @@ class EngineTest {
         var bound: Engine? = null
         var bindCount = 0
         var closeCount = 0
+
+        override val databases: Map<DatabaseId, DatabaseDescriptor> = emptyMap()
+        override val tables: Map<TableId, TableDescriptor<*>> = emptyMap()
+        override val aliases: Map<TableId, AliasDescriptor> = emptyMap()
 
         override fun bind(engine: Engine) {
             bound = engine
