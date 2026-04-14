@@ -29,7 +29,9 @@ class PeriodicCatalog(
     @Volatile private var lastReloadAt: Instant? = null
 
     @Volatile private var engine: Engine? = null
+
     private var bound = false
+
     private var disposable: Disposable? = null
 
     // --- public views ---
