@@ -8,7 +8,7 @@ import com.kakao.actionbase.core.state.transit
 import com.kakao.actionbase.engine.Audit
 import com.kakao.actionbase.engine.MutationContext
 import com.kakao.actionbase.engine.MutationEngine
-import com.kakao.actionbase.engine.binding.Table
+import com.kakao.actionbase.engine.catalog.Table
 import com.kakao.actionbase.engine.context.RequestContext
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.metadata.MutationModeContext

@@ -4,20 +4,24 @@ import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
+import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.State
-import com.kakao.actionbase.engine.binding.MutationRecordsSummary
-import com.kakao.actionbase.engine.binding.Table
+import com.kakao.actionbase.engine.catalog.MutationRecordsSummary
+import com.kakao.actionbase.engine.catalog.Table
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.engine.entity.LabelEntity
 
 import reactor.core.publisher.Mono
 
 class NilTable(
-    descriptor: V3TableDescriptor,
+    v3: V3TableDescriptor,
+    entity: LabelEntity,
 ) : Table {
-    override val table: String = descriptor.table
-    override val schema: ModelSchema = descriptor.schema
+    override val descriptor: TableDescriptor<*> = v3.toTableDescriptor(entity)
+    override val table: String = v3.table
+    override val schema: ModelSchema = v3.schema
     override val mutationMode: MutationMode = MutationMode.SYNC
 
     override fun <T> withLock(

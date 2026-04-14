@@ -1,11 +1,11 @@
 package com.kakao.actionbase.engine
 
-import com.kakao.actionbase.core.metadata.AliasDescriptor
-import com.kakao.actionbase.core.metadata.DatabaseDescriptor
 import com.kakao.actionbase.core.metadata.DatabaseId
-import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.TableId
+import com.kakao.actionbase.engine.catalog.Alias
 import com.kakao.actionbase.engine.catalog.Catalog
+import com.kakao.actionbase.engine.catalog.Database
+import com.kakao.actionbase.engine.catalog.Table
 
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -46,9 +46,9 @@ class EngineTest {
         var bindCount = 0
         var closeCount = 0
 
-        override val databases: Map<DatabaseId, DatabaseDescriptor> = emptyMap()
-        override val tables: Map<TableId, TableDescriptor<*>> = emptyMap()
-        override val aliases: Map<TableId, AliasDescriptor> = emptyMap()
+        override val databases: Map<DatabaseId, Database> = emptyMap()
+        override val tables: Map<TableId, Table> = emptyMap()
+        override val aliases: Map<TableId, Alias> = emptyMap()
 
         override fun bind(engine: Engine) {
             bound = engine

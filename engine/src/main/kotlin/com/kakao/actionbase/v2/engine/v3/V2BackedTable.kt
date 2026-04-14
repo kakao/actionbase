@@ -18,13 +18,14 @@ import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
 import com.kakao.actionbase.core.edge.record.EdgeStateRecord
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
+import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.core.storage.HBaseRecord
-import com.kakao.actionbase.engine.binding.MutationRecordsSummary
-import com.kakao.actionbase.engine.binding.Table
+import com.kakao.actionbase.engine.catalog.MutationRecordsSummary
+import com.kakao.actionbase.engine.catalog.Table
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.v2.core.code.CryptoUtils
 import com.kakao.actionbase.v2.core.edge.Edge
@@ -47,13 +48,14 @@ import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
 class V2BackedTable(
-    private val descriptor: V3TableDescriptor,
+    v3: V3TableDescriptor,
     private val label: HBaseIndexedLabel,
     private val mapper: EdgeRecordMapper,
     private val lockTimeout: Long,
 ) : Table {
-    override val table: String = descriptor.table
-    override val schema: ModelSchema = descriptor.schema
+    override val descriptor: TableDescriptor<*> = v3.toTableDescriptor(label.entity)
+    override val table: String = v3.table
+    override val schema: ModelSchema = v3.schema
     override val mutationMode: MutationMode = MutationMode.valueOf(label.entity.mode.name)
 
     private val groupRecordMapper = mapper.group

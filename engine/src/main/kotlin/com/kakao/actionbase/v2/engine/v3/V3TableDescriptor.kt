@@ -1,5 +1,8 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.core.metadata.common.MutationMode as V3MutationMode
+
+import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
@@ -15,6 +18,7 @@ import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.VertexField
 import com.kakao.actionbase.v2.core.types.VertexType
+import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 
 sealed class V3TableDescriptor {
@@ -22,17 +26,43 @@ sealed class V3TableDescriptor {
     abstract val table: String
     abstract val schema: ModelSchema
 
+    abstract fun toTableDescriptor(entity: LabelEntity): TableDescriptor<*>
+
     data class Edge(
         override val database: String,
         override val table: String,
         override val schema: ModelSchema.Edge,
-    ) : V3TableDescriptor()
+    ) : V3TableDescriptor() {
+        override fun toTableDescriptor(entity: LabelEntity): TableDescriptor.Edge =
+            TableDescriptor.Edge(
+                tenant = EntityName.tenant,
+                database = database,
+                table = table,
+                schema = schema,
+                mode = V3MutationMode.valueOf(entity.mode.name),
+                storage = entity.storage,
+                active = entity.active,
+                comment = entity.desc,
+            )
+    }
 
     data class MultiEdge(
         override val database: String,
         override val table: String,
         override val schema: ModelSchema.MultiEdge,
-    ) : V3TableDescriptor()
+    ) : V3TableDescriptor() {
+        override fun toTableDescriptor(entity: LabelEntity): TableDescriptor.MultiEdge =
+            TableDescriptor.MultiEdge(
+                tenant = EntityName.tenant,
+                database = database,
+                table = table,
+                schema = schema,
+                mode = V3MutationMode.valueOf(entity.mode.name),
+                storage = entity.storage,
+                active = entity.active,
+                comment = entity.desc,
+            )
+    }
 
     companion object {
         fun create(entity: LabelEntity): V3TableDescriptor {

@@ -1,6 +1,6 @@
 package com.kakao.actionbase.engine
 
-import com.kakao.actionbase.engine.binding.Table
+import com.kakao.actionbase.engine.catalog.Table
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 

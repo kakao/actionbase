@@ -3,7 +3,7 @@ package com.kakao.actionbase.v2.engine.label.hbase
 import com.kakao.actionbase.core.edge.Edge
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
-import com.kakao.actionbase.engine.binding.Table
+import com.kakao.actionbase.engine.catalog.Table
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.Index
@@ -49,7 +49,7 @@ open class HBaseIndexedLabel(
     IndexedLabelMixin<ByteArray> {
     val table: Table =
         V2BackedTable(
-            descriptor = V3TableDescriptor.create(entity),
+            v3 = V3TableDescriptor.create(entity),
             label = this,
             mapper = edgeRecordMapper,
             lockTimeout = lockTimeout,

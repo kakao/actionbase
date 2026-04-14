@@ -7,7 +7,7 @@ import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.MutationContext
 import com.kakao.actionbase.engine.MutationEngine
 import com.kakao.actionbase.engine.QueryEngine
-import com.kakao.actionbase.engine.binding.Table
+import com.kakao.actionbase.engine.catalog.Table
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.Graph
@@ -32,7 +32,7 @@ class V2BackedEngine(
     ): Table {
         val label = graph.getLabel(EntityName(database, alias))
         if (label is NilLabel) {
-            return NilTable(V3TableDescriptor.create(label.entity))
+            return NilTable(V3TableDescriptor.create(label.entity), label.entity)
         }
         if (label !is HBaseIndexedLabel) {
             throw UnsupportedOperationException(

@@ -2,7 +2,7 @@ package com.kakao.actionbase.engine
 
 import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.state.State
-import com.kakao.actionbase.engine.binding.Table
+import com.kakao.actionbase.engine.catalog.Table
 import com.kakao.actionbase.engine.metadata.MutationMode
 
 import reactor.core.publisher.Mono

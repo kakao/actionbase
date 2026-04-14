@@ -1,9 +1,10 @@
-package com.kakao.actionbase.engine.binding
+package com.kakao.actionbase.engine.catalog
 
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
+import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.metadata.MutationMode
@@ -12,6 +13,7 @@ import com.kakao.actionbase.v2.core.metadata.Direction
 import reactor.core.publisher.Mono
 
 interface Table {
+    val descriptor: TableDescriptor<*>
     val table: String
     val schema: ModelSchema
     val mutationMode: MutationMode

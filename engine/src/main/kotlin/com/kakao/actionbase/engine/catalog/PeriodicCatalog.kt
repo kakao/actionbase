@@ -1,9 +1,6 @@
 package com.kakao.actionbase.engine.catalog
 
-import com.kakao.actionbase.core.metadata.AliasDescriptor
-import com.kakao.actionbase.core.metadata.DatabaseDescriptor
 import com.kakao.actionbase.core.metadata.DatabaseId
-import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.TableId
 import com.kakao.actionbase.engine.Engine
 
@@ -35,9 +32,9 @@ class PeriodicCatalog(
     private var disposable: Disposable? = null
 
     // --- public views ---
-    override val databases: Map<DatabaseId, DatabaseDescriptor> get() = snapshot.databases
-    override val tables: Map<TableId, TableDescriptor<*>> get() = snapshot.tables
-    override val aliases: Map<TableId, AliasDescriptor> get() = snapshot.aliases
+    override val databases: Map<DatabaseId, Database> get() = snapshot.databases
+    override val tables: Map<TableId, Table> get() = snapshot.tables
+    override val aliases: Map<TableId, Alias> get() = snapshot.aliases
 
     @Synchronized
     override fun bind(engine: Engine) {
@@ -98,20 +95,20 @@ class PeriodicCatalog(
 
     private fun reload() {
         // Guards against an in-flight tick that fires after `close()`
-        // nulled out `engine`. `engine` is @Volatile so this read has a
-        // happens-before with close()'s write. Phase 2 will read the
-        // catalog through `engine` here and swap `snapshot` atomically.
+        // nulled out `engine`. Phase 2 will read the catalog through
+        // `engine` here and swap `snapshot` atomically, reusing existing
+        // Table instances when their descriptors haven't changed.
         if (engine == null) return
         log.debug("reloading catalog")
-        // Phase 2: snapshot = Snapshot(loadedDbs, loadedTables, loadedAliases)
+        // Phase 2: snapshot = Snapshot(freshDatabases, freshTables, freshAliases)
         reloadCount++
         lastReloadAt = Instant.now()
     }
 
     private data class Snapshot(
-        val databases: Map<DatabaseId, DatabaseDescriptor>,
-        val tables: Map<TableId, TableDescriptor<*>>,
-        val aliases: Map<TableId, AliasDescriptor>,
+        val databases: Map<DatabaseId, Database>,
+        val tables: Map<TableId, Table>,
+        val aliases: Map<TableId, Alias>,
     ) {
         companion object {
             val EMPTY = Snapshot(emptyMap(), emptyMap(), emptyMap())
