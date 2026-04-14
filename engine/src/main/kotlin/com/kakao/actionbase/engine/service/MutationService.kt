@@ -8,7 +8,7 @@ import com.kakao.actionbase.core.state.transit
 import com.kakao.actionbase.engine.Audit
 import com.kakao.actionbase.engine.MutationContext
 import com.kakao.actionbase.engine.MutationEngine
-import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.engine.binding.Table
 import com.kakao.actionbase.engine.context.RequestContext
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.metadata.MutationModeContext
@@ -35,7 +35,7 @@ class MutationService(
     ): Mono<List<MutationResult>> =
         Mono
             .fromCallable {
-                val tb = engine.getTableBinding(database, alias)
+                val tb = engine.getTable(database, alias)
                 val ctx =
                     MutationContext(
                         database = database,
@@ -73,7 +73,7 @@ class MutationService(
             }
 
     private fun readModifyWrite(
-        tb: TableBinding,
+        tb: Table,
         key: MutationKey,
         sorted: List<MutationEvent>,
         acquireLock: Boolean,

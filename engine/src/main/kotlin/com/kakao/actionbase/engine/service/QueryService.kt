@@ -48,7 +48,7 @@ class QueryService(
         require(filters == null) { "`filters` is not yet supported in count query." }
         require(features.isEmpty()) { "`features` ${features.joinToString(", ")} are not supported in get query." }
 
-        return engine.getTableBinding(database, table).count(start.toSet(), direction)
+        return engine.getTable(database, table).count(start.toSet(), direction)
     }
 
     @Suppress("UnusedParameter")
@@ -69,7 +69,7 @@ class QueryService(
                 target.distinct().map { t -> s to t }
             }
 
-        return engine.getTableBinding(database, table).gets(keys, filters)
+        return engine.getTable(database, table).gets(keys, filters)
     }
 
     @Suppress("UnusedParameter")
@@ -82,14 +82,14 @@ class QueryService(
     ): Mono<DataFrameEdgePayload> {
         require(features.isEmpty()) { "`features` ${features.joinToString(", ")} are not supported in get query." }
 
-        val tb = engine.getTableBinding(database, table)
+        val t = engine.getTable(database, table)
 
-        require(tb.schema is com.kakao.actionbase.core.metadata.common.ModelSchema.MultiEdge) {
+        require(t.schema is com.kakao.actionbase.core.metadata.common.ModelSchema.MultiEdge) {
             "get query with ids is only supported for multi-edge tables."
         }
 
         val keys = ids.distinct().map { id -> id to id }
-        return tb.gets(keys, filters)
+        return t.gets(keys, filters)
     }
 
     fun scan(
@@ -103,7 +103,7 @@ class QueryService(
         ranges: String? = null,
         filters: String? = null,
         features: List<String> = emptyList(),
-    ): Mono<DataFrameEdgePayload> = engine.getTableBinding(database, table).scan(index, start, direction, limit, offset, ranges, filters, features)
+    ): Mono<DataFrameEdgePayload> = engine.getTable(database, table).scan(index, start, direction, limit, offset, ranges, filters, features)
 
     fun seek(
         database: String,
@@ -113,7 +113,7 @@ class QueryService(
         direction: Direction,
         limit: Int = ScanFilter.defaultLimit,
         offset: String? = null,
-    ): Mono<DataFrameEdgePayload> = engine.getTableBinding(database, table).seek(cache, start, direction, limit, offset)
+    ): Mono<DataFrameEdgePayload> = engine.getTable(database, table).seek(cache, start, direction, limit, offset)
 
     fun agg(
         database: String,
@@ -125,7 +125,7 @@ class QueryService(
         filters: String? = null,
         features: List<String> = emptyList(),
         ttl: Long? = null,
-    ): Mono<DataFrameEdgeAggPayload> = engine.getTableBinding(database, table).agg(group, start, direction, ranges, filters, features, ttl)
+    ): Mono<DataFrameEdgeAggPayload> = engine.getTable(database, table).agg(group, start, direction, ranges, filters, features, ttl)
 
     fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = engine.query(request)
 

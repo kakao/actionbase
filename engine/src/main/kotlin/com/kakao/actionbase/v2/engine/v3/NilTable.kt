@@ -7,15 +7,15 @@ import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.binding.MutationRecordsSummary
-import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.engine.binding.Table
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.v2.core.metadata.Direction
 
 import reactor.core.publisher.Mono
 
-class NilTableBinding(
+class NilTable(
     descriptor: V3TableDescriptor,
-) : TableBinding {
+) : Table {
     override val table: String = descriptor.table
     override val schema: ModelSchema = descriptor.schema
     override val mutationMode: MutationMode = MutationMode.SYNC
@@ -43,7 +43,7 @@ class NilTableBinding(
     override fun gets(
         keys: List<Pair<Any, Any>>,
         filters: String?,
-    ): Mono<DataFrameEdgePayload> = V2BackedTableBinding.EMPTY_EDGE_PAYLOAD
+    ): Mono<DataFrameEdgePayload> = V2BackedTable.EMPTY_EDGE_PAYLOAD
 
     override fun scan(
         index: String,
@@ -54,7 +54,7 @@ class NilTableBinding(
         ranges: String?,
         filters: String?,
         features: List<String>,
-    ): Mono<DataFrameEdgePayload> = V2BackedTableBinding.EMPTY_EDGE_PAYLOAD
+    ): Mono<DataFrameEdgePayload> = V2BackedTable.EMPTY_EDGE_PAYLOAD
 
     override fun seek(
         cache: String,
@@ -62,7 +62,7 @@ class NilTableBinding(
         direction: Direction,
         limit: Int,
         offset: String?,
-    ): Mono<DataFrameEdgePayload> = V2BackedTableBinding.EMPTY_EDGE_PAYLOAD
+    ): Mono<DataFrameEdgePayload> = V2BackedTable.EMPTY_EDGE_PAYLOAD
 
     override fun agg(
         group: String,

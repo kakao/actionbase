@@ -24,7 +24,7 @@ import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.core.storage.HBaseRecord
 import com.kakao.actionbase.engine.binding.MutationRecordsSummary
-import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.engine.binding.Table
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.v2.core.code.CryptoUtils
 import com.kakao.actionbase.v2.core.edge.Edge
@@ -46,12 +46,12 @@ import org.slf4j.LoggerFactory
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
-class V2BackedTableBinding(
+class V2BackedTable(
     private val descriptor: V3TableDescriptor,
     private val label: HBaseIndexedLabel,
     private val mapper: EdgeRecordMapper,
     private val lockTimeout: Long,
-) : TableBinding {
+) : Table {
     override val table: String = descriptor.table
     override val schema: ModelSchema = descriptor.schema
     override val mutationMode: MutationMode = MutationMode.valueOf(label.entity.mode.name)
@@ -609,7 +609,7 @@ class V2BackedTableBinding(
     }
 
     companion object {
-        private val log = LoggerFactory.getLogger(V2BackedTableBinding::class.java)
+        private val log = LoggerFactory.getLogger(V2BackedTable::class.java)
 
         private const val SELECT_COUNT_FIELD = "COUNT(1)"
         private const val TS_FIELD = "ts"

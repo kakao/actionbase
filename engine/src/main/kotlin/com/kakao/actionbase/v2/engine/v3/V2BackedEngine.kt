@@ -7,7 +7,7 @@ import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.MutationContext
 import com.kakao.actionbase.engine.MutationEngine
 import com.kakao.actionbase.engine.QueryEngine
-import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.engine.binding.Table
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.Graph
@@ -26,20 +26,20 @@ class V2BackedEngine(
     private val graph: Graph,
 ) : MutationEngine,
     QueryEngine {
-    override fun getTableBinding(
+    override fun getTable(
         database: String,
         alias: String,
-    ): TableBinding {
+    ): Table {
         val label = graph.getLabel(EntityName(database, alias))
         if (label is NilLabel) {
-            return NilTableBinding(V3TableDescriptor.create(label.entity))
+            return NilTable(V3TableDescriptor.create(label.entity))
         }
         if (label !is HBaseIndexedLabel) {
             throw UnsupportedOperationException(
                 "This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation",
             )
         }
-        return label.tableBinding
+        return label.table
     }
 
     override fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = graph.query(request)

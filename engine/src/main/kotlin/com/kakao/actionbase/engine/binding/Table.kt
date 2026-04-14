@@ -11,7 +11,7 @@ import com.kakao.actionbase.v2.core.metadata.Direction
 
 import reactor.core.publisher.Mono
 
-interface TableBinding {
+interface Table {
     val table: String
     val schema: ModelSchema
     val mutationMode: MutationMode

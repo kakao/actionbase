@@ -9,8 +9,8 @@ import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.core.state.StateValue
 import com.kakao.actionbase.v2.core.code.hbase.Constants
-import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.mergeQualifiers
-import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.specialStateValueToNull
+import com.kakao.actionbase.v2.engine.v3.V2BackedTable.Companion.mergeQualifiers
+import com.kakao.actionbase.v2.engine.v3.V2BackedTable.Companion.specialStateValueToNull
 
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -21,7 +21,7 @@ import org.apache.hadoop.hbase.client.Put
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class V2BackedTableBindingTest {
+class V2BackedTableTest {
     @Nested
     inner class MergeQualifiers {
         private fun groupRecord(
@@ -99,7 +99,7 @@ class V2BackedTableBindingTest {
 
     /**
      * Verifies that EdgeCacheRecord encodes into HBase Put/Delete correctly,
-     * matching the pattern used in V2BackedTableBinding.buildHBaseMutations().
+     * matching the pattern used in V2BackedTable.buildHBaseMutations().
      */
     @Nested
     inner class CacheHBaseMutations {

@@ -2,7 +2,7 @@ package com.kakao.actionbase.engine
 
 import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.state.State
-import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.engine.binding.Table
 import com.kakao.actionbase.engine.metadata.MutationMode
 
 import reactor.core.publisher.Mono
@@ -13,12 +13,12 @@ import reactor.core.publisher.Mono
  */
 interface MutationEngine {
     /**
-     * Resolves a table binding from a database/alias pair.
+     * Resolves a table from a database/alias pair.
      */
-    fun getTableBinding(
+    fun getTable(
         database: String,
         alias: String,
-    ): TableBinding
+    ): Table
 
     fun writeWal(
         ctx: MutationContext,

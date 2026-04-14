@@ -1,6 +1,6 @@
 package com.kakao.actionbase.engine
 
-import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.engine.binding.Table
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 
@@ -11,10 +11,10 @@ import reactor.core.publisher.Mono
  * Decouples QueryService from Graph by exposing only the operations it needs.
  */
 interface QueryEngine {
-    fun getTableBinding(
+    fun getTable(
         database: String,
         alias: String,
-    ): TableBinding
+    ): Table
 
     fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>>
 }
