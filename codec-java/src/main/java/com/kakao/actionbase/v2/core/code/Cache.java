@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * <p>Defines a cache specification used to build {@code EdgeCacheRecord} (wide row) for multi-hop
+ * Defines a cache specification used to build {@code EdgeCacheRecord} (wide row) for multi-hop
  * queries. The {@link #code} is derived at runtime by {@code XXHash32(cache)} with seed 0, which
  * matches {@code XXHash32Wrapper.default.stringHash(cache)} in V3.
  *
