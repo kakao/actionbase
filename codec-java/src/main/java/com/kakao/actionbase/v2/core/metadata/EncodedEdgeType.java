@@ -8,6 +8,7 @@ public enum EncodedEdgeType {
   HASH_EDGE_TYPE((byte) -3),
   INDEXED_EDGE_TYPE((byte) -4),
   IMMUTABLE_INDEXED_EDGE_TYPE((byte) -5),
+  EDGE_CACHE_TYPE((byte) -6),
   ;
 
   private static final HashMap<Byte, EncodedEdgeType> CODE_TO_VALUE_MAP = new HashMap<>();

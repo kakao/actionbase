@@ -116,6 +116,38 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
   }
 
   @Override
+  public KeyFieldValue<byte[]> encodeCacheEdge(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      Cache cache) {
+    Object directedSrc;
+    Object directedTgt;
+    if (dir == Direction.OUT) {
+      directedSrc = src;
+      directedTgt = tgt;
+    } else {
+      directedSrc = tgt;
+      directedTgt = src;
+    }
+
+    byte[] key =
+        useAsByteArray(
+            buffer ->
+                encodeCacheEdgeKeyToBuffer(directedSrc, dir, labelId, cache.getCode(), buffer));
+    byte[] field =
+        useAsByteArray(
+            buffer ->
+                encodeCacheEdgeQualifierToBuffer(
+                    cache, ts, directedSrc, directedTgt, props, buffer));
+    byte[] value = useAsByteArray(buffer -> encodeCacheEdgeValueToBuffer(ts, props, buffer));
+    return new KeyFieldValue<>(key, field, value);
+  }
+
+  @Override
   public EncodedKey<byte[]> encodeIndexedEdgeKeyPrefix(
       Object directedSrc, Direction dir, int labelId, Index index, Consumer<EdgeBuffer> block) {
     byte[] key =

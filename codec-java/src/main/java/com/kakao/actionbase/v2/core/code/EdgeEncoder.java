@@ -76,4 +76,28 @@ public interface EdgeEncoder<T> {
     return encodeAllIndexedEdges(
         edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), dirType, labelId, indices);
   }
+
+  KeyFieldValue<T> encodeCacheEdge(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      Cache cache);
+
+  List<KeyFieldValue<T>> encodeAllCacheEdges(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      DirectionType dirType,
+      int labelId,
+      List<Cache> caches);
+
+  default List<KeyFieldValue<T>> encodeAllCacheEdges(
+      Edge edge, DirectionType dirType, int labelId, List<Cache> caches) {
+    return encodeAllCacheEdges(
+        edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), dirType, labelId, caches);
+  }
 }

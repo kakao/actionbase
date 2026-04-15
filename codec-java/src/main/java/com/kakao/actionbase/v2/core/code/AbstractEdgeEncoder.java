@@ -24,6 +24,7 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
   public static final byte INDEXED_EDGE_TYPE = EncodedEdgeType.INDEXED_EDGE_TYPE.getCode();
   public static final byte IMMUTABLE_INDEXED_EDGE_TYPE =
       EncodedEdgeType.IMMUTABLE_INDEXED_EDGE_TYPE.getCode();
+  public static final byte EDGE_CACHE_TYPE = EncodedEdgeType.EDGE_CACHE_TYPE.getCode();
 
   public static final String INSERT_TS_KEY = "__InsertTs__";
   public static final String DELETE_TS_KEY = "__DeleteTs__";
@@ -170,6 +171,59 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
     }
   }
 
+  // --- EdgeCache encoding
+  // Row key   : xxhash32 | directedSrc | labelId | EDGE_CACHE | direction | cacheCode
+  // Qualifier : cacheValues...(ordered) | directedTgt
+  // Value     : ts | (propertyHash, propertyValue)...
+
+  public static void encodeCacheEdgeKeyToBuffer(
+      Object directedSrc, Direction direction, int labelId, int cacheCode, EdgeBuffer buffer) {
+    buffer.encodeWithHash(directedSrc, labelId, EDGE_CACHE_TYPE);
+    buffer.encodeInt8(direction.getCode());
+    buffer.encodeInt32(cacheCode);
+  }
+
+  public static void encodeCacheEdgeQualifierToBuffer(
+      Cache cache,
+      long ts,
+      Object directedSrc,
+      Object directedTgt,
+      Map<String, Object> properties,
+      EdgeBuffer buffer) {
+    for (Index.Field field : cache.getFields()) {
+      Object value = resolveFieldValue(field.getName(), ts, directedSrc, directedTgt, properties);
+      buffer.encodeAny(value, field.getOrder());
+    }
+    buffer.encodeAny(directedTgt);
+  }
+
+  public static void encodeCacheEdgeValueToBuffer(
+      long ts, Map<String, Object> properties, EdgeBuffer buffer) {
+    buffer.encodeInt64(ts);
+    for (Map.Entry<String, Object> e : properties.entrySet()) {
+      buffer.encodeInt32(ValueUtils.stringHash(e.getKey()));
+      buffer.encodeAny(e.getValue());
+    }
+  }
+
+  private static Object resolveFieldValue(
+      String name,
+      long ts,
+      Object directedSrc,
+      Object directedTgt,
+      Map<String, Object> properties) {
+    switch (name) {
+      case "version":
+        return ts;
+      case "source":
+        return directedSrc;
+      case "target":
+        return directedTgt;
+      default:
+        return properties.get(name);
+    }
+  }
+
   @Override
   public List<KeyFieldValue<T>> encodeAllIndexedEdges(
       long ts,
@@ -184,6 +238,23 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
             index ->
                 dirType.getDirs().stream()
                     .map(dir -> encodeIndexedEdge(ts, src, tgt, props, dir, labelId, index)))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<KeyFieldValue<T>> encodeAllCacheEdges(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      DirectionType dirType,
+      int labelId,
+      List<Cache> caches) {
+    return caches.stream()
+        .flatMap(
+            cache ->
+                dirType.getDirs().stream()
+                    .map(dir -> encodeCacheEdge(ts, src, tgt, props, dir, labelId, cache)))
         .collect(Collectors.toList());
   }
 

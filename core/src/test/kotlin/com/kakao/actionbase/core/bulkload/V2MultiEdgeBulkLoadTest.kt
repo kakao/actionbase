@@ -1,9 +1,11 @@
 package com.kakao.actionbase.core.bulkload
 
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
+import com.kakao.actionbase.core.edge.mapper.EdgeCacheRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeCountRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
+import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeCountRecord
 import com.kakao.actionbase.core.edge.record.EdgeIndexRecord
 import com.kakao.actionbase.core.edge.record.EdgeStateRecord
@@ -43,6 +45,7 @@ class V2MultiEdgeBulkLoadTest {
     private val stateDecoder: EdgeStateRecordMapper.Decoder = EdgeStateRecordMapper.create().decoder
     private val indexDecoder: EdgeIndexRecordMapper.Decoder = EdgeIndexRecordMapper.create().decoder
     private val countDecoder: EdgeCountRecordMapper.Decoder = EdgeCountRecordMapper.create().decoder
+    private val cacheDecoder: EdgeCacheRecordMapper.Decoder = EdgeCacheRecordMapper.create().decoder
 
     @Test
     fun testEdgeState() {
@@ -209,5 +212,104 @@ class V2MultiEdgeBulkLoadTest {
             )
 
         assertEquals(expected, edgeCountRecord)
+    }
+
+    /**
+     * Round-trip verification of bulk-encoded MULTI_EDGE cache row (OUT direction) via V3 decoder.
+     *
+     * Bytes captured from `MultiEdgeBulkEdgeEncoderTests.testMultiEdgeWithCaches` with
+     * `caches: [{"cache":"top_created_at","fields":[{"name":"created_at","order":"DESC"}],"limit":100}]`.
+     *
+     * For MULTI_EDGE OUT: directedSource = properties._source (original src = 123L),
+     * directedTarget = record.key.source (edge id = 1L).
+     */
+    @Test
+    fun testEdgeCacheOut() {
+        val key0 = "GrcIXiyAAAAAAAAAeyuiY3G2KXopgivvyJjC"
+        val qualifier0 = "03/////////+LIAAAAAAAAAB"
+        val value0 =
+            "LIAAAAAAAAABK9VnOCUsgAAAAAAAAAErC16M1zRmb3IgZ29vZCBtb3JuaW5nACsqlDeONHB1YmxpYwArxD5SiSyAAAAAAAAAeytJ6FaTNENvZmZlZTEwAA=="
+        val key = Base64.getDecoder().decode(key0)
+        val qualifier = Base64.getDecoder().decode(qualifier0)
+        val value = Base64.getDecoder().decode(value0)
+
+        val edgeCacheRecord = cacheDecoder.decode(key, qualifier, value)
+
+        val expected =
+            EdgeCacheRecord(
+                key =
+                    EdgeCacheRecord.Key.of(
+                        directedSource = 123L,
+                        tableCode = xxHash32Wrapper.stringHash("gift.like_product_v1_20240402_132500"),
+                        direction = Direction.OUT,
+                        cacheCode = xxHash32Wrapper.stringHash("top_created_at"),
+                    ),
+                qualifier =
+                    EdgeCacheRecord.Qualifier(
+                        cacheValues = listOf(EdgeCacheRecord.Qualifier.CacheValue(value = 1L, order = Order.DESC)),
+                        directedTarget = 1L, // edge id
+                    ),
+                value =
+                    EdgeCacheRecord.Value(
+                        version = 1L,
+                        properties =
+                            mapOf(
+                                xxHash32Wrapper.stringHash("_source") to 123L,
+                                xxHash32Wrapper.stringHash("_target") to "Coffee10",
+                                xxHash32Wrapper.stringHash("created_at") to 1L,
+                                xxHash32Wrapper.stringHash("permission") to "public",
+                                xxHash32Wrapper.stringHash("memo") to "for good morning",
+                            ),
+                    ),
+            )
+
+        assertEquals(expected, edgeCacheRecord)
+    }
+
+    /**
+     * For MULTI_EDGE IN: directedSource = properties._target (original tgt = "Coffee10"),
+     * directedTarget = record.key.source (edge id = 1L).
+     */
+    @Test
+    fun testEdgeCacheIn() {
+        val key0 = "FK89BDRDb2ZmZWUxMAAromNxtil6KYMr78iYwg=="
+        val qualifier0 = "03/////////+LIAAAAAAAAAB"
+        val value0 =
+            "LIAAAAAAAAABK9VnOCUsgAAAAAAAAAErC16M1zRmb3IgZ29vZCBtb3JuaW5nACsqlDeONHB1YmxpYwArxD5SiSyAAAAAAAAAeytJ6FaTNENvZmZlZTEwAA=="
+        val key = Base64.getDecoder().decode(key0)
+        val qualifier = Base64.getDecoder().decode(qualifier0)
+        val value = Base64.getDecoder().decode(value0)
+
+        val edgeCacheRecord = cacheDecoder.decode(key, qualifier, value)
+
+        val expected =
+            EdgeCacheRecord(
+                key =
+                    EdgeCacheRecord.Key.of(
+                        directedSource = "Coffee10",
+                        tableCode = xxHash32Wrapper.stringHash("gift.like_product_v1_20240402_132500"),
+                        direction = Direction.IN,
+                        cacheCode = xxHash32Wrapper.stringHash("top_created_at"),
+                    ),
+                qualifier =
+                    EdgeCacheRecord.Qualifier(
+                        cacheValues = listOf(EdgeCacheRecord.Qualifier.CacheValue(value = 1L, order = Order.DESC)),
+                        directedTarget = 1L, // edge id
+                    ),
+                value =
+                    EdgeCacheRecord.Value(
+                        version = 1L,
+                        properties =
+                            mapOf(
+                                xxHash32Wrapper.stringHash("_source") to 123L,
+                                xxHash32Wrapper.stringHash("_target") to "Coffee10",
+                                xxHash32Wrapper.stringHash("created_at") to 1L,
+                                xxHash32Wrapper.stringHash("permission") to "public",
+                                xxHash32Wrapper.stringHash("memo") to "for good morning",
+                            ),
+                    ),
+            )
+
+        assertEquals(expected, edgeCacheRecord)
     }
 }

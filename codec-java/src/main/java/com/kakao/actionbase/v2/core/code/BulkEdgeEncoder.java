@@ -2,7 +2,11 @@ package com.kakao.actionbase.v2.core.code;
 
 import com.kakao.actionbase.v2.core.edge.BulkLoadEdge;
 import com.kakao.actionbase.v2.core.edge.Edge;
-import com.kakao.actionbase.v2.core.metadata.*;
+import com.kakao.actionbase.v2.core.metadata.Active;
+import com.kakao.actionbase.v2.core.metadata.Direction;
+import com.kakao.actionbase.v2.core.metadata.DirectionType;
+import com.kakao.actionbase.v2.core.metadata.LabelDTO;
+import com.kakao.actionbase.v2.core.metadata.LabelType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -84,6 +88,8 @@ public class BulkEdgeEncoder {
       edges.add(new KeyFieldValue<>(key.key, key.field, value));
     }
 
+    List<Cache> caches = label.getCaches();
+
     if (active == Active.ACTIVE) {
       // encode indexed edges
       if (labelType == LabelType.INDEXED || labelType == LabelType.IMMUTABLE_INDEXED) {
@@ -91,9 +97,14 @@ public class BulkEdgeEncoder {
         edges.addAll(
             encoder.encodeAllIndexedEdges(
                 castedEdge, label.getDirType(), labelId, label.getIndices()));
+
+        // Cache records are only supported on INDEXED labels (V3 EDGE type). V3 multi-hop queries
+        // rely on the wide-row EdgeCacheRecord written here to stay in sync with EdgeIndexRecord.
+        if (caches != null && !caches.isEmpty()) {
+          edges.addAll(
+              encoder.encodeAllCacheEdges(castedEdge, label.getDirType(), labelId, caches));
+        }
       } else if (labelType == LabelType.MULTI_EDGE) {
-        // For MultiEdge, create separate OUT/IN edges based on direction and reuse existing encoder
-        // BOTH: Split into two edges: src->edgeId (OUT), edgeId->tgt (IN)
         multiEdgeProps.put(SOURCE_FIELD_ON_STATE, castedEdge.getSrc());
         multiEdgeProps.put(TARGET_FIELD_ON_STATE, castedEdge.getTgt());
 
@@ -106,17 +117,30 @@ public class BulkEdgeEncoder {
 
           edges.addAll(
               encoder.encodeAllIndexedEdges(inEdge, DirectionType.IN, labelId, label.getIndices()));
+
+          if (caches != null && !caches.isEmpty()) {
+            edges.addAll(encoder.encodeAllCacheEdges(outEdge, DirectionType.OUT, labelId, caches));
+            edges.addAll(encoder.encodeAllCacheEdges(inEdge, DirectionType.IN, labelId, caches));
+          }
         } else if (label.getDirType() == DirectionType.OUT) {
           // OUT: Create src->edgeId edge
           Edge outEdge = new Edge(castedEdge.getTs(), castedEdge.getSrc(), edgeId, multiEdgeProps);
           edges.addAll(
               encoder.encodeAllIndexedEdges(
                   outEdge, DirectionType.OUT, labelId, label.getIndices()));
+
+          if (caches != null && !caches.isEmpty()) {
+            edges.addAll(encoder.encodeAllCacheEdges(outEdge, DirectionType.OUT, labelId, caches));
+          }
         } else if (label.getDirType() == DirectionType.IN) {
           // IN: Create edgeId->tgt edge
           Edge inEdge = new Edge(castedEdge.getTs(), edgeId, castedEdge.getTgt(), multiEdgeProps);
           edges.addAll(
               encoder.encodeAllIndexedEdges(inEdge, DirectionType.IN, labelId, label.getIndices()));
+
+          if (caches != null && !caches.isEmpty()) {
+            edges.addAll(encoder.encodeAllCacheEdges(inEdge, DirectionType.IN, labelId, caches));
+          }
         }
       }
 

@@ -1,11 +1,12 @@
 package com.kakao.actionbase.v2.core.code;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.kakao.actionbase.v2.core.edge.BulkLoadEdge;
 import com.kakao.actionbase.v2.core.metadata.LabelDTO;
 
-import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,13 @@ public class MultiEdgeBulkEdgeEncoderTests {
           + "      ]\n"
           + "    }\n"
           + "  ],\n"
+          + "  \"caches\": [\n"
+          + "    {\n"
+          + "      \"cache\": \"top_created_at\",\n"
+          + "      \"fields\": [{\"name\": \"created_at\", \"order\": \"DESC\"}],\n"
+          + "      \"limit\": 100\n"
+          + "    }\n"
+          + "  ],\n"
           + "  \"event\": false,\n"
           + "  \"readOnly\": false\n"
           + "}";
@@ -89,31 +97,42 @@ public class MultiEdgeBulkEdgeEncoderTests {
     LabelDTO label = objectMapper.readValue(labelJsonString, LabelDTO.class);
     BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
 
+    assertEquals(1, label.getCaches().size());
+
     EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
     EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
 
     List<KeyFieldValue<byte[]>> encodedEdges = BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label);
 
-    // 1 EdgeState
-    // 2 EdgeIndex (OUT, IN)
-    // 2 EdgeCount (OUT, IN)
+    // 1 EdgeState + 2 EdgeIndex (OUT/IN) + 2 EdgeCache (OUT/IN) + 2 EdgeCount (OUT/IN)
+    assertEquals(7, encodedEdges.size());
+
+    long cacheRowCount = encodedEdges.stream().filter(kv -> kv.field != null).count();
+    assertEquals(2, cacheRowCount, "expected 2 cache rows (OUT/IN)");
+  }
+
+  /**
+   * Backward-compatibility: a MULTI_EDGE label JSON without a `caches` entry must still deserialize
+   * and the bulk encoder must skip cache-row generation.
+   */
+  @Test
+  void testMultiEdgeWithoutCaches() throws JsonProcessingException {
+    String labelJsonString1 =
+        labelJsonString.replaceAll("(?s),\\s*\"caches\":\\s*\\[[^\\]]+\\]", "");
+    assertTrue(!labelJsonString1.contains("\"caches\""));
+
+    LabelDTO label = objectMapper.readValue(labelJsonString1, LabelDTO.class);
+    assertNull(label.getCaches());
+
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<KeyFieldValue<byte[]>> encodedEdges = BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label);
+
+    // 1 EdgeState + 2 EdgeIndex (OUT/IN) + 2 EdgeCount (OUT/IN) — no cache rows.
     assertEquals(5, encodedEdges.size());
-
-    encodedEdges.forEach(
-        kv -> {
-          String key = Base64.getEncoder().encodeToString(kv.getKey());
-          String value = Base64.getEncoder().encodeToString(kv.getValue());
-          System.out.println(key + ", " + value);
-        });
-
-    // see [com.kakao.actionbase.core.bulkload.V2MultiEdgeBulkLoadTest]
-    // jb3NsSyAAAAAAAAAASuiY3G2KX0sgAAAAAAAAAE=,
-    // KYEsgAAAAAAAAAEr1Wc4JSyAAAAAAAAAASyAAAAAAAAAASsLXozXNGZvciBnb29kIG1vcm5pbmcALIAAAAAAAAABKyqUN440cHVibGljACyAAAAAAAAAASvEPlKJLIAAAAAAAAB7LIAAAAAAAAABK0noVpM0Q29mZmVlMTAALIAAAAAAAAABK5JB3jEsgAAAAAAAAAEsgAAAAAAAAAE=
-    // XskydSyAAAAAAAAAeyuiY3G2KXwpgitptzPH03/////////+LIAAAAAAAAAB,
-    // LIAAAAAAAAABK9VnOCUsgAAAAAAAAAErC16M1zRmb3IgZ29vZCBtb3JuaW5nACsqlDeONHB1YmxpYwArxD5SiSyAAAAAAAAAeytJ6FaTNENvZmZlZTEwAA==
-    // 4IU4UDRDb2ZmZWUxMAAromNxtil8KYMrabczx9N//////////iyAAAAAAAAAAQ==,
-    // LIAAAAAAAAABK9VnOCUsgAAAAAAAAAErC16M1zRmb3IgZ29vZCBtb3JuaW5nACsqlDeONHB1YmxpYwArxD5SiSyAAAAAAAAAeytJ6FaTNENvZmZlZTEwAA==
-    // , dc/qIyyAAAAAAAAAeyuiY3G2KX4pgg==
-    // , 7s9/xDRDb2ZmZWUxMAAromNxtil+KYM=
+    assertEquals(0, encodedEdges.stream().filter(kv -> kv.field != null).count());
   }
 }
