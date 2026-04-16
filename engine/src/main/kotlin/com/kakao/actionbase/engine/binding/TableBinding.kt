@@ -2,11 +2,10 @@ package com.kakao.actionbase.engine.binding
 
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
-import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
-import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.metadata.MutationMode
+import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.v2.core.metadata.Direction
 
 import reactor.core.publisher.Mono
@@ -38,12 +37,12 @@ interface TableBinding {
     fun count(
         sources: Set<Any>,
         direction: Direction,
-    ): Mono<DataFrameEdgeCountPayload>
+    ): Mono<DataFrame>
 
     fun gets(
         keys: List<Pair<Any, Any>>,
         filters: String?,
-    ): Mono<DataFrameEdgePayload>
+    ): Mono<DataFrame>
 
     fun scan(
         index: String,
@@ -54,7 +53,7 @@ interface TableBinding {
         ranges: String?,
         filters: String?,
         features: List<String>,
-    ): Mono<DataFrameEdgePayload>
+    ): Mono<DataFrame>
 
     fun seek(
         cache: String,
@@ -62,7 +61,7 @@ interface TableBinding {
         direction: Direction,
         limit: Int,
         offset: String?,
-    ): Mono<DataFrameEdgePayload>
+    ): Mono<DataFrame>
 
     fun agg(
         group: String,

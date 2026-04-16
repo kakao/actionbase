@@ -1,14 +1,18 @@
 package com.kakao.actionbase.engine.service
 
+import com.kakao.actionbase.core.edge.EdgeField
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
+import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.v2.core.metadata.Direction
-import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
+import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.COUNT_FIELD
+import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.toV3
 
 import reactor.core.publisher.Mono
 
@@ -48,7 +52,22 @@ class QueryService(
         require(filters == null) { "`filters` is not yet supported in count query." }
         require(features.isEmpty()) { "`features` ${features.joinToString(", ")} are not supported in get query." }
 
-        return engine.getTableBinding(database, table).count(start.toSet(), direction)
+        return engine
+            .getTableBinding(database, table)
+            .count(start.toSet(), direction)
+            .map { df ->
+                val counts =
+                    df.rows.map { row ->
+                        EdgeCountPayload(
+                            start = row[EdgeField.SOURCE] as Any,
+                            direction = direction.toV3(),
+                            count = row[COUNT_FIELD] as Long,
+                            context = emptyMap(),
+                        )
+                    }
+
+                DataFrameEdgeCountPayload(counts, counts.size, context = emptyMap())
+            }
     }
 
     @Suppress("UnusedParameter")
@@ -69,7 +88,10 @@ class QueryService(
                 target.distinct().map { t -> s to t }
             }
 
-        return engine.getTableBinding(database, table).gets(keys, filters)
+        return engine
+            .getTableBinding(database, table)
+            .gets(keys, filters)
+            .map { it.toEdgePayload() }
     }
 
     @Suppress("UnusedParameter")
@@ -89,7 +111,9 @@ class QueryService(
         }
 
         val keys = ids.distinct().map { id -> id to id }
-        return tb.gets(keys, filters)
+        return tb
+            .gets(keys, filters)
+            .map { it.toEdgePayload() }
     }
 
     fun scan(
@@ -103,7 +127,11 @@ class QueryService(
         ranges: String? = null,
         filters: String? = null,
         features: List<String> = emptyList(),
-    ): Mono<DataFrameEdgePayload> = engine.getTableBinding(database, table).scan(index, start, direction, limit, offset, ranges, filters, features)
+    ): Mono<DataFrameEdgePayload> =
+        engine
+            .getTableBinding(database, table)
+            .scan(index, start, direction, limit, offset, ranges, filters, features)
+            .map { it.toEdgePayload(flip = direction == Direction.IN) }
 
     fun seek(
         database: String,
@@ -113,7 +141,11 @@ class QueryService(
         direction: Direction,
         limit: Int = ScanFilter.defaultLimit,
         offset: String? = null,
-    ): Mono<DataFrameEdgePayload> = engine.getTableBinding(database, table).seek(cache, start, direction, limit, offset)
+    ): Mono<DataFrameEdgePayload> =
+        engine
+            .getTableBinding(database, table)
+            .seek(cache, start, direction, limit, offset)
+            .map { it.toEdgePayload() }
 
     fun agg(
         database: String,
@@ -127,9 +159,34 @@ class QueryService(
         ttl: Long? = null,
     ): Mono<DataFrameEdgeAggPayload> = engine.getTableBinding(database, table).agg(group, start, direction, ranges, filters, features, ttl)
 
-    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = engine.query(request)
+    fun query(request: ActionbaseQuery): Mono<Map<String, com.kakao.actionbase.v2.engine.sql.DataFrame>> = engine.query(request)
+
+    private fun DataFrame.toEdgePayload(flip: Boolean = false): DataFrameEdgePayload {
+        val edges =
+            rows.map { row ->
+                val (source, target) = if (!flip) row[EdgeField.SOURCE]!! to row[EdgeField.TARGET]!! else row[EdgeField.TARGET]!! to row[EdgeField.SOURCE]!!
+
+                EdgePayload(
+                    version = row[EdgeField.VERSION] as Long,
+                    source = source,
+                    target = target,
+                    properties = row.data.filterKeys { it !in EDGE_FIELDS },
+                    context = emptyMap(),
+                )
+            }
+        return DataFrameEdgePayload(
+            edges = edges,
+            count = count,
+            total = total,
+            offset = offset,
+            hasNext = hasNext,
+            context = emptyMap(),
+        )
+    }
 
     companion object {
+        private val EDGE_FIELDS = setOf(EdgeField.VERSION, EdgeField.SOURCE, EdgeField.TARGET, EdgeField.DIRECTION)
+
         fun empty(direction: Direction): EdgeCountPayload =
             if (direction == Direction.OUT) {
                 emptyEdgeCountPayloadOut

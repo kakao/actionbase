@@ -3,7 +3,9 @@ package com.kakao.actionbase.v2.engine.label.hbase
 import com.kakao.actionbase.core.edge.Edge
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
+import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.v2.core.code.CryptoUtils
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.Index
@@ -75,6 +77,7 @@ open class HBaseIndexedLabel(
         cacheName: String,
         direction: Direction,
         limit: Int,
+        offset: String?,
     ): Mono<DataFrame> {
         val cache =
             entity.caches.find { it.cache == cacheName }
@@ -103,15 +106,35 @@ open class HBaseIndexedLabel(
         val descriptor = V3TableDescriptor.create(entity)
         val schema = buildSchema()
 
-        return hbaseGetWideRow(keys, from = null, to = null, order, limit)
+        val decodedOffset = offset?.let { CryptoUtils.decodeAndDecryptUrlSafe(it) }
+        val (from, to) =
+            if (decodedOffset == null) {
+                null to null
+            } else if (order == Order.DESC) {
+                null to decodedOffset
+            } else {
+                decodedOffset to null
+            }
+
+        return hbaseGetWideRow(keys, from, to, order, limit + 1)
             .map { records ->
+                val hasNext = records.size > limit
+                val results = if (hasNext) records.dropLast(1) else records
                 val rows =
-                    records.map { record ->
+                    results.map { record ->
                         val decoded = cacheMapper.decoder.decode(record.key, record.qualifier, record.value)
                         val edge = decoded.toEdge(descriptor.schema)
                         toRow(edge, schema)
                     }
-                DataFrame(rows, schema)
+                val nextOffset =
+                    if (hasNext) {
+                        results.lastOrNull()?.qualifier?.let {
+                            CryptoUtils.encryptAndEncodeUrlSafe(it)
+                        }
+                    } else {
+                        null
+                    }
+                DataFrame(rows, schema, offsets = listOfNotNull(nextOffset), hasNext = listOf(hasNext))
             }
     }
 
