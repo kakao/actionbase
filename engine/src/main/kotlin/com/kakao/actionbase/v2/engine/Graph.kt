@@ -232,12 +232,10 @@ class Graph(
      *
      * This is v2 direct-label access. Used internally by metadata/DDL services
      * and by the v2→v3 bridge classes in `v2/engine/v3/` (e.g.
-     * `V2BackedEngine.getTableBinding`, `V2BackedTableProvider.getTable`).
-     * v3 code must not call this directly — it should route through
-     * [com.kakao.actionbase.engine.binding.TableBinding] for REST-facing
-     * single-edge APIs, or
-     * [com.kakao.actionbase.engine.query.TableProvider] for `ActionbaseQuery`
-     * execution (which covers both single-item and multi-hop queries).
+     * `V2BackedEngine.getTableBinding`). v3 code must not call this directly —
+     * it should route through [com.kakao.actionbase.engine.binding.TableBinding],
+     * which is the single entry point for both single-edge REST APIs and
+     * `ActionbaseQuery` execution.
      */
     fun getLabel(name: EntityName): Label =
         if (aliases.containsKey(name)) {
