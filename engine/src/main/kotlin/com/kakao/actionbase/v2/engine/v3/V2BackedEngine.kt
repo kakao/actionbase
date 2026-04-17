@@ -9,12 +9,10 @@ import com.kakao.actionbase.engine.MutationEngine
 import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
-import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.nil.NilLabel
-import com.kakao.actionbase.v2.engine.sql.DataFrame
 
 import reactor.core.publisher.Mono
 
@@ -41,8 +39,6 @@ class V2BackedEngine(
         }
         return label.tableBinding
     }
-
-    override fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = graph.query(request)
 
     private val messaging = V2BackedMessageBinding(wal = graph.wal, cdc = graph.cdc)
 

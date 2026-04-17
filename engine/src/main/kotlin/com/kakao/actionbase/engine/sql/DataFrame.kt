@@ -10,6 +10,8 @@ data class DataFrame(
     val offset: String? = null,
     val hasNext: Boolean = false,
 ) {
+    fun getColumn(name: String): List<Any?> = rows.map { it.data[name] }
+
     companion object {
         val empty: DataFrame =
             DataFrame(

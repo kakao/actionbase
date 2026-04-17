@@ -8,6 +8,7 @@ import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
@@ -19,6 +20,8 @@ import reactor.core.publisher.Mono
 class QueryService(
     private val engine: QueryEngine,
 ) {
+    private val queryExecutor = ActionbaseQueryExecutor(engine)
+
     @Suppress("UnusedParameter")
     fun count(
         database: String,
@@ -159,7 +162,7 @@ class QueryService(
         ttl: Long? = null,
     ): Mono<DataFrameEdgeAggPayload> = engine.getTableBinding(database, table).agg(group, start, direction, ranges, filters, features, ttl)
 
-    fun query(request: ActionbaseQuery): Mono<Map<String, com.kakao.actionbase.v2.engine.sql.DataFrame>> = engine.query(request)
+    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = queryExecutor.query(request)
 
     private fun DataFrame.toEdgePayload(flip: Boolean = false): DataFrameEdgePayload {
         val edges =

@@ -3,10 +3,11 @@ package com.kakao.actionbase.v2.engine.v3
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Cache
-import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
 import com.kakao.actionbase.engine.service.MutationService
+import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.engine.Graph
@@ -25,11 +26,14 @@ class MultiHopQuerySpec :
     StringSpec({
 
         lateinit var graph: Graph
+        lateinit var queryExecutor: ActionbaseQueryExecutor
         lateinit var mutationService: MutationService
 
         beforeTest {
             graph = GraphFixtures.create()
-            mutationService = MutationService(V2BackedEngine(graph))
+            val engine = V2BackedEngine(graph)
+            queryExecutor = ActionbaseQueryExecutor(engine)
+            mutationService = MutationService(engine)
         }
 
         afterTest {
@@ -156,7 +160,7 @@ class MultiHopQuerySpec :
                                 limit = 100,
                                 include = false,
                             ),
-                            ActionbaseQuery.Item.Cache(
+                            ActionbaseQuery.Item.Seek(
                                 name = "hop2",
                                 database = database,
                                 table = wishlistTable,
@@ -169,7 +173,7 @@ class MultiHopQuerySpec :
                         ),
                 )
 
-            graph
+            queryExecutor
                 .query(query)
                 .test()
                 .assertNext { result ->
@@ -344,7 +348,7 @@ class MultiHopQuerySpec :
                                 limit = 100,
                                 include = false,
                             ),
-                            ActionbaseQuery.Item.Cache(
+                            ActionbaseQuery.Item.Seek(
                                 name = "hop2",
                                 database = database,
                                 table = wishlistTable,
@@ -354,7 +358,7 @@ class MultiHopQuerySpec :
                                 limit = 10,
                                 include = false,
                             ),
-                            ActionbaseQuery.Item.Cache(
+                            ActionbaseQuery.Item.Seek(
                                 name = "hop3",
                                 database = database,
                                 table = reviewsTable,
@@ -367,7 +371,7 @@ class MultiHopQuerySpec :
                         ),
                 )
 
-            graph
+            queryExecutor
                 .query(query)
                 .test()
                 .assertNext { result ->
