@@ -37,6 +37,7 @@ class GraphConfiguration {
     @Suppress("CyclomaticComplexMethod")
     fun provideGraphConfig(
         properties: GraphProperties,
+        serverProperties: ServerProperties,
         infoEndpoint: InfoEndpoint,
     ): GraphConfig {
         val builder =
@@ -82,6 +83,7 @@ class GraphConfiguration {
                 withHBase(properties.hbase)
                 properties.metadataFetchLimit?.let { withMetadataFetchLimit(it) }
                 properties.systemMutationMode?.let { withSystemMutationMode(it) }
+                withReadOnly(serverProperties.readOnly)
             }
         return builder.build()
     }

@@ -15,6 +15,7 @@ import com.kakao.actionbase.v2.core.types.Field as V2Field
 import com.kakao.actionbase.core.metadata.AliasDescriptor
 import com.kakao.actionbase.core.metadata.DatabaseDescriptor
 import com.kakao.actionbase.core.metadata.TableDescriptor
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.core.metadata.common.ModelSchema
@@ -56,7 +57,7 @@ object V3MetadataConverter {
             tenant = tenant,
             database = name.service,
             table = name.nameNotNull,
-            schema = schema.toV3ModelSchemaEdge(dirType.toV3DirectionType(), indices, groups),
+            schema = schema.toV3ModelSchemaEdge(dirType.toV3DirectionType(), indices, groups, caches),
             mode = mode.toV3MutationMode(),
             storage = storage,
             active = active,
@@ -68,7 +69,7 @@ object V3MetadataConverter {
             tenant = tenant,
             database = name.service,
             table = name.nameNotNull,
-            schema = schema.toV3ModelSchemaMultiEdge(dirType.toV3DirectionType(), indices, groups),
+            schema = schema.toV3ModelSchemaMultiEdge(dirType.toV3DirectionType(), indices, groups, caches),
             mode = mode.toV3MutationMode(),
             storage = storage,
             active = active,
@@ -180,6 +181,7 @@ object V3MetadataConverter {
         direction: V3DirectionType,
         indices: List<V2Index>,
         groups: List<Group>,
+        caches: List<Cache>,
     ): ModelSchema.Edge =
         ModelSchema.Edge(
             source =
@@ -196,12 +198,14 @@ object V3MetadataConverter {
             direction = direction,
             indexes = indices.map { it.toV3Index() },
             groups = groups,
+            caches = caches,
         )
 
     fun EdgeSchema.toV3ModelSchemaMultiEdge(
         direction: V3DirectionType,
         indices: List<V2Index>,
         groups: List<Group>,
+        caches: List<Cache>,
     ): ModelSchema.MultiEdge {
         val idField =
             fields.find { it.name == "_id" }
@@ -226,6 +230,7 @@ object V3MetadataConverter {
             direction = direction,
             indexes = indices.map { it.toV3Index() },
             groups = groups,
+            caches = caches,
         )
     }
 

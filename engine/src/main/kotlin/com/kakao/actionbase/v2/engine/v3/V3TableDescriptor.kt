@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.core.edge.EdgeField
 import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
@@ -144,23 +145,15 @@ sealed class V3TableDescriptor {
                 index = this.name,
                 fields =
                     this.fields.map { field ->
-                        IndexField(field.name.toV3FieldName(), field.order.toV3())
+                        IndexField(EdgeField.toV3(field.name), field.order.toV3())
                     },
                 comment = this.desc,
             )
 
-        private fun String.toV3FieldName(): String =
-            when (this) {
-                "ts" -> "version"
-                "src" -> "source"
-                "tgt" -> "target"
-                else -> this
-            }
-
         private fun Group.toV3(): Group = copy(fields = fields.map { it.toV3() })
 
-        private fun Group.Field.toV3(): Group.Field = copy(name = name.toV3FieldName())
+        private fun Group.Field.toV3(): Group.Field = copy(name = EdgeField.toV3(name))
 
-        private fun Cache.toV3(): Cache = copy(fields = fields.map { it.copy(field = it.field.toV3FieldName()) })
+        private fun Cache.toV3(): Cache = copy(fields = fields.map { it.copy(field = EdgeField.toV3(it.field)) })
     }
 }

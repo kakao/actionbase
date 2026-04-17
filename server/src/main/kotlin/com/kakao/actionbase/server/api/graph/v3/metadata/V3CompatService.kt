@@ -153,6 +153,7 @@ class V3CompatService(
                 indices = request.toV2Indices(),
                 readOnly = null,
                 mode = request.mode?.toV2MutationMode(),
+                caches = request.toV2Caches(),
             )
         return graph.labelDdl
             .update(EntityName(database, table), v2Request)

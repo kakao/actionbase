@@ -9,7 +9,9 @@ import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
 import com.kakao.actionbase.core.metadata.AliasDescriptor
 import com.kakao.actionbase.core.metadata.DatabaseDescriptor
 import com.kakao.actionbase.core.metadata.TableDescriptor
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.DirectionType
+import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.core.metadata.common.MutationMode
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2AliasEntity
@@ -270,6 +272,135 @@ class V3MetadataConverterTest {
             assertThat(schema.indexes[0].index).isEqualTo("idx1")
             assertThat(schema.indexes[0].fields[0].field).isEqualTo("score")
             assertThat(schema.indexes[0].fields[0].order).isEqualTo(V3Order.DESC)
+        }
+    }
+
+    @Nested
+    inner class TableCacheConversionTest {
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - database: mydb
+              table: mytable
+              cacheName: cache1
+              cacheLimit: 50
+              cacheComment: cache desc
+            """,
+        )
+        fun `LabelEntity caches are preserved when converting to TableDescriptor Edge`(
+            database: String,
+            table: String,
+            cacheName: String,
+            cacheLimit: Int,
+            cacheComment: String,
+        ) {
+            val edgeSchema =
+                EdgeSchema(
+                    VertexField(VertexType.STRING, "source"),
+                    VertexField(VertexType.STRING, "target"),
+                    listOf(
+                        com.kakao.actionbase.v2.core.types
+                            .Field("score", DataType.INT, true, "score field"),
+                    ),
+                )
+            val v2Entity =
+                LabelEntity(
+                    active = true,
+                    name = EntityName(database, table),
+                    desc = "test table",
+                    type = LabelType.INDEXED,
+                    schema = edgeSchema,
+                    dirType = V2DirectionType.OUT,
+                    storage = "datastore://test_namespace/test_table",
+                    indices = emptyList(),
+                    groups = emptyList(),
+                    caches =
+                        listOf(
+                            Cache(
+                                cache = cacheName,
+                                fields = listOf(IndexField("score", V3Order.DESC)),
+                                limit = cacheLimit,
+                                comment = cacheComment,
+                            ),
+                        ),
+                    event = false,
+                    readOnly = false,
+                    mode = V2MutationMode.SYNC,
+                )
+
+            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.Edge
+            val schema = v3Descriptor.schema
+            assertThat(schema.caches).hasSize(1)
+            assertThat(schema.caches[0].cache).isEqualTo(cacheName)
+            assertThat(schema.caches[0].limit).isEqualTo(cacheLimit)
+            assertThat(schema.caches[0].comment).isEqualTo(cacheComment)
+            assertThat(schema.caches[0].fields).hasSize(1)
+            assertThat(schema.caches[0].fields[0].field).isEqualTo("score")
+            assertThat(schema.caches[0].fields[0].order).isEqualTo(V3Order.DESC)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - database: mydb
+              table: mymultiedge
+              cacheName: cache1
+              cacheLimit: 100
+              cacheComment: multi-edge cache
+            """,
+        )
+        fun `LabelEntity caches are preserved when converting to TableDescriptor MultiEdge`(
+            database: String,
+            table: String,
+            cacheName: String,
+            cacheLimit: Int,
+            cacheComment: String,
+        ) {
+            val edgeSchema =
+                EdgeSchema(
+                    VertexField(VertexType.STRING, "source"),
+                    VertexField(VertexType.STRING, "target"),
+                    listOf(
+                        com.kakao.actionbase.v2.core.types
+                            .Field("_id", DataType.STRING, false, "id field"),
+                        com.kakao.actionbase.v2.core.types
+                            .Field("score", DataType.INT, true, "score field"),
+                    ),
+                )
+            val v2Entity =
+                LabelEntity(
+                    active = true,
+                    name = EntityName(database, table),
+                    desc = "test multi edge",
+                    type = LabelType.MULTI_EDGE,
+                    schema = edgeSchema,
+                    dirType = V2DirectionType.OUT,
+                    storage = "datastore://test_namespace/test_table",
+                    indices = emptyList(),
+                    groups = emptyList(),
+                    caches =
+                        listOf(
+                            Cache(
+                                cache = cacheName,
+                                fields = listOf(IndexField("score", V3Order.DESC)),
+                                limit = cacheLimit,
+                                comment = cacheComment,
+                            ),
+                        ),
+                    event = false,
+                    readOnly = true,
+                    mode = V2MutationMode.SYNC,
+                )
+
+            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.MultiEdge
+            val schema = v3Descriptor.schema
+            assertThat(schema.caches).hasSize(1)
+            assertThat(schema.caches[0].cache).isEqualTo(cacheName)
+            assertThat(schema.caches[0].limit).isEqualTo(cacheLimit)
+            assertThat(schema.caches[0].comment).isEqualTo(cacheComment)
+            assertThat(schema.caches[0].fields).hasSize(1)
+            assertThat(schema.caches[0].fields[0].field).isEqualTo("score")
+            assertThat(schema.caches[0].fields[0].order).isEqualTo(V3Order.DESC)
         }
     }
 

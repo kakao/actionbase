@@ -116,6 +116,7 @@ class Graph(
 ) : GraphDefaults,
     AutoCloseable {
     internal val mutationRequestTimeout = config.mutationRequestTimeout
+    internal val readOnly = config.readOnly
 
     private var metadataInitialized = false
 
@@ -697,7 +698,7 @@ class Graph(
                 if (it) {
                     Mono
                         .defer {
-                            if (label.entity.readOnly) {
+                            if (label.entity.readOnly || readOnly) {
                                 Mono.empty()
                             } else {
                                 writeWarmUp

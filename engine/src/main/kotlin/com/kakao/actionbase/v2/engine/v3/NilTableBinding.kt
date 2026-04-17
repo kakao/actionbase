@@ -2,13 +2,12 @@ package com.kakao.actionbase.v2.engine.v3
 
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
-import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
-import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.binding.MutationRecordsSummary
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
+import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.v2.core.metadata.Direction
 
 import reactor.core.publisher.Mono
@@ -38,12 +37,12 @@ class NilTableBinding(
     override fun count(
         sources: Set<Any>,
         direction: Direction,
-    ): Mono<DataFrameEdgeCountPayload> = Mono.just(DataFrameEdgeCountPayload(emptyList(), 0, emptyMap()))
+    ): Mono<DataFrame> = V2BackedTableBinding.EMPTY_DATAFRAME
 
     override fun gets(
         keys: List<Pair<Any, Any>>,
         filters: String?,
-    ): Mono<DataFrameEdgePayload> = V2BackedTableBinding.EMPTY_EDGE_PAYLOAD
+    ): Mono<DataFrame> = V2BackedTableBinding.EMPTY_DATAFRAME
 
     override fun scan(
         index: String,
@@ -54,7 +53,7 @@ class NilTableBinding(
         ranges: String?,
         filters: String?,
         features: List<String>,
-    ): Mono<DataFrameEdgePayload> = V2BackedTableBinding.EMPTY_EDGE_PAYLOAD
+    ): Mono<DataFrame> = V2BackedTableBinding.EMPTY_DATAFRAME
 
     override fun seek(
         cache: String,
@@ -62,7 +61,7 @@ class NilTableBinding(
         direction: Direction,
         limit: Int,
         offset: String?,
-    ): Mono<DataFrameEdgePayload> = V2BackedTableBinding.EMPTY_EDGE_PAYLOAD
+    ): Mono<DataFrame> = V2BackedTableBinding.EMPTY_DATAFRAME
 
     override fun agg(
         group: String,
