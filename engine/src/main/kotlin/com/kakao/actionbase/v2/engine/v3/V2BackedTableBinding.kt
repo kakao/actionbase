@@ -200,7 +200,7 @@ class V2BackedTableBinding(
                     .count(setOf(start), direction)
                     .map {
                         val jsonFormat = it.toJsonFormat()
-                        jsonFormat.data.first()[COUNT_FIELD] as Long
+                        jsonFormat.data.first()[DataFrame.COUNT_FIELD] as Long
                     }
             } else {
                 DEFAULT_TOTAL_VALUE_MONO
@@ -497,7 +497,6 @@ class V2BackedTableBinding(
     companion object {
         private val log = LoggerFactory.getLogger(V2BackedTableBinding::class.java)
 
-        internal const val COUNT_FIELD = "COUNT(1)"
         private const val FEATURE_TOTAL = "total"
         private const val DEFAULT_TOTAL_VALUE = -1L
         private val DEFAULT_TOTAL_VALUE_MONO = Mono.just(DEFAULT_TOTAL_VALUE)

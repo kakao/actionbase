@@ -13,6 +13,8 @@ data class DataFrame(
     fun getColumn(name: String): List<Any?> = rows.map { it.data[name] }
 
     companion object {
+        const val COUNT_FIELD = "COUNT(1)"
+
         val empty: DataFrame =
             DataFrame(
                 rows = emptyList(),
