@@ -11,6 +11,8 @@ data class DataFrame(
     val hasNext: Boolean = false,
 ) {
     companion object {
+        const val COUNT_FIELD = "COUNT(1)"
+
         val empty: DataFrame =
             DataFrame(
                 rows = emptyList(),

@@ -11,8 +11,6 @@ import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
-import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.COUNT_FIELD
-import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.toV3
 
 import reactor.core.publisher.Mono
 
@@ -61,7 +59,7 @@ class QueryService(
                         EdgeCountPayload(
                             start = row[EdgeField.SOURCE] as Any,
                             direction = direction.toV3(),
-                            count = row[COUNT_FIELD] as Long,
+                            count = row[DataFrame.COUNT_FIELD] as Long,
                             context = emptyMap(),
                         )
                     }
@@ -186,6 +184,12 @@ class QueryService(
 
     companion object {
         private val EDGE_FIELDS = setOf(EdgeField.VERSION, EdgeField.SOURCE, EdgeField.TARGET, EdgeField.DIRECTION)
+
+        private fun Direction.toV3(): com.kakao.actionbase.core.metadata.common.Direction =
+            when (this) {
+                Direction.OUT -> com.kakao.actionbase.core.metadata.common.Direction.OUT
+                Direction.IN -> com.kakao.actionbase.core.metadata.common.Direction.IN
+            }
 
         fun empty(direction: Direction): EdgeCountPayload =
             if (direction == Direction.OUT) {
