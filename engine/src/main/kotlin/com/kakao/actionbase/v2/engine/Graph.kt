@@ -9,6 +9,7 @@ import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
+import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
@@ -111,6 +112,7 @@ class Graph(
     onlineMetadataLabel: Label,
     private val nilLabel: Label,
 ) : GraphDefaults,
+    LabelProvider,
     AutoCloseable {
     internal val mutationRequestTimeout = config.mutationRequestTimeout
     internal val readOnly = config.readOnly
@@ -227,17 +229,7 @@ class Graph(
 
     // -- mutation
 
-    /**
-     * Resolves a [Label] by entity name, applying alias redirection when present.
-     *
-     * This is v2 direct-label access. Used internally by metadata/DDL services
-     * and by the v2→v3 bridge classes in `v2/engine/v3/` (e.g.
-     * `V2BackedEngine.getTableBinding`). v3 code must not call this directly —
-     * it should route through [com.kakao.actionbase.engine.binding.TableBinding],
-     * which is the single entry point for both single-edge REST APIs and
-     * `ActionbaseQuery` execution.
-     */
-    fun getLabel(name: EntityName): Label =
+    override fun getLabel(name: EntityName): Label =
         if (aliases.containsKey(name)) {
             labels[aliases[name]] ?: throw UnsupportedOperationException("No such label ${aliases[name]} of the alias $name.")
         } else {
