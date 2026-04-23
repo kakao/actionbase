@@ -5,6 +5,15 @@ on:
     branches:
       - main
       - '*.x'
+    paths-ignore:
+      - 'website/**'
+      - 'guides/**'
+      - 'docker/**'
+      - '**/*.md'
+      - 'CNAME'
+      - '.github/workflows/deploy-website.yml'
+      - '.github/workflows/website-ci.yml'
+      - '.github/workflows/translation.yml'
 
   pull_request:
     branches:
@@ -15,6 +24,15 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+    paths-ignore:
+      - 'website/**'
+      - 'guides/**'
+      - 'docker/**'
+      - '**/*.md'
+      - 'CNAME'
+      - '.github/workflows/deploy-website.yml'
+      - '.github/workflows/website-ci.yml'
+      - '.github/workflows/translation.yml'
 
 jobs:
   build:
