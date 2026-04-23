@@ -10,6 +10,7 @@ data class MutationResult(
     val before: State = State.initial,
     val after: State = State.initial,
     val acc: Long = 0,
+    val context: Map<String, Any?>? = null,
 ) {
     companion object {
         fun of(
