@@ -8,6 +8,7 @@ import com.kakao.actionbase.engine.binding.MutationRecordsSummary
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.sql.DataFrame
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.metadata.Direction
 
 import reactor.core.publisher.Mono
@@ -30,6 +31,7 @@ class NilTableBinding(
         key: MutationKey,
         before: State,
         after: State,
+        storageOpCollector: StorageOpCollector?,
     ): Mono<MutationRecordsSummary> = Mono.just(MutationRecordsSummary(IDLE, 0, State.initial, State.initial))
 
     override fun handleMutationError(error: Throwable) {}

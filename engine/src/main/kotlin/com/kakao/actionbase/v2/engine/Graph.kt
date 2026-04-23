@@ -10,6 +10,7 @@ import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
 import com.kakao.actionbase.engine.query.LabelProvider
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
@@ -285,7 +286,7 @@ class Graph(
         mode: MutationMode? = null,
         force: Boolean = false,
         failOnExist: Boolean = false,
-        includeContext: Boolean = false,
+        collectorFactory: (() -> StorageOpCollector)? = null,
     ): Mono<MutationResult> {
         val mutationModeContext = MutationModeContext.of(label.entity.mode, mode, systemMutationMode, force)
 
@@ -308,7 +309,7 @@ class Graph(
                                 )
                             } else {
                                 label
-                                    .mutate(edge, operation, alias, bulk, failOnExist)
+                                    .mutate(edge, operation, alias, bulk, failOnExist, collectorFactory)
                                     .map { context ->
                                         // fill audit and requestId
                                         context.copy(audit = audit, requestId = requestId)
@@ -340,6 +341,7 @@ class Graph(
                                             status = context.status,
                                             traceId = context.edge.traceId,
                                             edge = context.after ?: context.before,
+                                            context = context.storageOps?.let { mapOf("storage_ops" to it) },
                                         )
                                     }
                             }
@@ -370,11 +372,8 @@ class Graph(
                         )
                     }
             }.collectList()
-            .map { items ->
-                MutationResult(
-                    if (includeContext) items.map { it.copy(context = emptyMap()) } else items,
-                )
-            }.timeout(Duration.ofMillis(mutationRequestTimeout))
+            .map { MutationResult(it) }
+            .timeout(Duration.ofMillis(mutationRequestTimeout))
             // Ensures all work completes even if the request is cancelled - https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#cache--
             .cache(Duration.ZERO)
             .subscribeOn(Schedulers.boundedElastic())
@@ -384,7 +383,7 @@ class Graph(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
-        includeContext: Boolean = false,
+        collectorFactory: (() -> StorageOpCollector)? = null,
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -395,14 +394,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
-            includeContext = includeContext,
+            collectorFactory = collectorFactory,
         )
 
     fun update(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
-        includeContext: Boolean = false,
+        collectorFactory: (() -> StorageOpCollector)? = null,
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -413,14 +412,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
-            includeContext = includeContext,
+            collectorFactory = collectorFactory,
         )
 
     fun delete(
         request: DeleteEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
-        includeContext: Boolean = false,
+        collectorFactory: (() -> StorageOpCollector)? = null,
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -431,7 +430,7 @@ class Graph(
             request.requestId,
             bulk,
             mode,
-            includeContext = includeContext,
+            collectorFactory = collectorFactory,
         )
 
     fun purge(request: DeleteEdgeRequest): Mono<MutationResult> =
@@ -449,18 +448,18 @@ class Graph(
 
     fun upsert(
         request: InsertIdEdgeRequest,
-        includeContext: Boolean = false,
-    ): Mono<MutationResult> = upsert(request.toInsertEdgeRequest(idEdgeEncoder), includeContext = includeContext)
+        collectorFactory: (() -> StorageOpCollector)? = null,
+    ): Mono<MutationResult> = upsert(request.toInsertEdgeRequest(idEdgeEncoder), collectorFactory = collectorFactory)
 
     fun update(
         request: InsertIdEdgeRequest,
-        includeContext: Boolean = false,
-    ): Mono<MutationResult> = update(request.toInsertEdgeRequest(idEdgeEncoder), includeContext = includeContext)
+        collectorFactory: (() -> StorageOpCollector)? = null,
+    ): Mono<MutationResult> = update(request.toInsertEdgeRequest(idEdgeEncoder), collectorFactory = collectorFactory)
 
     fun delete(
         request: DeleteIdEdgeRequest,
-        includeContext: Boolean = false,
-    ): Mono<MutationResult> = delete(request.toDeleteEdgeRequest(idEdgeEncoder), includeContext = includeContext)
+        collectorFactory: (() -> StorageOpCollector)? = null,
+    ): Mono<MutationResult> = delete(request.toDeleteEdgeRequest(idEdgeEncoder), collectorFactory = collectorFactory)
 
     // -- query
 

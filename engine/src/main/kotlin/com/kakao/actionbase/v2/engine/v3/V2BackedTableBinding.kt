@@ -24,6 +24,7 @@ import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.engine.sql.Row
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -92,6 +93,7 @@ class V2BackedTableBinding(
         key: MutationKey,
         before: State,
         after: State,
+        storageOpCollector: StorageOpCollector?,
     ): Mono<MutationRecordsSummary> {
         val (source, target) = key.toSourceTarget()
         val beforeClean = before.specialStateValueToNull()
@@ -100,7 +102,7 @@ class V2BackedTableBinding(
         val afterRecord = EdgeStateRecord.of(source, target, afterClean, label.entity.id)
         val records = buildMutationRecords(beforeRecord, afterRecord)
         return label
-            .handleDeferredRequests(buildHBaseMutations(records))
+            .handleDeferredRequests(buildHBaseMutations(records), storageOpCollector)
             .thenReturn(MutationRecordsSummary(records.status, records.acc, beforeClean, afterClean))
     }
 
