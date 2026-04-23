@@ -1,23 +1,19 @@
 package com.kakao.actionbase.v2.engine.v3
 
 import com.kakao.actionbase.v2.core.code.hbase.Constants as HBaseConstants
+import com.kakao.actionbase.v2.engine.sql.DataFrame as V2DataFrame
 
 import com.kakao.actionbase.core.Constants
+import com.kakao.actionbase.core.edge.EdgeField
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationBuilder
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationRecords
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
-import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
-import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
-import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
-import com.kakao.actionbase.core.edge.payload.EdgePayload
-import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
 import com.kakao.actionbase.core.edge.record.EdgeStateRecord
-import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.SpecialStateValue
@@ -26,7 +22,8 @@ import com.kakao.actionbase.core.storage.HBaseRecord
 import com.kakao.actionbase.engine.binding.MutationRecordsSummary
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
-import com.kakao.actionbase.v2.core.code.CryptoUtils
+import com.kakao.actionbase.engine.sql.DataFrame
+import com.kakao.actionbase.engine.sql.Row
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -121,30 +118,16 @@ class V2BackedTableBinding(
     override fun count(
         sources: Set<Any>,
         direction: Direction,
-    ): Mono<DataFrameEdgeCountPayload> =
+    ): Mono<DataFrame> =
         label
             .count(sources, direction)
-            .map {
-                val jsonFormat = it.toJsonFormat()
-                DataFrameEdgeCountPayload(
-                    counts =
-                        jsonFormat.data.map { row ->
-                            EdgeCountPayload(
-                                start = row[SRC_FIELD] as Any,
-                                direction = direction.toV3(),
-                                count = row[SELECT_COUNT_FIELD] as Long,
-                                context = emptyMap(),
-                            )
-                        },
-                    count = jsonFormat.rows,
-                    context = emptyMap(),
-                )
-            }.switchIfEmpty(EMPTY_COUNT_PAYLOAD)
+            .map { it.toV3() }
+            .switchIfEmpty(EMPTY_DATAFRAME)
 
     override fun gets(
         keys: List<Pair<Any, Any>>,
         filters: String?,
-    ): Mono<DataFrameEdgePayload> {
+    ): Mono<DataFrame> {
         val postPredicates = filters?.let { WherePredicate.parse(it, label.entity.schema) }?.toSet() ?: emptySet()
 
         val hbaseGets =
@@ -158,8 +141,8 @@ class V2BackedTableBinding(
         return label
             .getActiveStates(hbaseGets)
             .map {
-                it.applyPredicates(postPredicates).toDataFrameEdgePayload(flip = false)
-            }.switchIfEmpty(EMPTY_EDGE_PAYLOAD)
+                it.applyPredicates(postPredicates).toV3()
+            }.switchIfEmpty(EMPTY_DATAFRAME)
     }
 
     override fun scan(
@@ -171,7 +154,7 @@ class V2BackedTableBinding(
         ranges: String?,
         filters: String?,
         features: List<String>,
-    ): Mono<DataFrameEdgePayload> {
+    ): Mono<DataFrame> {
         val indexFieldNames =
             label.entity.indices
                 .find { it.name == index }
@@ -217,7 +200,7 @@ class V2BackedTableBinding(
                     .count(setOf(start), direction)
                     .map {
                         val jsonFormat = it.toJsonFormat()
-                        jsonFormat.data.first()[SELECT_COUNT_FIELD] as Long
+                        jsonFormat.data.first()[DataFrame.COUNT_FIELD] as Long
                     }
             } else {
                 DEFAULT_TOTAL_VALUE_MONO
@@ -231,9 +214,8 @@ class V2BackedTableBinding(
             .map { tuple ->
                 val df = tuple.t1
                 val total = tuple.t2
-                val flip = direction == Direction.IN
-                df.applyPredicates(postPredicates).toDataFrameEdgePayload(flip, total)
-            }.switchIfEmpty(EMPTY_EDGE_PAYLOAD)
+                df.applyPredicates(postPredicates).toV3(total)
+            }.switchIfEmpty(EMPTY_DATAFRAME)
     }
 
     override fun seek(
@@ -242,82 +224,11 @@ class V2BackedTableBinding(
         direction: Direction,
         limit: Int,
         offset: String?,
-    ): Mono<DataFrameEdgePayload> {
-        val cacheEntity = label.entity.caches.find { it.cache == cache }
-        requireNotNull(cacheEntity) { "cache `$cache` is not found in label `${label.entity.name}`." }
-
-        val order = cacheEntity.fields.first().order
-        val casted =
-            if (direction == Direction.OUT) {
-                label.entity.schema.src.type.type
-                    .cast(start)
-            } else {
-                label.entity.schema.tgt.type.type
-                    .cast(start)
-            }
-        val key =
-            EdgeCacheRecord.Key.of(
-                directedSource = casted,
-                tableCode = label.entity.id,
-                direction = direction.toV3(),
-                cacheCode = cacheEntity.code,
-            )
-        val encodedKey = cacheRecordMapper.encoder.encodeKey(key)
-
-        val offsetNext = offset?.let { CryptoUtils.decodeAndDecryptUrlSafe(it) }
-        val (from, to) =
-            if (offsetNext == null) {
-                null to null
-            } else if (order == Order.DESC) {
-                null to offsetNext
-            } else {
-                offsetNext to null
-            }
-
-        return label
-            .hbaseGetWideRow(listOf(encodedKey), from, to, order, limit = limit + 1)
-            .map { records ->
-                val hasNext = records.size > limit
-                val results = if (hasNext) records.dropLast(1) else records
-                val fieldNameMap = label.entity.schema.hashToFieldNameMap
-                val edges =
-                    results.map { record ->
-                        val decoded = cacheRecordMapper.decoder.decode(record.key, record.qualifier, record.value)
-                        val (source, target) =
-                            when (direction) {
-                                Direction.OUT -> decoded.key.directedSource to decoded.qualifier.directedTarget
-                                Direction.IN -> decoded.qualifier.directedTarget to decoded.key.directedSource
-                            }
-                        EdgePayload(
-                            version = decoded.value.version,
-                            source = source,
-                            target = target,
-                            properties =
-                                decoded.value.properties
-                                    .mapNotNull { (code, value) ->
-                                        fieldNameMap[code]?.let { it to value }
-                                    }.toMap(),
-                            context = emptyMap(),
-                        )
-                    }
-                val nextOffset =
-                    if (hasNext) {
-                        results.lastOrNull()?.qualifier?.let {
-                            CryptoUtils.encryptAndEncodeUrlSafe(it)
-                        }
-                    } else {
-                        null
-                    }
-                DataFrameEdgePayload(
-                    edges = edges,
-                    count = edges.size,
-                    total = edges.size.toLong(),
-                    offset = nextOffset,
-                    hasNext = hasNext,
-                    context = emptyMap(),
-                )
-            }.switchIfEmpty(EMPTY_EDGE_PAYLOAD)
-    }
+    ): Mono<DataFrame> =
+        label
+            .cache(listOf(start), cache, direction, limit, offset)
+            .map { it.toV3() }
+            .switchIfEmpty(EMPTY_DATAFRAME)
 
     override fun agg(
         group: String,
@@ -576,66 +487,22 @@ class V2BackedTableBinding(
                 },
         )
 
-    private fun com.kakao.actionbase.v2.engine.sql.DataFrame.applyPredicates(predicates: Set<WherePredicate>): com.kakao.actionbase.v2.engine.sql.DataFrame =
+    private fun V2DataFrame.applyPredicates(predicates: Set<WherePredicate>): V2DataFrame =
         if (predicates.isEmpty()) {
             this
         } else {
             this.where(predicates)
         }
 
-    private fun com.kakao.actionbase.v2.engine.sql.DataFrame.toDataFrameEdgePayload(
-        flip: Boolean,
-        total: Long? = null,
-    ): DataFrameEdgePayload {
-        val jsonFormat = toJsonFormat()
-        val edges =
-            jsonFormat.data.map { row ->
-                EdgePayload(
-                    version = row[TS_FIELD] as Long,
-                    source = if (!flip) row[SRC_FIELD]!! else row[TGT_FIELD]!!,
-                    target = if (!flip) row[TGT_FIELD]!! else row[SRC_FIELD]!!,
-                    properties = row.filterKeys { it !in EDGE_FIELDS },
-                    context = emptyMap(),
-                )
-            }
-        return DataFrameEdgePayload(
-            edges = edges,
-            count = jsonFormat.rows,
-            total = total ?: rows.size.toLong(),
-            offset = if (jsonFormat.hasNext) jsonFormat.offset else null,
-            hasNext = jsonFormat.hasNext,
-            context = emptyMap(),
-        )
-    }
-
     companion object {
         private val log = LoggerFactory.getLogger(V2BackedTableBinding::class.java)
 
-        private const val SELECT_COUNT_FIELD = "COUNT(1)"
-        private const val TS_FIELD = "ts"
-        private const val SRC_FIELD = "src"
-        private const val TGT_FIELD = "tgt"
-        private const val DIR_FIELD = "dir"
-        private val EDGE_FIELDS = setOf(TS_FIELD, SRC_FIELD, TGT_FIELD, DIR_FIELD)
         private const val FEATURE_TOTAL = "total"
         private const val DEFAULT_TOTAL_VALUE = -1L
         private val DEFAULT_TOTAL_VALUE_MONO = Mono.just(DEFAULT_TOTAL_VALUE)
         private val AVAILABLE_SCAN_FEATURES = setOf(FEATURE_TOTAL)
 
-        val EMPTY_EDGE_PAYLOAD: Mono<DataFrameEdgePayload> =
-            Mono.just(
-                DataFrameEdgePayload(
-                    edges = emptyList(),
-                    count = 0,
-                    total = 0L,
-                    offset = null,
-                    hasNext = false,
-                    context = emptyMap(),
-                ),
-            )
-
-        val EMPTY_COUNT_PAYLOAD: Mono<DataFrameEdgeCountPayload> =
-            Mono.just(DataFrameEdgeCountPayload(emptyList(), 0, emptyMap()))
+        val EMPTY_DATAFRAME: Mono<DataFrame> = Mono.just(DataFrame.empty)
 
         private fun MutationKey.toSourceTarget(): Pair<Any, Any> =
             when (this) {
@@ -671,4 +538,41 @@ class V2BackedTableBinding(
                 Direction.IN -> com.kakao.actionbase.core.metadata.common.Direction.IN
             }
     }
+}
+
+internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
+    val v3Schema =
+        com.kakao.actionbase.core.metadata.common.StructType(
+            schema.fields.map { field ->
+                com.kakao.actionbase.core.metadata.common.StructField(
+                    name = EdgeField.toV3(field.name),
+                    type =
+                        com.kakao.actionbase.core.types.PrimitiveType
+                            .valueOf(field.type.name),
+                    comment = field.desc,
+                    nullable = field.isNullable,
+                )
+            },
+        )
+    val newRows =
+        rows.map { row ->
+            Row(
+                data =
+                    schema.fieldNames
+                        .mapIndexed { i, name ->
+                            EdgeField.toV3(name) to row.array[i]
+                        }.toMap(),
+                schema = v3Schema,
+            )
+        }
+    val rawOffset = offsets.singleOrNull()
+    val hasNext = rawOffset?.let { this.hasNext.singleOrNull() ?: false } ?: false
+    val offset = if (hasNext) rawOffset else null
+    return DataFrame(
+        rows = newRows,
+        schema = v3Schema,
+        total = total ?: rows.size.toLong(),
+        offset = offset,
+        hasNext = hasNext,
+    )
 }

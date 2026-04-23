@@ -5,6 +5,7 @@ import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.DirectionType
@@ -25,11 +26,14 @@ class MultiHopQuerySpec :
     StringSpec({
 
         lateinit var graph: Graph
+        lateinit var queryExecutor: ActionbaseQueryExecutor
         lateinit var mutationService: MutationService
 
         beforeTest {
             graph = GraphFixtures.create()
-            mutationService = MutationService(V2BackedEngine(graph))
+            val engine = V2BackedEngine(graph)
+            queryExecutor = ActionbaseQueryExecutor(engine)
+            mutationService = MutationService(engine)
         }
 
         afterTest {
@@ -156,11 +160,11 @@ class MultiHopQuerySpec :
                                 limit = 100,
                                 include = false,
                             ),
-                            ActionbaseQuery.Item.Cache(
+                            ActionbaseQuery.Item.Seek(
                                 name = "hop2",
                                 database = database,
                                 table = wishlistTable,
-                                source = ActionbaseQuery.Vertex.Ref(ref = "hop1", field = "tgt"),
+                                source = ActionbaseQuery.Vertex.Ref(ref = "hop1", field = "target"),
                                 direction = Direction.OUT,
                                 cache = cacheName,
                                 limit = 10,
@@ -169,14 +173,14 @@ class MultiHopQuerySpec :
                         ),
                 )
 
-            graph
+            queryExecutor
                 .query(query)
                 .test()
                 .assertNext { result ->
                     val hop2 = result["hop2"]!!
                     hop2.rows.size shouldBe 3
 
-                    val targets = hop2.getColumn("tgt").filterNotNull().toSet()
+                    val targets = hop2.getColumn("target").filterNotNull().toSet()
                     targets shouldBe setOf(5000L, 5001L, 5002L)
                 }.verifyComplete()
         }
@@ -344,21 +348,21 @@ class MultiHopQuerySpec :
                                 limit = 100,
                                 include = false,
                             ),
-                            ActionbaseQuery.Item.Cache(
+                            ActionbaseQuery.Item.Seek(
                                 name = "hop2",
                                 database = database,
                                 table = wishlistTable,
-                                source = ActionbaseQuery.Vertex.Ref(ref = "hop1", field = "tgt"),
+                                source = ActionbaseQuery.Vertex.Ref(ref = "hop1", field = "target"),
                                 direction = Direction.OUT,
                                 cache = cacheName,
                                 limit = 10,
                                 include = false,
                             ),
-                            ActionbaseQuery.Item.Cache(
+                            ActionbaseQuery.Item.Seek(
                                 name = "hop3",
                                 database = database,
                                 table = reviewsTable,
-                                source = ActionbaseQuery.Vertex.Ref(ref = "hop2", field = "tgt"),
+                                source = ActionbaseQuery.Vertex.Ref(ref = "hop2", field = "target"),
                                 direction = Direction.OUT,
                                 cache = cacheName,
                                 limit = 10,
@@ -367,14 +371,14 @@ class MultiHopQuerySpec :
                         ),
                 )
 
-            graph
+            queryExecutor
                 .query(query)
                 .test()
                 .assertNext { result ->
                     val hop3 = result["hop3"]!!
                     hop3.rows.size shouldBe 3
 
-                    val targets = hop3.getColumn("tgt").filterNotNull().toSet()
+                    val targets = hop3.getColumn("target").filterNotNull().toSet()
                     targets shouldBe setOf(8000L, 8001L, 8002L)
                 }.verifyComplete()
         }

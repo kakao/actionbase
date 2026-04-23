@@ -1,16 +1,15 @@
 package com.kakao.actionbase.v2.engine.v3.query
 
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
+import com.kakao.actionbase.core.metadata.common.StructField
+import com.kakao.actionbase.core.metadata.common.StructType
+import com.kakao.actionbase.core.types.PrimitiveType
+import com.kakao.actionbase.engine.QueryEngine
+import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.engine.query.LabelProvider
-import com.kakao.actionbase.v2.core.types.DataType
-import com.kakao.actionbase.v2.core.types.Field
-import com.kakao.actionbase.v2.core.types.StructType
-import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.label.Label
-import com.kakao.actionbase.v2.engine.sql.DataFrame
-import com.kakao.actionbase.v2.engine.sql.Row
+import com.kakao.actionbase.engine.sql.DataFrame
+import com.kakao.actionbase.engine.sql.Row
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
@@ -20,24 +19,28 @@ import reactor.test.StepVerifier
 class ActionbaseQueryExecutorAggregatorSpec :
     StringSpec({
 
-        val labelProvider =
-            object : LabelProvider {
-                override fun getLabel(name: EntityName): Label = throw NotImplementedError()
+        val engine =
+            object : QueryEngine {
+                override fun getTableBinding(
+                    database: String,
+                    alias: String,
+                ): TableBinding = throw NotImplementedError()
             }
-        val executor = ActionbaseQueryExecutor(labelProvider)
+        val executor = ActionbaseQueryExecutor(engine)
 
         val categorySchema =
             StructType(
-                arrayOf(
-                    Field("category", DataType.STRING, false),
-                    Field("amount", DataType.LONG, false),
+                listOf(
+                    StructField("category", PrimitiveType.STRING, "", false),
+                    StructField("amount", PrimitiveType.LONG, "", false),
                 ),
             )
 
         fun categoryDataFrame(vararg entries: Pair<String, Long>): DataFrame =
             DataFrame(
-                entries.map { (category, amount) -> Row(arrayOf(category, amount)) },
+                entries.map { (category, amount) -> Row(mapOf("category" to category, "amount" to amount), categorySchema) },
                 categorySchema,
+                total = entries.size.toLong(),
             )
 
         // region aggregateCount
@@ -59,8 +62,8 @@ class ActionbaseQueryExecutorAggregatorSpec :
                 .create(executor.aggregateCount(df, agg))
                 .expectNextMatches { result ->
                     result.schema.fields.map { it.name } shouldBe listOf("category", "count")
-                    result.schema.fields[1].type shouldBe DataType.LONG
-                    result.rows.map { it.array.toList() } shouldBe
+                    result.schema.fields[1].type shouldBe PrimitiveType.LONG
+                    result.rows.map { listOf(it.data["category"], it.data["count"]) } shouldBe
                         listOf(
                             listOf("a", 3L),
                             listOf("b", 2L),
@@ -85,7 +88,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
             StepVerifier
                 .create(executor.aggregateCount(df, agg))
                 .expectNextMatches { result ->
-                    result.rows.map { it.array.toList() } shouldBe
+                    result.rows.map { listOf(it.data["category"], it.data["count"]) } shouldBe
                         listOf(
                             listOf("b", 1L),
                             listOf("c", 1L),
@@ -113,7 +116,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
                 .create(executor.aggregateCount(df, agg))
                 .expectNextMatches { result ->
                     result.rows.size shouldBe 2
-                    result.rows.map { it.array.toList() } shouldBe
+                    result.rows.map { listOf(it.data["category"], it.data["count"]) } shouldBe
                         listOf(
                             listOf("a", 3L),
                             listOf("b", 2L),
@@ -123,7 +126,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
         }
 
         "aggregateCount: produces empty DataFrame when input has no rows" {
-            val df = DataFrame(emptyList(), categorySchema)
+            val df = DataFrame(emptyList(), categorySchema, total = 0L)
             val agg = ActionbaseQuery.Aggregator.Count(field = "category", order = Order.DESC, limit = 10)
 
             StepVerifier
@@ -139,7 +142,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
             val df = categoryDataFrame("a" to 10L)
             val agg = ActionbaseQuery.Aggregator.Count(field = "missing", order = Order.DESC, limit = 10)
 
-            shouldThrow<IllegalArgumentException> {
+            shouldThrow<NoSuchElementException> {
                 executor.aggregateCount(df, agg).block()
             }
         }
@@ -171,8 +174,8 @@ class ActionbaseQueryExecutorAggregatorSpec :
                 .create(executor.aggregateSum(df, agg))
                 .expectNextMatches { result ->
                     result.schema.fields.map { it.name } shouldBe listOf("category", "amount")
-                    result.schema.fields[1].type shouldBe DataType.DOUBLE
-                    result.rows.map { it.array.toList() } shouldBe
+                    result.schema.fields[1].type shouldBe PrimitiveType.DOUBLE
+                    result.rows.map { listOf(it.data["category"], it.data["amount"]) } shouldBe
                         listOf(
                             listOf("c", 100.0),
                             listOf("b", 45.0),
@@ -201,7 +204,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
             StepVerifier
                 .create(executor.aggregateSum(df, agg))
                 .expectNextMatches { result ->
-                    result.rows.map { it.array.toList() } shouldBe
+                    result.rows.map { listOf(it.data["category"], it.data["amount"]) } shouldBe
                         listOf(
                             listOf("b", 10.0),
                             listOf("c", 30.0),
@@ -214,21 +217,22 @@ class ActionbaseQueryExecutorAggregatorSpec :
         "aggregateSum: groups by multiple key fields" {
             val schema =
                 StructType(
-                    arrayOf(
-                        Field("region", DataType.STRING, false),
-                        Field("product", DataType.STRING, false),
-                        Field("amount", DataType.LONG, false),
+                    listOf(
+                        StructField("region", PrimitiveType.STRING, "", false),
+                        StructField("product", PrimitiveType.STRING, "", false),
+                        StructField("amount", PrimitiveType.LONG, "", false),
                     ),
                 )
             val df =
                 DataFrame(
                     listOf(
-                        Row(arrayOf("KR", "A", 10L)),
-                        Row(arrayOf("KR", "A", 20L)),
-                        Row(arrayOf("KR", "B", 30L)),
-                        Row(arrayOf("US", "A", 40L)),
+                        Row(mapOf("region" to "KR", "product" to "A", "amount" to 10L), schema),
+                        Row(mapOf("region" to "KR", "product" to "A", "amount" to 20L), schema),
+                        Row(mapOf("region" to "KR", "product" to "B", "amount" to 30L), schema),
+                        Row(mapOf("region" to "US", "product" to "A", "amount" to 40L), schema),
                     ),
                     schema,
+                    total = 4L,
                 )
 
             val agg =
@@ -243,7 +247,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
                 .create(executor.aggregateSum(df, agg))
                 .expectNextMatches { result ->
                     result.schema.fields.map { it.name } shouldBe listOf("region", "product", "amount")
-                    result.rows.map { it.array.toList() } shouldBe
+                    result.rows.map { listOf(it.data["region"], it.data["product"], it.data["amount"]) } shouldBe
                         listOf(
                             listOf("US", "A", 40.0),
                             listOf("KR", "A", 30.0),
@@ -274,7 +278,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
                 .create(executor.aggregateSum(df, agg))
                 .expectNextMatches { result ->
                     result.rows.size shouldBe 2
-                    result.rows.map { it.array.toList() } shouldBe
+                    result.rows.map { listOf(it.data["category"], it.data["amount"]) } shouldBe
                         listOf(
                             listOf("d", 40.0),
                             listOf("c", 30.0),
@@ -284,7 +288,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
         }
 
         "aggregateSum: produces empty DataFrame when input has no rows" {
-            val df = DataFrame(emptyList(), categorySchema)
+            val df = DataFrame(emptyList(), categorySchema, total = 0L)
             val agg =
                 ActionbaseQuery.Aggregator.Sum(
                     valueField = "amount",
@@ -312,7 +316,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
                     limit = 10,
                 )
 
-            shouldThrow<IllegalArgumentException> {
+            shouldThrow<NullPointerException> {
                 executor.aggregateSum(df, agg).block()
             }
         }
@@ -327,7 +331,7 @@ class ActionbaseQueryExecutorAggregatorSpec :
                     limit = 10,
                 )
 
-            shouldThrow<IllegalArgumentException> {
+            shouldThrow<NoSuchElementException> {
                 executor.aggregateSum(df, agg).block()
             }
         }

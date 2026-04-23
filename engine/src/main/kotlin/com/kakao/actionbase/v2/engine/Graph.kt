@@ -9,8 +9,6 @@ import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
-import com.kakao.actionbase.engine.query.ActionbaseQuery
-import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
 import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
@@ -169,8 +167,6 @@ class Graph(
     val idEdgeEncoder: IdEdgeEncoder = edgeEncoderFactory.bytesKeyValueEncoder
 
     fun isReady(): Boolean = metadataInitialized
-
-    private val queryExecutor = ActionbaseQueryExecutor(this)
 
     val metastoreInspector = MetastoreInspector(this.metastore, this.metadataTable)
 
@@ -553,8 +549,6 @@ class Graph(
             )
         return singleStepQuery(scanFilter, stats)
     }
-
-    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = queryExecutor.query(request)
 
     // -- system
 

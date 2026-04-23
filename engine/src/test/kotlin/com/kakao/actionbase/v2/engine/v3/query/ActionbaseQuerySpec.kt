@@ -1,10 +1,12 @@
 package com.kakao.actionbase.v2.engine.v3.query
 
 import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
+import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainExactly
@@ -15,11 +17,13 @@ class ActionbaseQuerySpec :
     StringSpec({
 
         lateinit var graph: Graph
+        lateinit var queryExecutor: ActionbaseQueryExecutor
 
         lateinit var hbase: Label
 
         beforeSpec {
             graph = GraphFixtures.create()
+            queryExecutor = ActionbaseQueryExecutor(V2BackedEngine(graph))
             hbase = graph.getLabel(EntityName(GraphFixtures.serviceName, GraphFixtures.hbaseIndexed))
         }
 
@@ -50,20 +54,17 @@ class ActionbaseQuerySpec :
 
             val actionBaseQuery = ActionbaseQuery.from(actionBaseQueryString)
 
-            graph
+            queryExecutor
                 .query(actionBaseQuery)
                 .test()
                 .assertNext {
                     it.size shouldBe 1
                     it.keys shouldBe setOf(queryName)
                     val df = it[queryName]!!
-                    df.rows.size shouldBe 0 // currently no self edges
+                    df.rows.size shouldBe 0
                 }.verifyComplete()
         }
 
-        /**
-         * [ActionbaseQuery.Item.Get]
-         */
         "ActionbaseQuery.Item.Get" {
             val database = hbase.name.service
             val table = hbase.name.nameNotNull
@@ -94,22 +95,17 @@ class ActionbaseQuerySpec :
                 """.trimIndent()
             val actionBaseQuery = ActionbaseQuery.from(actionBaseQueryString)
 
-            graph
+            queryExecutor
                 .query(actionBaseQuery)
                 .test()
                 .assertNext {
                     it.size shouldBe 1
                     it.keys shouldBe setOf(queryName)
                     val df = it[queryName]!!
-                    df
-                        .toRowWithSchema()
-                        .map { row -> row.getOrNull("permission") } shouldContainExactly listOf("na", "others")
+                    df.rows.map { row -> row.data["permission"] } shouldContainExactly listOf("na", "others")
                 }.verifyComplete()
         }
 
-        /**
-         * [ActionbaseQuery.Item.Count]
-         */
         "ActionbaseQuery.Item.Count" {
             val database = hbase.name.service
             val table = hbase.name.nameNotNull
@@ -137,22 +133,17 @@ class ActionbaseQuerySpec :
                 """.trimIndent()
             val actionBaseQuery = ActionbaseQuery.from(actionBaseQueryString)
 
-            graph
+            queryExecutor
                 .query(actionBaseQuery)
                 .test()
                 .assertNext {
                     it.size shouldBe 1
                     it.keys shouldBe setOf(queryName)
                     val df = it[queryName]!!
-                    df
-                        .toRowWithSchema()
-                        .map { row -> row.getOrNull("COUNT(1)") } shouldContainExactly listOf(6L)
+                    df.rows.map { row -> row.data["COUNT(1)"] } shouldContainExactly listOf(6L)
                 }.verifyComplete()
         }
 
-        /**
-         * [ActionbaseQuery.Item.Scan]
-         */
         "ActionbaseQuery.Item.Scan" {
             val database = hbase.name.service
             val table = hbase.name.nameNotNull
@@ -182,16 +173,14 @@ class ActionbaseQuerySpec :
                 """.trimIndent()
             val actionBaseQuery = ActionbaseQuery.from(actionBaseQueryString)
 
-            graph
+            queryExecutor
                 .query(actionBaseQuery)
                 .test()
                 .assertNext {
                     it.size shouldBe 1
                     it.keys shouldBe setOf(queryName)
                     val df = it[queryName]!!
-                    df
-                        .toRowWithSchema()
-                        .map { row -> row.getOrNull("permission") } shouldContainExactly
+                    df.rows.map { row -> row.data["permission"] } shouldContainExactly
                         listOf(
                             "me",
                             "me",
@@ -236,7 +225,7 @@ class ActionbaseQuerySpec :
                       "source": {
                         "type": "REF",
                         "ref": "step1",
-                        "field": "tgt"
+                        "field": "target"
                       },
                       "direction": "IN",
                       "index": "created_at_desc",
@@ -248,16 +237,12 @@ class ActionbaseQuerySpec :
                 """.trimIndent()
             val actionBaseQuery = ActionbaseQuery.from(actionBaseQueryString)
 
-            graph
+            queryExecutor
                 .query(actionBaseQuery)
                 .test()
                 .assertNext {
                     it.size shouldBe 2
                     it.keys shouldBe setOf("step1", "step2")
-                    val step1 = it["step1"]!!
-                    step1.show()
-                    val step2 = it["step2"]!!
-                    step2.show()
                 }.verifyComplete()
         }
     })

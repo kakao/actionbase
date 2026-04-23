@@ -183,7 +183,7 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                           "name": "hop2",
                           "database": "$db2",
                           "table": "$hop2Table",
-                          "source": {"type": "REF", "ref": "hop1", "field": "tgt"},
+                          "source": {"type": "REF", "ref": "hop1", "field": "target"},
                           "direction": "OUT",
                           "cache": "recent_wishlist",
                           "limit": 10,

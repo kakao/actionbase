@@ -4,7 +4,6 @@ import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.engine.sql.StatKey
-import com.kakao.actionbase.v2.engine.sql.WherePredicate
 
 import java.util.UUID
 
@@ -23,7 +22,7 @@ data class ActionbaseQuery(
         JsonSubTypes.Type(value = Item.Get::class, name = "GET"),
         JsonSubTypes.Type(value = Item.Count::class, name = "COUNT"),
         JsonSubTypes.Type(value = Item.Scan::class, name = "SCAN"),
-        JsonSubTypes.Type(value = Item.Cache::class, name = "CACHE"),
+        JsonSubTypes.Type(value = Item.Seek::class, name = "CACHE"),
     )
     sealed class Item {
         abstract val name: String
@@ -74,16 +73,16 @@ data class ActionbaseQuery(
             val source: Vertex,
             val direction: Direction,
             val index: String,
-            val limit: Int? = null,
+            val limit: Int = DEFAULT_SCAN_LIMIT,
             val offset: String? = null,
-            val predicates: List<WherePredicate>? = null,
+            val ranges: String? = null,
             override val include: Boolean = false,
             override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
             override val aggregators: List<Aggregator> = emptyList(),
         ) : Item()
 
-        data class Cache(
+        data class Seek(
             override val name: String = UUID.randomUUID().toString(),
             val database: String,
             val table: String,
@@ -121,6 +120,8 @@ data class ActionbaseQuery(
     }
 
     companion object {
+        private const val DEFAULT_SCAN_LIMIT = 10
+
         private val objectMapper = jacksonObjectMapper()
 
         fun from(json: String): ActionbaseQuery = objectMapper.readValue(json)
