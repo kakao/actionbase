@@ -98,10 +98,9 @@ open class HBaseHashLabel(
         storageOpCollector: StorageOpCollector?,
     ): Mono<Boolean> =
         tables
-            .flatMap { t ->
-                storageOpCollector?.collectAll(deferredRequests, t.edge.name.nameAsString)
-                t.edge.batch(deferredRequests)
-            }.thenReturn(true)
+            .doOnNext { t -> storageOpCollector?.collectAll(deferredRequests, t.edge.name.nameAsString) }
+            .flatMap { t -> t.edge.batch(deferredRequests) }
+            .thenReturn(true)
 
     override fun setnx(
         keyField: EncodedKey<ByteArray>,

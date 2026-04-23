@@ -30,7 +30,7 @@ interface Label : AutoCloseable {
         alias: EntityName? = null,
         bulk: Boolean = false,
         failOnExist: Boolean = false,
-        collectorFactory: (() -> StorageOpCollector)? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<List<CdcContext>>
 
     fun mutate(
@@ -39,9 +39,9 @@ interface Label : AutoCloseable {
         alias: EntityName? = null,
         bulk: Boolean = false,
         failOnExist: Boolean = false,
-        collectorFactory: (() -> StorageOpCollector)? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<CdcContext> =
-        mutate(listOf(edge), op, alias = alias, bulk = bulk, failOnExist = failOnExist, collectorFactory = collectorFactory)
+        mutate(listOf(edge), op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
             .map { it.first() }
 
     fun scan(

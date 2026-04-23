@@ -59,8 +59,7 @@ class MutationService(
                         } else {
                             groupMono.flatMap { group ->
                                 val sorted = group.sortedBy { it.event.version }
-                                val collector = if (requestContext.includeContext) StorageOpCollector() else null
-                                readModifyWrite(tb, key, sorted, acquireLock, collector)
+                                readModifyWrite(tb, key, sorted, acquireLock, requestContext.newCollector())
                                     .doOnNext { result ->
                                         engine.writeCdc(ctx, sorted, result.status, result.before, result.after, result.acc)
                                     }.onErrorResume {
@@ -88,7 +87,7 @@ class MutationService(
                     val after = sorted.fold(state) { acc, m -> acc.transit(m.event, tb.schema) }
                     tb.write(key, state, after, collector)
                 }.map { summary ->
-                    val context = collector?.snapshot()?.let { mapOf("storage_ops" to it) }
+                    val context = collector?.snapshot()?.let { mapOf(StorageOpCollector.CONTEXT_KEY to it) }
                     MutationResult(key, sorted.size, summary.status, summary.before, summary.after, summary.acc, context)
                 }
         }

@@ -65,12 +65,12 @@ class LocalBackedJdbcHashLabel(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean,
-        collectorFactory: (() -> StorageOpCollector)?,
+        newCollector: () -> StorageOpCollector?,
     ): Mono<List<CdcContext>> =
         if (useLocalStore) {
-            localLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, collectorFactory = collectorFactory)
+            localLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
         } else {
-            globalLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, collectorFactory = collectorFactory)
+            globalLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
         }
 
     override fun scan(

@@ -46,7 +46,7 @@ class NilLabel(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean,
-        collectorFactory: (() -> StorageOpCollector)?,
+        newCollector: () -> StorageOpCollector?,
     ): Mono<List<CdcContext>> =
         Mono.fromCallable {
             edges.map {

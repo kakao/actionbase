@@ -92,7 +92,7 @@ abstract class AbstractLabel<T>(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean,
-        collectorFactory: (() -> StorageOpCollector)?,
+        newCollector: () -> StorageOpCollector?,
     ): Mono<List<CdcContext>> {
         if (entity.readOnly) {
             return Mono.error(UnsupportedOperationException("This Label (${entity.fullName}) is read-only"))
@@ -100,7 +100,7 @@ abstract class AbstractLabel<T>(
         return Flux
             .fromIterable(edges)
             .map { it.ensureType(entity.schema) }
-            .flatMapSequential { processEdgeMutation(it, op, alias, bulk, failOnExist, collectorFactory?.invoke()) }
+            .flatMapSequential { processEdgeMutation(it, op, alias, bulk, failOnExist, newCollector()) }
             .collectList()
     }
 

@@ -286,7 +286,7 @@ class Graph(
         mode: MutationMode? = null,
         force: Boolean = false,
         failOnExist: Boolean = false,
-        collectorFactory: (() -> StorageOpCollector)? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> {
         val mutationModeContext = MutationModeContext.of(label.entity.mode, mode, systemMutationMode, force)
 
@@ -309,7 +309,7 @@ class Graph(
                                 )
                             } else {
                                 label
-                                    .mutate(edge, operation, alias, bulk, failOnExist, collectorFactory)
+                                    .mutate(edge, operation, alias, bulk, failOnExist, newCollector)
                                     .map { context ->
                                         // fill audit and requestId
                                         context.copy(audit = audit, requestId = requestId)
@@ -341,7 +341,7 @@ class Graph(
                                             status = context.status,
                                             traceId = context.edge.traceId,
                                             edge = context.after ?: context.before,
-                                            context = context.storageOps?.let { mapOf("storage_ops" to it) },
+                                            context = context.storageOps?.let { mapOf(StorageOpCollector.CONTEXT_KEY to it) },
                                         )
                                     }
                             }
@@ -383,7 +383,7 @@ class Graph(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
-        collectorFactory: (() -> StorageOpCollector)? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -394,14 +394,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
-            collectorFactory = collectorFactory,
+            newCollector = newCollector,
         )
 
     fun update(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
-        collectorFactory: (() -> StorageOpCollector)? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -412,14 +412,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
-            collectorFactory = collectorFactory,
+            newCollector = newCollector,
         )
 
     fun delete(
         request: DeleteEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
-        collectorFactory: (() -> StorageOpCollector)? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -430,7 +430,7 @@ class Graph(
             request.requestId,
             bulk,
             mode,
-            collectorFactory = collectorFactory,
+            newCollector = newCollector,
         )
 
     fun purge(request: DeleteEdgeRequest): Mono<MutationResult> =
@@ -448,18 +448,18 @@ class Graph(
 
     fun upsert(
         request: InsertIdEdgeRequest,
-        collectorFactory: (() -> StorageOpCollector)? = null,
-    ): Mono<MutationResult> = upsert(request.toInsertEdgeRequest(idEdgeEncoder), collectorFactory = collectorFactory)
+        newCollector: () -> StorageOpCollector? = { null },
+    ): Mono<MutationResult> = upsert(request.toInsertEdgeRequest(idEdgeEncoder), newCollector = newCollector)
 
     fun update(
         request: InsertIdEdgeRequest,
-        collectorFactory: (() -> StorageOpCollector)? = null,
-    ): Mono<MutationResult> = update(request.toInsertEdgeRequest(idEdgeEncoder), collectorFactory = collectorFactory)
+        newCollector: () -> StorageOpCollector? = { null },
+    ): Mono<MutationResult> = update(request.toInsertEdgeRequest(idEdgeEncoder), newCollector = newCollector)
 
     fun delete(
         request: DeleteIdEdgeRequest,
-        collectorFactory: (() -> StorageOpCollector)? = null,
-    ): Mono<MutationResult> = delete(request.toDeleteEdgeRequest(idEdgeEncoder), collectorFactory = collectorFactory)
+        newCollector: () -> StorageOpCollector? = { null },
+    ): Mono<MutationResult> = delete(request.toDeleteEdgeRequest(idEdgeEncoder), newCollector = newCollector)
 
     // -- query
 
