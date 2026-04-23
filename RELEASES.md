@@ -40,19 +40,21 @@ main:    A ─ B ─ C ─ D ─ E ─ ...          (0.3.0-SNAPSHOT)
 - `main` — active development, always `X.Y.0-SNAPSHOT`
 - `X.Y.x` — release branch, created automatically on minor release
 
+The `Bump Version` workflow takes only a `version` input — the target branch is derived from it (`X.Y.0` → `main`, `X.Y.Z` with `Z≥1` → `X.Y.x`).
+
 ### Minor release
 
 Three manual steps, everything else is automatic.
 
 ```
-1. [manual]    Actions → "Bump Version" → version: 0.2.0
-               → PR: "Bump version to 0.2.0"
+1. [manual]    Actions → "Bump Version" → version: 0.3.0
+               → PR: "Bump version to 0.3.0" (against main)
 2. [manual]    Merge PR
-               → (auto) tag v0.2.0
-               → (auto) create 0.2.x branch (0.2.1-SNAPSHOT)
-               → (auto) PR: "Bump version to 0.3.0-SNAPSHOT"
+               → (auto) tag v0.3.0
+               → (auto) create 0.3.x branch (0.3.1-SNAPSHOT)
+               → (auto) PR: "Bump version to 0.4.0-SNAPSHOT"
 3. [manual]    Merge snapshot PR
-               → main is now 0.3.0-SNAPSHOT
+               → main is now 0.4.0-SNAPSHOT
 ```
 
 ### Patch release
@@ -60,12 +62,21 @@ Three manual steps, everything else is automatic.
 Two manual steps. Fixes go to `main` first, then cherry-pick to the release branch.
 
 ```
-1. [manual]    Actions → "Bump Version" → version: 0.2.1, branch: 0.2.x
+1. [manual]    Actions → "Bump Version" → version: 0.2.1
                → PR: "Bump version to 0.2.1" (against 0.2.x)
 2. [manual]    Merge PR
                → (auto) tag v0.2.1
                → (auto) 0.2.x bumped to 0.2.2-SNAPSHOT
 ```
+
+### Approving the bump PR's CI
+
+The bump PR is opened by `github-actions[bot]`, so GitHub gates its workflow runs behind a one-time maintainer approval (this prevents workflow loops). Before you can merge the PR:
+
+1. Open the PR, or go to the Actions tab filtered by the PR
+2. Click `Approve and run` on the pending workflow runs
+
+Approval is per PR — expect to do this once for every release.
 
 ### Upstream-first
 
