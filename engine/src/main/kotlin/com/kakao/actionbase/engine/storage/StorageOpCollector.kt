@@ -2,14 +2,10 @@ package com.kakao.actionbase.engine.storage
 
 import com.kakao.actionbase.core.storage.StorageOp
 
-import java.util.concurrent.CopyOnWriteArrayList
-
 class StorageOpCollector(
     private val maxOps: Int = DEFAULT_MAX_OPS,
 ) {
-    private val ops = CopyOnWriteArrayList<StorageOp>()
-
-    @Volatile
+    private val ops = mutableListOf<StorageOp>()
     private var truncated = false
 
     @Suppress("UNUSED_PARAMETER")
