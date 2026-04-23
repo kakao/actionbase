@@ -162,8 +162,12 @@ abstract class AbstractLabel<T>(
                 } else {
                     Mono.just(context)
                 }
-            }.map { context -> context.copy(storageOps = collector?.snapshot()) }
-            .subscribeOn(Schedulers.boundedElastic())
+            }.map { context ->
+                context.copy(
+                    storageOps = collector?.snapshot(),
+                    storageOpsTruncated = collector?.isTruncated() ?: false,
+                )
+            }.subscribeOn(Schedulers.boundedElastic())
             .doFinally {
                 releaseLock(edge.traceId, encodedLockEdge, bulk)
                     .subscribeOn(Schedulers.boundedElastic())

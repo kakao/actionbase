@@ -31,6 +31,8 @@ data class CdcContext(
     val requestId: String = "",
     @JsonIgnore
     val storageOps: List<StorageOp>? = null,
+    @JsonIgnore
+    val storageOpsTruncated: Boolean = false,
 ) : Log {
     @Suppress("PropertyName")
     companion object {

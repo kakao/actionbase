@@ -341,7 +341,13 @@ class Graph(
                                             status = context.status,
                                             traceId = context.edge.traceId,
                                             edge = context.after ?: context.before,
-                                            context = context.storageOps?.let { mapOf(StorageOpCollector.CONTEXT_KEY to it) },
+                                            context =
+                                                context.storageOps?.let {
+                                                    buildMap {
+                                                        put(StorageOpCollector.CONTEXT_KEY, it)
+                                                        if (context.storageOpsTruncated) put(StorageOpCollector.TRUNCATED_KEY, true)
+                                                    }
+                                                },
                                         )
                                     }
                             }
