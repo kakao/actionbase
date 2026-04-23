@@ -8,6 +8,7 @@ import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
@@ -288,6 +289,7 @@ class Graph(
         mode: MutationMode? = null,
         force: Boolean = false,
         failOnExist: Boolean = false,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> {
         val mutationModeContext = MutationModeContext.of(label.entity.mode, mode, systemMutationMode, force)
 
@@ -310,7 +312,7 @@ class Graph(
                                 )
                             } else {
                                 label
-                                    .mutate(edge, operation, alias, bulk, failOnExist)
+                                    .mutate(edge, operation, alias, bulk, failOnExist, newCollector)
                                     .map { context ->
                                         // fill audit and requestId
                                         context.copy(audit = audit, requestId = requestId)
@@ -342,6 +344,13 @@ class Graph(
                                             status = context.status,
                                             traceId = context.edge.traceId,
                                             edge = context.after ?: context.before,
+                                            context =
+                                                context.storageOps?.let {
+                                                    buildMap {
+                                                        put(StorageOpCollector.CONTEXT_KEY, it)
+                                                        if (context.storageOpsTruncated) put(StorageOpCollector.TRUNCATED_KEY, true)
+                                                    }
+                                                },
                                         )
                                     }
                             }
@@ -383,6 +392,7 @@ class Graph(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -393,12 +403,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
+            newCollector = newCollector,
         )
 
     fun update(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -409,12 +421,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
+            newCollector = newCollector,
         )
 
     fun delete(
         request: DeleteEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -425,6 +439,7 @@ class Graph(
             request.requestId,
             bulk,
             mode,
+            newCollector = newCollector,
         )
 
     fun purge(request: DeleteEdgeRequest): Mono<MutationResult> =
@@ -440,11 +455,20 @@ class Graph(
             false,
         )
 
-    fun upsert(request: InsertIdEdgeRequest): Mono<MutationResult> = upsert(request.toInsertEdgeRequest(idEdgeEncoder))
+    fun upsert(
+        request: InsertIdEdgeRequest,
+        newCollector: () -> StorageOpCollector? = { null },
+    ): Mono<MutationResult> = upsert(request.toInsertEdgeRequest(idEdgeEncoder), newCollector = newCollector)
 
-    fun update(request: InsertIdEdgeRequest): Mono<MutationResult> = update(request.toInsertEdgeRequest(idEdgeEncoder))
+    fun update(
+        request: InsertIdEdgeRequest,
+        newCollector: () -> StorageOpCollector? = { null },
+    ): Mono<MutationResult> = update(request.toInsertEdgeRequest(idEdgeEncoder), newCollector = newCollector)
 
-    fun delete(request: DeleteIdEdgeRequest): Mono<MutationResult> = delete(request.toDeleteEdgeRequest(idEdgeEncoder))
+    fun delete(
+        request: DeleteIdEdgeRequest,
+        newCollector: () -> StorageOpCollector? = { null },
+    ): Mono<MutationResult> = delete(request.toDeleteEdgeRequest(idEdgeEncoder), newCollector = newCollector)
 
     // -- query
 

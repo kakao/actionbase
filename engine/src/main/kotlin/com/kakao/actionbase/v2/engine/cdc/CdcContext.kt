@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.cdc
 
+import com.kakao.actionbase.core.storage.StorageOp
 import com.kakao.actionbase.v2.core.edge.TraceEdge
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
 import com.kakao.actionbase.v2.engine.audit.Audit
@@ -28,6 +29,10 @@ data class CdcContext(
     val message: String? = null,
     val audit: Audit = Audit.default,
     val requestId: String = "",
+    @JsonIgnore
+    val storageOps: List<StorageOp>? = null,
+    @JsonIgnore
+    val storageOpsTruncated: Boolean = false,
 ) : Log {
     @Suppress("PropertyName")
     companion object {

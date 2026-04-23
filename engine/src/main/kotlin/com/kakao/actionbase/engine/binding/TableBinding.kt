@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.metadata.MutationMode
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 
 import reactor.core.publisher.Mono
 
@@ -23,6 +24,7 @@ interface TableBinding {
         key: MutationKey,
         before: State,
         after: State,
+        storageOpCollector: StorageOpCollector? = null,
     ): Mono<MutationRecordsSummary>
 
     fun handleMutationError(error: Throwable)

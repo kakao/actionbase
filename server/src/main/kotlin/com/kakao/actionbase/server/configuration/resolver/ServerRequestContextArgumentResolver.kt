@@ -29,6 +29,12 @@ class ServerRequestContextArgumentResolver : HandlerMethodArgumentResolver {
                 ?: headers.getFirst(HttpHeaderConstants.AB_ACTOR_ID)
                 ?: RequestContext.DEFAULT.actor
 
-        return Mono.just(RequestContext(requestId, actor))
+        val includeContext =
+            headers
+                .getFirst(HttpHeaderConstants.INCLUDE_MUTATION_CONTEXT)
+                ?.trim()
+                ?.equals("true", ignoreCase = true) == true
+
+        return Mono.just(RequestContext(requestId, actor, includeContext))
     }
 }

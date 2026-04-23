@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.label
 
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.edge.TraceEdge
@@ -29,6 +30,7 @@ interface Label : AutoCloseable {
         alias: EntityName? = null,
         bulk: Boolean = false,
         failOnExist: Boolean = false,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<List<CdcContext>>
 
     fun mutate(
@@ -37,7 +39,10 @@ interface Label : AutoCloseable {
         alias: EntityName? = null,
         bulk: Boolean = false,
         failOnExist: Boolean = false,
-    ): Mono<CdcContext> = mutate(listOf(edge), op, alias = alias, bulk = bulk, failOnExist = failOnExist).map { it.first() }
+        newCollector: () -> StorageOpCollector? = { null },
+    ): Mono<CdcContext> =
+        mutate(listOf(edge), op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
+            .map { it.first() }
 
     fun scan(
         scanFilter: ScanFilter,

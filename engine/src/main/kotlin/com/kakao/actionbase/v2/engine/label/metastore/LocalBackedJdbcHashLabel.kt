@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.label.metastore
 
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyValue
@@ -64,11 +65,12 @@ class LocalBackedJdbcHashLabel(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean,
+        newCollector: () -> StorageOpCollector?,
     ): Mono<List<CdcContext>> =
         if (useLocalStore) {
-            localLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist)
+            localLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
         } else {
-            globalLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist)
+            globalLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
         }
 
     override fun scan(

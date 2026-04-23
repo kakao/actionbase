@@ -2,10 +2,14 @@ name: 'Continuous Integration'
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - '*.x'
 
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - '*.x'
     types:
       - opened
       - reopened
