@@ -87,7 +87,7 @@ class MutationService(
                     val after = sorted.fold(state) { acc, m -> acc.transit(m.event, tb.schema) }
                     tb.write(key, state, after, collector)
                 }.map { summary ->
-                    val context = collector?.snapshot()?.let { mapOf(StorageOpCollector.CONTEXT_KEY to it) }
+                    val context = collector?.toContextMap()
                     MutationResult(key, sorted.size, summary.status, summary.before, summary.after, summary.acc, context)
                 }
         }
