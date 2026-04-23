@@ -68,6 +68,7 @@ class MutationService(
                             }
                         }
                     }.collectList()
+                    .map { list -> if (requestContext.includeContext) list.map { it.copy(context = emptyMap()) } else list }
                     .timeout(Duration.ofMillis(engine.mutationRequestTimeout))
                     .runEvenIfCancelled()
             }

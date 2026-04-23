@@ -6,4 +6,5 @@ object HttpHeaderConstants {
     const val ACTOR_ROLE = "Actor-ROLE"
     const val AB_ACTOR_ID = "X-AB-Actor-ID" // legacy support
     const val RESPONSE_META = "Response-Meta"
+    const val INCLUDE_MUTATION_CONTEXT = "AB-Include-Mutation-Context"
 }

@@ -285,6 +285,7 @@ class Graph(
         mode: MutationMode? = null,
         force: Boolean = false,
         failOnExist: Boolean = false,
+        includeContext: Boolean = false,
     ): Mono<MutationResult> {
         val mutationModeContext = MutationModeContext.of(label.entity.mode, mode, systemMutationMode, force)
 
@@ -369,8 +370,11 @@ class Graph(
                         )
                     }
             }.collectList()
-            .map { MutationResult(it) }
-            .timeout(Duration.ofMillis(mutationRequestTimeout))
+            .map { items ->
+                MutationResult(
+                    if (includeContext) items.map { it.copy(context = emptyMap()) } else items,
+                )
+            }.timeout(Duration.ofMillis(mutationRequestTimeout))
             // Ensures all work completes even if the request is cancelled - https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#cache--
             .cache(Duration.ZERO)
             .subscribeOn(Schedulers.boundedElastic())
@@ -380,6 +384,7 @@ class Graph(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        includeContext: Boolean = false,
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -390,12 +395,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
+            includeContext = includeContext,
         )
 
     fun update(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        includeContext: Boolean = false,
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -406,12 +413,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
+            includeContext = includeContext,
         )
 
     fun delete(
         request: DeleteEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        includeContext: Boolean = false,
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -422,6 +431,7 @@ class Graph(
             request.requestId,
             bulk,
             mode,
+            includeContext = includeContext,
         )
 
     fun purge(request: DeleteEdgeRequest): Mono<MutationResult> =
@@ -437,11 +447,20 @@ class Graph(
             false,
         )
 
-    fun upsert(request: InsertIdEdgeRequest): Mono<MutationResult> = upsert(request.toInsertEdgeRequest(idEdgeEncoder))
+    fun upsert(
+        request: InsertIdEdgeRequest,
+        includeContext: Boolean = false,
+    ): Mono<MutationResult> = upsert(request.toInsertEdgeRequest(idEdgeEncoder), includeContext = includeContext)
 
-    fun update(request: InsertIdEdgeRequest): Mono<MutationResult> = update(request.toInsertEdgeRequest(idEdgeEncoder))
+    fun update(
+        request: InsertIdEdgeRequest,
+        includeContext: Boolean = false,
+    ): Mono<MutationResult> = update(request.toInsertEdgeRequest(idEdgeEncoder), includeContext = includeContext)
 
-    fun delete(request: DeleteIdEdgeRequest): Mono<MutationResult> = delete(request.toDeleteEdgeRequest(idEdgeEncoder))
+    fun delete(
+        request: DeleteIdEdgeRequest,
+        includeContext: Boolean = false,
+    ): Mono<MutationResult> = delete(request.toDeleteEdgeRequest(idEdgeEncoder), includeContext = includeContext)
 
     // -- query
 
