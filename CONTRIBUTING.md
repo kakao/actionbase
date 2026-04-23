@@ -62,6 +62,41 @@ Server starts at `http://localhost:8080`.
 ./gradlew :server:test
 ```
 
+### Writing tests
+
+Prefer our `@ObjectSource` helper whenever a test fits a data-driven shape — input on the left, expected on the right. The point is that each case is *data*, not code: intent is readable from the YAML alone, and adding a case is a data edit.
+
+Good fits: parsers, validators, mappers, serializers — anywhere the test body reduces to "compute `actual` from `input`, assert against `expected`".
+
+```kotlin
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+
+@ObjectSourceParameterizedTest
+@ObjectSource(
+    """
+    - uri: datastore://my_namespace/my_table
+      namespace: my_namespace
+      table: my_table
+    - uri: datastore:///my_table
+      namespace: ""
+      table: my_table
+    - uri: datastore://ns/t
+      namespace: ns
+      table: t
+    """,
+)
+fun `valid URI`(uri: String, namespace: String, table: String) {
+    val (ns, tbl) = DatastoreUri.parse(uri)
+    assertEquals(namespace, ns)
+    assertEquals(table, tbl)
+}
+```
+
+YAML fields map to method parameters by name. Each case becomes its own JUnit invocation, so a failure points at one offending case.
+
+See `DatastoreUriTest`, `V3NameValidatorTest`, `ObjectSourceTest` for more patterns (shared fields, nested cases, JSON block scalars).
+
 ## PR workflow
 
 Fork [kakao/actionbase](https://github.com/kakao/actionbase) on GitHub, then set up remotes:
