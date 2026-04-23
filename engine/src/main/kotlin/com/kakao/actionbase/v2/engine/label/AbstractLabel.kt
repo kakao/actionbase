@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.label
 
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.EncodedKey
 import com.kakao.actionbase.v2.core.code.HashEdgeValue
@@ -91,6 +92,7 @@ abstract class AbstractLabel<T>(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean,
+        newCollector: () -> StorageOpCollector?,
     ): Mono<List<CdcContext>> {
         if (entity.readOnly) {
             return Mono.error(UnsupportedOperationException("This Label (${entity.fullName}) is read-only"))
@@ -98,7 +100,7 @@ abstract class AbstractLabel<T>(
         return Flux
             .fromIterable(edges)
             .map { it.ensureType(entity.schema) }
-            .flatMapSequential { processEdgeMutation(it, op, alias, bulk, failOnExist) }
+            .flatMapSequential { processEdgeMutation(it, op, alias, bulk, failOnExist, newCollector()) }
             .collectList()
     }
 
@@ -109,6 +111,7 @@ abstract class AbstractLabel<T>(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean = false,
+        collector: StorageOpCollector? = null,
     ): Mono<CdcContext> {
         log.debug("mutate {} {}", op, edge)
         val encodedHashEdgeKey = coder.encodeHashEdgeKey(edge, entity.id)
@@ -154,12 +157,13 @@ abstract class AbstractLabel<T>(
             }.flatMap { context ->
                 if (context.deferredRequests.isNotEmpty()) {
                     log.debug("6. handle {} deferred  requests", context.deferredRequests.size)
-                    handleDeferredRequests(context.deferredRequests)
+                    handleDeferredRequests(context.deferredRequests, collector)
                         .thenReturn(context.copy(deferredRequests = emptyList()))
                 } else {
                     Mono.just(context)
                 }
-            }.subscribeOn(Schedulers.boundedElastic())
+            }.map { context -> context.copy(storageOps = collector?.snapshot()) }
+            .subscribeOn(Schedulers.boundedElastic())
             .doFinally {
                 releaseLock(edge.traceId, encodedLockEdge, bulk)
                     .subscribeOn(Schedulers.boundedElastic())
@@ -671,7 +675,10 @@ abstract class AbstractLabel<T>(
 
     abstract fun deleteOnLock(keyField: KeyValue<T>): Mono<Boolean>
 
-    open fun handleDeferredRequests(deferredRequests: List<Any>): Mono<Boolean> = Mono.just(true)
+    open fun handleDeferredRequests(
+        deferredRequests: List<Any>,
+        storageOpCollector: StorageOpCollector? = null,
+    ): Mono<Boolean> = Mono.just(true)
 
     abstract fun setnx(
         keyField: EncodedKey<T>,

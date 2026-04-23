@@ -12,6 +12,7 @@ import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.context.RequestContext
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.metadata.MutationModeContext
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.engine.util.component1
 import com.kakao.actionbase.engine.util.component2
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
@@ -58,7 +59,7 @@ class MutationService(
                         } else {
                             groupMono.flatMap { group ->
                                 val sorted = group.sortedBy { it.event.version }
-                                readModifyWrite(tb, key, sorted, acquireLock)
+                                readModifyWrite(tb, key, sorted, acquireLock, requestContext.newCollector())
                                     .doOnNext { result ->
                                         engine.writeCdc(ctx, sorted, result.status, result.before, result.after, result.acc)
                                     }.onErrorResume {
@@ -68,7 +69,6 @@ class MutationService(
                             }
                         }
                     }.collectList()
-                    .map { list -> if (requestContext.includeContext) list.map { it.copy(context = emptyMap()) } else list }
                     .timeout(Duration.ofMillis(engine.mutationRequestTimeout))
                     .runEvenIfCancelled()
             }
@@ -78,15 +78,17 @@ class MutationService(
         key: MutationKey,
         sorted: List<MutationEvent>,
         acquireLock: Boolean,
+        collector: StorageOpCollector?,
     ): Mono<MutationResult> {
         val rwm = {
             tb
                 .read(key)
                 .flatMap { state ->
                     val after = sorted.fold(state) { acc, m -> acc.transit(m.event, tb.schema) }
-                    tb.write(key, state, after)
+                    tb.write(key, state, after, collector)
                 }.map { summary ->
-                    MutationResult(key, sorted.size, summary.status, summary.before, summary.after, summary.acc)
+                    val context = collector?.snapshot()?.let { mapOf(StorageOpCollector.CONTEXT_KEY to it) }
+                    MutationResult(key, sorted.size, summary.status, summary.before, summary.after, summary.acc, context)
                 }
         }
         return if (acquireLock) tb.withLock(key, rwm) else rwm()

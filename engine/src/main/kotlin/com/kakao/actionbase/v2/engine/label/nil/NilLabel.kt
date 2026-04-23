@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.label.nil
 
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.edge.TraceEdge
@@ -45,6 +46,7 @@ class NilLabel(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean,
+        newCollector: () -> StorageOpCollector?,
     ): Mono<List<CdcContext>> =
         Mono.fromCallable {
             edges.map {

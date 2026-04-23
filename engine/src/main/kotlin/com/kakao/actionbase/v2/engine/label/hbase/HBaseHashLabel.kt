@@ -2,6 +2,7 @@ package com.kakao.actionbase.v2.engine.label.hbase
 
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.storage.HBaseRecord
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.engine.util.HBaseRecordCache
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.EncodedKey
@@ -90,7 +91,14 @@ open class HBaseHashLabel(
         return Mono.just(listOf(delete))
     }
 
-    override fun handleDeferredRequests(deferredRequests: List<Any>): Mono<Boolean> = tables.flatMap { it.edge.batch(deferredRequests) }.thenReturn(true)
+    override fun handleDeferredRequests(
+        deferredRequests: List<Any>,
+        storageOpCollector: StorageOpCollector?,
+    ): Mono<Boolean> =
+        tables
+            .doOnNext { t -> storageOpCollector?.collectAll(deferredRequests, t.edge.name.nameAsString) }
+            .flatMap { t -> t.edge.batch(deferredRequests) }
+            .thenReturn(true)
 
     override fun setnx(
         keyField: EncodedKey<ByteArray>,

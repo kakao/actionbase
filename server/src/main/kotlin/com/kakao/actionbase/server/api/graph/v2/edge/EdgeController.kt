@@ -30,7 +30,7 @@ class EdgeController(
         @RequestParam(required = false) mode: MutationMode?,
         @RequestBody request: InsertEdgeRequest,
         requestContext: RequestContext,
-    ): Mono<ResponseEntity<MutationResult>> = graph.upsert(request, bulk, mode, requestContext.includeContext).mapToResponseEntity()
+    ): Mono<ResponseEntity<MutationResult>> = graph.upsert(request, bulk, mode, requestContext::newCollector).mapToResponseEntity()
 
     @PutMapping("/graph/v2/edge")
     fun update(
@@ -38,7 +38,7 @@ class EdgeController(
         @RequestParam(required = false) mode: MutationMode?,
         @RequestBody request: InsertEdgeRequest,
         requestContext: RequestContext,
-    ): Mono<ResponseEntity<MutationResult>> = graph.update(request, bulk, mode, requestContext.includeContext).mapToResponseEntity()
+    ): Mono<ResponseEntity<MutationResult>> = graph.update(request, bulk, mode, requestContext::newCollector).mapToResponseEntity()
 
     @DeleteMapping("/graph/v2/edge")
     fun delete(
@@ -46,23 +46,23 @@ class EdgeController(
         @RequestParam(required = false) mode: MutationMode?,
         @RequestBody request: DeleteEdgeRequest,
         requestContext: RequestContext,
-    ): Mono<ResponseEntity<MutationResult>> = graph.delete(request, bulk, mode, requestContext.includeContext).mapToResponseEntity()
+    ): Mono<ResponseEntity<MutationResult>> = graph.delete(request, bulk, mode, requestContext::newCollector).mapToResponseEntity()
 
     @PostMapping("/graph/v2/edge/id")
     fun insertId(
         @RequestBody request: InsertIdEdgeRequest,
         requestContext: RequestContext,
-    ): Mono<ResponseEntity<MutationResult>> = graph.upsert(request, requestContext.includeContext).mapToResponseEntity()
+    ): Mono<ResponseEntity<MutationResult>> = graph.upsert(request, requestContext::newCollector).mapToResponseEntity()
 
     @PutMapping("/graph/v2/edge/id")
     fun updateId(
         @RequestBody request: InsertIdEdgeRequest,
         requestContext: RequestContext,
-    ): Mono<ResponseEntity<MutationResult>> = graph.update(request, requestContext.includeContext).mapToResponseEntity()
+    ): Mono<ResponseEntity<MutationResult>> = graph.update(request, requestContext::newCollector).mapToResponseEntity()
 
     @DeleteMapping("/graph/v2/edge/id")
     fun deleteId(
         @RequestBody request: DeleteIdEdgeRequest,
         requestContext: RequestContext,
-    ): Mono<ResponseEntity<MutationResult>> = graph.delete(request, requestContext.includeContext).mapToResponseEntity()
+    ): Mono<ResponseEntity<MutationResult>> = graph.delete(request, requestContext::newCollector).mapToResponseEntity()
 }
