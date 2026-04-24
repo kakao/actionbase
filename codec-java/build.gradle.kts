@@ -1,7 +1,7 @@
 import actionbase.dependencies.Dependencies
 
 group = "com.kakao.actionbase"
-version = "0.0.1-SNAPSHOT"
+version = "0.1.0-SNAPSHOT"
 
 plugins {
     id("actionbase.java8-conventions")
