@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.label
 
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.v2.core.metadata.Active
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.Field
@@ -12,7 +13,11 @@ import com.kakao.actionbase.v2.engine.sql.Row
 import com.kakao.actionbase.v2.engine.sql.RowWithSchema
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 
 class LabelEntitySpec :
     StringSpec({
@@ -106,5 +111,20 @@ class LabelEntitySpec :
             val rowWithSchema = RowWithSchema(row, structType)
 
             LabelEntity.toEntity(rowWithSchema)
+        }
+
+        "LabelEntity JSON serializes caches field" {
+            val entity =
+                Metadata.serviceLabelEntity.copy(
+                    caches = listOf(Cache(cache = "c1", fields = emptyList())),
+                )
+
+            val json = jacksonObjectMapper().writeValueAsString(entity)
+            json shouldContain "\"caches\""
+            json shouldContain "\"c1\""
+
+            val roundTripped = jacksonObjectMapper().readValue(json, LabelEntity::class.java)
+            roundTripped.caches.size shouldBe 1
+            roundTripped.caches[0].cache shouldBe "c1"
         }
     })
