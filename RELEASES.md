@@ -115,12 +115,22 @@ As the project matures, we may introduce Long-Term Support (LTS) releases with e
 
 ## Release artifacts
 
-All modules share the same version and are released together.
+Each module releases independently.
 
-| Module     | Artifact     | Distribution                                |
-| ---------- | ------------ | ------------------------------------------- |
-| **core**   | Java library | GitHub Packages (Maven Central after 1.0.0) |
-| **server** | Docker image | `ghcr.io/kakao/actionbase`                  |
-| **cli**    | Binary       | GitHub Releases                             |
+| Module         | Artifact     | Distribution               |
+| -------------- | ------------ | -------------------------- |
+| **codec-java** | Java library | Maven (Central planned)    |
+| **core**       | Java library | Not yet published          |
+| **server**     | Docker image | `ghcr.io/kakao/actionbase` |
+| **cli**        | Binary       | GitHub Releases            |
+
+`codec-java` is slated for deprecation and will be absorbed into the Kotlin `core` module.
+
+### Compatibility
+
+| codec-java                              | Actionbase (server) |
+| --------------------------------------- | ------------------- |
+| `v2-core:1.0.14-SNAPSHOT` (source only) | 0.1.x, 0.2.x        |
+| `codec-java:0.0.1`                      | 0.3.x (upcoming)    |
 
 Release announcements are posted in [GitHub Releases](https://github.com/kakao/actionbase/releases).
