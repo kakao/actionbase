@@ -47,6 +47,28 @@ fun `valid URI`(uri: String, namespace: String, table: String) {
 - See `DatastoreUriTest`, `V3NameValidatorTest`, `ObjectSourceTest` for more
   patterns (shared fields, nested cases, JSON block scalars).
 
+### Dense matrices (`@TableSource`)
+
+When a test is a table of primitive values with many columns (state
+transitions, combinatorial matrices), the repeated YAML keys of
+`@ObjectSource` hurt density. Use `@TableSource` instead — `columns` declares
+parameter names once, `rows` carries one test case per list:
+
+```kotlin
+@ObjectSourceParameterizedTest
+@TableSource("""
+    columns: [from, event, expected]
+    rows:
+      - [IDLE,    START, RUNNING]
+      - [RUNNING, STOP,  IDLE]
+""")
+fun `transition`(from: State, event: Event, expected: State) { ... }
+```
+
+Still pure YAML. Same runner (`@ObjectSourceParameterizedTest`) and same
+name-based parameter binding. Use `~` for null entries. For nested or
+heterogeneous cases, prefer `@ObjectSource`.
+
 ## Other tests
 
 Write whatever is clearest for the case at hand.
