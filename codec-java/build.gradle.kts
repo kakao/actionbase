@@ -1,7 +1,7 @@
 import actionbase.dependencies.Dependencies
 
 group = "com.kakao.actionbase"
-version = "1.0.14-SNAPSHOT"
+version = "0.0.1-SNAPSHOT"
 
 plugins {
     id("actionbase.java8-conventions")
@@ -35,7 +35,7 @@ publishing {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
             groupId = "com.kakao.actionbase"
-            artifactId = "v2-core"
+            artifactId = "codec-java"
         }
     }
 
