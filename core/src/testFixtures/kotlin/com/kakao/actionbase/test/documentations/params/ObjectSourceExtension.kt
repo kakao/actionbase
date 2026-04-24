@@ -64,7 +64,7 @@ class ObjectSourceExtension : TestTemplateInvocationContextProvider {
         }
     }
 
-    private fun parseTableSource(annotation: TableSource): List<Map<String, Any?>> {
+    fun parseTableSource(annotation: TableSource): List<Map<String, Any?>> {
         require(annotation.value.isNotBlank()) { "@TableSource: 'value' must be provided" }
 
         val parsed: Map<String, Any?> = ObjectMappers.YAML.readValue(annotation.value)

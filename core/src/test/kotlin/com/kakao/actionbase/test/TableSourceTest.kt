@@ -1,11 +1,15 @@
 package com.kakao.actionbase.test
 
+import com.kakao.actionbase.test.documentations.params.ObjectSourceExtension
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 import com.kakao.actionbase.test.documentations.params.TableSource
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 class TableSourceTest {
     @ObjectSourceParameterizedTest
@@ -79,7 +83,7 @@ class TableSourceTest {
     }
 
     @Nested
-    inner class MisuseTest {
+    inner class NestedClassTest {
         @ObjectSourceParameterizedTest
         @TableSource(
             """
@@ -94,6 +98,117 @@ class TableSourceTest {
         ) {
             assertEquals(1, a)
             assertEquals(2, b)
+        }
+    }
+
+    @Nested
+    inner class ErrorTest {
+        private val extension = ObjectSourceExtension()
+
+        @Test
+        fun `blank value is rejected`() {
+            val e =
+                assertThrows<IllegalArgumentException> {
+                    extension.parseTableSource(TableSource(""))
+                }
+            assertTrue(e.message!!.contains("value"))
+        }
+
+        @Test
+        fun `missing columns is rejected`() {
+            val e =
+                assertThrows<IllegalStateException> {
+                    extension.parseTableSource(
+                        TableSource(
+                            """
+                            rows:
+                              - [1, 2]
+                            """.trimIndent(),
+                        ),
+                    )
+                }
+            assertTrue(e.message!!.contains("columns"))
+        }
+
+        @Test
+        fun `missing rows is rejected`() {
+            val e =
+                assertThrows<IllegalStateException> {
+                    extension.parseTableSource(
+                        TableSource(
+                            """
+                            columns: [a, b]
+                            """.trimIndent(),
+                        ),
+                    )
+                }
+            assertTrue(e.message!!.contains("rows"))
+        }
+
+        @Test
+        fun `row size mismatch is rejected`() {
+            val e =
+                assertThrows<IllegalArgumentException> {
+                    extension.parseTableSource(
+                        TableSource(
+                            """
+                            columns: [a, b, c]
+                            rows:
+                              - [1, 2]
+                            """.trimIndent(),
+                        ),
+                    )
+                }
+            assertTrue(e.message!!.contains("row size"))
+            assertTrue(e.message!!.contains("columns size"))
+        }
+
+        @Test
+        fun `non-string column entry is rejected`() {
+            val e =
+                assertThrows<IllegalArgumentException> {
+                    extension.parseTableSource(
+                        TableSource(
+                            """
+                            columns: [a, 2]
+                            rows:
+                              - [1, 2]
+                            """.trimIndent(),
+                        ),
+                    )
+                }
+            assertTrue(e.message!!.contains("must be strings"))
+        }
+
+        @Test
+        fun `row that is not a list is rejected`() {
+            val e =
+                assertThrows<IllegalArgumentException> {
+                    extension.parseTableSource(
+                        TableSource(
+                            """
+                            columns: [a, b]
+                            rows:
+                              - not-a-list
+                            """.trimIndent(),
+                        ),
+                    )
+                }
+            assertTrue(e.message!!.contains("must be a list"))
+        }
+
+        @Test
+        fun `empty rows list produces no test cases`() {
+            val result =
+                extension.parseTableSource(
+                    TableSource(
+                        """
+                        columns: [a, b]
+                        rows: []
+                        """.trimIndent(),
+                    ),
+                )
+            assertEquals(0, result.size)
         }
     }
 
