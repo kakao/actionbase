@@ -83,6 +83,24 @@ git remote add origin https://github.com/YOUR_USERNAME/actionbase.git
 5. Commit: `git commit -m "feat(scope): description"`
 6. Push & create PR
 
+## AI-Assisted Pull Requests
+
+AI-assisted pull requests are welcome, provided that you:
+
+- Note in the PR description if the changes were largely written by AI.
+- Name the AI tool and model that produced them (e.g., Claude Code, Cursor,
+  Codex, ChatGPT).
+- Understand the changes — be ready to discuss any line.
+- Write the PR description and reply to reviewers in your own voice. Do not
+  paste AI-generated text into review threads.
+- Read through the diff yourself before opening the PR.
+- Run a code-review pass with your AI tool (e.g., `/review` in Claude Code
+  or Codex CLI) before submitting.
+- Follow the conventions in [`CODING_STYLE.md`](CODING_STYLE.md) and the
+  test rules in [`TESTING.md`](TESTING.md).
+
+_Inspired by [SlateDB's contribution policy](https://github.com/slatedb/slatedb/blob/main/CONTRIBUTING.md) — thanks to the SlateDB team for codifying these norms._
+
 ## Translations
 
 Translations are managed through Translation Memory (TM) files. Here's how to contribute:

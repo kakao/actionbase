@@ -11,3 +11,8 @@ Closes #
 ## How to Test
 
 
+## AI Assistance
+
+- [ ] This PR was written largely with AI assistance.
+  - Tool / model:
+
