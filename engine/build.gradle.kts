@@ -51,8 +51,8 @@ dependencies {
     implementation(Dependencies.Logging.SLF4J_API)
     implementation(Dependencies.Logging.LOGBACK_CLASSIC)
 
-    // SlateDB (Maven Central)
-    implementation("io.slatedb:slatedb:0.11.0")
+    // SlateDB (Maven Central, UniFFI bindings)
+    implementation("io.slatedb:slatedb-uniffi:0.12.1")
 
     // HBase
     implementation(Dependencies.HBase.CLIENT)

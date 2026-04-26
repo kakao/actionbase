@@ -3,9 +3,10 @@ package com.kakao.actionbase.v2.engine.storage.slatedb
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-import io.slatedb.SlateDb
-import io.slatedb.SlateDbKeyValue
-import io.slatedb.SlateDbMergeOperator
+import io.slatedb.uniffi.Db
+import io.slatedb.uniffi.DbIterator
+import io.slatedb.uniffi.MergeOperator
+import io.slatedb.uniffi.WriteBatch
 import reactor.core.publisher.Mono
 
 fun Long.toSlateBytes(): ByteArray =
@@ -18,7 +19,7 @@ fun Long.toSlateBytes(): ByteArray =
 fun ByteArray.toLong(): Long = ByteBuffer.wrap(this).order(ByteOrder.BIG_ENDIAN).long
 
 val incrementMergeOperator =
-    SlateDbMergeOperator { _, existingValue, operand ->
+    MergeOperator { _, existingValue, operand ->
         val current = existingValue?.toLong() ?: 0L
         val delta = operand.toLong()
         (current + delta).toSlateBytes()
@@ -40,7 +41,7 @@ sealed class BatchOperation {
     ) : BatchOperation()
 }
 
-interface SlateDbTable : AutoCloseable {
+interface SlateDbTable {
     fun get(key: ByteArray): Mono<ByteArray>
 
     fun put(
@@ -64,91 +65,92 @@ interface SlateDbTable : AutoCloseable {
 
     fun batch(operations: List<BatchOperation>): Mono<Void>
 
+    fun close(): Mono<Void>
+
     companion object {
-        fun create(db: SlateDb): SlateDbTable = SlateDbTableImpl(db)
+        fun create(db: Db): SlateDbTable = SlateDbTableImpl(db)
     }
 }
 
 internal class SlateDbTableImpl(
-    private val db: SlateDb,
+    private val db: Db,
 ) : SlateDbTable {
-    // The SlateDB C library uses a single global Tokio runtime with block_on, which
-    // does not support concurrent calls from multiple threads. The global single-thread
-    // scheduler serializes all native FFI calls across all database instances.
-    private val scheduler = SlateDbScheduler.INSTANCE
+    // All `Mono.fromFuture { db.<op>(..) }` calls use the Supplier overload so
+    // the underlying CompletableFuture is created at subscription time, not
+    // when the Mono is constructed. The eager overload would start every
+    // operation in a chain like `put.then(delete).then(get)` immediately,
+    // racing them against each other.
 
     override fun get(key: ByteArray): Mono<ByteArray> =
-        Mono
-            .fromCallable { db.get(key) }
-            .flatMap { Mono.justOrEmpty(it) }
-            .subscribeOn(scheduler)
+        Mono.fromFuture { db.get(key) }.flatMap { Mono.justOrEmpty(it) }
 
     override fun put(
         key: ByteArray,
         value: ByteArray,
-    ): Mono<Void> =
-        Mono
-            .fromCallable { db.put(key, value) }
-            .subscribeOn(scheduler)
-            .then()
+    ): Mono<Void> = Mono.fromFuture { db.put(key, value) }.then()
 
-    override fun delete(key: ByteArray): Mono<Void> =
-        Mono
-            .fromCallable { db.delete(key) }
-            .subscribeOn(scheduler)
-            .then()
+    override fun delete(key: ByteArray): Mono<Void> = Mono.fromFuture { db.delete(key) }.then()
 
     override fun merge(
         key: ByteArray,
         value: ByteArray,
-    ): Mono<Void> =
-        Mono
-            .fromCallable { db.merge(key, value) }
-            .subscribeOn(scheduler)
-            .then()
+    ): Mono<Void> = Mono.fromFuture { db.merge(key, value) }.then()
 
-    override fun flush(): Mono<Void> =
-        Mono
-            .fromCallable { db.flush() }
-            .subscribeOn(scheduler)
-            .then()
+    override fun flush(): Mono<Void> = Mono.fromFuture { db.flush() }
 
     override fun scanPrefix(
         prefix: ByteArray,
         limit: Int,
     ): Mono<List<Pair<ByteArray, ByteArray>>> =
         Mono
-            .fromCallable {
+            .fromFuture { db.scanPrefix(prefix) }
+            .flatMap { iterator -> drainIterator(iterator, limit) }
+
+    // DbIterator.next() returns CompletableFuture<KeyValue?>; null marks end-of-stream.
+    // Drain by chaining continuations rather than .get(), so the calling thread is
+    // never blocked while UniFFI's Tokio runtime fetches the next block.
+    private fun drainIterator(
+        iterator: DbIterator,
+        limit: Int,
+    ): Mono<List<Pair<ByteArray, ByteArray>>> =
+        Mono
+            .create<List<Pair<ByteArray, ByteArray>>> { sink ->
                 val results = mutableListOf<Pair<ByteArray, ByteArray>>()
-                db.scanPrefix(prefix).use { iterator ->
-                    var kv: SlateDbKeyValue? = iterator.next()
-                    var count = 0
-                    while (kv != null && count < limit) {
-                        results.add(kv.key() to kv.value())
-                        count++
-                        kv = iterator.next()
+                fun pump() {
+                    if (results.size >= limit) {
+                        sink.success(results.toList())
+                        return
+                    }
+                    iterator.next().whenComplete { kv, err ->
+                        when {
+                            err != null -> sink.error(err)
+                            kv == null -> sink.success(results.toList())
+                            else -> {
+                                results.add(kv.key() to kv.value())
+                                pump()
+                            }
+                        }
                     }
                 }
-                results.toList()
-            }.subscribeOn(scheduler)
+                pump()
+            }.doFinally { iterator.close() }
 
     override fun batch(operations: List<BatchOperation>): Mono<Void> =
         Mono
-            .fromCallable {
-                SlateDb.newWriteBatch().use { batch ->
-                    operations.forEach { op ->
-                        when (op) {
-                            is BatchOperation.Put -> batch.put(op.key, op.value)
-                            is BatchOperation.Delete -> batch.delete(op.key)
-                            is BatchOperation.Increment -> batch.merge(op.key, op.delta.toSlateBytes())
-                        }
+            .defer {
+                // Fresh batch per subscription (db.write consumes it). doFinally close
+                // pins it across the async write so UniFFI's cleaner cannot free the
+                // Rust handle mid-flight; close is idempotent.
+                val batch = WriteBatch()
+                operations.forEach { op ->
+                    when (op) {
+                        is BatchOperation.Put -> batch.put(op.key, op.value)
+                        is BatchOperation.Delete -> batch.delete(op.key)
+                        is BatchOperation.Increment -> batch.merge(op.key, op.delta.toSlateBytes())
                     }
-                    db.write(batch)
                 }
-            }.subscribeOn(scheduler)
-            .then()
+                Mono.fromFuture { db.write(batch) }.doFinally { batch.close() }
+            }.then()
 
-    override fun close() {
-        db.close()
-    }
+    override fun close(): Mono<Void> = Mono.fromFuture { db.shutdown() }
 }

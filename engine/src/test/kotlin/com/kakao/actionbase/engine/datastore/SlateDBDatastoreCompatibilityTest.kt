@@ -1,6 +1,7 @@
 package com.kakao.actionbase.engine.datastore
 
 import com.kakao.actionbase.v2.engine.storage.slatedb.BatchOperation
+import com.kakao.actionbase.v2.engine.storage.slatedb.SlateDbConnections
 import com.kakao.actionbase.v2.engine.storage.slatedb.SlateDbTable
 import com.kakao.actionbase.v2.engine.storage.slatedb.incrementMergeOperator
 import com.kakao.actionbase.v2.engine.storage.slatedb.toLong
@@ -14,8 +15,8 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.io.TempDir
 
-import io.slatedb.SlateDb
-import io.slatedb.SlateDbConfig
+import io.slatedb.uniffi.DbBuilder
+import io.slatedb.uniffi.ObjectStore
 
 /**
  * SlateDB compatibility test.
@@ -38,18 +39,22 @@ class SlateDBDatastoreCompatibilityTest : DatastoreCompatibilityTest() {
     ) {
         assumeTrue(enabled, "SLATEDB_TEST=true not set")
         tempDir = dir
-        SlateDb.initLogging(SlateDbConfig.LogLevel.INFO)
-        val db =
-            SlateDb.builder("data", "file://${tempDir.toAbsolutePath()}", null).use { builder ->
-                builder.withMergeOperator(incrementMergeOperator)
-                builder.build()
+        // Triggers native-library extraction + Slatedb.initLogging on the
+        // first call, then no-ops on subsequent ones.
+        SlateDbConnections.ensureInitialized()
+        val dbFuture =
+            ObjectStore.resolve("file://${tempDir.toAbsolutePath()}").use { objectStore ->
+                DbBuilder("data", objectStore).use { builder ->
+                    builder.withMergeOperator(incrementMergeOperator)
+                    builder.build()
+                }
             }
-        table = SlateDbTable.create(db)
+        table = SlateDbTable.create(dbFuture.join())
     }
 
     @AfterAll
     fun tearDownSlateDB() {
-        table?.close()
+        table?.close()?.block()
     }
 
     override fun createStore(): StorageOperations = SlateDBOperations(table!!)

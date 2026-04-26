@@ -8,8 +8,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
-import io.slatedb.SlateDb
-import io.slatedb.SlateDbConfig
+import io.slatedb.uniffi.DbBuilder
+import io.slatedb.uniffi.ObjectStore
 import reactor.test.StepVerifier
 
 class SlateDbTableTest {
@@ -20,19 +20,23 @@ class SlateDbTableTest {
 
     @BeforeEach
     fun setUp() {
-        SlateDb.initLogging(SlateDbConfig.LogLevel.INFO)
+        // Triggers native-library extraction + Slatedb.initLogging on the
+        // first call, then no-ops on subsequent ones.
+        SlateDbConnections.ensureInitialized()
 
-        val db =
-            SlateDb.builder("data", "file://${tempDir.toAbsolutePath()}", null).use { builder ->
-                builder.withMergeOperator(incrementMergeOperator)
-                builder.build()
+        val dbFuture =
+            ObjectStore.resolve("file://${tempDir.toAbsolutePath()}").use { objectStore ->
+                DbBuilder("data", objectStore).use { builder ->
+                    builder.withMergeOperator(incrementMergeOperator)
+                    builder.build()
+                }
             }
-        table = SlateDbTable.create(db)
+        table = SlateDbTable.create(dbFuture.join())
     }
 
     @AfterEach
     fun tearDown() {
-        table.close()
+        table.close().block()
     }
 
     @Test
