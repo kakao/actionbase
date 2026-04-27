@@ -131,6 +131,6 @@ Each module releases independently.
 | codec-java                              | Actionbase (server) |
 | --------------------------------------- | ------------------- |
 | `v2-core:1.0.14-SNAPSHOT` (source only) | 0.1.x, 0.2.x        |
-| `codec-java:0.1.0`                      | 0.3.x (upcoming)    |
+| `codec-java:0.1.0`                      | 0.3.x               |
 
 Release announcements are posted in [GitHub Releases](https://github.com/kakao/actionbase/releases).
