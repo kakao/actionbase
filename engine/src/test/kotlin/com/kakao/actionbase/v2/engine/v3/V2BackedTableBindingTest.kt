@@ -470,7 +470,11 @@ class V2BackedTableBindingTest {
                 )
             val v2 = V2DataFrame(rows = emptyList(), schema = v2Schema)
 
-            val types = v2.toV3().schema.fields.map { it.type }
+            val types =
+                v2
+                    .toV3()
+                    .schema.fields
+                    .map { it.type }
 
             assertEquals(
                 listOf(
