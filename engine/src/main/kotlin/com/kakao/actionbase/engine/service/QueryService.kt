@@ -12,7 +12,6 @@ import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
-
 import reactor.core.publisher.Mono
 
 class QueryService(
@@ -171,14 +170,13 @@ class QueryService(
                     version = row[EdgeField.VERSION] as Long,
                     source = source,
                     target = target,
-                    // Strip the V2->V3 collision-escape backticks: backticks are an
-                    // internal disambiguation for the DataFrame row map, but
+                    // Backticks are an internal disambiguation for the V3 DataFrame row map.
                     // EdgePayload.properties is its own namespace separate from the
-                    // version/source/target fields, so the natural names are safe to use.
+                    // version/source/target fields, so the natural names are safe to use here.
                     properties =
                         row.data
                             .filterKeys { it !in EDGE_FIELDS }
-                            .mapKeys { (k, _) -> k.removeSurrounding("`") },
+                            .mapKeys { (k, _) -> unescapeV3Keyword(k) },
                     context = emptyMap(),
                 )
             }
@@ -223,5 +221,9 @@ class QueryService(
                 count = 0L,
                 context = emptyMap(),
             )
+
+        internal fun escapeV3Keyword(fieldName: String): String = if (fieldName in EDGE_FIELDS) "`$fieldName`" else EdgeField.toV3(fieldName)
+
+        private fun unescapeV3Keyword(name: String): String = name.removeSurrounding("`")
     }
 }

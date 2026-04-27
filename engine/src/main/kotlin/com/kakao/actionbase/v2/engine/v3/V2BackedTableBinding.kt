@@ -3,9 +3,7 @@ package com.kakao.actionbase.v2.engine.v3
 import com.kakao.actionbase.v2.core.code.hbase.Constants as HBaseConstants
 import com.kakao.actionbase.v2.core.types.DataType as V2DataType
 import com.kakao.actionbase.v2.engine.sql.DataFrame as V2DataFrame
-
 import com.kakao.actionbase.core.Constants
-import com.kakao.actionbase.core.edge.EdgeField
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
@@ -24,6 +22,7 @@ import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.binding.MutationRecordsSummary
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
+import com.kakao.actionbase.engine.service.QueryService.Companion.escapeV3Keyword
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.engine.sql.Row
 import com.kakao.actionbase.engine.storage.StorageOpCollector
@@ -35,14 +34,12 @@ import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.sql.toJsonFormat
-
 import org.apache.hadoop.hbase.client.Delete
 import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Increment
 import org.apache.hadoop.hbase.client.Mutation
 import org.apache.hadoop.hbase.client.Put
 import org.slf4j.LoggerFactory
-
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 
@@ -586,11 +583,6 @@ internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
         hasNext = hasNext,
     )
 }
-
-private val V3_SYSTEM_FIELD_NAMES =
-    setOf(EdgeField.VERSION, EdgeField.SOURCE, EdgeField.TARGET, EdgeField.DIRECTION)
-
-private fun escapeV3Keyword(v2Name: String): String = if (v2Name in V3_SYSTEM_FIELD_NAMES) "`$v2Name`" else EdgeField.toV3(v2Name)
 
 // TODO: dedupe with V3MetadataConverter.toV3PrimitiveType once a shared
 // home for V2<->V3 type conversions exists (engine can't depend on server).
