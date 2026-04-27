@@ -1,6 +1,7 @@
 package com.kakao.actionbase.v2.engine.v3
 
 import com.kakao.actionbase.v2.core.code.hbase.Constants as HBaseConstants
+import com.kakao.actionbase.v2.core.types.DataType as V2DataType
 import com.kakao.actionbase.v2.engine.sql.DataFrame as V2DataFrame
 
 import com.kakao.actionbase.core.Constants
@@ -19,6 +20,7 @@ import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.core.storage.HBaseRecord
+import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.binding.MutationRecordsSummary
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
@@ -548,9 +550,7 @@ internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
             schema.fields.map { field ->
                 com.kakao.actionbase.core.metadata.common.StructField(
                     name = EdgeField.toV3(field.name),
-                    type =
-                        com.kakao.actionbase.core.types.PrimitiveType
-                            .valueOf(field.type.name),
+                    type = field.type.toV3PrimitiveType(),
                     comment = field.desc,
                     nullable = field.isNullable,
                 )
@@ -578,3 +578,16 @@ internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
         hasNext = hasNext,
     )
 }
+
+internal fun V2DataType.toV3PrimitiveType(): PrimitiveType =
+    when (this) {
+        V2DataType.BOOLEAN -> PrimitiveType.BOOLEAN
+        V2DataType.BYTE -> PrimitiveType.BYTE
+        V2DataType.SHORT -> PrimitiveType.SHORT
+        V2DataType.INT -> PrimitiveType.INT
+        V2DataType.LONG -> PrimitiveType.LONG
+        V2DataType.FLOAT -> PrimitiveType.FLOAT
+        V2DataType.DOUBLE -> PrimitiveType.DOUBLE
+        V2DataType.STRING -> PrimitiveType.STRING
+        V2DataType.DECIMAL, V2DataType.JSON -> PrimitiveType.OBJECT
+    }

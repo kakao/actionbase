@@ -1,5 +1,9 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.v2.core.types.StructType as V2StructType
+import com.kakao.actionbase.v2.engine.sql.DataFrame as V2DataFrame
+import com.kakao.actionbase.v2.engine.sql.Row as V2Row
+
 import com.kakao.actionbase.core.edge.mapper.EdgeCacheRecordMapper
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
@@ -8,7 +12,10 @@ import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.core.state.StateValue
+import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.v2.core.code.hbase.Constants
+import com.kakao.actionbase.v2.core.types.DataType
+import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.mergeQualifiers
 import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.specialStateValueToNull
 
@@ -392,6 +399,223 @@ class V2BackedTableBindingTest {
             assertNull(result.properties["deleted"]?.value)
             assertNull(result.properties["unset"]?.value)
             assertEquals(42, result.properties["number"]?.value)
+        }
+    }
+
+    @Nested
+    inner class V2DataFrameToV3 {
+        @Test
+        fun `empty rows produce empty v3 DataFrame with total 0`() {
+            val v2 = V2DataFrame(rows = emptyList(), schema = V2StructType())
+
+            val v3 = v2.toV3()
+
+            assertTrue(v3.rows.isEmpty())
+            assertEquals(0L, v3.total)
+            assertNull(v3.offset)
+            assertEquals(false, v3.hasNext)
+        }
+
+        @Test
+        fun `v2 edge field names are translated to v3 names in schema and rows`() {
+            val v2Schema =
+                V2StructType(
+                    arrayOf(
+                        Field("src", DataType.STRING, false, "source field"),
+                        Field("tgt", DataType.STRING, false, "target field"),
+                        Field("ts", DataType.LONG, false, "version field"),
+                        Field("dir", DataType.STRING, false, "direction field"),
+                    ),
+                )
+            val v2 =
+                V2DataFrame(
+                    rows = listOf(V2Row(arrayOf("user", "post", 100L, "OUT"))),
+                    schema = v2Schema,
+                )
+
+            val v3 = v2.toV3()
+
+            assertEquals(listOf("source", "target", "version", "direction"), v3.schema.fields.map { it.name })
+            assertEquals("user", v3.rows[0].data["source"])
+            assertEquals("post", v3.rows[0].data["target"])
+            assertEquals(100L, v3.rows[0].data["version"])
+            assertEquals("OUT", v3.rows[0].data["direction"])
+        }
+
+        @Test
+        fun `non-edge field names are passed through unchanged`() {
+            val v2Schema = V2StructType(arrayOf(Field("score", DataType.INT, true, "")))
+            val v2 = V2DataFrame(rows = listOf(V2Row(arrayOf(42))), schema = v2Schema)
+
+            val v3 = v2.toV3()
+
+            assertEquals("score", v3.schema.fields[0].name)
+            assertEquals(42, v3.rows[0].data["score"])
+        }
+
+        @Test
+        fun `each v2 DataType maps to the corresponding v3 PrimitiveType`() {
+            val v2Schema =
+                V2StructType(
+                    arrayOf(
+                        Field("b", DataType.BOOLEAN, false, ""),
+                        Field("by", DataType.BYTE, false, ""),
+                        Field("s", DataType.SHORT, false, ""),
+                        Field("i", DataType.INT, false, ""),
+                        Field("l", DataType.LONG, false, ""),
+                        Field("f", DataType.FLOAT, false, ""),
+                        Field("d", DataType.DOUBLE, false, ""),
+                        Field("str", DataType.STRING, false, ""),
+                    ),
+                )
+            val v2 = V2DataFrame(rows = emptyList(), schema = v2Schema)
+
+            val types = v2.toV3().schema.fields.map { it.type }
+
+            assertEquals(
+                listOf(
+                    PrimitiveType.BOOLEAN,
+                    PrimitiveType.BYTE,
+                    PrimitiveType.SHORT,
+                    PrimitiveType.INT,
+                    PrimitiveType.LONG,
+                    PrimitiveType.FLOAT,
+                    PrimitiveType.DOUBLE,
+                    PrimitiveType.STRING,
+                ),
+                types,
+            )
+        }
+
+        @Test
+        fun `JSON and DECIMAL DataTypes both map to OBJECT PrimitiveType`() {
+            val v2Schema =
+                V2StructType(
+                    arrayOf(
+                        Field("payload", DataType.JSON, true, ""),
+                        Field("amount", DataType.DECIMAL, true, ""),
+                    ),
+                )
+            val v2 = V2DataFrame(rows = emptyList(), schema = v2Schema)
+
+            val v3 = v2.toV3()
+
+            assertEquals(PrimitiveType.OBJECT, v3.schema.fields[0].type)
+            assertEquals(PrimitiveType.OBJECT, v3.schema.fields[1].type)
+        }
+
+        @Test
+        fun `field comment and nullable flag are preserved in v3 schema`() {
+            val v2Schema =
+                V2StructType(
+                    arrayOf(
+                        Field("score", DataType.INT, true, "user score"),
+                        Field("name", DataType.STRING, false, "display name"),
+                    ),
+                )
+            val v2 = V2DataFrame(rows = emptyList(), schema = v2Schema)
+
+            val v3 = v2.toV3()
+
+            assertEquals("user score", v3.schema.fields[0].comment)
+            assertEquals(true, v3.schema.fields[0].nullable)
+            assertEquals("display name", v3.schema.fields[1].comment)
+            assertEquals(false, v3.schema.fields[1].nullable)
+        }
+
+        @Test
+        fun `total parameter overrides rows size`() {
+            val v2Schema = V2StructType(arrayOf(Field("a", DataType.INT, false, "")))
+            val v2 =
+                V2DataFrame(
+                    rows = listOf(V2Row(arrayOf(1)), V2Row(arrayOf(2))),
+                    schema = v2Schema,
+                )
+
+            val v3 = v2.toV3(total = 999L)
+
+            assertEquals(999L, v3.total)
+            assertEquals(2, v3.rows.size)
+        }
+
+        @Test
+        fun `total defaults to rows size when not provided`() {
+            val v2Schema = V2StructType(arrayOf(Field("a", DataType.INT, false, "")))
+            val v2 =
+                V2DataFrame(
+                    rows = listOf(V2Row(arrayOf(1)), V2Row(arrayOf(2)), V2Row(arrayOf(3))),
+                    schema = v2Schema,
+                )
+
+            assertEquals(3L, v2.toV3().total)
+        }
+
+        @Test
+        fun `offset is preserved when hasNext is true`() {
+            val v2Schema = V2StructType(arrayOf(Field("a", DataType.INT, false, "")))
+            val v2 =
+                V2DataFrame(
+                    rows = listOf(V2Row(arrayOf(1))),
+                    schema = v2Schema,
+                    offsets = listOf("offset-token"),
+                    hasNext = listOf(true),
+                )
+
+            val v3 = v2.toV3()
+
+            assertEquals("offset-token", v3.offset)
+            assertEquals(true, v3.hasNext)
+        }
+
+        @Test
+        fun `offset is dropped when hasNext is false`() {
+            val v2Schema = V2StructType(arrayOf(Field("a", DataType.INT, false, "")))
+            val v2 =
+                V2DataFrame(
+                    rows = listOf(V2Row(arrayOf(1))),
+                    schema = v2Schema,
+                    offsets = listOf("offset-token"),
+                    hasNext = listOf(false),
+                )
+
+            val v3 = v2.toV3()
+
+            assertNull(v3.offset)
+            assertEquals(false, v3.hasNext)
+        }
+
+        @Test
+        fun `offset is dropped when hasNext list is empty`() {
+            val v2Schema = V2StructType(arrayOf(Field("a", DataType.INT, false, "")))
+            val v2 =
+                V2DataFrame(
+                    rows = listOf(V2Row(arrayOf(1))),
+                    schema = v2Schema,
+                    offsets = listOf("offset-token"),
+                    hasNext = emptyList(),
+                )
+
+            val v3 = v2.toV3()
+
+            assertNull(v3.offset)
+            assertEquals(false, v3.hasNext)
+        }
+
+        @Test
+        fun `offset is null when offsets list has multiple entries`() {
+            val v2Schema = V2StructType(arrayOf(Field("a", DataType.INT, false, "")))
+            val v2 =
+                V2DataFrame(
+                    rows = listOf(V2Row(arrayOf(1))),
+                    schema = v2Schema,
+                    offsets = listOf("a", "b"),
+                    hasNext = listOf(true),
+                )
+
+            val v3 = v2.toV3()
+
+            assertNull(v3.offset)
+            assertEquals(false, v3.hasNext)
         }
     }
 }
