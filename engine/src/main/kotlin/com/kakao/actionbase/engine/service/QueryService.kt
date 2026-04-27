@@ -171,7 +171,14 @@ class QueryService(
                     version = row[EdgeField.VERSION] as Long,
                     source = source,
                     target = target,
-                    properties = row.data.filterKeys { it !in EDGE_FIELDS },
+                    // Strip the V2->V3 collision-escape backticks: backticks are an
+                    // internal disambiguation for the DataFrame row map, but
+                    // EdgePayload.properties is its own namespace separate from the
+                    // version/source/target fields, so the natural names are safe to use.
+                    properties =
+                        row.data
+                            .filterKeys { it !in EDGE_FIELDS }
+                            .mapKeys { (k, _) -> k.removeSurrounding("`") },
                     context = emptyMap(),
                 )
             }

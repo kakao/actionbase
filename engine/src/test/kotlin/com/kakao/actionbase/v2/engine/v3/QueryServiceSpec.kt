@@ -237,7 +237,7 @@ class QueryServiceSpec :
                 .verifyComplete()
         }
 
-        "get: colliding user property fields surface under backticked keys" {
+        "get: colliding user property fields surface in properties without leaking backticks" {
             setupCollisionLabel()
             queryService
                 .gets(GraphFixtures.serviceName, collisionTable, listOf(collisionEdge.src), listOf(collisionEdge.tgt))
@@ -248,9 +248,9 @@ class QueryServiceSpec :
                     payload.version shouldBe collisionEdge.ts
                     payload.source.toString() shouldBe collisionEdge.src.toString()
                     payload.target.toString() shouldBe collisionEdge.tgt.toString()
-                    payload.properties["`version`"] shouldBe 999L
-                    payload.properties["`source`"] shouldBe "userSrcValue"
-                    payload.properties["`target`"] shouldBe "userTgtValue"
+                    payload.properties["version"] shouldBe 999L
+                    payload.properties["source"] shouldBe "userSrcValue"
+                    payload.properties["target"] shouldBe "userTgtValue"
                     payload.properties["createdAt"] shouldBe 50L
                 }.verifyComplete()
         }
@@ -264,7 +264,7 @@ class QueryServiceSpec :
                 .verifyComplete()
         }
 
-        "scan: colliding user property fields surface under backticked keys" {
+        "scan: colliding user property fields surface in properties without leaking backticks" {
             setupCollisionLabel()
             queryService
                 .scan(GraphFixtures.serviceName, collisionTable, collisionIndex, collisionEdge.src, Direction.OUT, limit = 10)
@@ -275,9 +275,9 @@ class QueryServiceSpec :
                     payload.version shouldBe collisionEdge.ts
                     payload.source.toString() shouldBe collisionEdge.src.toString()
                     payload.target.toString() shouldBe collisionEdge.tgt.toString()
-                    payload.properties["`version`"] shouldBe 999L
-                    payload.properties["`source`"] shouldBe "userSrcValue"
-                    payload.properties["`target`"] shouldBe "userTgtValue"
+                    payload.properties["version"] shouldBe 999L
+                    payload.properties["source"] shouldBe "userSrcValue"
+                    payload.properties["target"] shouldBe "userTgtValue"
                     payload.properties["createdAt"] shouldBe 50L
                 }.verifyComplete()
         }
