@@ -579,6 +579,8 @@ internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
     )
 }
 
+// TODO: dedupe with V3MetadataConverter.toV3PrimitiveType once a shared
+// home for V2<->V3 type conversions exists (engine can't depend on server).
 internal fun V2DataType.toV3PrimitiveType(): PrimitiveType =
     when (this) {
         V2DataType.BOOLEAN -> PrimitiveType.BOOLEAN
