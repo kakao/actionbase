@@ -454,6 +454,63 @@ class V2BackedTableBindingTest {
         }
 
         @Test
+        fun `user property fields whose name collides with a v3 system field are escaped with backticks`() {
+            val v2Schema =
+                V2StructType(
+                    arrayOf(
+                        Field("ts", DataType.LONG, false, ""),
+                        Field("src", DataType.STRING, false, ""),
+                        Field("tgt", DataType.STRING, false, ""),
+                        // User properties whose names collide with V3 system fields.
+                        Field("version", DataType.LONG, true, ""),
+                        Field("source", DataType.STRING, true, ""),
+                        Field("target", DataType.STRING, true, ""),
+                        Field("direction", DataType.STRING, true, ""),
+                    ),
+                )
+            val v2 =
+                V2DataFrame(
+                    rows = listOf(V2Row(arrayOf(100L, "edgeSrc", "edgeTgt", 999L, "userSrc", "userTgt", "userDir"))),
+                    schema = v2Schema,
+                )
+
+            val v3 = v2.toV3()
+
+            // Edge fields keep their natural V3 names.
+            assertEquals(
+                listOf("version", "source", "target", "`version`", "`source`", "`target`", "`direction`"),
+                v3.schema.fields.map { it.name },
+            )
+            // System values at natural keys.
+            assertEquals(100L, v3.rows[0].data["version"])
+            assertEquals("edgeSrc", v3.rows[0].data["source"])
+            assertEquals("edgeTgt", v3.rows[0].data["target"])
+            // User values at backticked keys.
+            assertEquals(999L, v3.rows[0].data["`version`"])
+            assertEquals("userSrc", v3.rows[0].data["`source`"])
+            assertEquals("userTgt", v3.rows[0].data["`target`"])
+            assertEquals("userDir", v3.rows[0].data["`direction`"])
+        }
+
+        @Test
+        fun `non-colliding user property fields are not escaped`() {
+            val v2Schema =
+                V2StructType(
+                    arrayOf(
+                        Field("createdAt", DataType.LONG, false, ""),
+                        Field("permission", DataType.STRING, true, ""),
+                    ),
+                )
+            val v2 = V2DataFrame(rows = listOf(V2Row(arrayOf(50L, "na"))), schema = v2Schema)
+
+            val v3 = v2.toV3()
+
+            assertEquals(listOf("createdAt", "permission"), v3.schema.fields.map { it.name })
+            assertEquals(50L, v3.rows[0].data["createdAt"])
+            assertEquals("na", v3.rows[0].data["permission"])
+        }
+
+        @Test
         fun `each v2 DataType maps to the corresponding v3 PrimitiveType`() {
             val v2Schema =
                 V2StructType(

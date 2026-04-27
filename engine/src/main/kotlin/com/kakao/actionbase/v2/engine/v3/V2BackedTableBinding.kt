@@ -544,12 +544,20 @@ class V2BackedTableBinding(
     }
 }
 
+/**
+ * Converts a V2 DataFrame to a V3 DataFrame.
+ *
+ * User property fields whose names match V3 system fields (`version`, `source`, `target`,
+ * `direction`) are wrapped in backticks (e.g. `` `version` ``) so they do not shadow the
+ * edge metadata at those keys. This is a workaround; remove it once V3 DataFrame supports
+ * a nested row form that gives user properties their own namespace.
+ */
 internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
     val v3Schema =
         com.kakao.actionbase.core.metadata.common.StructType(
             schema.fields.map { field ->
                 com.kakao.actionbase.core.metadata.common.StructField(
-                    name = EdgeField.toV3(field.name),
+                    name = escapeIfCollides(field.name),
                     type = field.type.toV3PrimitiveType(),
                     comment = field.desc,
                     nullable = field.isNullable,
@@ -562,7 +570,7 @@ internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
                 data =
                     schema.fieldNames
                         .mapIndexed { i, name ->
-                            EdgeField.toV3(name) to row.array[i]
+                            escapeIfCollides(name) to row.array[i]
                         }.toMap(),
                 schema = v3Schema,
             )
@@ -578,6 +586,11 @@ internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
         hasNext = hasNext,
     )
 }
+
+private val V3_SYSTEM_FIELD_NAMES =
+    setOf(EdgeField.VERSION, EdgeField.SOURCE, EdgeField.TARGET, EdgeField.DIRECTION)
+
+private fun escapeIfCollides(v2Name: String): String = if (v2Name in V3_SYSTEM_FIELD_NAMES) "`$v2Name`" else EdgeField.toV3(v2Name)
 
 // TODO: dedupe with V3MetadataConverter.toV3PrimitiveType once a shared
 // home for V2<->V3 type conversions exists (engine can't depend on server).
