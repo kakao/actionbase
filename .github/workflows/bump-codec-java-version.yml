@@ -1,0 +1,80 @@
+name: Bump codec-java Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 0.1.0 for minor, 0.1.1 for patch)'
+        required: true
+        type: string
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Validate version format
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format: $VERSION. Expected: X.Y.Z"
+            exit 1
+          fi
+
+      - name: Determine target branch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          patch=${VERSION##*.}
+          minor_prefix=${VERSION%.*}
+          if [[ "$patch" == "0" ]]; then
+            target_branch=main
+          else
+            target_branch="codec-java/${minor_prefix}.x"
+          fi
+          echo "target_branch=$target_branch" >> $GITHUB_ENV
+          echo "minor_prefix=$minor_prefix" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.target_branch }}
+
+      - name: Check current version matches target branch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          current=$(grep '^version = ' codec-java/build.gradle.kts | head -1 | cut -d'"' -f2)
+          if [[ "$current" != *-SNAPSHOT ]]; then
+            echo "::error::Current codec-java version ($current) on ${{ env.target_branch }} is not a SNAPSHOT"
+            exit 1
+          fi
+          if [[ "$current" != ${{ env.minor_prefix }}.*-SNAPSHOT ]]; then
+            echo "::error::Version $VERSION does not match branch ${{ env.target_branch }} (current: $current)"
+            exit 1
+          fi
+          echo "current_version=$current" >> $GITHUB_ENV
+
+      - name: Update codec-java/build.gradle.kts
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" codec-java/build.gradle.kts
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          base: ${{ env.target_branch }}
+          branch: release/codec-java/v${{ inputs.version }}
+          commit-message: "Bump codec-java version to ${{ inputs.version }}"
+          title: "Bump codec-java version to ${{ inputs.version }}"
+          body: |
+            Bump codec-java version from `${{ env.current_version }}` to `${{ inputs.version }}`.
+            Target: `${{ env.target_branch }}`
+
+            After merging, the following will happen automatically:
+            - Tag `codec-java/v${{ inputs.version }}` will be created
+            - Version will be bumped to the next SNAPSHOT
+          labels: release

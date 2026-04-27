@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - '*.x'
+      - 'codec-java/*.x'
     paths-ignore:
       - 'website/**'
       - 'guides/**'
@@ -19,6 +20,7 @@ on:
     branches:
       - main
       - '*.x'
+      - 'codec-java/*.x'
     types:
       - opened
       - reopened

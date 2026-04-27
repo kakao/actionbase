@@ -1,0 +1,87 @@
+name: Post Release codec-java
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+      - 'codec-java/*.x'
+
+jobs:
+  release:
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/codec-java/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract version
+        run: |
+          version=$(grep '^version = ' codec-java/build.gradle.kts | head -1 | cut -d'"' -f2)
+          major=${version%%.*}
+          rest=${version#*.}
+          minor=${rest%%.*}
+          patch=${version##*.}
+          base=${{ github.event.pull_request.base.ref }}
+
+          echo "version=$version" >> $GITHUB_ENV
+          echo "base_branch=$base" >> $GITHUB_ENV
+          echo "is_patch=$([[ "$base" != "main" ]] && echo true || echo false)" >> $GITHUB_ENV
+          echo "release_branch=codec-java/${major}.${minor}.x" >> $GITHUB_ENV
+          echo "next_minor=${major}.$((minor + 1)).0-SNAPSHOT" >> $GITHUB_ENV
+          echo "next_patch=${major}.${minor}.$((patch + 1))-SNAPSHOT" >> $GITHUB_ENV
+
+      - name: Create tag
+        run: |
+          git tag "codec-java/v${{ env.version }}"
+          git push origin "codec-java/v${{ env.version }}"
+
+      - name: Create release branch (minor release only)
+        if: env.is_patch == 'false'
+        run: |
+          git checkout -b "${{ env.release_branch }}" "codec-java/v${{ env.version }}"
+          sed -i "s/^version = \".*\"/version = \"${{ env.next_patch }}\"/" codec-java/build.gradle.kts
+          git add codec-java/build.gradle.kts
+          git commit -m "Bump codec-java version to ${{ env.next_patch }}"
+          git push origin "${{ env.release_branch }}"
+
+      - name: Bump release branch (patch release only)
+        if: env.is_patch == 'true'
+        run: |
+          git checkout "${{ env.base_branch }}"
+          sed -i "s/^version = \".*\"/version = \"${{ env.next_patch }}\"/" codec-java/build.gradle.kts
+          git add codec-java/build.gradle.kts
+          git commit -m "Bump codec-java version to ${{ env.next_patch }}"
+          git push origin "${{ env.base_branch }}"
+
+      - name: Prepare main for next SNAPSHOT (minor release only)
+        if: env.is_patch == 'false'
+        run: |
+          git checkout main
+          sed -i "s/^version = \".*\"/version = \"${{ env.next_minor }}\"/" codec-java/build.gradle.kts
+
+      - name: Create PR to bump main (minor release only)
+        if: env.is_patch == 'false'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bump-main/codec-java/v${{ env.version }}
+          commit-message: "Bump codec-java version to ${{ env.next_minor }}"
+          title: "Bump codec-java version to ${{ env.next_minor }}"
+          body: |
+            Post-release version bump from `${{ env.version }}` to `${{ env.next_minor }}`.
+
+            Released:
+            - Tag `codec-java/v${{ env.version }}` created
+            - Branch `${{ env.release_branch }}` created with `${{ env.next_patch }}`
+          labels: release
