@@ -557,7 +557,7 @@ internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
         com.kakao.actionbase.core.metadata.common.StructType(
             schema.fields.map { field ->
                 com.kakao.actionbase.core.metadata.common.StructField(
-                    name = escapeIfCollides(field.name),
+                    name = escapeV3Keyword(field.name),
                     type = field.type.toV3PrimitiveType(),
                     comment = field.desc,
                     nullable = field.isNullable,
@@ -570,7 +570,7 @@ internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
                 data =
                     schema.fieldNames
                         .mapIndexed { i, name ->
-                            escapeIfCollides(name) to row.array[i]
+                            escapeV3Keyword(name) to row.array[i]
                         }.toMap(),
                 schema = v3Schema,
             )
@@ -590,7 +590,7 @@ internal fun V2DataFrame.toV3(total: Long? = null): DataFrame {
 private val V3_SYSTEM_FIELD_NAMES =
     setOf(EdgeField.VERSION, EdgeField.SOURCE, EdgeField.TARGET, EdgeField.DIRECTION)
 
-private fun escapeIfCollides(v2Name: String): String = if (v2Name in V3_SYSTEM_FIELD_NAMES) "`$v2Name`" else EdgeField.toV3(v2Name)
+private fun escapeV3Keyword(v2Name: String): String = if (v2Name in V3_SYSTEM_FIELD_NAMES) "`$v2Name`" else EdgeField.toV3(v2Name)
 
 // TODO: dedupe with V3MetadataConverter.toV3PrimitiveType once a shared
 // home for V2<->V3 type conversions exists (engine can't depend on server).
