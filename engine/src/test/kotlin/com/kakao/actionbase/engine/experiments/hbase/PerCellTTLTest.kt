@@ -39,7 +39,7 @@ class PerCellTTLTest(
         - Delete then TTL        | Delete, Put(20), Delay(50)      | ~
         - Short delay TTL active | Put(20), Delay(5)               | value_0
         - Increment then Delete  | Increment, Delete               | ~
-        - Multiple Increments    | Increment, Increment, Increment | '3'
+        - Multiple Increments    | Increment, Increment, Increment | 3
         """,
     )
     fun testHBaseTTLOperations(
