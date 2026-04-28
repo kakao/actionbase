@@ -145,6 +145,8 @@ class PrettyObjectWriter(
     private fun tryRender(value: Any): String = prettyPrinter.writeValueAsString(value)
 
     companion object {
+        val DEFAULT: PrettyObjectWriter = PrettyObjectWriter(indentSize = 2, lineLengthLimit = 80)
+
         private val mapper =
             jacksonObjectMapper().apply {
                 setDefaultPrettyPrinter(PrettyPrinter())

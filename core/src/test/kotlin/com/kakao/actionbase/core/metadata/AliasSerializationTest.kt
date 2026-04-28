@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import com.fasterxml.jackson.module.kotlin.readValue
 
 class AliasSerializationTest {
-    val prettyWriter = PrettyObjectWriter(indentSize = 2, lineLengthLimit = 80)
+    val prettyWriter = PrettyObjectWriter.DEFAULT
 
     val objectMapper = prettyWriter.objectMapper
 
