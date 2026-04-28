@@ -26,10 +26,6 @@ class ObjectSourceParameterResolver(
         parameterContext: ParameterContext,
         extensionContext: ExtensionContext,
     ): Boolean {
-        // Only resolve parameters of the test method itself. Without this guard
-        // the resolver competes with class-level extensions for constructor and
-        // lifecycle parameters (e.g., HBaseTestingClusterExtension injecting
-        // Table into the test class constructor).
         val testMethod = extensionContext.testMethod.orElse(null) ?: return false
         if (parameterContext.declaringExecutable != testMethod) return false
         return parameterContext.index < parameterNames.size
