@@ -2,6 +2,8 @@ package com.kakao.actionbase.core.v2.metadata
 
 import com.kakao.actionbase.core.metadata.AliasDescriptor as V3AliasDescriptor
 
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 import com.kakao.actionbase.test.json.PrettyObjectWriter
 
 import kotlin.test.Ignore
@@ -11,42 +13,39 @@ import kotlin.test.assertEquals
 import com.fasterxml.jackson.module.kotlin.readValue
 
 class V2AliasSerializationTest {
-    val prettyWriter = PrettyObjectWriter(indentSize = 2, lineLengthLimit = 80)
+    val prettyWriter = PrettyObjectWriter.DEFAULT
 
     val objectMapper = prettyWriter.objectMapper
 
-    @Test
-    fun `test service serialization`() {
-        // given
-        val v2AliasDescriptor =
-            V2AliasDescriptor(
-                name = "gift.gift_like_product_v1",
-                desc = "Gift Wish",
-                active = true,
-                target = "gift.gift_like_product_v1_20240605_102816",
-            )
-        // when
-        val actual = prettyWriter.writeValueAsString(v2AliasDescriptor)
-
-        // then
-        val expected =
-            """
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - descriptor: {
+              "name": "gift.gift_like_product_v1",
+              "desc": "Gift Wish",
+              "active": true,
+              "target": "gift.gift_like_product_v1_20240605_102816"
+            }
+          expected: |-
             {
               "name": "gift.gift_like_product_v1",
               "target": "gift.gift_like_product_v1_20240605_102816",
               "desc": "Gift Wish",
               "active": true
             }
-            """.trimIndent()
-
-        assertEquals(expected, actual)
+        """,
+    )
+    fun `serializes to JSON`(
+        descriptor: V2AliasDescriptor,
+        expected: String,
+    ) {
+        assertEquals(expected, prettyWriter.writeValueAsString(descriptor))
     }
 
-    @Test
-    fun `test alias deserialization`() {
-        // given
-        val json =
-            """
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - input: |-
             {
               "active": true,
               "name": "gift.gift_like_product_v1",
@@ -58,52 +57,46 @@ class V2AliasSerializationTest {
                 "desc": "some redundant label information"
               }
             }
-            """.trimIndent()
-
-        // when
-        val actual = objectMapper.readValue<V2AliasDescriptor>(json)
-
-        // then
-        val expected =
-            V2AliasDescriptor(
-                name = "gift.gift_like_product_v1",
-                desc = "Gift Wish",
-                active = true,
-                target = "gift.gift_like_product_v1_20240605_102816",
-            )
-        assertEquals(expected, actual)
+          expected: {
+              "name": "gift.gift_like_product_v1",
+              "desc": "Gift Wish",
+              "active": true,
+              "target": "gift.gift_like_product_v1_20240605_102816"
+            }
+        """,
+    )
+    fun `deserializes from JSON`(
+        input: String,
+        expected: V2AliasDescriptor,
+    ) {
+        assertEquals(expected, objectMapper.readValue<V2AliasDescriptor>(input))
     }
 
-    @Test
-    fun `test service to v3 object`() {
-        // given
-        val v2AliasDescriptor =
-            V2AliasDescriptor(
-                name = "gift.gift_like_product_v1",
-                desc = "Gift Wish",
-                active = true,
-                target = "gift.gift_like_product_v1_20240605_102816",
-            )
-
-        // when
-        val actual = v2AliasDescriptor.toV3("test_tenant")
-
-        // then
-        val expected =
-            V3AliasDescriptor(
-                tenant = "test_tenant",
-                database = "gift",
-                alias = "gift_like_product_v1",
-                table = "gift_like_product_v1_20240605_102816",
-                comment = "Gift Wish",
-                active = true,
-                revision = -1,
-                createdAt = -1,
-                createdBy = "",
-                updatedAt = -1,
-                updatedBy = "",
-            )
-        assertEquals(expected, actual)
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - tenant: test_tenant
+          descriptor: {
+              "name": "gift.gift_like_product_v1",
+              "desc": "Gift Wish",
+              "active": true,
+              "target": "gift.gift_like_product_v1_20240605_102816"
+            }
+          expected: {
+              "tenant": "test_tenant",
+              "database": "gift",
+              "alias": "gift_like_product_v1",
+              "table": "gift_like_product_v1_20240605_102816",
+              "comment": "Gift Wish"
+            }
+        """,
+    )
+    fun `converts to V3 object`(
+        tenant: String,
+        descriptor: V2AliasDescriptor,
+        expected: V3AliasDescriptor,
+    ) {
+        assertEquals(expected, descriptor.toV3(tenant))
     }
 
     @Ignore

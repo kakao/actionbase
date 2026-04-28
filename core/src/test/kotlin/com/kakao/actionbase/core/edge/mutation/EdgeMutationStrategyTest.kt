@@ -6,82 +6,98 @@ import com.kakao.actionbase.core.edge.record.EdgeCountRecord
 import com.kakao.actionbase.core.edge.record.EdgeStateRecord
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+import com.kakao.actionbase.test.documentations.params.TableSource
 
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class EdgeMutationStrategyTest {
+    private fun strategyOf(name: String): EdgeMutationStrategy =
+        when (name) {
+            "Edge" -> EdgeMutationStrategy.Edge
+            "MultiEdge" -> EdgeMutationStrategy.MultiEdge
+            else -> error("unknown strategy: $name")
+        }
+
+    private fun recordOf(
+        strategy: String,
+        source: Any = "userA",
+        target: Any = "postX",
+        active: Boolean = true,
+        version: Long = 1L,
+    ): EdgeStateRecord =
+        when (strategy) {
+            "Edge" -> edgeRecord(source = source, target = target, active = active, version = version)
+            "MultiEdge" -> multiEdgeRecord(id = "edgeId1", source = source, target = target, active = active, version = version)
+            else -> error("unknown strategy: $strategy")
+        }
+
     @Nested
     inner class DirectedSource {
-        @Test
-        fun `Edge OUT returns key source`() {
-            val record = edgeRecord(source = "userA", target = "postX", active = true)
-            assertEquals("userA", EdgeMutationStrategy.Edge.directedSource(record, Direction.OUT))
-        }
-
-        @Test
-        fun `Edge IN returns key target`() {
-            val record = edgeRecord(source = "userA", target = "postX", active = true)
-            assertEquals("postX", EdgeMutationStrategy.Edge.directedSource(record, Direction.IN))
-        }
-
-        @Test
-        fun `MultiEdge OUT returns properties _source`() {
-            val record = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true)
-            assertEquals("userA", EdgeMutationStrategy.MultiEdge.directedSource(record, Direction.OUT))
-        }
-
-        @Test
-        fun `MultiEdge IN returns properties _target`() {
-            val record = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true)
-            assertEquals("postX", EdgeMutationStrategy.MultiEdge.directedSource(record, Direction.IN))
+        @ObjectSourceParameterizedTest
+        @TableSource(
+            """
+            # strategy   | direction | expected
+            - Edge       | OUT       | userA   # Edge OUT  → key.source
+            - Edge       | IN        | postX   # Edge IN   → key.target
+            - MultiEdge  | OUT       | userA   # MultiEdge → properties._source
+            - MultiEdge  | IN        | postX   # MultiEdge → properties._target
+            """,
+        )
+        fun `returns the configured source for the direction`(
+            strategy: String,
+            direction: Direction,
+            expected: String,
+        ) {
+            val record = recordOf(strategy)
+            assertEquals(expected, strategyOf(strategy).directedSource(record, direction))
         }
     }
 
     @Nested
     inner class DirectedTarget {
-        @Test
-        fun `Edge OUT returns key target`() {
-            val record = edgeRecord(source = "userA", target = "postX", active = true)
-            assertEquals("postX", EdgeMutationStrategy.Edge.directedTarget(record, Direction.OUT))
-        }
-
-        @Test
-        fun `Edge IN returns key source`() {
-            val record = edgeRecord(source = "userA", target = "postX", active = true)
-            assertEquals("userA", EdgeMutationStrategy.Edge.directedTarget(record, Direction.IN))
-        }
-
-        @Test
-        fun `MultiEdge OUT returns key source (id)`() {
-            val record = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true)
-            assertEquals("edgeId1", EdgeMutationStrategy.MultiEdge.directedTarget(record, Direction.OUT))
-        }
-
-        @Test
-        fun `MultiEdge IN returns key source (id)`() {
-            val record = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true)
-            assertEquals("edgeId1", EdgeMutationStrategy.MultiEdge.directedTarget(record, Direction.IN))
+        @ObjectSourceParameterizedTest
+        @TableSource(
+            """
+            # strategy   | direction | expected
+            - Edge       | OUT       | postX    # Edge swaps source/target
+            - Edge       | IN        | userA
+            - MultiEdge  | OUT       | edgeId1  # MultiEdge always uses key.source (id)
+            - MultiEdge  | IN        | edgeId1
+            """,
+        )
+        fun `returns the configured target for the direction`(
+            strategy: String,
+            direction: Direction,
+            expected: String,
+        ) {
+            val record = recordOf(strategy)
+            assertEquals(expected, strategyOf(strategy).directedTarget(record, direction))
         }
     }
 
     @Nested
     inner class CountRecordOnDelete {
-        @Test
-        fun `Edge returns after record`() {
-            val before = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
-            val after = edgeRecord(source = "userA", target = "postX", active = false, version = 2)
-            assertEquals(after, EdgeMutationStrategy.Edge.countRecordOnDelete(before, after))
-        }
-
-        @Test
-        fun `MultiEdge returns before record`() {
-            val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
-            val after = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = false, version = 2)
-            assertEquals(before, EdgeMutationStrategy.MultiEdge.countRecordOnDelete(before, after))
+        @ObjectSourceParameterizedTest
+        @TableSource(
+            """
+            # Edge counts the after record (because source/target are stable across the
+            # delete); MultiEdge counts the before record (after's properties are nulled).
+            - Edge      | after
+            - MultiEdge | before
+            """,
+        )
+        fun `picks the count record by strategy`(
+            strategy: String,
+            which: String,
+        ) {
+            val before = recordOf(strategy, active = true, version = 1)
+            val after = recordOf(strategy, active = false, version = 2)
+            val expected = if (which == "before") before else after
+            assertEquals(expected, strategyOf(strategy).countRecordOnDelete(before, after))
         }
     }
 
@@ -102,43 +118,39 @@ class EdgeMutationStrategyTest {
                 }
             }
 
-        @Test
-        fun `Edge always returns empty list`() {
-            val before = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
-            val after = edgeRecord(source = "userB", target = "postY", active = true, version = 2)
-            val result = EdgeMutationStrategy.Edge.countRecordsOnUpdate(before, after, DirectionType.BOTH, stubBuildCountRecords)
-            assertTrue(result.isEmpty())
+        @ObjectSourceParameterizedTest
+        @TableSource(
+            """
+            # Edge never produces records on update; MultiEdge produces 4 (2 directions
+            # × decrement+increment) iff source or target changed.
+            # strategy    | beforeSrc | afterSrc | beforeTgt | afterTgt | expectedSize
+            - Edge        | userA     | userB    | postX     | postY    | 0   # Edge ignores changes
+            - MultiEdge   | userA     | userA    | postX     | postX    | 0   # unchanged
+            - MultiEdge   | userA     | userB    | postX     | postX    | 4   # source changed
+            - MultiEdge   | userA     | userA    | postX     | postY    | 4   # target changed
+            """,
+        )
+        fun `produces records only when MultiEdge source or target changed`(
+            strategy: String,
+            beforeSrc: String,
+            afterSrc: String,
+            beforeTgt: String,
+            afterTgt: String,
+            expectedSize: Int,
+        ) {
+            val before = recordOf(strategy, source = beforeSrc, target = beforeTgt, version = 1)
+            val after = recordOf(strategy, source = afterSrc, target = afterTgt, version = 2)
+            val result =
+                strategyOf(strategy).countRecordsOnUpdate(before, after, DirectionType.BOTH, stubBuildCountRecords)
+            assertEquals(expectedSize, result.size)
         }
 
         @Test
-        fun `MultiEdge returns records when source changes`() {
+        fun `MultiEdge change produces matching decrement and increment records`() {
             val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
             val after = multiEdgeRecord(id = "edgeId1", source = "userB", target = "postX", active = true, version = 2)
-            val result = EdgeMutationStrategy.MultiEdge.countRecordsOnUpdate(before, after, DirectionType.BOTH, stubBuildCountRecords)
-            assertEquals(4, result.size)
-        }
-
-        @Test
-        fun `MultiEdge returns records when target changes`() {
-            val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
-            val after = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postY", active = true, version = 2)
-            val result = EdgeMutationStrategy.MultiEdge.countRecordsOnUpdate(before, after, DirectionType.BOTH, stubBuildCountRecords)
-            assertEquals(4, result.size)
-        }
-
-        @Test
-        fun `MultiEdge returns empty when source and target unchanged`() {
-            val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
-            val after = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 2)
-            val result = EdgeMutationStrategy.MultiEdge.countRecordsOnUpdate(before, after, DirectionType.BOTH, stubBuildCountRecords)
-            assertTrue(result.isEmpty())
-        }
-
-        @Test
-        fun `MultiEdge decrement records use -1 and increment records use 1`() {
-            val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
-            val after = multiEdgeRecord(id = "edgeId1", source = "userB", target = "postX", active = true, version = 2)
-            val result = EdgeMutationStrategy.MultiEdge.countRecordsOnUpdate(before, after, DirectionType.BOTH, stubBuildCountRecords)
+            val result =
+                EdgeMutationStrategy.MultiEdge.countRecordsOnUpdate(before, after, DirectionType.BOTH, stubBuildCountRecords)
             val decrementRecords = result.filter { it.value == -1L }
             val incrementRecords = result.filter { it.value == 1L }
             assertEquals(2, decrementRecords.size)

@@ -16,11 +16,12 @@ class AliasSerializationTest {
     @ObjectSourceParameterizedTest
     @ObjectSource(
         """
-        - descriptor:
-            tenant: test_tenant
-            database: test_database
-            alias: test_alias
-            table: test_table
+        - descriptor: {
+              "tenant": "test_tenant",
+              "database": "test_database",
+              "alias": "test_alias",
+              "table": "test_table"
+            }
           expected: |-
             {
               "tenant": "test_tenant",
@@ -48,11 +49,12 @@ class AliasSerializationTest {
     @ObjectSource(
         """
         - input: '{"tenant":"test_tenant","database":"test_database","alias":"test_alias","table":"test_table"}'
-          expected:
-            tenant: test_tenant
-            database: test_database
-            alias: test_alias
-            table: test_table
+          expected: {
+              "tenant": "test_tenant",
+              "database": "test_database",
+              "alias": "test_alias",
+              "table": "test_table"
+            }
         """,
     )
     fun `deserializes from JSON`(

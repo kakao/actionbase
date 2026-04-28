@@ -1,25 +1,23 @@
 package com.kakao.actionbase.core.metadata.common
 
-import com.kakao.actionbase.core.java.codec.common.hbase.Order
-import com.kakao.actionbase.core.types.PrimitiveType
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 import com.kakao.actionbase.test.json.PrettyObjectWriter
 
 import kotlin.test.assertEquals
 
-import org.junit.jupiter.api.Test
-
 import com.fasterxml.jackson.module.kotlin.readValue
 
 class EdgeSchemaSerializationTest {
-    val prettyWriter = PrettyObjectWriter(indentSize = 2, lineLengthLimit = 80)
+    val prettyWriter = PrettyObjectWriter.DEFAULT
 
     val objectMapper = prettyWriter.objectMapper
 
-    @Test
-    fun `deserialize struct type`() {
-        // given
-        val schemaJson =
-            """
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - name: struct type
+          input: |-
             {
               "type": "edge",
               "source": {"type": "long", "comment": "Source node ID"},
@@ -48,39 +46,26 @@ class EdgeSchemaSerializationTest {
               ],
               "groups": []
             }
-            """.trimIndent()
-
-        // when
-        val actual = objectMapper.readValue<ModelSchema>(schemaJson)
-
-        // then
-        val expected =
-            ModelSchema.Edge(
-                source = Field(type = PrimitiveType.LONG, comment = "Source node ID"),
-                target = Field(type = PrimitiveType.LONG, comment = "Target node ID"),
-                properties =
-                    listOf(
-                        StructField(name = "id", type = PrimitiveType.LONG, comment = "Identifier", nullable = false),
-                        StructField(name = "name", type = PrimitiveType.STRING, comment = "name", nullable = false),
-                    ),
-                direction = DirectionType.BOTH,
-                groups = emptyList(),
-                indexes =
-                    listOf(
-                        Index(
-                            index = "updated_at_desc",
-                            fields = listOf(IndexField(field = "version", order = Order.DESC)),
-                            comment = "recent updates",
-                        ),
-                    ),
-            )
-        assertEquals(expected, actual)
-    }
-
-    @Test
-    fun `deserialize edge schema with caches`() {
-        val schemaJson =
-            """
+          expected: {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [
+                {"name": "id", "type": "long", "comment": "Identifier", "nullable": false},
+                {"name": "name", "type": "string", "comment": "name", "nullable": false}
+              ],
+              "direction": "BOTH",
+              "groups": [],
+              "indexes": [
+                {
+                  "index": "updated_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}],
+                  "comment": "recent updates"
+                }
+              ]
+            }
+        - name: with caches
+          input: |-
             {
               "type": "edge",
               "source": {"type": "long", "comment": "Source node ID"},
@@ -102,65 +87,58 @@ class EdgeSchemaSerializationTest {
                 }
               ]
             }
-            """.trimIndent()
-
-        val actual = objectMapper.readValue<ModelSchema>(schemaJson)
-
-        val expected =
-            ModelSchema.Edge(
-                source = Field(type = PrimitiveType.LONG, comment = "Source node ID"),
-                target = Field(type = PrimitiveType.LONG, comment = "Target node ID"),
-                properties = emptyList(),
-                direction = DirectionType.OUT,
-                indexes =
-                    listOf(
-                        Index(
-                            index = "created_at_desc",
-                            fields = listOf(IndexField(field = "version", order = Order.DESC)),
-                        ),
-                    ),
-                caches =
-                    listOf(
-                        Cache(
-                            cache = "created_at_desc",
-                            fields = listOf(IndexField(field = "version", order = Order.DESC)),
-                            limit = 1,
-                        ),
-                    ),
-            )
-        assertEquals(expected, actual)
+          expected: {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [],
+              "direction": "OUT",
+              "indexes": [
+                {
+                  "index": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}]
+                }
+              ],
+              "caches": [
+                {
+                  "cache": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}],
+                  "limit": 1
+                }
+              ]
+            }
+        """,
+    )
+    fun `deserializes edge schema from JSON`(
+        name: String,
+        input: String,
+        expected: ModelSchema,
+    ) {
+        assertEquals(expected, objectMapper.readValue<ModelSchema>(input))
     }
 
-    @Test
-    fun `serialize edge schema`() {
-        // given
-        val edgeSchema =
-            ModelSchema.Edge(
-                source = Field(type = PrimitiveType.LONG, comment = "Source node ID"),
-                target = Field(type = PrimitiveType.LONG, comment = "Target node ID"),
-                properties =
-                    listOf(
-                        StructField(name = "id", type = PrimitiveType.LONG, comment = "Identifier", nullable = false),
-                        StructField(name = "name", type = PrimitiveType.STRING, comment = "name", nullable = false),
-                    ),
-                direction = DirectionType.BOTH,
-                groups = emptyList(),
-                indexes =
-                    listOf(
-                        Index(
-                            index = "updated_at_desc",
-                            fields = listOf(IndexField(field = "version", order = Order.DESC)),
-                            comment = "recent updates",
-                        ),
-                    ),
-            )
-
-        // when
-        val actual = prettyWriter.writeValueAsString(edgeSchema)
-
-        // then
-        val expected =
-            """
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - schema: {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [
+                {"name": "id", "type": "long", "comment": "Identifier", "nullable": false},
+                {"name": "name", "type": "string", "comment": "name", "nullable": false}
+              ],
+              "direction": "BOTH",
+              "groups": [],
+              "indexes": [
+                {
+                  "index": "updated_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}],
+                  "comment": "recent updates"
+                }
+              ]
+            }
+          expected: |-
             {
               "type": "edge",
               "source": {"type": "long", "comment": "Source node ID"},
@@ -192,7 +170,12 @@ class EdgeSchemaSerializationTest {
               "groups": [],
               "caches": []
             }
-            """.trimIndent()
-        assertEquals(expected, actual)
+        """,
+    )
+    fun `serializes edge schema to JSON`(
+        schema: ModelSchema,
+        expected: String,
+    ) {
+        assertEquals(expected, prettyWriter.writeValueAsString(schema))
     }
 }
