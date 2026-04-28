@@ -90,7 +90,7 @@ class ObjectSourceExtension : TestTemplateInvocationContextProvider {
                         require(trimmed.isNotEmpty()) {
                             "@TableSource: empty cell in row '$row'. Use ~ for null."
                         }
-                        ObjectMappers.YAML.readValue<Any?>(trimmed)
+                        if (trimmed == "~") null else trimmed
                     }
                 else -> error("@TableSource: each row must be a list or a pipe-delimited string, got ${row?.javaClass}")
             }

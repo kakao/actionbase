@@ -91,9 +91,7 @@ class ProcessingOrderTest {
           - A2; I1             | 2 | 1 | 2 | 1 | 1 | 1 | ~ | T | n | 8 | U | U | 4
 
           # ISSUE-3233 see [com.kakao.actionbase.v2.engine.IssueSpec]
-          # in the v2 engine| can not invalidate "c"
-          # I2; C1               | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| U | 4",
-          # C1; I2               | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| **c** | 4",
+          # in the v2 engine, can not invalidate "c"
           - I2; C1             | 2 | 2 | 2 | 2 | 2 | 2 | ~ | T | n | 7 | U | U | 4
           - C1; I2             | 2 | 2 | 2 | 2 | 2 | 2 | ~ | T | n | 7 | U | U | 4
         """,

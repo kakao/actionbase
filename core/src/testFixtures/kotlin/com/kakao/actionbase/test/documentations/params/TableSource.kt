@@ -20,10 +20,13 @@ package com.kakao.actionbase.test.documentations.params
  *    ```
  *
  * 2. **Pipe-delimited string** `a | b | c` — recommended for wide matrices
- *    where column-by-column scannability matters. Each cell is parsed as a
- *    YAML scalar (so `~` is null, bare numbers are typed, single-quoted
- *    strings keep their content). YAML strips `#` comments and blank lines
- *    between items naturally.
+ *    where column-by-column scannability matters. Each cell is the trimmed
+ *    text between `|` separators; cells stay as `String` and are coerced to
+ *    the test parameter's declared type (Int, Long, Boolean, Double, enum,
+ *    String, ...) by Jackson at parameter-resolution time. The only special
+ *    cell is `~`, which maps to `null` (so a literal `"~"` String cannot be
+ *    expressed in pipe form — use a flow row instead). YAML strips `#`
+ *    comments and blank lines between items naturally.
  *
  *    ```
  *    @TableSource("""
