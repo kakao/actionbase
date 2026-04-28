@@ -12,14 +12,12 @@ class MetadataStatusTest {
         @ObjectSourceParameterizedTest
         @TableSource(
             """
-            columns: [status, active, expected]
-            rows:
-              - [ACTIVE,   true,  true]
-              - [ACTIVE,   false, false]
-              - [INACTIVE, true,  false]
-              - [INACTIVE, false, true]
-              - [ALL,      true,  true]
-              - [ALL,      false, true]
+            - ACTIVE   | true  | true
+            - ACTIVE   | false | false
+            - INACTIVE | true  | false
+            - INACTIVE | false | true
+            - ALL      | true  | true
+            - ALL      | false | true
             """,
         )
         fun `matches reflects status against active flag`(

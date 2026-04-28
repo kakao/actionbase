@@ -28,14 +28,14 @@ class ObjectSourceExtension : TestTemplateInvocationContextProvider {
             "@ObjectSource and @TableSource cannot be applied to the same method"
         }
 
+        val parameterNames = getParameterNames(context.requiredTestClass, context.requiredTestMethod.name)
+
         val testCases: List<Map<String, Any?>> =
             when {
                 objectSource != null -> parseObjectSource(objectSource)
-                tableSource != null -> parseTableSource(tableSource)
+                tableSource != null -> parseTableSource(tableSource, parameterNames)
                 else -> error("Either @ObjectSource or @TableSource must be present")
             }
-
-        val parameterNames = getParameterNames(context.requiredTestClass, context.requiredTestMethod.name)
 
         return testCases
             .mapIndexed { index, testCase ->
@@ -64,29 +64,40 @@ class ObjectSourceExtension : TestTemplateInvocationContextProvider {
         }
     }
 
-    fun parseTableSource(annotation: TableSource): List<Map<String, Any?>> {
+    fun parseTableSource(
+        annotation: TableSource,
+        methodParameters: List<String>,
+    ): List<Map<String, Any?>> {
         require(annotation.value.isNotBlank()) { "@TableSource: 'value' must be provided" }
-
-        val parsed: Map<String, Any?> = ObjectMappers.YAML.readValue(annotation.value)
-
-        val columns =
-            (parsed["columns"] as? List<*>)?.map {
-                require(it is String) { "@TableSource: 'columns' entries must be strings, got ${it?.javaClass}" }
-                it
-            } ?: error("@TableSource: 'columns' key is required and must be a list of strings")
-
-        val rows =
-            (parsed["rows"] as? List<*>)?.map {
-                require(it is List<*>) { "@TableSource: each row must be a list, got ${it?.javaClass}" }
-                it
-            } ?: error("@TableSource: 'rows' key is required and must be a list of lists")
-
-        return rows.map { row ->
-            require(row.size == columns.size) {
-                "@TableSource: row size ${row.size} does not match columns size ${columns.size}: $row"
-            }
-            columns.zip(row).toMap()
+        require(methodParameters.isNotEmpty()) {
+            "@TableSource: requires the test method to declare parameters; row cells map by position"
         }
+
+        val rows: List<Any?> = ObjectMappers.YAML.readValue(annotation.value)
+        return rows.map { row -> parseRow(row, methodParameters) }
+    }
+
+    private fun parseRow(
+        row: Any?,
+        columns: List<String>,
+    ): Map<String, Any?> {
+        val cells: List<Any?> =
+            when (row) {
+                is List<*> -> row
+                is String ->
+                    row.split("|").map { cell ->
+                        val trimmed = cell.trim()
+                        require(trimmed.isNotEmpty()) {
+                            "@TableSource: empty cell in row '$row'. Use ~ for null."
+                        }
+                        ObjectMappers.YAML.readValue<Any?>(trimmed)
+                    }
+                else -> error("@TableSource: each row must be a list or a pipe-delimited string, got ${row?.javaClass}")
+            }
+        require(cells.size == columns.size) {
+            "@TableSource: row has ${cells.size} cells, expected ${columns.size} (test method parameters): $row"
+        }
+        return columns.zip(cells).toMap()
     }
 
     private fun getParameterNames(

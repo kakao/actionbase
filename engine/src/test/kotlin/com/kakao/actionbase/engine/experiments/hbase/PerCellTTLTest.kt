@@ -26,22 +26,20 @@ class PerCellTTLTest(
     @ObjectSourceParameterizedTest
     @TableSource(
         """
-        columns: [name, operations, expected]
-        rows:
-          - [Basic TTL expired,      'Put(20), Delay(50)',              ~]
-          - [Basic TTL active,       'Put(50), Delay(20)',              value_0]
-          - [Put then TTL expired,   'Put, Put(20), Delay(50)',         value_0]
-          - [Put then TTL active,    'Put, Put(50), Delay(20)',         value_1]
-          - [TTL then Put,           'Put(20), Put, Delay(50)',         value_1]
-          - [Multiple Puts TTL,      'Put, Put, Put(20), Delay(50)',    value_1]
-          - [Put TTL Delete,         'Put, Put(20), Delete, Delay(50)', ~]
-          - [Put Delete no delay,    'Put, Delete',                     ~]
-          - [TTL Delete immediate,   'Put(20), Delete',                 ~]
-          - [Delete then Put,        'Delete, Put',                     value_1]
-          - [Delete then TTL,        'Delete, Put(20), Delay(50)',      ~]
-          - [Short delay TTL active, 'Put(20), Delay(5)',               value_0]
-          - [Increment then Delete,  'Increment, Delete',               ~]
-          - [Multiple Increments,    'Increment, Increment, Increment', '3']
+        - Basic TTL expired      | Put(20), Delay(50)              | ~
+        - Basic TTL active       | Put(50), Delay(20)              | value_0
+        - Put then TTL expired   | Put, Put(20), Delay(50)         | value_0
+        - Put then TTL active    | Put, Put(50), Delay(20)         | value_1
+        - TTL then Put           | Put(20), Put, Delay(50)         | value_1
+        - Multiple Puts TTL      | Put, Put, Put(20), Delay(50)    | value_1
+        - Put TTL Delete         | Put, Put(20), Delete, Delay(50) | ~
+        - Put Delete no delay    | Put, Delete                     | ~
+        - TTL Delete immediate   | Put(20), Delete                 | ~
+        - Delete then Put        | Delete, Put                     | value_1
+        - Delete then TTL        | Delete, Put(20), Delay(50)      | ~
+        - Short delay TTL active | Put(20), Delay(5)               | value_0
+        - Increment then Delete  | Increment, Delete               | ~
+        - Multiple Increments    | Increment, Increment, Increment | '3'
         """,
     )
     fun testHBaseTTLOperations(
