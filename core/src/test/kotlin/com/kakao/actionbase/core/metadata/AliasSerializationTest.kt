@@ -1,8 +1,9 @@
 package com.kakao.actionbase.core.metadata
 
+import com.kakao.actionbase.test.documentations.params.ObjectSource
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 import com.kakao.actionbase.test.json.PrettyObjectWriter
 
-import kotlin.test.Test
 import kotlin.test.assertEquals
 
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -12,23 +13,15 @@ class AliasSerializationTest {
 
     val objectMapper = prettyWriter.objectMapper
 
-    @Test
-    fun `test database serialization`() {
-        // given
-        val aliasDescriptor =
-            AliasDescriptor(
-                tenant = "test_tenant",
-                database = "test_database",
-                alias = "test_alias",
-                table = "test_table",
-            )
-
-        // when
-        val actual = prettyWriter.writeValueAsString(aliasDescriptor)
-
-        // then
-        val expected =
-            """
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - descriptor:
+            tenant: test_tenant
+            database: test_database
+            alias: test_alias
+            table: test_table
+          expected: |-
             {
               "tenant": "test_tenant",
               "database": "test_database",
@@ -42,26 +35,30 @@ class AliasSerializationTest {
               "updatedAt": -1,
               "updatedBy": ""
             }
-            """.trimIndent()
-        assertEquals(expected, actual)
+        """,
+    )
+    fun `serializes to JSON`(
+        descriptor: AliasDescriptor,
+        expected: String,
+    ) {
+        assertEquals(expected, prettyWriter.writeValueAsString(descriptor))
     }
 
-    @Test
-    fun `test database deserialization`() {
-        // given
-        val json = """{"tenant":"test_tenant","database":"test_database","alias":"test_alias","table":"test_table"}"""
-
-        // when
-        val actual = objectMapper.readValue<AliasDescriptor>(json)
-
-        // then
-        val expected =
-            AliasDescriptor(
-                tenant = "test_tenant",
-                database = "test_database",
-                alias = "test_alias",
-                table = "test_table",
-            )
-        assertEquals(expected, actual)
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - input: '{"tenant":"test_tenant","database":"test_database","alias":"test_alias","table":"test_table"}'
+          expected:
+            tenant: test_tenant
+            database: test_database
+            alias: test_alias
+            table: test_table
+        """,
+    )
+    fun `deserializes from JSON`(
+        input: String,
+        expected: AliasDescriptor,
+    ) {
+        assertEquals(expected, objectMapper.readValue<AliasDescriptor>(input))
     }
 }

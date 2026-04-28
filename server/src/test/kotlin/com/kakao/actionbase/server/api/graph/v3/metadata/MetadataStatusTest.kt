@@ -1,24 +1,29 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+import com.kakao.actionbase.test.documentations.params.TableSource
+
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 
 class MetadataStatusTest {
-    @Test
-    fun `ACTIVE matches only active entities`() {
-        assertThat(MetadataStatus.ACTIVE.matches(active = true)).isTrue()
-        assertThat(MetadataStatus.ACTIVE.matches(active = false)).isFalse()
-    }
-
-    @Test
-    fun `INACTIVE matches only inactive entities`() {
-        assertThat(MetadataStatus.INACTIVE.matches(active = true)).isFalse()
-        assertThat(MetadataStatus.INACTIVE.matches(active = false)).isTrue()
-    }
-
-    @Test
-    fun `ALL matches both active and inactive entities`() {
-        assertThat(MetadataStatus.ALL.matches(active = true)).isTrue()
-        assertThat(MetadataStatus.ALL.matches(active = false)).isTrue()
+    @ObjectSourceParameterizedTest
+    @TableSource(
+        """
+        columns: [status, active, expected]
+        rows:
+          - [ACTIVE,   true,  true]
+          - [ACTIVE,   false, false]
+          - [INACTIVE, true,  false]
+          - [INACTIVE, false, true]
+          - [ALL,      true,  true]
+          - [ALL,      false, true]
+        """,
+    )
+    fun `matches reflects status against active flag`(
+        status: MetadataStatus,
+        active: Boolean,
+        expected: Boolean,
+    ) {
+        assertThat(status.matches(active = active)).isEqualTo(expected)
     }
 }
