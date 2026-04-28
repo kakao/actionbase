@@ -371,6 +371,7 @@ class EdgeStateMapperTest {
         assertArrayEquals(expected.value(), actual.value)
     }
 
+    @ObjectSourceParameterizedTest
     @ObjectSource(
         """
         - encodedKey: gyqAoiuAAATSK7UfmNkpfTTsiqTtg4DrsoXsiqQA
@@ -386,7 +387,6 @@ class EdgeStateMapperTest {
           schema: {"type":"struct","fields":[{"name":"A","type":{"type":"string"}}]}
         """,
     )
-    @ObjectSourceParameterizedTest
     fun decodeTest(
         encodedKey: String,
         encodedValue: String,

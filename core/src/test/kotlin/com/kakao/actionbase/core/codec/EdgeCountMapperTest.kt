@@ -51,6 +51,7 @@ class EdgeCountMapperTest {
                 .code()
     }
 
+    @ObjectSourceParameterizedTest
     @ObjectSource(
         """
         - sourceField:
@@ -63,7 +64,6 @@ class EdgeCountMapperTest {
           direction: IN
         """,
     )
-    @ObjectSourceParameterizedTest
     fun encodeKeyTest(
         sourceField: Field,
         direction: Direction,
@@ -79,6 +79,7 @@ class EdgeCountMapperTest {
         assertArrayEquals(expected, actual)
     }
 
+    @ObjectSourceParameterizedTest
     @ObjectSource(
         """
         - base64EncodedKey: 3NCIliuAAATSK7UfmNkpfimD
@@ -98,7 +99,6 @@ class EdgeCountMapperTest {
           direction: IN
         """,
     )
-    @ObjectSourceParameterizedTest
     fun decodeKeyTest(
         base64EncodedKey: String,
         expectedSourceField: Field,
