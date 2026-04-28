@@ -58,6 +58,7 @@ class EdgeIndexMapperTest {
                 .code()
     }
 
+    @ObjectSourceParameterizedTest
     @ObjectSource(
         """
         - sourceField:
@@ -84,7 +85,6 @@ class EdgeIndexMapperTest {
           version: 1
         """,
     )
-    @ObjectSourceParameterizedTest
     fun encodeTest(
         sourceField: Field,
         targetField: Field,
