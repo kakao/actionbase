@@ -15,3 +15,5 @@ include(
 
     "tools:v3v2-boundary-check",
 )
+
+include("pipeline-spark")

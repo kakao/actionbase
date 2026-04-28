@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  OSS-friendly standalone HBase config for integrationTest fixtures.
+  Derived from kc-deploy/docker/hbase/2.4.17/hbase-site.xml. Changes:
+    - hbase.zookeeper.property.clientPort: 2182 -> 2181 (host-container
+      binding is 1:1 for testcontainers simplicity).
+    - Added hbase.rootdir (file:///tmp/hbase) — HBase 2.5.x requires it
+      to be explicit when running standalone without HDFS.
+    - Added hbase.cluster.distributed=false to make standalone mode
+      explicit for HBase 2.5.x.
+    - Kept hostnames as `localhost` so the master advertises the region
+      server as `localhost:16020`; combined with fixed 1:1 host-container
+      port binding in HBaseContainer this lets the host JVM connect.
+-->
+<configuration>
+    <property>
+        <name>hbase.cluster.distributed</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>hbase.rootdir</name>
+        <!--
+          Must live under the host↔container bind-mounted shared root so
+          that bulkload's staging copies & HFile moves can traverse the
+          same filesystem paths on both sides. The HBaseContainer fixture
+          bind-mounts `/tmp/ab-it-hbase-shared/` identity, and this
+          rootdir sits inside it.
+        -->
+        <value>file:///tmp/ab-it-hbase-shared/hbase-rootdir</value>
+    </property>
+    <property>
+        <name>hbase.unsafe.stream.capability.enforce</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>hbase.zookeeper.quorum</name>
+        <value>localhost</value>
+    </property>
+
+    <!--Master configurations-->
+    <property>
+        <name>hbase.master.hostname</name>
+        <value>localhost</value>
+    </property>
+    <property>
+        <name>hbase.master.ipc.address</name>
+        <value>0.0.0.0</value>
+    </property>
+    <property>
+        <name>hbase.master.port</name>
+        <value>16000</value>
+    </property>
+    <property>
+        <name>hbase.master.info.port</name>
+        <value>16010</value>
+    </property>
+
+    <!--RegionServer configurations-->
+    <property>
+        <name>hbase.regionserver.hostname</name>
+        <value>localhost</value>
+    </property>
+    <property>
+        <name>hbase.regionserver.ipc.address</name>
+        <value>0.0.0.0</value>
+    </property>
+    <property>
+        <name>hbase.regionserver.port</name>
+        <value>16020</value>
+    </property>
+    <property>
+        <name>hbase.regionserver.info.port</name>
+        <value>16030</value>
+    </property>
+
+    <!--ZooKeeper configuration-->
+    <property>
+        <name>hbase.zookeeper.property.clientPort</name>
+        <value>2181</value>
+    </property>
+    <property>
+        <name>hbase.zookeeper.property.clientPortAddress</name>
+        <value>0.0.0.0</value>
+    </property>
+</configuration>
