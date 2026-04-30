@@ -56,7 +56,7 @@ class AliasSpec :
         "query on alias" {
             val src = GraphFixtures.sampleEdges.first().src
             val aliasName = EntityName(GraphFixtures.serviceName, "alias_${Random.nextInt().absoluteValue}")
-            val targetLabelName = EntityName(GraphFixtures.serviceName, GraphFixtures.hbaseHash)
+            val targetLabelName = EntityName(GraphFixtures.serviceName, GraphFixtures.jdbcHash)
             graph.aliasDdl
                 .create(
                     aliasName,
@@ -76,7 +76,7 @@ class AliasSpec :
 
         "mutate on alias" {
             val aliasName = EntityName(GraphFixtures.serviceName, "alias_${Random.nextInt().absoluteValue}")
-            val targetLabelName = EntityName(GraphFixtures.serviceName, GraphFixtures.hbaseHash)
+            val targetLabelName = EntityName(GraphFixtures.serviceName, GraphFixtures.jdbcHash)
             graph.aliasDdl
                 .create(
                     aliasName,
@@ -119,7 +119,7 @@ class AliasSpec :
         "alias cannot be made if a label has a same name" {
             graph.aliasDdl
                 .create(
-                    EntityName(GraphFixtures.serviceName, GraphFixtures.hbaseHash),
+                    EntityName(GraphFixtures.serviceName, GraphFixtures.jdbcHash),
                     AliasCreateRequest("", "test.like_hbase_hash"),
                 ).test()
                 .verifyError(IllegalArgumentException::class.java)

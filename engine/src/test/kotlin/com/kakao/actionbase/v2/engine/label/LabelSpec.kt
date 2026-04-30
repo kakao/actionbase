@@ -16,7 +16,6 @@ import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
-import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.metadata.StorageType
@@ -183,10 +182,6 @@ class LabelSpec :
                 .verifyComplete()
         }
 
-        "empty src scan test - hbase" {
-            testEmptySrcScan(hbase)
-        }
-
         "empty src scan test - jdbc" {
             testEmptySrcScan(jdbc)
         }
@@ -211,13 +206,6 @@ class LabelSpec :
                 .test()
                 .assertNext { it.rows.size shouldBe 6 }
                 .verifyComplete()
-        }
-
-        "scan ignore dirty data - hbase" {
-            scanIgnoreDirtyData(hbase) { label, edge ->
-                val kfv = (label as HBaseHashLabel).coder.encodeHashEdgeKey(edge, label.entity.id)
-                label.create(EncodedKey(kfv.key, kfv.field), "dirtyData".toByteArray()).block()
-            }
         }
 
         "scan ignore dirty data - hbase indexed" {
