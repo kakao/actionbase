@@ -70,7 +70,7 @@ public class MultiEdgeBulkEdgeEncoderTests {
           + "  \"caches\": [\n"
           + "    {\n"
           + "      \"cache\": \"top_created_at\",\n"
-          + "      \"fields\": [{\"name\": \"created_at\", \"order\": \"DESC\"}],\n"
+          + "      \"fields\": [{\"field\": \"created_at\", \"order\": \"DESC\"}],\n"
           + "      \"limit\": 100\n"
           + "    }\n"
           + "  ],\n"

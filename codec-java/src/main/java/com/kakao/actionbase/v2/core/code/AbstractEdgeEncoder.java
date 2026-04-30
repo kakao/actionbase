@@ -190,8 +190,8 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
       Object directedTgt,
       Map<String, Object> properties,
       EdgeBuffer buffer) {
-    for (Index.Field field : cache.getFields()) {
-      Object value = resolveFieldValue(field.getName(), ts, directedSrc, directedTgt, properties);
+    for (Cache.Field field : cache.getFields()) {
+      Object value = resolveFieldValue(field.getField(), ts, directedSrc, directedTgt, properties);
       buffer.encodeAny(value, field.getOrder());
     }
     buffer.encodeAny(directedTgt);

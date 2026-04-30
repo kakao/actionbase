@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.core.code;
 
+import com.kakao.actionbase.v2.core.code.hbase.Order;
 import com.kakao.actionbase.v2.core.code.hbase.ValueUtils;
 
 import java.io.Serializable;
@@ -22,11 +23,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * <pre>
  * {
  *   "cache": "top_created_at",
- *   "fields": [{"name": "created_at", "order": "DESC"}],
+ *   "fields": [{"field": "created_at", "order": "DESC"}],
  *   "limit": 100,
  *   "comment": "..."
  * }
  * </pre>
+ *
+ * <p>The cache field uses the {@code "field"} JSON key (not {@code "name"}) to align with V3
+ * {@code IndexField.kt}. {@link Index.Field} keeps the legacy {@code "name"} key, so cache fields
+ * must not reuse it.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Cache implements Serializable {
@@ -38,7 +43,7 @@ public class Cache implements Serializable {
   private final String cache;
 
   @JsonProperty("fields")
-  private final List<Index.Field> fields;
+  private final List<Field> fields;
 
   @JsonProperty("limit")
   private final int limit;
@@ -51,7 +56,7 @@ public class Cache implements Serializable {
   @JsonCreator
   public Cache(
       @JsonProperty("cache") String cache,
-      @JsonProperty("fields") List<Index.Field> fields,
+      @JsonProperty("fields") List<Field> fields,
       @JsonProperty("limit") Integer limit,
       @JsonProperty("comment") String comment) {
     if (cache == null || cache.isEmpty()) {
@@ -68,7 +73,7 @@ public class Cache implements Serializable {
     this.code = ValueUtils.stringHash(cache);
   }
 
-  public Cache(String cache, List<Index.Field> fields) {
+  public Cache(String cache, List<Field> fields) {
     this(cache, fields, null, null);
   }
 
@@ -76,8 +81,50 @@ public class Cache implements Serializable {
     return cache;
   }
 
-  public List<Index.Field> getFields() {
+  public List<Field> getFields() {
     return fields;
+  }
+
+  public static class Field implements Serializable {
+
+    @JsonProperty("field")
+    private final String field;
+
+    @JsonProperty("order")
+    private final Order order;
+
+    @JsonCreator
+    public Field(@JsonProperty("field") String field, @JsonProperty("order") Order order) {
+      this.field = field;
+      this.order = order;
+    }
+
+    public String getField() {
+      return field;
+    }
+
+    public Order getOrder() {
+      return order;
+    }
+
+    @Override
+    public String toString() {
+      return "Field{" + "field='" + field + '\'' + ", order=" + order + '}';
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof Field) {
+        Field other = (Field) obj;
+        return Objects.equals(field, other.field) && Objects.equals(order, other.order);
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(field, order);
+    }
   }
 
   public int getLimit() {

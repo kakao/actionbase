@@ -2,6 +2,7 @@ package com.kakao.actionbase.v2.core.metadata;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.kakao.actionbase.v2.core.code.Cache;
 import com.kakao.actionbase.v2.core.code.Index;
 import com.kakao.actionbase.v2.core.code.hbase.Order;
 import com.kakao.actionbase.v2.core.types.*;
@@ -75,5 +76,30 @@ public class LabelDTOTests {
     assertEquals("created_at", label.getIndices().get(0).getFields().get(0).getName());
     assertEquals(Order.DESC, label.getIndices().get(0).getFields().get(0).getOrder());
     assertEquals("ASYNC", label.getMode().name());
+  }
+
+  @Test
+  void testGraphResponseDeserializationWithCaches() throws JsonProcessingException {
+    // Server (LabelEntity) imports the V3 Cache from core.metadata.common, whose IndexField
+    // serializes as {"field": ..., "order": ...}. The V2 client must accept that wire shape.
+    String jsonString =
+        "{\"name\":\"gift.like_product_v1\",\"desc\":\"\",\"type\":\"INDEXED\","
+            + "\"schema\":{\"src\":{\"type\":\"LONG\"},\"tgt\":{\"type\":\"STRING\"},\"fields\":[]},"
+            + "\"dirType\":\"BOTH\",\"storage\":\"hbase_sandbox\",\"indices\":[],\"groups\":[],"
+            + "\"caches\":[{\"cache\":\"top_created_at\","
+            + "\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],"
+            + "\"limit\":50,\"comment\":\"top by created_at\"}],"
+            + "\"event\":false,\"readOnly\":false,\"mode\":\"ASYNC\"}";
+
+    LabelDTO label = objectMapper.readValue(jsonString, LabelDTO.class);
+
+    assertEquals(1, label.getCaches().size());
+    Cache cache = label.getCaches().get(0);
+    assertEquals("top_created_at", cache.getCache());
+    assertEquals(50, cache.getLimit());
+    assertEquals("top by created_at", cache.getComment());
+    assertEquals(1, cache.getFields().size());
+    assertEquals("created_at", cache.getFields().get(0).getField());
+    assertEquals(Order.DESC, cache.getFields().get(0).getOrder());
   }
 }
