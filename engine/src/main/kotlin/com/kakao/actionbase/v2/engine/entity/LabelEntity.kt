@@ -17,7 +17,7 @@ import com.kakao.actionbase.v2.engine.entity.deprecated.DeprecatedEdgeSchema
 import com.kakao.actionbase.v2.engine.label.DatastoreHashLabel
 import com.kakao.actionbase.v2.engine.label.DatastoreIndexedLabel
 import com.kakao.actionbase.v2.engine.label.Label
-import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
+import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashOnlyIndexedLabel
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.metastore.LocalBackedJdbcHashLabel
@@ -79,7 +79,7 @@ data class LabelEntity(
                     when (storage) {
                         is LocalStorage -> LocalBackedJdbcHashLabel.create(this, graph, storage, block)
                         is JdbcStorage -> JdbcHashLabel.create(this, graph, storage, block)
-                        is HBaseStorage -> HBaseHashLabel.create(this, graph, storage)
+                        is HBaseStorage -> HBaseHashOnlyIndexedLabel.create(this, graph, storage)
                         is DatastoreStorage -> DatastoreHashLabel.create(this, graph, block)
                         else -> {
                             logger.error(
