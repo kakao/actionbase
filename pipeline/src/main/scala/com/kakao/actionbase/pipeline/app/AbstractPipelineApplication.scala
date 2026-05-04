@@ -6,12 +6,18 @@ import scala.reflect.ClassTag
 
 abstract class AbstractPipelineApplication[T <: Product: ClassTag] {
 
-  // Override to opt out of Hive metastore for pipelines that don't need it.
+  // Override to opt out of the Hive metastore for pipelines that don't need it.
   protected def hiveSupport: Boolean = true
 
-  // Last-mile customization point. Subclasses can override to attach
-  // Spark configuration (e.g. .config("spark.sql.shuffle.partitions", ...))
-  // without rebuilding the whole main() method.
+  // Last-mile customization point for the SparkSession.Builder.
+  //
+  // For the simple opt-out case, override `hiveSupport`. Override this method
+  // only when you need full control — and remember that `hiveSupport` is then
+  // ignored unless you delegate to `super.configureSparkBuilder(builder)`.
+  //
+  // Example:
+  //   override def configureSparkBuilder(b: SparkSession.Builder) =
+  //     super.configureSparkBuilder(b).config("spark.sql.shuffle.partitions", "200")
   protected def configureSparkBuilder(builder: SparkSession.Builder): SparkSession.Builder =
     if (hiveSupport) builder.enableHiveSupport() else builder
 
