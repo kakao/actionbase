@@ -19,12 +19,13 @@ object ConfigLoader {
     mapper
   }
 
-  def load[T <: Product: ClassTag](): T = {
-    load(Array.empty[String])
-  }
-
-  // Always prints a per-field report (env/props/args trace + final value).
-  def load[T <: Product: ClassTag](args: Array[String]): T = {
+  // Cascading config: env (SPARK_AB_FOO_BAR) < props (spark.ab.foo.bar) < args (--key=value).
+  // Prints a per-field report by default; pass printReport = false to silence
+  // (e.g. unit tests, batch tools) without changing other behavior.
+  def load[T <: Product: ClassTag](
+      args: Array[String] = Array.empty,
+      printReport: Boolean = true,
+  ): T = {
     val envMap   = loadConfigFromEnvironment()
     val propsMap = loadConfigFromProperties()
     val argsMap  = loadConfigFromArgs(args)
@@ -33,7 +34,7 @@ object ConfigLoader {
     val configMap = envMap ++ propsMap ++ argsMap
     val parsed    = parse[T](configMap)
 
-    ConfigPrinter.printConfigReport(envMap, propsMap, argsMap, parsed)
+    if (printReport) ConfigPrinter.printConfigReport(envMap, propsMap, argsMap, parsed)
     parsed
   }
 
