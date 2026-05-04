@@ -156,14 +156,15 @@ class ConfigLoaderTest {
   @CsvSource(
     delimiter = '|',
     value = Array(
-      "[]            |",
-      "[1,2,3]       | 1,2,3",
-      "[1,2,3,]      | 1,2,3",
-      "[ , 1 , 2 ]   | 1,2"
+      "[]            |",          // empty literal yields empty array
+      "[1,2,3]       | 1,2,3",    // baseline
+      "[1,2,3,]      | 1,2,3",    // trailing comma ignored
+      "[ , 1 , 2 ]   | 1,2"       // empty/whitespace tokens dropped
     )
   )
   def testIntArrayParsing(literal: String, expected: String): Unit = {
     val config = ConfigLoader.load[DefaultConfig](Array(s"--intArray=$literal"))
+    // JUnit5 @CsvSource: an empty unquoted cell becomes null, not "".
     val expectedSeq =
       if (expected == null || expected.trim.isEmpty) Seq.empty[Int]
       else expected.split(',').map(_.trim).filter(_.nonEmpty).map(_.toInt).toSeq
