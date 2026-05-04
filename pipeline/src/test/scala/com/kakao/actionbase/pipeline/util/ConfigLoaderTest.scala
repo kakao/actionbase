@@ -2,6 +2,8 @@ package com.kakao.actionbase.pipeline.util
 
 import org.junit.jupiter.api.Assertions.{assertEquals, assertThrows}
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 
 case class SimpleConfig(
     booleanBoolean: Boolean
@@ -128,36 +130,43 @@ class ConfigLoaderTest {
   }
 
   @Test
-  def testEmptyArray(): Unit = {
-    val config = ConfigLoader.load[DefaultConfig](Array("--intArray=[]"))
-    assertEquals(Seq.empty[Int], config.intArray.toSeq)
-  }
-
-  @Test
   def testStringArrayWithEscapedComma(): Unit = {
     val config = ConfigLoader.load[DefaultConfig](Array("--stringArray=[a\\,b,c]"))
     assertEquals(Seq("a,b", "c"), config.stringArray.toSeq)
   }
 
-  @Test
-  def testRejectArgWithoutEquals(): Unit = {
+  @ParameterizedTest(name = "[{index}] {0}")
+  @CsvSource(
+    Array(
+      "--booleanBoolean",     // missing '='
+      "booleanBoolean=false", // missing '--' prefix
+      "--=value"              // empty key
+    )
+  )
+  def testRejectMalformedArg(arg: String): Unit = {
     assertThrows(
       classOf[IllegalArgumentException],
-      () => ConfigLoader.load[DefaultConfig](Array("--booleanBoolean"))
+      () => ConfigLoader.load[DefaultConfig](Array(arg))
     )
   }
 
-  @Test
-  def testTrailingCommaIgnored(): Unit = {
-    val config = ConfigLoader.load[DefaultConfig](Array("--intArray=[1,2,3,]"))
-    assertEquals(Seq(1, 2, 3), config.intArray.toSeq)
-  }
-
-  @Test
-  def testRejectArgWithoutDashes(): Unit = {
-    assertThrows(
-      classOf[IllegalArgumentException],
-      () => ConfigLoader.load[DefaultConfig](Array("booleanBoolean=false"))
+  // Pipe delimiter so commas inside the array literal stay intact.
+  // Empty `expected` means "expected empty array".
+  @ParameterizedTest(name = "[{index}] {0} -> [{1}]")
+  @CsvSource(
+    delimiter = '|',
+    value = Array(
+      "[]            |",
+      "[1,2,3]       | 1,2,3",
+      "[1,2,3,]      | 1,2,3",
+      "[ , 1 , 2 ]   | 1,2"
     )
+  )
+  def testIntArrayParsing(literal: String, expected: String): Unit = {
+    val config = ConfigLoader.load[DefaultConfig](Array(s"--intArray=$literal"))
+    val expectedSeq =
+      if (expected == null || expected.trim.isEmpty) Seq.empty[Int]
+      else expected.split(',').map(_.trim).filter(_.nonEmpty).map(_.toInt).toSeq
+    assertEquals(expectedSeq, config.intArray.toSeq)
   }
 }
