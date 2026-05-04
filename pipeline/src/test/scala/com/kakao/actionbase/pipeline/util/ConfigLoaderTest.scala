@@ -143,8 +143,14 @@ class ConfigLoaderTest {
   def testRejectArgWithoutEquals(): Unit = {
     assertThrows(
       classOf[IllegalArgumentException],
-      () => ConfigLoader.load[DefaultConfig](Array("--booleanBoolean", "false"))
+      () => ConfigLoader.load[DefaultConfig](Array("--booleanBoolean"))
     )
+  }
+
+  @Test
+  def testTrailingCommaIgnored(): Unit = {
+    val config = ConfigLoader.load[DefaultConfig](Array("--intArray=[1,2,3,]"))
+    assertEquals(Seq(1, 2, 3), config.intArray.toSeq)
   }
 
   @Test

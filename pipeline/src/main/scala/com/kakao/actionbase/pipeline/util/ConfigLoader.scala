@@ -72,23 +72,27 @@ object ConfigLoader {
   }
 
   // Array literal: [a, b, c]. Splits on top-level commas only — commas inside
-  // double-quoted segments or escaped as \, are preserved. Empty body ([]) yields an empty array.
+  // double-quoted segments or escaped as \, are preserved. Empty body ([]) and
+  // empty/whitespace-only tokens (trailing commas, [a,,b]) yield no element.
   private def toJsonNode(s: String): JsonNode = {
     val str = s.trim
     if (str.startsWith("[") && str.endsWith("]")) {
       val arrNode = json.createArrayNode()
       val inner   = str.substring(1, str.length - 1)
-      if (inner.trim.nonEmpty) {
-        splitTopLevelCommas(inner).foreach { elem =>
-          arrNode.add(toJsonNode(elem.trim))
-        }
-      }
+      splitTopLevelCommas(inner)
+        .map(_.trim)
+        .filter(_.nonEmpty)
+        .foreach(elem => arrNode.add(toJsonNode(elem)))
       arrNode
     } else {
       json.getNodeFactory.textNode(s)
     }
   }
 
+  // Top-level comma splitter. Within double quotes, commas are preserved.
+  // A backslash escapes the very next character — so \, yields a literal comma
+  // and \" yields a literal quote. Note: this is "literal next char" semantics,
+  // i.e. \n is the letter n, not a newline; \\ is a single backslash.
   private def splitTopLevelCommas(s: String): Seq[String] = {
     val out     = scala.collection.mutable.ListBuffer[String]()
     val cur     = new StringBuilder

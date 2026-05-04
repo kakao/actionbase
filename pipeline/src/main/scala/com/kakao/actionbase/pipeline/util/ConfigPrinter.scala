@@ -13,6 +13,8 @@ object ConfigPrinter {
 
   // Field-name patterns that look like credentials. Values for matching fields are masked
   // in both the per-field report and the YAML dump to avoid leaking secrets into driver logs.
+  // Conservative on purpose — generic terms like "key" or "auth" are intentionally excluded
+  // to avoid masking innocuous fields. Extend this pattern as new sensitive field names appear.
   private val SensitivePattern = Pattern.compile("(?i).*(password|passwd|secret|token|credential).*")
   private val Mask             = "***"
 
@@ -33,7 +35,11 @@ object ConfigPrinter {
 
   // Per-field report: for each field of T, show the final value, the winning source,
   // and a trace of every source that contributed a value. Ends with the full YAML dump.
+  //
   // Sensitive fields (see SensitivePattern) are masked everywhere they appear.
+  // Note: the per-field section iterates only the top-level declared fields of T;
+  // the trailing YAML dump renders the full tree (including nested objects), and
+  // masking is applied recursively there.
   def printConfigReport[T <: Product](
       envMap: Map[String, String],
       propsMap: Map[String, String],
@@ -68,12 +74,13 @@ object ConfigPrinter {
     println(yaml.writeValueAsString(maskedTree(parsed)))
   }
 
-  private def isSensitive(name: String): Boolean = SensitivePattern.matcher(name).matches()
+  private[util] def isSensitive(name: String): Boolean = SensitivePattern.matcher(name).matches()
 
   private def maskValue(sensitive: Boolean, v: String): String = if (sensitive) Mask else v
 
   // Walks the serialized tree and replaces sensitive fields with the mask string.
-  private def maskedTree(parsed: Product): JsonNode = {
+  // Visible to tests so masking can be verified without capturing stdout.
+  private[util] def maskedTree(parsed: Product): JsonNode = {
     val tree = yaml.valueToTree[JsonNode](parsed)
     maskInPlace(tree)
     tree
