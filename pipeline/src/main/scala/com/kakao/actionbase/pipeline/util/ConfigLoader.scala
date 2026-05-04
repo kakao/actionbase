@@ -60,26 +60,60 @@ object ConfigLoader {
     }
   }
 
+  // Only --key=value form is supported. Splits on the first '='; later '=' chars stay in the value.
   private def loadConfigFromArgs(args: Array[String]): Map[String, String] = {
-    args
-      .sliding(2, 2)
-      .collect {
-        case Array(k, v) if k.startsWith("--") => k.drop(2) -> v
-      }
-      .toMap
+    args.iterator.map { arg =>
+      require(arg.startsWith("--"), s"Expected --key=value, got: $arg")
+      val body = arg.drop(2)
+      val eq   = body.indexOf('=')
+      require(eq > 0, s"Expected --key=value, got: $arg")
+      body.substring(0, eq) -> body.substring(eq + 1)
+    }.toMap
   }
 
+  // Array literal: [a, b, c]. Splits on top-level commas only — commas inside
+  // double-quoted segments or escaped as \, are preserved. Empty body ([]) yields an empty array.
   private def toJsonNode(s: String): JsonNode = {
     val str = s.trim
     if (str.startsWith("[") && str.endsWith("]")) {
       val arrNode = json.createArrayNode()
-      str.drop(1).dropRight(1).split(",").foreach { elem =>
-        arrNode.add(toJsonNode(elem.trim))
+      val inner   = str.substring(1, str.length - 1)
+      if (inner.trim.nonEmpty) {
+        splitTopLevelCommas(inner).foreach { elem =>
+          arrNode.add(toJsonNode(elem.trim))
+        }
       }
       arrNode
     } else {
       json.getNodeFactory.textNode(s)
     }
+  }
+
+  private def splitTopLevelCommas(s: String): Seq[String] = {
+    val out     = scala.collection.mutable.ListBuffer[String]()
+    val cur     = new StringBuilder
+    var inQuote = false
+    var i       = 0
+    while (i < s.length) {
+      val c = s.charAt(i)
+      if (c == '\\' && i + 1 < s.length) {
+        cur.append(s.charAt(i + 1))
+        i += 2
+      } else if (c == '"') {
+        inQuote = !inQuote
+        cur.append(c)
+        i += 1
+      } else if (c == ',' && !inQuote) {
+        out += cur.toString
+        cur.clear()
+        i += 1
+      } else {
+        cur.append(c)
+        i += 1
+      }
+    }
+    out += cur.toString
+    out.toSeq
   }
 
   private def camelize(s: String, sep: Char): String = {

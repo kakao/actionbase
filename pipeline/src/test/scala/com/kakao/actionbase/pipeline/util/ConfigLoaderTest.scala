@@ -80,14 +80,14 @@ class ConfigLoaderTest {
 
   @Test
   def testProvideMissingValue(): Unit = {
-    val config = ConfigLoader.load[PartialConfig](Array("--booleanBoolean", "true"))
+    val config = ConfigLoader.load[PartialConfig](Array("--booleanBoolean=true"))
     assertEquals(true, config.booleanBoolean)
     assertEquals(1, config.byteByte)
   }
 
   @Test
   def testReplaceValue(): Unit = {
-    val config = ConfigLoader.load[DefaultConfig](Array("--booleanBoolean", "false"))
+    val config = ConfigLoader.load[DefaultConfig](Array("--booleanBoolean=false"))
 
     assertEquals(false, config.booleanBoolean)
     assertEquals(1, config.byteByte)
@@ -98,13 +98,16 @@ class ConfigLoaderTest {
     val base = ConfigLoader.load[DefaultConfig]()
     assertEquals(true, base.booleanBoolean)
 
-    val replaceByArgs = ConfigLoader.load[DefaultConfig](Array("--booleanBoolean", "false"))
+    val replaceByArgs = ConfigLoader.load[DefaultConfig](Array("--booleanBoolean=false"))
     assertEquals(false, replaceByArgs.booleanBoolean)
 
-    System.setProperty("spark.ab.boolean.boolean", "false")
-    val replaceByProps = ConfigLoader.load[DefaultConfig]()
-    assertEquals(false, replaceByProps.booleanBoolean)
-    System.clearProperty("spark.ab.boolean.boolean")
+    try {
+      System.setProperty("spark.ab.boolean.boolean", "false")
+      val replaceByProps = ConfigLoader.load[DefaultConfig]()
+      assertEquals(false, replaceByProps.booleanBoolean)
+    } finally {
+      System.clearProperty("spark.ab.boolean.boolean")
+    }
   }
 
   @Test
@@ -112,12 +115,43 @@ class ConfigLoaderTest {
     val base = ConfigLoader.load[DefaultConfig]()
     assertEquals(Seq(1, 2, 3), base.intArray.toSeq)
 
-    val replaceByArgs = ConfigLoader.load[DefaultConfig](Array("--intArray", "[4,5,6]"))
+    val replaceByArgs = ConfigLoader.load[DefaultConfig](Array("--intArray=[4,5,6]"))
     assertEquals(Seq(4, 5, 6), replaceByArgs.intArray.toSeq)
 
-    System.setProperty("spark.ab.int.array", "[7,8,9]")
-    val replaceByProps = ConfigLoader.load[DefaultConfig]()
-    assertEquals(Seq(7, 8, 9), replaceByProps.intArray.toSeq)
-    System.clearProperty("spark.ab.int.array")
+    try {
+      System.setProperty("spark.ab.int.array", "[7,8,9]")
+      val replaceByProps = ConfigLoader.load[DefaultConfig]()
+      assertEquals(Seq(7, 8, 9), replaceByProps.intArray.toSeq)
+    } finally {
+      System.clearProperty("spark.ab.int.array")
+    }
+  }
+
+  @Test
+  def testEmptyArray(): Unit = {
+    val config = ConfigLoader.load[DefaultConfig](Array("--intArray=[]"))
+    assertEquals(Seq.empty[Int], config.intArray.toSeq)
+  }
+
+  @Test
+  def testStringArrayWithEscapedComma(): Unit = {
+    val config = ConfigLoader.load[DefaultConfig](Array("--stringArray=[a\\,b,c]"))
+    assertEquals(Seq("a,b", "c"), config.stringArray.toSeq)
+  }
+
+  @Test
+  def testRejectArgWithoutEquals(): Unit = {
+    assertThrows(
+      classOf[IllegalArgumentException],
+      () => ConfigLoader.load[DefaultConfig](Array("--booleanBoolean", "false"))
+    )
+  }
+
+  @Test
+  def testRejectArgWithoutDashes(): Unit = {
+    assertThrows(
+      classOf[IllegalArgumentException],
+      () => ConfigLoader.load[DefaultConfig](Array("booleanBoolean=false"))
+    )
   }
 }
