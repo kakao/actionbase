@@ -13,5 +13,7 @@ include(
     "engine",
     "server",
 
+    "pipeline",
+
     "tools:v3v2-boundary-check",
 )
