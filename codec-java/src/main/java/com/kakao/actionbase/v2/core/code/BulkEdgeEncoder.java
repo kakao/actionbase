@@ -35,7 +35,7 @@ public class BulkEdgeEncoder {
   static final String SOURCE_FIELD_ON_STATE = "_source";
   static final String TARGET_FIELD_ON_STATE = "_target";
 
-  public static <T> List<KeyFieldValueV2<T>> bulkEncodeAll(
+  public static <T> List<TypedKeyFieldValue<T>> bulkEncodeAll(
       EdgeEncoder<T> encoder, BulkLoadEdge bulkLoadEdge, LabelDTO label) {
     LabelType labelType = label.getType();
 
@@ -45,7 +45,7 @@ public class BulkEdgeEncoder {
     Active active = bulkLoadEdge.isActive() ? Active.ACTIVE : Active.INACTIVE;
     Edge castedEdge = bulkLoadEdge.ensureType(label.getSchema());
 
-    List<KeyFieldValueV2<T>> edges = new ArrayList<>();
+    List<TypedKeyFieldValue<T>> edges = new ArrayList<>();
 
     // Special handling for MultiEdge
     // - Keep existing HASH, INDEXED as is, and for MultiEdge, create separate edges based on ID and
@@ -87,7 +87,7 @@ public class BulkEdgeEncoder {
                   edgeForEdgeState.getProps(),
                   insertTs,
                   deleteTs));
-      edges.add(new KeyFieldValueV2<>(EncodedEdgeType.HASH_EDGE_TYPE, key.key, key.field, value));
+      edges.add(new TypedKeyFieldValue<>(EncodedEdgeType.HASH_EDGE_TYPE, key.key, key.field, value));
     }
 
     List<Cache> caches = label.getCaches();
@@ -100,7 +100,7 @@ public class BulkEdgeEncoder {
             encoder
                 .encodeAllIndexedEdges(castedEdge, label.getDirType(), labelId, label.getIndices())
                 .stream()
-                .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
+                .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
                 .collect(Collectors.toList()));
 
         // Cache records are only supported on INDEXED labels (V3 EDGE type). V3 multi-hop queries
@@ -108,7 +108,7 @@ public class BulkEdgeEncoder {
         if (caches != null && !caches.isEmpty()) {
           edges.addAll(
               encoder.encodeAllCacheEdges(castedEdge, label.getDirType(), labelId, caches).stream()
-                  .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.EDGE_CACHE_TYPE))
+                  .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.EDGE_CACHE_TYPE))
                   .collect(Collectors.toList()));
         }
       } else if (labelType == LabelType.MULTI_EDGE) {
@@ -122,24 +122,24 @@ public class BulkEdgeEncoder {
               encoder
                   .encodeAllIndexedEdges(outEdge, DirectionType.OUT, labelId, label.getIndices())
                   .stream()
-                  .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
+                  .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
                   .collect(Collectors.toList()));
 
           edges.addAll(
               encoder
                   .encodeAllIndexedEdges(inEdge, DirectionType.IN, labelId, label.getIndices())
                   .stream()
-                  .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
+                  .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
                   .collect(Collectors.toList()));
 
           if (caches != null && !caches.isEmpty()) {
             edges.addAll(
                 encoder.encodeAllCacheEdges(outEdge, DirectionType.OUT, labelId, caches).stream()
-                    .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.EDGE_CACHE_TYPE))
+                    .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.EDGE_CACHE_TYPE))
                     .collect(Collectors.toList()));
             edges.addAll(
                 encoder.encodeAllCacheEdges(inEdge, DirectionType.IN, labelId, caches).stream()
-                    .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.EDGE_CACHE_TYPE))
+                    .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.EDGE_CACHE_TYPE))
                     .collect(Collectors.toList()));
           }
         } else if (label.getDirType() == DirectionType.OUT) {
@@ -149,13 +149,13 @@ public class BulkEdgeEncoder {
               encoder
                   .encodeAllIndexedEdges(outEdge, DirectionType.OUT, labelId, label.getIndices())
                   .stream()
-                  .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
+                  .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
                   .collect(Collectors.toList()));
 
           if (caches != null && !caches.isEmpty()) {
             edges.addAll(
                 encoder.encodeAllCacheEdges(outEdge, DirectionType.OUT, labelId, caches).stream()
-                    .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.EDGE_CACHE_TYPE))
+                    .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.EDGE_CACHE_TYPE))
                     .collect(Collectors.toList()));
           }
         } else if (label.getDirType() == DirectionType.IN) {
@@ -165,13 +165,13 @@ public class BulkEdgeEncoder {
               encoder
                   .encodeAllIndexedEdges(inEdge, DirectionType.IN, labelId, label.getIndices())
                   .stream()
-                  .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
+                  .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.INDEXED_EDGE_TYPE))
                   .collect(Collectors.toList()));
 
           if (caches != null && !caches.isEmpty()) {
             edges.addAll(
                 encoder.encodeAllCacheEdges(inEdge, DirectionType.IN, labelId, caches).stream()
-                    .map(v -> KeyFieldValueV2.fromV1(v, EncodedEdgeType.EDGE_CACHE_TYPE))
+                    .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.EDGE_CACHE_TYPE))
                     .collect(Collectors.toList()));
           }
         }
@@ -182,20 +182,20 @@ public class BulkEdgeEncoder {
         T outboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.OUT, labelId);
         T inboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.IN, labelId);
         edges.add(
-            new KeyFieldValueV2<>(
+            new TypedKeyFieldValue<>(
                 EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), outboundKey));
         edges.add(
-            new KeyFieldValueV2<>(
+            new TypedKeyFieldValue<>(
                 EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), inboundKey));
       } else if (label.getDirType() == DirectionType.OUT) {
         T outboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.OUT, labelId);
         edges.add(
-            new KeyFieldValueV2<>(
+            new TypedKeyFieldValue<>(
                 EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), outboundKey));
       } else if (label.getDirType() == DirectionType.IN) {
         T inboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.IN, labelId);
         edges.add(
-            new KeyFieldValueV2<>(
+            new TypedKeyFieldValue<>(
                 EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), inboundKey));
       }
     }

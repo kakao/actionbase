@@ -2,20 +2,20 @@ package com.kakao.actionbase.v2.core.code;
 
 import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
 
-public class KeyFieldValueV2<T> {
+public class TypedKeyFieldValue<T> {
   EncodedEdgeType encodedEdgeType;
   T key;
   T field;
   T value;
 
-  public KeyFieldValueV2(EncodedEdgeType encodedEdgeType, T key, T field, T value) {
+  public TypedKeyFieldValue(EncodedEdgeType encodedEdgeType, T key, T field, T value) {
     this.encodedEdgeType = encodedEdgeType;
     this.key = key;
     this.field = field;
     this.value = value;
   }
 
-  public KeyFieldValueV2(EncodedEdgeType encodedEdgeType, T key, T value) {
+  public TypedKeyFieldValue(EncodedEdgeType encodedEdgeType, T key, T value) {
     this.encodedEdgeType = encodedEdgeType;
     this.key = key;
     this.field = null;
@@ -38,9 +38,9 @@ public class KeyFieldValueV2<T> {
     return value;
   }
 
-  public static <T> KeyFieldValueV2<T> fromV1(
+  public static <T> TypedKeyFieldValue<T> from(
       KeyFieldValue<T> keyFieldValue, EncodedEdgeType encodedEdgeType) {
-    return new KeyFieldValueV2<>(
+    return new TypedKeyFieldValue<>(
         encodedEdgeType,
         keyFieldValue.getKey(),
         keyFieldValue.getField(),

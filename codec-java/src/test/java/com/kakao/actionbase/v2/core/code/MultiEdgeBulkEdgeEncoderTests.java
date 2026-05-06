@@ -102,7 +102,7 @@ public class MultiEdgeBulkEdgeEncoderTests {
     EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
     EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
 
-    List<KeyFieldValueV2<byte[]>> encodedEdges =
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
         BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label);
 
     // 1 EdgeState + 2 EdgeIndex (OUT/IN) + 2 EdgeCache (OUT/IN) + 2 EdgeCount (OUT/IN)
@@ -130,7 +130,7 @@ public class MultiEdgeBulkEdgeEncoderTests {
     EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
     EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
 
-    List<KeyFieldValueV2<byte[]>> encodedEdges =
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
         BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label);
 
     // 1 EdgeState + 2 EdgeIndex (OUT/IN) + 2 EdgeCount (OUT/IN) — no cache rows.

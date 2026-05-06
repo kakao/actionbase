@@ -30,7 +30,7 @@ public class KeyFieldValue<T> {
     return value;
   }
 
-  public static <T> KeyFieldValue<T> fromV2(KeyFieldValueV2<T> keyFieldValue) {
+  public static <T> KeyFieldValue<T> from(TypedKeyFieldValue<T> keyFieldValue) {
     return new KeyFieldValue<>(
         keyFieldValue.getKey(), keyFieldValue.getField(), keyFieldValue.getValue());
   }
