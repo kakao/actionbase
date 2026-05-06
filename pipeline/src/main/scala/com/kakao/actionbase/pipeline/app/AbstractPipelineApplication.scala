@@ -24,7 +24,7 @@ abstract class AbstractPipelineApplication[T <: Product: ClassTag] {
     }
   }
 
-  protected def run(spark: SparkSession, config: T): Unit
+  def run(spark: SparkSession, config: T): Unit
 
-  protected def configure(builder: SparkSession.Builder): SparkSession.Builder = builder
+  def configure(builder: SparkSession.Builder): SparkSession.Builder = builder
 }
