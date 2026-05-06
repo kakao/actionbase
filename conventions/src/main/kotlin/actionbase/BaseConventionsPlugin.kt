@@ -1,8 +1,5 @@
 package actionbase
 
-import actionbase.dependencies.Dependencies
-import actionbase.tasks.GenerateCodeStyleTask
-import com.diffplug.gradle.spotless.SpotlessExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
@@ -12,6 +9,12 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.external.javadoc.StandardJavadocDocletOptions
+
+import com.diffplug.gradle.spotless.SpotlessExtension
+
+import actionbase.dependencies.Dependencies
+import actionbase.tasks.GenerateCodeStyleTask
+import actionbase.tasks.GenerateCodeStyleTask.Companion.scalaFmtConfig
 
 class BaseConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -114,12 +117,12 @@ class BaseConventionsPlugin : Plugin<Project> {
                 endWithNewline()
             }
 
-            // Scala configuration is commented out in the original file
-            // spotless.scala {
-            //     scalafmt().configFile(project.rootProject.scalaFmtConfig)
-            //     trimTrailingWhitespace()
-            //     endWithNewline()
-            // }
+            scala {
+                scalafmt("3.8.3").configFile(project.rootProject.scalaFmtConfig)
+                target("**/*.scala")
+                trimTrailingWhitespace()
+                endWithNewline()
+            }
         }
     }
 }
