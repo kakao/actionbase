@@ -2,7 +2,12 @@ package com.kakao.actionbase.v2.core.code;
 
 import com.kakao.actionbase.v2.core.edge.BulkLoadEdge;
 import com.kakao.actionbase.v2.core.edge.Edge;
-import com.kakao.actionbase.v2.core.metadata.*;
+import com.kakao.actionbase.v2.core.metadata.Active;
+import com.kakao.actionbase.v2.core.metadata.Direction;
+import com.kakao.actionbase.v2.core.metadata.DirectionType;
+import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
+import com.kakao.actionbase.v2.core.metadata.LabelDTO;
+import com.kakao.actionbase.v2.core.metadata.LabelType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
