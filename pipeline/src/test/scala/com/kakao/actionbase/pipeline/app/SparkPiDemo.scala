@@ -6,7 +6,7 @@ case class SparkPiConfig(slices: Int = 2)
 
 object SparkPiDemo extends AbstractPipelineApplication[SparkPiConfig] {
 
-  override def run(spark: SparkSession, config: SparkPiConfig): Unit = {
+  override protected def run(spark: SparkSession, config: SparkPiConfig): Unit = {
     val pi = estimatePi(spark, config.slices)
     println(s"Pi is roughly $pi")
   }
