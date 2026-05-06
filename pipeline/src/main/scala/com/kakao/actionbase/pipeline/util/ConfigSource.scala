@@ -7,6 +7,14 @@ trait ConfigSource {
   def load(): Map[String, String]
 }
 
+object ConfigSource {
+  // foo_bar -> fooBar (sep='_'); foo.bar -> fooBar (sep='.')
+  private[util] def camelize(s: String, sep: Char): String = {
+    val parts = s.split(sep).map(_.toLowerCase)
+    parts.head + parts.tail.map(_.capitalize).mkString
+  }
+}
+
 // SPARK_AB_FOO_BAR -> fooBar
 object EnvSource extends ConfigSource {
   private val Prefix = "SPARK_AB_"
@@ -41,12 +49,4 @@ case class ArgsSource(args: Array[String]) extends ConfigSource {
       require(eq > 0, s"Expected --key=value, got: $arg")
       body.substring(0, eq) -> body.substring(eq + 1)
     }.toMap
-}
-
-object ConfigSource {
-  // foo_bar -> fooBar (sep='_'); foo.bar -> fooBar (sep='.')
-  private[util] def camelize(s: String, sep: Char): String = {
-    val parts = s.split(sep).map(_.toLowerCase)
-    parts.head + parts.tail.map(_.capitalize).mkString
-  }
 }
