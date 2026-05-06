@@ -87,7 +87,8 @@ public class BulkEdgeEncoder {
                   edgeForEdgeState.getProps(),
                   insertTs,
                   deleteTs));
-      edges.add(new TypedKeyFieldValue<>(EncodedEdgeType.HASH_EDGE_TYPE, key.key, key.field, value));
+      edges.add(
+          new TypedKeyFieldValue<>(EncodedEdgeType.HASH_EDGE_TYPE, key.key, key.field, value));
     }
 
     List<Cache> caches = label.getCaches();

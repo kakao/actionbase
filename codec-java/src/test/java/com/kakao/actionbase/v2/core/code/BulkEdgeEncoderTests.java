@@ -64,8 +64,7 @@ public class BulkEdgeEncoderTests {
       assertNull(kv.field);
 
       if (kv.key.length != 0) {
-        DecodedEdge decodedEdge =
-            DecodedEdge.from(KeyFieldValue.from(kv), Collections.emptyMap());
+        DecodedEdge decodedEdge = DecodedEdge.from(KeyFieldValue.from(kv), Collections.emptyMap());
         assertEquals(newLabel.getId(), decodedEdge.getLabelId());
         assertEquals(expectedEdge.getTs(), decodedEdge.getTs());
         if (decodedEdge.getType() == EncodedEdgeType.HASH_EDGE_TYPE) {
