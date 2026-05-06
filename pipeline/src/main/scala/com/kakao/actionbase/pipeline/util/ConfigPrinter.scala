@@ -36,14 +36,13 @@ object ConfigPrinter {
   // Per-field report: for each field of T, show the final value, the winning source,
   // and a trace of every source that contributed a value. Ends with the full YAML dump.
   //
+  // Sources arrive in low→high precedence order; the last contributor wins.
   // Sensitive fields (see SensitivePattern) are masked everywhere they appear.
   // Note: the per-field section iterates only the top-level declared fields of T;
   // the trailing YAML dump renders the full tree (including nested objects), and
   // masking is applied recursively there.
   def printConfigReport[T <: Product](
-      envMap: Map[String, String],
-      propsMap: Map[String, String],
-      argsMap: Map[String, String],
+      sources: Seq[(String, Map[String, String])],
       parsed: T
   ): Unit = {
     println("=== Configuration ===")
@@ -55,17 +54,13 @@ object ConfigPrinter {
         val sensitive = isSensitive(name)
         val value     = if (sensitive) Mask else display(field.get(parsed))
 
-        val origin =
-          if (argsMap.contains(name))       "args"
-          else if (propsMap.contains(name)) "props"
-          else if (envMap.contains(name))   "env"
-          else                              "default"
+        val origin = sources.reverse
+          .collectFirst { case (srcName, m) if m.contains(name) => srcName }
+          .getOrElse("default")
 
-        val trace = Seq(
-          envMap.get(name).map(v => s"env=${maskValue(sensitive, v)}"),
-          propsMap.get(name).map(v => s"props=${maskValue(sensitive, v)}"),
-          argsMap.get(name).map(v => s"args=${maskValue(sensitive, v)}")
-        ).flatten
+        val trace = sources.flatMap { case (srcName, m) =>
+          m.get(name).map(v => s"$srcName=${maskValue(sensitive, v)}")
+        }
 
         val tracePart = if (trace.isEmpty) "" else s"  (${trace.mkString(", ")})"
         println(s"  $name = $value  [$origin]$tracePart")

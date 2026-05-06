@@ -6,10 +6,56 @@ import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModul
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
-object ConfigLoader {
-  private val PropPrefix = "spark.ab."
-  private val EnvPrefix  = "SPARK_AB_"
+trait ConfigSource {
+  def name: String
+  def load(): Map[String, String]
+}
 
+// SPARK_AB_FOO_BAR -> fooBar
+object EnvSource extends ConfigSource {
+  private val Prefix = "SPARK_AB_"
+  val name           = "env"
+
+  def load(): Map[String, String] =
+    System.getenv().asScala.toMap.collect {
+      case (k, v) if k.startsWith(Prefix) => ConfigSource.camelize(k.stripPrefix(Prefix), '_') -> v
+    }
+}
+
+// spark.ab.foo.bar -> fooBar
+object PropsSource extends ConfigSource {
+  private val Prefix = "spark.ab."
+  val name           = "props"
+
+  def load(): Map[String, String] =
+    System.getProperties.asScala.toMap.collect {
+      case (k, v) if k.startsWith(Prefix) => ConfigSource.camelize(k.stripPrefix(Prefix), '.') -> v
+    }
+}
+
+// Only --key=value form is supported. Splits on the first '='; later '=' chars stay in the value.
+case class ArgsSource(args: Array[String]) extends ConfigSource {
+  val name = "args"
+
+  def load(): Map[String, String] =
+    args.iterator.map { arg =>
+      require(arg.startsWith("--"), s"Expected --key=value, got: $arg")
+      val body = arg.drop(2)
+      val eq   = body.indexOf('=')
+      require(eq > 0, s"Expected --key=value, got: $arg")
+      body.substring(0, eq) -> body.substring(eq + 1)
+    }.toMap
+}
+
+object ConfigSource {
+  // foo_bar -> fooBar (sep='_'); foo.bar -> fooBar (sep='.')
+  private[util] def camelize(s: String, sep: Char): String = {
+    val parts = s.split(sep).map(_.toLowerCase)
+    parts.head + parts.tail.map(_.capitalize).mkString
+  }
+}
+
+object ConfigLoader {
   // Strict JSON mapper for config deserialization: missing required primitives must throw.
   @transient private lazy val json: ObjectMapper with ClassTagExtensions = {
     val mapper = new ObjectMapper() with ClassTagExtensions
@@ -19,22 +65,20 @@ object ConfigLoader {
     mapper
   }
 
-  // Cascading config: env (SPARK_AB_FOO_BAR) < props (spark.ab.foo.bar) < args (--key=value).
+  // Cascading config: sources are merged left-to-right, so later sources win.
+  // Default order is env < props < args.
   // Prints a per-field report by default; pass printReport = false to silence
   // (e.g. unit tests, batch tools) without changing other behavior.
   def load[T <: Product: ClassTag](
       args: Array[String] = Array.empty,
       printReport: Boolean = true,
   ): T = {
-    val envMap   = loadConfigFromEnvironment()
-    val propsMap = loadConfigFromProperties()
-    val argsMap  = loadConfigFromArgs(args)
+    val sources   = Seq(EnvSource, PropsSource, ArgsSource(args)) // low → high
+    val perSource = sources.map(s => s.name -> s.load())
+    val merged    = perSource.map(_._2).reduce(_ ++ _)
+    val parsed    = parse[T](merged)
 
-    // preference order: args > properties > environment > defaults
-    val configMap = envMap ++ propsMap ++ argsMap
-    val parsed    = parse[T](configMap)
-
-    if (printReport) ConfigPrinter.printConfigReport(envMap, propsMap, argsMap, parsed)
+    if (printReport) ConfigPrinter.printConfigReport(perSource, parsed)
     parsed
   }
 
@@ -45,31 +89,6 @@ object ConfigLoader {
     }
     val cls = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
     json.convertValue(root, cls)
-  }
-
-  // SPARK_AB_FOO_BAR -> fooBar
-  private def loadConfigFromEnvironment(): Map[String, String] = {
-    System.getenv().asScala.toMap.collect {
-      case (k, v) if k.startsWith(EnvPrefix) => camelize(k.stripPrefix(EnvPrefix), '_') -> v
-    }
-  }
-
-  // spark.ab.foo.bar -> fooBar
-  private def loadConfigFromProperties(): Map[String, String] = {
-    System.getProperties.asScala.toMap.collect {
-      case (k, v) if k.startsWith(PropPrefix) => camelize(k.stripPrefix(PropPrefix), '.') -> v
-    }
-  }
-
-  // Only --key=value form is supported. Splits on the first '='; later '=' chars stay in the value.
-  private def loadConfigFromArgs(args: Array[String]): Map[String, String] = {
-    args.iterator.map { arg =>
-      require(arg.startsWith("--"), s"Expected --key=value, got: $arg")
-      val body = arg.drop(2)
-      val eq   = body.indexOf('=')
-      require(eq > 0, s"Expected --key=value, got: $arg")
-      body.substring(0, eq) -> body.substring(eq + 1)
-    }.toMap
   }
 
   // Array literal: [a, b, c]. Splits on top-level commas only — commas inside
@@ -119,10 +138,5 @@ object ConfigLoader {
     }
     out += cur.toString
     out.toSeq
-  }
-
-  private def camelize(s: String, sep: Char): String = {
-    val parts = s.split(sep).map(_.toLowerCase)
-    parts.head + parts.tail.map(_.capitalize).mkString
   }
 }

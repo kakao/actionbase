@@ -73,9 +73,11 @@ class ConfigPrinterTest {
     System.setOut(new java.io.PrintStream(baos))
     try {
       ConfigPrinter.printConfigReport(
-        envMap = Map.empty,
-        propsMap = Map.empty,
-        argsMap = Map("token" -> "tok-secret-value", "name" -> "alice"),
+        sources = Seq(
+          "env"   -> Map.empty,
+          "props" -> Map.empty,
+          "args"  -> Map("token" -> "tok-secret-value", "name" -> "alice")
+        ),
         parsed = WithSecret()
       )
     } finally {
