@@ -1,22 +1,10 @@
 package com.kakao.actionbase.pipeline.util
 
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.databind.{DeserializationFeature, JsonNode, SerializationFeature}
+import com.fasterxml.jackson.databind.{DeserializationFeature, SerializationFeature}
 import com.fasterxml.jackson.dataformat.yaml.{YAMLFactory, YAMLGenerator, YAMLMapper}
 import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
 
-import java.util.regex.Pattern
-
-import scala.collection.JavaConverters._
-
 object ConfigPrinter {
-
-  // Field-name patterns that look like credentials. Values for matching fields are masked
-  // in both the per-field report and the YAML dump to avoid leaking secrets into driver logs.
-  // Conservative on purpose — generic terms like "key" or "auth" are intentionally excluded
-  // to avoid masking innocuous fields. Extend this pattern as new sensitive field names appear.
-  private val SensitivePattern = Pattern.compile("(?i).*(password|passwd|secret|token|credential).*")
-  private val Mask             = "***"
 
   @transient private lazy val yaml: YAMLMapper with ClassTagExtensions = {
     val factory = new YAMLFactory()
@@ -35,12 +23,7 @@ object ConfigPrinter {
 
   // Per-field report: for each field of T, show the final value, the winning source,
   // and a trace of every source that contributed a value. Ends with the full YAML dump.
-  //
   // Sources arrive in low→high precedence order; the last contributor wins.
-  // Sensitive fields (see SensitivePattern) are masked everywhere they appear.
-  // Note: the per-field section iterates only the top-level declared fields of T;
-  // the trailing YAML dump renders the full tree (including nested objects), and
-  // masking is applied recursively there.
   def printConfigReport[T <: Product](
       sources: Seq[(String, Map[String, String])],
       parsed: T
@@ -50,45 +33,22 @@ object ConfigPrinter {
       .filterNot(_.getName.contains("$"))
       .foreach { field =>
         field.setAccessible(true)
-        val name      = field.getName
-        val sensitive = isSensitive(name)
-        val value     = if (sensitive) Mask else display(field.get(parsed))
+        val name  = field.getName
+        val value = display(field.get(parsed))
 
         val origin = sources.reverse
           .collectFirst { case (srcName, m) if m.contains(name) => srcName }
           .getOrElse("default")
 
         val trace = sources.flatMap { case (srcName, m) =>
-          m.get(name).map(v => s"$srcName=${maskValue(sensitive, v)}")
+          m.get(name).map(v => s"$srcName=$v")
         }
 
         val tracePart = if (trace.isEmpty) "" else s"  (${trace.mkString(", ")})"
         println(s"  $name = $value  [$origin]$tracePart")
       }
     println("--- final ---")
-    println(yaml.writeValueAsString(maskedTree(parsed)))
-  }
-
-  private[util] def isSensitive(name: String): Boolean = SensitivePattern.matcher(name).matches()
-
-  private def maskValue(sensitive: Boolean, v: String): String = if (sensitive) Mask else v
-
-  // Walks the serialized tree and replaces sensitive fields with the mask string.
-  // Visible to tests so masking can be verified without capturing stdout.
-  private[util] def maskedTree(parsed: Product): JsonNode = {
-    val tree = yaml.valueToTree[JsonNode](parsed)
-    maskInPlace(tree)
-    tree
-  }
-
-  private def maskInPlace(node: JsonNode): Unit = node match {
-    case obj: ObjectNode =>
-      obj.fields().asScala.toSeq.foreach { entry =>
-        if (isSensitive(entry.getKey)) obj.put(entry.getKey, Mask)
-        else maskInPlace(entry.getValue)
-      }
-    case arr if arr.isArray => arr.elements().asScala.foreach(maskInPlace)
-    case _                  => ()
+    println(yaml.writeValueAsString(parsed))
   }
 
   private def display(value: Any): String = value match {
