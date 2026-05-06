@@ -151,20 +151,11 @@ open class GenerateCodeStyleTask : DefaultTask() {
             # $WARNING_MESSAGE
             # $UPDATE_MESSAGE
 
-            version = "3.7.17"
+            version = "3.8.3"
             runner.dialect = scala212
 
             align.preset = more
             maxColumn = 120
-            assumeStandardLibraryStripMargin = true
-
-            # Import sorting configuration
-            rewrite.rules = [SortImports]
-            rewrite.imports.sort = original
-            rewrite.imports.groups = [
-              ${getScalafmtImportGroups()}
-            ]
-            rewrite.imports.contiguousGroups = yes
             """.trimIndent(),
         )
 
