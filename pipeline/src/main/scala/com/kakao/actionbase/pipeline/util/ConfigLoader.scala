@@ -21,7 +21,7 @@ object ConfigLoader {
   // (e.g. unit tests, batch tools) without changing other behavior.
   def load[T <: Product: ClassTag](
       args: Array[String] = Array.empty,
-      printReport: Boolean = true,
+      printReport: Boolean = true
   ): T = {
     val sources   = Seq(EnvSource, PropsSource, ArgsSource(args)) // low → high
     val perSource = sources.map(s => s.name -> s.load())

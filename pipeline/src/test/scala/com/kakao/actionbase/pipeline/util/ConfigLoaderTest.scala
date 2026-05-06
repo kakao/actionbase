@@ -156,10 +156,10 @@ class ConfigLoaderTest {
   @CsvSource(
     delimiter = '|',
     value = Array(
-      "[]            |",          // empty literal yields empty array
-      "[1,2,3]       | 1,2,3",    // baseline
-      "[1,2,3,]      | 1,2,3",    // trailing comma ignored
-      "[ , 1 , 2 ]   | 1,2"       // empty/whitespace tokens dropped
+      "[]            |",       // empty literal yields empty array
+      "[1,2,3]       | 1,2,3", // baseline
+      "[1,2,3,]      | 1,2,3", // trailing comma ignored
+      "[ , 1 , 2 ]   | 1,2"    // empty/whitespace tokens dropped
     )
   )
   def testIntArrayParsing(literal: String, expected: String): Unit = {
