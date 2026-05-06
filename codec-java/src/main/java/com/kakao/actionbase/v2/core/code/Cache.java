@@ -29,9 +29,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * }
  * </pre>
  *
- * <p>The cache field uses the {@code "field"} JSON key (not {@code "name"}) to align with V3
- * {@code IndexField.kt}. {@link Index.Field} keeps the legacy {@code "name"} key, so cache fields
- * must not reuse it.
+ * <p>The cache field uses the {@code "field"} JSON key (not {@code "name"}) to align with V3 {@code
+ * IndexField.kt}. {@link Index.Field} keeps the legacy {@code "name"} key, so cache fields must not
+ * reuse it.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Cache implements Serializable {

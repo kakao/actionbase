@@ -38,7 +38,12 @@ public class KeyFieldValueV2<T> {
     return value;
   }
 
-  public static <T> KeyFieldValueV2<T> fromV1(KeyFieldValue<T> keyFieldValue, EncodedEdgeType encodedEdgeType) {
-    return new KeyFieldValueV2<>(encodedEdgeType, keyFieldValue.getKey(), keyFieldValue.getField(), keyFieldValue.getValue());
+  public static <T> KeyFieldValueV2<T> fromV1(
+      KeyFieldValue<T> keyFieldValue, EncodedEdgeType encodedEdgeType) {
+    return new KeyFieldValueV2<>(
+        encodedEdgeType,
+        keyFieldValue.getKey(),
+        keyFieldValue.getField(),
+        keyFieldValue.getValue());
   }
 }

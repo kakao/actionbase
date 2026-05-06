@@ -64,7 +64,8 @@ public class BulkEdgeEncoderTests {
       assertNull(kv.field);
 
       if (kv.key.length != 0) {
-        DecodedEdge decodedEdge = DecodedEdge.from(KeyFieldValue.fromV2(kv), Collections.emptyMap());
+        DecodedEdge decodedEdge =
+            DecodedEdge.from(KeyFieldValue.fromV2(kv), Collections.emptyMap());
         assertEquals(newLabel.getId(), decodedEdge.getLabelId());
         assertEquals(expectedEdge.getTs(), decodedEdge.getTs());
         if (decodedEdge.getType() == EncodedEdgeType.HASH_EDGE_TYPE) {
@@ -218,7 +219,8 @@ public class BulkEdgeEncoderTests {
     EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
     EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
 
-    List<KeyFieldValueV2<byte[]>> encodedEdges = BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label);
+    List<KeyFieldValueV2<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label);
 
     // 1 hash + 2 indexed(OUT/IN) + 2 counter(OUT/IN) — no cache rows.
     assertEquals(5, encodedEdges.size());
