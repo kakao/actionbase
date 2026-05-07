@@ -213,14 +213,15 @@ object EdgeMutationBuilder {
                 return@flatMap emptyList()
             }
 
+            val cacheValues =
+                fieldValues.map { (field, value) ->
+                    EdgeCacheRecord.Qualifier.CacheValue(
+                        value = value,
+                        order = field.order,
+                    )
+                }
+
             directions.map { direction ->
-                val cacheValues =
-                    fieldValues.map { (field, value) ->
-                        EdgeCacheRecord.Qualifier.CacheValue(
-                            value = value,
-                            order = field.order,
-                        )
-                    }
                 EdgeCacheRecord(
                     key =
                         EdgeCacheRecord.Key.of(
