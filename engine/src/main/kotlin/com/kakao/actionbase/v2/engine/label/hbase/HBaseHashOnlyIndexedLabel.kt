@@ -10,6 +10,7 @@ import com.kakao.actionbase.v2.engine.label.LabelFactory
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
+import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 
@@ -43,6 +44,7 @@ class HBaseHashOnlyIndexedLabel(
         direction: Direction,
         limit: Int,
         offset: String?,
+        predicates: List<WherePredicate>,
     ): Mono<DataFrame> = unsupported("seek")
 
     private fun unsupported(op: String): Mono<DataFrame> =

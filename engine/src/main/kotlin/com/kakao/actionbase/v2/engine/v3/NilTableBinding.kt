@@ -63,6 +63,7 @@ class NilTableBinding(
         direction: Direction,
         limit: Int,
         offset: String?,
+        ranges: String?,
     ): Mono<DataFrame> = V2BackedTableBinding.EMPTY_DATAFRAME
 
     override fun agg(

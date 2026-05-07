@@ -12,6 +12,7 @@ import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
+import com.kakao.actionbase.v2.engine.sql.WherePredicate
 
 import java.lang.AutoCloseable
 
@@ -95,6 +96,7 @@ interface Label : AutoCloseable {
         direction: Direction,
         limit: Int,
         offset: String? = null,
+        predicates: List<WherePredicate> = emptyList(),
     ): Mono<DataFrame> = Mono.error(UnsupportedOperationException("cache is not supported for ${this::class.simpleName}"))
 
     fun count(

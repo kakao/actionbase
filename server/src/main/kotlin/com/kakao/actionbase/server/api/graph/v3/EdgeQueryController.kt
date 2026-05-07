@@ -103,9 +103,10 @@ class EdgeQueryController(
         @RequestParam direction: Direction,
         @RequestParam limit: Int = ScanFilter.defaultLimit,
         @RequestParam offset: String? = null,
+        @RequestParam ranges: String? = null,
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
         queryService
-            .seek(database, table, cache, start, direction, limit, offset)
+            .seek(database, table, cache, start, direction, limit, offset, ranges)
             .mapToResponseEntity()
 
     @GetMapping("/graph/v3/databases/{database}/tables/{table}/edges/agg/{group}")

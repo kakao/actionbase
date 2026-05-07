@@ -41,7 +41,8 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
                     "source": {"type": "long", "comment": "src"},
                     "target": {"type": "long", "comment": "tgt"},
                     "properties": [
-                      {"name": "createdAt", "type": "long", "comment": "ts", "nullable": true}
+                      {"name": "createdAt", "type": "long", "comment": "ts", "nullable": true},
+                      {"name": "permission", "type": "string", "comment": "perm", "nullable": true}
                     ],
                     "direction": "BOTH",
                     "indexes": [],
@@ -50,6 +51,14 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
                       {
                         "cache": "recent_wishlist",
                         "fields": [{"field": "createdAt", "order": "DESC"}],
+                        "limit": 100
+                      },
+                      {
+                        "cache": "permission_created_at_desc",
+                        "fields": [
+                          {"field": "permission", "order": "ASC"},
+                          {"field": "createdAt", "order": "DESC"}
+                        ],
                         "limit": 100
                       }
                     ]
@@ -63,6 +72,9 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
             .expectStatus()
             .isOk
 
+        // Single-source fixtures used by recent_wishlist (single-field cache) tests.
+        // permission is omitted, so the compound cache stores `(null, createdAt, target)`
+        // for these rows — they don't intersect with the compound-test source below.
         client
             .post()
             .uri("/graph/v3/databases/$db/tables/$edgeTable/edges")
@@ -73,6 +85,29 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
                   "mutations": [
                     {"type": "INSERT", "edge": {"version": 1, "source": 1000, "target": 2000, "properties": {"createdAt": 100}}},
                     {"type": "INSERT", "edge": {"version": 1, "source": 1000, "target": 2001, "properties": {"createdAt": 101}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        // Compound-cache fixtures on a separate source. permission groups: "me" (1 row),
+        // "others" (4 rows). Within "others", createdAt descends 500 → 400 → 300 → 100.
+        // Lex byte order = (permission ASC, createdAt DESC).
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables/$edgeTable/edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 2, "properties": {"permission": "me",     "createdAt": 200}}},
+                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 3, "properties": {"permission": "others", "createdAt": 500}}},
+                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 4, "properties": {"permission": "others", "createdAt": 400}}},
+                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 5, "properties": {"permission": "others", "createdAt": 300}}},
+                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 6, "properties": {"permission": "others", "createdAt": 100}}}
                   ]
                 }
                 """.trimIndent(),
@@ -240,6 +275,102 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
             .isEqualTo(1000)
             .jsonPath("$.edges[0].target")
             .isEqualTo(2000)
+            .jsonPath("$.edges[0].properties.createdAt")
+            .isEqualTo(100)
+    }
+
+    /**
+     * Single-field DESC cache filtered by `ranges=createdAt:gte:101`.
+     *
+     * EdgeCache (source=1000, OUT, recent_wishlist) wide row:
+     * |       row key        | qualifier (DESC) | target | createdAt | vs gte:101 |
+     * |----------------------|------------------|--------|-----------|------------|
+     * | hash|1000|T|-6|OUT|C | ~101             | 2001   | 101       | included   |
+     * |                      | ~100             | 2000   | 100       | excluded   |
+     *
+     * Expected: only 2001 (createdAt=101) survives the `ColumnRangeFilter`.
+     */
+    @Test
+    fun `seek with single-field range filter excludes rows below the bound`() {
+        client
+            .get()
+            .uri(
+                "/graph/v3/databases/$db/tables/$edgeTable/edges/seek/recent_wishlist" +
+                    "?start=1000&direction=OUT&ranges=createdAt:gte:101",
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.count")
+            .isEqualTo(1)
+            .jsonPath("$.edges[0].target")
+            .isEqualTo(2001)
+            .jsonPath("$.edges[0].properties.createdAt")
+            .isEqualTo(101)
+            .jsonPath("$.hasNext")
+            .isEqualTo(false)
+    }
+
+    /**
+     * Compound cache (permission ASC, createdAt DESC) filtered by leading-prefix `Eq`.
+     *
+     * EdgeCache (source=1, OUT, permission_created_at_desc) wide row:
+     * |      row key      | permission (ASC) | createdAt (DESC) | target | vs eq:others |
+     * |-------------------|------------------|------------------|--------|--------------|
+     * | hash|1|T|-6|OUT|C | "me"             | 200              | 2      | excluded     |
+     * |                   | "others"         | 500              | 3      | included     |
+     * |                   | "others"         | 400              | 4      | included     |
+     * |                   | "others"         | 300              | 5      | included     |
+     * |                   | "others"         | 100              | 6      | included     |
+     *
+     * `ranges=permission:eq:others` brackets the four "others" rows into a single
+     * `ColumnRangeFilter`. Expected: targets [3, 4, 5, 6] in createdAt DESC order.
+     */
+    @Test
+    fun `seek with compound Eq filter returns only the matching permission group`() {
+        client
+            .get()
+            .uri(
+                "/graph/v3/databases/$db/tables/$edgeTable/edges/seek/permission_created_at_desc" +
+                    "?start=1&direction=OUT&ranges=permission:eq:others",
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.count")
+            .isEqualTo(4)
+            .jsonPath("$.edges[0].target")
+            .isEqualTo(3)
+            .jsonPath("$.edges[0].properties.createdAt")
+            .isEqualTo(500)
+            .jsonPath("$.edges[3].target")
+            .isEqualTo(6)
+            .jsonPath("$.edges[3].properties.createdAt")
+            .isEqualTo(100)
+    }
+
+    /**
+     * Same compound cache, but `Eq` on permission combined with a trailing range
+     * on createdAt — the canonical `WHERE permission = X AND createdAt < T` shape.
+     *
+     * `ranges=permission:eq:others;createdAt:lt:300` keeps only "others" rows
+     * with createdAt < 300, i.e. the single row with createdAt=100.
+     */
+    @Test
+    fun `seek with compound Eq plus trailing range filters within the group`() {
+        client
+            .get()
+            .uri(
+                "/graph/v3/databases/$db/tables/$edgeTable/edges/seek/permission_created_at_desc" +
+                    "?start=1&direction=OUT&ranges=permission:eq:others;createdAt:lt:300",
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.count")
+            .isEqualTo(1)
+            .jsonPath("$.edges[0].target")
+            .isEqualTo(6)
             .jsonPath("$.edges[0].properties.createdAt")
             .isEqualTo(100)
     }

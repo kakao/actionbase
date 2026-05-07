@@ -228,11 +228,40 @@ class V2BackedTableBinding(
         direction: Direction,
         limit: Int,
         offset: String?,
-    ): Mono<DataFrame> =
-        label
-            .cache(listOf(start), cache, direction, limit, offset)
+        ranges: String?,
+    ): Mono<DataFrame> {
+        val cacheEntity =
+            label.entity.caches.find { it.cache == cache }
+                ?: return Mono.error(IllegalArgumentException("cache `$cache` is not found in label `${label.entity.name}`."))
+
+        val cacheFieldNames = cacheEntity.fields.map { it.field }
+        val predicates = ranges?.let { WherePredicate.parse(it, label.entity.schema) } ?: emptyList()
+        val predicateKeys = predicates.map { it.key }
+
+        val lazyCacheMismatchErrorMessage: () -> String = {
+            "valid `ranges` order for the cache `$cache` is $cacheFieldNames. input was: $predicateKeys."
+        }
+        require(predicateKeys.size <= cacheFieldNames.size, lazyCacheMismatchErrorMessage)
+        predicateKeys.zip(cacheFieldNames).forEach { (predicateFieldName, cacheFieldName) ->
+            require(predicateFieldName == cacheFieldName, lazyCacheMismatchErrorMessage)
+        }
+
+        predicates.dropLast(1).forEach { predicate ->
+            require(predicate is WherePredicate.Eq) {
+                "cache `$cache` predicate on `${predicate.key}` must be `=` (only the trailing predicate may be a range)."
+            }
+        }
+        predicates.lastOrNull()?.let { trailing ->
+            require(trailing !is WherePredicate.In) {
+                "cache `$cache` does not support `IN` predicate on `${trailing.key}`."
+            }
+        }
+
+        return label
+            .cache(listOf(start), cache, direction, limit, offset, predicates)
             .map { it.toV3() }
             .switchIfEmpty(EMPTY_DATAFRAME)
+    }
 
     override fun agg(
         group: String,

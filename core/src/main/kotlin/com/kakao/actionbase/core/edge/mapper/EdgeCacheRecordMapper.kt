@@ -10,8 +10,10 @@ import com.kakao.actionbase.core.codec.buffer
 import com.kakao.actionbase.core.codec.getValue
 import com.kakao.actionbase.core.codec.getValueOrNull
 import com.kakao.actionbase.core.codec.hasRemaining
+import com.kakao.actionbase.core.codec.plusOne
 import com.kakao.actionbase.core.codec.putValue
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
+import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.storage.HBaseRecord
 
@@ -84,6 +86,45 @@ class EdgeCacheRecordMapper private constructor(
                             it.putValue(propertyValue)
                         }
                     }.toByteArray()
+            }
+
+        /**
+         * Encode the `start` side of a qualifier prefix range for an HBase
+         * `ColumnRangeFilter`.
+         *
+         * For each entry whose [QualifierStartStop.start] is non-null, append the value
+         * with its field's [Order]; non-inclusive components are advanced by one byte
+         * so an exclusive `min` bound skips the boundary value.
+         */
+        fun encodeQualifierPrefixStart(startStops: List<QualifierStartStop>): ByteArray =
+            bufferPool.use { buffer ->
+                startStops.forEach { (start, _) ->
+                    if (start != null) {
+                        buffer.putValue(start.value, start.order)
+                        if (!start.inclusive) buffer.plusOne()
+                    }
+                }
+                buffer.toByteArray()
+            }
+
+        /**
+         * Encode the `stop` side of a qualifier prefix range for an HBase
+         * `ColumnRangeFilter`.
+         *
+         * For each entry whose [QualifierStartStop.stop] is non-null, append the value
+         * with its field's [Order]; the trailing inclusive component is advanced by one
+         * byte so an exclusive `max` bound still admits the boundary value.
+         */
+        fun encodeQualifierPrefixStop(startStops: List<QualifierStartStop>): ByteArray =
+            bufferPool.use { buffer ->
+                val lastIndex = startStops.indexOfLast { it.stop != null }
+                startStops.forEachIndexed { index, (_, stop) ->
+                    if (stop != null) {
+                        buffer.putValue(stop.value, stop.order)
+                        if (stop.inclusive && index == lastIndex) buffer.plusOne()
+                    }
+                }
+                buffer.toByteArray()
             }
     }
 
@@ -160,3 +201,14 @@ class EdgeCacheRecordMapper private constructor(
         }
     }
 }
+
+data class QualifierStartStopItem(
+    val value: Any,
+    val order: Order,
+    val inclusive: Boolean,
+)
+
+data class QualifierStartStop(
+    val start: QualifierStartStopItem?,
+    val stop: QualifierStartStopItem?,
+)

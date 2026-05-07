@@ -90,6 +90,7 @@ data class ActionbaseQuery(
             val direction: Direction,
             val cache: String,
             val limit: Int,
+            val ranges: String? = null,
             override val include: Boolean = false,
             override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),

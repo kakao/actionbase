@@ -142,10 +142,11 @@ class QueryService(
         direction: Direction,
         limit: Int = ScanFilter.defaultLimit,
         offset: String? = null,
+        ranges: String? = null,
     ): Mono<DataFrameEdgePayload> =
         engine
             .getTableBinding(database, table)
-            .seek(cache, start, direction, limit, offset)
+            .seek(cache, start, direction, limit, offset, ranges)
             .map { it.toEdgePayload() }
 
     fun agg(

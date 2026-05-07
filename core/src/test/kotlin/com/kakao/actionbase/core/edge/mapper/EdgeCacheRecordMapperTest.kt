@@ -8,6 +8,18 @@ import kotlin.test.assertEquals
 
 import org.junit.jupiter.api.Test
 
+private fun compareUnsigned(
+    a: ByteArray,
+    b: ByteArray,
+): Int {
+    val len = minOf(a.size, b.size)
+    for (i in 0 until len) {
+        val diff = (a[i].toInt() and 0xFF) - (b[i].toInt() and 0xFF)
+        if (diff != 0) return diff
+    }
+    return a.size - b.size
+}
+
 /**
  * EdgeCache (Wide Row) layout:
  *
@@ -233,6 +245,113 @@ class EdgeCacheRecordMapperTest {
         assertEquals(Direction.IN, record.key.direction)
         assertEquals("product1", record.key.directedSource)
         assertEquals("user1", record.qualifier.directedTarget)
+    }
+
+    /**
+     * Compound (permission ASC, createdAt DESC). Per-field [Order] is baked into
+     * the qualifier bytes via OrderedBytes (DESC fields are bit-inverted), so an
+     * unsigned-byte lex sort — the way HBase scans columns — yields the intended
+     * compound order without any explicit scan-direction handling.
+     *
+     * | target | permission (ASC) | createdAt (DESC) |
+     * |--------|------------------|------------------|
+     * | t5     | "others"         | 1716388213000    |
+     * | t2     | "me"             | 1744597404230    |
+     * | t7     | "others"         | 1629251546000    |
+     * | t3     | "others"         | 1766556337836    |
+     * | t4     | "others"         | 1744692001289    |
+     * | t6     | "others"         | 1682054196000    |
+     *
+     * | byte-sort | permission | createdAt     | reason                     |
+     * |-----------|------------|---------------|----------------------------|
+     * | t2        | "me"       | 1744597404230 | "me" < "others" (ASCII)    |
+     * | t3        | "others"   | 1766556337836 | largest createdAt, DESC 1st|
+     * | t4        | "others"   | 1744692001289 | ↓                          |
+     * | t5        | "others"   | 1716388213000 | ↓                          |
+     * | t6        | "others"   | 1682054196000 | ↓                          |
+     * | t7        | "others"   | 1629251546000 | smallest, DESC last        |
+     */
+    @Test
+    fun `compound mixed-direction qualifiers sort lex by (leading ASC, trailing DESC)`() {
+        // schema: (permission ASC, createdAt DESC)
+        val records =
+            listOf(
+                Triple("others", 1716388213000L, "t5"),
+                Triple("me", 1744597404230L, "t2"),
+                Triple("others", 1629251546000L, "t7"),
+                Triple("others", 1766556337836L, "t3"),
+                Triple("others", 1744692001289L, "t4"),
+                Triple("others", 1682054196000L, "t6"),
+            )
+        val encoded =
+            records.map { (perm, ts, target) ->
+                val q =
+                    EdgeCacheRecord.Qualifier(
+                        cacheValues =
+                            listOf(
+                                EdgeCacheRecord.Qualifier.CacheValue(perm, Order.ASC),
+                                EdgeCacheRecord.Qualifier.CacheValue(ts, Order.DESC),
+                            ),
+                        directedTarget = target,
+                    )
+                target to mapper.encoder.encodeQualifier(q)
+            }
+
+        val sorted = encoded.sortedWith { a, b -> compareUnsigned(a.second, b.second) }
+
+        assertEquals(listOf("t2", "t3", "t4", "t5", "t6", "t7"), sorted.map { it.first })
+    }
+
+    /**
+     * Predicate `WHERE permission='others'` on schema (permission ASC, createdAt DESC).
+     *
+     * |   bound   |           encoded bytes           |
+     * |-----------|-----------------------------------|
+     * | start (≤) | encode("others", ASC)             |
+     * | stop  (<) | encode("others", ASC) + plusOne() |
+     *
+     * | qualifier (permission | createdAt(DESC) | target) | vs [start, stop) |
+     * |---------------------------------------------------|------------------|
+     * | "me"                  | 1000L          | "tx"     | < start          |
+     * | "others"              | 1000L          | "tx"     | inside           |
+     * | "public"              | 1000L          | "tx"     | ≥ stop           |
+     *
+     * `WHERE permission='others'` becomes a contiguous qualifier range
+     * `[encode("others"), encode("others")+1)` — the byte-range translated
+     * into a single ColumnRangeFilter by the seek API.
+     */
+    @Test
+    fun `predicate prefix start-stop bracket matching qualifiers and exclude others`() {
+        val comparator = Comparator<ByteArray> { a, b -> compareUnsigned(a, b) }
+        // Eq("permission", "others") on an ASC field → same item on both start and stop sides.
+        val eqItem = QualifierStartStopItem("others", Order.ASC, true)
+        val startStops = listOf(QualifierStartStop(eqItem, eqItem))
+        val start = mapper.encoder.encodeQualifierPrefixStart(startStops)
+        val stop = mapper.encoder.encodeQualifierPrefixStop(startStops)
+
+        fun encodeFor(perm: String): ByteArray {
+            val q =
+                EdgeCacheRecord.Qualifier(
+                    cacheValues =
+                        listOf(
+                            EdgeCacheRecord.Qualifier.CacheValue(perm, Order.ASC),
+                            EdgeCacheRecord.Qualifier.CacheValue(1_000L, Order.DESC),
+                        ),
+                    directedTarget = "tx",
+                )
+            return mapper.encoder.encodeQualifier(q)
+        }
+
+        val matching = encodeFor("others")
+        val before = encodeFor("me")
+        val after = encodeFor("public") // 'p' > 'o'
+
+        // matching qualifier sits in [start, stop)
+        assert(comparator.compare(start, matching) < 0) { "start should be < matching" }
+        assert(comparator.compare(matching, stop) < 0) { "matching should be < stop" }
+        // non-matching qualifiers fall outside
+        assert(comparator.compare(before, start) < 0) { "permission='me' must precede start" }
+        assert(comparator.compare(after, stop) >= 0) { "permission='public' must not precede stop" }
     }
 
     /**

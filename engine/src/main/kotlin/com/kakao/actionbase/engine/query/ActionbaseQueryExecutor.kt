@@ -190,7 +190,7 @@ class ActionbaseQueryExecutor(
                 .flatMap { start ->
                     engine
                         .getTableBinding(database = queryItem.database, alias = queryItem.table)
-                        .seek(queryItem.cache, start, queryItem.direction, queryItem.limit, offset = null)
+                        .seek(queryItem.cache, start, queryItem.direction, queryItem.limit, offset = null, ranges = queryItem.ranges)
                 }.reduce { a, b ->
                     DataFrame(rows = a.rows + b.rows, schema = a.schema, total = a.total + b.total)
                 }.switchIfEmpty(Mono.just(DataFrame.empty))

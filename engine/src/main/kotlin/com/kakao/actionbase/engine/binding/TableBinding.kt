@@ -63,6 +63,7 @@ interface TableBinding {
         direction: Direction,
         limit: Int,
         offset: String?,
+        ranges: String?,
     ): Mono<DataFrame>
 
     fun agg(

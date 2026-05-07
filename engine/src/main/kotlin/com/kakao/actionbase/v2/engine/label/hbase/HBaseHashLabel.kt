@@ -448,14 +448,8 @@ open class HBaseHashLabel(
         rows: List<ByteArray>,
         from: ByteArray?,
         to: ByteArray?,
-        order: Order,
         limit: Int,
     ): Mono<List<HBaseRecord>> {
-        // ColumnRangeFilter requires minColumn <= maxColumn in byte order.
-        // DESC encoding flips bytes, so from > to; swap to restore byte order.
-        val (min, max) =
-            if (order == Order.DESC) to to from else from to to
-
         val gets =
             rows.map {
                 val get =
@@ -464,12 +458,12 @@ open class HBaseHashLabel(
 
                 val filters = FilterList(FilterList.Operator.MUST_PASS_ALL)
 
-                if (min != null || max != null) {
+                if (from != null || to != null) {
                     filters.addFilter(
                         ColumnRangeFilter(
-                            min,
+                            from,
                             false,
-                            max,
+                            to,
                             false,
                         ),
                     )
