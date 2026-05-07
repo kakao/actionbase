@@ -11,8 +11,11 @@ import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.Index
 import com.kakao.actionbase.core.metadata.common.IndexField
+import com.kakao.actionbase.core.state.AbstractSchema
+import com.kakao.actionbase.core.state.StateValue
 
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 import org.junit.jupiter.api.Nested
@@ -412,6 +415,161 @@ class EdgeMutationBuilderTest {
                 listOf(EdgeCacheRecord.Qualifier.CacheValue(value = 5L, order = Order.DESC)),
                 cacheRecord.qualifier.cacheValues,
             )
+        }
+    }
+
+    @Nested
+    inner class CacheDimensionFilter {
+        private val permissionCode = AbstractSchema.codeOf("permission")
+        private val createdAtCode = AbstractSchema.codeOf("createdAt")
+
+        // Cache that only stores edges where permission is "me" or "others".
+        private val permissionWhitelist =
+            Cache(
+                cache = "permission_created_at_desc",
+                fields =
+                    listOf(
+                        IndexField(field = "permission", order = Order.ASC, dimension = setOf("me", "others")),
+                        IndexField(field = "createdAt", order = Order.DESC),
+                    ),
+                limit = 100,
+            )
+
+        private fun edgeWithPermission(
+            active: Boolean,
+            version: Long,
+            permission: String?,
+            createdAt: Long = version,
+        ) = edgeRecord(
+            source = "userA",
+            target = "postX",
+            active = active,
+            version = version,
+            properties =
+                mapOf(
+                    permissionCode to StateValue(version, permission),
+                    createdAtCode to StateValue(version, createdAt),
+                ),
+        )
+
+        @Test
+        fun `value within dimension produces cache records`() {
+            val before = edgeWithPermission(active = false, version = 0, permission = null)
+            val after = edgeWithPermission(active = true, version = 1, permission = "me")
+            val result =
+                EdgeMutationBuilder.buildForUniqueEdge(
+                    before,
+                    after,
+                    DirectionType.BOTH,
+                    emptyList(),
+                    emptyList(),
+                    listOf(permissionWhitelist),
+                )
+
+            assertEquals("CREATED", result.status)
+            assertEquals(2, result.createCacheRecords.size)
+            assertTrue(result.createCacheRecords.all { record ->
+                record.qualifier.cacheValues.first().value == "me"
+            })
+        }
+
+        @Test
+        fun `value outside dimension skips cache records`() {
+            val before = edgeWithPermission(active = false, version = 0, permission = null)
+            val after = edgeWithPermission(active = true, version = 1, permission = "private")
+            val result =
+                EdgeMutationBuilder.buildForUniqueEdge(
+                    before,
+                    after,
+                    DirectionType.BOTH,
+                    emptyList(),
+                    emptyList(),
+                    listOf(permissionWhitelist),
+                )
+
+            // Other mutation outputs (state, count) are unaffected — only the wide-row
+            // cache write is suppressed for non-whitelisted edges.
+            assertEquals("CREATED", result.status)
+            assertEquals(1L, result.acc)
+            assertTrue(result.createCacheRecords.isEmpty())
+            assertTrue(result.deleteCacheRecordQualifiers.isEmpty())
+        }
+
+        @Test
+        fun `null dimension on a field is treated as no constraint`() {
+            // Same shape as permissionWhitelist but with no dimension on either field.
+            val unconstrained =
+                Cache(
+                    cache = "permission_created_at_desc",
+                    fields =
+                        listOf(
+                            IndexField(field = "permission", order = Order.ASC),
+                            IndexField(field = "createdAt", order = Order.DESC),
+                        ),
+                    limit = 100,
+                )
+            val before = edgeWithPermission(active = false, version = 0, permission = null)
+            val after = edgeWithPermission(active = true, version = 1, permission = "private")
+            val result =
+                EdgeMutationBuilder.buildForUniqueEdge(
+                    before,
+                    after,
+                    DirectionType.BOTH,
+                    emptyList(),
+                    emptyList(),
+                    listOf(unconstrained),
+                )
+
+            assertEquals(2, result.createCacheRecords.size)
+        }
+
+        @Test
+        fun `UPDATED transitioning out of dimension deletes old qualifier and writes nothing new`() {
+            val before = edgeWithPermission(active = true, version = 1, permission = "me")
+            val after = edgeWithPermission(active = true, version = 2, permission = "private")
+            val result =
+                EdgeMutationBuilder.buildForUniqueEdge(
+                    before,
+                    after,
+                    DirectionType.BOTH,
+                    emptyList(),
+                    emptyList(),
+                    listOf(permissionWhitelist),
+                )
+
+            assertEquals("UPDATED", result.status)
+            // before was in dimension → emit deletes; after is out of dimension → no creates.
+            assertTrue(result.createCacheRecords.isEmpty())
+            assertEquals(2, result.deleteCacheRecordQualifiers.size)
+        }
+
+        @Test
+        fun `UPDATED transitioning into dimension writes new qualifier without spurious deletes`() {
+            val before = edgeWithPermission(active = true, version = 1, permission = "private")
+            val after = edgeWithPermission(active = true, version = 2, permission = "others")
+            val result =
+                EdgeMutationBuilder.buildForUniqueEdge(
+                    before,
+                    after,
+                    DirectionType.BOTH,
+                    emptyList(),
+                    emptyList(),
+                    listOf(permissionWhitelist),
+                )
+
+            assertEquals("UPDATED", result.status)
+            // before never had a cache row (filtered out), so nothing to delete.
+            assertEquals(2, result.createCacheRecords.size)
+            assertTrue(result.deleteCacheRecordQualifiers.isEmpty())
+        }
+
+        @Test
+        fun `empty dimension is rejected at construction`() {
+            // Empty dimension would produce a cache that whitelists nothing — caught
+            // at construction so the DDL mistake surfaces immediately.
+            assertFailsWith<IllegalArgumentException> {
+                IndexField(field = "permission", order = Order.ASC, dimension = emptySet())
+            }
         }
     }
 

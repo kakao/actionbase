@@ -60,6 +60,14 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
                           {"field": "createdAt", "order": "DESC"}
                         ],
                         "limit": 100
+                      },
+                      {
+                        "cache": "whitelisted_permission",
+                        "fields": [
+                          {"field": "permission", "order": "ASC", "dimension": ["me"]},
+                          {"field": "createdAt", "order": "DESC"}
+                        ],
+                        "limit": 100
                       }
                     ]
                   },
@@ -373,6 +381,54 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
             .isEqualTo(6)
             .jsonPath("$.edges[0].properties.createdAt")
             .isEqualTo(100)
+    }
+
+    /**
+     * Same source=1 fixture as the compound-cache tests, but queried through the
+     * `whitelisted_permission` cache whose `permission` field declares
+     * `dimension: ["me"]`. The dimension is a write-time whitelist: only the single
+     * `permission="me"` edge (target=2) was ever stored in this cache; the four
+     * `permission="others"` edges are silently absent.
+     *
+     * EdgeCache (source=1, OUT, whitelisted_permission) wide row:
+     * |      row key      | permission (ASC) | createdAt (DESC) | target |
+     * |-------------------|------------------|------------------|--------|
+     * | hash|1|T|-6|OUT|C | "me"             | 200              | 2      |
+     *
+     * Expected: a bare seek returns only target=2; an Eq filter on the excluded
+     * "others" returns zero rows even though that source has four such edges.
+     */
+    @Test
+    fun `seek with dimension-filtered cache excludes non-whitelisted permissions at write time`() {
+        client
+            .get()
+            .uri(
+                "/graph/v3/databases/$db/tables/$edgeTable/edges/seek/whitelisted_permission" +
+                    "?start=1&direction=OUT",
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.count")
+            .isEqualTo(1)
+            .jsonPath("$.edges[0].target")
+            .isEqualTo(2)
+            .jsonPath("$.edges[0].properties.permission")
+            .isEqualTo("me")
+
+        // permission="others" was filtered out at write time, so the cache holds nothing
+        // for this branch even though four such edges exist on the underlying source.
+        client
+            .get()
+            .uri(
+                "/graph/v3/databases/$db/tables/$edgeTable/edges/seek/whitelisted_permission" +
+                    "?start=1&direction=OUT&ranges=permission:eq:others",
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.count")
+            .isEqualTo(0)
     }
 
     /**

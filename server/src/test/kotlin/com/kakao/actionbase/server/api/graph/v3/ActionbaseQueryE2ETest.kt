@@ -73,7 +73,9 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
             .expectStatus()
             .isOk
 
-        // hop2 table: EDGE with index + cache
+        // hop2 table: EDGE with index + caches.
+        //   recent_wishlist          — no dimension; full whitelist on createdAt DESC.
+        //   public_recent_wishlist   — dimension on permission=["others"]
         client
             .post()
             .uri("/graph/v3/databases/$db2/tables")
@@ -87,7 +89,8 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                     "source": {"type": "long", "comment": "source"},
                     "target": {"type": "long", "comment": "target"},
                     "properties": [
-                      {"name": "createdAt", "type": "long", "comment": "ts", "nullable": true}
+                      {"name": "createdAt", "type": "long", "comment": "ts", "nullable": true},
+                      {"name": "permission", "type": "string", "comment": "perm", "nullable": true}
                     ],
                     "direction": "BOTH",
                     "indexes": [
@@ -98,6 +101,14 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                       {
                         "cache": "recent_wishlist",
                         "fields": [{"field": "createdAt", "order": "DESC"}],
+                        "limit": 100
+                      },
+                      {
+                        "cache": "public_recent_wishlist",
+                        "fields": [
+                          {"field": "permission", "order": "ASC", "dimension": ["others"]},
+                          {"field": "createdAt", "order": "DESC"}
+                        ],
                         "limit": 100
                       }
                     ]
@@ -131,7 +142,9 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
             .expectStatus()
             .isOk
 
-        // hop2 edges: 2000 wishlists [3000, 3001], 2001 wishlists [3002]
+        // hop2 edges: 2000 wishlists [3000(others), 3001(me)], 2001 wishlists [3002(others)].
+        // recent_wishlist (no dimension) caches all 3; public_recent_wishlist filters
+        // out 3001 at write time, leaving 3000 and 3002.
         client
             .post()
             .uri("/graph/v3/databases/$db2/tables/$hop2Table/edges")
@@ -140,9 +153,9 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                 """
                 {
                   "mutations": [
-                    {"type": "INSERT", "edge": {"version": 1, "source": 2000, "target": 3000, "properties": {"createdAt": 200}}},
-                    {"type": "INSERT", "edge": {"version": 1, "source": 2000, "target": 3001, "properties": {"createdAt": 201}}},
-                    {"type": "INSERT", "edge": {"version": 1, "source": 2001, "target": 3002, "properties": {"createdAt": 202}}}
+                    {"type": "INSERT", "edge": {"version": 1, "source": 2000, "target": 3000, "properties": {"createdAt": 200, "permission": "others"}}},
+                    {"type": "INSERT", "edge": {"version": 1, "source": 2000, "target": 3001, "properties": {"createdAt": 201, "permission": "me"}}},
+                    {"type": "INSERT", "edge": {"version": 1, "source": 2001, "target": 3002, "properties": {"createdAt": 202, "permission": "others"}}}
                   ]
                 }
                 """.trimIndent(),
@@ -206,6 +219,107 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                 .isEqualTo("hop2")
                 .jsonPath("$.items[1].rows")
                 .isEqualTo(3)
+        }
+
+        @Test
+        fun `multihop with dimension cache filters non-whitelisted edges at write time`() {
+            // public_recent_wishlist has dimension=["others"] on permission, so the
+            // "me" edge (2000 -> 3001) was never written to this cache. The CACHE step
+            // needs no `ranges` predicate — only the 2 "others" targets surface.
+            client
+                .post()
+                .uri("/graph/v3/query")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    """
+                    {
+                      "query": [
+                        {
+                          "type": "SCAN",
+                          "name": "hop1",
+                          "database": "$db1",
+                          "table": "$hop1Table",
+                          "source": {"type": "VALUE", "value": [1000]},
+                          "direction": "OUT",
+                          "index": "created_at_desc",
+                          "limit": 100,
+                          "include": true
+                        },
+                        {
+                          "type": "CACHE",
+                          "name": "hop2",
+                          "database": "$db2",
+                          "table": "$hop2Table",
+                          "source": {"type": "REF", "ref": "hop1", "field": "target"},
+                          "direction": "OUT",
+                          "cache": "public_recent_wishlist",
+                          "limit": 10,
+                          "include": true
+                        }
+                      ]
+                    }
+                    """.trimIndent(),
+                ).exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$.items.length()")
+                .isEqualTo(2)
+                .jsonPath("$.items[1].name")
+                .isEqualTo("hop2")
+                .jsonPath("$.items[1].rows")
+                .isEqualTo(2)
+        }
+
+        @Test
+        fun `multihop dimension cache excludes me even with explicit permission predicate`() {
+            // permission='me' would normally match the underlying edge, but the
+            // dimension whitelist prevented it from being cached. Asking the cache for
+            // 'me' returns zero — the storage row exists, the cache row never did.
+            client
+                .post()
+                .uri("/graph/v3/query")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    """
+                    {
+                      "query": [
+                        {
+                          "type": "SCAN",
+                          "name": "hop1",
+                          "database": "$db1",
+                          "table": "$hop1Table",
+                          "source": {"type": "VALUE", "value": [1000]},
+                          "direction": "OUT",
+                          "index": "created_at_desc",
+                          "limit": 100,
+                          "include": true
+                        },
+                        {
+                          "type": "CACHE",
+                          "name": "hop2",
+                          "database": "$db2",
+                          "table": "$hop2Table",
+                          "source": {"type": "REF", "ref": "hop1", "field": "target"},
+                          "direction": "OUT",
+                          "cache": "public_recent_wishlist",
+                          "ranges": "permission:eq:me",
+                          "limit": 10,
+                          "include": true
+                        }
+                      ]
+                    }
+                    """.trimIndent(),
+                ).exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$.items.length()")
+                .isEqualTo(2)
+                .jsonPath("$.items[1].name")
+                .isEqualTo("hop2")
+                .jsonPath("$.items[1].rows")
+                .isEqualTo(0)
         }
 
         @Test

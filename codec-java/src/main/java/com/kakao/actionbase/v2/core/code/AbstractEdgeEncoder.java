@@ -11,6 +11,7 @@ import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -251,11 +252,23 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
       int labelId,
       List<Cache> caches) {
     return caches.stream()
+        .filter(cache -> matches(cache, ts, src, tgt, props))
         .flatMap(
             cache ->
                 dirType.getDirs().stream()
                     .map(dir -> encodeCacheEdge(ts, src, tgt, props, dir, labelId, cache)))
         .collect(Collectors.toList());
+  }
+
+  private static boolean matches(
+      Cache cache, long ts, Object src, Object tgt, Map<String, Object> props) {
+    for (Cache.Field field : cache.getFields()) {
+      Set<Object> dimension = field.getDimension();
+      if (dimension == null) continue;
+      Object value = resolveFieldValue(field.getField(), ts, src, tgt, props);
+      if (!dimension.contains(value)) return false;
+    }
+    return true;
   }
 
   // --- internal

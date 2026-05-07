@@ -199,10 +199,23 @@ object EdgeMutationBuilder {
 
         val directions = directionType.directions()
         return caches.flatMap { cache ->
+            val fieldValues =
+                cache.fields.map { field ->
+                    field to record.indexValueOf(properties, field.field)
+                }
+
+            val matches =
+                fieldValues.all { (field, value) ->
+                    field.dimension?.let { value in it } ?: true
+                }
+
+            if (!matches) {
+                return@flatMap emptyList()
+            }
+
             directions.map { direction ->
                 val cacheValues =
-                    cache.fields.map { field ->
-                        val value = record.indexValueOf(properties, field.field)
+                    fieldValues.map { (field, value) ->
                         EdgeCacheRecord.Qualifier.CacheValue(
                             value = value,
                             order = field.order,

@@ -5,8 +5,10 @@ import com.kakao.actionbase.v2.core.code.hbase.ValueUtils;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -22,8 +24,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *
  * <pre>
  * {
- *   "cache": "top_created_at",
- *   "fields": [{"field": "created_at", "order": "DESC"}],
+ *   "cache": "permission_created_at_desc",
+ *   "fields": [
+ *     {"field": "permission", "order": "ASC", "dimension": ["me", "others"]},
+ *     {"field": "created_at", "order": "DESC"}
+ *   ],
  *   "limit": 100,
  *   "comment": "..."
  * }
@@ -32,6 +37,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * <p>The cache field uses the {@code "field"} JSON key (not {@code "name"}) to align with V3 {@code
  * IndexField.kt}. {@link Index.Field} keeps the legacy {@code "name"} key, so cache fields must not
  * reuse it.
+ *
+ * <p>{@code dimension} is an optional whitelist: when set, only edges whose value for the field is
+ * in the list are written to the cache. Other edges are silently skipped at write time.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Cache implements Serializable {
@@ -93,10 +101,28 @@ public class Cache implements Serializable {
     @JsonProperty("order")
     private final Order order;
 
+    @JsonProperty("dimension")
+    private final Set<Object> dimension;
+
     @JsonCreator
-    public Field(@JsonProperty("field") String field, @JsonProperty("order") Order order) {
+    public Field(
+        @JsonProperty("field") String field,
+        @JsonProperty("order") Order order,
+        @JsonProperty("dimension") Set<Object> dimension) {
+      if (dimension != null && dimension.isEmpty()) {
+        throw new IllegalArgumentException(
+            "Cache field `"
+                + field
+                + "` has an empty `dimension`; omit the key to disable filtering.");
+      }
       this.field = field;
       this.order = order;
+      this.dimension =
+          dimension == null ? null : Collections.unmodifiableSet(new LinkedHashSet<>(dimension));
+    }
+
+    public Field(String field, Order order) {
+      this(field, order, null);
     }
 
     public String getField() {
@@ -107,23 +133,37 @@ public class Cache implements Serializable {
       return order;
     }
 
+    public Set<Object> getDimension() {
+      return dimension;
+    }
+
     @Override
     public String toString() {
-      return "Field{" + "field='" + field + '\'' + ", order=" + order + '}';
+      return "Field{"
+          + "field='"
+          + field
+          + '\''
+          + ", order="
+          + order
+          + ", dimension="
+          + dimension
+          + '}';
     }
 
     @Override
     public boolean equals(Object obj) {
       if (obj instanceof Field) {
         Field other = (Field) obj;
-        return Objects.equals(field, other.field) && Objects.equals(order, other.order);
+        return Objects.equals(field, other.field)
+            && Objects.equals(order, other.order)
+            && Objects.equals(dimension, other.dimension);
       }
       return false;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(field, order);
+      return Objects.hash(field, order, dimension);
     }
   }
 
