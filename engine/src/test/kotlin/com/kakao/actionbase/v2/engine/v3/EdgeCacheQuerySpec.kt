@@ -118,7 +118,7 @@ class EdgeCacheQuerySpec :
                 }.verifyComplete()
 
             queryService
-                .seek(database, table, cacheName, "1000", Direction.OUT, 10)
+                .seek(database, table, cacheName, listOf("1000"), Direction.OUT, 10)
                 .test()
                 .assertNext { payload ->
                     payload.count shouldBe 3
@@ -192,7 +192,7 @@ class EdgeCacheQuerySpec :
             // Page 1: limit=2 → [2002, 2001], hasNext=true
             var nextOffset: String? = null
             queryService
-                .seek(database, table, cacheName, "1000", Direction.OUT, 2)
+                .seek(database, table, cacheName, listOf("1000"), Direction.OUT, 2)
                 .test()
                 .assertNext { payload ->
                     payload.count shouldBe 2
@@ -204,7 +204,7 @@ class EdgeCacheQuerySpec :
 
             // Page 2: offset=cursor → [2000], hasNext=false
             queryService
-                .seek(database, table, cacheName, "1000", Direction.OUT, 2, nextOffset)
+                .seek(database, table, cacheName, listOf("1000"), Direction.OUT, 2, nextOffset)
                 .test()
                 .assertNext { payload ->
                     payload.count shouldBe 1
@@ -276,7 +276,7 @@ class EdgeCacheQuerySpec :
 
             // Query IN with start=2000 — should find 1 edge (source=1000 → target=2000)
             queryService
-                .seek(database, table, cacheName, "2000", Direction.IN, 10)
+                .seek(database, table, cacheName, listOf("2000"), Direction.IN, 10)
                 .test()
                 .assertNext { payload ->
                     payload.count shouldBe 1
@@ -286,7 +286,7 @@ class EdgeCacheQuerySpec :
 
             // Query IN with start=1000 — no edges (1000 is source, not target)
             queryService
-                .seek(database, table, cacheName, "1000", Direction.IN, 10)
+                .seek(database, table, cacheName, listOf("1000"), Direction.IN, 10)
                 .test()
                 .assertNext { payload ->
                     payload.count shouldBe 0
@@ -384,7 +384,7 @@ class EdgeCacheQuerySpec :
 
             // Query cache — should return only 1 edge
             queryService
-                .seek(database, table, cacheName, "1000", Direction.OUT, 10)
+                .seek(database, table, cacheName, listOf("1000"), Direction.OUT, 10)
                 .test()
                 .assertNext { payload ->
                     payload.count shouldBe 1
@@ -474,7 +474,7 @@ class EdgeCacheQuerySpec :
 
             // Query OUT — directedTarget is id, not target
             queryService
-                .seek(database, table, cacheName, "1000", Direction.OUT, 10)
+                .seek(database, table, cacheName, listOf("1000"), Direction.OUT, 10)
                 .test()
                 .assertNext { payload ->
                     payload.count shouldBe 3

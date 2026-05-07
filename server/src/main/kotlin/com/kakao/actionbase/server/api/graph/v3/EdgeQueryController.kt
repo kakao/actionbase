@@ -99,14 +99,16 @@ class EdgeQueryController(
         @PathVariable database: String,
         @PathVariable table: String,
         @PathVariable cache: String,
-        @RequestParam start: String,
+        @RequestParam start: List<String>,
         @RequestParam direction: Direction,
         @RequestParam limit: Int = ScanFilter.defaultLimit,
         @RequestParam offset: String? = null,
         @RequestParam ranges: String? = null,
+        @RequestParam filters: String? = null,
+        @RequestParam features: List<String> = emptyList(),
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
         queryService
-            .seek(database, table, cache, start, direction, limit, offset, ranges)
+            .seek(database, table, cache, start, direction, limit, offset, ranges, filters, features)
             .mapToResponseEntity()
 
     @GetMapping("/graph/v3/databases/{database}/tables/{table}/edges/agg/{group}")

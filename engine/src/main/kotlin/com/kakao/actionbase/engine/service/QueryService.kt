@@ -138,15 +138,17 @@ class QueryService(
         database: String,
         table: String,
         cache: String,
-        start: Any,
+        start: List<Any>,
         direction: Direction,
         limit: Int = ScanFilter.defaultLimit,
         offset: String? = null,
         ranges: String? = null,
+        filters: String? = null,
+        features: List<String> = emptyList(),
     ): Mono<DataFrameEdgePayload> =
         engine
             .getTableBinding(database, table)
-            .seek(cache, start, direction, limit, offset, ranges)
+            .seek(cache, start, direction, limit, offset, ranges, filters, features)
             .map { it.toEdgePayload() }
 
     fun agg(

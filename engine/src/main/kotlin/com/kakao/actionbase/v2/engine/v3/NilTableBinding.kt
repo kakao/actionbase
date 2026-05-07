@@ -59,11 +59,13 @@ class NilTableBinding(
 
     override fun seek(
         cache: String,
-        start: Any,
+        start: List<Any>,
         direction: Direction,
         limit: Int,
         offset: String?,
         ranges: String?,
+        filters: String?,
+        features: List<String>,
     ): Mono<DataFrame> = V2BackedTableBinding.EMPTY_DATAFRAME
 
     override fun agg(

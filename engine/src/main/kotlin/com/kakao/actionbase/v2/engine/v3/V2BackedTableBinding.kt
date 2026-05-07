@@ -224,12 +224,17 @@ class V2BackedTableBinding(
 
     override fun seek(
         cache: String,
-        start: Any,
+        start: List<Any>,
         direction: Direction,
         limit: Int,
         offset: String?,
         ranges: String?,
+        filters: String?,
+        features: List<String>,
     ): Mono<DataFrame> {
+        require(filters == null) { "`filters` is not yet supported in seek query." }
+        require(features.isEmpty()) { "`features` ${features.joinToString(", ")} are not supported in seek query." }
+
         val cacheEntity =
             label.entity.caches.find { it.cache == cache }
                 ?: return Mono.error(IllegalArgumentException("cache `$cache` is not found in label `${label.entity.name}`."))
@@ -258,7 +263,7 @@ class V2BackedTableBinding(
         }
 
         return label
-            .cache(listOf(start), cache, direction, limit, offset, predicates)
+            .cache(start, cache, direction, limit, offset, predicates)
             .map { it.toV3() }
             .switchIfEmpty(EMPTY_DATAFRAME)
     }
