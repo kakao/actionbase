@@ -468,9 +468,13 @@ class EdgeMutationBuilderTest {
 
             assertEquals("CREATED", result.status)
             assertEquals(2, result.createCacheRecords.size)
-            assertTrue(result.createCacheRecords.all { record ->
-                record.qualifier.cacheValues.first().value == "me"
-            })
+            assertTrue(
+                result.createCacheRecords.all { record ->
+                    record.qualifier.cacheValues
+                        .first()
+                        .value == "me"
+                },
+            )
         }
 
         @Test
