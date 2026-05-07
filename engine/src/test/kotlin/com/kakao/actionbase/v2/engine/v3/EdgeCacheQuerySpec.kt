@@ -128,6 +128,170 @@ class EdgeCacheQuerySpec :
         }
 
         /**
+         * Mutation:
+         * | source | target | createdAt |
+         * |--------|--------|-----------|
+         * | 1000   | 2000   | 100       |
+         * | 1000   | 2002   | 300       |
+         * | 1001   | 3000   | 200       |
+         * | 1001   | 3001   | 400       |
+         *
+         * EdgeCache (direction=OUT) — two distinct row keys
+         * |       row key        | qualifier (DESC) |                   value                 |
+         * |----------------------|------------------|-----------------------------------------|
+         * | hash|1000|T|-6|OUT|C | ~300 | 2002      | version=1, permission=na, createdAt=300 |
+         * |                      | ~100 | 2000      | version=1, permission=na, createdAt=100 |
+         * | hash|1001|T|-6|OUT|C | ~400 | 3001      | version=1, permission=na, createdAt=400 |
+         * |                      | ~200 | 3000      | version=1, permission=na, createdAt=200 |
+         *
+         * Query OUT (start=[1000, 1001], limit=10, DESC)
+         *
+         * Expected: 4 edges — (1000,2002), (1000,2000), (1001,3001), (1001,3000)
+         * (within each row qualifiers are DESC; ordering across rows is not guaranteed)
+         */
+        "INSERT → seek OUT with multi-start returns edges from all sources" {
+            val database = GraphFixtures.serviceName
+            val table = "cache_multi_start_test"
+            val cacheName = "created_at_desc"
+
+            val createRequest =
+                LabelCreateRequest(
+                    desc = "cache multi-start test",
+                    type = LabelType.INDEXED,
+                    schema = GraphFixtures.sampleSchema,
+                    dirType = DirectionType.BOTH,
+                    storage = GraphFixtures.datastoreStorage,
+                    indices = GraphFixtures.sampleIndices,
+                    caches =
+                        listOf(
+                            Cache(
+                                cache = cacheName,
+                                fields = listOf(IndexField("createdAt", Order.DESC)),
+                                limit = 100,
+                            ),
+                        ),
+                )
+
+            graph.labelDdl
+                .create(EntityName(database, table), createRequest)
+                .test()
+                .assertNext { it.status.name shouldBe "CREATED" }
+                .verifyComplete()
+
+            val insertRequest =
+                mapper.readValue<EdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "edge": {"version": 1, "source": "1000", "target": "2000", "properties": {"permission": "na", "createdAt": 100}}},
+                        {"type": "INSERT", "edge": {"version": 1, "source": "1000", "target": "2002", "properties": {"permission": "na", "createdAt": 300}}},
+                        {"type": "INSERT", "edge": {"version": 1, "source": "1001", "target": "3000", "properties": {"permission": "na", "createdAt": 200}}},
+                        {"type": "INSERT", "edge": {"version": 1, "source": "1001", "target": "3001", "properties": {"permission": "na", "createdAt": 400}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, table, insertRequest.mutations)
+                .test()
+                .assertNext { }
+                .verifyComplete()
+
+            queryService
+                .seek(database, table, cacheName, listOf("1000", "1001"), Direction.OUT, 10)
+                .test()
+                .assertNext { payload ->
+                    payload.count shouldBe 4
+                    payload.edges
+                        .map { it.source to it.target }
+                        .toSet() shouldBe
+                        setOf(
+                            1000L to 2002L,
+                            1000L to 2000L,
+                            1001L to 3001L,
+                            1001L to 3000L,
+                        )
+                }.verifyComplete()
+        }
+
+        /**
+         * Multi-start with one source that has no edges — only the populated source contributes.
+         *
+         * EdgeCache (direction=OUT)
+         * |       row key        | qualifier (DESC) |                   value                 |
+         * |----------------------|------------------|-----------------------------------------|
+         * | hash|1000|T|-6|OUT|C | ~200 | 2001      | version=1, permission=na, createdAt=200 |
+         * |                      | ~100 | 2000      | version=1, permission=na, createdAt=100 |
+         * | hash|9999|T|-6|OUT|C | (empty)          |                                         |
+         *
+         * Query OUT (start=[1000, 9999], limit=10, DESC)
+         *
+         * Expected: 2 edges — (1000,2001), (1000,2000)
+         */
+        "INSERT → seek OUT with multi-start tolerates empty source" {
+            val database = GraphFixtures.serviceName
+            val table = "cache_multi_start_empty_test"
+            val cacheName = "created_at_desc"
+
+            val createRequest =
+                LabelCreateRequest(
+                    desc = "cache multi-start empty source test",
+                    type = LabelType.INDEXED,
+                    schema = GraphFixtures.sampleSchema,
+                    dirType = DirectionType.BOTH,
+                    storage = GraphFixtures.datastoreStorage,
+                    indices = GraphFixtures.sampleIndices,
+                    caches =
+                        listOf(
+                            Cache(
+                                cache = cacheName,
+                                fields = listOf(IndexField("createdAt", Order.DESC)),
+                                limit = 100,
+                            ),
+                        ),
+                )
+
+            graph.labelDdl
+                .create(EntityName(database, table), createRequest)
+                .test()
+                .assertNext { it.status.name shouldBe "CREATED" }
+                .verifyComplete()
+
+            val insertRequest =
+                mapper.readValue<EdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "edge": {"version": 1, "source": "1000", "target": "2000", "properties": {"permission": "na", "createdAt": 100}}},
+                        {"type": "INSERT", "edge": {"version": 1, "source": "1000", "target": "2001", "properties": {"permission": "na", "createdAt": 200}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, table, insertRequest.mutations)
+                .test()
+                .assertNext { }
+                .verifyComplete()
+
+            queryService
+                .seek(database, table, cacheName, listOf("1000", "9999"), Direction.OUT, 10)
+                .test()
+                .assertNext { payload ->
+                    payload.count shouldBe 2
+                    payload.edges
+                        .map { it.source to it.target }
+                        .toSet() shouldBe
+                        setOf(
+                            1000L to 2001L,
+                            1000L to 2000L,
+                        )
+                }.verifyComplete()
+        }
+
+        /**
          * Same data as above, but query with limit=2 + cursor pagination.
          *
          * EdgeCache (source=1000, direction=OUT)
