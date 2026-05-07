@@ -124,13 +124,10 @@ Each module releases independently.
 | **server**     | Docker image | `ghcr.io/kakao/actionbase` |
 | **cli**        | Binary       | GitHub Releases            |
 
-`codec-java` is slated for deprecation and will be absorbed into the Kotlin `core` module.
-
 ### Compatibility
 
-| codec-java                              | Actionbase (server) |
-| --------------------------------------- | ------------------- |
-| `v2-core:1.0.14-SNAPSHOT` (source only) | 0.1.x, 0.2.x        |
-| `codec-java:0.1.0`                      | 0.3.x               |
+| codec-java | Actionbase (server) |
+| ---------- | ------------------- |
+| 0.2.0      | 0.3.x               |
 
 Release announcements are posted in [GitHub Releases](https://github.com/kakao/actionbase/releases).
