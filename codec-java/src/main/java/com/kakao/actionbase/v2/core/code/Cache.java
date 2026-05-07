@@ -5,7 +5,7 @@ import com.kakao.actionbase.v2.core.code.hbase.ValueUtils;
 
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -117,8 +117,7 @@ public class Cache implements Serializable {
       }
       this.field = field;
       this.order = order;
-      this.dimension =
-          dimension == null ? null : Collections.unmodifiableSet(new LinkedHashSet<>(dimension));
+      this.dimension = dimension == null ? null : new HashSet<>(dimension);
     }
 
     public Field(String field, Order order) {
