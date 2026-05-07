@@ -199,6 +199,73 @@ public class BulkEdgeEncoderTests {
   }
 
   /**
+   * dimension whitelist on a cache field: edges whose value matches the whitelist still produce
+   * cache rows alongside the hash/indexed/counter rows.
+   */
+  @Test
+  void testCacheDimensionWhitelistKeepsMatchingEdge() throws JsonProcessingException {
+    String labelWithDimension =
+        labelJsonString.replace(
+            "\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+            "\"caches\":[{\"cache\":\"public_top_created_at\",\"fields\":[{\"field\":\"permission\",\"order\":\"ASC\",\"dimension\":[\"others\"]},{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]");
+    LabelDTO label = objectMapper.readValue(labelWithDimension, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    String othersEdgeJson =
+        edgeJsonString.replace("\"permission\":\"public\"", "\"permission\":\"others\"");
+    BulkLoadEdge edge = objectMapper.readValue(othersEdgeJson, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    // permission="others" matches dimension → 1 hash + 2 indexed + 2 cache + 2 counter
+    assertEquals(7, encodedEdges.size());
+    long cacheRows =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_CACHE_TYPE)
+            .count();
+    assertEquals(2, cacheRows);
+  }
+
+  /**
+   * dimension whitelist on a cache field: edges outside the whitelist are skipped at the cache
+   * layer, but the hash/indexed/counter rows are unaffected.
+   */
+  @Test
+  void testCacheDimensionWhitelistSkipsNonMatchingEdge() throws JsonProcessingException {
+    String labelWithDimension =
+        labelJsonString.replace(
+            "\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+            "\"caches\":[{\"cache\":\"public_top_created_at\",\"fields\":[{\"field\":\"permission\",\"order\":\"ASC\",\"dimension\":[\"others\"]},{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]");
+    LabelDTO label = objectMapper.readValue(labelWithDimension, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    String meEdgeJson =
+        edgeJsonString.replace("\"permission\":\"public\"", "\"permission\":\"me\"");
+    BulkLoadEdge edge = objectMapper.readValue(meEdgeJson, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    // permission="me" outside dimension=["others"] → cache rows skipped, others kept
+    // 1 hash + 2 indexed + 0 cache + 2 counter
+    assertEquals(5, encodedEdges.size());
+    long cacheRows =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_CACHE_TYPE)
+            .count();
+    assertEquals(0, cacheRows);
+  }
+
+  /**
    * Backward-compatibility: a label JSON without a `caches` entry must still deserialize, and the
    * bulk encoder must skip cache-row generation without error.
    */
