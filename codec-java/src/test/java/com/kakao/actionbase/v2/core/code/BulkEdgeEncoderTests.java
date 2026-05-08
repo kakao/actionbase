@@ -394,6 +394,12 @@ public class BulkEdgeEncoderTests {
             + withinOthers
             + ", crossPermission="
             + crossPermission);
+
+    // (4) ASC encoding sorts the 4 buckets in (permission, memo) lexicographic order:
+    //     me/a < me/b < others/a < others/b.
+    assertTrue(byteCompare(meA, meB) < 0, "me/a < me/b");
+    assertTrue(byteCompare(meB, othersA) < 0, "me/b < others/a");
+    assertTrue(byteCompare(othersA, othersB) < 0, "others/a < others/b");
   }
 
   private byte[] dimValueOf(
@@ -418,6 +424,15 @@ public class BulkEdgeEncoderTests {
       if (a[i] != b[i]) return i;
     }
     return n;
+  }
+
+  private static int byteCompare(byte[] a, byte[] b) {
+    int n = Math.min(a.length, b.length);
+    for (int i = 0; i < n; i++) {
+      int diff = (a[i] & 0xff) - (b[i] & 0xff);
+      if (diff != 0) return diff;
+    }
+    return a.length - b.length;
   }
 
   /**
