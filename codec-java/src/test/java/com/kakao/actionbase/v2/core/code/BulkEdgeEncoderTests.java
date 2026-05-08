@@ -335,8 +335,8 @@ public class BulkEdgeEncoderTests {
    *
    * <ol>
    *   <li>each of the 4 (permission, memo) combinations produces a distinct dimensionValue tag,
-   *   <li>two edges with the same (permission, memo) but different non-dimensioned fields share
-   *       the same dimensionValue (stable group-by key), and
+   *   <li>two edges with the same (permission, memo) but different non-dimensioned fields share the
+   *       same dimensionValue (stable group-by key), and
    *   <li>the configured field order (permission first, memo second) is preserved in the byte
    *       encoding -- same-permission siblings share a longer byte prefix than cross-permission
    *       pairs.
@@ -415,7 +415,8 @@ public class BulkEdgeEncoderTests {
         .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_CACHE_TYPE)
         .map(TypedKeyFieldValue::getDimensionValue)
         .findFirst()
-        .orElseThrow(() -> new AssertionError("no cache row emitted for " + permission + "/" + memo));
+        .orElseThrow(
+            () -> new AssertionError("no cache row emitted for " + permission + "/" + memo));
   }
 
   private static int commonPrefix(byte[] a, byte[] b) {
