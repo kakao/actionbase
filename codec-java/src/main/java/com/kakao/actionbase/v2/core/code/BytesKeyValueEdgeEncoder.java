@@ -27,6 +27,11 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
   }
 
   @Override
+  protected byte[] encodeBufferAsT(Consumer<EdgeBuffer> block) {
+    return useAsByteArray(block);
+  }
+
+  @Override
   public EncodedKey<byte[]> encodeHashEdgeKey(Edge edge, int labelId) {
     byte[] key =
         useAsByteArray(

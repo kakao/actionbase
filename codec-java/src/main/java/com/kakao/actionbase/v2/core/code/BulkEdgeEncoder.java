@@ -88,7 +88,8 @@ public class BulkEdgeEncoder {
                   insertTs,
                   deleteTs));
       edges.add(
-          new TypedKeyFieldValue<>(EncodedEdgeType.HASH_EDGE_TYPE, key.key, key.field, value));
+          new TypedKeyFieldValue<>(
+              EncodedEdgeType.HASH_EDGE_TYPE, key.key, key.field, value, null));
     }
 
     List<Cache> caches = label.getCaches();
@@ -184,20 +185,20 @@ public class BulkEdgeEncoder {
         T inboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.IN, labelId);
         edges.add(
             new TypedKeyFieldValue<>(
-                EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), outboundKey));
+                EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), null, outboundKey, null));
         edges.add(
             new TypedKeyFieldValue<>(
-                EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), inboundKey));
+                EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), null, inboundKey, null));
       } else if (label.getDirType() == DirectionType.OUT) {
         T outboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.OUT, labelId);
         edges.add(
             new TypedKeyFieldValue<>(
-                EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), outboundKey));
+                EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), null, outboundKey, null));
       } else if (label.getDirType() == DirectionType.IN) {
         T inboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.IN, labelId);
         edges.add(
             new TypedKeyFieldValue<>(
-                EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), inboundKey));
+                EncodedEdgeType.COUNTER_EDGE_TYPE, encoder.getEmpty(), null, inboundKey, null));
       }
     }
 

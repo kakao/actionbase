@@ -24,6 +24,11 @@ public class StringKeyFieldValueEdgeEncoder extends AbstractEdgeEncoder<String> 
   }
 
   @Override
+  protected String encodeBufferAsT(Consumer<EdgeBuffer> block) {
+    return useAsHexString(block);
+  }
+
+  @Override
   public EncodedKey<String> encodeHashEdgeKey(Edge edge, int labelId) {
     String key =
         useAsBase64String(buffer -> encodeHashKeyPrefixToBuffer(edge.getSrc(), labelId, buffer));

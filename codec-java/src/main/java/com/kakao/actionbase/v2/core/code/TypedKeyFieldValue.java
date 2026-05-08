@@ -7,19 +7,15 @@ public class TypedKeyFieldValue<T> {
   T key;
   T field;
   T value;
+  T dimensionValue;
 
-  public TypedKeyFieldValue(EncodedEdgeType encodedEdgeType, T key, T field, T value) {
+  public TypedKeyFieldValue(
+      EncodedEdgeType encodedEdgeType, T key, T field, T value, T dimensionValue) {
     this.encodedEdgeType = encodedEdgeType;
     this.key = key;
     this.field = field;
     this.value = value;
-  }
-
-  public TypedKeyFieldValue(EncodedEdgeType encodedEdgeType, T key, T value) {
-    this.encodedEdgeType = encodedEdgeType;
-    this.key = key;
-    this.field = null;
-    this.value = value;
+    this.dimensionValue = dimensionValue;
   }
 
   public EncodedEdgeType getEncodedEdgeType() {
@@ -38,12 +34,17 @@ public class TypedKeyFieldValue<T> {
     return value;
   }
 
+  public T getDimensionValue() {
+    return dimensionValue;
+  }
+
   public static <T> TypedKeyFieldValue<T> from(
       KeyFieldValue<T> keyFieldValue, EncodedEdgeType encodedEdgeType) {
     return new TypedKeyFieldValue<>(
         encodedEdgeType,
         keyFieldValue.getKey(),
         keyFieldValue.getField(),
-        keyFieldValue.getValue());
+        keyFieldValue.getValue(),
+        keyFieldValue.getDimensionValue());
   }
 }

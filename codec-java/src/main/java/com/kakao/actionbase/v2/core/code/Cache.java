@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -61,6 +62,8 @@ public class Cache implements Serializable {
 
   @JsonIgnore private final int code;
 
+  @JsonIgnore private final List<Field> dimensionedFields;
+
   @JsonCreator
   public Cache(
       @JsonProperty("cache") String cache,
@@ -79,6 +82,9 @@ public class Cache implements Serializable {
     this.limit = resolvedLimit;
     this.comment = comment == null ? DEFAULT_COMMENT : comment;
     this.code = ValueUtils.stringHash(cache);
+    this.dimensionedFields =
+        Collections.unmodifiableList(
+            this.fields.stream().filter(Field::hasDimension).collect(Collectors.toList()));
   }
 
   public Cache(String cache, List<Field> fields) {
@@ -91,6 +97,14 @@ public class Cache implements Serializable {
 
   public List<Field> getFields() {
     return fields;
+  }
+
+  public List<Field> getDimensionedFields() {
+    return dimensionedFields;
+  }
+
+  public boolean hasAnyDimension() {
+    return !dimensionedFields.isEmpty();
   }
 
   public static class Field implements Serializable {
@@ -109,12 +123,6 @@ public class Cache implements Serializable {
         @JsonProperty("field") String field,
         @JsonProperty("order") Order order,
         @JsonProperty("dimension") Set<Object> dimension) {
-      if (dimension != null && dimension.isEmpty()) {
-        throw new IllegalArgumentException(
-            "Cache field `"
-                + field
-                + "` has an empty `dimension`; omit the key to disable filtering.");
-      }
       this.field = field;
       this.order = order;
       this.dimension = dimension == null ? null : new HashSet<>(dimension);
@@ -134,6 +142,10 @@ public class Cache implements Serializable {
 
     public Set<Object> getDimension() {
       return dimension;
+    }
+
+    public boolean hasDimension() {
+      return dimension != null && !dimension.isEmpty();
     }
 
     @Override

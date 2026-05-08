@@ -98,6 +98,15 @@ public class BulkEdgeEncoderTests {
     }
 
     assertEquals(2, cacheRowCount, "expected 2 cache rows (OUT/IN)");
+
+    // No dimension configured on this cache → dimensionValue must be null on cache rows.
+    encodedEdges.stream()
+        .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_CACHE_TYPE)
+        .forEach(
+            kv ->
+                assertNull(
+                    kv.getDimensionValue(),
+                    "dimensionValue should be null when cache has no dimension config"));
   }
 
   @Test
@@ -229,6 +238,17 @@ public class BulkEdgeEncoderTests {
             .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_CACHE_TYPE)
             .count();
     assertEquals(2, cacheRows);
+
+    // Matching cache rows must carry an encoded dimensionValue (non-null, non-empty).
+    encodedEdges.stream()
+        .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_CACHE_TYPE)
+        .forEach(
+            kv -> {
+              assertNotNull(
+                  kv.getDimensionValue(),
+                  "dimensionValue should be encoded when cache field matches its dimension");
+              assertTrue(kv.getDimensionValue().length > 0, "dimensionValue should be non-empty");
+            });
   }
 
   /**
@@ -263,6 +283,40 @@ public class BulkEdgeEncoderTests {
             .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_CACHE_TYPE)
             .count();
     assertEquals(0, cacheRows);
+  }
+
+  /**
+   * Empty {@code dimension: []} is treated as equivalent to omitting the key — no filtering, no
+   * dimensionValue encoded. Any edge value passes through and cache rows carry a null
+   * dimensionValue.
+   */
+  @Test
+  void testCacheDimensionEmptyArrayBehavesAsNoFilter() throws JsonProcessingException {
+    String labelWithEmptyDimension =
+        labelJsonString.replace(
+            "\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+            "\"caches\":[{\"cache\":\"public_top_created_at\",\"fields\":[{\"field\":\"permission\",\"order\":\"ASC\",\"dimension\":[]},{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]");
+    LabelDTO label = objectMapper.readValue(labelWithEmptyDimension, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    // dimension=[] acts as no filter → 1 hash + 2 indexed + 2 cache + 2 counter
+    assertEquals(7, encodedEdges.size());
+    encodedEdges.stream()
+        .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_CACHE_TYPE)
+        .forEach(
+            kv ->
+                assertNull(
+                    kv.getDimensionValue(),
+                    "dimensionValue should be null when dimension is empty (no filter)"));
   }
 
   /**
