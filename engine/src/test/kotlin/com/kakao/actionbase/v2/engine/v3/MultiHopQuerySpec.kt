@@ -3,7 +3,7 @@ package com.kakao.actionbase.v2.engine.v3
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Cache
-import com.kakao.actionbase.core.metadata.common.IndexField
+import com.kakao.actionbase.core.metadata.common.CacheField
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
 import com.kakao.actionbase.engine.service.MutationService
@@ -95,7 +95,7 @@ class MultiHopQuerySpec :
                             listOf(
                                 Cache(
                                     cache = cacheName,
-                                    fields = listOf(IndexField("createdAt", Order.DESC)),
+                                    fields = listOf(CacheField("createdAt", Order.DESC)),
                                     limit = 100,
                                 ),
                             ),
@@ -219,7 +219,7 @@ class MultiHopQuerySpec :
                 listOf(
                     Cache(
                         cache = cacheName,
-                        fields = listOf(IndexField("createdAt", Order.DESC)),
+                        fields = listOf(CacheField("createdAt", Order.DESC)),
                         limit = 100,
                     ),
                 )

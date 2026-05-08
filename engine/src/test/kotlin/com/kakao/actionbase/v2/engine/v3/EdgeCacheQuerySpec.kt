@@ -5,7 +5,7 @@ import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Cache
-import com.kakao.actionbase.core.metadata.common.IndexField
+import com.kakao.actionbase.core.metadata.common.CacheField
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -83,7 +83,7 @@ class EdgeCacheQuerySpec :
                         listOf(
                             Cache(
                                 cache = cacheName,
-                                fields = listOf(IndexField("createdAt", Order.DESC)),
+                                fields = listOf(CacheField("createdAt", Order.DESC)),
                                 limit = 100,
                             ),
                         ),
@@ -166,7 +166,7 @@ class EdgeCacheQuerySpec :
                         listOf(
                             Cache(
                                 cache = cacheName,
-                                fields = listOf(IndexField("createdAt", Order.DESC)),
+                                fields = listOf(CacheField("createdAt", Order.DESC)),
                                 limit = 100,
                             ),
                         ),
@@ -246,7 +246,7 @@ class EdgeCacheQuerySpec :
                         listOf(
                             Cache(
                                 cache = cacheName,
-                                fields = listOf(IndexField("createdAt", Order.DESC)),
+                                fields = listOf(CacheField("createdAt", Order.DESC)),
                                 limit = 100,
                             ),
                         ),
@@ -322,7 +322,7 @@ class EdgeCacheQuerySpec :
                         listOf(
                             Cache(
                                 cache = cacheName,
-                                fields = listOf(IndexField("createdAt", Order.DESC)),
+                                fields = listOf(CacheField("createdAt", Order.DESC)),
                                 limit = 100,
                             ),
                         ),
@@ -407,7 +407,7 @@ class EdgeCacheQuerySpec :
                         listOf(
                             Cache(
                                 cache = cacheName,
-                                fields = listOf(IndexField("createdAt", Order.DESC)),
+                                fields = listOf(CacheField("createdAt", Order.DESC)),
                                 limit = 100,
                             ),
                         ),
@@ -493,7 +493,7 @@ class EdgeCacheQuerySpec :
                         listOf(
                             Cache(
                                 cache = cacheName,
-                                fields = listOf(IndexField("createdAt", Order.DESC)),
+                                fields = listOf(CacheField("createdAt", Order.DESC)),
                                 limit = 100,
                             ),
                         ),
@@ -605,7 +605,7 @@ class EdgeCacheQuerySpec :
                         listOf(
                             Cache(
                                 cache = cacheName,
-                                fields = listOf(IndexField("paidAt", Order.DESC)),
+                                fields = listOf(CacheField("paidAt", Order.DESC)),
                                 limit = 100,
                             ),
                         ),

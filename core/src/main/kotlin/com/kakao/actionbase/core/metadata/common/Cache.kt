@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 
 data class Cache(
     val cache: String,
-    val fields: List<IndexField>,
+    val fields: List<CacheField>,
     val limit: Int = 100,
     val comment: String = Constants.DEFAULT_COMMENT,
 ) {

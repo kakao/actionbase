@@ -6,7 +6,7 @@ import com.kakao.actionbase.core.edge.mapper.QualifierStartStop
 import com.kakao.actionbase.core.edge.mapper.QualifierStartStopItem
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
-import com.kakao.actionbase.core.metadata.common.IndexField
+import com.kakao.actionbase.core.metadata.common.CacheField
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.v2.core.code.CryptoUtils
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
@@ -149,7 +149,7 @@ open class HBaseIndexedLabel(
      * @return `(from, to)` where either side may be `null` when no bound applies.
      */
     private fun encodeCacheRange(
-        fields: List<IndexField>,
+        fields: List<CacheField>,
         predicates: List<WherePredicate>,
         offset: String?,
     ): Pair<ByteArray?, ByteArray?> {
@@ -190,7 +190,7 @@ open class HBaseIndexedLabel(
      * DESC field contributes to `start`, not `stop`.
      */
     private fun toQualifierStartStop(
-        field: IndexField,
+        field: CacheField,
         predicate: WherePredicate,
     ): QualifierStartStop =
         when (predicate) {

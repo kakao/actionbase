@@ -10,8 +10,8 @@ import com.kakao.actionbase.core.metadata.AliasDescriptor
 import com.kakao.actionbase.core.metadata.DatabaseDescriptor
 import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.common.Cache
+import com.kakao.actionbase.core.metadata.common.CacheField
 import com.kakao.actionbase.core.metadata.common.DirectionType
-import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.core.metadata.common.MutationMode
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2AliasEntity
@@ -318,7 +318,7 @@ class V3MetadataConverterTest {
                         listOf(
                             Cache(
                                 cache = cacheName,
-                                fields = listOf(IndexField("score", V3Order.DESC)),
+                                fields = listOf(CacheField("score", V3Order.DESC)),
                                 limit = cacheLimit,
                                 comment = cacheComment,
                             ),
@@ -382,7 +382,7 @@ class V3MetadataConverterTest {
                         listOf(
                             Cache(
                                 cache = cacheName,
-                                fields = listOf(IndexField("score", V3Order.DESC)),
+                                fields = listOf(CacheField("score", V3Order.DESC)),
                                 limit = cacheLimit,
                                 comment = cacheComment,
                             ),

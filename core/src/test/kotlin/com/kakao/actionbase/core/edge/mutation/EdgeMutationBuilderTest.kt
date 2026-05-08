@@ -5,6 +5,7 @@ import com.kakao.actionbase.core.edge.mutation.EdgeMutationTestFixtures.multiEdg
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.metadata.common.Cache
+import com.kakao.actionbase.core.metadata.common.CacheField
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Group
@@ -298,7 +299,7 @@ class EdgeMutationBuilderTest {
         private val cache =
             Cache(
                 cache = "created_at_desc",
-                fields = listOf(IndexField(field = "version", order = Order.DESC)),
+                fields = listOf(CacheField(field = "version", order = Order.DESC)),
                 limit = 1,
             )
 
@@ -429,8 +430,8 @@ class EdgeMutationBuilderTest {
                 cache = "permission_created_at_desc",
                 fields =
                     listOf(
-                        IndexField(field = "permission", order = Order.ASC, dimension = setOf("me", "others")),
-                        IndexField(field = "createdAt", order = Order.DESC),
+                        CacheField(field = "permission", order = Order.ASC, dimension = setOf("me", "others")),
+                        CacheField(field = "createdAt", order = Order.DESC),
                     ),
                 limit = 100,
             )
@@ -507,8 +508,8 @@ class EdgeMutationBuilderTest {
                     cache = "permission_created_at_desc",
                     fields =
                         listOf(
-                            IndexField(field = "permission", order = Order.ASC),
-                            IndexField(field = "createdAt", order = Order.DESC),
+                            CacheField(field = "permission", order = Order.ASC),
+                            CacheField(field = "createdAt", order = Order.DESC),
                         ),
                     limit = 100,
                 )
@@ -572,7 +573,7 @@ class EdgeMutationBuilderTest {
             // Empty dimension would produce a cache that whitelists nothing — caught
             // at construction so the DDL mistake surfaces immediately.
             assertFailsWith<IllegalArgumentException> {
-                IndexField(field = "permission", order = Order.ASC, dimension = emptySet())
+                CacheField(field = "permission", order = Order.ASC, dimension = emptySet())
             }
         }
     }
@@ -582,7 +583,7 @@ class EdgeMutationBuilderTest {
         private val cache =
             Cache(
                 cache = "created_at_desc",
-                fields = listOf(IndexField(field = "version", order = Order.DESC)),
+                fields = listOf(CacheField(field = "version", order = Order.DESC)),
                 limit = 1,
             )
 
