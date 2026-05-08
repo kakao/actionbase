@@ -320,6 +320,107 @@ public class BulkEdgeEncoderTests {
   }
 
   /**
+   * Two dimensioned fields define a 4-bucket grid: permission in {me, others} and memo in {a, b}.
+   *
+   * <pre>
+   * permission | memo | dimensionValue bytes
+   * -----------+------+--------------------------
+   * me         | a    | [enc(me)     | enc(a)]
+   * me         | b    | [enc(me)     | enc(b)]
+   * others     | a    | [enc(others) | enc(a)]
+   * others     | b    | [enc(others) | enc(b)]
+   * </pre>
+   *
+   * Verifies the encoder output that downstream per-dimension top-N relies on:
+   *
+   * <ol>
+   *   <li>each of the 4 (permission, memo) combinations produces a distinct dimensionValue tag,
+   *   <li>two edges with the same (permission, memo) but different non-dimensioned fields share
+   *       the same dimensionValue (stable group-by key), and
+   *   <li>the configured field order (permission first, memo second) is preserved in the byte
+   *       encoding -- same-permission siblings share a longer byte prefix than cross-permission
+   *       pairs.
+   * </ol>
+   */
+  @Test
+  void testCacheDimensionFourBucketsHaveDistinctOrderedTags() throws JsonProcessingException {
+    String labelTwoDim =
+        labelJsonString.replace(
+            "\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+            "\"caches\":[{\"cache\":\"perm_memo_top\",\"fields\":["
+                + "{\"field\":\"permission\",\"order\":\"ASC\",\"dimension\":[\"me\",\"others\"]},"
+                + "{\"field\":\"memo\",\"order\":\"ASC\",\"dimension\":[\"a\",\"b\"]},"
+                + "{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]");
+    LabelDTO label = objectMapper.readValue(labelTwoDim, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    byte[] meA = dimValueOf(encoder, newLabel, "me", "a", 1);
+    byte[] meB = dimValueOf(encoder, newLabel, "me", "b", 1);
+    byte[] othersA = dimValueOf(encoder, newLabel, "others", "a", 1);
+    byte[] othersB = dimValueOf(encoder, newLabel, "others", "b", 1);
+
+    // (1) 4 buckets → 4 distinct dimensionValue tags.
+    assertFalse(Arrays.equals(meA, meB), "me/a vs me/b");
+    assertFalse(Arrays.equals(meA, othersA), "me/a vs others/a");
+    assertFalse(Arrays.equals(meA, othersB), "me/a vs others/b");
+    assertFalse(Arrays.equals(meB, othersA), "me/b vs others/a");
+    assertFalse(Arrays.equals(meB, othersB), "me/b vs others/b");
+    assertFalse(Arrays.equals(othersA, othersB), "others/a vs others/b");
+
+    // (2) Same bucket, different created_at → identical dimensionValue.
+    byte[] meARepeat = dimValueOf(encoder, newLabel, "me", "a", 999);
+    assertArrayEquals(
+        meA,
+        meARepeat,
+        "same-bucket edges must share dimensionValue regardless of non-dimensioned fields");
+
+    // (3) permission encoded before memo: same-permission pairs agree on a longer byte prefix
+    //     than cross-permission pairs.
+    int withinMe = commonPrefix(meA, meB);
+    int withinOthers = commonPrefix(othersA, othersB);
+    int crossPermission = commonPrefix(meA, othersA);
+    assertTrue(
+        withinMe > crossPermission,
+        "permission must be encoded first: withinMe="
+            + withinMe
+            + ", crossPermission="
+            + crossPermission);
+    assertTrue(
+        withinOthers > crossPermission,
+        "permission must be encoded first: withinOthers="
+            + withinOthers
+            + ", crossPermission="
+            + crossPermission);
+  }
+
+  private byte[] dimValueOf(
+      EdgeEncoder<byte[]> encoder, LabelDTO label, String permission, String memo, long createdAt)
+      throws JsonProcessingException {
+    String json =
+        edgeJsonString
+            .replace("\"permission\":\"public\"", "\"permission\":\"" + permission + "\"")
+            .replace("\"memo\":\"for good morning\"", "\"memo\":\"" + memo + "\"")
+            .replace("\"created_at\":1", "\"created_at\":" + createdAt);
+    BulkLoadEdge edge = objectMapper.readValue(json, BulkLoadEdge.class);
+    return BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label).stream()
+        .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_CACHE_TYPE)
+        .map(TypedKeyFieldValue::getDimensionValue)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("no cache row emitted for " + permission + "/" + memo));
+  }
+
+  private static int commonPrefix(byte[] a, byte[] b) {
+    int n = Math.min(a.length, b.length);
+    for (int i = 0; i < n; i++) {
+      if (a[i] != b[i]) return i;
+    }
+    return n;
+  }
+
+  /**
    * Backward-compatibility: a label JSON without a `caches` entry must still deserialize, and the
    * bulk encoder must skip cache-row generation without error.
    */
