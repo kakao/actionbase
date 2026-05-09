@@ -1,0 +1,6 @@
+executor-memory: 1g
+executor-cores: 1
+num-executors: 2
+driver-memory: 512m
+conf:
+  spark.sql.shuffle.partitions: 4

@@ -1,0 +1,24 @@
+name: spark-pi
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+env:
+  SAMPLES: 1000000
+
+jobs:
+  pi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: kakao/actionbase/actions/pipeline-runner@v0.1.0
+        with:
+          class: SparkPiJob
+          config:
+            samples: ${{ env.SAMPLES }}
+          submit:
+            preset: small                       # loaded from workflows/preset/small.yaml
+            driver-memory: 1g                   # overrides preset's 512m
+            conf:
+              spark.sql.shuffle.partitions: 8   # deep-merged with preset's conf

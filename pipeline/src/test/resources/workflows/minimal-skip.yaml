@@ -1,0 +1,30 @@
+name: minimal-skip
+on: workflow_dispatch
+
+env:
+  enabled: "false"
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    if: ${{ env.enabled == 'true' }}
+    steps:
+      - uses: kakao/actionbase/actions/pipeline-runner@v0.1.0
+        with:
+          class: com.kakao.actionbase.pipeline.runner.StageJob
+          config:
+            in: ${{ env.INPUT }}
+            out: ${{ env.OUT }}
+          submit:
+            preset: test-small
+  count:
+    runs-on: ubuntu-latest
+    needs: [stage]
+    steps:
+      - uses: kakao/actionbase/actions/pipeline-runner@v0.1.0
+        with:
+          class: com.kakao.actionbase.pipeline.runner.CountJob
+          config:
+            in: ${{ needs.stage.outputs.out }}
+          submit:
+            preset: test-small

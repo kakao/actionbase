@@ -1,0 +1,30 @@
+name: spark-pi-steps
+on:
+  workflow_dispatch:
+
+env:
+  SAMPLES: 1000000
+
+jobs:
+  pi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: kakao/actionbase/actions/pipeline-runner@v0.1.0
+        with:
+          class: StepsRunnerJob
+          config:
+            steps:
+              - step: SampleSource
+                args:
+                  n: ${{ env.SAMPLES }}
+                  columns: [x, y]
+              - step: SqlTransform
+                args:
+                  query: |
+                    SELECT
+                      4.0 * SUM(CASE WHEN x*x + y*y <= 1 THEN 1 ELSE 0 END) / COUNT(*) AS pi
+                    FROM _0
+              - step: ShowSink
+          submit:
+            preset: small

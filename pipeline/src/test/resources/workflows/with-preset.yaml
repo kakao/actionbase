@@ -1,0 +1,16 @@
+name: with-preset
+on: workflow_dispatch
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: kakao/actionbase/actions/pipeline-runner@v0.1.0
+        with:
+          class: com.kakao.actionbase.pipeline.runner.StageJob
+          config:
+            in: /tmp/x
+            out: /tmp/y
+          submit:
+            preset: test-small
+            driver-memory: 1g
