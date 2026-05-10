@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider
 
 import com.fasterxml.jackson.module.kotlin.readValue
 
-class ObjectSourceExtension : TestTemplateInvocationContextProvider {
+class SourceExtension : TestTemplateInvocationContextProvider {
     override fun supportsTestTemplate(context: ExtensionContext): Boolean {
         val method = context.requiredTestMethod
         return method.isAnnotationPresent(ObjectSource::class.java) ||
@@ -39,7 +39,7 @@ class ObjectSourceExtension : TestTemplateInvocationContextProvider {
 
         return testCases
             .mapIndexed { index, testCase ->
-                ObjectSourceInvocationContext(index + 1, testCases.size, parameterNames, testCase) as TestTemplateInvocationContext
+                SourceInvocationContext(index + 1, testCases.size, parameterNames, testCase) as TestTemplateInvocationContext
             }.stream()
     }
 

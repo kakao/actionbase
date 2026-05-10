@@ -6,6 +6,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 @Retention
 @TestTemplate
 @MustBeDocumented
-@ExtendWith(ObjectSourceExtension::class)
+@ExtendWith(SourceExtension::class)
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.ANNOTATION_CLASS)
 annotation class ObjectSourceParameterizedTest
