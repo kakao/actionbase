@@ -1,0 +1,2 @@
+driver-memory: 1g
+executor-memory: 2g

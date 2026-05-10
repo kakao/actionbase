@@ -1,0 +1,27 @@
+name: spark-pi
+
+env:
+  samples: "1000000"
+
+presets:
+  spark-small:
+    driver-memory: 1g
+    executor-memory: 2g
+
+jobs:
+  pi:
+    kind: spark
+    artifact: "com.kakao.actionbase:pipeline:0.x"
+    mainClass: SparkPiJob
+    args:
+      samples: "${{ env.samples }}"
+    submit:
+      $extends: ${{ presets.spark-small }}
+      conf:
+        spark.sql.shuffle.partitions: 8
+
+  report:
+    kind: bash
+    needs: [pi]
+    when: "${{ needs.pi.result == 'success' }}"
+    run: 'echo "pi computed"'
