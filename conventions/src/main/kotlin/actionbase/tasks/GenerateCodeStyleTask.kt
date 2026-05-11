@@ -157,6 +157,7 @@ open class GenerateCodeStyleTask : DefaultTask() {
             align.preset = more
             maxColumn = 120
             docstrings.wrap = no
+            docstrings.blankFirstLine = yes
             """.trimIndent(),
         )
 
