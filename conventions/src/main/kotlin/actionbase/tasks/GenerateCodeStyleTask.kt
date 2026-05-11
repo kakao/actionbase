@@ -94,7 +94,7 @@ open class GenerateCodeStyleTask : DefaultTask() {
             get() = File(rootDir, ".editorconfig")
 
         val Project.scalaFmtConfig: File
-            get() = File(rootDir, "./scalafmt.conf")
+            get() = File(rootDir, "./.scalafmt.conf")
     }
 
     init {
