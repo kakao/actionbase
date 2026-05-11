@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.type.CollectionType
 import com.fasterxml.jackson.databind.type.MapType
 
-class ObjectSourceParameterResolver(
+class SourceParameterResolver(
     private val parameterNames: List<String>,
     private val testCase: Map<String, Any?>,
 ) : ParameterResolver {

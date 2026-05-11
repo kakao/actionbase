@@ -1,7 +1,7 @@
 package com.kakao.actionbase.test
 
-import com.kakao.actionbase.test.documentations.params.ObjectSourceExtension
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+import com.kakao.actionbase.test.documentations.params.SourceExtension
 import com.kakao.actionbase.test.documentations.params.TableSource
 
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -141,7 +141,7 @@ class TableSourceTest {
 
     @Nested
     inner class ErrorTest {
-        private val extension = ObjectSourceExtension()
+        private val extension = SourceExtension()
 
         private val twoCols = listOf("a", "b")
         private val threeCols = listOf("a", "b", "c")
