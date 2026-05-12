@@ -128,21 +128,18 @@ class HBaseAdmin(
                 .getDescriptor(tableName)
                 .toMono()
                 .flatMap { descriptor ->
-                    val cf =
-                        descriptor.columnFamilies.firstOrNull()
-                            ?: return@flatMap Mono.error<Void>(
-                                IllegalStateException("No column family found for $namespace:$table"),
-                            )
-                    if (cf.scope == scope) {
-                        logger.info("Table {}:{} replication scope already {}", namespace, table, scope)
+                    val stale = descriptor.columnFamilies.filter { it.scope != scope }
+                    if (stale.isEmpty()) {
+                        logger.info("Table {}:{} replication scope already {} on all column families", namespace, table, scope)
                         Mono.empty()
                     } else {
-                        val updated =
-                            ColumnFamilyDescriptorBuilder
-                                .newBuilder(cf)
-                                .setScope(scope)
-                                .build()
-                        admin.modifyColumnFamily(tableName, updated).toMono()
+                        val builder = TableDescriptorBuilder.newBuilder(descriptor)
+                        stale.forEach { cf ->
+                            builder.modifyColumnFamily(
+                                ColumnFamilyDescriptorBuilder.newBuilder(cf).setScope(scope).build(),
+                            )
+                        }
+                        admin.modifyTable(builder.build()).toMono()
                     }
                 }
         }.then()
