@@ -3,6 +3,7 @@ package com.kakao.actionbase.engine.datastore.hbase.admin
 import com.kakao.actionbase.v2.engine.util.getLogger
 
 import org.apache.hadoop.hbase.ClusterMetrics
+import org.apache.hadoop.hbase.HConstants
 import org.apache.hadoop.hbase.KeepDeletedCells
 import org.apache.hadoop.hbase.NamespaceDescriptor
 import org.apache.hadoop.hbase.NamespaceNotFoundException
@@ -105,6 +106,45 @@ class HBaseAdmin(
                         Mono.empty()
                     }
                 }.then(Mono.defer { admin.deleteTable(tableName).toMono() })
+        }.then()
+
+    fun enableReplication(
+        namespace: String,
+        table: String,
+    ): Mono<Void> = setReplicationScope(namespace, table, HConstants.REPLICATION_SCOPE_GLOBAL)
+
+    fun disableReplication(
+        namespace: String,
+        table: String,
+    ): Mono<Void> = setReplicationScope(namespace, table, HConstants.REPLICATION_SCOPE_LOCAL)
+
+    private fun setReplicationScope(
+        namespace: String,
+        table: String,
+        scope: Int,
+    ): Mono<Void> =
+        withTableOperation(namespace, table) { admin, tableName ->
+            admin
+                .getDescriptor(tableName)
+                .toMono()
+                .flatMap { descriptor ->
+                    val cf =
+                        descriptor.columnFamilies.firstOrNull()
+                            ?: return@flatMap Mono.error<Void>(
+                                IllegalStateException("No column family found for $namespace:$table"),
+                            )
+                    if (cf.scope == scope) {
+                        logger.info("Table {}:{} replication scope already {}", namespace, table, scope)
+                        Mono.empty()
+                    } else {
+                        val updated =
+                            ColumnFamilyDescriptorBuilder
+                                .newBuilder(cf)
+                                .setScope(scope)
+                                .build()
+                        admin.modifyColumnFamily(tableName, updated).toMono()
+                    }
+                }
         }.then()
 
     fun getTables(namespace: String): Mono<List<HBaseTableInfo>> =

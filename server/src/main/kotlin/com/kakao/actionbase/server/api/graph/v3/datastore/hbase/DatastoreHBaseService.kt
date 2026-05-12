@@ -79,6 +79,31 @@ class DatastoreHBaseService(
             throwErrorIfStorageInUse(tableName).then(updateStream)
         }
 
+    fun enableTable(optionalFullQualifierTableName: String): Mono<Void> =
+        withValidatedTableName(optionalFullQualifierTableName) { tableName ->
+            throwErrorIfStorageInUse(tableName)
+                .then(hBaseAdmin.enableTable(tableName.namespaceAsString, tableName.qualifierAsString))
+        }
+
+    fun disableTable(optionalFullQualifierTableName: String): Mono<Void> =
+        withValidatedTableName(optionalFullQualifierTableName) { tableName ->
+            throwErrorIfStorageInUse(tableName)
+                .then(hBaseAdmin.disableTable(tableName.namespaceAsString, tableName.qualifierAsString))
+        }
+
+    // Replication toggle is allowed on in-use tables. The operator runbook for safe table cleanup
+    // requires setting replicationScope=0 on both clusters *before* disabling/dropping — that step
+    // must work while the table is still actively serving writes.
+    fun enableReplication(optionalFullQualifierTableName: String): Mono<Void> =
+        withValidatedTableName(optionalFullQualifierTableName) { tableName ->
+            hBaseAdmin.enableReplication(tableName.namespaceAsString, tableName.qualifierAsString)
+        }
+
+    fun disableReplication(optionalFullQualifierTableName: String): Mono<Void> =
+        withValidatedTableName(optionalFullQualifierTableName) { tableName ->
+            hBaseAdmin.disableReplication(tableName.namespaceAsString, tableName.qualifierAsString)
+        }
+
     fun deleteTable(optionalFullQualifierTableName: String): Mono<Void> =
         withValidatedTableName(optionalFullQualifierTableName) { tableName ->
             throwErrorIfStorageInUse(tableName)

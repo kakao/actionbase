@@ -6,6 +6,7 @@ import com.kakao.actionbase.test.hbase.HBaseTestingClusterExtension
 
 import java.util.UUID
 
+import org.apache.hadoop.hbase.HConstants
 import org.apache.hadoop.hbase.client.AsyncConnection
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -104,6 +105,42 @@ class HBaseAdminTest(
             .flatMap { admin.getTableMetricSummary(testNamespace, it) }
             .test()
             .assertNext { metrics -> assertNotNull(metrics) }
+            .verifyComplete()
+    }
+
+    @Test
+    fun shouldEnableReplication() {
+        val tableName = makeTestAlphanumericName()
+        createTestTable(tableName)
+            .flatMap { admin.enableReplication(testNamespace, it) }
+            .then(admin.getTable(testNamespace, tableName))
+            .test()
+            .assertNext { table -> assertEquals(HConstants.REPLICATION_SCOPE_GLOBAL, table.replicationScope) }
+            .verifyComplete()
+    }
+
+    @Test
+    fun shouldDisableReplication() {
+        val tableName = makeTestAlphanumericName()
+        createTestTable(tableName)
+            .flatMap { admin.enableReplication(testNamespace, it) }
+            .then(admin.disableReplication(testNamespace, tableName))
+            .then(admin.getTable(testNamespace, tableName))
+            .test()
+            .assertNext { table -> assertEquals(HConstants.REPLICATION_SCOPE_LOCAL, table.replicationScope) }
+            .verifyComplete()
+    }
+
+    @Test
+    fun shouldBeIdempotentWhenReplicationAlreadyAtTargetScope() {
+        val tableName = makeTestAlphanumericName()
+        // Default schema creates the table with REPLICATION_SCOPE_LOCAL. Calling disableReplication
+        // again must be a no-op (the modify path is skipped) instead of throwing.
+        createTestTable(tableName)
+            .flatMap { admin.disableReplication(testNamespace, it) }
+            .then(admin.getTable(testNamespace, tableName))
+            .test()
+            .assertNext { table -> assertEquals(HConstants.REPLICATION_SCOPE_LOCAL, table.replicationScope) }
             .verifyComplete()
     }
 
