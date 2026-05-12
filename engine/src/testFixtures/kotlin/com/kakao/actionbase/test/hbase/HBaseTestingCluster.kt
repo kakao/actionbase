@@ -97,6 +97,14 @@ object HBaseTestingCluster {
     private fun configureHBase(util: HBaseTestingUtility) {
         val conf = util.configuration
 
+        // Force loopback so the mini cluster does not depend on the host's hostname
+        // resolving to a currently-bindable interface (laptops change networks).
+        conf.set("hbase.master.ipc.address", "127.0.0.1")
+        conf.set("hbase.regionserver.ipc.address", "127.0.0.1")
+        conf.set("hbase.master.hostname", "localhost")
+        conf.set("hbase.regionserver.hostname", "localhost")
+        conf.set("hbase.localcluster.assign.random.ports", "true")
+
         // Minimal/core tuning only (focus on significant ones)
         conf.setInt("hbase.master.info.port", -1)
         conf.setInt("hbase.regionserver.info.port", -1)
