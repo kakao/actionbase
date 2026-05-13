@@ -80,7 +80,7 @@ class DatastoreHBaseController(
         @ModelAttribute actorRole: ActorRole,
         @PathVariable tableName: String,
     ): Mono<Map<String, String>> {
-        requireProductionAdmin(actorRole, "actionbase does not support HBase update operations")
+        requireProductionAdmin(actorRole, "actionbase does not support HBase enable operations")
         return service
             .enableTable(tableName)
             .then(Mono.just(mapOf("result" to "enabled")))
@@ -91,7 +91,7 @@ class DatastoreHBaseController(
         @ModelAttribute actorRole: ActorRole,
         @PathVariable tableName: String,
     ): Mono<Map<String, String>> {
-        requireProductionAdmin(actorRole, "actionbase does not support HBase update operations")
+        requireProductionAdmin(actorRole, "actionbase does not support HBase disable operations")
         return service
             .disableTable(tableName)
             .then(Mono.just(mapOf("result" to "disabled")))
@@ -102,7 +102,7 @@ class DatastoreHBaseController(
         @ModelAttribute actorRole: ActorRole,
         @PathVariable tableName: String,
     ): Mono<Map<String, String>> {
-        requireProductionAdmin(actorRole, "actionbase does not support HBase update operations")
+        requireProductionAdmin(actorRole, "actionbase does not support HBase replication enable operations")
         return service
             .enableReplication(tableName)
             .then(Mono.just(mapOf("result" to "replication-enabled")))
@@ -113,7 +113,7 @@ class DatastoreHBaseController(
         @ModelAttribute actorRole: ActorRole,
         @PathVariable tableName: String,
     ): Mono<Map<String, String>> {
-        requireProductionAdmin(actorRole, "actionbase does not support HBase update operations")
+        requireProductionAdmin(actorRole, "actionbase does not support HBase replication disable operations")
         return service
             .disableReplication(tableName)
             .then(Mono.just(mapOf("result" to "replication-disabled")))
