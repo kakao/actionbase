@@ -129,6 +129,40 @@ class QueryServiceSpec :
                 }.verifyComplete()
         }
 
+        "scan with offset and filters" {
+            // Regression: post-filter (`filters`) must not strip the next-page cursor.
+            // src=100 edges sorted by createdAt DESC: [15(na), 14(me), 13(others), 12(me), 11(others), 10(na)].
+            // With limit=2 and filters=permission:eq:me, page 1 reads [15, 14] and only 14
+            // passes the post-filter, but the underlying scan still has more rows so the cursor
+            // must be returned. Page 2 resumes via that cursor and yields the remaining match (12).
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.hbaseIndexed
+            val index = GraphFixtures.index2 // created_at_desc
+            val sampleEdge = GraphFixtures.sampleEdges.first()
+            val filters = "permission:eq:me"
+
+            val expectedMatches =
+                GraphFixtures.sampleEdges
+                    .filter { it.src == sampleEdge.src && it.props["permission"] == "me" }
+                    .map { EdgePayload(it.ts, it.src, it.tgt, mapOf("receivedFrom" to null) + it.props, emptyMap()) }
+                    .sortedByDescending { it.properties["createdAt"].toString().toLong() }
+
+            queryService
+                .scan(database, table, index, sampleEdge.src, Direction.OUT, limit = 2, filters = filters)
+                .flatMap { firstPage ->
+                    val cursor =
+                        requireNotNull(firstPage.offset) {
+                            "first page must carry a cursor even when the post-filter drops rows"
+                        }
+                    queryService
+                        .scan(database, table, index, sampleEdge.src, Direction.OUT, limit = 10, offset = cursor, filters = filters)
+                        .map { secondPage -> firstPage.edges + secondPage.edges }
+                }.test()
+                .assertNext { combined ->
+                    combined.map { it.toStringValues() } shouldBe expectedMatches.map { it.toStringValues() }
+                }.verifyComplete()
+        }
+
         "scan with features=total" {
             val database = GraphFixtures.serviceName
             val table = GraphFixtures.hbaseIndexed

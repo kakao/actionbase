@@ -110,7 +110,10 @@ data class DataFrame(
                     predicate.eval(row, schema)
                 }
             }
-        return DataFrame(filteredRows, schema)
+        // Preserve offsets/hasNext/stats: the post-filter is transparent
+        // to the underlying paginated scan, whose cursor must survive
+        // even when zero rows pass the predicate on this page.
+        return copy(rows = filteredRows)
     }
 
     companion object {
