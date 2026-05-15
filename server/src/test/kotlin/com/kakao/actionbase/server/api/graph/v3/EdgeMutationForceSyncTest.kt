@@ -85,7 +85,7 @@ class EdgeMutationForceSyncTest : E2ETestBase() {
     }
 
     @Test
-    fun `sync endpoint queues when system=ASYNC overrides`() {
+    fun `sync endpoint preserves SYNC contract when system=ASYNC overrides SYNC table`() {
         client
             .post()
             .uri("/graph/v3/databases/$db/tables/$table/edges/sync")
@@ -97,7 +97,7 @@ class EdgeMutationForceSyncTest : E2ETestBase() {
             .isOk
             .expectBody()
             .jsonPath("$.results[0].status")
-            .isEqualTo("QUEUED")
+            .isEqualTo("CREATED")
     }
 
     @Test
