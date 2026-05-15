@@ -10,7 +10,9 @@ plugins {
 }
 
 tasks.withType<JavaExec> {
-    jvmArgs = listOf("--add-exports=java.base/sun.nio.ch=ALL-UNNAMED")
+    if (JavaVersion.current().isJava9Compatible) {
+        jvmArgs = listOf("--add-exports=java.base/sun.nio.ch=ALL-UNNAMED")
+    }
 }
 
 dependencies {
