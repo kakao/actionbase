@@ -1,0 +1,183 @@
+name: Release branch cherry-pick report
+
+# Reports which commits on a release branch are present on `main` and which are
+# not, so a maintainer can decide before cutting a new release. This workflow
+# never fails the build — it only renders a Step Summary and emits warning
+# annotations for visibility.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_branch:
+        description: 'Release branch to compare (e.g. 0.4.x). Leave empty to scan every origin/*.x branch.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Resolve release branches
+        id: branches
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.release_branch }}" ]; then
+            echo "list=${{ inputs.release_branch }}" >> "$GITHUB_OUTPUT"
+          else
+            list=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/*.x' \
+                     | sed 's|^origin/||' | tr '\n' ' ')
+            echo "list=$list" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build report
+        env:
+          BRANCHES: ${{ steps.branches.outputs.list }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "# Release branch cherry-pick report"
+            echo ""
+            echo "Comparing **\`origin/main\`** (\`$(git rev-parse --short origin/main)\`) against:"
+            for b in $BRANCHES; do
+              if git show-ref --verify --quiet "refs/remotes/origin/$b"; then
+                short=$(git rev-parse --short "origin/$b")
+                echo "- \`origin/$b\` (\`$short\`)"
+              else
+                echo "- \`origin/$b\` _(not found, skipped)_"
+              fi
+            done
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          total_needs_decision=0
+
+          for branch in $BRANCHES; do
+            ref="origin/$branch"
+            if ! git show-ref --verify --quiet "refs/remotes/$ref"; then
+              continue
+            fi
+
+            allowlist="release-policy/${branch}.patch-only"
+
+            upstreamed_rows=()
+            intentional_rows=()
+            needs_decision_rows=()
+
+            while IFS= read -r line; do
+              [ -z "$line" ] && continue
+              marker="${line:0:1}"
+              rest="${line:2}"
+              sha="${rest%% *}"
+              short="${sha:0:7}"
+              subject=$(git log -1 --pretty=%s "$sha" | sed 's/|/\\|/g')
+              author=$(git log -1 --pretty='%an' "$sha")
+              link="[\`$short\`](${REPO_URL}/commit/${sha})"
+
+              if [ "$marker" = "-" ]; then
+                upstreamed_rows+=("| $link | $subject | $author | patch-id match |")
+                continue
+              fi
+
+              if [ -f "$allowlist" ] && grep -qE "^$sha(\b|$)" "$allowlist"; then
+                reason=$(grep -E "^$sha(\b|$)" "$allowlist" | head -1 | sed -E "s/^$sha[[:space:]]*#?[[:space:]]*//")
+                intentional_rows+=("| $link | $subject | $author | ${reason:-(no reason)} |")
+                continue
+              fi
+
+              trace=$(git log -1 --pretty=%B "$sha" \
+                        | grep -oE 'cherry picked from commit [a-f0-9]+' \
+                        | awk '{print $NF}' | head -1 || true)
+              if [ -n "$trace" ] && git merge-base --is-ancestor "$trace" origin/main 2>/dev/null; then
+                trace_short="${trace:0:7}"
+                trace_link="[\`$trace_short\`](${REPO_URL}/commit/${trace})"
+                upstreamed_rows+=("| $link | $subject | $author | -x trace → $trace_link |")
+                continue
+              fi
+
+              needs_decision_rows+=("| $link | $subject | $author |")
+              echo "::warning ::[$branch] $short — \"$subject\" has no equivalent on main"
+            done < <(git cherry origin/main "$ref" -v)
+
+            total_needs_decision=$((total_needs_decision + ${#needs_decision_rows[@]}))
+
+            {
+              echo "## \`$branch\`"
+              echo ""
+              echo "- Needs decision: **${#needs_decision_rows[@]}**"
+              echo "- Intentionally patch-only: ${#intentional_rows[@]}"
+              echo "- Upstreamed: ${#upstreamed_rows[@]}"
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            if [ ${#needs_decision_rows[@]} -gt 0 ]; then
+              {
+                echo "### :warning: Needs decision (${#needs_decision_rows[@]})"
+                echo ""
+                echo "Backport to \`main\`, or mark intentional in \`$allowlist\`."
+                echo ""
+                echo "| Commit | Subject | Author |"
+                echo "|---|---|---|"
+                printf '%s\n' "${needs_decision_rows[@]}"
+                echo ""
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+
+            if [ ${#intentional_rows[@]} -gt 0 ]; then
+              {
+                echo "<details><summary>:large_yellow_circle: Intentionally patch-only (${#intentional_rows[@]})</summary>"
+                echo ""
+                echo "| Commit | Subject | Author | Reason |"
+                echo "|---|---|---|---|"
+                printf '%s\n' "${intentional_rows[@]}"
+                echo ""
+                echo "</details>"
+                echo ""
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+
+            if [ ${#upstreamed_rows[@]} -gt 0 ]; then
+              {
+                echo "<details><summary>:white_check_mark: Upstreamed on main (${#upstreamed_rows[@]})</summary>"
+                echo ""
+                echo "| Commit | Subject | Author | Detection |"
+                echo "|---|---|---|---|"
+                printf '%s\n' "${upstreamed_rows[@]}"
+                echo ""
+                echo "</details>"
+                echo ""
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+
+            if [ ${#upstreamed_rows[@]} -eq 0 ] && [ ${#intentional_rows[@]} -eq 0 ] && [ ${#needs_decision_rows[@]} -eq 0 ]; then
+              echo "_No commits divergent from main._" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+          {
+            echo "---"
+            echo ""
+            if [ "$total_needs_decision" -gt 0 ]; then
+              echo "**Total needs-decision commits: $total_needs_decision**"
+              echo ""
+              echo "How to mark a commit as intentionally patch-only:"
+              echo ""
+              echo '```bash'
+              echo 'echo "<sha>  # reason" >> release-policy/<branch>.patch-only'
+              echo 'git add release-policy/<branch>.patch-only'
+              echo 'git commit -m "policy: mark <sha> patch-only on <branch>"'
+              echo '```'
+            else
+              echo "**All release branch commits are accounted for.** :tada:"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
