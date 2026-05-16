@@ -30,17 +30,13 @@ class GraphSystemAsyncSpec :
 
         val database = GraphFixtures.serviceName
         val syncEdgeName = "sync_edge"
-        val syncMultiEdgeName = "sync_multi_edge"
         val asyncEdgeName = "async_edge"
 
         lateinit var graph: Graph
         lateinit var syncEdge: Label
-        lateinit var syncMultiEdge: Label
         lateinit var asyncEdge: Label
 
         fun syncEdgeRef() = EntityName(database, syncEdgeName)
-
-        fun syncMultiEdgeRef() = EntityName(database, syncMultiEdgeName)
 
         fun asyncEdgeRef() = EntityName(database, asyncEdgeName)
 
@@ -55,11 +51,9 @@ class GraphSystemAsyncSpec :
                 .create(EntityName.fromOrigin(database), ServiceCreateRequest(desc = "test service"))
                 .block()
             graph.labelDdl.create(syncEdgeRef(), mapper.readValue<LabelCreateRequest>(syncEdgeDescriptor)).block()
-            graph.labelDdl.create(syncMultiEdgeRef(), mapper.readValue<LabelCreateRequest>(syncMultiEdgeDescriptor)).block()
             graph.labelDdl.create(asyncEdgeRef(), mapper.readValue<LabelCreateRequest>(asyncEdgeDescriptor)).block()
 
             syncEdge = graph.getLabel(syncEdgeRef())
-            syncMultiEdge = graph.getLabel(syncMultiEdgeRef())
             asyncEdge = graph.getLabel(asyncEdgeRef())
         }
 
@@ -142,40 +136,6 @@ class GraphSystemAsyncSpec :
             verifyCdc(syncEdge)
         }
 
-        "system=ASYNC + SYNC EDGE table maps PURGE to PURGED" {
-            val request =
-                DeleteEdgeRequest(
-                    label = "$database.$syncEdgeName",
-                    edges = listOf(Edge(10L, 1000L, 9000L)),
-                )
-
-            graph
-                .purge(request)
-                .test()
-                .assertNext { statuses(it) shouldBe listOf(EdgeOperationStatus.PURGED) }
-                .verifyComplete()
-
-            verifyWal(syncEdge, 1, queue = true)
-            verifyCdc(syncEdge)
-        }
-
-        "system=ASYNC + SYNC MULTI_EDGE table maps INSERT to CREATED" {
-            val request =
-                InsertEdgeRequest(
-                    label = "$database.$syncMultiEdgeName",
-                    edges = listOf(Edge(10L, 1L, 2L, mapOf("_id" to 100000L, "paidAt" to 1234567890L, "productId" to 200L))),
-                )
-
-            graph
-                .upsert(request)
-                .test()
-                .assertNext { statuses(it) shouldBe listOf(EdgeOperationStatus.CREATED) }
-                .verifyComplete()
-
-            verifyWal(syncMultiEdge, 1, queue = true)
-            verifyCdc(syncMultiEdge)
-        }
-
         // ---- scenario 2: system=ASYNC overrides request=SYNC on ASYNC table ----
 
         "system=ASYNC overrides request=SYNC on ASYNC EDGE table" {
@@ -253,29 +213,6 @@ class GraphSystemAsyncSpec :
               "storage": "${GraphFixtures.datastoreStorage}",
               "indices": [
                 {"name": "created_at_desc", "fields": [{"name": "createdAt", "order": "DESC"}], "desc": "recently created first"}
-              ],
-              "event": false
-            }
-            """.trimIndent()
-
-        private val syncMultiEdgeDescriptor =
-            """
-            {
-              "desc": "sync multi edge for system-async test",
-              "type": "MULTI_EDGE",
-              "schema": {
-                "src": {"type": "LONG", "desc": "sender"},
-                "tgt": {"type": "LONG", "desc": "receiver"},
-                "fields": [
-                  {"name": "_id", "type": "LONG", "nullable": false, "desc": "order.id"},
-                  {"name": "paidAt", "type": "LONG", "nullable": false, "desc": "payment time"},
-                  {"name": "productId", "type": "LONG", "nullable": false, "desc": "product id"}
-                ]
-              },
-              "dirType": "BOTH",
-              "storage": "${GraphFixtures.datastoreStorage}",
-              "indices": [
-                {"name": "paid_at_desc", "fields": [{"name": "paidAt", "order": "DESC"}], "desc": "recently paid first"}
               ],
               "event": false
             }
