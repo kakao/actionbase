@@ -388,8 +388,8 @@ class Graph(
     /**
      * For `system=ASYNC + label=SYNC` (no force), return the SYNC-shaped status derived from the
      * request's [EdgeOperation] so clients keep their contract; mutations are still queued via the
-     * WAL. The status is intent-based and never `IDLE`. All other queued paths (force, `system=null`,
-     * `system=IGNORE`, `label=ASYNC`, `label=IGNORE`) keep returning [EdgeOperationStatus.QUEUED].
+     * WAL. The status is intent-based and never `IDLE`. All other queued paths keep returning
+     * [EdgeOperationStatus.QUEUED].
      */
     private fun queuedStatus(
         mode: MutationModeContext,
