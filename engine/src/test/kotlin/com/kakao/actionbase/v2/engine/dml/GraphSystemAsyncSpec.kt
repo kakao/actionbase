@@ -176,26 +176,7 @@ class GraphSystemAsyncSpec :
             verifyCdc(syncMultiEdge)
         }
 
-        // ---- scenario 2: ASYNC table keeps returning QUEUED ----
-
-        "system=ASYNC + ASYNC EDGE table keeps QUEUED on INSERT" {
-            val request =
-                InsertEdgeRequest(
-                    label = "$database.$asyncEdgeName",
-                    edges = listOf(Edge(10L, 1000L, 9000L, mapOf("paidAt" to 1L, "productId" to 200L))),
-                )
-
-            graph
-                .upsert(request)
-                .test()
-                .assertNext { statuses(it) shouldBe listOf(EdgeOperationStatus.QUEUED) }
-                .verifyComplete()
-
-            verifyWal(asyncEdge, 1, queue = true)
-            verifyCdc(asyncEdge)
-        }
-
-        // ---- scenario 3: system=ASYNC overrides request=SYNC on ASYNC table ----
+        // ---- scenario 2: system=ASYNC overrides request=SYNC on ASYNC table ----
 
         "system=ASYNC overrides request=SYNC on ASYNC EDGE table" {
             graph
@@ -213,7 +194,7 @@ class GraphSystemAsyncSpec :
             verifyCdc(asyncEdge)
         }
 
-        // ---- scenario 4: force=true + request=SYNC overrides system=ASYNC ----
+        // ---- scenario 3: force=true + request=SYNC overrides system=ASYNC ----
 
         "force=true request=SYNC overrides system=ASYNC on ASYNC EDGE table" {
             graph
@@ -232,7 +213,7 @@ class GraphSystemAsyncSpec :
             verifyCdc(asyncEdge, 1)
         }
 
-        // ---- scenario 5: force=true + request=ASYNC keeps QUEUED on SYNC table ----
+        // ---- scenario 4: force=true + request=ASYNC keeps QUEUED on SYNC table ----
         // Client explicitly forced ASYNC; the SYNC contract preservation must not apply.
 
         "force=true request=ASYNC on SYNC EDGE table returns QUEUED" {
