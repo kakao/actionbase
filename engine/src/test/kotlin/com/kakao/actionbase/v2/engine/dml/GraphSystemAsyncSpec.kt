@@ -25,6 +25,22 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import reactor.kotlin.test.test
 
+/**
+ * v2 counterpart of the v3 `MutationServiceSystemAsyncSpec` (#336). Locks in the SYNC response
+ * contract when `systemMutationMode=ASYNC` overrides a SYNC table.
+ *
+ * Covered:
+ * - SYNC EDGE table × INSERT / UPDATE / DELETE — operation-based status
+ * - `system=ASYNC` overrides `request=SYNC` on ASYNC table → QUEUED
+ * - `force=true + request=SYNC` overrides `system=ASYNC` → actual sync result
+ * - `force=true + request=ASYNC` on SYNC table → QUEUED (forced ASYNC, no contract to preserve)
+ *
+ * Not covered (intentional):
+ * - MULTI_EDGE: officially v3-only; v2 keeps compatibility but has no production integrations.
+ * - PURGE: not exercised in production. The `PURGE -> PURGED` mapping in `Graph.kt` is defensive.
+ * - Multi-event tie-break (same-version / highest-version wins): v2 `mutate()` takes a single
+ *   `EdgeOperation` per call, so the case cannot arise.
+ */
 class GraphSystemAsyncSpec :
     StringSpec({
 
