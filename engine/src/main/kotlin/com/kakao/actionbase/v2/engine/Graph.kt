@@ -302,7 +302,7 @@ class Graph(
                             if (mutationModeContext.queue) {
                                 Mono.just(
                                     MutationResultItem(
-                                        status = EdgeOperationStatus.QUEUED,
+                                        status = queuedStatus(mutationModeContext, operation),
                                         traceId = edge.traceId,
                                         edge = null,
                                     ),
@@ -383,6 +383,27 @@ class Graph(
             // Ensures all work completes even if the request is cancelled - https://projectreactor.io/docs/core/release/api/reactor/core/publisher/Mono.html#cache--
             .cache(Duration.ZERO)
             .subscribeOn(Schedulers.boundedElastic())
+    }
+
+    /**
+     * For `system=ASYNC + label=SYNC` (no force), return the SYNC-shaped status derived from the
+     * request's [EdgeOperation] so clients keep their contract; mutations are still queued via the
+     * WAL. The status is intent-based and never `IDLE`. All other queued paths keep returning
+     * [EdgeOperationStatus.QUEUED].
+     */
+    private fun queuedStatus(
+        mode: MutationModeContext,
+        operation: EdgeOperation,
+    ): EdgeOperationStatus {
+        if (mode.f || mode.s != MutationMode.ASYNC || mode.l != MutationMode.SYNC) {
+            return EdgeOperationStatus.QUEUED
+        }
+        return when (operation) {
+            EdgeOperation.INSERT -> EdgeOperationStatus.CREATED
+            EdgeOperation.UPDATE -> EdgeOperationStatus.UPDATED
+            EdgeOperation.DELETE -> EdgeOperationStatus.DELETED
+            EdgeOperation.PURGE -> EdgeOperationStatus.PURGED
+        }
     }
 
     fun upsert(
