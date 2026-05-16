@@ -5,6 +5,7 @@ import com.kakao.actionbase.v2.core.metadata.EdgeOperation
 import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.GraphConfig
+import com.kakao.actionbase.v2.engine.edge.MutationResult
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.DeleteEdgeRequest
 import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus
@@ -86,7 +87,7 @@ class GraphSystemAsyncSpec :
             if (expectedSize == 0) actual.shouldBeEmpty() else actual.size shouldBe expectedSize
         }
 
-        fun statuses(result: com.kakao.actionbase.v2.engine.edge.MutationResult) = result.result.map { it.status }
+        fun statuses(result: MutationResult) = result.result.map { it.status }
 
         // ---- scenario 1: system=ASYNC overrides SYNC table — preserve SYNC response contract ----
 
@@ -319,7 +320,6 @@ class GraphSystemAsyncSpec :
               ],
               "event": false,
               "mode": "ASYNC"
-
             }
             """.trimIndent()
     }
