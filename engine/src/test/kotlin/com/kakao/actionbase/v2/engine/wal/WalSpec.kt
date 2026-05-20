@@ -15,13 +15,13 @@ import reactor.kotlin.test.test
 class WalSpec :
     StringSpec({
 
-        "primary success, wal write succeed" {
+        "all producers succeed, wal write succeeds" {
 
             val mockWal1 = mockk<Producer>()
             every { mockWal1.produce(any()) } returns Mono.empty()
 
             val mockWal2 = mockk<Producer>()
-            every { mockWal2.produce(any()) } returns Mono.error(RuntimeException("mock error"))
+            every { mockWal2.produce(any()) } returns Mono.empty()
 
             val walLog =
                 WalLog(
@@ -34,31 +34,13 @@ class WalSpec :
             wal.write(walLog).test().verifyComplete()
         }
 
-        "primary failed, but secondary success, wal write succeed" {
+        "any producer fails, wal write fails" {
 
             val mockWal1 = mockk<Producer>()
             every { mockWal1.produce(any()) } returns Mono.empty()
 
             val mockWal2 = mockk<Producer>()
             every { mockWal2.produce(any()) } returns Mono.error(RuntimeException("mock error"))
-
-            val walLog =
-                WalLog(
-                    EntityName("test", "alias"),
-                    EntityName("test", "label"),
-                    Edge(1, "src", "tgt", emptyMap<String, Any>()).toTraceEdge(),
-                    EdgeOperation.INSERT,
-                )
-            val wal = DefaultWal(ProducerList(listOf(mockWal2, mockWal1)))
-            wal.write(walLog).test().verifyComplete()
-        }
-
-        "all wals failed, wal write failed" {
-            val mockWal2 = mockk<Producer>()
-            every { mockWal2.produce(any()) } returns Mono.error(RuntimeException("mock error"))
-
-            val mockWal1 = mockk<Producer>()
-            every { mockWal1.produce(any()) } returns Mono.error(RuntimeException("mock error"))
 
             val walLog =
                 WalLog(

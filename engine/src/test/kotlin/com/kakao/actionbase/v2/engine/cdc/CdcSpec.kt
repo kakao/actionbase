@@ -16,13 +16,13 @@ import reactor.kotlin.test.test
 class CdcSpec :
     StringSpec({
 
-        "primary success, cdc write succeed" {
+        "all producers succeed, cdc write succeeds" {
 
             val mockWal1 = mockk<Producer>()
             every { mockWal1.produce(any()) } returns Mono.empty()
 
             val mockWal2 = mockk<Producer>()
-            every { mockWal2.produce(any()) } returns Mono.error(RuntimeException("mock error"))
+            every { mockWal2.produce(any()) } returns Mono.empty()
 
             val cdcLog =
                 CdcContext(
@@ -40,36 +40,13 @@ class CdcSpec :
             cdc.write(cdcLog).test().verifyComplete()
         }
 
-        "primary failed, but secondary success, cdc write succeed" {
+        "any producer fails, cdc write fails" {
 
             val mockWal1 = mockk<Producer>()
             every { mockWal1.produce(any()) } returns Mono.empty()
 
             val mockWal2 = mockk<Producer>()
             every { mockWal2.produce(any()) } returns Mono.error(RuntimeException("mock error"))
-
-            val cdcLog =
-                CdcContext(
-                    EntityName("test", "alias"),
-                    Edge(1, "src", "tgt", emptyMap<String, Any>()).toTraceEdge(),
-                    EdgeOperation.INSERT,
-                    EdgeOperationStatus.CREATED,
-                    null,
-                    null,
-                    0,
-                    EntityName("test", "alias"),
-                    emptyList(),
-                )
-            val cdc = DefaultCdc(ProducerList(listOf(mockWal2, mockWal1)))
-            cdc.write(cdcLog).test().verifyComplete()
-        }
-
-        "all cdc failed, cdc write failed" {
-            val mockWal2 = mockk<Producer>()
-            every { mockWal2.produce(any()) } returns Mono.error(RuntimeException("mock error"))
-
-            val mockWal1 = mockk<Producer>()
-            every { mockWal1.produce(any()) } returns Mono.error(RuntimeException("mock error"))
 
             val cdcLog =
                 CdcContext(
