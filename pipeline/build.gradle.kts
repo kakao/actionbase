@@ -17,6 +17,10 @@ dependencies {
     implementation(project(":codec-java"))
 
     implementation(Dependencies.Jackson.JACKSON_YAML)
+
+    // Spark ML algorithms (ALS, etc.) used by built-in Transform steps. compileOnly because spark-submit provides it.
+    compileOnly(Dependencies.Spark.MLLIB)
+    testImplementation(Dependencies.Spark.MLLIB)
 }
 
 publishing {

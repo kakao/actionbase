@@ -1,0 +1,52 @@
+# ALS-based item-to-item similarity experiment.
+#
+# Reads V2 edge dumps stored as line-delimited JSON, treats each edge as an implicit-feedback signal
+# (source=user, target=item, rating=1.0), trains an ALS model, and writes the top-20 most similar
+# items per item by cosine similarity over the trained item factors.
+#
+# Run via `StepsRunnerJob` (or copy `steps:` block under a workflow `jobs:` definition):
+#   spark-submit --class com.kakao.actionbase.pipeline.jobs.StepsRunnerJob ... \
+#       --steps=@als-i2i-experiment.yaml
+#
+# Tune `rank`, `maxIter`, `regParam`, and `k` per dataset. `seed` is fixed for reproducibility.
+
+steps:
+  - step: FileSource
+    args:
+      path: "s3a://ab-edges/v2/dump/latest/*.json"
+      format: "json"
+
+  # Prep: cast source/target to int (ALS only takes int keys) and synthesize a rating column.
+  # Implicit feedback ⇒ rating is a constant; the ALS confidence comes from edge presence × alpha.
+  - step: SqlTransform
+    args:
+      query: |
+        SELECT
+          CAST(source AS INT) AS user,
+          CAST(target AS INT) AS item,
+          1.0 AS rating
+        FROM _0
+        WHERE source IS NOT NULL AND target IS NOT NULL
+
+  - step: AlsTransform
+    args:
+      userCol: "user"
+      itemCol: "item"
+      ratingCol: "rating"
+      rank: 32
+      maxIter: 15
+      regParam: 0.05
+      implicitPrefs: true
+      alpha: 1.0
+      coldStartStrategy: "drop"
+      seed: 42
+
+  - step: TopKSimilarityTransform
+    args:
+      k: 20
+
+  - step: FileSink
+    args:
+      path: "s3a://ab-edges/v2/i2i/latest"
+      format: "parquet"
+      mode: "overwrite"
