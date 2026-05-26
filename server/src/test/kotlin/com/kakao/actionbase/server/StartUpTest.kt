@@ -1,11 +1,13 @@
 package com.kakao.actionbase.server
 
 import com.kakao.actionbase.server.test.E2ETestBase
+import com.kakao.actionbase.server.test.InvalidWalConfig
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
 import kotlin.test.Test
 
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 
 class StartUpTest : E2ETestBase() {
@@ -173,5 +175,24 @@ class StartUpWithReadOnlyAndWarmUpEnabledTest : E2ETestBase() {
             .exchange()
             .expectStatus()
             .isOk
+    }
+}
+
+@TestPropertySource(
+    properties = [
+        "kc.graph.warmup.enabled=true",
+        "kc.graph.warmup.count=4",
+    ],
+)
+@Import(InvalidWalConfig::class)
+class StartUpWithWarmUpAndInvalidWalProducerTest : E2ETestBase() {
+    @Test
+    fun `readiness stays DOWN when WAL producer is invalid during warmup`() {
+        client
+            .get()
+            .uri("/graph/health/readiness")
+            .exchange()
+            .expectStatus()
+            .isEqualTo(503)
     }
 }
