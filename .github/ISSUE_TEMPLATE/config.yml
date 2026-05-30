@@ -3,9 +3,3 @@ contact_links:
   - name: Documentation
     url: https://actionbase.io/
     about: Read the documentation
-  - name: Question
-    url: https://github.com/kakao/actionbase/discussions/new?category=q-a
-    about: Ask questions and get help from the community
-  - name: Discussion
-    url: https://github.com/kakao/actionbase/discussions/new
-    about: Start a general discussion
