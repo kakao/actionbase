@@ -16,7 +16,6 @@ class MirrorRequestFilter : WebFilter {
     private val allowedPathPattern =
         listOf(
             pathPatternParser.parse("/graph/v2/service/{service}/label/{label}/edge"),
-            pathPatternParser.parse("/graph/v2/service/{service}/label/{label}/edge/id/{edgeId}"),
             pathPatternParser.parse("/graph/v2/service/{service}/query/{query}/edge"),
         )
 
