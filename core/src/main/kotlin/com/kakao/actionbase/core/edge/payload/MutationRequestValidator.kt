@@ -19,17 +19,25 @@ internal fun checkNonNullableFields(
     properties: List<StructField>,
     payload: Map<String, Any?>,
 ) {
-    if (eventType == EventType.DELETE) return
-    for (field in properties) {
-        if (field.nullable) continue
-        if (!payload.containsKey(field.name)) {
-            require(eventType == EventType.UPDATE) {
+    if (eventType == EventType.INSERT) {
+        for (field in properties) {
+            if (field.nullable) continue
+            require(payload.containsKey(field.name)) {
                 "Property '${field.name}' is required and cannot be null"
             }
-        } else {
             require(payload[field.name] != null) {
                 "Property '${field.name}' cannot be null"
             }
         }
+    } else if (eventType == EventType.UPDATE) {
+        for (field in properties) {
+            if (field.nullable) continue
+            if (payload.containsKey(field.name)) {
+                require(payload[field.name] != null) {
+                    "Property '${field.name}' cannot be null"
+                }
+            }
+        }
     }
+    // DELETE: no property validation (tombstone semantics)
 }
