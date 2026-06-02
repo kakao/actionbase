@@ -2,7 +2,6 @@ package com.kakao.actionbase.v2.engine.label.hbase
 
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.GraphDefaults
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
@@ -35,7 +34,6 @@ class HBaseHashOnlyIndexedLabel(
     override fun scan(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> = unsupported("scan")
 
     override fun cache(

@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.consistency
 
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
@@ -98,7 +97,7 @@ class EventualConsistencySpec :
 
                 val getQueryResult =
                     tests.map {
-                        label.get(it.src.base, it.tgt.base, Direction.OUT, setOf(StatKey.WITH_ALL), EmptyEdgeIdEncoder.INSTANCE)
+                        label.get(it.src.base, it.tgt.base, Direction.OUT, setOf(StatKey.WITH_ALL))
                     }
 
                 DataFrameStepVerifier
@@ -115,7 +114,7 @@ class EventualConsistencySpec :
                                 dir = Direction.OUT,
                                 indexName = "created_at_desc",
                             )
-                        label.scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                        label.scan(scanFilter, emptySet())
                     }
 
                 DataFrameStepVerifier
@@ -154,7 +153,7 @@ class EventualConsistencySpec :
 
                 val getQueryResult =
                     tests.map {
-                        label.get(it.src.base, it.tgt.base, Direction.OUT, setOf(StatKey.WITH_ALL), EmptyEdgeIdEncoder.INSTANCE)
+                        label.get(it.src.base, it.tgt.base, Direction.OUT, setOf(StatKey.WITH_ALL))
                     }
 
                 DataFrameStepVerifier
@@ -171,7 +170,7 @@ class EventualConsistencySpec :
                                 dir = Direction.IN,
                                 indexName = "created_at_desc",
                             )
-                        label.scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                        label.scan(scanFilter, emptySet())
                     }
 
                 DataFrameStepVerifier

@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.label
 
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.edge.TraceEdge
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -59,7 +58,7 @@ class EventOrderSpec :
             src: Any,
             tgt: Any,
         ): Mono<RowWithSchema> {
-            val df = label.get(src, listOf(tgt), Direction.OUT, setOf(StatKey.WITH_ALL), EmptyEdgeIdEncoder.INSTANCE)
+            val df = label.get(src, listOf(tgt), Direction.OUT, setOf(StatKey.WITH_ALL))
             df.show()
             return df.map { it.toRowWithSchema().first() }
         }

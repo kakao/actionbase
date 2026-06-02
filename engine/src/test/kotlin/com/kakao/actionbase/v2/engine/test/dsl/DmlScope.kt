@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.test.dsl
 
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
 import com.kakao.actionbase.v2.engine.cdc.CdcContext
@@ -82,7 +81,7 @@ class DmlScope(
         block2: Mono<DataFrame>.() -> Unit,
     ) {
         val scanFilter = ScanFilter(EntityName.origin, setOf(src), dir = dir)
-        val df: Mono<DataFrame> = label.scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE).cache()
+        val df: Mono<DataFrame> = label.scan(scanFilter, emptySet()).cache()
         df.block2()
     }
 }

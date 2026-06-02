@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.indexed
 
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
@@ -87,7 +86,7 @@ class SimpleFiltersSpec :
                 )
 
             label
-                .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                .scan(scanFilter, emptySet())
                 .test()
                 .assertNext {
                     it.rows.map { row -> row.array.toList() } shouldBe
@@ -118,7 +117,7 @@ class SimpleFiltersSpec :
                 )
 
             label
-                .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                .scan(scanFilter, emptySet())
                 .test()
                 .assertNext {
                     it.rows.map { row -> row.array.toList() } shouldBe
@@ -149,7 +148,7 @@ class SimpleFiltersSpec :
                 )
 
             label
-                .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                .scan(scanFilter, emptySet())
                 .test()
                 .assertNext {
                     it.rows.map { row -> row.array.toList() } shouldBe

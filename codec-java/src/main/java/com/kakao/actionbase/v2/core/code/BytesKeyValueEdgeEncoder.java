@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
-public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implements IdEdgeEncoder {
+public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> {
 
   public BytesKeyValueEdgeEncoder() {
     super();
@@ -195,28 +195,5 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
     } else {
       throw new IllegalArgumentException("Invalid encodedEdgeType: " + encodedEdgeType);
     }
-  }
-
-  // --- IdEdgeEncoder
-
-  @Override
-  public String encode(Object src, Object tgt) {
-    byte[] encodedEdgeId =
-        useAsByteArray(
-            buffer -> {
-              buffer.encodeAny(src);
-              buffer.encodeAny(tgt);
-            });
-    return CryptoUtils.encryptAndEncodeUrlSafe(encodedEdgeId);
-  }
-
-  @Override
-  public KeyValue<Object> decode(String edgeId) {
-    byte[] encodedEdgeId = CryptoUtils.decodeAndDecryptUrlSafe(edgeId);
-
-    SimplePositionedMutableByteRange buffer = new SimplePositionedMutableByteRange(encodedEdgeId);
-    Object src = ValueUtils.deserialize(buffer);
-    Object tgt = ValueUtils.deserialize(buffer);
-    return new KeyValue<>(src, tgt);
   }
 }

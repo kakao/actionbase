@@ -150,7 +150,7 @@ class LabelSpec :
         }
 
         fun testEmptySrcGet(label: Label) {
-            val dfMono = label.get(999, 10000, Direction.OUT, emptySet(), graph.idEdgeEncoder)
+            val dfMono = label.get(999, 10000, Direction.OUT, emptySet())
             dfMono
                 .test()
                 .assertNext { it.rows.isEmpty() }
@@ -175,7 +175,7 @@ class LabelSpec :
                     offset = "100",
                     indexName = "created_at_desc",
                 )
-            val dfMono = label.scan(scanFilter, emptySet(), graph.idEdgeEncoder)
+            val dfMono = label.scan(scanFilter, emptySet())
             dfMono
                 .test()
                 .assertNext { it.rows.isEmpty() }
@@ -202,7 +202,7 @@ class LabelSpec :
                 )
 
             label
-                .scan(scanFilter, emptySet(), graph.idEdgeEncoder)
+                .scan(scanFilter, emptySet())
                 .test()
                 .assertNext { it.rows.size shouldBe 6 }
                 .verifyComplete()
@@ -487,7 +487,7 @@ class LabelSpec :
 
             graph
                 .getLabel(EntityName("test", "async_label"))
-                .get("a", "b", Direction.OUT, emptySet(), graph.idEdgeEncoder)
+                .get("a", "b", Direction.OUT, emptySet())
                 .test()
                 .assertNext { it.rows.isEmpty() }
                 .verifyComplete()

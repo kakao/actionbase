@@ -1,7 +1,6 @@
 package com.kakao.actionbase.v2.engine.label.nil
 
 import com.kakao.actionbase.engine.storage.StorageOpCollector
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.edge.TraceEdge
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -65,13 +64,11 @@ class NilLabel(
     override fun scan(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> = empty
 
     override fun getSelf(
         src: List<Any>,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> = empty
 
     override fun get(
@@ -79,7 +76,6 @@ class NilLabel(
         tgt: Any,
         dir: Direction,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> = empty
 
     override fun count(
