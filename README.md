@@ -1,6 +1,6 @@
 # Actionbase
 
-**One database for U2U, U2I, and I2I interactions — precomputed at write time, served as simple lookups.**<br />
+**One database for user–user, user–item, and item–item interactions — precomputed at write time, served as simple lookups.**<br />
 **1M+ req/min in production at Kakao. Built on HBase.**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/kakao/actionbase/continuous-integration.yml?label=ci&style=flat-square)](https://github.com/kakao/actionbase/actions/workflows/continuous-integration.yml) [![Release](https://img.shields.io/github/v/release/kakao/actionbase?label=release&style=flat-square)](https://github.com/kakao/actionbase/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://opensource.org/licenses/Apache-2.0) [![Docs](https://img.shields.io/badge/docs-actionbase.io-green?style=flat-square)](https://actionbase.io)
