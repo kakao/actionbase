@@ -52,6 +52,8 @@ class MutationService(
                 Flux
                     .fromIterable(unresolvedEvents)
                     .map { it.createEvent(tb.schema) }
+                    .collectList()
+                    .flatMapMany { Flux.fromIterable(it) }
                     .flatMap { event -> engine.writeWal(ctx, event).thenReturn(event) }
                     .groupBy { it.key }
                     .flatMap { (key, groupMono) ->
@@ -63,9 +65,13 @@ class MutationService(
                                 readModifyWrite(tb, key, sorted, acquireLock, requestContext.newCollector())
                                     .doOnNext { result ->
                                         engine.writeCdc(ctx, sorted, result.status, result.before, result.after, result.acc)
-                                    }.onErrorResume {
-                                        tb.handleMutationError(it)
-                                        Mono.just(MutationResult.of(key, 0, ERROR))
+                                    }.onErrorResume { error ->
+                                        if (error is IllegalArgumentException) {
+                                            Mono.error(error)
+                                        } else {
+                                            tb.handleMutationError(error)
+                                            Mono.just(MutationResult.of(key, 0, ERROR))
+                                        }
                                     }
                             }
                         }
