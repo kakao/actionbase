@@ -15,15 +15,15 @@ import com.kakao.actionbase.core.state.EventType
  * Throws [IllegalArgumentException] on violation so the global exception handler maps it to 400.
  */
 internal fun checkNonNullableFields(
-    type: EventType,
+    eventType: EventType,
     properties: List<StructField>,
     payload: Map<String, Any?>,
 ) {
-    if (type == EventType.DELETE) return
+    if (eventType == EventType.DELETE) return
     for (field in properties) {
         if (field.nullable) continue
         if (!payload.containsKey(field.name)) {
-            require(type == EventType.UPDATE) {
+            require(eventType == EventType.UPDATE) {
                 "Property '${field.name}' is required and cannot be null"
             }
         } else {
