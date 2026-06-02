@@ -10,7 +10,6 @@ import com.kakao.actionbase.core.metadata.common.CacheField
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.v2.core.code.CryptoUtils
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.types.DataType
@@ -68,12 +67,10 @@ open class HBaseIndexedLabel(
     override fun scan(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> =
         scanIndexedEdges(
             scanFilter,
             stats,
-            idEdgeEncoder,
         )
 
     override fun cache(

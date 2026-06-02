@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.service.ddl
 
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Active
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -190,7 +189,7 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                 limit = graph.metadataFetchLimit,
             )
         return label
-            .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+            .scan(scanFilter, emptySet())
             .map {
                 factory.fromDataFrame(it)
             }.map {
@@ -205,7 +204,6 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
                 name.nameNotNull,
                 Direction.OUT,
                 emptySet(),
-                EmptyEdgeIdEncoder.INSTANCE,
             ).map {
                 factory.fromDataFrame(it)
             }.mapNotNull {

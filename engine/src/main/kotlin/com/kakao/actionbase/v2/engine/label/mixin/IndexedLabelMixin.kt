@@ -2,7 +2,6 @@ package com.kakao.actionbase.v2.engine.label.mixin
 
 import com.kakao.actionbase.v2.core.code.EdgeBuffer
 import com.kakao.actionbase.v2.core.code.EncodedKey
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.code.KeyFieldValue
 import com.kakao.actionbase.v2.core.code.hbase.Order
@@ -425,10 +424,8 @@ interface IndexedLabelMixin<T> {
     fun scanIndexedEdges(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
         val withAll = stats.contains(StatKey.WITH_ALL)
-        val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
 
         // temporary fix for due date
         // { -- this will be removed
@@ -437,10 +434,6 @@ interface IndexedLabelMixin<T> {
         // if OFFSET exists, all options are ignored.
         if (withAll) {
             self.log.warn("WITH_ALL is ignored when OFFSET is present")
-        }
-
-        if (stats.contains(StatKey.EDGE_ID)) {
-            self.log.warn("EDGE_ID is ignored when OFFSET is present")
         }
         // }
 
@@ -462,10 +455,8 @@ interface IndexedLabelMixin<T> {
                                         val schemaEdge = self.encodedEdgeToSchemaEdge(it)
                                         if (withOffset) {
                                             schemaEdge.toRowWithOffset(self.coder.encodeOffset(it), self.isMultiEdge)
-                                        } else if (withEdgeId) {
-                                            schemaEdge.toRow(withAll, idEdgeEncoder, self.isMultiEdge)
                                         } else {
-                                            schemaEdge.toRow(withAll, null, self.isMultiEdge)
+                                            schemaEdge.toRow(withAll, self.isMultiEdge)
                                         }
                                     } catch (e: Throwable) {
                                         self.log.error("Exception while decoding edge", e.message)
@@ -488,7 +479,6 @@ interface IndexedLabelMixin<T> {
                 when {
                     withOffset -> self.entity.schema.offsetStructType
                     withAll -> self.entity.schema.allStructType
-                    withEdgeId -> self.entity.schema.edgeIdStructType
                     else -> self.entity.schema.structType
                 },
                 offsets = offsets,

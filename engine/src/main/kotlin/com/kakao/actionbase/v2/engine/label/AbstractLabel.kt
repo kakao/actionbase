@@ -4,7 +4,6 @@ import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.EncodedKey
 import com.kakao.actionbase.v2.core.code.HashEdgeValue
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyFieldValue
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.code.VersionValue
@@ -366,10 +365,8 @@ abstract class AbstractLabel<T>(
     override fun scan(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
         val withAll = stats.contains(StatKey.WITH_ALL)
-        val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
         require(scanFilter.dir == Direction.OUT) { "Only OUT direction is supported" }
         val keys = makeHashEdgeScanKeys(scanFilter)
         val rowsWithLastRow =
@@ -395,11 +392,7 @@ abstract class AbstractLabel<T>(
                                 allRows
                                     .filter { withAll || it.isActive }
                                     .map {
-                                        if (withEdgeId) {
-                                            it.toRow(withAll, idEdgeEncoder)
-                                        } else {
-                                            it.toRow(withAll, null)
-                                        }
+                                        it.toRow(withAll)
                                     }
                             val lastValue = group.lastOrNull()
                             val offset = lastValue?.let { coder.encodeOffset(it) }
@@ -416,8 +409,6 @@ abstract class AbstractLabel<T>(
                 rows,
                 if (withAll) {
                     entity.schema.allStructType
-                } else if (withEdgeId) {
-                    entity.schema.edgeIdStructType
                 } else {
                     entity.schema.structType
                 },

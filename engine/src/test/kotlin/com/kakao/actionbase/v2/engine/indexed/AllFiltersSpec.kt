@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.indexed
 
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
@@ -128,7 +127,6 @@ class AllFiltersSpec :
                                 otherPredicates = predicate,
                             ),
                             emptySet(),
-                            EmptyEdgeIdEncoder.INSTANCE,
                         ).test()
                         .assertNext {
                             it.rows.map { row -> row.array[1] as Long } shouldBe expected
@@ -153,7 +151,6 @@ class AllFiltersSpec :
                         otherPredicates = predicate,
                     ),
                     emptySet(),
-                    EmptyEdgeIdEncoder.INSTANCE,
                 ).test()
                 .assertNext {
                     it.rows.map { row -> row.array[1] as Long } shouldBe expected
@@ -179,7 +176,6 @@ class AllFiltersSpec :
                             otherPredicates = predicate,
                         ),
                         emptySet(),
-                        EmptyEdgeIdEncoder.INSTANCE,
                     ).test()
                     .assertNext {
                         it.rows.map { row -> row.array[1] as Long } shouldBe expected
@@ -210,7 +206,6 @@ class AllFiltersSpec :
                                     otherPredicates = predicates,
                                 ),
                                 emptySet(),
-                                EmptyEdgeIdEncoder.INSTANCE,
                             ).test()
                             .assertNext {
                                 it.rows.map { row -> row.array[1] as Long } shouldBe expected
@@ -235,7 +230,6 @@ class AllFiltersSpec :
                             otherPredicates = predicates,
                         ),
                         emptySet(),
-                        EmptyEdgeIdEncoder.INSTANCE,
                     ).test()
                     .assertNext {
                         it.rows.map { row -> row.array[1] as Long } shouldBe expected

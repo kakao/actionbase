@@ -1,14 +1,12 @@
 package com.kakao.actionbase.v2.engine.dml
 
 import com.kakao.actionbase.v2.core.edge.Edge
-import com.kakao.actionbase.v2.core.edge.EdgeValue
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.audit.Audit
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus
 import com.kakao.actionbase.v2.engine.label.InsertEdgeRequest
-import com.kakao.actionbase.v2.engine.label.InsertIdEdgeRequest
 import com.kakao.actionbase.v2.engine.sql.select
 import com.kakao.actionbase.v2.engine.sql.toRowFlux
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
@@ -69,33 +67,6 @@ class DmlTests :
                 .assertNext {
                     val node = objectMapper.createObjectNode().apply { put("a", 1) }
                     it.rows[0].array shouldBe arrayOf(Direction.OUT.name, 1L, "a", "b", "me", null, node)
-                }.verifyComplete()
-
-            val edgeId = graph.getEdgeId(EntityName("test", "test"), "c", "d").block()!!
-
-            val idRequest =
-                InsertIdEdgeRequest(
-                    label = "test.test",
-                    edgeId = edgeId,
-                    edgeValue = EdgeValue(1L, mapOf("permission" to "me")),
-                    audit = Audit.default,
-                    requestId = "no_request_id",
-                )
-
-            graph
-                .upsert(idRequest)
-                .test()
-                .assertNext {
-                    it.result.map { result -> result.status } shouldContainAll listOf(EdgeOperationStatus.CREATED)
-                }.verifyComplete()
-
-            graph
-                .queryScan(EntityName("test", "test"), "c")
-                .select("src", "tgt")
-                .toRowFlux()
-                .test()
-                .assertNext {
-                    it.row.array shouldBe arrayOf("c", "d")
                 }.verifyComplete()
         }
     })

@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.edge
 
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.hbase.ValueUtils
 import com.kakao.actionbase.v2.core.edge.SchemaEdge
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -12,14 +11,11 @@ private val TARGET_CODE_AS_STRING = ValueUtils.stringHash("_target").toString()
 
 fun SchemaEdge.toRow(
     withAll: Boolean,
-    edgeIdEdgeEncoder: IdEdgeEncoder?,
     isMultiEdge: Boolean = false,
 ): Row {
     val numFields =
         if (withAll) {
             schema.allStructType.size
-        } else if (edgeIdEdgeEncoder != null) {
-            schema.edgeIdStructType.size
         } else {
             schema.structType.size
         }
@@ -27,9 +23,6 @@ fun SchemaEdge.toRow(
 
     if (withAll) {
         array[schema.activeIndex] = isActive
-    }
-    if (edgeIdEdgeEncoder != null) {
-        array[schema.edgeIdIndex] = edgeIdEdgeEncoder.encode(src, tgt)
     }
 
     if (isMultiEdge) {

@@ -6,9 +6,7 @@ import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.edge.MutationResult
 import com.kakao.actionbase.v2.engine.label.DeleteEdgeRequest
-import com.kakao.actionbase.v2.engine.label.DeleteIdEdgeRequest
 import com.kakao.actionbase.v2.engine.label.InsertEdgeRequest
-import com.kakao.actionbase.v2.engine.label.InsertIdEdgeRequest
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -47,22 +45,4 @@ class EdgeController(
         @RequestBody request: DeleteEdgeRequest,
         requestContext: RequestContext,
     ): Mono<ResponseEntity<MutationResult>> = graph.delete(request, bulk, mode, requestContext::newCollector).mapToResponseEntity()
-
-    @PostMapping("/graph/v2/edge/id")
-    fun insertId(
-        @RequestBody request: InsertIdEdgeRequest,
-        requestContext: RequestContext,
-    ): Mono<ResponseEntity<MutationResult>> = graph.upsert(request, requestContext::newCollector).mapToResponseEntity()
-
-    @PutMapping("/graph/v2/edge/id")
-    fun updateId(
-        @RequestBody request: InsertIdEdgeRequest,
-        requestContext: RequestContext,
-    ): Mono<ResponseEntity<MutationResult>> = graph.update(request, requestContext::newCollector).mapToResponseEntity()
-
-    @DeleteMapping("/graph/v2/edge/id")
-    fun deleteId(
-        @RequestBody request: DeleteIdEdgeRequest,
-        requestContext: RequestContext,
-    ): Mono<ResponseEntity<MutationResult>> = graph.delete(request, requestContext::newCollector).mapToResponseEntity()
 }

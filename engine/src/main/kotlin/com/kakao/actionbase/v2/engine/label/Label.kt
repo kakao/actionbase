@@ -1,7 +1,6 @@
 package com.kakao.actionbase.v2.engine.label
 
 import com.kakao.actionbase.engine.storage.StorageOpCollector
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.edge.TraceEdge
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -48,13 +47,11 @@ interface Label : AutoCloseable {
     fun scan(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame>
 
     fun getSelf(
         src: List<Any>,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame>
 
     fun get(
@@ -62,19 +59,17 @@ interface Label : AutoCloseable {
         tgt: Any,
         dir: Direction,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
-    ): Mono<DataFrame> = get(src, listOf(tgt), dir, stats, idEdgeEncoder)
+    ): Mono<DataFrame> = get(src, listOf(tgt), dir, stats)
 
     fun get(
         src: Any,
         tgt: List<Any>,
         dir: Direction,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> =
         Flux
             .fromIterable(tgt)
-            .flatMap { get(src, it, dir, stats, idEdgeEncoder) }
+            .flatMap { get(src, it, dir, stats) }
             .filter { it.rows.isNotEmpty() }
             .reduce { a, b -> a + b }
 
@@ -82,11 +77,10 @@ interface Label : AutoCloseable {
         src: List<Any>,
         tgt: List<Any>,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> =
         Flux
             .fromIterable(src)
-            .flatMap { get(it, tgt, Direction.OUT, stats, idEdgeEncoder) }
+            .flatMap { get(it, tgt, Direction.OUT, stats) }
             .filter { it.rows.isNotEmpty() }
             .reduce { a, b -> a + b }
 
@@ -115,18 +109,4 @@ interface Label : AutoCloseable {
         lockEdge: KeyValue<Any>,
         lockTimeout: Long,
     ): Mono<Void>
-
-    fun getEdgeId(
-        idEdgeEncoder: IdEdgeEncoder,
-        src: Any,
-        tgt: Any,
-    ): String {
-        val castedSrc =
-            entity.schema.src.dataType
-                .cast(src)
-        val castedTgt =
-            entity.schema.tgt.dataType
-                .cast(tgt)
-        return idEdgeEncoder.encode(castedSrc, castedTgt)
-    }
 }

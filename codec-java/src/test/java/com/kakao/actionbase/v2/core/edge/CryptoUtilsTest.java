@@ -1,9 +1,6 @@
 package com.kakao.actionbase.v2.core.edge;
 
 import com.kakao.actionbase.v2.core.code.CryptoUtils;
-import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory;
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder;
-import com.kakao.actionbase.v2.core.code.KeyValue;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -39,26 +36,6 @@ public class CryptoUtilsTest {
       Assertions.fail(
           "An exception occurred during the encrypt/decrypt process: " + e.getMessage());
     }
-  }
-
-  @RepeatedTest(10)
-  void testEdgeId() {
-    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
-    IdEdgeEncoder encoder = (IdEdgeEncoder) factory.getBytesKeyValueEncoder();
-
-    long src = 123;
-    long dst = 456;
-
-    String encryptedEdgeId = encoder.encode(src, dst);
-    Assertions.assertNotNull(encryptedEdgeId);
-
-    System.out.println(
-        "Encrypted edge id: " + encryptedEdgeId + " (" + encryptedEdgeId.length() + " bytes)");
-
-    KeyValue<Object> decodedEdgeId = encoder.decode(encryptedEdgeId);
-    Assertions.assertNotNull(decodedEdgeId);
-    Assertions.assertEquals(src, decodedEdgeId.getKey());
-    Assertions.assertEquals(dst, decodedEdgeId.getValue());
   }
 
   @Disabled

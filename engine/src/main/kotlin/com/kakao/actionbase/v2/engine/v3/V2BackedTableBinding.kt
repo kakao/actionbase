@@ -210,8 +210,7 @@ class V2BackedTableBinding(
                 DEFAULT_TOTAL_VALUE_MONO
             }
 
-        @Suppress("UNCHECKED_CAST")
-        val dfMono = label.scan(scanFilter, emptySet(), label.coder as com.kakao.actionbase.v2.core.code.IdEdgeEncoder)
+        val dfMono = label.scan(scanFilter, emptySet())
 
         return dfMono
             .zipWith(totalMono)

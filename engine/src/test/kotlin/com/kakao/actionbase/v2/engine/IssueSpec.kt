@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine
 
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.code.hbase.Order
 import com.kakao.actionbase.v2.core.edge.Edge
@@ -303,7 +302,7 @@ class IssueSpec :
                     val sequenceKey = processingSequence.joinToString("; ") { "${it.first.name.first()}${it.second.ts}" }
                     val row =
                         thisLabel
-                            .get(listOf(src), listOf(tgt), emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                            .get(listOf(src), listOf(tgt), emptySet())
                             .map { it.rows.first() }
                             .block()!!
                     results[sequenceKey] = row

@@ -2,7 +2,6 @@ package com.kakao.actionbase.v2.engine.label.metastore
 
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.EncodedKey
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyFieldValue
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.edge.Edge
@@ -202,10 +201,8 @@ open class JdbcHashLabel(
     override fun getSelf(
         src: List<Any>,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
         val withAll = stats.contains(StatKey.WITH_ALL)
-        val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
         val rows =
             Mono.fromCallable {
                 val metastoreKeys =
@@ -222,11 +219,7 @@ open class JdbcHashLabel(
                             encodedEdgeToSchemaEdge(KeyFieldValue(row[metadataTable.k], row[metadataTable.v]))
                         }.filter { withAll || it.isActive }
                         .map {
-                            if (withEdgeId) {
-                                it.toRow(withAll, idEdgeEncoder)
-                            } else {
-                                it.toRow(withAll, null)
-                            }
+                            it.toRow(withAll)
                         }
                 }
             }
@@ -236,8 +229,6 @@ open class JdbcHashLabel(
                     it,
                     if (withAll) {
                         entity.schema.allStructType
-                    } else if (withEdgeId) {
-                        entity.schema.edgeIdStructType
                     } else {
                         entity.schema.structType
                     },
@@ -250,10 +241,8 @@ open class JdbcHashLabel(
         tgt: List<Any>,
         dir: Direction,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
         val withAll = stats.contains(StatKey.WITH_ALL)
-        val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
         val rows =
             Mono.fromCallable {
                 val metastoreKeys =
@@ -270,11 +259,7 @@ open class JdbcHashLabel(
                             encodedEdgeToSchemaEdge(KeyFieldValue(row[metadataTable.k], row[metadataTable.v]))
                         }.filter { withAll || it.isActive }
                         .map {
-                            if (withEdgeId) {
-                                it.toRow(withAll, idEdgeEncoder)
-                            } else {
-                                it.toRow(withAll, null)
-                            }
+                            it.toRow(withAll)
                         }
                 }
             }
@@ -284,8 +269,6 @@ open class JdbcHashLabel(
                     it,
                     if (withAll) {
                         entity.schema.allStructType
-                    } else if (withEdgeId) {
-                        entity.schema.edgeIdStructType
                     } else {
                         entity.schema.structType
                     },

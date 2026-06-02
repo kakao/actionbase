@@ -6,7 +6,6 @@ import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.engine.util.HBaseRecordCache
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.EncodedKey
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyFieldValue
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.code.hbase.Constants
@@ -223,10 +222,8 @@ open class HBaseHashLabel(
     override fun getSelf(
         src: List<Any>,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
         val withAll = stats.contains(StatKey.WITH_ALL)
-        val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
 
         val gets =
             src.map {
@@ -249,11 +246,7 @@ open class HBaseHashLabel(
                             }
                         }.filter { it != null && (withAll || it.isActive) }
                         .map {
-                            if (withEdgeId) {
-                                it!!.toRow(withAll, idEdgeEncoder)
-                            } else {
-                                it!!.toRow(withAll, null)
-                            }
+                            it!!.toRow(withAll)
                         }
                 }
 
@@ -263,8 +256,6 @@ open class HBaseHashLabel(
                     it,
                     if (withAll) {
                         entity.schema.allStructType
-                    } else if (withEdgeId) {
-                        entity.schema.edgeIdStructType
                     } else {
                         entity.schema.structType
                     },
@@ -277,10 +268,8 @@ open class HBaseHashLabel(
         tgt: List<Any>,
         dir: Direction,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
         val withAll = stats.contains(StatKey.WITH_ALL)
-        val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
 
         val gets =
             tgt.map {
@@ -303,11 +292,7 @@ open class HBaseHashLabel(
                             }
                         }.filter { it != null && (withAll || it.isActive) }
                         .map {
-                            if (withEdgeId) {
-                                it!!.toRow(withAll, idEdgeEncoder, isMultiEdge)
-                            } else {
-                                it!!.toRow(withAll, null, isMultiEdge)
-                            }
+                            it!!.toRow(withAll, isMultiEdge)
                         }
                 }
 
@@ -317,8 +302,6 @@ open class HBaseHashLabel(
                     it,
                     if (withAll) {
                         entity.schema.allStructType
-                    } else if (withEdgeId) {
-                        entity.schema.edgeIdStructType
                     } else {
                         entity.schema.structType
                     },
@@ -340,7 +323,7 @@ open class HBaseHashLabel(
                             }
                         }.filter { it != null && it.isActive }
                         .map {
-                            it!!.toRow(withAll = false, null, isMultiEdge)
+                            it!!.toRow(withAll = false, isMultiEdge = isMultiEdge)
                         }
                 }
         return rows

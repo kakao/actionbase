@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
-public class StateCodec implements EdgeIdCodec {
+public class StateCodec {
 
   private final ConcurrentLinkedQueue<StateCodecBuffer> bufferPool;
 
@@ -152,27 +152,6 @@ public class StateCodec implements EdgeIdCodec {
     }
 
     return builder.build();
-  }
-
-  // --- IdEdgeEncoder
-
-  public String encode(Object src, Object tgt) {
-    byte[] encodedEdgeId =
-        useAsByteArray(
-            buffer -> {
-              buffer.encodeAny(src);
-              buffer.encodeAny(tgt);
-            });
-    return CryptoUtils.encryptAndEncodeUrlSafe(encodedEdgeId);
-  }
-
-  public KeyValue<Object> decode(String edgeId) {
-    byte[] encodedEdgeId = CryptoUtils.decodeAndDecryptUrlSafe(edgeId);
-
-    SimplePositionedMutableByteRange buffer = new SimplePositionedMutableByteRange(encodedEdgeId);
-    Object src = ValueUtils.deserialize(buffer);
-    Object tgt = ValueUtils.deserialize(buffer);
-    return ImmutableKeyValue.of(src, tgt);
   }
 
   public static final byte EDGE_STATE_CODE = EncodedEdgeType.EDGE_STATE.getCode();
