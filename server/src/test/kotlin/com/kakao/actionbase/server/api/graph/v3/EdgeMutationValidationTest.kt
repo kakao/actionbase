@@ -18,7 +18,7 @@ class EdgeMutationValidationTest : E2ETestBase() {
     private val syncTable = "validation-sync-edge"
     private val asyncTable = "validation-async-edge"
 
-    // Schema: "score" (long, non-nullable), "tag" (string, nullable)
+    // Schema: "required" (long, non-nullable), "optional" (string, nullable)
     private fun tableDdl(
         table: String,
         storage: String,
@@ -31,8 +31,8 @@ class EdgeMutationValidationTest : E2ETestBase() {
             "source": {"type": "string", "comment": "src"},
             "target": {"type": "string", "comment": "tgt"},
             "properties": [
-              {"name": "score", "type": "long", "comment": "score", "nullable": false},
-              {"name": "tag",   "type": "string", "comment": "tag",   "nullable": true}
+              {"name": "required", "type": "long",   "comment": "required", "nullable": false},
+              {"name": "optional", "type": "string", "comment": "optional", "nullable": true}
             ],
             "direction": "OUT",
             "indexes": [],
@@ -94,25 +94,25 @@ class EdgeMutationValidationTest : E2ETestBase() {
 
     @Test
     fun `sync INSERT missing non-nullable field returns 400`() {
-        mutateSync("""{"mutations":[{"type":"INSERT","edge":{"version":1,"source":"A","target":"B","properties":{"tag":"hello"}}}]}""")
+        mutateSync("""{"mutations":[{"type":"INSERT","edge":{"version":1,"source":"A","target":"B","properties":{"optional":"hello"}}}]}""")
             .isBadRequest
     }
 
     @Test
     fun `sync INSERT with explicit null for non-nullable field returns 400`() {
-        mutateSync("""{"mutations":[{"type":"INSERT","edge":{"version":2,"source":"A","target":"B","properties":{"score":null,"tag":"hello"}}}]}""")
+        mutateSync("""{"mutations":[{"type":"INSERT","edge":{"version":2,"source":"A","target":"B","properties":{"required":null,"optional":"hello"}}}]}""")
             .isBadRequest
     }
 
     @Test
     fun `sync UPDATE with explicit null for non-nullable field returns 400`() {
-        mutateSync("""{"mutations":[{"type":"UPDATE","edge":{"version":3,"source":"A","target":"B","properties":{"score":null}}}]}""")
+        mutateSync("""{"mutations":[{"type":"UPDATE","edge":{"version":3,"source":"A","target":"B","properties":{"required":null}}}]}""")
             .isBadRequest
     }
 
     @Test
     fun `sync INSERT with all required fields returns 200`() {
-        mutateSync("""{"mutations":[{"type":"INSERT","edge":{"version":10,"source":"X","target":"Y","properties":{"score":42}}}]}""")
+        mutateSync("""{"mutations":[{"type":"INSERT","edge":{"version":10,"source":"X","target":"Y","properties":{"required":42}}}]}""")
             .isOk
             .expectBody()
             .jsonPath("$.results[0].status")
@@ -121,7 +121,7 @@ class EdgeMutationValidationTest : E2ETestBase() {
 
     @Test
     fun `async INSERT missing non-nullable field returns 400`() {
-        mutateAsync("""{"mutations":[{"type":"INSERT","edge":{"version":1,"source":"A","target":"B","properties":{"tag":"hello"}}}]}""")
+        mutateAsync("""{"mutations":[{"type":"INSERT","edge":{"version":1,"source":"A","target":"B","properties":{"optional":"hello"}}}]}""")
             .isBadRequest
     }
 }
