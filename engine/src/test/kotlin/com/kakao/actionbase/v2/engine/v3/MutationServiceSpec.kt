@@ -346,6 +346,59 @@ class MutationServiceSpec :
                 }.verifyComplete()
         }
 
+        "INSERT missing non-nullable field should fail before WAL publication" {
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.hbaseIndexed // createdAt: LONG, nullable=false
+
+            val invalidRequest =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"permission": "na"}}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+
+            mutationService
+                .mutate(database, table, invalidRequest.mutations)
+                .test()
+                .verifyError(IllegalArgumentException::class.java)
+
+            // No row should be persisted
+            queryService
+                .gets(database, table, listOf("1000"), listOf("9000"))
+                .test()
+                .assertNext { it.edges.isEmpty() shouldBe true }
+                .verifyComplete()
+        }
+
+        "bulk INSERT with one invalid item should not publish any item (all-or-nothing)" {
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.hbaseIndexed
+
+            val mixedRequest =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 10, "source": "2000", "target": "9000", "properties": {"permission": "na", "createdAt": 10}}},
+                    {"type": "INSERT", "edge": {"version": 11, "source": "2000", "target": "9001", "properties": {"permission": "na"}}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+
+            mutationService
+                .mutate(database, table, mixedRequest.mutations)
+                .test()
+                .verifyError(IllegalArgumentException::class.java)
+
+            // The valid item (2000→9000) must also not be written
+            queryService
+                .gets(database, table, listOf("2000"), listOf("9000"))
+                .test()
+                .assertNext { it.edges.isEmpty() shouldBe true }
+                .verifyComplete()
+        }
+
         "runEvenIfCancelled should complete execution even when cancelled" {
             val database = GraphFixtures.serviceName
             val table = GraphFixtures.hbaseIndexed

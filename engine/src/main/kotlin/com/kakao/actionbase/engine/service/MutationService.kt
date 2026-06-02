@@ -52,6 +52,8 @@ class MutationService(
                 Flux
                     .fromIterable(unresolvedEvents)
                     .map { it.createEvent(tb.schema) }
+                    .collectList()
+                    .flatMapMany { Flux.fromIterable(it) }
                     .flatMap { event -> engine.writeWal(ctx, event).thenReturn(event) }
                     .groupBy { it.key }
                     .flatMap { (key, groupMono) ->

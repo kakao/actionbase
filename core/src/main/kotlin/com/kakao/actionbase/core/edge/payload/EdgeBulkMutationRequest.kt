@@ -18,6 +18,7 @@ data class EdgeBulkMutationRequest(
             require(schema is ModelSchema.Edge) { "Expected ModelSchema.Edge, but got ${schema::class.simpleName}" }
             val source = schema.source.type.cast(edge.source)
             val target = schema.target.type.cast(edge.target)
+            checkNonNullableFields(type, schema.properties, edge.properties)
             val event =
                 Event.create(
                     type = type,
