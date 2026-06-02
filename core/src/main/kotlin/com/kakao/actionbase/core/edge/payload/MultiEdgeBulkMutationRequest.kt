@@ -17,7 +17,7 @@ data class MultiEdgeBulkMutationRequest(
         override fun createEvent(schema: ModelSchema): MultiEdgeEvent {
             require(schema is ModelSchema.MultiEdge) { "Expected ModelSchema.MultiEdge, but got ${schema::class.simpleName}" }
             val id = schema.id.type.cast(edge.id)
-            validateMutationRequest(type, schema.properties, edge.properties)
+            checkNonNullableFields(type, schema.properties, edge.properties)
             val additionalProperties =
                 listOfNotNull(
                     edge.source?.let { "_source" to schema.source.type.cast(it) },

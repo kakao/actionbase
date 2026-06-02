@@ -14,7 +14,7 @@ import com.kakao.actionbase.core.state.EventType
  *
  * Throws [IllegalArgumentException] on violation so the global exception handler maps it to 400.
  */
-internal fun validateMutationRequest(
+internal fun checkNonNullableFields(
     type: EventType,
     properties: List<StructField>,
     payload: Map<String, Any?>,
