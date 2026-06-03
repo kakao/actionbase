@@ -101,9 +101,7 @@ class QueryService(
         table: String,
         keys: List<Any>,
         filters: String? = null,
-    ): Mono<DataFrameEdgePayload> {
-        return gets(database, table, keys, listOf(VERTEX_MARKER), filters = filters)
-    }
+    ): Mono<DataFrameEdgePayload> = gets(database, table, keys, listOf(VERTEX_MARKER), filters = filters)
 
     @Suppress("UnusedParameter")
     fun gets(

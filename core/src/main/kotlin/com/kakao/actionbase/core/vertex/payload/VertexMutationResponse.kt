@@ -1,9 +1,10 @@
 package com.kakao.actionbase.core.vertex.payload
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.MutationResult
+
+import com.fasterxml.jackson.annotation.JsonInclude
 
 data class VertexMutationResponse(
     val results: List<Item>,

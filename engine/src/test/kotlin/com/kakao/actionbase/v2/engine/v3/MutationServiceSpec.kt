@@ -10,7 +10,6 @@ import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
-import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.metadata.Metadata

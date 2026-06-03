@@ -39,7 +39,7 @@ class VertexBulkMutationRequestTest {
 
     @Test
     fun `createEvent sets source=id and target=VERTEX_MARKER`() {
-        val event = item(EventType.INSERT, id = "user1", properties = mapOf("name" to "Alice")) .createEvent(schema) as EdgeEvent
+        val event = item(EventType.INSERT, id = "user1", properties = mapOf("name" to "Alice")).createEvent(schema) as EdgeEvent
         assertEquals("user1", event.source)
         assertEquals(VERTEX_MARKER, event.target)
     }

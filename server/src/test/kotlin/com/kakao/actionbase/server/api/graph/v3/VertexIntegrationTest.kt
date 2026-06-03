@@ -1,6 +1,7 @@
 package com.kakao.actionbase.server.api.graph.v3
 
 import com.kakao.actionbase.server.test.E2ETestBase
+
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -44,7 +45,7 @@ class VertexIntegrationTest : E2ETestBase() {
                   "mode": "SYNC",
                   "comment": "users vertex table"
                 }
-                """.trimIndent()
+                """.trimIndent(),
             ).exchange()
             .expectStatus()
             .isOk
@@ -79,16 +80,21 @@ class VertexIntegrationTest : E2ETestBase() {
                     }
                   ]
                 }
-                """.trimIndent()
+                """.trimIndent(),
             ).exchange()
             .expectStatus()
             .isOk
             .expectBody()
-            .jsonPath("$.results.length()").isEqualTo(2)
-            .jsonPath("$.results[0].status").isEqualTo("CREATED")
-            .jsonPath("$.results[0].id").isEqualTo("user1")
-            .jsonPath("$.results[1].status").isEqualTo("CREATED")
-            .jsonPath("$.results[1].id").isEqualTo("user2")
+            .jsonPath("$.results.length()")
+            .isEqualTo(2)
+            .jsonPath("$.results[0].status")
+            .isEqualTo("CREATED")
+            .jsonPath("$.results[0].id")
+            .isEqualTo("user1")
+            .jsonPath("$.results[1].status")
+            .isEqualTo("CREATED")
+            .jsonPath("$.results[1].id")
+            .isEqualTo("user2")
 
         // 2. Get vertices (Multi-Get)
         client
@@ -98,13 +104,20 @@ class VertexIntegrationTest : E2ETestBase() {
             .expectStatus()
             .isOk
             .expectBody()
-            .jsonPath("$.vertices.length()").isEqualTo(2)
-            .jsonPath("$.vertices[0].id").isEqualTo("user1")
-            .jsonPath("$.vertices[0].properties.name").isEqualTo("Alice")
-            .jsonPath("$.vertices[0].properties.age").isEqualTo(20)
-            .jsonPath("$.vertices[1].id").isEqualTo("user2")
-            .jsonPath("$.vertices[1].properties.name").isEqualTo("Bob")
-            .jsonPath("$.vertices[1].properties.age").isEqualTo(25)
+            .jsonPath("$.vertices.length()")
+            .isEqualTo(2)
+            .jsonPath("$.vertices[0].id")
+            .isEqualTo("user1")
+            .jsonPath("$.vertices[0].properties.name")
+            .isEqualTo("Alice")
+            .jsonPath("$.vertices[0].properties.age")
+            .isEqualTo(20)
+            .jsonPath("$.vertices[1].id")
+            .isEqualTo("user2")
+            .jsonPath("$.vertices[1].properties.name")
+            .isEqualTo("Bob")
+            .jsonPath("$.vertices[1].properties.age")
+            .isEqualTo(25)
 
         // 3. Update vertex
         client
@@ -125,13 +138,15 @@ class VertexIntegrationTest : E2ETestBase() {
                     }
                   ]
                 }
-                """.trimIndent()
+                """.trimIndent(),
             ).exchange()
             .expectStatus()
             .isOk
             .expectBody()
-            .jsonPath("$.results.length()").isEqualTo(1)
-            .jsonPath("$.results[0].status").isEqualTo("UPDATED")
+            .jsonPath("$.results.length()")
+            .isEqualTo(1)
+            .jsonPath("$.results[0].status")
+            .isEqualTo("UPDATED")
 
         // 4. Get updated vertex
         client
@@ -141,10 +156,14 @@ class VertexIntegrationTest : E2ETestBase() {
             .expectStatus()
             .isOk
             .expectBody()
-            .jsonPath("$.vertices.length()").isEqualTo(1)
-            .jsonPath("$.vertices[0].id").isEqualTo("user1")
-            .jsonPath("$.vertices[0].properties.name").isEqualTo("Alice In Wonderland")
-            .jsonPath("$.vertices[0].properties.age").isEqualTo(21)
+            .jsonPath("$.vertices.length()")
+            .isEqualTo(1)
+            .jsonPath("$.vertices[0].id")
+            .isEqualTo("user1")
+            .jsonPath("$.vertices[0].properties.name")
+            .isEqualTo("Alice In Wonderland")
+            .jsonPath("$.vertices[0].properties.age")
+            .isEqualTo(21)
 
         // 5. Delete vertex
         client
@@ -165,13 +184,15 @@ class VertexIntegrationTest : E2ETestBase() {
                     }
                   ]
                 }
-                """.trimIndent()
+                """.trimIndent(),
             ).exchange()
             .expectStatus()
             .isOk
             .expectBody()
-            .jsonPath("$.results.length()").isEqualTo(1)
-            .jsonPath("$.results[0].status").isEqualTo("DELETED")
+            .jsonPath("$.results.length()")
+            .isEqualTo(1)
+            .jsonPath("$.results[0].status")
+            .isEqualTo("DELETED")
 
         // 6. Get deleted vertex (should be empty since active = false)
         client
@@ -181,6 +202,7 @@ class VertexIntegrationTest : E2ETestBase() {
             .expectStatus()
             .isOk
             .expectBody()
-            .jsonPath("$.vertices.length()").isEqualTo(0)
+            .jsonPath("$.vertices.length()")
+            .isEqualTo(0)
     }
 }

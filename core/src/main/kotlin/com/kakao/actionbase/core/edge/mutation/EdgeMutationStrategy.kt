@@ -42,6 +42,7 @@ sealed interface EdgeMutationStrategy {
 
     data object Edge : EdgeMutationStrategy {
         override val producesCount: Boolean = true
+
         override fun directedSource(
             record: EdgeStateRecord,
             direction: Direction,
@@ -75,6 +76,7 @@ sealed interface EdgeMutationStrategy {
 
     data object MultiEdge : EdgeMutationStrategy {
         override val producesCount: Boolean = true
+
         override fun directedSource(
             record: EdgeStateRecord,
             direction: Direction,

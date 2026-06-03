@@ -412,7 +412,10 @@ class V3MetadataConverterTest {
                 EdgeSchema(
                     idField,
                     targetField,
-                    listOf(com.kakao.actionbase.v2.core.types.Field("name", DataType.STRING, false, "user name")),
+                    listOf(
+                        com.kakao.actionbase.v2.core.types
+                            .Field("name", DataType.STRING, false, "user name"),
+                    ),
                 )
             val v2Entity =
                 LabelEntity(
