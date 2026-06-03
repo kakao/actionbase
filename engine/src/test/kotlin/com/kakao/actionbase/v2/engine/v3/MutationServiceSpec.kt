@@ -1,12 +1,16 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.core.Constants.VERTEX_MARKER
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
+import com.kakao.actionbase.core.vertex.payload.VertexBulkMutationRequest
+import com.kakao.actionbase.core.vertex.payload.VertexMutationResponse
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.metadata.Metadata
@@ -439,6 +443,108 @@ class MutationServiceSpec :
                 }.verifyComplete()
 
             executionCompleted.get() shouldBe true
+        }
+        "vertex mutation and query" {
+            val database = GraphFixtures.serviceName
+            val table = "users"
+
+            // Create vertex table (LabelType.VERTEX, no index)
+            val createRequest =
+                mapper.readValue<LabelCreateRequest>(
+                    """
+                    {
+                      "desc": "users vertex table",
+                      "type": "VERTEX",
+                      "schema": {
+                        "src": { "type": "STRING", "desc": "user id" },
+                        "tgt": { "type": "STRING", "desc": "<vertex>" },
+                        "fields": [
+                          { "name": "name", "type": "STRING", "nullable": false }
+                        ]
+                      },
+                      "dirType": "OUT",
+                      "storage": "${GraphFixtures.datastoreStorage}",
+                      "indices": []
+                    }
+                    """.trimIndent(),
+                )
+            graph.labelDdl.create(EntityName(database, table), createRequest).block()
+
+            // Insert two vertices
+            val insertRequest =
+                mapper.readValue<VertexBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "vertex": {"version": 1, "id": "user1", "properties": {"name": "Alice"}}},
+                        {"type": "INSERT", "vertex": {"version": 1, "id": "user2", "properties": {"name": "Bob"}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            val mutateResult =
+                mutationService
+                    .mutate(database, table, insertRequest.mutations)
+                    .map { VertexMutationResponse.from(it) }
+                    .block()!!
+
+            mutateResult.results.map { it.status } shouldBe listOf("CREATED", "CREATED")
+            mutateResult.results.map { it.id.toString() } shouldBe listOf("user1", "user2")
+
+            // Multi-Get: user1, user2 found; user3 absent
+            val getResult =
+                queryService
+                    .getVertices(database, table, listOf("user1", "user2", "user3"))
+                    .block()!!
+
+            getResult.edges.size shouldBe 2
+            getResult.edges.all { it.target == VERTEX_MARKER } shouldBe true
+            getResult.edges.map { it.source.toString() }.sorted() shouldBe listOf("user1", "user2")
+
+            // Update user1
+            val updateRequest =
+                mapper.readValue<VertexBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "UPDATE", "vertex": {"version": 2, "id": "user1", "properties": {"name": "Alice Updated"}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+            val updateResult =
+                mutationService
+                    .mutate(database, table, updateRequest.mutations)
+                    .map { VertexMutationResponse.from(it) }
+                    .block()!!
+            updateResult.results[0].status shouldBe "UPDATED"
+
+            // Delete user2
+            val deleteRequest =
+                mapper.readValue<VertexBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "DELETE", "vertex": {"version": 3, "id": "user2", "properties": {}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+            val deleteResult =
+                mutationService
+                    .mutate(database, table, deleteRequest.mutations)
+                    .map { VertexMutationResponse.from(it) }
+                    .block()!!
+            deleteResult.results[0].status shouldBe "DELETED"
+
+            // After delete: only user1 remains
+            val afterDeleteResult =
+                queryService
+                    .getVertices(database, table, listOf("user1", "user2"))
+                    .block()!!
+            afterDeleteResult.edges.size shouldBe 1
+            afterDeleteResult.edges[0].source.toString() shouldBe "user1"
         }
     }) {
     companion object {

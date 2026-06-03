@@ -38,6 +38,7 @@ import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
 
 class V3MetadataConverterTest {
     private val tenant = "test-tenant"
@@ -401,6 +402,43 @@ class V3MetadataConverterTest {
             assertThat(schema.caches[0].fields).hasSize(1)
             assertThat(schema.caches[0].fields[0].field).isEqualTo("score")
             assertThat(schema.caches[0].fields[0].order).isEqualTo(V3Order.DESC)
+        }
+
+        @Test
+        fun `LabelType VERTEX LabelEntity is restored as V3TableDescriptor Vertex`() {
+            val idField = VertexField(VertexType.STRING, "user id")
+            val targetField = VertexField(VertexType.STRING, "<vertex>")
+            val edgeSchema =
+                EdgeSchema(
+                    idField,
+                    targetField,
+                    listOf(com.kakao.actionbase.v2.core.types.Field("name", DataType.STRING, false, "user name")),
+                )
+            val v2Entity =
+                LabelEntity(
+                    active = true,
+                    name = EntityName("mydb", "users"),
+                    desc = "vertex table",
+                    type = LabelType.VERTEX,
+                    schema = edgeSchema,
+                    dirType = V2DirectionType.OUT,
+                    storage = "datastore://test_namespace/users",
+                    indices = emptyList(),
+                    groups = emptyList(),
+                    event = false,
+                    readOnly = false,
+                    mode = V2MutationMode.SYNC,
+                )
+
+            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.Vertex
+            assertThat(v3Descriptor.tenant).isEqualTo(tenant)
+            assertThat(v3Descriptor.database).isEqualTo("mydb")
+            assertThat(v3Descriptor.table).isEqualTo("users")
+            assertThat(v3Descriptor.active).isTrue()
+            val schema = v3Descriptor.schema
+            assertThat(schema.id.type).isEqualTo(PrimitiveType.STRING)
+            assertThat(schema.properties).hasSize(1)
+            assertThat(schema.properties[0].name).isEqualTo("name")
         }
     }
 

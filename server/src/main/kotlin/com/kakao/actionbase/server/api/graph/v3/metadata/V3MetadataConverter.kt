@@ -76,9 +76,22 @@ object V3MetadataConverter {
             comment = desc,
         )
 
+    fun LabelEntity.toV3TableDescriptorVertex(tenant: String): TableDescriptor.Vertex =
+        TableDescriptor.Vertex(
+            tenant = tenant,
+            database = name.service,
+            table = name.nameNotNull,
+            schema = schema.toV3ModelSchemaVertex(),
+            mode = mode.toV3MutationMode(),
+            storage = storage,
+            active = active,
+            comment = desc,
+        )
+
     fun LabelEntity.toV3TableDescriptor(tenant: String): TableDescriptor<*> =
         when (type) {
             LabelType.MULTI_EDGE -> toV3TableDescriptorMultiEdge(tenant)
+            LabelType.VERTEX -> toV3TableDescriptorVertex(tenant)
             else -> toV3TableDescriptorEdge(tenant)
         }
 
@@ -176,6 +189,12 @@ object V3MetadataConverter {
     // endregion
 
     // region Schema conversion (V3 ModelSchema <-> V2 EdgeSchema)
+
+    fun EdgeSchema.toV3ModelSchemaVertex(): ModelSchema.Vertex =
+        ModelSchema.Vertex(
+            id = V3Field(type = src.type.toV3PrimitiveType(), comment = src.desc),
+            properties = fields.map { it.toV3StructField() },
+        )
 
     fun EdgeSchema.toV3ModelSchemaEdge(
         direction: V3DirectionType,

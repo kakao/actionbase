@@ -436,6 +436,65 @@ public class BulkEdgeEncoderTests {
     return a.length - b.length;
   }
 
+  // VERTEX label: active edge → State only (1 hash row). No index, no counter.
+  @Test
+  void testVertexActiveEdgeProducesStateOnly() throws JsonProcessingException {
+    String vertexLabelJson =
+        labelJsonString
+            .replace("\"type\":\"INDEXED\"", "\"type\":\"VERTEX\"")
+            .replace("\"dirType\":\"BOTH\"", "\"dirType\":\"OUT\"")
+            .replace(
+                "\"indices\":[{\"id\":0,\"name\":\"created_at_desc\",\"fields\":[{\"name\":\"created_at\",\"order\":\"DESC\"}]}]",
+                "\"indices\":[]")
+            .replace(
+                ",\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+                "");
+    LabelDTO label = objectMapper.readValue(vertexLabelJson, LabelDTO.class);
+    LabelDTO newLabel = label.copy("vertex_table_20240101", "vertex_table_20240101");
+
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    // Vertex: State only — 1 hash row, no index, no counter
+    assertEquals(1, encodedEdges.size());
+    assertEquals(EncodedEdgeType.HASH_EDGE_TYPE, encodedEdges.get(0).getEncodedEdgeType());
+  }
+
+  // VERTEX label: inactive edge → 1 hash tombstone only.
+  @Test
+  void testVertexInactiveEdgeProducesHashTombstoneOnly() throws JsonProcessingException {
+    String vertexLabelJson =
+        labelJsonString
+            .replace("\"type\":\"INDEXED\"", "\"type\":\"VERTEX\"")
+            .replace("\"dirType\":\"BOTH\"", "\"dirType\":\"OUT\"")
+            .replace(
+                "\"indices\":[{\"id\":0,\"name\":\"created_at_desc\",\"fields\":[{\"name\":\"created_at\",\"order\":\"DESC\"}]}]",
+                "\"indices\":[]")
+            .replace(
+                ",\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+                "");
+    LabelDTO label = objectMapper.readValue(vertexLabelJson, LabelDTO.class);
+    LabelDTO newLabel = label.copy("vertex_table_20240101", "vertex_table_20240101");
+
+    String inactiveEdgeJson = edgeJsonString.replace("\"active\":true", "\"active\":false");
+    BulkLoadEdge edge = objectMapper.readValue(inactiveEdgeJson, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    // Inactive vertex: tombstone hash row only
+    assertEquals(1, encodedEdges.size());
+    assertEquals(EncodedEdgeType.HASH_EDGE_TYPE, encodedEdges.get(0).getEncodedEdgeType());
+  }
+
   /**
    * Backward-compatibility: a label JSON without a `caches` entry must still deserialize, and the
    * bulk encoder must skip cache-row generation without error.

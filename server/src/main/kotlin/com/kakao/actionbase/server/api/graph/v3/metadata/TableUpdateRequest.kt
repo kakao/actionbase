@@ -46,6 +46,7 @@ data class TableUpdateRequest(
                             },
                     )
                 }
+                is ModelSchema.Vertex -> null
             }
         }
 
@@ -54,6 +55,7 @@ data class TableUpdateRequest(
             when (it) {
                 is ModelSchema.Edge -> it.indexes.map { idx -> idx.toV2Index() }
                 is ModelSchema.MultiEdge -> it.indexes.map { idx -> idx.toV2Index() }
+                is ModelSchema.Vertex -> emptyList()
             }
         }
 
@@ -62,6 +64,7 @@ data class TableUpdateRequest(
             when (it) {
                 is ModelSchema.Edge -> it.groups
                 is ModelSchema.MultiEdge -> it.groups
+                is ModelSchema.Vertex -> emptyList()
             }
         }
 
@@ -70,6 +73,7 @@ data class TableUpdateRequest(
             when (it) {
                 is ModelSchema.Edge -> it.caches
                 is ModelSchema.MultiEdge -> it.caches
+                is ModelSchema.Vertex -> emptyList()
             }
         }
 }

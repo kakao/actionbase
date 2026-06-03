@@ -377,6 +377,8 @@ class V2BackedTableBinding(
                 EdgeMutationBuilder.buildForUniqueEdge(before, after, schema.direction, schema.indexes, schema.groups, schema.caches)
             is ModelSchema.MultiEdge ->
                 EdgeMutationBuilder.buildForMultiEdge(before, after, schema.direction, schema.indexes, schema.groups, schema.caches)
+            is ModelSchema.Vertex ->
+                EdgeMutationBuilder.buildForVertex(before, after)
         }
     }
 

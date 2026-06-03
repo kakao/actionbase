@@ -42,6 +42,11 @@ object EdgeMutationBuilder {
         caches: List<Cache>,
     ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.MultiEdge, before, after, directionType, indexes, groups, caches)
 
+    fun buildForVertex(
+        before: EdgeStateRecord,
+        after: EdgeStateRecord,
+    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.Vertex, before, after, DirectionType.OUT, emptyList(), emptyList(), emptyList())
+
     private fun buildWith(
         strategy: EdgeMutationStrategy,
         before: EdgeStateRecord,
@@ -65,7 +70,7 @@ object EdgeMutationBuilder {
                     acc = 1L,
                     stateRecord = after,
                     createIndexRecords = buildIndexRecords(strategy, after, directionType, indexes),
-                    countRecords = buildCountRecords(strategy, after, directionType, 1L),
+                    countRecords = if (strategy.producesCount) buildCountRecords(strategy, after, directionType, 1L) else emptyList(),
                     groupRecords = buildGroupRecords(strategy, after, groups, 1L),
                     createCacheRecords = buildCacheRecords(strategy, after, directionType, caches),
                 )
@@ -78,7 +83,7 @@ object EdgeMutationBuilder {
                     acc = -1L,
                     stateRecord = after,
                     deleteIndexRecordKeys = buildIndexRecords(strategy, before, directionType, indexes).map { it.key },
-                    countRecords = buildCountRecords(strategy, countSource, directionType, -1L),
+                    countRecords = if (strategy.producesCount) buildCountRecords(strategy, countSource, directionType, -1L) else emptyList(),
                     groupRecords = buildGroupRecords(strategy, before, groups, -1L),
                     deleteCacheRecordQualifiers =
                         buildCacheRecords(strategy, before, directionType, caches)

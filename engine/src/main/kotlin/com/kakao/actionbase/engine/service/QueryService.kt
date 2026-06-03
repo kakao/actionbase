@@ -1,5 +1,6 @@
 package com.kakao.actionbase.engine.service
 
+import com.kakao.actionbase.core.Constants.VERTEX_MARKER
 import com.kakao.actionbase.core.edge.EdgeField
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
@@ -93,6 +94,15 @@ class QueryService(
             .getTableBinding(database, table)
             .gets(keys, filters)
             .map { it.toEdgePayload() }
+    }
+
+    fun getVertices(
+        database: String,
+        table: String,
+        keys: List<Any>,
+        filters: String? = null,
+    ): Mono<DataFrameEdgePayload> {
+        return gets(database, table, keys, listOf(VERTEX_MARKER), filters = filters)
     }
 
     @Suppress("UnusedParameter")

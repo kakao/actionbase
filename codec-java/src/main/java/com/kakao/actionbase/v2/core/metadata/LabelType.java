@@ -9,6 +9,7 @@ public enum LabelType {
   INDEXED(EdgeType.INDEXED, true),
   IMMUTABLE_INDEXED(EdgeType.INDEXED, true),
   MULTI_EDGE(EdgeType.MULTI_EDGE, true),
+  VERTEX(EdgeType.INDEXED, true),
   ;
 
   private static final Map<String, LabelType> NAME_TO_VALUE_MAP = new HashMap<>();

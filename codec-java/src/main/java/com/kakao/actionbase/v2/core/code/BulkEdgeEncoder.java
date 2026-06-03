@@ -70,7 +70,8 @@ public class BulkEdgeEncoder {
     // encode a single hash edge
     if (labelType == LabelType.HASH
         || labelType == LabelType.INDEXED
-        || labelType == LabelType.MULTI_EDGE) {
+        || labelType == LabelType.MULTI_EDGE
+        || labelType == LabelType.VERTEX) {
       EncodedKey<T> key = encoder.encodeHashEdgeKey(edgeForEdgeState, labelId);
       Long insertTs = null;
       Long deleteTs = null;
@@ -179,7 +180,10 @@ public class BulkEdgeEncoder {
         }
       }
 
-      // EdgeCount is compatible with existing code as is
+      // EdgeCount: Vertex stores State only, no count records
+      if (labelType == LabelType.VERTEX) {
+        return edges;
+      }
       if (label.getDirType() == DirectionType.BOTH) {
         T outboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.OUT, labelId);
         T inboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.IN, labelId);

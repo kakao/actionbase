@@ -19,6 +19,7 @@ class EdgeMutationStrategyTest {
         when (name) {
             "Edge" -> EdgeMutationStrategy.Edge
             "MultiEdge" -> EdgeMutationStrategy.MultiEdge
+            "Vertex" -> EdgeMutationStrategy.Vertex
             else -> error("unknown strategy: $name")
         }
 
@@ -32,8 +33,19 @@ class EdgeMutationStrategyTest {
         when (strategy) {
             "Edge" -> edgeRecord(source = source, target = target, active = active, version = version)
             "MultiEdge" -> multiEdgeRecord(id = "edgeId1", source = source, target = target, active = active, version = version)
+            "Vertex" -> edgeRecord(source = source, target = "-", active = active, version = version)
             else -> error("unknown strategy: $strategy")
         }
+
+    @Nested
+    inner class ProducesCount {
+        @Test
+        fun `Edge and MultiEdge produce count, Vertex does not`() {
+            assertEquals(true, EdgeMutationStrategy.Edge.producesCount)
+            assertEquals(true, EdgeMutationStrategy.MultiEdge.producesCount)
+            assertEquals(false, EdgeMutationStrategy.Vertex.producesCount)
+        }
+    }
 
     @Nested
     inner class DirectedSource {
@@ -45,6 +57,8 @@ class EdgeMutationStrategyTest {
             - Edge       | IN        | postX   # Edge IN   → key.target
             - MultiEdge  | OUT       | userA   # MultiEdge → properties._source
             - MultiEdge  | IN        | postX   # MultiEdge → properties._target
+            - Vertex     | OUT       | userA   # Vertex delegates to Edge: key.source
+            - Vertex     | IN        | -       # Vertex delegates to Edge: key.target (VERTEX_MARKER)
             """,
         )
         fun `returns the configured source for the direction`(
@@ -67,6 +81,8 @@ class EdgeMutationStrategyTest {
             - Edge       | IN        | userA
             - MultiEdge  | OUT       | edgeId1  # MultiEdge always uses key.source (id)
             - MultiEdge  | IN        | edgeId1
+            - Vertex     | OUT       | -        # Vertex: target is always VERTEX_MARKER
+            - Vertex     | IN        | userA    # Vertex delegates to Edge: key.source on IN
             """,
         )
         fun `returns the configured target for the direction`(

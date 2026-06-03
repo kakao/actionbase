@@ -6,13 +6,14 @@ import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
 
 /**
- * Strategy that encapsulates the behavioral differences between Edge and MultiEdge mutation building.
+ * Strategy that encapsulates the behavioral differences between Edge, MultiEdge, and Vertex mutation building.
  *
- * The four axes of difference:
- * 1. Source resolution: Edge uses key.source/target, MultiEdge uses properties._source/_target
- * 2. Target resolution (index suffix): Edge swaps source/target, MultiEdge always uses key.source (id)
+ * The five axes of difference:
+ * 1. Source resolution: Edge/Vertex uses key.source/target, MultiEdge uses properties._source/_target
+ * 2. Target resolution (index suffix): Edge/Vertex swaps source/target, MultiEdge always uses key.source (id)
  * 3. DELETE count source: Edge uses after record, MultiEdge uses before record
- * 4. UPDATE count: Edge produces none, MultiEdge produces conditionally (when source/target changed)
+ * 4. UPDATE count: Edge/Vertex produces none, MultiEdge produces conditionally (when source/target changed)
+ * 5. Count generation: Edge/MultiEdge produces count records, Vertex suppresses all count records
  */
 sealed interface EdgeMutationStrategy {
     fun directedSource(
@@ -24,6 +25,8 @@ sealed interface EdgeMutationStrategy {
         record: EdgeStateRecord,
         direction: Direction,
     ): Any
+
+    val producesCount: Boolean
 
     fun countRecordOnDelete(
         before: EdgeStateRecord,
@@ -38,6 +41,7 @@ sealed interface EdgeMutationStrategy {
     ): List<EdgeCountRecord>
 
     data object Edge : EdgeMutationStrategy {
+        override val producesCount: Boolean = true
         override fun directedSource(
             record: EdgeStateRecord,
             direction: Direction,
@@ -70,6 +74,7 @@ sealed interface EdgeMutationStrategy {
     }
 
     data object MultiEdge : EdgeMutationStrategy {
+        override val producesCount: Boolean = true
         override fun directedSource(
             record: EdgeStateRecord,
             direction: Direction,
@@ -106,5 +111,31 @@ sealed interface EdgeMutationStrategy {
                 emptyList()
             }
         }
+    }
+
+    data object Vertex : EdgeMutationStrategy {
+        override val producesCount: Boolean = false
+
+        override fun directedSource(
+            record: EdgeStateRecord,
+            direction: Direction,
+        ): Any = Edge.directedSource(record, direction)
+
+        override fun directedTarget(
+            record: EdgeStateRecord,
+            direction: Direction,
+        ): Any = Edge.directedTarget(record, direction)
+
+        override fun countRecordOnDelete(
+            before: EdgeStateRecord,
+            after: EdgeStateRecord,
+        ): EdgeStateRecord = after
+
+        override fun countRecordsOnUpdate(
+            before: EdgeStateRecord,
+            after: EdgeStateRecord,
+            directionType: DirectionType,
+            buildCountRecords: (EdgeStateRecord, DirectionType, Long) -> List<EdgeCountRecord>,
+        ): List<EdgeCountRecord> = emptyList()
     }
 }
