@@ -45,7 +45,7 @@ sealed class ModelSchema : AbstractSchema {
     ) : ModelSchema(),
         AbstractSchema by Schema(properties.associate { it.name to it.nullable } + listOf("_source" to false, "_target" to false))
 
-    @JsonTypeName("VERTEX")
+    @JsonTypeName("vertex")
     data class Vertex(
         val id: Field,
         override val properties: List<StructField> = emptyList(),
