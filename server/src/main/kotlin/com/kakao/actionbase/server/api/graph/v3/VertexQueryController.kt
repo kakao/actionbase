@@ -19,10 +19,10 @@ class VertexQueryController(
     fun getVertices(
         @PathVariable database: String,
         @PathVariable table: String,
-        @RequestParam key: List<String>,
+        @RequestParam id: List<String>,
         @RequestParam(required = false) filters: String? = null,
     ): Mono<ResponseEntity<DataFrameVertexPayload>> =
         queryService
-            .getVertices(database, table, key, filters)
+            .getVertices(database, table, id, filters)
             .map { ResponseEntity.ok(DataFrameVertexPayload.from(it)) }
 }

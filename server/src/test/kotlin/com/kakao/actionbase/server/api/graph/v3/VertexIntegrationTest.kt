@@ -99,7 +99,7 @@ class VertexIntegrationTest : E2ETestBase() {
         // 2. Get vertices (Multi-Get)
         client
             .get()
-            .uri("/graph/v3/databases/$db/tables/$vertexTable/vertices/get?key=user1,user2,user3")
+            .uri("/graph/v3/databases/$db/tables/$vertexTable/vertices/get?id=user1,user2,user3")
             .exchange()
             .expectStatus()
             .isOk
@@ -151,7 +151,7 @@ class VertexIntegrationTest : E2ETestBase() {
         // 4. Get updated vertex
         client
             .get()
-            .uri("/graph/v3/databases/$db/tables/$vertexTable/vertices/get?key=user1")
+            .uri("/graph/v3/databases/$db/tables/$vertexTable/vertices/get?id=user1")
             .exchange()
             .expectStatus()
             .isOk
@@ -197,7 +197,7 @@ class VertexIntegrationTest : E2ETestBase() {
         // 6. Get deleted vertex (should be empty since active = false)
         client
             .get()
-            .uri("/graph/v3/databases/$db/tables/$vertexTable/vertices/get?key=user1")
+            .uri("/graph/v3/databases/$db/tables/$vertexTable/vertices/get?id=user1")
             .exchange()
             .expectStatus()
             .isOk
