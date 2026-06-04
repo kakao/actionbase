@@ -1,12 +1,22 @@
 package com.kakao.actionbase.v2.engine.label
 
 import com.kakao.actionbase.core.metadata.common.Cache
+import com.kakao.actionbase.core.metadata.common.Group
+import com.kakao.actionbase.core.metadata.common.GroupType
+import com.kakao.actionbase.v2.core.code.Index
+import com.kakao.actionbase.v2.core.code.hbase.Order
 import com.kakao.actionbase.v2.core.metadata.Active
+import com.kakao.actionbase.v2.core.metadata.DirectionType
+import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.DataType
+import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.StructType
+import com.kakao.actionbase.v2.core.types.VertexField
+import com.kakao.actionbase.v2.core.types.VertexType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.edge.HashEdge
+import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.metadata.Metadata
 import com.kakao.actionbase.v2.engine.sql.Row
@@ -15,6 +25,7 @@ import com.kakao.actionbase.v2.engine.test.GraphFixtures
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -113,6 +124,80 @@ class LabelEntitySpec :
             LabelEntity.toEntity(rowWithSchema)
         }
 
+        // Vertex stores State only — indices/groups/caches/IN-direction are silently dropped
+        // by BulkEdgeEncoder and the v3 schema converter. Reject them at construction so the
+        // data never reaches storage in an inconsistent state.
+        "VERTEX label rejects non-OUT direction" {
+            shouldThrow<IllegalArgumentException> {
+                LabelEntity(
+                    active = true,
+                    name = EntityName("db", "users"),
+                    desc = "",
+                    type = LabelType.VERTEX,
+                    schema = vertexSchema(),
+                    dirType = DirectionType.BOTH,
+                    storage = "test",
+                )
+            }
+        }
+
+        "VERTEX label rejects indices" {
+            shouldThrow<IllegalArgumentException> {
+                LabelEntity(
+                    active = true,
+                    name = EntityName("db", "users"),
+                    desc = "",
+                    type = LabelType.VERTEX,
+                    schema = vertexSchema(),
+                    dirType = DirectionType.OUT,
+                    storage = "test",
+                    indices = listOf(Index("name_asc", listOf(Index.Field("name", Order.ASC)))),
+                )
+            }
+        }
+
+        "VERTEX label rejects groups" {
+            shouldThrow<IllegalArgumentException> {
+                LabelEntity(
+                    active = true,
+                    name = EntityName("db", "users"),
+                    desc = "",
+                    type = LabelType.VERTEX,
+                    schema = vertexSchema(),
+                    dirType = DirectionType.OUT,
+                    storage = "test",
+                    groups = listOf(Group(group = "g1", type = GroupType.COUNT, fields = emptyList())),
+                )
+            }
+        }
+
+        "VERTEX label rejects caches" {
+            shouldThrow<IllegalArgumentException> {
+                LabelEntity(
+                    active = true,
+                    name = EntityName("db", "users"),
+                    desc = "",
+                    type = LabelType.VERTEX,
+                    schema = vertexSchema(),
+                    dirType = DirectionType.OUT,
+                    storage = "test",
+                    caches = listOf(Cache(cache = "c1", fields = emptyList())),
+                )
+            }
+        }
+
+        "VERTEX label accepts the canonical empty shape" {
+            LabelEntity(
+                active = true,
+                name = EntityName("db", "users"),
+                desc = "",
+                type = LabelType.VERTEX,
+                schema = vertexSchema(),
+                dirType = DirectionType.OUT,
+                storage = "test",
+            )
+        }
+
         "LabelEntity JSON serializes caches field" {
             val entity =
                 Metadata.serviceLabelEntity.copy(
@@ -127,4 +212,13 @@ class LabelEntitySpec :
             roundTripped.caches.size shouldBe 1
             roundTripped.caches[0].cache shouldBe "c1"
         }
-    })
+    }) {
+    companion object {
+        private fun vertexSchema() =
+            EdgeSchema(
+                VertexField(VertexType.STRING, "id"),
+                VertexField(VertexType.STRING, "<vertex>"),
+                listOf(Field("name", DataType.STRING, false, "")),
+            )
+    }
+}

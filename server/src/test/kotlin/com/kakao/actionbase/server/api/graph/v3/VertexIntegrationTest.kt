@@ -11,6 +11,7 @@ import org.springframework.http.MediaType
 class VertexIntegrationTest : E2ETestBase() {
     private val db = "vertex-db"
     private val vertexTable = "users"
+    private val longIdTable = "users_long"
 
     @BeforeAll
     fun setup() {
@@ -44,6 +45,31 @@ class VertexIntegrationTest : E2ETestBase() {
                   "storage": "datastore://vertex_ns/users",
                   "mode": "SYNC",
                   "comment": "users vertex table"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        // 3. Create vertex table with LONG id (regression: id must round-trip as Long)
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$longIdTable",
+                  "schema": {
+                    "type": "VERTEX",
+                    "id": {"type": "long", "comment": "numeric user id"},
+                    "properties": [
+                      {"name": "name", "type": "string", "comment": "user name"}
+                    ]
+                  },
+                  "storage": "datastore://vertex_ns/users_long",
+                  "mode": "SYNC",
+                  "comment": "users vertex table with numeric id"
                 }
                 """.trimIndent(),
             ).exchange()
@@ -204,5 +230,44 @@ class VertexIntegrationTest : E2ETestBase() {
             .expectBody()
             .jsonPath("$.vertices.length()")
             .isEqualTo(0)
+    }
+
+    @Test
+    fun `test vertex with LONG id type`() {
+        // Insert a vertex with numeric id; the id arrives in JSON as a number, not a string.
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables/$longIdTable/vertices")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "vertex": {"version": 1, "id": 100, "properties": {"name": "Alice"}}},
+                    {"type": "INSERT", "vertex": {"version": 1, "id": 200, "properties": {"name": "Bob"}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.results.length()")
+            .isEqualTo(2)
+
+        // Multi-Get with numeric ids over query string. Spring binds List<Any> from comma-split.
+        client
+            .get()
+            .uri("/graph/v3/databases/$db/tables/$longIdTable/vertices/get?id=100,200,300")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.vertices.length()")
+            .isEqualTo(2)
+            .jsonPath("$.vertices[0].id")
+            .isEqualTo(100)
+            .jsonPath("$.vertices[1].id")
+            .isEqualTo(200)
     }
 }

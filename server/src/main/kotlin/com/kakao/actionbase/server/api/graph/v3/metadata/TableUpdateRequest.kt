@@ -55,7 +55,9 @@ data class TableUpdateRequest(
             when (it) {
                 is ModelSchema.Edge -> it.indexes.map { idx -> idx.toV2Index() }
                 is ModelSchema.MultiEdge -> it.indexes.map { idx -> idx.toV2Index() }
-                is ModelSchema.Vertex -> emptyList()
+                // Vertex has no indices; return null so LabelUpdateRequest treats it as no-op
+                // instead of overwriting any existing serialized list with `[]`.
+                is ModelSchema.Vertex -> null
             }
         }
 
@@ -64,7 +66,7 @@ data class TableUpdateRequest(
             when (it) {
                 is ModelSchema.Edge -> it.groups
                 is ModelSchema.MultiEdge -> it.groups
-                is ModelSchema.Vertex -> emptyList()
+                is ModelSchema.Vertex -> null
             }
         }
 
@@ -73,7 +75,7 @@ data class TableUpdateRequest(
             when (it) {
                 is ModelSchema.Edge -> it.caches
                 is ModelSchema.MultiEdge -> it.caches
-                is ModelSchema.Vertex -> emptyList()
+                is ModelSchema.Vertex -> null
             }
         }
 }
