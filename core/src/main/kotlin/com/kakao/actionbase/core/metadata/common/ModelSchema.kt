@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName
 @JsonSubTypes(
     JsonSubTypes.Type(value = ModelSchema.Edge::class, name = "EDGE"),
     JsonSubTypes.Type(value = ModelSchema.MultiEdge::class, name = "MULTI_EDGE"),
+    JsonSubTypes.Type(value = ModelSchema.Vertex::class, name = "VERTEX"),
 )
 sealed class ModelSchema : AbstractSchema {
     abstract val properties: List<StructField>
@@ -43,4 +44,11 @@ sealed class ModelSchema : AbstractSchema {
         val caches: List<Cache> = emptyList(),
     ) : ModelSchema(),
         AbstractSchema by Schema(properties.associate { it.name to it.nullable } + listOf("_source" to false, "_target" to false))
+
+    @JsonTypeName("vertex")
+    data class Vertex(
+        val id: Field,
+        override val properties: List<StructField> = emptyList(),
+    ) : ModelSchema(),
+        AbstractSchema by Schema(properties.associate { it.name to it.nullable })
 }

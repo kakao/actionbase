@@ -402,6 +402,85 @@ class V3MetadataConverterTest {
             assertThat(schema.caches[0].fields[0].field).isEqualTo("score")
             assertThat(schema.caches[0].fields[0].order).isEqualTo(V3Order.DESC)
         }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - database: mydb
+              table: users
+              idType: STRING
+              idComment: user id
+              propertyName: name
+              propertyType: STRING
+              propertyNullable: false
+              propertyComment: user name
+              storage: "datastore://test_namespace/users"
+              comment: vertex table
+            - database: mydb
+              table: users_long
+              idType: LONG
+              idComment: numeric user id
+              propertyName: score
+              propertyType: INT
+              propertyNullable: true
+              propertyComment: user score
+              storage: "datastore://test_namespace/users_long"
+              comment: vertex table with numeric id
+            """,
+        )
+        fun `LabelType VERTEX LabelEntity is restored as V3TableDescriptor Vertex`(
+            database: String,
+            table: String,
+            idType: String,
+            idComment: String,
+            propertyName: String,
+            propertyType: String,
+            propertyNullable: Boolean,
+            propertyComment: String,
+            storage: String,
+            comment: String,
+        ) {
+            val edgeSchema =
+                EdgeSchema(
+                    VertexField(VertexType.valueOf(idType), idComment),
+                    VertexField(VertexType.STRING, "<vertex>"),
+                    listOf(
+                        com.kakao.actionbase.v2.core.types
+                            .Field(propertyName, DataType.valueOf(propertyType), propertyNullable, propertyComment),
+                    ),
+                )
+            val v2Entity =
+                LabelEntity(
+                    active = true,
+                    name = EntityName(database, table),
+                    desc = comment,
+                    type = LabelType.VERTEX,
+                    schema = edgeSchema,
+                    dirType = V2DirectionType.OUT,
+                    storage = storage,
+                    indices = emptyList(),
+                    groups = emptyList(),
+                    event = false,
+                    readOnly = false,
+                    mode = V2MutationMode.SYNC,
+                )
+
+            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.Vertex
+            assertThat(v3Descriptor.tenant).isEqualTo(tenant)
+            assertThat(v3Descriptor.database).isEqualTo(database)
+            assertThat(v3Descriptor.table).isEqualTo(table)
+            assertThat(v3Descriptor.active).isTrue()
+            assertThat(v3Descriptor.comment).isEqualTo(comment)
+            assertThat(v3Descriptor.storage).isEqualTo(storage)
+
+            val schema = v3Descriptor.schema
+            assertThat(schema.id.type).isEqualTo(PrimitiveType.valueOf(idType))
+            assertThat(schema.id.comment).isEqualTo(idComment)
+            assertThat(schema.properties).hasSize(1)
+            assertThat(schema.properties[0].name).isEqualTo(propertyName)
+            assertThat(schema.properties[0].nullable).isEqualTo(propertyNullable)
+            assertThat(schema.properties[0].comment).isEqualTo(propertyComment)
+        }
     }
 
     @Nested

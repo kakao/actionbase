@@ -666,4 +666,61 @@ class EdgeMutationBuilderTest {
             )
         }
     }
+
+    @Nested
+    inner class VertexStrategy {
+        @Test
+        fun `IDLE when before equals after`() {
+            val record = edgeRecord(source = "user1", target = "-", active = true)
+            val result = EdgeMutationBuilder.buildForVertex(record, record)
+
+            assertEquals("IDLE", result.status)
+            assertEquals(0L, result.acc)
+            assertTrue(result.countRecords.isEmpty())
+            assertTrue(result.createIndexRecords.isEmpty())
+        }
+
+        @Test
+        fun `CREATED produces no count records`() {
+            val before = edgeRecord(source = "user1", target = "-", active = false, version = 0)
+            val after = edgeRecord(source = "user1", target = "-", active = true, version = 1)
+            val result = EdgeMutationBuilder.buildForVertex(before, after)
+
+            assertEquals("CREATED", result.status)
+            assertEquals(1L, result.acc)
+            assertTrue(result.countRecords.isEmpty())
+            assertTrue(result.createIndexRecords.isEmpty())
+        }
+
+        @Test
+        fun `DELETED produces no count records`() {
+            val before = edgeRecord(source = "user1", target = "-", active = true, version = 1)
+            val after = edgeRecord(source = "user1", target = "-", active = false, version = 2)
+            val result = EdgeMutationBuilder.buildForVertex(before, after)
+
+            assertEquals("DELETED", result.status)
+            assertEquals(-1L, result.acc)
+            assertTrue(result.countRecords.isEmpty())
+        }
+
+        @Test
+        fun `UPDATED produces no count records`() {
+            val before = edgeRecord(source = "user1", target = "-", active = true, version = 1)
+            val after = edgeRecord(source = "user1", target = "-", active = true, version = 2)
+            val result = EdgeMutationBuilder.buildForVertex(before, after)
+
+            assertEquals("UPDATED", result.status)
+            assertEquals(0L, result.acc)
+            assertTrue(result.countRecords.isEmpty())
+        }
+
+        @Test
+        fun `stateRecord is always written`() {
+            val before = edgeRecord(source = "user1", target = "-", active = false, version = 0)
+            val after = edgeRecord(source = "user1", target = "-", active = true, version = 1)
+            val result = EdgeMutationBuilder.buildForVertex(before, after)
+
+            assertEquals(after, result.stateRecord)
+        }
+    }
 }

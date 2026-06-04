@@ -4,6 +4,7 @@ import com.kakao.actionbase.v2.core.code.Index as V2Index
 import com.kakao.actionbase.v2.core.metadata.DirectionType as V2DirectionType
 import com.kakao.actionbase.v2.core.types.Field as V2Field
 
+import com.kakao.actionbase.core.Constants.VERTEX_TARGET_COMMENT
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DataType
@@ -61,23 +62,34 @@ data class TableCreateRequest(
                         },
                 )
             }
+            is ModelSchema.Vertex ->
+                EdgeSchema(
+                    VertexField(schema.id.type.toV2VertexType(), schema.id.comment),
+                    VertexField(com.kakao.actionbase.v2.core.types.VertexType.STRING, VERTEX_TARGET_COMMENT),
+                    schema.properties.map {
+                        V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
+                    },
+                )
         }
 
     fun toV2DirectionType(): V2DirectionType =
         when (schema) {
             is ModelSchema.Edge -> schema.direction.toV2DirectionType()
             is ModelSchema.MultiEdge -> schema.direction.toV2DirectionType()
+            is ModelSchema.Vertex -> V2DirectionType.OUT
         }
 
     fun toV2Indices(): List<V2Index> =
         when (schema) {
             is ModelSchema.Edge -> schema.indexes.map { it.toV2Index() }
             is ModelSchema.MultiEdge -> schema.indexes.map { it.toV2Index() }
+            is ModelSchema.Vertex -> emptyList()
         }
 
     fun labelType(): LabelType =
         when (schema) {
             is ModelSchema.Edge -> LabelType.INDEXED
             is ModelSchema.MultiEdge -> LabelType.MULTI_EDGE
+            is ModelSchema.Vertex -> LabelType.VERTEX
         }
 }

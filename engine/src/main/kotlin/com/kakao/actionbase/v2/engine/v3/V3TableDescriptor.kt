@@ -35,12 +35,32 @@ sealed class V3TableDescriptor {
         override val schema: ModelSchema.MultiEdge,
     ) : V3TableDescriptor()
 
+    data class Vertex(
+        override val database: String,
+        override val table: String,
+        override val schema: ModelSchema.Vertex,
+    ) : V3TableDescriptor()
+
     companion object {
         fun create(entity: LabelEntity): V3TableDescriptor {
             val database = entity.name.service
             val table = entity.name.nameNotNull
 
+            val isVertexTable = entity.type == LabelType.VERTEX
             val isMultiEdgeTable = entity.type == LabelType.MULTI_EDGE
+            if (isVertexTable) {
+                val schema =
+                    ModelSchema.Vertex(
+                        id = entity.schema.src.toV3(),
+                        properties =
+                            entity.schema.fields.map { it.toV3() },
+                    )
+                return Vertex(
+                    database = database,
+                    table = table,
+                    schema = schema,
+                )
+            }
             return if (isMultiEdgeTable) {
                 val schema =
                     ModelSchema.MultiEdge(

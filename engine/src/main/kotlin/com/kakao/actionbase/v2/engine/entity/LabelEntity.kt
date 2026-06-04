@@ -62,6 +62,17 @@ data class LabelEntity(
         require(type.edgeType != EdgeType.HASH || dirType == DirectionType.OUT) {
             "The hash LabelV0 $type supports only OUT direction. Input direction: $dirType"
         }
+        // Vertex stores State only — indices/groups/caches/IN-direction are silently ignored
+        // by BulkEdgeEncoder and toV3ModelSchemaVertex. Reject at construction so the data
+        // never reaches storage in an inconsistent state.
+        if (type == LabelType.VERTEX) {
+            require(dirType == DirectionType.OUT) {
+                "VERTEX label supports only OUT direction. Input direction: $dirType"
+            }
+            require(indices.isEmpty()) { "VERTEX label does not support indices, got ${indices.size}" }
+            require(groups.isEmpty()) { "VERTEX label does not support groups, got ${groups.size}" }
+            require(caches.isEmpty()) { "VERTEX label does not support caches, got ${caches.size}" }
+        }
     }
 
     @Suppress("CyclomaticComplexMethod")
@@ -91,8 +102,8 @@ data class LabelEntity(
                         }
                     }
                 }
-                LabelType.INDEXED, LabelType.MULTI_EDGE -> {
-                    // MultiEdge is a variant of the INDEXED type in the v2 engine.
+                LabelType.INDEXED, LabelType.MULTI_EDGE, LabelType.VERTEX -> {
+                    // MultiEdge and Vertex are both backed by the INDEXED storage path in the v2 engine.
                     if (type == LabelType.MULTI_EDGE && !readOnly) {
                         logger.error("MULTI_EDGE type should be read-only in the v2 engine. Fallback to NilLabel")
                         return NilLabel(this.copy(type = LabelType.NIL))
