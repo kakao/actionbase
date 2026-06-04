@@ -47,7 +47,6 @@ class TokenAuthenticationFilter(
     }
 
     fun warmUp() {
-        println("warming up token cache...")
         customTokenFilter?.warmUp()
     }
 }
