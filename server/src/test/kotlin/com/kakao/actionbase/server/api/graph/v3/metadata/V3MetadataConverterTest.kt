@@ -38,7 +38,6 @@ import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Test
 
 class V3MetadataConverterTest {
     private val tenant = "test-tenant"
@@ -404,28 +403,61 @@ class V3MetadataConverterTest {
             assertThat(schema.caches[0].fields[0].order).isEqualTo(V3Order.DESC)
         }
 
-        @Test
-        fun `LabelType VERTEX LabelEntity is restored as V3TableDescriptor Vertex`() {
-            val idField = VertexField(VertexType.STRING, "user id")
-            val targetField = VertexField(VertexType.STRING, "<vertex>")
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - database: mydb
+              table: users
+              idType: STRING
+              idComment: user id
+              propertyName: name
+              propertyType: STRING
+              propertyNullable: false
+              propertyComment: user name
+              storage: "datastore://test_namespace/users"
+              comment: vertex table
+            - database: mydb
+              table: users_long
+              idType: LONG
+              idComment: numeric user id
+              propertyName: score
+              propertyType: INT
+              propertyNullable: true
+              propertyComment: user score
+              storage: "datastore://test_namespace/users_long"
+              comment: vertex table with numeric id
+            """,
+        )
+        fun `LabelType VERTEX LabelEntity is restored as V3TableDescriptor Vertex`(
+            database: String,
+            table: String,
+            idType: String,
+            idComment: String,
+            propertyName: String,
+            propertyType: String,
+            propertyNullable: Boolean,
+            propertyComment: String,
+            storage: String,
+            comment: String,
+        ) {
             val edgeSchema =
                 EdgeSchema(
-                    idField,
-                    targetField,
+                    VertexField(VertexType.valueOf(idType), idComment),
+                    VertexField(VertexType.STRING, "<vertex>"),
                     listOf(
                         com.kakao.actionbase.v2.core.types
-                            .Field("name", DataType.STRING, false, "user name"),
+                            .Field(propertyName, DataType.valueOf(propertyType), propertyNullable, propertyComment),
                     ),
                 )
             val v2Entity =
                 LabelEntity(
                     active = true,
-                    name = EntityName("mydb", "users"),
-                    desc = "vertex table",
+                    name = EntityName(database, table),
+                    desc = comment,
                     type = LabelType.VERTEX,
                     schema = edgeSchema,
                     dirType = V2DirectionType.OUT,
-                    storage = "datastore://test_namespace/users",
+                    storage = storage,
                     indices = emptyList(),
                     groups = emptyList(),
                     event = false,
@@ -435,13 +467,19 @@ class V3MetadataConverterTest {
 
             val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.Vertex
             assertThat(v3Descriptor.tenant).isEqualTo(tenant)
-            assertThat(v3Descriptor.database).isEqualTo("mydb")
-            assertThat(v3Descriptor.table).isEqualTo("users")
+            assertThat(v3Descriptor.database).isEqualTo(database)
+            assertThat(v3Descriptor.table).isEqualTo(table)
             assertThat(v3Descriptor.active).isTrue()
+            assertThat(v3Descriptor.comment).isEqualTo(comment)
+            assertThat(v3Descriptor.storage).isEqualTo(storage)
+
             val schema = v3Descriptor.schema
-            assertThat(schema.id.type).isEqualTo(PrimitiveType.STRING)
+            assertThat(schema.id.type).isEqualTo(PrimitiveType.valueOf(idType))
+            assertThat(schema.id.comment).isEqualTo(idComment)
             assertThat(schema.properties).hasSize(1)
-            assertThat(schema.properties[0].name).isEqualTo("name")
+            assertThat(schema.properties[0].name).isEqualTo(propertyName)
+            assertThat(schema.properties[0].nullable).isEqualTo(propertyNullable)
+            assertThat(schema.properties[0].comment).isEqualTo(propertyComment)
         }
     }
 
