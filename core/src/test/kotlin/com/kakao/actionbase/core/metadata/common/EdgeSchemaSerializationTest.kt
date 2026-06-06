@@ -5,7 +5,9 @@ import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterized
 import com.kakao.actionbase.test.json.PrettyObjectWriter
 
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.junit.jupiter.api.Test
 
@@ -308,6 +310,23 @@ class EdgeSchemaSerializationTest {
             """.trimIndent()
 
         assertEquals(100, objectMapper.readValue<Cache>(json).tolerance)
+    }
+
+    @Test
+    fun `cache with explicit null tolerance is rejected`() {
+        val json =
+            """
+            {
+              "cache": "created_at_desc",
+              "fields": [{"field": "version", "order": "DESC"}],
+              "limit": 50,
+              "tolerance": null
+            }
+            """.trimIndent()
+
+        assertFailsWith<JsonProcessingException> {
+            objectMapper.readValue<Cache>(json)
+        }
     }
 
     @Test
