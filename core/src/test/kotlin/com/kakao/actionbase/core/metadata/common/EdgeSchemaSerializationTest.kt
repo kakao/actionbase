@@ -7,9 +7,10 @@ import com.kakao.actionbase.test.json.PrettyObjectWriter
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
+import org.junit.jupiter.api.Test
+
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.junit.jupiter.api.Test
 
 class EdgeSchemaSerializationTest {
     val prettyWriter = PrettyObjectWriter.DEFAULT
