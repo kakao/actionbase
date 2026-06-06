@@ -9,10 +9,12 @@ data class Cache(
     val cache: String,
     val fields: List<CacheField>,
     val limit: Int = 100,
+    val tolerance: Int = limit * 2,
     val comment: String = Constants.DEFAULT_COMMENT,
 ) {
     init {
         require(limit > 0) { "Cache limit must be positive, got: $limit" }
+        require(tolerance > 0) { "Cache tolerance must be positive, got: $tolerance" }
     }
 
     @JsonIgnore

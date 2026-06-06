@@ -38,6 +38,7 @@ import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
 
 class V3MetadataConverterTest {
     private val tenant = "test-tenant"
@@ -401,6 +402,69 @@ class V3MetadataConverterTest {
             assertThat(schema.caches[0].fields).hasSize(1)
             assertThat(schema.caches[0].fields[0].field).isEqualTo("score")
             assertThat(schema.caches[0].fields[0].order).isEqualTo(V3Order.DESC)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - database: mydb
+              table: mytable
+              cacheName: cache1
+              cacheLimit: 50
+              cacheTolerance: 30
+            """,
+        )
+        fun `LabelEntity cache tolerance is preserved when converting to TableDescriptor Edge`(
+            database: String,
+            table: String,
+            cacheName: String,
+            cacheLimit: Int,
+            cacheTolerance: Int,
+        ) {
+            val edgeSchema =
+                EdgeSchema(
+                    VertexField(VertexType.STRING, "source"),
+                    VertexField(VertexType.STRING, "target"),
+                    listOf(
+                        com.kakao.actionbase.v2.core.types
+                            .Field("score", DataType.INT, true, "score field"),
+                    ),
+                )
+            val v2Entity =
+                LabelEntity(
+                    active = true,
+                    name = EntityName(database, table),
+                    desc = "test table",
+                    type = LabelType.INDEXED,
+                    schema = edgeSchema,
+                    dirType = V2DirectionType.OUT,
+                    storage = "datastore://test_namespace/test_table",
+                    indices = emptyList(),
+                    groups = emptyList(),
+                    caches =
+                        listOf(
+                            Cache(
+                                cache = cacheName,
+                                fields = listOf(CacheField("score", V3Order.DESC)),
+                                limit = cacheLimit,
+                                tolerance = cacheTolerance,
+                            ),
+                        ),
+                    event = false,
+                    readOnly = false,
+                    mode = V2MutationMode.SYNC,
+                )
+
+            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.Edge
+            val schema = v3Descriptor.schema
+            assertThat(schema.caches).hasSize(1)
+            assertThat(schema.caches[0].tolerance).isEqualTo(cacheTolerance)
+        }
+
+        @Test
+        fun `Cache tolerance defaults to limit times 2 when not set`() {
+            val cache = Cache(cache = "c", fields = emptyList(), limit = 50)
+            assertThat(cache.tolerance).isEqualTo(100)
         }
 
         @ObjectSourceParameterizedTest

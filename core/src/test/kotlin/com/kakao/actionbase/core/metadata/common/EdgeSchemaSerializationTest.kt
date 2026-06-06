@@ -7,6 +7,7 @@ import com.kakao.actionbase.test.json.PrettyObjectWriter
 import kotlin.test.assertEquals
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.junit.jupiter.api.Test
 
 class EdgeSchemaSerializationTest {
     val prettyWriter = PrettyObjectWriter.DEFAULT
@@ -107,6 +108,51 @@ class EdgeSchemaSerializationTest {
                 }
               ]
             }
+        - name: with caches and tolerance
+          input: |-
+            {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [],
+              "direction": "OUT",
+              "indexes": [
+                {
+                  "index": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}]
+                }
+              ],
+              "groups": [],
+              "caches": [
+                {
+                  "cache": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}],
+                  "limit": 50,
+                  "tolerance": 30
+                }
+              ]
+            }
+          expected: {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [],
+              "direction": "OUT",
+              "indexes": [
+                {
+                  "index": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}]
+                }
+              ],
+              "caches": [
+                {
+                  "cache": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}],
+                  "limit": 50,
+                  "tolerance": 30
+                }
+              ]
+            }
         """,
     )
     fun `deserializes edge schema from JSON`(
@@ -170,6 +216,77 @@ class EdgeSchemaSerializationTest {
               "groups": [],
               "caches": []
             }
+        - schema: {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [],
+              "direction": "OUT",
+              "groups": [],
+              "indexes": [],
+              "caches": [
+                {
+                  "cache": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}],
+                  "limit": 50,
+                  "tolerance": 30
+                }
+              ]
+            }
+          expected: |-
+            {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [],
+              "direction": "OUT",
+              "indexes": [],
+              "groups": [],
+              "caches": [
+                {
+                  "cache": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC", "dimension": null}],
+                  "limit": 50,
+                  "tolerance": 30,
+                  "comment": ""
+                }
+              ]
+            }
+        - schema: {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [],
+              "direction": "OUT",
+              "groups": [],
+              "indexes": [],
+              "caches": [
+                {
+                  "cache": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC"}],
+                  "limit": 50
+                }
+              ]
+            }
+          expected: |-
+            {
+              "type": "edge",
+              "source": {"type": "long", "comment": "Source node ID"},
+              "target": {"type": "long", "comment": "Target node ID"},
+              "properties": [],
+              "direction": "OUT",
+              "indexes": [],
+              "groups": [],
+              "caches": [
+                {
+                  "cache": "created_at_desc",
+                  "fields": [{"field": "version", "order": "DESC", "dimension": null}],
+                  "limit": 50,
+                  "tolerance": 100,
+                  "comment": ""
+                }
+              ]
+            }
         """,
     )
     fun `serializes edge schema to JSON`(
@@ -177,5 +294,34 @@ class EdgeSchemaSerializationTest {
         expected: String,
     ) {
         assertEquals(expected, prettyWriter.writeValueAsString(schema))
+    }
+
+    @Test
+    fun `cache without tolerance deserializes to limit times 2`() {
+        val json =
+            """
+            {
+              "cache": "created_at_desc",
+              "fields": [{"field": "version", "order": "DESC"}],
+              "limit": 50
+            }
+            """.trimIndent()
+
+        assertEquals(100, objectMapper.readValue<Cache>(json).tolerance)
+    }
+
+    @Test
+    fun `cache with explicit tolerance keeps its value on deserialization`() {
+        val json =
+            """
+            {
+              "cache": "created_at_desc",
+              "fields": [{"field": "version", "order": "DESC"}],
+              "limit": 50,
+              "tolerance": 30
+            }
+            """.trimIndent()
+
+        assertEquals(30, objectMapper.readValue<Cache>(json).tolerance)
     }
 }
