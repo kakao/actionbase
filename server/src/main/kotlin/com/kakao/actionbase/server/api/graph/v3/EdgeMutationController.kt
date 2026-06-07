@@ -1,7 +1,9 @@
 package com.kakao.actionbase.server.api.graph.v3
 
+import com.kakao.actionbase.core.edge.payload.DataFramePrunePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
+import com.kakao.actionbase.core.edge.payload.EdgePruneRequest
 import com.kakao.actionbase.engine.context.RequestContext
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.service.MutationService
@@ -43,4 +45,14 @@ class EdgeMutationController(
         mutationService
             .mutate(database, table, request.mutations, lock, syncMode = MutationMode.SYNC, forceSyncMode = force, requestContext = requestContext)
             .map { ResponseEntity.ok(EdgeMutationResponse.from(it)) }
+
+    @PostMapping("/graph/v3/databases/{database}/tables/{table}/edges/prune")
+    fun prune(
+        @PathVariable database: String,
+        @PathVariable table: String,
+        @RequestBody request: EdgePruneRequest,
+    ): Mono<ResponseEntity<DataFramePrunePayload>> =
+        mutationService
+            .prune(database, table, request.type, request.targets)
+            .map { results -> ResponseEntity.ok(DataFramePrunePayload(results)) }
 }

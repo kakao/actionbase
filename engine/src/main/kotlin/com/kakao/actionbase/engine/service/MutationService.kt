@@ -4,6 +4,9 @@ import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.UnresolvedEvent
 import com.kakao.actionbase.core.edge.payload.MutationResult
+import com.kakao.actionbase.core.edge.payload.PruneResult
+import com.kakao.actionbase.core.edge.payload.PruneTarget
+import com.kakao.actionbase.core.edge.payload.PruneType
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.state.transit
 import com.kakao.actionbase.engine.Audit
@@ -75,6 +78,13 @@ class MutationService(
                     .timeout(Duration.ofMillis(engine.mutationRequestTimeout))
                     .runEvenIfCancelled()
             }
+
+    fun prune(
+        database: String,
+        table: String,
+        type: PruneType,
+        targets: List<PruneTarget>,
+    ): Mono<List<PruneResult>> = Mono.just(emptyList())
 
     /**
      * For `system=ASYNC + label=SYNC` (no force), return the SYNC-shaped status derived from
