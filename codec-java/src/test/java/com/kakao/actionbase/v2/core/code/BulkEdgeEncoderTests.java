@@ -437,6 +437,44 @@ public class BulkEdgeEncoderTests {
     return a.length - b.length;
   }
 
+  @Test
+  void shouldRejectBulkEncodeWhenRequiredFieldIsNull() throws JsonProcessingException {
+    LabelDTO label = objectMapper.readValue(labelJsonString, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    String invalidEdgeJson = edgeJsonString.replace("\"created_at\":1", "\"created_at\":null");
+    BulkLoadEdge edge = objectMapper.readValue(invalidEdgeJson, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel));
+    assertTrue(ex.getMessage().contains("created_at"), ex.getMessage());
+  }
+
+  @Test
+  void shouldRejectBulkEncodeWhenRequiredFieldIsMissing() throws JsonProcessingException {
+    LabelDTO label = objectMapper.readValue(labelJsonString, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    String invalidEdgeJson = edgeJsonString.replace("\"created_at\":1, ", "");
+    BulkLoadEdge edge = objectMapper.readValue(invalidEdgeJson, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel));
+    assertTrue(ex.getMessage().contains("created_at"), ex.getMessage());
+  }
+
   // VERTEX label: active edge → State only (1 hash row). No index, no counter.
   @Test
   void testVertexActiveEdgeProducesStateOnly() throws JsonProcessingException {

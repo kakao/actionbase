@@ -60,6 +60,44 @@ public class Edge {
     return props;
   }
 
+  public void validateAgainstSchema(EdgeSchema schema) {
+    for (Field field : schema.getFields()) {
+      String name = field.getName();
+      boolean present = props.containsKey(name);
+      Object raw = present ? props.get(name) : null;
+
+      if (raw != null) {
+        Object casted = field.getType().cast(raw);
+        if (casted == null) {
+          throw new IllegalArgumentException(
+              "Schema validation failed: field '"
+                  + name
+                  + "' value ["
+                  + raw
+                  + "] cannot be cast to "
+                  + field.getType()
+                  + " (type mismatch) "
+                  + identityForError());
+        }
+        continue;
+      }
+
+      if (!field.isNullable()) {
+        throw new IllegalArgumentException(
+            "Schema validation failed: required field '"
+                + name
+                + "' is "
+                + (present ? "null" : "missing")
+                + " "
+                + identityForError());
+      }
+    }
+  }
+
+  private String identityForError() {
+    return "(src=" + src + ", tgt=" + tgt + ", ts=" + ts + ")";
+  }
+
   public Edge ensureType(EdgeSchema schema) {
     Object castedSrc = schema.getSrc().getDataType().castNotNull(src);
     Object castedTgt = schema.getTgt().getDataType().castNotNull(tgt);
