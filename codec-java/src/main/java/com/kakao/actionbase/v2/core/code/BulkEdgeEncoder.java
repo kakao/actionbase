@@ -1,6 +1,7 @@
 package com.kakao.actionbase.v2.core.code;
 
 import com.kakao.actionbase.v2.core.edge.BulkLoadEdge;
+import com.kakao.actionbase.v2.core.edge.BulkLoadVertex;
 import com.kakao.actionbase.v2.core.edge.Edge;
 import com.kakao.actionbase.v2.core.metadata.Active;
 import com.kakao.actionbase.v2.core.metadata.Direction;
@@ -34,6 +35,24 @@ public class BulkEdgeEncoder {
 
   static final String SOURCE_FIELD_ON_STATE = "_source";
   static final String TARGET_FIELD_ON_STATE = "_target";
+
+  /**
+   * Encode a Vertex bulk-load row.
+   *
+   * <p>Lowers {@link BulkLoadVertex} into a {@link BulkLoadEdge} ({@code src=id,
+   * tgt=VERTEX_MARKER}) and dispatches through {@link #bulkEncodeAll(EdgeEncoder, BulkLoadEdge,
+   * LabelDTO)}. The label type is asserted up-front so callers cannot mistakenly write vertex
+   * payloads into a non-vertex table — that would silently corrupt the edge keyspace with a row at
+   * {@code target="-"}.
+   */
+  public static <T> List<TypedKeyFieldValue<T>> bulkEncodeVertex(
+      EdgeEncoder<T> encoder, BulkLoadVertex bulkLoadVertex, LabelDTO label) {
+    if (label.getType() != LabelType.VERTEX) {
+      throw new IllegalArgumentException(
+          "bulkEncodeVertex requires a VERTEX label, got " + label.getType());
+    }
+    return bulkEncodeAll(encoder, bulkLoadVertex.toBulkLoadEdge(), label);
+  }
 
   public static <T> List<TypedKeyFieldValue<T>> bulkEncodeAll(
       EdgeEncoder<T> encoder, BulkLoadEdge bulkLoadEdge, LabelDTO label) {

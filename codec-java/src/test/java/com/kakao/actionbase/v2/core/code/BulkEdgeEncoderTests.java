@@ -3,6 +3,7 @@ package com.kakao.actionbase.v2.core.code;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.kakao.actionbase.v2.core.edge.BulkLoadEdge;
+import com.kakao.actionbase.v2.core.edge.BulkLoadVertex;
 import com.kakao.actionbase.v2.core.edge.Edge;
 import com.kakao.actionbase.v2.core.metadata.Direction;
 import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
@@ -463,6 +464,105 @@ public class BulkEdgeEncoderTests {
     // Vertex: State only — 1 hash row, no index, no counter
     assertEquals(1, encodedEdges.size());
     assertEquals(EncodedEdgeType.HASH_EDGE_TYPE, encodedEdges.get(0).getEncodedEdgeType());
+  }
+
+  // bulkEncodeVertex: lowers (id, props) into BulkLoadEdge(src=id, tgt="-") and produces
+  // exactly the same single hash row as the legacy entry point — no index, no counter.
+  @Test
+  void testBulkEncodeVertexActiveProducesStateOnly() throws JsonProcessingException {
+    String vertexLabelJson =
+        labelJsonString
+            .replace("\"type\":\"INDEXED\"", "\"type\":\"VERTEX\"")
+            .replace("\"dirType\":\"BOTH\"", "\"dirType\":\"OUT\"")
+            .replace(
+                "\"indices\":[{\"id\":0,\"name\":\"created_at_desc\",\"fields\":[{\"name\":\"created_at\",\"order\":\"DESC\"}]}]",
+                "\"indices\":[]")
+            .replace(
+                ",\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+                "");
+    LabelDTO label = objectMapper.readValue(vertexLabelJson, LabelDTO.class);
+    LabelDTO newLabel = label.copy("vertex_table_20240101", "vertex_table_20240101");
+
+    String vertexJson =
+        "{\"active\":true,\"ts\":1,\"id\":123,\"props\":{\"created_at\":1,\"permission\":\"public\",\"memo\":\"hi\"}}";
+    BulkLoadVertex vertex = objectMapper.readValue(vertexJson, BulkLoadVertex.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeVertex(encoder, vertex, newLabel);
+
+    assertEquals(1, encodedEdges.size());
+    assertEquals(EncodedEdgeType.HASH_EDGE_TYPE, encodedEdges.get(0).getEncodedEdgeType());
+
+    // Decoded row carries src=id and tgt=VERTEX_MARKER — the on-wire vertex shape.
+    DecodedEdge decoded =
+        DecodedEdge.from(KeyFieldValue.from(encodedEdges.get(0)), Collections.emptyMap());
+    assertEquals(123L, decoded.getSrc());
+    assertEquals(BulkLoadVertex.VERTEX_MARKER, decoded.getTgt());
+  }
+
+  // bulkEncodeVertex on an inactive vertex emits a single hash tombstone — same as the legacy
+  // path, but without the caller having to know about VERTEX_MARKER.
+  @Test
+  void testBulkEncodeVertexInactiveProducesHashTombstoneOnly() throws JsonProcessingException {
+    String vertexLabelJson =
+        labelJsonString
+            .replace("\"type\":\"INDEXED\"", "\"type\":\"VERTEX\"")
+            .replace("\"dirType\":\"BOTH\"", "\"dirType\":\"OUT\"")
+            .replace(
+                "\"indices\":[{\"id\":0,\"name\":\"created_at_desc\",\"fields\":[{\"name\":\"created_at\",\"order\":\"DESC\"}]}]",
+                "\"indices\":[]")
+            .replace(
+                ",\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+                "");
+    LabelDTO label = objectMapper.readValue(vertexLabelJson, LabelDTO.class);
+    LabelDTO newLabel = label.copy("vertex_table_20240101", "vertex_table_20240101");
+
+    String vertexJson = "{\"active\":false,\"ts\":1,\"id\":123,\"props\":{\"created_at\":1}}";
+    BulkLoadVertex vertex = objectMapper.readValue(vertexJson, BulkLoadVertex.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeVertex(encoder, vertex, newLabel);
+
+    assertEquals(1, encodedEdges.size());
+    assertEquals(EncodedEdgeType.HASH_EDGE_TYPE, encodedEdges.get(0).getEncodedEdgeType());
+
+    // The tombstone row must still carry the on-wire vertex shape (src=id, tgt="-").
+    DecodedEdge decoded =
+        DecodedEdge.from(KeyFieldValue.from(encodedEdges.get(0)), Collections.emptyMap());
+    assertEquals(123L, decoded.getSrc());
+    assertEquals(BulkLoadVertex.VERTEX_MARKER, decoded.getTgt());
+  }
+
+  // bulkEncodeVertex must reject non-VERTEX labels; otherwise a vertex payload would silently
+  // be written into an edge table at target="-".
+  @Test
+  void testBulkEncodeVertexRejectsNonVertexLabel() throws JsonProcessingException {
+    LabelDTO indexedLabel = objectMapper.readValue(labelJsonString, LabelDTO.class);
+    BulkLoadVertex vertex = new BulkLoadVertex(true, 1L, 123L, Collections.emptyMap());
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> BulkEdgeEncoder.bulkEncodeVertex(encoder, vertex, indexedLabel));
+    assertTrue(ex.getMessage().contains("VERTEX"));
+  }
+
+  // The reserved marker "-" must never become a vertex id — the encoded row would be
+  // indistinguishable from a tombstone-shaped key.
+  @Test
+  void testBulkLoadVertexRejectsReservedMarkerId() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new BulkLoadVertex(true, 1L, BulkLoadVertex.VERTEX_MARKER, Collections.emptyMap()));
   }
 
   // VERTEX label: inactive edge → 1 hash tombstone only.
