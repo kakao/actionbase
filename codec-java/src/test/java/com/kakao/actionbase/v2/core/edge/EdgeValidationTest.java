@@ -52,8 +52,7 @@ public class EdgeValidationTest {
     props.put("rank", 1);
     Edge edge = new Edge(1L, 1L, "tgt", props);
     IllegalArgumentException ex =
-        assertThrows(
-            IllegalArgumentException.class, () -> edge.validateAgainstSchema(SCHEMA));
+        assertThrows(IllegalArgumentException.class, () -> edge.validateAgainstSchema(SCHEMA));
     assertTrue(ex.getMessage().contains("score"), ex.getMessage());
     assertTrue(ex.getMessage().contains("missing"), ex.getMessage());
   }
@@ -64,8 +63,7 @@ public class EdgeValidationTest {
     props.put("score", null);
     Edge edge = new Edge(1L, 1L, "tgt", props);
     IllegalArgumentException ex =
-        assertThrows(
-            IllegalArgumentException.class, () -> edge.validateAgainstSchema(SCHEMA));
+        assertThrows(IllegalArgumentException.class, () -> edge.validateAgainstSchema(SCHEMA));
     assertTrue(ex.getMessage().contains("score"), ex.getMessage());
     assertTrue(ex.getMessage().contains("null"), ex.getMessage());
   }
@@ -76,8 +74,7 @@ public class EdgeValidationTest {
     props.put("score", "not-a-long");
     Edge edge = new Edge(1L, 1L, "tgt", props);
     IllegalArgumentException ex =
-        assertThrows(
-            IllegalArgumentException.class, () -> edge.validateAgainstSchema(SCHEMA));
+        assertThrows(IllegalArgumentException.class, () -> edge.validateAgainstSchema(SCHEMA));
     assertTrue(ex.getMessage().contains("score"), ex.getMessage());
     assertTrue(ex.getMessage().contains("type mismatch"), ex.getMessage());
   }
@@ -90,8 +87,7 @@ public class EdgeValidationTest {
     props.put("rank", "not-an-int");
     Edge edge = new Edge(1L, 1L, "tgt", props);
     IllegalArgumentException ex =
-        assertThrows(
-            IllegalArgumentException.class, () -> edge.validateAgainstSchema(SCHEMA));
+        assertThrows(IllegalArgumentException.class, () -> edge.validateAgainstSchema(SCHEMA));
     assertTrue(ex.getMessage().contains("rank"), ex.getMessage());
     assertTrue(ex.getMessage().contains("type mismatch"), ex.getMessage());
   }
