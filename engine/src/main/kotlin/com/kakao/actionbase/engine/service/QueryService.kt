@@ -2,11 +2,14 @@ package com.kakao.actionbase.engine.service
 
 import com.kakao.actionbase.core.Constants.VERTEX_MARKER
 import com.kakao.actionbase.core.edge.EdgeField
+import com.kakao.actionbase.core.edge.mutation.EdgeMutationBuilder
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
+import com.kakao.actionbase.core.edge.payload.DataFrameMultiEdgeAggCountPayload
 import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.EdgePayload
+import com.kakao.actionbase.core.edge.payload.MultiEdgeAggCountPayload
 import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
@@ -170,6 +173,45 @@ class QueryService(
         features: List<String> = emptyList(),
         ttl: Long? = null,
     ): Mono<DataFrameEdgeAggPayload> = engine.getTableBinding(database, table).agg(group, start, direction, ranges, filters, features, ttl)
+
+    fun multiEdgeCount(
+        database: String,
+        table: String,
+        group: String,
+        start: List<Any>,
+        direction: Direction,
+        target: String,
+        ranges: String? = null,
+        ttl: Long? = null,
+    ): Mono<DataFrameMultiEdgeAggCountPayload> {
+        val groupField =
+            if (direction == Direction.OUT) EdgeMutationBuilder.MULTI_EDGE_TARGET_FIELD_NAME else EdgeMutationBuilder.MULTI_EDGE_SOURCE_FIELD_NAME
+
+        return agg(
+            database,
+            table,
+            group,
+            start,
+            direction,
+            ranges = listOfNotNull("$groupField:eq:$target", ranges).joinToString(";"),
+            ttl = ttl,
+        ).map { payload ->
+            val counts =
+                payload.groups.map { item ->
+                    MultiEdgeAggCountPayload(
+                        start = item.start,
+                        direction = item.direction,
+                        count = item.value,
+                        context = item.context,
+                    )
+                }
+            DataFrameMultiEdgeAggCountPayload(
+                counts = counts,
+                count = counts.size,
+                context = payload.context,
+            )
+        }
+    }
 
     fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = queryExecutor.query(request)
 
