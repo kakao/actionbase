@@ -126,4 +126,19 @@ class EdgeQueryController(
         queryService
             .agg(database, table, group, start, direction, ranges, filters, features, ttl)
             .mapToResponseEntity()
+
+    @GetMapping("/graph/v3/databases/{database}/tables/{table}/edges/top-k/{topk}")
+    fun topk(
+        @PathVariable table: String,
+        @PathVariable database: String,
+        @PathVariable topk: String,
+        @RequestParam start: String,
+        @RequestParam direction: Direction,
+        @RequestParam limit: Int = ScanFilter.defaultLimit,
+        @RequestParam offset: String? = null,
+        @RequestParam filters: String? = null,
+    ): Mono<ResponseEntity<DataFrameEdgePayload>> =
+        queryService
+            .topk(database, table, topk, start, direction, limit, offset, filters)
+            .mapToResponseEntity()
 }

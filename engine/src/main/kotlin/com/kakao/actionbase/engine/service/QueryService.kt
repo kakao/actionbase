@@ -162,6 +162,34 @@ class QueryService(
             .seek(cache, start, direction, limit, offset, ranges, filters, features)
             .map { it.toEdgePayload() }
 
+    fun topk(
+        database: String,
+        table: String,
+        topk: String,
+        start: String,
+        direction: Direction,
+        limit: Int = ScanFilter.defaultLimit,
+        offset: String? = null,
+        filters: String? = null,
+    ): Mono<DataFrameEdgePayload> =
+        scan(
+            database = database,
+            table = table,
+            index = "score",
+            start = "$start:$topk",
+            direction = direction,
+            limit = limit,
+            offset = offset,
+            filters = filters,
+        ).map { payload ->
+            payload.copy(
+                edges =
+                    payload.edges.map { edge ->
+                        edge.copy(source = (edge.source as String).substringBefore(":"))
+                    },
+            )
+        }
+
     fun agg(
         database: String,
         table: String,

@@ -13,6 +13,7 @@ data class Group(
     val comment: String = Constants.DEFAULT_COMMENT,
     val directionType: DirectionType = DirectionType.BOTH,
     val ttl: Long = Constants.Group.DEFAULT_TTL,
+    val topk: String? = null,
 ) {
     @JsonIgnore
     val code = XXHash32Wrapper.default.stringHash(group)
