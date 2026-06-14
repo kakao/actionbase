@@ -9,6 +9,7 @@ import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationBuilder
+import com.kakao.actionbase.core.edge.mutation.EdgeMutationBuilder.MULTI_EDGE_SOURCE_FIELD_NAME
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationRecords
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
@@ -102,10 +103,29 @@ class V2BackedTableBinding(
         val afterClean = after.specialStateValueToNull()
         val beforeRecord = EdgeStateRecord.of(source, target, beforeClean, label.entity.id)
         val afterRecord = EdgeStateRecord.of(source, target, afterClean, label.entity.id)
-        val records = buildMutationRecords(beforeRecord, afterRecord)
-        return label
-            .handleDeferredRequests(buildHBaseMutations(records), storageOpCollector)
-            .thenReturn(MutationRecordsSummary(records.status, records.acc, beforeClean, afterClean))
+
+        val isMultiEdgeSourceChanged = descriptor.schema is ModelSchema.MultiEdge &&
+            beforeClean.active && afterClean.active &&
+            beforeClean.properties[MULTI_EDGE_SOURCE_FIELD_NAME]?.value !=
+            afterClean.properties[MULTI_EDGE_SOURCE_FIELD_NAME]?.value
+
+        return if (isMultiEdgeSourceChanged) {
+            val inactiveClean = afterClean.copy(active = false)
+            val inactiveRecord = EdgeStateRecord.of(source, target, state = inactiveClean, label.entity.id)
+
+            val deleteRecords = buildMutationRecords(before = beforeRecord, after = inactiveRecord)
+            val createRecords = buildMutationRecords(before = inactiveRecord, after = afterRecord)
+
+            label.handleDeferredRequests(buildHBaseMutations(deleteRecords), storageOpCollector)
+                .then(label.handleDeferredRequests(buildHBaseMutations(createRecords), null))
+                .thenReturn(MutationRecordsSummary("UPDATED", 0L, beforeClean, afterClean))
+        } else {
+            val records = buildMutationRecords(beforeRecord, afterRecord)
+
+            label
+                .handleDeferredRequests(buildHBaseMutations(records), storageOpCollector)
+                .thenReturn(MutationRecordsSummary(records.status, records.acc, beforeClean, afterClean))
+        }
     }
 
     override fun handleMutationError(error: Throwable) {
