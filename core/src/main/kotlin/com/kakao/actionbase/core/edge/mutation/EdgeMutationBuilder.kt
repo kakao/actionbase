@@ -19,6 +19,7 @@ object EdgeMutationBuilder {
     const val MULTI_EDGE_ID_FIELD_NAME = "id"
     const val MULTI_EDGE_SOURCE_FIELD_NAME = "_source"
     const val MULTI_EDGE_TARGET_FIELD_NAME = "_target"
+    const val MULTI_EDGE_COUNT_GROUP_NAME = "_count"
 
     val MULTI_EDGE_ID_CODE = XXHash32Wrapper.default.stringHash(MULTI_EDGE_ID_FIELD_NAME)
     val MULTI_EDGE_SOURCE_CODE = XXHash32Wrapper.default.stringHash(MULTI_EDGE_SOURCE_FIELD_NAME)

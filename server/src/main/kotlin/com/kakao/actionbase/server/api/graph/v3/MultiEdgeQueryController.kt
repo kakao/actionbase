@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.api.graph.v3
 
+import com.kakao.actionbase.core.edge.mutation.EdgeMutationBuilder
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.DataFrameMultiEdgeAggCountPayload
 import com.kakao.actionbase.engine.service.QueryService
@@ -52,7 +53,7 @@ class MultiEdgeQueryController(
     fun count(
         @PathVariable database: String,
         @PathVariable table: String,
-        @RequestParam group: String,
+        @RequestParam group: String = EdgeMutationBuilder.MULTI_EDGE_COUNT_GROUP_NAME,
         @RequestParam start: List<String>,
         @RequestParam target: String,
         @RequestParam direction: Direction,

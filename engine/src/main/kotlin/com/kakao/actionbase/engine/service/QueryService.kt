@@ -177,7 +177,7 @@ class QueryService(
     fun multiEdgeCount(
         database: String,
         table: String,
-        group: String,
+        group: String = EdgeMutationBuilder.MULTI_EDGE_COUNT_GROUP_NAME,
         start: List<Any>,
         direction: Direction,
         target: String,
