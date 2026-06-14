@@ -82,6 +82,16 @@ class MultiEdgeSpec :
                   "desc": "recently paid first"
                 }
               ],
+              "groups": [
+                {
+                  "group": "by_target",
+                  "type": "COUNT",
+                  "fields": [
+                    { "name": "_target" }
+                  ],
+                  "directionType": "OUT"
+                }
+              ],
               "event": false,
               "readOnly": true,
               "mode": "SYNC"
@@ -772,6 +782,145 @@ class MultiEdgeSpec :
                     result.edges[0].properties["_id"] shouldBe 300001L
                     result.edges[0].properties["paidAt"] shouldBe 2000L
                 }.verifyComplete()
+        }
+
+        "agg group counter is correct when _source changes on UPDATE" {
+            // separate label with STRING src/tgt for agg qualifier type compatibility
+            val aggLabelName = EntityName(GraphFixtures.serviceName, "agg_test_label")
+            val aggLabelDefinition = """
+            {
+              "desc": "agg test",
+              "type": "MULTI_EDGE",
+              "schema": {
+                "src": { "type": "STRING", "desc": "source" },
+                "tgt": { "type": "STRING", "desc": "target" },
+                "fields": [
+                  { "name": "_id", "type": "STRING", "nullable": false, "desc": "id" },
+                  { "name": "paidAt", "type": "LONG", "nullable": false, "desc": "paidAt" },
+                  { "name": "productId", "type": "LONG", "nullable": false, "desc": "productId" }
+                ]
+              },
+              "dirType": "BOTH",
+              "storage": "${GraphFixtures.hbaseStorage}",
+              "groups": [
+                { "group": "by_target", "type": "COUNT", "fields": [{ "name": "_target" }], "directionType": "OUT" }
+              ],
+              "event": false,
+              "readOnly": true,
+              "mode": "SYNC"
+            }
+            """.trimIndent()
+            graph.labelDdl.create(aggLabelName, mapper.readValue<LabelCreateRequest>(aggLabelDefinition)).block()
+            val aggTable = aggLabelName.nameNotNull
+
+            // INSERT: id="e1", source="userA", target="postB"
+            mutationService
+                .mutate(
+                    database, aggTable,
+                    mapper.readValue<MultiEdgeBulkMutationRequest>(
+                        """{"mutations":[{"type":"INSERT","edge":{"version":1,"id":"e1","source":"userA","target":"postB","properties":{"paidAt":1,"productId":100}}}]}""",
+                    ).mutations,
+                ).test()
+                .assertNext { it.first().status shouldBe "CREATED" }
+                .verifyComplete()
+
+            // agg: source="userA", target="postB" → count=1
+            queryService.agg(database, aggTable, "by_target", listOf("userA"), Direction.OUT, "_target:eq:postB")
+                .test()
+                .assertNext { it.groups.first().value shouldBe 1L }
+                .verifyComplete()
+
+            // UPDATE id="e1": source="userA"→"userC" (_source changes)
+            mutationService
+                .mutate(
+                    database, aggTable,
+                    mapper.readValue<MultiEdgeBulkMutationRequest>(
+                        """{"mutations":[{"type":"UPDATE","edge":{"version":2,"id":"e1","source":"userC","target":"postB","properties":{"paidAt":1,"productId":100}}}]}""",
+                    ).mutations,
+                ).test()
+                .assertNext { it.first().status shouldBe "UPDATED" }
+                .verifyComplete()
+
+            // old source="userA", target="postB" → count=0
+            queryService.agg(database, aggTable, "by_target", listOf("userA"), Direction.OUT, "_target:eq:postB")
+                .test()
+                .assertNext { it.groups.firstOrNull()?.value ?: 0L shouldBe 0L }
+                .verifyComplete()
+
+            // new source="userC", target="postB" → count=1
+            queryService.agg(database, aggTable, "by_target", listOf("userC"), Direction.OUT, "_target:eq:postB")
+                .test()
+                .assertNext { it.groups.first().value shouldBe 1L }
+                .verifyComplete()
+        }
+
+        "agg group counter is correct when both _source and _target change on UPDATE" {
+            val aggLabelName = EntityName(GraphFixtures.serviceName, "agg_test_label_2")
+            val aggLabelDefinition = """
+            {
+              "desc": "agg test 2",
+              "type": "MULTI_EDGE",
+              "schema": {
+                "src": { "type": "STRING", "desc": "source" },
+                "tgt": { "type": "STRING", "desc": "target" },
+                "fields": [
+                  { "name": "_id", "type": "STRING", "nullable": false, "desc": "id" },
+                  { "name": "paidAt", "type": "LONG", "nullable": false, "desc": "paidAt" },
+                  { "name": "productId", "type": "LONG", "nullable": false, "desc": "productId" }
+                ]
+              },
+              "dirType": "BOTH",
+              "storage": "${GraphFixtures.hbaseStorage}",
+              "groups": [
+                { "group": "by_target", "type": "COUNT", "fields": [{ "name": "_target" }], "directionType": "OUT" }
+              ],
+              "event": false,
+              "readOnly": true,
+              "mode": "SYNC"
+            }
+            """.trimIndent()
+            graph.labelDdl.create(aggLabelName, mapper.readValue<LabelCreateRequest>(aggLabelDefinition)).block()
+            val aggTable = aggLabelName.nameNotNull
+
+            // INSERT: id="e2", source="userA", target="postB"
+            mutationService
+                .mutate(
+                    database, aggTable,
+                    mapper.readValue<MultiEdgeBulkMutationRequest>(
+                        """{"mutations":[{"type":"INSERT","edge":{"version":1,"id":"e2","source":"userA","target":"postB","properties":{"paidAt":1,"productId":200}}}]}""",
+                    ).mutations,
+                ).test()
+                .assertNext { it.first().status shouldBe "CREATED" }
+                .verifyComplete()
+
+            // agg: source="userA", target="postB" → count=1
+            queryService.agg(database, aggTable, "by_target", listOf("userA"), Direction.OUT, "_target:eq:postB")
+                .test()
+                .assertNext { it.groups.first().value shouldBe 1L }
+                .verifyComplete()
+
+            // UPDATE id="e2": source="userA"→"userC", target="postB"→"postD"
+            mutationService
+                .mutate(
+                    database, aggTable,
+                    mapper.readValue<MultiEdgeBulkMutationRequest>(
+                        """{"mutations":[{"type":"UPDATE","edge":{"version":2,"id":"e2","source":"userC","target":"postD","properties":{"paidAt":1,"productId":200}}}]}""",
+                    ).mutations,
+                ).test()
+                .assertNext { it.first().status shouldBe "UPDATED" }
+                .verifyComplete()
+
+            // old source="userA", target="postB" → count=0
+            queryService.agg(database, aggTable, "by_target", listOf("userA"), Direction.OUT, "_target:eq:postB")
+                .test()
+                .assertNext { it.groups.firstOrNull()?.value ?: 0L shouldBe 0L }
+                .verifyComplete()
+
+            // new source="userC", target="postD" → count=1
+            queryService.agg(database, aggTable, "by_target", listOf("userC"), Direction.OUT, "_target:eq:postD")
+                .test()
+                .assertNext { it.groups.first().value shouldBe 1L }
+                .verifyComplete()
         }
 
         "ids query should not return deleted edges" {
