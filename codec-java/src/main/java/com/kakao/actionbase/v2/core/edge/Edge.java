@@ -60,15 +60,14 @@ public class Edge {
     return props;
   }
 
-  public void validateAgainstSchema(EdgeSchema schema) {
+  public void validate(EdgeSchema schema) {
     for (Field field : schema.getFields()) {
       String name = field.getName();
       boolean present = props.containsKey(name);
       Object raw = present ? props.get(name) : null;
 
       if (raw != null) {
-        Object casted = field.getType().cast(raw);
-        if (casted == null) {
+        if (field.getType().cast(raw) == null) {
           throw new IllegalArgumentException(
               "Schema validation failed: field '"
                   + name
@@ -79,10 +78,7 @@ public class Edge {
                   + " (type mismatch) "
                   + identityForError());
         }
-        continue;
-      }
-
-      if (!field.isNullable()) {
+      } else if (!field.isNullable()) {
         throw new IllegalArgumentException(
             "Schema validation failed: required field '"
                 + name

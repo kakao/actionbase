@@ -64,7 +64,7 @@ public class BulkEdgeEncoder {
     Active active = bulkLoadEdge.isActive() ? Active.ACTIVE : Active.INACTIVE;
     Edge castedEdge = bulkLoadEdge.ensureType(label.getSchema());
     if (bulkLoadEdge.isActive()) {
-      bulkLoadEdge.validateAgainstSchema(label.getSchema());
+      bulkLoadEdge.validate(label.getSchema());
     }
 
     List<TypedKeyFieldValue<T>> edges = new ArrayList<>();
