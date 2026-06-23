@@ -20,4 +20,22 @@ fun <T> ByteArrayBuffer.getValueOrNull(): T? = ValueUtils.deserialize(buffer = t
 
 fun ByteArrayBuffer.hasRemaining(): Boolean = remaining > 0
 
+fun ByteArrayBuffer.plusOne(): ByteArrayBuffer {
+    val position = this.position
+    val bytes = this.bytes
+    var carry = true
+    var i = position - 1
+    while (i >= 0 && carry) {
+        if ((bytes[i].toInt() and 0xFF) == 0xFF) {
+            bytes[i] = 0
+        } else {
+            bytes[i]++
+            carry = false
+        }
+        i--
+    }
+    require(!carry) { "Overflow while incrementing byte buffer" }
+    return this
+}
+
 fun ByteArray.buffer(): ByteArrayBuffer = ByteArrayBuffer(this)

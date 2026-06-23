@@ -30,11 +30,9 @@ public class EdgeSchema implements Serializable {
   @JsonIgnore private final Map<Integer, String> hashToFieldNameMap;
   @JsonIgnore private final StructType allStructType;
   @JsonIgnore private final StructType structType;
-  @JsonIgnore private final StructType edgeIdStructType;
   @JsonIgnore private final StructType offsetStructType;
   @JsonIgnore private final Map<String, Integer> fieldIndices;
-  @JsonIgnore
-  private final int edgeIdIndex, activeIndex, dirIndex, tsIndex, srcIndex, tgtIndex, offsetIndex;
+  @JsonIgnore private final int activeIndex, dirIndex, tsIndex, srcIndex, tgtIndex, offsetIndex;
 
   @JsonCreator
   public EdgeSchema(
@@ -65,10 +63,6 @@ public class EdgeSchema implements Serializable {
     Field[] defaultFieldArray = fieldList.toArray(new Field[0]);
     this.structType = new StructType(defaultFieldArray);
 
-    fieldList.add(new Field(Fields.EDGE_ID, DataType.STRING, false, "edgeId"));
-
-    this.edgeIdStructType = new StructType(fieldList.toArray(new Field[0]));
-
     fieldList.add(new Field(Fields.ACTIVE, DataType.BOOLEAN, false, "active"));
 
     Field[] fieldsArray = fieldList.toArray(new Field[0]);
@@ -80,8 +74,6 @@ public class EdgeSchema implements Serializable {
                 .collect(
                     Collectors.toMap(
                         Field::getName, field -> allStructType.fieldIndex(field.getName()))));
-
-    this.edgeIdIndex = allStructType.fieldIndex(Fields.EDGE_ID);
 
     this.activeIndex = allStructType.fieldIndex(Fields.ACTIVE);
 
@@ -127,10 +119,6 @@ public class EdgeSchema implements Serializable {
     return allStructType;
   }
 
-  public StructType getEdgeIdStructType() {
-    return edgeIdStructType;
-  }
-
   public StructType getOffsetStructType() {
     return offsetStructType;
   }
@@ -141,10 +129,6 @@ public class EdgeSchema implements Serializable {
 
   public Map<Integer, String> getHashToFieldNameMap() {
     return hashToFieldNameMap;
-  }
-
-  public int getEdgeIdIndex() {
-    return edgeIdIndex;
   }
 
   public int getActiveIndex() {
@@ -198,7 +182,6 @@ public class EdgeSchema implements Serializable {
   }
 
   public static class Fields {
-    public static final String EDGE_ID = "edgeId";
     public static final String ACTIVE = "active";
     public static final String DIR = "dir";
     public static final String TS = "ts";

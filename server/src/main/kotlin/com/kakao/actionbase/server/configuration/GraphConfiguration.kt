@@ -1,7 +1,7 @@
 package com.kakao.actionbase.server.configuration
 
-import com.kakao.actionbase.engine.MutationEngine
 import com.kakao.actionbase.engine.service.MutationService
+import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.client.kafka.SpringKafkaClientFactory
 import com.kakao.actionbase.server.client.web.SpringWebClientFactory
 import com.kakao.actionbase.v2.engine.Graph
@@ -13,7 +13,6 @@ import com.kakao.actionbase.v2.engine.client.web.WebClientFactory
 import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.util.getLogger
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
-import com.kakao.actionbase.v2.engine.v3.V3QueryService
 import com.kakao.actionbase.v2.engine.wal.DefaultWalFactory
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 
@@ -38,6 +37,7 @@ class GraphConfiguration {
     @Suppress("CyclomaticComplexMethod")
     fun provideGraphConfig(
         properties: GraphProperties,
+        serverProperties: ServerProperties,
         infoEndpoint: InfoEndpoint,
     ): GraphConfig {
         val builder =
@@ -83,6 +83,7 @@ class GraphConfiguration {
                 withHBase(properties.hbase)
                 properties.metadataFetchLimit?.let { withMetadataFetchLimit(it) }
                 properties.systemMutationMode?.let { withSystemMutationMode(it) }
+                withReadOnly(serverProperties.readOnly)
             }
         return builder.build()
     }
@@ -132,11 +133,11 @@ class GraphConfiguration {
     fun provideLocalMetastoreInspector(graph: Graph): MetastoreInspector = MetastoreInspector.createLocal(graph)
 
     @Bean
-    fun provideV3QueryService(graph: Graph): V3QueryService = V3QueryService(graph)
+    fun provideV2BackedEngine(graph: Graph): V2BackedEngine = V2BackedEngine(graph)
 
     @Bean
-    fun provideMutationEngine(graph: Graph): MutationEngine = V2BackedEngine(graph)
+    fun provideQueryService(engine: V2BackedEngine): QueryService = QueryService(engine)
 
     @Bean
-    fun provideMutationService(engine: MutationEngine): MutationService = MutationService(engine)
+    fun provideMutationService(engine: V2BackedEngine): MutationService = MutationService(engine)
 }

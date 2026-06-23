@@ -3,7 +3,6 @@ package com.kakao.actionbase.v2.engine.v3.query
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQuery.Companion.toJson
 import com.kakao.actionbase.v2.core.metadata.Direction
-import com.kakao.actionbase.v2.engine.sql.WherePredicate
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -28,13 +27,7 @@ class ActionbaseQueryParserSpec :
                       "direction": "OUT",
                       "index": "created_at_desc",
                       "limit": 100,
-                      "predicates": [
-                        {
-                          "type": "=",
-                          "key": "name",
-                          "value": "Alice"
-                        }
-                      ]
+                      "ranges": "name:eq:Alice"
                     },
                     {
                       "type": "GET",
@@ -104,7 +97,7 @@ class ActionbaseQueryParserSpec :
                     direction = Direction.OUT,
                     index = "created_at_desc",
                     limit = 100,
-                    predicates = listOf(WherePredicate.Eq("name", "Alice")),
+                    ranges = "name:eq:Alice",
                     include = false,
                 )
             actionBaseQuery.query[1] shouldBe
@@ -134,7 +127,7 @@ class ActionbaseQueryParserSpec :
                     include = false,
                 )
             actionBaseQuery.query[4] shouldBe
-                ActionbaseQuery.Item.Cache(
+                ActionbaseQuery.Item.Seek(
                     name = "f",
                     database = "{database}",
                     table = "{table}",

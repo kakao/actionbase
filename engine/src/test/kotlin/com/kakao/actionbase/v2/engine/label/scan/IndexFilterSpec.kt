@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.label.scan
 
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
@@ -28,7 +27,7 @@ class IndexFilterSpec :
             // SQL: src = 100 order by permission_created_at_desc
             ScanFilter(label.entity.name, setOf(100), indexName = "permission_created_at_desc").let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         it.toRowWithSchema().map { row -> row.getOrNull("permission") } shouldContainExactly
@@ -53,7 +52,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Eq("permission", "me")),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         it.toRowWithSchema().map { row -> row.getOrNull("permission") } shouldContainExactly
@@ -69,7 +68,7 @@ class IndexFilterSpec :
             // SQL: src = 100 order by created_at_desc
             ScanFilter(label.entity.name, setOf(100), indexName = "created_at_desc").let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         it.toRowWithSchema().map { row -> row.getOrNull("permission") } shouldContainExactly
@@ -89,7 +88,7 @@ class IndexFilterSpec :
             // SQL: src = 100 order by created_at_desc limit 2
             ScanFilter(label.entity.name, setOf(100, 101), limit = 2, indexName = "created_at_desc").let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         it.toRowWithSchema().map { row -> row.getOrNull("permission") } shouldContainExactly
@@ -114,7 +113,7 @@ class IndexFilterSpec :
                     limit = 2,
                     indexName = "created_at_desc",
                 ).let { scanFilter ->
-                    label.scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE).map { it.offsets }.block()!!
+                    label.scan(scanFilter, emptySet()).map { it.offsets }.block()!!
                 }
 
             val offset = offsets.singleOrNull()
@@ -127,7 +126,7 @@ class IndexFilterSpec :
                 indexName = "created_at_desc",
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         it.toRowWithSchema().map { row -> row.getOrNull("permission") } shouldContainExactly
@@ -148,7 +147,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Gt("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>
@@ -167,7 +166,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Gte("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>
@@ -186,7 +185,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Between("createdAt", 12, 14)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         it.toRowWithSchema().forEach { println(it) }
@@ -205,7 +204,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Lte("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>
@@ -224,7 +223,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Lt("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>
@@ -242,7 +241,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Eq("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>
@@ -261,7 +260,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Gt("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>
@@ -280,7 +279,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Gte("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>
@@ -299,7 +298,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Between("createdAt", 12, 14)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         it.toRowWithSchema().forEach { println(it) }
@@ -318,7 +317,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Lte("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>
@@ -336,7 +335,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Lt("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>
@@ -354,7 +353,7 @@ class IndexFilterSpec :
                 otherPredicates = setOf(WherePredicate.Eq("createdAt", 12)),
             ).let { scanFilter ->
                 label
-                    .scan(scanFilter, emptySet(), EmptyEdgeIdEncoder.INSTANCE)
+                    .scan(scanFilter, emptySet())
                     .test()
                     .assertNext {
                         val createdAtList = it.toRowWithSchema().map { it["createdAt"] } as List<Long>

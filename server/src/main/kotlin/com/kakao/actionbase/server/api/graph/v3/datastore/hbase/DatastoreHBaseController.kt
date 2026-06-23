@@ -75,6 +75,50 @@ class DatastoreHBaseController(
             .then(Mono.just(mapOf("result" to "updated")))
     }
 
+    @PostMapping("/graph/v3/datastore/hbase/tables/{tableName}/enable")
+    fun enableTable(
+        @ModelAttribute actorRole: ActorRole,
+        @PathVariable tableName: String,
+    ): Mono<Map<String, String>> {
+        requireProductionAdmin(actorRole, "actionbase does not support HBase enable operations")
+        return service
+            .enableTable(tableName)
+            .then(Mono.just(mapOf("result" to "enabled")))
+    }
+
+    @PostMapping("/graph/v3/datastore/hbase/tables/{tableName}/disable")
+    fun disableTable(
+        @ModelAttribute actorRole: ActorRole,
+        @PathVariable tableName: String,
+    ): Mono<Map<String, String>> {
+        requireProductionAdmin(actorRole, "actionbase does not support HBase disable operations")
+        return service
+            .disableTable(tableName)
+            .then(Mono.just(mapOf("result" to "disabled")))
+    }
+
+    @PostMapping("/graph/v3/datastore/hbase/tables/{tableName}/replication/enable")
+    fun enableReplication(
+        @ModelAttribute actorRole: ActorRole,
+        @PathVariable tableName: String,
+    ): Mono<Map<String, String>> {
+        requireProductionAdmin(actorRole, "actionbase does not support HBase replication enable operations")
+        return service
+            .enableReplication(tableName)
+            .then(Mono.just(mapOf("result" to "replication-enabled")))
+    }
+
+    @PostMapping("/graph/v3/datastore/hbase/tables/{tableName}/replication/disable")
+    fun disableReplication(
+        @ModelAttribute actorRole: ActorRole,
+        @PathVariable tableName: String,
+    ): Mono<Map<String, String>> {
+        requireProductionAdmin(actorRole, "actionbase does not support HBase replication disable operations")
+        return service
+            .disableReplication(tableName)
+            .then(Mono.just(mapOf("result" to "replication-disabled")))
+    }
+
     @DeleteMapping("/graph/v3/datastore/hbase/tables/{tableName}")
     fun deleteTable(
         @ModelAttribute actorRole: ActorRole,

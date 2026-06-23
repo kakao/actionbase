@@ -38,25 +38,6 @@ public class CryptoUtilsTest {
     }
   }
 
-  @RepeatedTest(10)
-  void testEdgeId() {
-    EdgeIdCodec encoder = new StateCodecFactory().create();
-
-    long src = 123;
-    long dst = 456;
-
-    String encryptedEdgeId = encoder.encode(src, dst);
-    Assertions.assertNotNull(encryptedEdgeId);
-
-    System.out.println(
-        "Encrypted edge id: " + encryptedEdgeId + " (" + encryptedEdgeId.length() + " bytes)");
-
-    KeyValue<Object> decodedEdgeId = encoder.decode(encryptedEdgeId);
-    Assertions.assertNotNull(decodedEdgeId);
-    Assertions.assertEquals(src, decodedEdgeId.key());
-    Assertions.assertEquals(dst, decodedEdgeId.value());
-  }
-
   @Disabled
   void testGenerateAESKey() {
     try {

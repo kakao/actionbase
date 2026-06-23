@@ -1,5 +1,7 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.core.edge.EdgeField
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.Index
@@ -33,12 +35,32 @@ sealed class V3TableDescriptor {
         override val schema: ModelSchema.MultiEdge,
     ) : V3TableDescriptor()
 
+    data class Vertex(
+        override val database: String,
+        override val table: String,
+        override val schema: ModelSchema.Vertex,
+    ) : V3TableDescriptor()
+
     companion object {
         fun create(entity: LabelEntity): V3TableDescriptor {
             val database = entity.name.service
             val table = entity.name.nameNotNull
 
+            val isVertexTable = entity.type == LabelType.VERTEX
             val isMultiEdgeTable = entity.type == LabelType.MULTI_EDGE
+            if (isVertexTable) {
+                val schema =
+                    ModelSchema.Vertex(
+                        id = entity.schema.src.toV3(),
+                        properties =
+                            entity.schema.fields.map { it.toV3() },
+                    )
+                return Vertex(
+                    database = database,
+                    table = table,
+                    schema = schema,
+                )
+            }
             return if (isMultiEdgeTable) {
                 val schema =
                     ModelSchema.MultiEdge(
@@ -54,6 +76,7 @@ sealed class V3TableDescriptor {
                         direction = entity.dirType.toV3(),
                         groups = entity.groups.map { it.toV3() },
                         indexes = entity.indices.map { it.toV3() },
+                        caches = entity.caches.map { it.toV3() },
                     )
                 MultiEdge(
                     database = database,
@@ -72,6 +95,7 @@ sealed class V3TableDescriptor {
                         direction = entity.dirType.toV3(),
                         groups = entity.groups.map { it.toV3() },
                         indexes = entity.indices.map { it.toV3() },
+                        caches = entity.caches.map { it.toV3() },
                     )
                 Edge(
                     database = database,
@@ -141,21 +165,15 @@ sealed class V3TableDescriptor {
                 index = this.name,
                 fields =
                     this.fields.map { field ->
-                        IndexField(field.name.toV3FieldName(), field.order.toV3())
+                        IndexField(EdgeField.toV3(field.name), field.order.toV3())
                     },
                 comment = this.desc,
             )
 
-        private fun String.toV3FieldName(): String =
-            when (this) {
-                "ts" -> "version"
-                "src" -> "source"
-                "tgt" -> "target"
-                else -> this
-            }
-
         private fun Group.toV3(): Group = copy(fields = fields.map { it.toV3() })
 
-        private fun Group.Field.toV3(): Group.Field = copy(name = name.toV3FieldName())
+        private fun Group.Field.toV3(): Group.Field = copy(name = EdgeField.toV3(name))
+
+        private fun Cache.toV3(): Cache = copy(fields = fields.map { it.copy(field = EdgeField.toV3(it.field)) })
     }
 }

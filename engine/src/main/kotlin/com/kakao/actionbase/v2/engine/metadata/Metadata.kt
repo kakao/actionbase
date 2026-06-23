@@ -147,6 +147,7 @@ object Metadata {
                         Field("storage", DataType.STRING, false),
                         Field("groups", DataType.STRING, true),
                         Field("indices", DataType.STRING, false),
+                        Field("caches", DataType.STRING, true),
                         Field("event", DataType.BOOLEAN, false),
                         Field("readOnly", DataType.BOOLEAN, false),
                         Field("mode", DataType.STRING, true),

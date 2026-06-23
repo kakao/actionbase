@@ -7,6 +7,7 @@ import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.MultiEdgeMutationResponse
 import com.kakao.actionbase.engine.service.MutationService
+import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.GraphConfig
@@ -18,7 +19,6 @@ import com.kakao.actionbase.v2.engine.test.GraphFixtures
 import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdc
 import com.kakao.actionbase.v2.engine.test.wal.InMemoryWal
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
-import com.kakao.actionbase.v2.engine.v3.V3QueryService
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -45,7 +45,7 @@ class MutationServiceSystemAsyncSpec :
 
         lateinit var graph: Graph
         lateinit var mutationService: MutationService
-        lateinit var v3QueryService: V3QueryService
+        lateinit var queryService: QueryService
 
         beforeTest {
             graph =
@@ -67,8 +67,9 @@ class MutationServiceSystemAsyncSpec :
             asyncEdgeTable = graph.getLabel(EntityName(database, asyncEdgeTableName))
             asyncMultiEdgeTable = graph.getLabel(EntityName(database, asyncMultiEdgeTableName))
 
-            mutationService = MutationService(V2BackedEngine(graph))
-            v3QueryService = V3QueryService(graph)
+            val engine = V2BackedEngine(graph)
+            mutationService = MutationService(engine)
+            queryService = QueryService(engine)
         }
 
         afterTest {
@@ -101,9 +102,9 @@ class MutationServiceSystemAsyncSpec :
             }
         }
 
-        // ---- scenario 1: system=ASYNC overrides table ----
+        // ---- scenario 1: system=ASYNC overrides SYNC table — preserves SYNC response contract ----
 
-        "system=ASYNC overrides SYNC EDGE table" {
+        "system=ASYNC + SYNC EDGE table maps INSERT to CREATED" {
             val request =
                 mapper.readValue<EdgeBulkMutationRequest>(
                     """
@@ -120,20 +121,123 @@ class MutationServiceSystemAsyncSpec :
                 .map { EdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
-                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"QUEUED","count":1}]}"""
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"CREATED","count":1}]}"""
                 }.verifyComplete()
 
             verifyWal(graph, syncEdgeTable, 1, queue = true)
             verifyCdc(graph, syncEdgeTable)
 
-            v3QueryService
+            queryService
                 .gets(database, syncEdgeTableName, listOf(1000L), listOf(9000L))
                 .test()
                 .assertNext { it.edges.size shouldBe 0 }
                 .verifyComplete()
         }
 
-        "system=ASYNC overrides SYNC MULTI_EDGE table" {
+        "system=ASYNC + SYNC EDGE table maps UPDATE to UPDATED" {
+            val request =
+                mapper.readValue<EdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "UPDATE", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"permission": "rw"}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, syncEdgeTableName, request.mutations)
+                .map { EdgeMutationResponse.from(it) }
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"UPDATED","count":1}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, syncEdgeTable, 1, queue = true)
+            verifyCdc(graph, syncEdgeTable)
+        }
+
+        "system=ASYNC + SYNC EDGE table maps DELETE to DELETED" {
+            val request =
+                mapper.readValue<EdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "DELETE", "edge": {"version": 10, "source": "1000", "target": "9000"}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, syncEdgeTableName, request.mutations)
+                .map { EdgeMutationResponse.from(it) }
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"DELETED","count":1}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, syncEdgeTable, 1, queue = true)
+            verifyCdc(graph, syncEdgeTable)
+        }
+
+        "system=ASYNC + SYNC EDGE table — multi-event same version, last input wins" {
+            // sortedBy is stable, so for equal versions the last input wins.
+            // [INSERT, DELETE] at v=10 → DELETED (last input).
+            val request =
+                mapper.readValue<EdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"permission": "na", "createdAt": 10}}},
+                        {"type": "DELETE", "edge": {"version": 10, "source": "1000", "target": "9000"}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, syncEdgeTableName, request.mutations)
+                .map { EdgeMutationResponse.from(it) }
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"DELETED","count":2}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, syncEdgeTable, 2, queue = true)
+            verifyCdc(graph, syncEdgeTable)
+        }
+
+        "system=ASYNC + SYNC EDGE table — multi-event ascending versions, highest wins" {
+            // [DELETE v=10, INSERT v=20, UPDATE v=15] → INSERT@v=20 is the max → CREATED
+            // (UPDATE @ v=15 < INSERT @ v=20, so INSERT wins by version not by position)
+            val request =
+                mapper.readValue<EdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "DELETE", "edge": {"version": 10, "source": "1000", "target": "9000"}},
+                        {"type": "INSERT", "edge": {"version": 20, "source": "1000", "target": "9000", "properties": {"permission": "rw", "createdAt": 10}}},
+                        {"type": "UPDATE", "edge": {"version": 15, "source": "1000", "target": "9000", "properties": {"permission": "ro"}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, syncEdgeTableName, request.mutations)
+                .map { EdgeMutationResponse.from(it) }
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"CREATED","count":3}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, syncEdgeTable, 3, queue = true)
+            verifyCdc(graph, syncEdgeTable)
+        }
+
+        "system=ASYNC + SYNC MULTI_EDGE table maps INSERT to CREATED" {
             val request =
                 mapper.readValue<MultiEdgeBulkMutationRequest>(
                     """
@@ -150,17 +254,65 @@ class MutationServiceSystemAsyncSpec :
                 .map { MultiEdgeMutationResponse.from(it) }
                 .test()
                 .assertNext {
-                    mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"QUEUED","count":1}]}"""
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"CREATED","count":1}]}"""
                 }.verifyComplete()
 
             verifyWal(graph, syncMultiEdgeTable, 1, queue = true)
             verifyCdc(graph, syncMultiEdgeTable)
 
-            v3QueryService
+            queryService
                 .gets(database, syncMultiEdgeTableName, listOf(100000L), listOf(100000L))
                 .test()
                 .assertNext { it.edges.size shouldBe 0 }
                 .verifyComplete()
+        }
+
+        "system=ASYNC + SYNC MULTI_EDGE table maps UPDATE to UPDATED" {
+            val request =
+                mapper.readValue<MultiEdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "UPDATE", "edge": {"version": 10, "id": 100000, "source": 1, "target": 2, "properties": {"paidAt": 9999999999}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, syncMultiEdgeTableName, request.mutations)
+                .map { MultiEdgeMutationResponse.from(it) }
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"UPDATED","count":1}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, syncMultiEdgeTable, 1, queue = true)
+            verifyCdc(graph, syncMultiEdgeTable)
+        }
+
+        "system=ASYNC + SYNC MULTI_EDGE table maps DELETE to DELETED" {
+            val request =
+                mapper.readValue<MultiEdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "DELETE", "edge": {"version": 10, "id": 100000, "source": 1, "target": 2}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, syncMultiEdgeTableName, request.mutations)
+                .map { MultiEdgeMutationResponse.from(it) }
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"id":100000,"status":"DELETED","count":1}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, syncMultiEdgeTable, 1, queue = true)
+            verifyCdc(graph, syncMultiEdgeTable)
         }
 
         // ---- scenario 2: system=ASYNC overrides request=SYNC ----
@@ -188,7 +340,7 @@ class MutationServiceSystemAsyncSpec :
             verifyWal(graph, asyncEdgeTable, 1, queue = true)
             verifyCdc(graph, asyncEdgeTable)
 
-            v3QueryService
+            queryService
                 .gets(database, asyncEdgeTableName, listOf(1000L), listOf(9000L))
                 .test()
                 .assertNext { it.edges.size shouldBe 0 }
@@ -218,7 +370,7 @@ class MutationServiceSystemAsyncSpec :
             verifyWal(graph, asyncMultiEdgeTable, 1, queue = true)
             verifyCdc(graph, asyncMultiEdgeTable)
 
-            v3QueryService
+            queryService
                 .gets(database, asyncMultiEdgeTableName, listOf(100000L), listOf(100000L))
                 .test()
                 .assertNext { it.edges.size shouldBe 0 }
@@ -250,7 +402,7 @@ class MutationServiceSystemAsyncSpec :
             verifyWal(graph, asyncEdgeTable, 1, queue = false)
             verifyCdc(graph, asyncEdgeTable, 1)
 
-            v3QueryService
+            queryService
                 .gets(database, asyncEdgeTableName, listOf(1000L), listOf(9000L))
                 .test()
                 .assertNext { it.edges.size shouldBe 1 }
@@ -280,11 +432,38 @@ class MutationServiceSystemAsyncSpec :
             verifyWal(graph, asyncMultiEdgeTable, 1, queue = false)
             verifyCdc(graph, asyncMultiEdgeTable, 1)
 
-            v3QueryService
+            queryService
                 .gets(database, asyncMultiEdgeTableName, listOf(100000L), listOf(100000L))
                 .test()
                 .assertNext { it.edges.size shouldBe 1 }
                 .verifyComplete()
+        }
+
+        // ---- scenario 4: force=true + request=ASYNC keeps QUEUED on SYNC table ----
+        // Client explicitly forced ASYNC; the SYNC contract preservation must not apply.
+
+        "force=true request=ASYNC on SYNC EDGE table returns QUEUED even when system=ASYNC" {
+            val request =
+                mapper.readValue<EdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"permission": "na", "createdAt": 10}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, syncEdgeTableName, request.mutations, syncMode = EngineMutationMode.ASYNC, forceSyncMode = true)
+                .map { EdgeMutationResponse.from(it) }
+                .test()
+                .assertNext {
+                    mapper.writeValueAsString(it) shouldBe """{"results":[{"source":1000,"target":9000,"status":"QUEUED","count":1}]}"""
+                }.verifyComplete()
+
+            verifyWal(graph, syncEdgeTable, 1, queue = true)
+            verifyCdc(graph, syncEdgeTable)
         }
     }) {
     companion object {

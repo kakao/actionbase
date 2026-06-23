@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.UnresolvedEvent
 import com.kakao.actionbase.core.edge.payload.MutationResult
+import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.state.transit
 import com.kakao.actionbase.engine.Audit
 import com.kakao.actionbase.engine.MutationContext
@@ -12,6 +13,7 @@ import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.context.RequestContext
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.metadata.MutationModeContext
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.engine.util.component1
 import com.kakao.actionbase.engine.util.component2
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
@@ -50,15 +52,17 @@ class MutationService(
                 Flux
                     .fromIterable(unresolvedEvents)
                     .map { it.createEvent(tb.schema) }
+                    .collectList()
+                    .flatMapMany { Flux.fromIterable(it) }
                     .flatMap { event -> engine.writeWal(ctx, event).thenReturn(event) }
                     .groupBy { it.key }
                     .flatMap { (key, groupMono) ->
                         if (ctx.mutationMode.queue) {
-                            groupMono.map { group -> MutationResult.of(key, group.size, QUEUED) }
+                            groupMono.map { group -> MutationResult.of(key, group.size, queuedStatus(ctx, group)) }
                         } else {
                             groupMono.flatMap { group ->
                                 val sorted = group.sortedBy { it.event.version }
-                                readModifyWrite(tb, key, sorted, acquireLock)
+                                readModifyWrite(tb, key, sorted, acquireLock, requestContext.newCollector())
                                     .doOnNext { result ->
                                         engine.writeCdc(ctx, sorted, result.status, result.before, result.after, result.acc)
                                     }.onErrorResume {
@@ -72,20 +76,43 @@ class MutationService(
                     .runEvenIfCancelled()
             }
 
+    /**
+     * For `system=ASYNC + label=SYNC` (no force), return the SYNC-shaped status derived from
+     * the highest-version event's EventType so clients keep their contract; mutations are
+     * still queued via the WAL. Intent-based, never `IDLE`. Otherwise `QUEUED`.
+     */
+    private fun queuedStatus(
+        ctx: MutationContext,
+        group: List<MutationEvent>,
+    ): String {
+        val mode = ctx.mutationMode
+        if (mode.force || mode.system != MutationMode.ASYNC || mode.label != MutationMode.SYNC) {
+            return QUEUED
+        }
+        val last = group.sortedBy { it.event.version }.last()
+        return when (last.event.type) {
+            EventType.INSERT -> "CREATED"
+            EventType.UPDATE -> "UPDATED"
+            EventType.DELETE -> "DELETED"
+        }
+    }
+
     private fun readModifyWrite(
         tb: TableBinding,
         key: MutationKey,
         sorted: List<MutationEvent>,
         acquireLock: Boolean,
+        collector: StorageOpCollector?,
     ): Mono<MutationResult> {
         val rwm = {
             tb
                 .read(key)
                 .flatMap { state ->
                     val after = sorted.fold(state) { acc, m -> acc.transit(m.event, tb.schema) }
-                    tb.write(key, state, after)
+                    tb.write(key, state, after, collector)
                 }.map { summary ->
-                    MutationResult(key, sorted.size, summary.status, summary.before, summary.after, summary.acc)
+                    val context = collector?.toContextMap()
+                    MutationResult(key, sorted.size, summary.status, summary.before, summary.after, summary.acc, context)
                 }
         }
         return if (acquireLock) tb.withLock(key, rwm) else rwm()

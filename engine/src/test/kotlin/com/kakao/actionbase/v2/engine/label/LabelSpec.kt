@@ -16,7 +16,6 @@ import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
-import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.metadata.StorageType
@@ -151,7 +150,7 @@ class LabelSpec :
         }
 
         fun testEmptySrcGet(label: Label) {
-            val dfMono = label.get(999, 10000, Direction.OUT, emptySet(), graph.idEdgeEncoder)
+            val dfMono = label.get(999, 10000, Direction.OUT, emptySet())
             dfMono
                 .test()
                 .assertNext { it.rows.isEmpty() }
@@ -176,15 +175,11 @@ class LabelSpec :
                     offset = "100",
                     indexName = "created_at_desc",
                 )
-            val dfMono = label.scan(scanFilter, emptySet(), graph.idEdgeEncoder)
+            val dfMono = label.scan(scanFilter, emptySet())
             dfMono
                 .test()
                 .assertNext { it.rows.isEmpty() }
                 .verifyComplete()
-        }
-
-        "empty src scan test - hbase" {
-            testEmptySrcScan(hbase)
         }
 
         "empty src scan test - jdbc" {
@@ -207,17 +202,10 @@ class LabelSpec :
                 )
 
             label
-                .scan(scanFilter, emptySet(), graph.idEdgeEncoder)
+                .scan(scanFilter, emptySet())
                 .test()
                 .assertNext { it.rows.size shouldBe 6 }
                 .verifyComplete()
-        }
-
-        "scan ignore dirty data - hbase" {
-            scanIgnoreDirtyData(hbase) { label, edge ->
-                val kfv = (label as HBaseHashLabel).coder.encodeHashEdgeKey(edge, label.entity.id)
-                label.create(EncodedKey(kfv.key, kfv.field), "dirtyData".toByteArray()).block()
-            }
         }
 
         "scan ignore dirty data - hbase indexed" {
@@ -499,7 +487,7 @@ class LabelSpec :
 
             graph
                 .getLabel(EntityName("test", "async_label"))
-                .get("a", "b", Direction.OUT, emptySet(), graph.idEdgeEncoder)
+                .get("a", "b", Direction.OUT, emptySet())
                 .test()
                 .assertNext { it.rows.isEmpty() }
                 .verifyComplete()

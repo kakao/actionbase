@@ -4,13 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., 0.2.0)'
+        description: 'Release version (e.g., 0.3.0 for minor, 0.2.1 for patch)'
         required: true
-        type: string
-      branch:
-        description: 'Target branch (default: main, e.g., 0.2.x for patch release)'
-        required: false
-        default: 'main'
         type: string
 
 jobs:
@@ -20,10 +15,6 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.branch }}
-
       - name: Validate version format
         env:
           VERSION: ${{ inputs.version }}
@@ -33,11 +24,35 @@ jobs:
             exit 1
           fi
 
-      - name: Check current version is SNAPSHOT
+      - name: Determine target branch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          patch=${VERSION##*.}
+          minor_prefix=${VERSION%.*}
+          if [[ "$patch" == "0" ]]; then
+            target_branch=main
+          else
+            target_branch="${minor_prefix}.x"
+          fi
+          echo "target_branch=$target_branch" >> $GITHUB_ENV
+          echo "minor_prefix=$minor_prefix" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.target_branch }}
+
+      - name: Check current version matches target branch
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           current=$(grep '^version=' gradle.properties | cut -d= -f2)
           if [[ "$current" != *-SNAPSHOT ]]; then
-            echo "::error::Current version ($current) is not a SNAPSHOT version"
+            echo "::error::Current version ($current) on ${{ env.target_branch }} is not a SNAPSHOT"
+            exit 1
+          fi
+          if [[ "$current" != ${{ env.minor_prefix }}.*-SNAPSHOT ]]; then
+            echo "::error::Version $VERSION does not match branch ${{ env.target_branch }} (current: $current)"
             exit 1
           fi
           echo "current_version=$current" >> $GITHUB_ENV
@@ -51,13 +66,13 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
         with:
-          base: ${{ inputs.branch }}
+          base: ${{ env.target_branch }}
           branch: release/v${{ inputs.version }}
           commit-message: "Bump version to ${{ inputs.version }}"
           title: "Bump version to ${{ inputs.version }}"
           body: |
             Bump version from `${{ env.current_version }}` to `${{ inputs.version }}`.
-            Target: `${{ inputs.branch }}`
+            Target: `${{ env.target_branch }}`
 
             After merging, the following will happen automatically:
             - Tag `v${{ inputs.version }}` will be created

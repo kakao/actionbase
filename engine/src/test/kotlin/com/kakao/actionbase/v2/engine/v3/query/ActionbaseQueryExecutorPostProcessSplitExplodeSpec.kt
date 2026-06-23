@@ -1,15 +1,15 @@
 package com.kakao.actionbase.v2.engine.v3.query
 
+import com.kakao.actionbase.core.metadata.common.StructField
+import com.kakao.actionbase.core.metadata.common.StructType
+import com.kakao.actionbase.core.types.PrimitiveType
+import com.kakao.actionbase.engine.QueryEngine
+import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
-import com.kakao.actionbase.engine.query.LabelProvider
+import com.kakao.actionbase.engine.sql.DataFrame
+import com.kakao.actionbase.engine.sql.Row
 import com.kakao.actionbase.v2.core.types.DataType
-import com.kakao.actionbase.v2.core.types.Field
-import com.kakao.actionbase.v2.core.types.StructType
-import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.label.Label
-import com.kakao.actionbase.v2.engine.sql.DataFrame
-import com.kakao.actionbase.v2.engine.sql.Row
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -18,26 +18,36 @@ import reactor.test.StepVerifier
 class ActionbaseQueryExecutorPostProcessSplitExplodeSpec :
     StringSpec({
 
-        val labelProvider =
-            object : LabelProvider {
-                override fun getLabel(name: EntityName): Label = throw NotImplementedError()
+        val engine =
+            object : QueryEngine {
+                override fun getTableBinding(
+                    database: String,
+                    alias: String,
+                ): TableBinding = throw NotImplementedError()
             }
-        val executor = ActionbaseQueryExecutor(labelProvider)
+        val executor = ActionbaseQueryExecutor(engine)
+
+        val idFruitsSchema =
+            StructType(
+                listOf(
+                    StructField("id", PrimitiveType.STRING, "", false),
+                    StructField("fruits", PrimitiveType.STRING, "", true),
+                ),
+            )
+
+        fun idFruitsDataFrame(vararg entries: Pair<String, String>): DataFrame =
+            DataFrame(
+                entries.map { (id, fruits) -> Row(mapOf("id" to id, "fruits" to fruits), idFruitsSchema) },
+                idFruitsSchema,
+                total = entries.size.toLong(),
+            )
 
         "should split and explode a string field without dropping the original field" {
             val df =
-                DataFrame(
-                    listOf(
-                        Row(arrayOf("1", "apple,banana,cherry")),
-                        Row(arrayOf("2", "dog,cat")),
-                        Row(arrayOf("3", "")),
-                    ),
-                    StructType(
-                        arrayOf(
-                            Field("id", DataType.STRING, false),
-                            Field("fruits", DataType.STRING, true),
-                        ),
-                    ),
+                idFruitsDataFrame(
+                    "1" to "apple,banana,cherry",
+                    "2" to "dog,cat",
+                    "3" to "",
                 )
 
             val plan =
@@ -55,29 +65,21 @@ class ActionbaseQueryExecutorPostProcessSplitExplodeSpec :
                 .expectNextMatches { result ->
                     result.schema.fields.map { it.name } shouldBe listOf("id", "fruits", "fruit")
                     result.rows.size shouldBe 5
-                    result.rows[0].array shouldBe arrayOf("1", "apple,banana,cherry", "apple")
-                    result.rows[1].array shouldBe arrayOf("1", "apple,banana,cherry", "banana")
-                    result.rows[2].array shouldBe arrayOf("1", "apple,banana,cherry", "cherry")
-                    result.rows[3].array shouldBe arrayOf("2", "dog,cat", "dog")
-                    result.rows[4].array shouldBe arrayOf("2", "dog,cat", "cat")
+                    result.rows[0].data shouldBe mapOf("id" to "1", "fruits" to "apple,banana,cherry", "fruit" to "apple")
+                    result.rows[1].data shouldBe mapOf("id" to "1", "fruits" to "apple,banana,cherry", "fruit" to "banana")
+                    result.rows[2].data shouldBe mapOf("id" to "1", "fruits" to "apple,banana,cherry", "fruit" to "cherry")
+                    result.rows[3].data shouldBe mapOf("id" to "2", "fruits" to "dog,cat", "fruit" to "dog")
+                    result.rows[4].data shouldBe mapOf("id" to "2", "fruits" to "dog,cat", "fruit" to "cat")
                     true
                 }.verifyComplete()
         }
 
         "should split and explode a string field and drop the original field" {
             val df =
-                DataFrame(
-                    listOf(
-                        Row(arrayOf("1", "apple,banana,cherry")),
-                        Row(arrayOf("2", "dog,cat")),
-                        Row(arrayOf("3", "")),
-                    ),
-                    StructType(
-                        arrayOf(
-                            Field("id", DataType.STRING, false),
-                            Field("fruits", DataType.STRING, true),
-                        ),
-                    ),
+                idFruitsDataFrame(
+                    "1" to "apple,banana,cherry",
+                    "2" to "dog,cat",
+                    "3" to "",
                 )
 
             val plan =
@@ -95,11 +97,11 @@ class ActionbaseQueryExecutorPostProcessSplitExplodeSpec :
                 .expectNextMatches { result ->
                     result.schema.fields.map { it.name } shouldBe listOf("id", "fruit")
                     result.rows.size shouldBe 5
-                    result.rows[0].array shouldBe arrayOf("1", "apple")
-                    result.rows[1].array shouldBe arrayOf("1", "banana")
-                    result.rows[2].array shouldBe arrayOf("1", "cherry")
-                    result.rows[3].array shouldBe arrayOf("2", "dog")
-                    result.rows[4].array shouldBe arrayOf("2", "cat")
+                    result.rows[0].data shouldBe mapOf("id" to "1", "fruit" to "apple")
+                    result.rows[1].data shouldBe mapOf("id" to "1", "fruit" to "banana")
+                    result.rows[2].data shouldBe mapOf("id" to "1", "fruit" to "cherry")
+                    result.rows[3].data shouldBe mapOf("id" to "2", "fruit" to "dog")
+                    result.rows[4].data shouldBe mapOf("id" to "2", "fruit" to "cat")
                     true
                 }.verifyComplete()
         }

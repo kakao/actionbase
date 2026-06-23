@@ -1,9 +1,13 @@
 package com.kakao.actionbase.v2.engine.v3
 
+import com.kakao.actionbase.core.Constants.VERTEX_MARKER
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
+import com.kakao.actionbase.core.vertex.payload.VertexBulkMutationRequest
+import com.kakao.actionbase.core.vertex.payload.VertexMutationResponse
 import com.kakao.actionbase.engine.service.MutationService
+import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
@@ -28,12 +32,13 @@ class MutationServiceSpec :
 
         lateinit var graph: Graph
         lateinit var mutationService: MutationService
-        lateinit var v3QueryService: V3QueryService
+        lateinit var queryService: QueryService
 
         beforeTest {
             graph = GraphFixtures.create()
-            mutationService = MutationService(V2BackedEngine(graph))
-            v3QueryService = V3QueryService(graph)
+            val engine = V2BackedEngine(graph)
+            mutationService = MutationService(engine)
+            queryService = QueryService(engine)
         }
 
         afterTest {
@@ -74,7 +79,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .gets(database, table, listOf("1000"), listOf("9000"))
                 .test()
                 .assertNext { actualObject ->
@@ -94,7 +99,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .scan(database, table, GraphFixtures.index2, "1000", Direction.OUT, limit = 10)
                 .test()
                 .assertNext { actualObject ->
@@ -115,7 +120,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .count(database, table, "1000", Direction.OUT)
                 .test()
                 .assertNext {
@@ -123,7 +128,7 @@ class MutationServiceSpec :
                     it.count shouldBe 2L
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .scan(database, table, GraphFixtures.index1, "1000", Direction.OUT, limit = 10, ranges = "permission:eq:me")
                 .test()
                 .assertNext { actualObject ->
@@ -165,7 +170,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .gets(database, table, listOf("1000"), listOf("9000"))
                 .test()
                 .assertNext { actualObject ->
@@ -185,7 +190,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .scan(database, table, GraphFixtures.index2, "1000", Direction.OUT, limit = 10)
                 .test()
                 .assertNext { actualObject ->
@@ -206,7 +211,7 @@ class MutationServiceSpec :
                     actualObject.toNormalizedString() shouldBe expected
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .count(database, table, "1000", Direction.OUT)
                 .test()
                 .assertNext {
@@ -214,7 +219,7 @@ class MutationServiceSpec :
                     it.count shouldBe 2L
                 }.verifyComplete()
 
-            v3QueryService
+            queryService
                 .scan(database, table, GraphFixtures.index1, "1000", Direction.OUT, limit = 10, ranges = "permission:eq:me")
                 .test()
                 .assertNext { actualObject ->
@@ -293,7 +298,7 @@ class MutationServiceSpec :
                 .mutate(database, table, insertRequest2.mutations)
                 .block()
 
-            v3QueryService
+            queryService
                 .scan(database, table, index, "1", Direction.OUT, limit = 10)
                 .test()
                 .assertNext { actualObject ->
@@ -344,6 +349,59 @@ class MutationServiceSpec :
                 }.verifyComplete()
         }
 
+        "INSERT missing non-nullable field should fail before WAL publication" {
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.hbaseIndexed // createdAt: LONG, nullable=false
+
+            val invalidRequest =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 10, "source": "1000", "target": "9000", "properties": {"permission": "na"}}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+
+            mutationService
+                .mutate(database, table, invalidRequest.mutations)
+                .test()
+                .verifyError(IllegalArgumentException::class.java)
+
+            // No row should be persisted
+            queryService
+                .gets(database, table, listOf("1000"), listOf("9000"))
+                .test()
+                .assertNext { it.edges.isEmpty() shouldBe true }
+                .verifyComplete()
+        }
+
+        "bulk INSERT with one invalid item should not publish any item (all-or-nothing)" {
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.hbaseIndexed
+
+            val mixedRequest =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 10, "source": "2000", "target": "9000", "properties": {"permission": "na", "createdAt": 10}}},
+                    {"type": "INSERT", "edge": {"version": 11, "source": "2000", "target": "9001", "properties": {"permission": "na"}}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+
+            mutationService
+                .mutate(database, table, mixedRequest.mutations)
+                .test()
+                .verifyError(IllegalArgumentException::class.java)
+
+            // The valid item (2000→9000) must also not be written
+            queryService
+                .gets(database, table, listOf("2000"), listOf("9000"))
+                .test()
+                .assertNext { it.edges.isEmpty() shouldBe true }
+                .verifyComplete()
+        }
+
         "runEvenIfCancelled should complete execution even when cancelled" {
             val database = GraphFixtures.serviceName
             val table = GraphFixtures.hbaseIndexed
@@ -384,6 +442,108 @@ class MutationServiceSpec :
                 }.verifyComplete()
 
             executionCompleted.get() shouldBe true
+        }
+        "vertex mutation and query" {
+            val database = GraphFixtures.serviceName
+            val table = "users"
+
+            // Create vertex table (LabelType.VERTEX, no index)
+            val createRequest =
+                mapper.readValue<LabelCreateRequest>(
+                    """
+                    {
+                      "desc": "users vertex table",
+                      "type": "VERTEX",
+                      "schema": {
+                        "src": { "type": "STRING", "desc": "user id" },
+                        "tgt": { "type": "STRING", "desc": "<vertex>" },
+                        "fields": [
+                          { "name": "name", "type": "STRING", "nullable": false }
+                        ]
+                      },
+                      "dirType": "OUT",
+                      "storage": "${GraphFixtures.datastoreStorage}",
+                      "indices": []
+                    }
+                    """.trimIndent(),
+                )
+            graph.labelDdl.create(EntityName(database, table), createRequest).block()
+
+            // Insert two vertices
+            val insertRequest =
+                mapper.readValue<VertexBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "vertex": {"version": 1, "id": "user1", "properties": {"name": "Alice"}}},
+                        {"type": "INSERT", "vertex": {"version": 1, "id": "user2", "properties": {"name": "Bob"}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            val mutateResult =
+                mutationService
+                    .mutate(database, table, insertRequest.mutations)
+                    .map { VertexMutationResponse.from(it) }
+                    .block()!!
+
+            mutateResult.results.map { it.status } shouldBe listOf("CREATED", "CREATED")
+            mutateResult.results.map { it.id.toString() } shouldBe listOf("user1", "user2")
+
+            // Multi-Get: user1, user2 found; user3 absent
+            val getResult =
+                queryService
+                    .getVertices(database, table, listOf("user1", "user2", "user3"))
+                    .block()!!
+
+            getResult.edges.size shouldBe 2
+            getResult.edges.all { it.target == VERTEX_MARKER } shouldBe true
+            getResult.edges.map { it.source.toString() }.sorted() shouldBe listOf("user1", "user2")
+
+            // Update user1
+            val updateRequest =
+                mapper.readValue<VertexBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "UPDATE", "vertex": {"version": 2, "id": "user1", "properties": {"name": "Alice Updated"}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+            val updateResult =
+                mutationService
+                    .mutate(database, table, updateRequest.mutations)
+                    .map { VertexMutationResponse.from(it) }
+                    .block()!!
+            updateResult.results[0].status shouldBe "UPDATED"
+
+            // Delete user2
+            val deleteRequest =
+                mapper.readValue<VertexBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "DELETE", "vertex": {"version": 3, "id": "user2", "properties": {}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+            val deleteResult =
+                mutationService
+                    .mutate(database, table, deleteRequest.mutations)
+                    .map { VertexMutationResponse.from(it) }
+                    .block()!!
+            deleteResult.results[0].status shouldBe "DELETED"
+
+            // After delete: only user1 remains
+            val afterDeleteResult =
+                queryService
+                    .getVertices(database, table, listOf("user1", "user2"))
+                    .block()!!
+            afterDeleteResult.edges.size shouldBe 1
+            afterDeleteResult.edges[0].source.toString() shouldBe "user1"
         }
     }) {
     companion object {

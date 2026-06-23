@@ -2,15 +2,39 @@ name: 'Continuous Integration'
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - '*.x'
+      - 'codec-java/*.x'
+    paths-ignore:
+      - 'website/**'
+      - 'guides/**'
+      - 'docker/**'
+      - '**/*.md'
+      - 'CNAME'
+      - '.github/workflows/deploy-website.yml'
+      - '.github/workflows/website-ci.yml'
+      - '.github/workflows/translation.yml'
 
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - '*.x'
+      - 'codec-java/*.x'
     types:
       - opened
       - reopened
       - synchronize
       - ready_for_review
+    paths-ignore:
+      - 'website/**'
+      - 'guides/**'
+      - 'docker/**'
+      - '**/*.md'
+      - 'CNAME'
+      - '.github/workflows/deploy-website.yml'
+      - '.github/workflows/website-ci.yml'
+      - '.github/workflows/translation.yml'
 
 jobs:
   build:

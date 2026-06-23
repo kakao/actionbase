@@ -2,10 +2,10 @@ package com.kakao.actionbase.v2.engine.label.hbase
 
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.core.storage.HBaseRecord
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.engine.util.HBaseRecordCache
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.EncodedKey
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyFieldValue
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.code.hbase.Constants
@@ -35,6 +35,8 @@ import org.apache.hadoop.hbase.client.Increment
 import org.apache.hadoop.hbase.client.Put
 import org.apache.hadoop.hbase.client.Scan
 import org.apache.hadoop.hbase.filter.BinaryComparator
+import org.apache.hadoop.hbase.filter.ColumnCountGetFilter
+import org.apache.hadoop.hbase.filter.ColumnRangeFilter
 import org.apache.hadoop.hbase.filter.FilterList
 import org.apache.hadoop.hbase.filter.PageFilter
 import org.apache.hadoop.hbase.filter.QualifierFilter
@@ -90,7 +92,14 @@ open class HBaseHashLabel(
         return Mono.just(listOf(delete))
     }
 
-    override fun handleDeferredRequests(deferredRequests: List<Any>): Mono<Boolean> = tables.flatMap { it.edge.batch(deferredRequests) }.thenReturn(true)
+    override fun handleDeferredRequests(
+        deferredRequests: List<Any>,
+        storageOpCollector: StorageOpCollector?,
+    ): Mono<Boolean> =
+        tables
+            .doOnNext { t -> storageOpCollector?.collectAll(deferredRequests, t.edge.name.nameAsString) }
+            .flatMap { t -> t.edge.batch(deferredRequests) }
+            .thenReturn(true)
 
     override fun setnx(
         keyField: EncodedKey<ByteArray>,
@@ -213,10 +222,8 @@ open class HBaseHashLabel(
     override fun getSelf(
         src: List<Any>,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
         val withAll = stats.contains(StatKey.WITH_ALL)
-        val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
 
         val gets =
             src.map {
@@ -239,11 +246,7 @@ open class HBaseHashLabel(
                             }
                         }.filter { it != null && (withAll || it.isActive) }
                         .map {
-                            if (withEdgeId) {
-                                it!!.toRow(withAll, idEdgeEncoder)
-                            } else {
-                                it!!.toRow(withAll, null)
-                            }
+                            it!!.toRow(withAll)
                         }
                 }
 
@@ -253,8 +256,6 @@ open class HBaseHashLabel(
                     it,
                     if (withAll) {
                         entity.schema.allStructType
-                    } else if (withEdgeId) {
-                        entity.schema.edgeIdStructType
                     } else {
                         entity.schema.structType
                     },
@@ -267,10 +268,8 @@ open class HBaseHashLabel(
         tgt: List<Any>,
         dir: Direction,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
         val withAll = stats.contains(StatKey.WITH_ALL)
-        val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
 
         val gets =
             tgt.map {
@@ -293,11 +292,7 @@ open class HBaseHashLabel(
                             }
                         }.filter { it != null && (withAll || it.isActive) }
                         .map {
-                            if (withEdgeId) {
-                                it!!.toRow(withAll, idEdgeEncoder, isMultiEdge)
-                            } else {
-                                it!!.toRow(withAll, null, isMultiEdge)
-                            }
+                            it!!.toRow(withAll, isMultiEdge)
                         }
                 }
 
@@ -307,8 +302,6 @@ open class HBaseHashLabel(
                     it,
                     if (withAll) {
                         entity.schema.allStructType
-                    } else if (withEdgeId) {
-                        entity.schema.edgeIdStructType
                     } else {
                         entity.schema.structType
                     },
@@ -330,7 +323,7 @@ open class HBaseHashLabel(
                             }
                         }.filter { it != null && it.isActive }
                         .map {
-                            it!!.toRow(withAll = false, null, isMultiEdge)
+                            it!!.toRow(withAll = false, isMultiEdge = isMultiEdge)
                         }
                 }
         return rows
@@ -430,6 +423,56 @@ open class HBaseHashLabel(
         } else {
             Mono.zip(orderedMonos) { results ->
                 results.flatMap { it as List<HBaseRecord> }
+            }
+        }
+    }
+
+    fun hbaseGetWideRow(
+        rows: List<ByteArray>,
+        from: ByteArray?,
+        to: ByteArray?,
+        limit: Int,
+    ): Mono<List<HBaseRecord>> {
+        val gets =
+            rows.map {
+                val get =
+                    Get(it)
+                        .addFamily(Constants.DEFAULT_COLUMN_FAMILY)
+
+                val filters = FilterList(FilterList.Operator.MUST_PASS_ALL)
+
+                if (from != null || to != null) {
+                    filters.addFilter(
+                        ColumnRangeFilter(
+                            from,
+                            false,
+                            to,
+                            false,
+                        ),
+                    )
+                }
+
+                // Exclude empty values (tombstones)
+                filters.addFilter(
+                    ValueFilter(
+                        CompareOperator.NOT_EQUAL,
+                        BinaryComparator(Bytes.toBytes("")),
+                    ),
+                )
+
+                filters.addFilter(ColumnCountGetFilter(limit))
+
+                get.setFilter(filters)
+            }
+        return tables.flatMap { it.edge.get(gets) }.map {
+            it.flatMap { result ->
+                val cells = result.listCells() ?: return@flatMap emptyList()
+                cells.map { cell ->
+                    val row = CellUtil.cloneRow(cell)
+                    val qualifier = CellUtil.cloneQualifier(cell)
+                    val value = CellUtil.cloneValue(cell)
+                    HBaseRecord(row, qualifier, value)
+                }
             }
         }
     }

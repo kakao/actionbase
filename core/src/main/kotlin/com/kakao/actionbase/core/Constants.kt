@@ -1,6 +1,10 @@
 package com.kakao.actionbase.core
 
 object Constants {
+    const val VERTEX_MARKER: String = "-"
+
+    const val VERTEX_TARGET_COMMENT: String = "<vertex>"
+
     const val EDGE_TABLE_NAME: String = "edges"
 
     const val LOCK_TABLE_NAME: String = "locks"

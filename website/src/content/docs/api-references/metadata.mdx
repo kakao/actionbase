@@ -743,6 +743,7 @@ data class ModelSchema.Edge(
     val direction: DirectionType,                   // Direction type (OUT, IN, BOTH)
     val indexes: List<Index> = emptyList(),          // Index definitions
     val groups: List<Group> = emptyList(),            // Group definitions
+    val caches: List<Cache> = emptyList(),           // Cache definitions
 )
 ```
 
@@ -760,6 +761,7 @@ data class ModelSchema.MultiEdge(
     val direction: DirectionType,                   // Direction type (OUT, IN, BOTH)
     val indexes: List<Index> = emptyList(),          // Index definitions
     val groups: List<Group> = emptyList(),            // Group definitions
+    val caches: List<Cache> = emptyList(),           // Cache definitions
 )
 ```
 
@@ -825,6 +827,21 @@ data class Group(
     val ttl: Long = -1,                             // Time-to-live in milliseconds (-1 = no expiry)
 )
 ```
+
+### Cache
+
+Cache definition. Precomputes a bounded, sorted projection of edges (e.g., top-N by score) for low-latency reads.
+
+```kotlin
+data class Cache(
+    val cache: String,                              // Cache name
+    val fields: List<IndexField>,                   // Sort keys with order
+    val limit: Int = 100,                           // Maximum number of pre-sorted entries kept per source key (must be > 0)
+    val comment: String = Constants.DEFAULT_COMMENT,// Cache description
+)
+```
+
+> **Updating `indexes` / `groups` / `caches` via PUT**: these fields live inside `ModelSchema`, so a `PUT /graph/v3/databases/{database}/tables/{table}` body that omits `schema` does **not** change any of them. To change a cache, send the full `schema` payload with the desired `caches` array. This matches the existing semantics for `indexes` and `groups`.
 
 ### DatabaseCreateRequest
 

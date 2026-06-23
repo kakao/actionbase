@@ -113,6 +113,13 @@ class V3CompatService(
             when (val s = request.schema) {
                 is ModelSchema.Edge -> s.groups
                 is ModelSchema.MultiEdge -> s.groups
+                is ModelSchema.Vertex -> emptyList()
+            }
+        val caches =
+            when (val s = request.schema) {
+                is ModelSchema.Edge -> s.caches
+                is ModelSchema.MultiEdge -> s.caches
+                is ModelSchema.Vertex -> emptyList()
             }
         val v2Request =
             V2LabelCreateRequest(
@@ -123,6 +130,7 @@ class V3CompatService(
                 storage = request.storage,
                 groups = groups,
                 indices = request.toV2Indices(),
+                caches = caches,
                 event = false,
                 readOnly = isMultiEdge,
                 mode = request.mode.toV2MutationMode(),
@@ -147,6 +155,7 @@ class V3CompatService(
                 indices = request.toV2Indices(),
                 readOnly = null,
                 mode = request.mode?.toV2MutationMode(),
+                caches = request.toV2Caches(),
             )
         return graph.labelDdl
             .update(EntityName(database, table), v2Request)

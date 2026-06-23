@@ -121,6 +121,7 @@ object Dependencies {
         const val CORE = "org.apache.spark:spark-core_${Versions.SCALA_BINARY}:${Versions.SPARK}"
         const val SQL = "org.apache.spark:spark-sql_${Versions.SCALA_BINARY}:${Versions.SPARK}"
         const val STREAMING = "org.apache.spark:spark-streaming_${Versions.SCALA_BINARY}:${Versions.SPARK}"
+        const val MLLIB = "org.apache.spark:spark-mllib_${Versions.SCALA_BINARY}:${Versions.SPARK}"
     }
 
     object Spring {

@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.entity
 
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.v2.core.code.Index
@@ -17,7 +18,7 @@ import com.kakao.actionbase.v2.engine.entity.deprecated.DeprecatedEdgeSchema
 import com.kakao.actionbase.v2.engine.label.DatastoreHashLabel
 import com.kakao.actionbase.v2.engine.label.DatastoreIndexedLabel
 import com.kakao.actionbase.v2.engine.label.Label
-import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
+import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashOnlyIndexedLabel
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.metastore.LocalBackedJdbcHashLabel
@@ -50,6 +51,7 @@ data class LabelEntity(
     val storage: String,
     val indices: List<Index> = emptyList(),
     val groups: List<Group> = emptyList(),
+    val caches: List<Cache> = emptyList(),
     val event: Boolean = false,
     val readOnly: Boolean = false,
     val mode: MutationMode = MutationMode.SYNC,
@@ -60,6 +62,17 @@ data class LabelEntity(
     init {
         require(type.edgeType != EdgeType.HASH || dirType == DirectionType.OUT) {
             "The hash LabelV0 $type supports only OUT direction. Input direction: $dirType"
+        }
+        // Vertex stores State only — indices/groups/caches/IN-direction are silently ignored
+        // by BulkEdgeEncoder and toV3ModelSchemaVertex. Reject at construction so the data
+        // never reaches storage in an inconsistent state.
+        if (type == LabelType.VERTEX) {
+            require(dirType == DirectionType.OUT) {
+                "VERTEX label supports only OUT direction. Input direction: $dirType"
+            }
+            require(indices.isEmpty()) { "VERTEX label does not support indices, got ${indices.size}" }
+            require(groups.isEmpty()) { "VERTEX label does not support groups, got ${groups.size}" }
+            require(caches.isEmpty()) { "VERTEX label does not support caches, got ${caches.size}" }
         }
     }
 
@@ -78,7 +91,7 @@ data class LabelEntity(
                     when (storage) {
                         is LocalStorage -> LocalBackedJdbcHashLabel.create(this, graph, storage, block)
                         is JdbcStorage -> JdbcHashLabel.create(this, graph, storage, block)
-                        is HBaseStorage -> HBaseHashLabel.create(this, graph, storage)
+                        is HBaseStorage -> HBaseHashOnlyIndexedLabel.create(this, graph, storage)
                         is DatastoreStorage -> DatastoreHashLabel.create(this, graph, block)
                         else -> {
                             logger.error(
@@ -90,8 +103,8 @@ data class LabelEntity(
                         }
                     }
                 }
-                LabelType.INDEXED, LabelType.MULTI_EDGE -> {
-                    // MultiEdge is a variant of the INDEXED type in the v2 engine.
+                LabelType.INDEXED, LabelType.MULTI_EDGE, LabelType.VERTEX -> {
+                    // MultiEdge and Vertex are both backed by the INDEXED storage path in the v2 engine.
                     if (type == LabelType.MULTI_EDGE && !readOnly) {
                         logger.error("MULTI_EDGE type should be read-only in the v2 engine. Fallback to NilLabel")
                         return NilLabel(this.copy(type = LabelType.NIL))
@@ -136,6 +149,7 @@ data class LabelEntity(
                     "event" to event,
                     "groups" to objectMapper.writeValueAsString(groups),
                     "indices" to objectMapper.writeValueAsString(indices),
+                    "caches" to objectMapper.writeValueAsString(caches),
                     "readOnly" to readOnly,
                     "mode" to mode.name,
                 ),
@@ -189,6 +203,7 @@ data class LabelEntity(
                 storage = edge.props["storage"].toString(),
                 groups = groups.resolveFieldTypes(schema),
                 indices = objectMapper.readValue(edge.props["indices"].toString()),
+                caches = objectMapper.readValue(edge.props["caches"]?.toString() ?: "[]"),
                 event = edge.props["event"].toString().toBoolean(),
                 readOnly = edge.props["readOnly"].toString().toBoolean(),
                 mode =
@@ -217,6 +232,7 @@ data class LabelEntity(
                 storage = row.getString("storage"),
                 groups = groups.resolveFieldTypes(schema),
                 indices = objectMapper.readValue(row.getString("indices")),
+                caches = objectMapper.readValue(row.getOrNull("caches")?.toString() ?: "[]"),
                 event = DataType.BOOLEAN.cast(row.getOrNull("event"))?.let { it as Boolean } ?: false,
                 readOnly = row.getBoolean("readOnly"),
                 mode = MutationMode.valueOf((row.getOrNull("mode") ?: MutationMode.SYNC.name).toString()),
@@ -235,6 +251,7 @@ data class LabelEntity(
             @JsonProperty("storage") storage: String,
             @JsonProperty("groups", required = false) groups: List<Group> = emptyList(),
             @JsonProperty("indices", required = false) indices: List<Index> = emptyList(),
+            @JsonProperty("caches", required = false) caches: List<Cache> = emptyList(),
             @JsonProperty("event", required = false) event: Boolean = false,
             @JsonProperty("readOnly", required = false) readOnly: Boolean = false,
             @JsonProperty("mode", required = false) mode: MutationMode = MutationMode.SYNC,
@@ -249,6 +266,7 @@ data class LabelEntity(
                 storage,
                 indices,
                 groups.resolveFieldTypes(schema),
+                caches,
                 event,
                 readOnly,
                 mode,

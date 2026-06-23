@@ -2,18 +2,16 @@ package com.kakao.actionbase.v2.engine
 
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.ByteArrayBufferPool
+import com.kakao.actionbase.core.edge.mapper.EdgeCacheRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeCountRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
-import com.kakao.actionbase.engine.query.ActionbaseQuery
-import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
 import com.kakao.actionbase.engine.query.LabelProvider
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.edge.TraceEdge
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -40,10 +38,8 @@ import com.kakao.actionbase.v2.engine.entity.StorageEntity
 import com.kakao.actionbase.v2.engine.exception.MutationError
 import com.kakao.actionbase.v2.engine.fake.fakeEdges
 import com.kakao.actionbase.v2.engine.label.DeleteEdgeRequest
-import com.kakao.actionbase.v2.engine.label.DeleteIdEdgeRequest
 import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus
 import com.kakao.actionbase.v2.engine.label.InsertEdgeRequest
-import com.kakao.actionbase.v2.engine.label.InsertIdEdgeRequest
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.LockAcquisitionFailedException
 import com.kakao.actionbase.v2.engine.metadata.Metadata
@@ -116,6 +112,7 @@ class Graph(
     LabelProvider,
     AutoCloseable {
     internal val mutationRequestTimeout = config.mutationRequestTimeout
+    internal val readOnly = config.readOnly
 
     private var metadataInitialized = false
 
@@ -164,11 +161,7 @@ class Graph(
 
     val aliasDdl = AliasDdlService(this, aliasLabel, AliasEntity)
 
-    val idEdgeEncoder: IdEdgeEncoder = edgeEncoderFactory.bytesKeyValueEncoder
-
     fun isReady(): Boolean = metadataInitialized
-
-    private val queryExecutor = ActionbaseQueryExecutor(this)
 
     val metastoreInspector = MetastoreInspector(this.metastore, this.metadataTable)
 
@@ -287,6 +280,7 @@ class Graph(
         mode: MutationMode? = null,
         force: Boolean = false,
         failOnExist: Boolean = false,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> {
         val mutationModeContext = MutationModeContext.of(label.entity.mode, mode, systemMutationMode, force)
 
@@ -302,14 +296,14 @@ class Graph(
                             if (mutationModeContext.queue) {
                                 Mono.just(
                                     MutationResultItem(
-                                        status = EdgeOperationStatus.QUEUED,
+                                        status = queuedStatus(mutationModeContext, operation),
                                         traceId = edge.traceId,
                                         edge = null,
                                     ),
                                 )
                             } else {
                                 label
-                                    .mutate(edge, operation, alias, bulk, failOnExist)
+                                    .mutate(edge, operation, alias, bulk, failOnExist, newCollector)
                                     .map { context ->
                                         // fill audit and requestId
                                         context.copy(audit = audit, requestId = requestId)
@@ -341,6 +335,13 @@ class Graph(
                                             status = context.status,
                                             traceId = context.edge.traceId,
                                             edge = context.after ?: context.before,
+                                            context =
+                                                context.storageOps?.let {
+                                                    buildMap {
+                                                        put(StorageOpCollector.CONTEXT_KEY, it)
+                                                        if (context.storageOpsTruncated) put(StorageOpCollector.TRUNCATED_KEY, true)
+                                                    }
+                                                },
                                         )
                                     }
                             }
@@ -378,10 +379,32 @@ class Graph(
             .subscribeOn(Schedulers.boundedElastic())
     }
 
+    /**
+     * For `system=ASYNC + label=SYNC` (no force), return the SYNC-shaped status derived from the
+     * request's [EdgeOperation] so clients keep their contract; mutations are still queued via the
+     * WAL. The status is intent-based and never `IDLE`. All other queued paths keep returning
+     * [EdgeOperationStatus.QUEUED].
+     */
+    private fun queuedStatus(
+        mode: MutationModeContext,
+        operation: EdgeOperation,
+    ): EdgeOperationStatus {
+        if (mode.f || mode.s != MutationMode.ASYNC || mode.l != MutationMode.SYNC) {
+            return EdgeOperationStatus.QUEUED
+        }
+        return when (operation) {
+            EdgeOperation.INSERT -> EdgeOperationStatus.CREATED
+            EdgeOperation.UPDATE -> EdgeOperationStatus.UPDATED
+            EdgeOperation.DELETE -> EdgeOperationStatus.DELETED
+            EdgeOperation.PURGE -> EdgeOperationStatus.PURGED
+        }
+    }
+
     fun upsert(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -392,12 +415,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
+            newCollector = newCollector,
         )
 
     fun update(
         request: InsertEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -408,12 +433,14 @@ class Graph(
             request.requestId,
             bulk,
             mode,
+            newCollector = newCollector,
         )
 
     fun delete(
         request: DeleteEdgeRequest,
         bulk: Boolean = false,
         mode: MutationMode? = null,
+        newCollector: () -> StorageOpCollector? = { null },
     ): Mono<MutationResult> =
         mutate(
             request.name,
@@ -424,6 +451,7 @@ class Graph(
             request.requestId,
             bulk,
             mode,
+            newCollector = newCollector,
         )
 
     fun purge(request: DeleteEdgeRequest): Mono<MutationResult> =
@@ -439,12 +467,6 @@ class Graph(
             false,
         )
 
-    fun upsert(request: InsertIdEdgeRequest): Mono<MutationResult> = upsert(request.toInsertEdgeRequest(idEdgeEncoder))
-
-    fun update(request: InsertIdEdgeRequest): Mono<MutationResult> = update(request.toInsertEdgeRequest(idEdgeEncoder))
-
-    fun delete(request: DeleteIdEdgeRequest): Mono<MutationResult> = delete(request.toDeleteEdgeRequest(idEdgeEncoder))
-
     // -- query
 
     fun singleStepQuery(
@@ -457,14 +479,14 @@ class Graph(
 
         val dfMono =
             if (scanFilter.selfEdge) {
-                label.getSelf(scanFilter.srcSet.toList(), stats, idEdgeEncoder)
+                label.getSelf(scanFilter.srcSet.toList(), stats)
             } else if (scanFilter.srcSet.size == 1 && scanFilter.tgt != null) {
-                label.get(scanFilter.srcSet.first(), scanFilter.tgt.toList(), scanFilter.dir, stats, idEdgeEncoder)
+                label.get(scanFilter.srcSet.first(), scanFilter.tgt.toList(), scanFilter.dir, stats)
             } else if ("COUNT(1)" in scanFilter.selectFields && scanFilter.selectFields.size == 1 && scanFilter.tgt == null) {
                 label.count(scanFilter.srcSet, scanFilter.dir)
             } else {
                 require(scanFilter.tgt == null) { "tgt should be null" }
-                label.scan(scanFilter, stats, idEdgeEncoder)
+                label.scan(scanFilter, stats)
             }
 
         val statMonos: List<Mono<Stat<*>>> =
@@ -551,8 +573,6 @@ class Graph(
             )
         return singleStepQuery(scanFilter, stats)
     }
-
-    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = queryExecutor.query(request)
 
     // -- system
 
@@ -663,7 +683,6 @@ class Graph(
                     fakeEdge.tgt,
                     Direction.OUT,
                     emptySet(),
-                    EmptyEdgeIdEncoder.INSTANCE,
                 ).timeout(Duration.ofSeconds(2L))
                 .flatMap {
                     Flux
@@ -674,7 +693,6 @@ class Graph(
                                 fakeEdge.tgt,
                                 Direction.OUT,
                                 emptySet(),
-                                EmptyEdgeIdEncoder.INSTANCE,
                             )
                         }, warmUpConfig.concurrency)
                         .count()
@@ -685,7 +703,7 @@ class Graph(
                 if (it) {
                     Mono
                         .defer {
-                            if (label.entity.readOnly) {
+                            if (label.entity.readOnly || readOnly) {
                                 Mono.empty()
                             } else {
                                 writeWarmUp
@@ -908,17 +926,6 @@ class Graph(
 
     fun status(name: EntityName): Mono<String> = getLabel(name).status()
 
-    fun getEdgeId(
-        name: EntityName,
-        src: String,
-        tgt: String,
-    ): Mono<String> = Mono.fromCallable { getLabel(name).getEdgeId(idEdgeEncoder, src, tgt) }
-
-    fun getSrcAndTgt(edgeId: String): Pair<Any, Any> {
-        val pair = idEdgeEncoder.decode(edgeId)
-        return pair.key to pair.value
-    }
-
     fun migrate(name: String): Mono<List<String>> = Migration.migrate(this, name)
 
     fun dumpAll(): List<String> =
@@ -986,6 +993,7 @@ class Graph(
                         count = EdgeCountRecordMapper.create(pool),
                         lock = EdgeLockRecordMapper.create(pool),
                         group = EdgeGroupRecordMapper.create(pool),
+                        cache = EdgeCacheRecordMapper.create(pool),
                     )
                 }
 

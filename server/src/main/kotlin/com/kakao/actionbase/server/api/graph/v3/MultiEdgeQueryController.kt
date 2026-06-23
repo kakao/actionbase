@@ -1,9 +1,9 @@
 package com.kakao.actionbase.server.api.graph.v3
 
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
+import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.payload.MultiEdgeIdsRequest
 import com.kakao.actionbase.server.util.mapToResponseEntity
-import com.kakao.actionbase.v2.engine.v3.V3QueryService
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono
 
 @RestController
 class MultiEdgeQueryController(
-    private val v3QueryService: V3QueryService,
+    private val queryService: QueryService,
 ) {
     @GetMapping("/graph/v3/databases/{database}/tables/{table}/multi-edges/ids")
     fun ids(
@@ -27,7 +27,7 @@ class MultiEdgeQueryController(
         @RequestParam filters: String? = null,
         @RequestParam features: List<String> = emptyList(),
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
-        v3QueryService
+        queryService
             .gets(database, table, ids, filters, features)
             .mapToResponseEntity()
 
@@ -37,7 +37,7 @@ class MultiEdgeQueryController(
         @PathVariable table: String,
         @RequestBody request: MultiEdgeIdsRequest,
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
-        v3QueryService
+        queryService
             .gets(database, table, request.ids, request.filters, request.features)
             .mapToResponseEntity()
 }

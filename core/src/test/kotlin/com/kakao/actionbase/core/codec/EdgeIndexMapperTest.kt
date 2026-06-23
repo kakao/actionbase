@@ -20,14 +20,13 @@ import com.kakao.actionbase.core.java.metadata.v3.common.MutationMode
 import com.kakao.actionbase.core.java.types.DataType
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+import com.kakao.actionbase.test.documentations.params.TableSource
 
 import java.util.Base64
 
 import kotlin.test.assertEquals
 
 import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 
 class EdgeIndexMapperTest {
     companion object {
@@ -58,6 +57,7 @@ class EdgeIndexMapperTest {
                 .code()
     }
 
+    @ObjectSourceParameterizedTest
     @ObjectSource(
         """
         - sourceField:
@@ -84,7 +84,6 @@ class EdgeIndexMapperTest {
           version: 1
         """,
     )
-    @ObjectSourceParameterizedTest
     fun encodeTest(
         sourceField: Field,
         targetField: Field,
@@ -156,15 +155,13 @@ class EdgeIndexMapperTest {
         assertArrayEquals(expected.value(), actualValue)
     }
 
-    @CsvSource(
-        delimiter = '|',
-        value = [
-            // base64 encoded key                                             | base64 encoded value
-            "OYdPnzTsiqTtg4DrsoXsiqQAK7UfmNkpfCmDK4AAAAE0dXBkYXRlX3RzACuAAATS | LIAAAAAAAAABKzPZOuA0dmFsdWUA",
-            "68VKEyuAAATSK7UfmNkpfCmCK4AAAAHLnI2anouam6Cei/8sgAAAAAAAFi4=     | LIAAAAAAAAABK5Blmk00QgA=",
-        ],
+    @ObjectSourceParameterizedTest
+    @TableSource(
+        """
+        - OYdPnzTsiqTtg4DrsoXsiqQAK7UfmNkpfCmDK4AAAAE0dXBkYXRlX3RzACuAAATS | LIAAAAAAAAABKzPZOuA0dmFsdWUA
+        - 68VKEyuAAATSK7UfmNkpfCmCK4AAAAHLnI2anouam6Cei/8sgAAAAAAAFi4=   | LIAAAAAAAAABK5Blmk00QgA=
+        """,
     )
-    @ParameterizedTest(name = "key[{0}], value[{1}]")
     fun decodedKeyTest(
         encodedKey: String,
         encodedValue: String,

@@ -1,12 +1,15 @@
 package com.kakao.actionbase.test.json
 
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+import com.kakao.actionbase.test.documentations.params.TableSource
+
 import kotlin.test.assertEquals
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class PrettyObjectWriterTest {
-    private val writer = PrettyObjectWriter(indentSize = 2, lineLengthLimit = 80)
+    private val writer = PrettyObjectWriter.DEFAULT
 
     @Test
     fun `test empty object and array`() {
@@ -104,66 +107,41 @@ class PrettyObjectWriterTest {
         assertEquals(expected, actual)
     }
 
-    @Test
-    fun `test format sort=false`() {
-        // given
+    @ObjectSourceParameterizedTest
+    @TableSource(
+        """
+        #   sort | expected
+        - 'false | {"z": 1, "a": 2, "m": 3}'
+        - 'true  | {"a": 2, "m": 3, "z": 1}'
+        """,
+    )
+    fun `format honors sort flag`(
+        sort: Boolean,
+        expected: String,
+    ) {
         val json = """{"z": 1, "a": 2, "m": 3}"""
-
-        // when
-        val actual = writer.format(json, sort = false)
-
-        // then
-        val expected = """{"z": 1, "a": 2, "m": 3}"""
-        assertEquals(expected, actual)
+        assertEquals(expected, writer.format(json, sort = sort))
     }
 
-    @Test
-    fun `test format sort=true`() {
-        // given
-        val json = """{"z": 1, "a": 2, "m": 3}"""
-
-        // when
-        val actual = writer.format(json, sort = true)
-
-        // then
-        val expected = """{"a": 2, "m": 3, "z": 1}"""
-        assertEquals(expected, actual)
-    }
-
-    @Test
-    fun `test writeValueAsString sort=false`() {
-        // given
+    @ObjectSourceParameterizedTest
+    @TableSource(
+        """
+        #   sort | expected
+        - 'false | {"z": 1, "a": 2, "m": 3}'
+        - 'true  | {"a": 2, "m": 3, "z": 1}'
+        """,
+    )
+    fun `writeValueAsString honors sort flag`(
+        sort: Boolean,
+        expected: String,
+    ) {
         val orderedMap =
             mapOf(
                 "z" to 1,
                 "a" to 2,
                 "m" to 3,
             )
-
-        // when
-        val actual = writer.writeValueAsString(orderedMap, sort = false)
-
-        // then
-        val expected = """{"z": 1, "a": 2, "m": 3}"""
-        assertEquals(expected, actual)
-    }
-
-    @Test
-    fun `test writeValueAsString sort=true`() {
-        // given
-        val orderedMap =
-            mapOf(
-                "z" to 1,
-                "a" to 2,
-                "m" to 3,
-            )
-
-        // when
-        val actual = writer.writeValueAsString(orderedMap, sort = true)
-
-        // then
-        val expected = """{"a": 2, "m": 3, "z": 1}"""
-        assertEquals(expected, actual)
+        assertEquals(expected, writer.writeValueAsString(orderedMap, sort = sort))
     }
 
     @Test

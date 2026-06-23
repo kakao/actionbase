@@ -1,7 +1,7 @@
 package com.kakao.actionbase.v2.engine.label.metastore
 
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.edge.TraceEdge
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -64,20 +64,20 @@ class LocalBackedJdbcHashLabel(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean,
+        newCollector: () -> StorageOpCollector?,
     ): Mono<List<CdcContext>> =
         if (useLocalStore) {
-            localLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist)
+            localLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
         } else {
-            globalLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist)
+            globalLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
         }
 
     override fun scan(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
-        val local = localLabel.scan(scanFilter, stats, idEdgeEncoder)
-        val global = globalLabel.scan(scanFilter, stats, idEdgeEncoder)
+        val local = localLabel.scan(scanFilter, stats)
+        val global = globalLabel.scan(scanFilter, stats)
         return local.zipWith(global) { a, b ->
             a + b
         }
@@ -86,10 +86,9 @@ class LocalBackedJdbcHashLabel(
     override fun getSelf(
         src: List<Any>,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
-        val local = localLabel.getSelf(src, stats, idEdgeEncoder)
-        val global = globalLabel.getSelf(src, stats, idEdgeEncoder)
+        val local = localLabel.getSelf(src, stats)
+        val global = globalLabel.getSelf(src, stats)
         return local.zipWith(global) { a, b ->
             a + b
         }
@@ -100,10 +99,9 @@ class LocalBackedJdbcHashLabel(
         tgt: Any,
         dir: Direction,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
-        val local = localLabel.get(src, tgt, dir, stats, idEdgeEncoder)
-        val global = globalLabel.get(src, tgt, dir, stats, idEdgeEncoder)
+        val local = localLabel.get(src, tgt, dir, stats)
+        val global = globalLabel.get(src, tgt, dir, stats)
         return local.zipWith(global) { a, b ->
             a + b
         }
@@ -114,10 +112,9 @@ class LocalBackedJdbcHashLabel(
         tgt: List<Any>,
         dir: Direction,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
-        val local = localLabel.get(src, tgt, dir, stats, idEdgeEncoder)
-        val global = globalLabel.get(src, tgt, dir, stats, idEdgeEncoder)
+        val local = localLabel.get(src, tgt, dir, stats)
+        val global = globalLabel.get(src, tgt, dir, stats)
         return local.zipWith(global) { a, b ->
             a + b
         }

@@ -2,6 +2,7 @@ package com.kakao.actionbase.core.storage
 
 import com.kakao.actionbase.core.codec.MapperExtensions.decodeEdgeKeyPrefix
 import com.kakao.actionbase.core.codec.buffer
+import com.kakao.actionbase.core.edge.mapper.EdgeCacheRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeCountRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
@@ -20,6 +21,7 @@ object HBaseEdgeRecordMapper {
             count = EdgeCountRecordMapper.create(),
             lock = EdgeLockRecordMapper.create(),
             group = EdgeGroupRecordMapper.create(),
+            cache = EdgeCacheRecordMapper.create(),
         )
     private val stateDecoder = edgeRecordMapper.state.decoder
     private val indexDecoder = edgeRecordMapper.index.decoder

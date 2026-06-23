@@ -634,6 +634,193 @@ class TableControllerTest : E2ETestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class CacheTest {
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-edge-cache-crud
+              create: |
+                {
+                  "table": "v3-edge-cache-crud",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "long", "comment": "user"},
+                    "target": {"type": "long", "comment": "item"},
+                    "properties": [
+                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": [],
+                    "caches": [
+                      {
+                        "cache": "top_items",
+                        "fields": [{"field": "score", "order": "DESC"}],
+                        "limit": 50,
+                        "comment": "top 50 items"
+                      }
+                    ]
+                  },
+                  "storage": "datastore://test_namespace/v3_edge_cache_crud",
+                  "mode": "SYNC",
+                  "comment": "edge table with cache"
+                }
+              expected: |
+                {
+                  "type": "edge",
+                  "table": "v3-edge-cache-crud",
+                  "schema": {
+                    "type": "edge",
+                    "caches": [
+                      {
+                        "cache": "top_items",
+                        "fields": [{"field": "score", "order": "DESC"}],
+                        "limit": 50,
+                        "comment": "top 50 items"
+                      }
+                    ]
+                  },
+                  "active": true
+                }
+            """,
+        )
+        fun `create table preserves caches on response and get`(
+            name: String,
+            create: String,
+            expected: String,
+        ) {
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+
+            client
+                .get()
+                .uri("$baseUri/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - name: v3-edge-cache-upd
+              create: |
+                {
+                  "table": "v3-edge-cache-upd",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "long", "comment": "user"},
+                    "target": {"type": "long", "comment": "item"},
+                    "properties": [
+                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": [],
+                    "caches": [
+                      {
+                        "cache": "old_cache",
+                        "fields": [{"field": "score", "order": "ASC"}],
+                        "limit": 10,
+                        "comment": "old"
+                      }
+                    ]
+                  },
+                  "storage": "datastore://test_namespace/v3_edge_cache_upd",
+                  "mode": "SYNC",
+                  "comment": "edge table"
+                }
+              update: |
+                {
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "long", "comment": "user"},
+                    "target": {"type": "long", "comment": "item"},
+                    "properties": [
+                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": [],
+                    "caches": [
+                      {
+                        "cache": "new_cache",
+                        "fields": [{"field": "score", "order": "DESC"}],
+                        "limit": 100,
+                        "comment": "new"
+                      }
+                    ]
+                  }
+                }
+              expected: |
+                {
+                  "table": "v3-edge-cache-upd",
+                  "schema": {
+                    "caches": [
+                      {
+                        "cache": "new_cache",
+                        "fields": [{"field": "score", "order": "DESC"}],
+                        "limit": 100,
+                        "comment": "new"
+                      }
+                    ]
+                  },
+                  "active": true
+                }
+            """,
+        )
+        fun `update table changes caches and reflects on get`(
+            name: String,
+            create: String,
+            update: String,
+            expected: String,
+        ) {
+            // precondition: create with initial cache
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus()
+                .isOk
+
+            // update cache
+            client
+                .put()
+                .uri("$baseUri/$name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(update)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+
+            // verify persistence via get
+            client
+                .get()
+                .uri("$baseUri/$name")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .json(expected)
+        }
+    }
+
+    @Nested
     inner class ValidationTest {
         @Test
         fun `invalid status value returns 400`() {

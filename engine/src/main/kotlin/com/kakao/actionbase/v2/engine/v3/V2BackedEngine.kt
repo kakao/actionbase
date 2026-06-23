@@ -6,6 +6,7 @@ import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.MutationContext
 import com.kakao.actionbase.engine.MutationEngine
+import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.Graph
@@ -21,7 +22,8 @@ import reactor.core.publisher.Mono
  */
 class V2BackedEngine(
     private val graph: Graph,
-) : MutationEngine {
+) : MutationEngine,
+    QueryEngine {
     override fun getTableBinding(
         database: String,
         alias: String,

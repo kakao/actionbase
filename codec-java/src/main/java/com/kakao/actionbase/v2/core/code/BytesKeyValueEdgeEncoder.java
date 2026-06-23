@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
-public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implements IdEdgeEncoder {
+public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> {
 
   public BytesKeyValueEdgeEncoder() {
     super();
@@ -24,6 +24,11 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
   @Override
   public byte[] getEmpty() {
     return new byte[0];
+  }
+
+  @Override
+  protected byte[] encodeBufferAsT(Consumer<EdgeBuffer> block) {
+    return useAsByteArray(block);
   }
 
   @Override
@@ -116,6 +121,38 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
   }
 
   @Override
+  public KeyFieldValue<byte[]> encodeCacheEdge(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      Cache cache) {
+    Object directedSrc;
+    Object directedTgt;
+    if (dir == Direction.OUT) {
+      directedSrc = src;
+      directedTgt = tgt;
+    } else {
+      directedSrc = tgt;
+      directedTgt = src;
+    }
+
+    byte[] key =
+        useAsByteArray(
+            buffer ->
+                encodeCacheEdgeKeyToBuffer(directedSrc, dir, labelId, cache.getCode(), buffer));
+    byte[] field =
+        useAsByteArray(
+            buffer ->
+                encodeCacheEdgeQualifierToBuffer(
+                    cache, ts, directedSrc, directedTgt, props, buffer));
+    byte[] value = useAsByteArray(buffer -> encodeCacheEdgeValueToBuffer(ts, props, buffer));
+    return new KeyFieldValue<>(key, field, value);
+  }
+
+  @Override
   public EncodedKey<byte[]> encodeIndexedEdgeKeyPrefix(
       Object directedSrc, Direction dir, int labelId, Index index, Consumer<EdgeBuffer> block) {
     byte[] key =
@@ -158,28 +195,5 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> implem
     } else {
       throw new IllegalArgumentException("Invalid encodedEdgeType: " + encodedEdgeType);
     }
-  }
-
-  // --- IdEdgeEncoder
-
-  @Override
-  public String encode(Object src, Object tgt) {
-    byte[] encodedEdgeId =
-        useAsByteArray(
-            buffer -> {
-              buffer.encodeAny(src);
-              buffer.encodeAny(tgt);
-            });
-    return CryptoUtils.encryptAndEncodeUrlSafe(encodedEdgeId);
-  }
-
-  @Override
-  public KeyValue<Object> decode(String edgeId) {
-    byte[] encodedEdgeId = CryptoUtils.decodeAndDecryptUrlSafe(edgeId);
-
-    SimplePositionedMutableByteRange buffer = new SimplePositionedMutableByteRange(encodedEdgeId);
-    Object src = ValueUtils.deserialize(buffer);
-    Object tgt = ValueUtils.deserialize(buffer);
-    return new KeyValue<>(src, tgt);
   }
 }

@@ -1,9 +1,9 @@
 package com.kakao.actionbase.v2.engine.label
 
+import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.EncodedKey
 import com.kakao.actionbase.v2.core.code.HashEdgeValue
-import com.kakao.actionbase.v2.core.code.IdEdgeEncoder
 import com.kakao.actionbase.v2.core.code.KeyFieldValue
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.code.VersionValue
@@ -91,6 +91,7 @@ abstract class AbstractLabel<T>(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean,
+        newCollector: () -> StorageOpCollector?,
     ): Mono<List<CdcContext>> {
         if (entity.readOnly) {
             return Mono.error(UnsupportedOperationException("This Label (${entity.fullName}) is read-only"))
@@ -98,7 +99,7 @@ abstract class AbstractLabel<T>(
         return Flux
             .fromIterable(edges)
             .map { it.ensureType(entity.schema) }
-            .flatMapSequential { processEdgeMutation(it, op, alias, bulk, failOnExist) }
+            .flatMapSequential { processEdgeMutation(it, op, alias, bulk, failOnExist, newCollector()) }
             .collectList()
     }
 
@@ -109,6 +110,7 @@ abstract class AbstractLabel<T>(
         alias: EntityName?,
         bulk: Boolean,
         failOnExist: Boolean = false,
+        collector: StorageOpCollector? = null,
     ): Mono<CdcContext> {
         log.debug("mutate {} {}", op, edge)
         val encodedHashEdgeKey = coder.encodeHashEdgeKey(edge, entity.id)
@@ -154,11 +156,16 @@ abstract class AbstractLabel<T>(
             }.flatMap { context ->
                 if (context.deferredRequests.isNotEmpty()) {
                     log.debug("6. handle {} deferred  requests", context.deferredRequests.size)
-                    handleDeferredRequests(context.deferredRequests)
+                    handleDeferredRequests(context.deferredRequests, collector)
                         .thenReturn(context.copy(deferredRequests = emptyList()))
                 } else {
                     Mono.just(context)
                 }
+            }.map { context ->
+                context.copy(
+                    storageOps = collector?.snapshot(),
+                    storageOpsTruncated = collector?.isTruncated() ?: false,
+                )
             }.subscribeOn(Schedulers.boundedElastic())
             .doFinally {
                 releaseLock(edge.traceId, encodedLockEdge, bulk)
@@ -358,10 +365,8 @@ abstract class AbstractLabel<T>(
     override fun scan(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
-        idEdgeEncoder: IdEdgeEncoder,
     ): Mono<DataFrame> {
         val withAll = stats.contains(StatKey.WITH_ALL)
-        val withEdgeId = withAll || stats.contains(StatKey.EDGE_ID)
         require(scanFilter.dir == Direction.OUT) { "Only OUT direction is supported" }
         val keys = makeHashEdgeScanKeys(scanFilter)
         val rowsWithLastRow =
@@ -387,11 +392,7 @@ abstract class AbstractLabel<T>(
                                 allRows
                                     .filter { withAll || it.isActive }
                                     .map {
-                                        if (withEdgeId) {
-                                            it.toRow(withAll, idEdgeEncoder)
-                                        } else {
-                                            it.toRow(withAll, null)
-                                        }
+                                        it.toRow(withAll)
                                     }
                             val lastValue = group.lastOrNull()
                             val offset = lastValue?.let { coder.encodeOffset(it) }
@@ -408,8 +409,6 @@ abstract class AbstractLabel<T>(
                 rows,
                 if (withAll) {
                     entity.schema.allStructType
-                } else if (withEdgeId) {
-                    entity.schema.edgeIdStructType
                 } else {
                     entity.schema.structType
                 },
@@ -671,7 +670,10 @@ abstract class AbstractLabel<T>(
 
     abstract fun deleteOnLock(keyField: KeyValue<T>): Mono<Boolean>
 
-    open fun handleDeferredRequests(deferredRequests: List<Any>): Mono<Boolean> = Mono.just(true)
+    open fun handleDeferredRequests(
+        deferredRequests: List<Any>,
+        storageOpCollector: StorageOpCollector? = null,
+    ): Mono<Boolean> = Mono.just(true)
 
     abstract fun setnx(
         keyField: EncodedKey<T>,

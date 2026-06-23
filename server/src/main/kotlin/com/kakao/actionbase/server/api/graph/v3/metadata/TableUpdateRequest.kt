@@ -3,6 +3,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 import com.kakao.actionbase.v2.core.code.Index as V2Index
 import com.kakao.actionbase.v2.core.types.Field as V2Field
 
+import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
@@ -45,6 +46,7 @@ data class TableUpdateRequest(
                             },
                     )
                 }
+                is ModelSchema.Vertex -> null
             }
         }
 
@@ -53,6 +55,9 @@ data class TableUpdateRequest(
             when (it) {
                 is ModelSchema.Edge -> it.indexes.map { idx -> idx.toV2Index() }
                 is ModelSchema.MultiEdge -> it.indexes.map { idx -> idx.toV2Index() }
+                // Vertex has no indices; return null so LabelUpdateRequest treats it as no-op
+                // instead of overwriting any existing serialized list with `[]`.
+                is ModelSchema.Vertex -> null
             }
         }
 
@@ -61,6 +66,16 @@ data class TableUpdateRequest(
             when (it) {
                 is ModelSchema.Edge -> it.groups
                 is ModelSchema.MultiEdge -> it.groups
+                is ModelSchema.Vertex -> null
+            }
+        }
+
+    fun toV2Caches(): List<Cache>? =
+        schema?.let {
+            when (it) {
+                is ModelSchema.Edge -> it.caches
+                is ModelSchema.MultiEdge -> it.caches
+                is ModelSchema.Vertex -> null
             }
         }
 }

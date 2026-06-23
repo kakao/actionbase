@@ -1,11 +1,11 @@
 package com.kakao.actionbase.core.state
 
+import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
+import com.kakao.actionbase.test.documentations.params.TableSource
 import com.kakao.actionbase.test.state.StateTestFixture
 import com.kakao.actionbase.test.toEventSequence
 
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 
 class ProcessingOrderTest {
     /**
@@ -25,80 +25,76 @@ class ProcessingOrderTest {
      *  - D: Delete event
      * ```
      */
-    @ParameterizedTest(name = "Processing - {0}")
-    @CsvSource(
-        delimiter = '|',
-        nullValues = ["#"],
-        value = [
-            //                        v| n| a| e| c|    c| d| a|    n| a| e| c | size
-            "I1                     | 1| 1| 1| 1| 1|    1| #| T|    n| 7| U| U | 4",
-            "A1                     | 1| #| 1| #| #|    #| #| F|    #| 8| #| # | 1",
-            "E1                     | 1| #| #| 1| #|    #| #| F|    #| #| e| # | 1",
-            "C1                     | 1| #| #| #| 1|    #| #| F|    #| #| #| c | 1",
-            "D1                     | 1| 1| 1| 1| 1|    #| 1| F|    D| D| D| D | 4",
+    @ObjectSourceParameterizedTest
+    @TableSource(
+        """
+          #                    | v | n | a | e | c | c | d | a | n | a | e | c | size
+          - I1                 | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | U | U | 4
+          - A1                 | 1 | ~ | 1 | ~ | ~ | ~ | ~ | F | ~ | 8 | ~ | ~ | 1
+          - E1                 | 1 | ~ | ~ | 1 | ~ | ~ | ~ | F | ~ | ~ | e | ~ | 1
+          - C1                 | 1 | ~ | ~ | ~ | 1 | ~ | ~ | F | ~ | ~ | ~ | c | 1
+          - D1                 | 1 | 1 | 1 | 1 | 1 | ~ | 1 | F | D | D | D | D | 4
 
-            // overwrite by insert
-            "I1; A1                 | 1| 1| 1| 1| 1|    1| #| T|    n| 8| U| U | 4", // UPDATE wins
-            "A1; I1                 | 1| 1| 1| 1| 1|    1| #| T|    n| 7| U| U | 4", // INSERT wins
-            "I1; A1; E1; C1         | 1| 1| 1| 1| 1|    1| #| T|    n| 8| e| c | 4", // UPDATE wins
-            "A1; I1; E1; C1         | 1| 1| 1| 1| 1|    1| #| T|    n| 7| e| c | 4", // INSERT wins
-            "A1; E1; I1; C1         | 1| 1| 1| 1| 1|    1| #| T|    n| 7| e| c | 4", // INSERT wins
-            "A1; E1; C1; I1         | 1| 1| 1| 1| 1|    1| #| T|    n| 7| e| c | 4", // INSERT wins
+          # overwrite by insert
+          - I1; A1             | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 8 | U | U | 4   # UPDATE wins
+          - A1; I1             | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | U | U | 4   # INSERT wins
+          - I1; A1; E1; C1     | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 8 | e | c | 4   # UPDATE wins
+          - A1; I1; E1; C1     | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | e | c | 4   # INSERT wins
+          - A1; E1; I1; C1     | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | e | c | 4   # INSERT wins
+          - A1; E1; C1; I1     | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | e | c | 4   # INSERT wins
 
-            // normal case (all values are updated)
-            "I1; A2; E2; C2         | 2| 1| 2| 2| 2|    1| #| T|    n| 8| e| c | 4",
-            "A2; I1; E2; C2         | 2| 1| 2| 2| 2|    1| #| T|    n| 8| e| c | 4",
-            "A2; E2; I1; C2         | 2| 1| 2| 2| 2|    1| #| T|    n| 8| e| c | 4",
-            "A2; E2; C2; I1         | 2| 1| 2| 2| 2|    1| #| T|    n| 8| e| c | 4",
+          # normal case (all values are updated)
+          - I1; A2; E2; C2     | 2 | 1 | 2 | 2 | 2 | 1 | ~ | T | n | 8 | e | c | 4
+          - A2; I1; E2; C2     | 2 | 1 | 2 | 2 | 2 | 1 | ~ | T | n | 8 | e | c | 4
+          - A2; E2; I1; C2     | 2 | 1 | 2 | 2 | 2 | 1 | ~ | T | n | 8 | e | c | 4
+          - A2; E2; C2; I1     | 2 | 1 | 2 | 2 | 2 | 1 | ~ | T | n | 8 | e | c | 4
 
-            // normal case (latest insert wins)
-            "I2; A1; E1; C1         | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| U | 4",
-            "A1; I2; E1; C1         | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| U | 4",
-            "A1; E1; I2; C1         | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| U | 4",
-            "A1; E1; C1; I2         | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| U | 4",
+          # normal case (latest insert wins)
+          - I2; A1; E1; C1     | 2 | 2 | 2 | 2 | 2 | 2 | ~ | T | n | 7 | U | U | 4
+          - A1; I2; E1; C1     | 2 | 2 | 2 | 2 | 2 | 2 | ~ | T | n | 7 | U | U | 4
+          - A1; E1; I2; C1     | 2 | 2 | 2 | 2 | 2 | 2 | ~ | T | n | 7 | U | U | 4
+          - A1; E1; C1; I2     | 2 | 2 | 2 | 2 | 2 | 2 | ~ | T | n | 7 | U | U | 4
 
-            // overwrite by delete
-            "D1; I1                 | 1| 1| 1| 1| 1|    1| #| T|    n| 7| U| U | 4", // INSERT wins
-            "I1; D1                 | 1| 1| 1| 1| 1|    #| 1| F|    D| D| D| D | 4", // DELETE wins
-            "D1; I1; A1; E1; C1     | 1| 1| 1| 1| 1|    1| #| T|    n| 8| e| c | 4", // INSERT wins
-            "I1; D1; A1; E1; C1     | 1| 1| 1| 1| 1|    #| 1| F|    D| 8| e| c | 4", // DELETE wins
-            "I1; A1; D1; E1; C1     | 1| 1| 1| 1| 1|    #| 1| F|    D| D| e| c | 4", // DELETE wins
-            "I1; A1; E1; D1; C1     | 1| 1| 1| 1| 1|    #| 1| F|    D| D| D| c | 4", // DELETE wins
-            "I1; A1; E1; C1; D1     | 1| 1| 1| 1| 1|    #| 1| F|    D| D| D| D | 4", // DELETE wins
+          # overwrite by delete
+          - D1; I1             | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | U | U | 4   # INSERT wins
+          - I1; D1             | 1 | 1 | 1 | 1 | 1 | ~ | 1 | F | D | D | D | D | 4   # DELETE wins
+          - D1; I1; A1; E1; C1 | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 8 | e | c | 4   # INSERT wins
+          - I1; D1; A1; E1; C1 | 1 | 1 | 1 | 1 | 1 | ~ | 1 | F | D | 8 | e | c | 4   # DELETE wins
+          - I1; A1; D1; E1; C1 | 1 | 1 | 1 | 1 | 1 | ~ | 1 | F | D | D | e | c | 4   # DELETE wins
+          - I1; A1; E1; D1; C1 | 1 | 1 | 1 | 1 | 1 | ~ | 1 | F | D | D | D | c | 4   # DELETE wins
+          - I1; A1; E1; C1; D1 | 1 | 1 | 1 | 1 | 1 | ~ | 1 | F | D | D | D | D | 4   # DELETE wins
 
-            // pairs
-            "I1; E1                 | 1| 1| 1| 1| 1|    1| #| T|    n| 7| e| U | 4",
-            "E1; I1                 | 1| 1| 1| 1| 1|    1| #| T|    n| 7| e| U | 4",
-            "I1; C1                 | 1| 1| 1| 1| 1|    1| #| T|    n| 7| U| c | 4",
-            "C1; I1                 | 1| 1| 1| 1| 1|    1| #| T|    n| 7| U| c | 4",
+          # pairs
+          - I1; E1             | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | e | U | 4
+          - E1; I1             | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | e | U | 4
+          - I1; C1             | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | U | c | 4
+          - C1; I1             | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | U | c | 4
 
-            // update comment to null
-            "I1; C1                 | 1| 1| 1| 1| 1|    1| #| T|    n| 7| U| c | 4",
-            "I1; C1; N1             | 1| 1| 1| 1| 1|    1| #| T|    n| 7| U| U | 4",
-            "I1; N1; C1             | 1| 1| 1| 1| 1|    1| #| T|    n| 7| U| c | 4",
+          # update comment to null
+          - I1; C1             | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | U | c | 4
+          - I1; C1; N1         | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | U | U | 4
+          - I1; N1; C1         | 1 | 1 | 1 | 1 | 1 | 1 | ~ | T | n | 7 | U | c | 4
 
-            // normal case (set comment to null)
-            "I1; C2; N3             | 3| 1| 1| 1| 3|    1| #| T|    n| 7| U| U | 4",
-            "I1; N3; C2             | 3| 1| 1| 1| 3|    1| #| T|    n| 7| U| U | 4",
-            "C2; I1; N3             | 3| 1| 1| 1| 3|    1| #| T|    n| 7| U| U | 4",
-            "C2; N3; I1             | 3| 1| 1| 1| 3|    1| #| T|    n| 7| U| U | 4",
-            "N3; I1; C2             | 3| 1| 1| 1| 3|    1| #| T|    n| 7| U| U | 4",
-            "N3; C2; I1             | 3| 1| 1| 1| 3|    1| #| T|    n| 7| U| U | 4",
+          # normal case (set comment to null)
+          - I1; C2; N3         | 3 | 1 | 1 | 1 | 3 | 1 | ~ | T | n | 7 | U | U | 4
+          - I1; N3; C2         | 3 | 1 | 1 | 1 | 3 | 1 | ~ | T | n | 7 | U | U | 4
+          - C2; I1; N3         | 3 | 1 | 1 | 1 | 3 | 1 | ~ | T | n | 7 | U | U | 4
+          - C2; N3; I1         | 3 | 1 | 1 | 1 | 3 | 1 | ~ | T | n | 7 | U | U | 4
+          - N3; I1; C2         | 3 | 1 | 1 | 1 | 3 | 1 | ~ | T | n | 7 | U | U | 4
+          - N3; C2; I1         | 3 | 1 | 1 | 1 | 3 | 1 | ~ | T | n | 7 | U | U | 4
 
-            // normal case (set comment to c)
-            "I1; N2; C3             | 3| 1| 1| 1| 3|    1| #| T|    n| 7| U| c | 4",
+          # normal case (set comment to c)
+          - I1; N2; C3         | 3 | 1 | 1 | 1 | 3 | 1 | ~ | T | n | 7 | U | c | 4
 
-            // eventual consistency (these cases are covered by StateCompanion Test)
-            "I1; A2                 | 2| 1| 2| 1| 1|    1| #| T|    n| 8| U| U | 4",
-            "A2; I1                 | 2| 1| 2| 1| 1|    1| #| T|    n| 8| U| U | 4",
+          # eventual consistency (these cases are covered by StateCompanion Test)
+          - I1; A2             | 2 | 1 | 2 | 1 | 1 | 1 | ~ | T | n | 8 | U | U | 4
+          - A2; I1             | 2 | 1 | 2 | 1 | 1 | 1 | ~ | T | n | 8 | U | U | 4
 
-            // ISSUE-3233 see [com.kakao.actionbase.v2.engine.IssueSpec]
-            // in the v2 engine| can not invalidate "c"
-            // I2; C1               | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| U | 4",
-            // C1; I2               | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| **c** | 4",
-            "I2; C1                 | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| U | 4",
-            "C1; I2                 | 2| 2| 2| 2| 2|    2| #| T|    n| 7| U| U | 4",
-        ],
+          # ISSUE-3233 see [com.kakao.actionbase.v2.engine.IssueSpec]
+          # in the v2 engine, can not invalidate "c"
+          - I2; C1             | 2 | 2 | 2 | 2 | 2 | 2 | ~ | T | n | 7 | U | U | 4
+          - C1; I2             | 2 | 2 | 2 | 2 | 2 | 2 | ~ | T | n | 7 | U | U | 4
+        """,
     )
     @DisplayName("Processing Time Test")
     fun `test processing order`(

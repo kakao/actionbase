@@ -24,6 +24,11 @@ public class StringKeyFieldValueEdgeEncoder extends AbstractEdgeEncoder<String> 
   }
 
   @Override
+  protected String encodeBufferAsT(Consumer<EdgeBuffer> block) {
+    return useAsHexString(block);
+  }
+
+  @Override
   public EncodedKey<String> encodeHashEdgeKey(Edge edge, int labelId) {
     String key =
         useAsBase64String(buffer -> encodeHashKeyPrefixToBuffer(edge.getSrc(), labelId, buffer));
@@ -107,6 +112,37 @@ public class StringKeyFieldValueEdgeEncoder extends AbstractEdgeEncoder<String> 
                     index, ts, directedSrc, directedTgt, props, buffer));
     String value = useAsBase64String(buffer -> encodeIndexedEdgeValueToBuffer(ts, props, buffer));
 
+    return new KeyFieldValue<>(key, field, value);
+  }
+
+  @Override
+  public KeyFieldValue<String> encodeCacheEdge(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      Cache cache) {
+    Object directedSrc;
+    Object directedTgt;
+    if (dir == Direction.OUT) {
+      directedSrc = src;
+      directedTgt = tgt;
+    } else {
+      directedSrc = tgt;
+      directedTgt = src;
+    }
+    String key =
+        useAsBase64String(
+            buffer ->
+                encodeCacheEdgeKeyToBuffer(directedSrc, dir, labelId, cache.getCode(), buffer));
+    String field =
+        useAsHexString(
+            buffer ->
+                encodeCacheEdgeQualifierToBuffer(
+                    cache, ts, directedSrc, directedTgt, props, buffer));
+    String value = useAsBase64String(buffer -> encodeCacheEdgeValueToBuffer(ts, props, buffer));
     return new KeyFieldValue<>(key, field, value);
   }
 

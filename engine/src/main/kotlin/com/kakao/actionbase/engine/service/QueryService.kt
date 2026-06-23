@@ -1,0 +1,241 @@
+package com.kakao.actionbase.engine.service
+
+import com.kakao.actionbase.core.Constants.VERTEX_MARKER
+import com.kakao.actionbase.core.edge.EdgeField
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
+import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
+import com.kakao.actionbase.core.edge.payload.EdgePayload
+import com.kakao.actionbase.engine.QueryEngine
+import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
+import com.kakao.actionbase.engine.sql.DataFrame
+import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.engine.sql.ScanFilter
+
+import reactor.core.publisher.Mono
+
+class QueryService(
+    private val engine: QueryEngine,
+) {
+    private val queryExecutor = ActionbaseQueryExecutor(engine)
+
+    @Suppress("UnusedParameter")
+    fun count(
+        database: String,
+        table: String,
+        start: Any,
+        direction: Direction,
+        ranges: String? = null,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+    ): Mono<EdgeCountPayload> =
+        counts(database, table, listOf(start), direction, ranges, filters, features)
+            .map {
+                if (it.count == 0) {
+                    empty(direction)
+                } else {
+                    it.counts.first()
+                }
+            }
+
+    @Suppress("UnusedParameter")
+    fun counts(
+        database: String,
+        table: String,
+        start: List<Any>,
+        direction: Direction,
+        ranges: String? = null,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+    ): Mono<DataFrameEdgeCountPayload> {
+        require(ranges == null) { "`ranges` is not yet supported in count query." }
+        require(filters == null) { "`filters` is not yet supported in count query." }
+        require(features.isEmpty()) { "`features` ${features.joinToString(", ")} are not supported in get query." }
+
+        return engine
+            .getTableBinding(database, table)
+            .count(start.toSet(), direction)
+            .map { df ->
+                val counts =
+                    df.rows.map { row ->
+                        EdgeCountPayload(
+                            start = row[EdgeField.SOURCE] as Any,
+                            direction = direction.toV3(),
+                            count = row[DataFrame.COUNT_FIELD] as Long,
+                            context = emptyMap(),
+                        )
+                    }
+
+                DataFrameEdgeCountPayload(counts, counts.size, context = emptyMap())
+            }
+    }
+
+    @Suppress("UnusedParameter")
+    fun gets(
+        database: String,
+        table: String,
+        source: List<Any>,
+        target: List<Any>,
+        ranges: String? = null,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+    ): Mono<DataFrameEdgePayload> {
+        require(ranges == null) { "`ranges` is not supported in get query." }
+        require(features.isEmpty()) { "`features` ${features.joinToString(", ")} are not supported in get query." }
+
+        val keys =
+            source.distinct().flatMap { s ->
+                target.distinct().map { t -> s to t }
+            }
+
+        return engine
+            .getTableBinding(database, table)
+            .gets(keys, filters)
+            .map { it.toEdgePayload() }
+    }
+
+    fun getVertices(
+        database: String,
+        table: String,
+        keys: List<Any>,
+        filters: String? = null,
+    ): Mono<DataFrameEdgePayload> = gets(database, table, keys, listOf(VERTEX_MARKER), filters = filters)
+
+    @Suppress("UnusedParameter")
+    fun gets(
+        database: String,
+        table: String,
+        ids: List<Any>,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+    ): Mono<DataFrameEdgePayload> {
+        require(features.isEmpty()) { "`features` ${features.joinToString(", ")} are not supported in get query." }
+
+        val tb = engine.getTableBinding(database, table)
+
+        require(tb.schema is com.kakao.actionbase.core.metadata.common.ModelSchema.MultiEdge) {
+            "get query with ids is only supported for multi-edge tables."
+        }
+
+        val keys = ids.distinct().map { id -> id to id }
+        return tb
+            .gets(keys, filters)
+            .map { it.toEdgePayload() }
+    }
+
+    fun scan(
+        database: String,
+        table: String,
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int = ScanFilter.defaultLimit,
+        offset: String? = null,
+        ranges: String? = null,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+    ): Mono<DataFrameEdgePayload> =
+        engine
+            .getTableBinding(database, table)
+            .scan(index, start, direction, limit, offset, ranges, filters, features)
+            .map { it.toEdgePayload(flip = direction == Direction.IN) }
+
+    fun seek(
+        database: String,
+        table: String,
+        cache: String,
+        start: List<Any>,
+        direction: Direction,
+        limit: Int = ScanFilter.defaultLimit,
+        offset: String? = null,
+        ranges: String? = null,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+    ): Mono<DataFrameEdgePayload> =
+        engine
+            .getTableBinding(database, table)
+            .seek(cache, start, direction, limit, offset, ranges, filters, features)
+            .map { it.toEdgePayload() }
+
+    fun agg(
+        database: String,
+        table: String,
+        group: String,
+        start: List<Any>,
+        direction: Direction,
+        ranges: String,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+        ttl: Long? = null,
+    ): Mono<DataFrameEdgeAggPayload> = engine.getTableBinding(database, table).agg(group, start, direction, ranges, filters, features, ttl)
+
+    fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = queryExecutor.query(request)
+
+    private fun DataFrame.toEdgePayload(flip: Boolean = false): DataFrameEdgePayload {
+        val edges =
+            rows.map { row ->
+                val (source, target) = if (!flip) row[EdgeField.SOURCE]!! to row[EdgeField.TARGET]!! else row[EdgeField.TARGET]!! to row[EdgeField.SOURCE]!!
+
+                EdgePayload(
+                    version = row[EdgeField.VERSION] as Long,
+                    source = source,
+                    target = target,
+                    // Backticks are an internal disambiguation for the V3 DataFrame row map.
+                    // EdgePayload.properties is its own namespace separate from the
+                    // version/source/target fields, so the natural names are safe to use here.
+                    properties =
+                        row.data
+                            .filterKeys { it !in EDGE_FIELDS }
+                            .mapKeys { (k, _) -> unescapeV3Keyword(k) },
+                    context = emptyMap(),
+                )
+            }
+        return DataFrameEdgePayload(
+            edges = edges,
+            count = count,
+            total = total,
+            offset = offset,
+            hasNext = hasNext,
+            context = emptyMap(),
+        )
+    }
+
+    companion object {
+        private val EDGE_FIELDS = setOf(EdgeField.VERSION, EdgeField.SOURCE, EdgeField.TARGET, EdgeField.DIRECTION)
+
+        private fun Direction.toV3(): com.kakao.actionbase.core.metadata.common.Direction =
+            when (this) {
+                Direction.OUT -> com.kakao.actionbase.core.metadata.common.Direction.OUT
+                Direction.IN -> com.kakao.actionbase.core.metadata.common.Direction.IN
+            }
+
+        fun empty(direction: Direction): EdgeCountPayload =
+            if (direction == Direction.OUT) {
+                emptyEdgeCountPayloadOut
+            } else {
+                emptyEdgeCountPayloadIn
+            }
+
+        private val emptyEdgeCountPayloadOut: EdgeCountPayload =
+            EdgeCountPayload(
+                start = "",
+                direction = com.kakao.actionbase.core.metadata.common.Direction.OUT,
+                count = 0L,
+                context = emptyMap(),
+            )
+
+        private val emptyEdgeCountPayloadIn: EdgeCountPayload =
+            EdgeCountPayload(
+                start = "",
+                direction = com.kakao.actionbase.core.metadata.common.Direction.IN,
+                count = 0L,
+                context = emptyMap(),
+            )
+
+        internal fun escapeV3Keyword(fieldName: String): String = if (fieldName in EDGE_FIELDS) "`$fieldName`" else EdgeField.toV3(fieldName)
+
+        private fun unescapeV3Keyword(name: String): String = name.removeSurrounding("`")
+    }
+}

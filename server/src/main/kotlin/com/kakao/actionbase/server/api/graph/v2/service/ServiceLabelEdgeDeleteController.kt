@@ -1,13 +1,11 @@
 package com.kakao.actionbase.server.api.graph.v2.service
 
 import com.kakao.actionbase.server.configuration.Defaults
-import com.kakao.actionbase.server.payload.EdgeValueRequest
 import com.kakao.actionbase.server.payload.EdgesRequest
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.edge.MutationResult
 import com.kakao.actionbase.v2.engine.label.DeleteEdgeRequest
-import com.kakao.actionbase.v2.engine.label.DeleteIdEdgeRequest
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
@@ -34,29 +32,6 @@ class ServiceLabelEdgeDeleteController(
         ) requestId: String,
     ): Mono<ResponseEntity<MutationResult>> {
         val request = DeleteEdgeRequest("$service.$label", edges.edges, edges.audit, requestId)
-        return graph.delete(request).mapToResponseEntity()
-    }
-
-    @PostMapping("/graph/v2/service/{service}/label/{label}/edge/delete/id/{edgeId}")
-    fun deleteByEdgeId(
-        @PathVariable service: String,
-        @PathVariable label: String,
-        @PathVariable edgeId: String,
-        @RequestBody edgeValue: EdgeValueRequest,
-        @RequestHeader(
-            Defaults.REQUEST_ID_HEADER,
-            required = false,
-            defaultValue = Defaults.DEFAULT_REQUEST_ID,
-        ) requestId: String,
-    ): Mono<ResponseEntity<MutationResult>> {
-        val request =
-            DeleteIdEdgeRequest(
-                "$service.$label",
-                edgeId,
-                edgeValue.toEdgeValue(),
-                edgeValue.audit,
-                requestId,
-            )
         return graph.delete(request).mapToResponseEntity()
     }
 }

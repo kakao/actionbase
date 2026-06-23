@@ -4,7 +4,6 @@ enum class StatKey {
     WITH_ALL,
     SRC_DEGREE,
     TGT_DEGREE,
-    EDGE_ID,
     OFFSET,
 
     IGNORE_PHASE,

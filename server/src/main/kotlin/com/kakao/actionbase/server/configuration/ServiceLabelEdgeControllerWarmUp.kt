@@ -17,12 +17,14 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.server.WebFilter
 
 import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 @Component
 @ConditionalOnProperty(name = ["kc.graph.warmup.enabled"], havingValue = "true")
 class ServiceLabelEdgeControllerWarmUp(
     @Value("\${server.port:8080}") private val serverPort: Int,
     graphProperties: GraphProperties,
+    serverProperties: ServerProperties,
     @Qualifier("tokenAuthenticationFilter") private val tokenAuthenticationFilter: WebFilter,
 ) : ApplicationListener<ApplicationReadyEvent> {
     private val log: Logger = LoggerFactory.getLogger(ServiceLabelEdgeControllerWarmUp::class.java)
@@ -43,7 +45,12 @@ class ServiceLabelEdgeControllerWarmUp(
         log.info("WarmUp is added. serverPort: $serverPort, config: $warmUpConfig")
     }
 
-    private val allMethods = listOf(HttpMethod.POST, HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE)
+    private val allMethods =
+        if (serverProperties.readOnly) {
+            listOf(HttpMethod.GET)
+        } else {
+            listOf(HttpMethod.POST, HttpMethod.GET, HttpMethod.PUT, HttpMethod.DELETE)
+        }
 
     fun warmUpInfo(
         i: Int,
@@ -57,8 +64,12 @@ class ServiceLabelEdgeControllerWarmUp(
         )
 
     override fun onApplicationEvent(event: ApplicationReadyEvent) {
+        // Round up warmUpConfig.count to the nearest multiple of allMethods.size.
+        val warmUpCount =
+            ((warmUpConfig.count + allMethods.size - 1) / allMethods.size) * allMethods.size
+
         Flux
-            .range(0, warmUpConfig.count)
+            .range(0, warmUpCount)
             .flatMap({ i ->
                 if (tokenAuthenticationFilter is TokenAuthenticationFilter) {
                     tokenAuthenticationFilter.warmUp()
@@ -66,7 +77,7 @@ class ServiceLabelEdgeControllerWarmUp(
                 if (i == 0) {
                     log.info("ServiceLabelEdgeControllerWarmUp is started")
                 }
-                val method = allMethods.random()
+                val method = allMethods[i % allMethods.size]
                 val uri =
                     if (method != HttpMethod.GET) {
                         "/graph/v2/service/sys/label/info/edge"
@@ -87,7 +98,28 @@ class ServiceLabelEdgeControllerWarmUp(
                             else -> {}
                         }
                     }.retrieve()
-                    .bodyToMono(String::class.java)
+                    .bodyToMono(Map::class.java)
+                    .flatMap { body ->
+                        if (method == HttpMethod.GET) {
+                            Mono.just(body)
+                        } else {
+                            @Suppress("UNCHECKED_CAST")
+                            val results = body["result"] as? List<*> ?: emptyList<Any>()
+                            val erroredItem =
+                                results.firstOrNull {
+                                    (it as? Map<*, *>)?.get("status") == "ERROR"
+                                }
+                            if (erroredItem != null) {
+                                Mono.error(
+                                    IllegalStateException(
+                                        "Warm-up mutation returned ERROR status: $erroredItem",
+                                    ),
+                                )
+                            } else {
+                                Mono.just(body)
+                            }
+                        }
+                    }
             }, warmUpConfig.concurrency)
             .count()
             .flatMap {
@@ -101,8 +133,9 @@ class ServiceLabelEdgeControllerWarmUp(
                     }.doOnError { ex ->
                         log.error("💔 readiness DOWN  💔", ex)
                     }.thenReturn(it)
-            }.subscribe {
-                log.info("Warm-up is completed: $it tires.")
-            }
+            }.subscribe(
+                { log.info("Warm-up is completed: $it tires.") },
+                { ex -> log.error("💔 Warm-up FAILED — readiness stays DOWN 💔", ex) },
+            )
     }
 }

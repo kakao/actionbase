@@ -20,8 +20,6 @@ import java.util.Base64
 import kotlin.test.assertEquals
 
 import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 
 class EdgeCountMapperTest {
     companion object {
@@ -51,6 +49,7 @@ class EdgeCountMapperTest {
                 .code()
     }
 
+    @ObjectSourceParameterizedTest
     @ObjectSource(
         """
         - sourceField:
@@ -63,7 +62,6 @@ class EdgeCountMapperTest {
           direction: IN
         """,
     )
-    @ObjectSourceParameterizedTest
     fun encodeKeyTest(
         sourceField: Field,
         direction: Direction,
@@ -79,6 +77,7 @@ class EdgeCountMapperTest {
         assertArrayEquals(expected, actual)
     }
 
+    @ObjectSourceParameterizedTest
     @ObjectSource(
         """
         - base64EncodedKey: 3NCIliuAAATSK7UfmNkpfimD
@@ -98,7 +97,6 @@ class EdgeCountMapperTest {
           direction: IN
         """,
     )
-    @ObjectSourceParameterizedTest
     fun decodeKeyTest(
         base64EncodedKey: String,
         expectedSourceField: Field,
@@ -112,14 +110,13 @@ class EdgeCountMapperTest {
         assertEquals(direction, actual.direction)
     }
 
-    @CsvSource(
-        delimiter = '|',
-        value = [
-            // base64 decoded value | expected count
-            "AAAAAAAAAAI            | 2",
-        ],
+    @ObjectSourceParameterizedTest
+    @ObjectSource(
+        """
+        - encodedValue: AAAAAAAAAAI
+          expectedCount: 2
+        """,
     )
-    @ParameterizedTest(name = "source[{1}], direction[{2}]")
     fun decodeValueTest(
         encodedValue: String,
         expectedCount: Long,

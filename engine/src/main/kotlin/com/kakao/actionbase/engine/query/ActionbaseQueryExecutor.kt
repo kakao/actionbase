@@ -1,11 +1,12 @@
 package com.kakao.actionbase.engine.query
 
-import com.kakao.actionbase.engine.query.compat.toScanFilter
-import com.kakao.actionbase.v2.core.code.EmptyEdgeIdEncoder
-import com.kakao.actionbase.v2.core.types.Field
-import com.kakao.actionbase.v2.core.types.StructType
-import com.kakao.actionbase.v2.engine.sql.DataFrame
-import com.kakao.actionbase.v2.engine.sql.Row
+import com.kakao.actionbase.core.java.codec.common.hbase.Order
+import com.kakao.actionbase.core.metadata.common.StructField
+import com.kakao.actionbase.core.metadata.common.StructType
+import com.kakao.actionbase.core.types.PrimitiveType
+import com.kakao.actionbase.engine.QueryEngine
+import com.kakao.actionbase.engine.sql.DataFrame
+import com.kakao.actionbase.engine.sql.Row
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
@@ -19,13 +20,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 /**
  * @see ActionbaseQuery
  */
 class ActionbaseQueryExecutor(
-    private val labelProvider: LabelProvider,
+    private val engine: QueryEngine,
 ) {
     private val objectMapper = jacksonObjectMapper()
 
@@ -37,14 +39,17 @@ class ActionbaseQueryExecutor(
     private fun resolveVertex(
         vertex: ActionbaseQuery.Vertex,
         context: Map<String, DataFrame>,
-    ): Set<Any> =
+        actionBaseQuery: ActionbaseQuery,
+    ): Mono<Set<Any>> =
         when (vertex) {
-            is ActionbaseQuery.Vertex.Ref -> refToValues(vertex, context)
-            is ActionbaseQuery.Vertex.Value -> vertex.value.toSet()
+            is ActionbaseQuery.Vertex.Ref -> Mono.just(refToValues(vertex, context))
+            is ActionbaseQuery.Vertex.Value -> Mono.just(vertex.value.toSet())
+            is ActionbaseQuery.Vertex.Step ->
+                processQuery(vertex.step, context, actionBaseQuery)
+                    .map { df -> df.getColumn(vertex.field).filterNotNull().toSet() }
         }
 
     fun query(actionBaseQuery: ActionbaseQuery): Mono<Map<String, DataFrame>> {
-        val returnNames = actionBaseQuery.query.filter { it.include }.map { it.name }
         val computed: Mono<Map<String, DataFrame>> =
             actionBaseQuery.query.fold(Mono.just(emptyMap())) { acc, queryItem ->
                 acc.flatMap { context ->
@@ -52,6 +57,7 @@ class ActionbaseQueryExecutor(
                         .map { context + (queryItem.name to it) }
                 }
             }
+        val returnNames = actionBaseQuery.query.filter { it.include }.map { it.name }
         return computed.map { context ->
             returnNames.associateWith { context.getValue(it) }
         }
@@ -64,6 +70,7 @@ class ActionbaseQueryExecutor(
     ): Mono<DataFrame> =
         processQueryItem(queryItem, context, actionBaseQuery)
             .flatMap { applyPostProcessors(it, queryItem.post) }
+            .flatMap { applyAggregators(it, queryItem.aggregators) }
             .let { if (queryItem.memoize) it.cache() else it }
 
     private fun processQueryItem(
@@ -74,16 +81,16 @@ class ActionbaseQueryExecutor(
         when (queryItem) {
             is ActionbaseQuery.Item.Self -> processSelf(queryItem, context, actionBaseQuery)
             is ActionbaseQuery.Item.Get -> processGet(queryItem, context, actionBaseQuery)
-            is ActionbaseQuery.Item.Count -> processCount(queryItem, context)
+            is ActionbaseQuery.Item.Count -> processCount(queryItem, context, actionBaseQuery)
             is ActionbaseQuery.Item.Scan -> processScan(queryItem, context, actionBaseQuery)
-            is ActionbaseQuery.Item.Cache -> processCache(queryItem, context)
+            is ActionbaseQuery.Item.Seek -> processSeek(queryItem, context, actionBaseQuery)
         }
 
     private fun applyPostProcessors(
         df: DataFrame,
         postProcessors: List<ActionbaseQuery.PostProcessor>,
     ): Mono<DataFrame> =
-        postProcessors.fold(Mono.just(df) as Mono<DataFrame>) { acc, postProcessor ->
+        postProcessors.fold(Mono.just(df)) { acc, postProcessor ->
             acc.flatMap { applyPostProcessor(it, postProcessor) }
         }
 
@@ -96,56 +103,158 @@ class ActionbaseQueryExecutor(
             is ActionbaseQuery.PostProcessor.SplitExplode -> postProcessorSplitExplode(df, postProcessor)
         }
 
+    private fun applyAggregators(
+        df: DataFrame,
+        aggregators: List<ActionbaseQuery.Aggregator>,
+    ): Mono<DataFrame> =
+        aggregators.fold(Mono.just(df)) { acc, aggregator ->
+            acc.flatMap { applyAggregator(it, aggregator) }
+        }
+
+    private fun applyAggregator(
+        df: DataFrame,
+        aggregator: ActionbaseQuery.Aggregator,
+    ): Mono<DataFrame> =
+        when (aggregator) {
+            is ActionbaseQuery.Aggregator.Flatten -> Mono.just(df)
+            is ActionbaseQuery.Aggregator.Count -> aggregateCount(df, aggregator)
+            is ActionbaseQuery.Aggregator.Sum -> aggregateSum(df, aggregator)
+        }
+
     private fun processSelf(
         queryItem: ActionbaseQuery.Item.Self,
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
-    ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
-        val src = resolveVertex(queryItem.source, context).toList()
-        return label.getSelf(src, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
-    }
+    ): Mono<DataFrame> =
+        resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
+            val keys = source.map { it to it }
+
+            engine
+                .getTableBinding(database = queryItem.database, alias = queryItem.table)
+                .gets(keys, null)
+        }
 
     private fun processGet(
         queryItem: ActionbaseQuery.Item.Get,
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
-    ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
-        val src = resolveVertex(queryItem.source, context).toList()
-        val tgt = resolveVertex(queryItem.target, context).toList()
-        return label.get(src, tgt, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
-    }
+    ): Mono<DataFrame> =
+        resolveVertex(queryItem.source, context, actionBaseQuery)
+            .zipWith(resolveVertex(queryItem.target, context, actionBaseQuery))
+            .flatMap { tuple ->
+                val sources = tuple.t1
+                val targets = tuple.t2
+                val keys = sources.flatMap { s -> targets.map { t -> s to t } }
+
+                engine
+                    .getTableBinding(database = queryItem.database, alias = queryItem.table)
+                    .gets(keys, null)
+            }
 
     private fun processCount(
         queryItem: ActionbaseQuery.Item.Count,
         context: Map<String, DataFrame>,
-    ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
-        val src = resolveVertex(queryItem.source, context)
-        return label.count(src, queryItem.direction)
-    }
+        actionBaseQuery: ActionbaseQuery,
+    ): Mono<DataFrame> =
+        resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
+            engine
+                .getTableBinding(database = queryItem.database, alias = queryItem.table)
+                .count(source, queryItem.direction)
+        }
 
     private fun processScan(
         queryItem: ActionbaseQuery.Item.Scan,
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
-    ): Mono<DataFrame> {
-        val label = labelProvider.getLabel(queryItem.database, queryItem.table)
-        val src = resolveVertex(queryItem.source, context)
-        val scanFilter = queryItem.toScanFilter(src)
-        return label.scan(scanFilter, actionBaseQuery.stats, EmptyEdgeIdEncoder.INSTANCE)
-    }
-
-    @Suppress("UnusedParameter")
-    private fun processCache(
-        queryItem: ActionbaseQuery.Item.Cache,
-        context: Map<String, DataFrame>,
     ): Mono<DataFrame> =
-        // TODO Phase 3: resolve src via resolveVertex(), look up label via labelProvider,
-        //  perform EdgeCache multi-get using cache and limit from queryItem,
-        //  validate limit > 0 from user input
-        Mono.just(DataFrame(emptyList(), StructType(emptyArray())))
+        resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
+            Flux
+                .fromIterable(source)
+                .flatMap { start ->
+                    engine
+                        .getTableBinding(database = queryItem.database, alias = queryItem.table)
+                        .scan(queryItem.index, start, queryItem.direction, queryItem.limit, queryItem.offset, ranges = queryItem.ranges, filters = null, features = emptyList())
+                }.reduce { a, b ->
+                    DataFrame(rows = a.rows + b.rows, schema = a.schema, total = a.total + b.total)
+                }.switchIfEmpty(Mono.just(DataFrame.empty))
+        }
+
+    private fun processSeek(
+        queryItem: ActionbaseQuery.Item.Seek,
+        context: Map<String, DataFrame>,
+        actionBaseQuery: ActionbaseQuery,
+    ): Mono<DataFrame> =
+        resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
+            engine
+                .getTableBinding(database = queryItem.database, alias = queryItem.table)
+                .seek(queryItem.cache, source.toList(), queryItem.direction, queryItem.limit, offset = null, ranges = queryItem.ranges, filters = null, features = emptyList())
+                .switchIfEmpty(Mono.just(DataFrame.empty))
+        }
+
+    // region Aggregators
+
+    internal fun aggregateCount(
+        df: DataFrame,
+        agg: ActionbaseQuery.Aggregator.Count,
+    ): Mono<DataFrame> =
+        Mono.fromCallable {
+            val grouped =
+                df.rows
+                    .groupingBy { it.data[agg.field] }
+                    .eachCount()
+                    .entries
+                    .let { counts ->
+                        when (agg.order) {
+                            Order.ASC -> counts.sortedBy { it.value }
+                            Order.DESC -> counts.sortedByDescending { it.value }
+                        }
+                    }.take(agg.limit)
+
+            val sourceField = df.schema.getField(agg.field)
+            val newSchema =
+                StructType(
+                    listOf(
+                        sourceField,
+                        StructField("count", PrimitiveType.LONG, "", false),
+                    ),
+                )
+            val newRows =
+                grouped.map {
+                    Row(mapOf(agg.field to it.key, "count" to it.value.toLong()), newSchema)
+                }
+            DataFrame(newRows, newSchema, total = newRows.size.toLong())
+        }
+
+    internal fun aggregateSum(
+        df: DataFrame,
+        agg: ActionbaseQuery.Aggregator.Sum,
+    ): Mono<DataFrame> =
+        Mono.fromCallable {
+            val grouped =
+                df.rows
+                    .groupingBy { row -> agg.keyFields.map { row.data[it] } }
+                    .fold(0.0) { acc, row -> acc + (row.data[agg.valueField] as Number).toDouble() }
+                    .entries
+                    .let { sums ->
+                        when (agg.order) {
+                            Order.ASC -> sums.sortedBy { it.value }
+                            Order.DESC -> sums.sortedByDescending { it.value }
+                        }
+                    }.take(agg.limit)
+
+            val keyFields = agg.keyFields.map { df.schema.getField(it) }
+            val newSchema = StructType(keyFields + StructField(agg.valueField, PrimitiveType.DOUBLE, "", false))
+            val newRows =
+                grouped.map { (keys, sum) ->
+                    val data = agg.keyFields.zip(keys).toMap() + (agg.valueField to sum)
+                    Row(data, newSchema)
+                }
+            DataFrame(newRows, newSchema, total = newRows.size.toLong())
+        }
+
+    // endregion
+
+    // region PostProcessors
 
     internal fun postProcessJsonObject(
         df: DataFrame,
@@ -153,9 +262,9 @@ class ActionbaseQueryExecutor(
     ): Mono<DataFrame> =
         Mono.fromCallable {
             val extractedColumns = extractJsonColumns(df, plan)
-            val newFields = createNewFields(df, plan)
-            val newRows = createNewRows(df, plan, extractedColumns, newFields)
-            DataFrame(newRows, StructType(newFields.toTypedArray()))
+            val newSchema = createNewSchema(df, plan)
+            val newRows = createNewRows(df, plan, extractedColumns, newSchema)
+            DataFrame(newRows, newSchema, total = newRows.size.toLong())
         }
 
     private fun extractJsonColumns(
@@ -202,63 +311,56 @@ class ActionbaseQueryExecutor(
         return current
     }
 
-    private fun createNewFields(
+    private fun createNewSchema(
         df: DataFrame,
         plan: ActionbaseQuery.PostProcessor.JsonObject,
-    ): List<Field> {
-        val extractedFields = plan.paths.map { path -> Field(path.alias, path.dataType, true) }
-        return if (plan.drop) {
-            df.schema.fields.filter { it.name != plan.field } + extractedFields
-        } else {
-            df.schema.fields.toList() + extractedFields
-        }
+    ): StructType {
+        val extractedFields = plan.paths.map { path -> StructField(path.alias, PrimitiveType.valueOf(path.dataType.name), "", true) }
+        val baseFields =
+            if (plan.drop) {
+                df.schema.fields.filter { it.name != plan.field }
+            } else {
+                df.schema.fields
+            }
+        return StructType(baseFields + extractedFields)
     }
 
     private fun createNewRows(
         df: DataFrame,
         plan: ActionbaseQuery.PostProcessor.JsonObject,
         extractedColumns: List<List<Any?>>,
-        newFields: List<Field>,
+        newSchema: StructType,
     ): List<Row> =
         df.rows.mapIndexed { rowIndex, row ->
-            val newRowValues = arrayOfNulls<Any?>(newFields.size)
-            var columnIndex = 0
-
-            df.schema.fields.forEachIndexed { index, field ->
-                if (!plan.drop || field.name != plan.field) {
-                    newRowValues[columnIndex++] = row[index]
+            val baseData =
+                if (plan.drop) {
+                    row.data.filterKeys { it != plan.field }
+                } else {
+                    row.data
                 }
-            }
-
-            extractedColumns[rowIndex].forEachIndexed { index, value ->
-                newRowValues[columnIndex + index] = value
-            }
-
-            Row(newRowValues)
+            val extractedData = plan.paths.mapIndexed { i, path -> path.alias to extractedColumns[rowIndex][i] }.toMap()
+            Row(baseData + extractedData, newSchema)
         }
 
     internal fun postProcessorSplitExplode(
         df: DataFrame,
         plan: ActionbaseQuery.PostProcessor.SplitExplode,
-    ): Mono<DataFrame> {
-        return Mono.fromCallable {
-            val fieldIndex = df.schema.fields.indexOfFirst { it.name == plan.field }
-
-            require(fieldIndex != -1) { "Field ${plan.field} not found in the DataFrame" }
-
+    ): Mono<DataFrame> =
+        Mono.fromCallable {
             val newFields =
                 if (plan.drop) {
-                    df.schema.fields.filterIndexed { index, _ -> index != fieldIndex } + Field(plan.alias, plan.dataType, true)
+                    df.schema.fields.filter { it.name != plan.field } +
+                        StructField(plan.alias, PrimitiveType.valueOf(plan.dataType.name), "", true)
                 } else {
-                    df.schema.fields.toList() + Field(plan.alias, plan.dataType, true)
+                    df.schema.fields + StructField(plan.alias, PrimitiveType.valueOf(plan.dataType.name), "", true)
                 }
-            val newSchema = StructType(newFields.toTypedArray())
+            val newSchema = StructType(newFields)
 
             val newRows =
                 df.rows.flatMap { row ->
-                    val fieldValue = row[fieldIndex] as? String
+                    val fieldValue = row.data[plan.field] as? String
                     if (fieldValue.isNullOrEmpty()) {
-                        return@flatMap emptyList<Row>() // Skip empty strings entirely
+                        return@flatMap emptyList<Row>()
                     }
 
                     val splitValues =
@@ -269,16 +371,18 @@ class ActionbaseQueryExecutor(
                         }
 
                     splitValues.filter { it.isNotEmpty() }.map { splitValue ->
-                        val newArray = row.array.toMutableList()
-                        if (plan.drop) {
-                            newArray.removeAt(fieldIndex)
-                        }
-                        newArray.add(plan.dataType.cast(splitValue))
-                        Row(newArray.toTypedArray())
+                        val baseData =
+                            if (plan.drop) {
+                                row.data.filterKeys { it != plan.field }
+                            } else {
+                                row.data
+                            }
+                        Row(baseData + (plan.alias to plan.dataType.cast(splitValue)), newSchema)
                     }
                 }
 
-            DataFrame(newRows, newSchema)
+            DataFrame(newRows, newSchema, total = newRows.size.toLong())
         }
-    }
+
+    // endregion
 }
