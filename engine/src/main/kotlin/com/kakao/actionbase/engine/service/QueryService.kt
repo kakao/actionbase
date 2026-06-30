@@ -1,10 +1,12 @@
 package com.kakao.actionbase.engine.service
 
+import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.Constants.VERTEX_MARKER
 import com.kakao.actionbase.core.edge.EdgeField
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
+import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.engine.QueryEngine
@@ -165,11 +167,19 @@ class QueryService(
         group: String,
         start: List<Any>,
         direction: Direction,
-        ranges: String,
+        ranges: String? = null,
         filters: String? = null,
         features: List<String> = emptyList(),
         ttl: Long? = null,
-    ): Mono<DataFrameEdgeAggPayload> = engine.getTableBinding(database, table).agg(group, start, direction, ranges, filters, features, ttl)
+    ): Mono<DataFrameEdgeAggPayload> {
+        if (group == Constants.Group.COUNT_SENTINEL) {
+            require(ranges == null) { "`ranges` is not supported for group `${Constants.Group.COUNT_SENTINEL}`." }
+            return counts(database, table, start, direction, null, filters, features)
+                .map { it.toAggPayload() }
+        }
+        requireNotNull(ranges) { "`ranges` is required for group `$group`." }
+        return engine.getTableBinding(database, table).agg(group, start, direction, ranges, filters, features, ttl)
+    }
 
     fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = queryExecutor.query(request)
 
@@ -237,5 +247,18 @@ class QueryService(
         internal fun escapeV3Keyword(fieldName: String): String = if (fieldName in EDGE_FIELDS) "`$fieldName`" else EdgeField.toV3(fieldName)
 
         private fun unescapeV3Keyword(name: String): String = name.removeSurrounding("`")
+
+        private fun DataFrameEdgeCountPayload.toAggPayload(): DataFrameEdgeAggPayload {
+            val groups =
+                counts.map { c ->
+                    EdgeAggPayload(
+                        start = c.start,
+                        direction = c.direction,
+                        value = c.count,
+                        context = c.context,
+                    )
+                }
+            return DataFrameEdgeAggPayload(groups, groups.size, context)
+        }
     }
 }

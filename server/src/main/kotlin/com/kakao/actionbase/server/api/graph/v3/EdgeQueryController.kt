@@ -118,7 +118,7 @@ class EdgeQueryController(
         @PathVariable group: String,
         @RequestParam start: List<String>,
         @RequestParam direction: Direction,
-        @RequestParam ranges: String,
+        @RequestParam ranges: String? = null,
         @RequestParam filters: String? = null,
         @RequestParam features: List<String> = emptyList(),
         @RequestParam ttl: Long? = null,
