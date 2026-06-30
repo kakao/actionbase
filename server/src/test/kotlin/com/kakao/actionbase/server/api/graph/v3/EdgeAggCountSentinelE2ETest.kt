@@ -2,15 +2,22 @@ package com.kakao.actionbase.server.api.graph.v3
 
 import com.kakao.actionbase.server.test.E2ETestBase
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.http.MediaType
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EdgeAggCountSentinelE2ETest : E2ETestBase() {
     private val db = "test-agg-count-db"
     private val table = "follows"
+    private val objectMapper = jacksonObjectMapper()
 
     @BeforeAll
     fun setup() {
@@ -35,10 +42,18 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
                     "type": "EDGE",
                     "source": {"type": "long", "comment": "src"},
                     "target": {"type": "long", "comment": "tgt"},
-                    "properties": [],
+                    "properties": [
+                      {"name": "category", "type": "string", "comment": "cat", "nullable": true}
+                    ],
                     "direction": "BOTH",
                     "indexes": [],
-                    "groups": [],
+                    "groups": [
+                      {
+                        "group": "by_category",
+                        "type": "SUM",
+                        "fields": [{"name": "category"}]
+                      }
+                    ],
                     "caches": []
                   },
                   "storage": "datastore://test_namespace/$table",
@@ -59,9 +74,9 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
                 """
                 {
                   "mutations": [
-                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 2}},
-                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 3}},
-                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 4}}
+                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 2, "properties": {"category": "A"}}},
+                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 3, "properties": {"category": "A"}}},
+                    {"type": "INSERT", "edge": {"version": 1, "source": 1, "target": 4, "properties": {"category": "B"}}}
                   ]
                 }
                 """.trimIndent(),
@@ -69,7 +84,7 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
             .expectStatus()
             .isOk
 
-        // Insert 2 incoming edges to node 1 (5→1, 6→1)
+        // Insert 2 incoming edges to node 1 (5→1, 6→1), 1 outgoing from node 5 (5→1)
         client
             .post()
             .uri("/graph/v3/databases/$db/tables/$table/edges")
@@ -78,8 +93,8 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
                 """
                 {
                   "mutations": [
-                    {"type": "INSERT", "edge": {"version": 1, "source": 5, "target": 1}},
-                    {"type": "INSERT", "edge": {"version": 1, "source": 6, "target": 1}}
+                    {"type": "INSERT", "edge": {"version": 1, "source": 5, "target": 1, "properties": {"category": "A"}}},
+                    {"type": "INSERT", "edge": {"version": 1, "source": 6, "target": 1, "properties": {"category": "B"}}}
                   ]
                 }
                 """.trimIndent(),
@@ -88,34 +103,56 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
             .isOk
     }
 
+    /**
+     * Reads the native count for a given start/direction from the /edges/count endpoint.
+     * Used as ground truth to compare against agg/__count__.
+     */
+    private fun nativeCount(start: Long, direction: String): Long {
+        val body =
+            client
+                .get()
+                .uri("/graph/v3/databases/$db/tables/$table/edges/count?start=$start&direction=$direction")
+                .exchange()
+                .expectStatus().isOk
+                .expectBody(String::class.java)
+                .returnResult()
+                .responseBody!!
+        val json: Map<String, Any> = objectMapper.readValue(body)
+        return (json["count"] as Number).toLong()
+    }
+
     @Test
-    fun `agg with __count__ sentinel returns OUT count`() {
+    fun `agg with __count__ sentinel returns same OUT count as native count endpoint`() {
+        val expected = nativeCount(1L, "OUT")
+
         client
             .get()
             .uri("/graph/v3/databases/$db/tables/$table/edges/agg/__count__?start=1&direction=OUT")
             .exchange()
-            .expectStatus()
-            .isOk
+            .expectStatus().isOk
             .expectBody()
             .jsonPath("$.count").isEqualTo(1)
             .jsonPath("$.groups.length()").isEqualTo(1)
-            .jsonPath("$.groups[0].value").isEqualTo(3)
+            .jsonPath("$.groups[0].start").isEqualTo(1)
             .jsonPath("$.groups[0].direction").isEqualTo("OUT")
+            .jsonPath("$.groups[0].value").isEqualTo(expected)
     }
 
     @Test
-    fun `agg with __count__ sentinel returns IN count`() {
+    fun `agg with __count__ sentinel returns same IN count as native count endpoint`() {
+        val expected = nativeCount(1L, "IN")
+
         client
             .get()
             .uri("/graph/v3/databases/$db/tables/$table/edges/agg/__count__?start=1&direction=IN")
             .exchange()
-            .expectStatus()
-            .isOk
+            .expectStatus().isOk
             .expectBody()
             .jsonPath("$.count").isEqualTo(1)
             .jsonPath("$.groups.length()").isEqualTo(1)
-            .jsonPath("$.groups[0].value").isEqualTo(2)
+            .jsonPath("$.groups[0].start").isEqualTo(1)
             .jsonPath("$.groups[0].direction").isEqualTo("IN")
+            .jsonPath("$.groups[0].value").isEqualTo(expected)
     }
 
     @Test
@@ -129,23 +166,43 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
     }
 
     @Test
-    fun `agg with __count__ and multiple starts returns count per node`() {
-        client
-            .get()
-            .uri("/graph/v3/databases/$db/tables/$table/edges/agg/__count__?start=1&start=5&direction=OUT")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody()
-            .jsonPath("$.count").isEqualTo(2)
-            .jsonPath("$.groups.length()").isEqualTo(2)
+    fun `agg with __count__ and multiple starts returns one group per node with value matching native count`() {
+        val expectedNode1 = nativeCount(1L, "OUT")
+        val expectedNode5 = nativeCount(5L, "OUT")
+
+        val body =
+            client
+                .get()
+                .uri("/graph/v3/databases/$db/tables/$table/edges/agg/__count__?start=1&start=5&direction=OUT")
+                .exchange()
+                .expectStatus().isOk
+                .expectBody(String::class.java)
+                .returnResult()
+                .responseBody!!
+
+        val json: Map<String, Any> = objectMapper.readValue(body)
+        val groups = json["groups"] as List<*>
+
+        assertEquals(2, groups.size)
+        assertEquals(2, json["count"])
+
+        @Suppress("UNCHECKED_CAST")
+        val byStart = groups.associateBy { ((it as Map<String, Any>)["start"] as Number).toLong() }
+
+        val group1 = byStart[1L] as? Map<*, *>
+        val group5 = byStart[5L] as? Map<*, *>
+        assertNotNull(group1, "group for start=1 not found")
+        assertNotNull(group5, "group for start=5 not found")
+        assertEquals(expectedNode1, (group1!!["value"] as Number).toLong())
+        assertEquals(expectedNode5, (group5!!["value"] as Number).toLong())
     }
 
     @Test
-    fun `agg with regular group requires ranges`() {
+    fun `agg with existing regular group and no ranges returns 400`() {
+        // "by_category" is a real group defined in the table schema — ranges is required for non-sentinel groups
         client
             .get()
-            .uri("/graph/v3/databases/$db/tables/$table/edges/agg/no_such_group?start=1&direction=OUT")
+            .uri("/graph/v3/databases/$db/tables/$table/edges/agg/by_category?start=1&direction=OUT")
             .exchange()
             .expectStatus()
             .isBadRequest
