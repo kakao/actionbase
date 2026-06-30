@@ -2,16 +2,15 @@ package com.kakao.actionbase.server.api.graph.v3
 
 import com.kakao.actionbase.server.test.E2ETestBase
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.http.MediaType
 
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EdgeAggCountSentinelE2ETest : E2ETestBase() {
@@ -107,13 +106,17 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
      * Reads the native count for a given start/direction from the /edges/count endpoint.
      * Used as ground truth to compare against agg/__count__.
      */
-    private fun nativeCount(start: Long, direction: String): Long {
+    private fun nativeCount(
+        start: Long,
+        direction: String,
+    ): Long {
         val body =
             client
                 .get()
                 .uri("/graph/v3/databases/$db/tables/$table/edges/count?start=$start&direction=$direction")
                 .exchange()
-                .expectStatus().isOk
+                .expectStatus()
+                .isOk
                 .expectBody(String::class.java)
                 .returnResult()
                 .responseBody!!
@@ -129,13 +132,19 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
             .get()
             .uri("/graph/v3/databases/$db/tables/$table/edges/agg/__count__?start=1&direction=OUT")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody()
-            .jsonPath("$.count").isEqualTo(1)
-            .jsonPath("$.groups.length()").isEqualTo(1)
-            .jsonPath("$.groups[0].start").isEqualTo(1)
-            .jsonPath("$.groups[0].direction").isEqualTo("OUT")
-            .jsonPath("$.groups[0].value").isEqualTo(expected)
+            .jsonPath("$.count")
+            .isEqualTo(1)
+            .jsonPath("$.groups.length()")
+            .isEqualTo(1)
+            .jsonPath("$.groups[0].start")
+            .isEqualTo(1)
+            .jsonPath("$.groups[0].direction")
+            .isEqualTo("OUT")
+            .jsonPath("$.groups[0].value")
+            .isEqualTo(expected)
     }
 
     @Test
@@ -146,13 +155,19 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
             .get()
             .uri("/graph/v3/databases/$db/tables/$table/edges/agg/__count__?start=1&direction=IN")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody()
-            .jsonPath("$.count").isEqualTo(1)
-            .jsonPath("$.groups.length()").isEqualTo(1)
-            .jsonPath("$.groups[0].start").isEqualTo(1)
-            .jsonPath("$.groups[0].direction").isEqualTo("IN")
-            .jsonPath("$.groups[0].value").isEqualTo(expected)
+            .jsonPath("$.count")
+            .isEqualTo(1)
+            .jsonPath("$.groups.length()")
+            .isEqualTo(1)
+            .jsonPath("$.groups[0].start")
+            .isEqualTo(1)
+            .jsonPath("$.groups[0].direction")
+            .isEqualTo("IN")
+            .jsonPath("$.groups[0].value")
+            .isEqualTo(expected)
     }
 
     @Test
@@ -175,7 +190,8 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
                 .get()
                 .uri("/graph/v3/databases/$db/tables/$table/edges/agg/__count__?start=1&start=5&direction=OUT")
                 .exchange()
-                .expectStatus().isOk
+                .expectStatus()
+                .isOk
                 .expectBody(String::class.java)
                 .returnResult()
                 .responseBody!!
