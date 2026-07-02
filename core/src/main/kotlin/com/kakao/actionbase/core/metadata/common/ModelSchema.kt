@@ -3,6 +3,7 @@ package com.kakao.actionbase.core.metadata.common
 import com.kakao.actionbase.core.state.AbstractSchema
 import com.kakao.actionbase.core.state.Schema
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName
@@ -19,6 +20,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName
 )
 sealed class ModelSchema : AbstractSchema {
     abstract val properties: List<StructField>
+
+    @get:JsonIgnore
+    val propertiesByName: Map<String, StructField> by lazy { properties.associateBy { it.name } }
 
     @JsonTypeName("edge")
     data class Edge(
