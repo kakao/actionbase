@@ -35,5 +35,8 @@ object Constants {
 
     object Group {
         const val DEFAULT_TTL = 8 * 24 * 60 * 60 * 1000L // 8 days in milliseconds (691,200,000)
+
+        /** Sentinel group name that delegates to the native edge-count query. */
+        const val COUNT_SENTINEL = "__count__"
     }
 }
