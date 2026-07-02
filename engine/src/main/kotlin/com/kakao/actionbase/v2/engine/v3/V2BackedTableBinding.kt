@@ -333,7 +333,15 @@ class V2BackedTableBinding(
                 require(predicate is WherePredicate.Eq) {
                     "only `Eq` predicate is allowed for the first ${firstPairs.size} group fields, but got $predicate."
                 }
-                field.bucketOrGet(predicate.value, ceil = false)
+                if (field.bucket == null) {
+                    descriptor.schema.properties
+                        .find { it.name == field.name }
+                        ?.type
+                        ?.cast(predicate.value)
+                        ?: predicate.value
+                } else {
+                    field.bucketOrGet(predicate.value, ceil = false)
+                }
             }
 
         val (from, to) = encodeAggRanges(eqValues, lastField, lastPredicate)
@@ -462,14 +470,27 @@ class V2BackedTableBinding(
                 EdgeGroupRecord.Qualifier(groupValues = values + additionalValues.toList()),
             )
 
+        fun bucketOrCast(
+            value: Any,
+            ceil: Boolean,
+        ): Any =
+            if (lastField.bucket == null) {
+                descriptor.schema.properties
+                    .find { it.name == lastField.name }
+                    ?.type
+                    ?.cast(value) ?: value
+            } else {
+                lastField.bucketOrGet(value, ceil)
+            }
+
         return when (lastPredicate) {
             is WherePredicate.Eq -> {
-                val parsed = lastField.bucketOrGet(lastPredicate.value, ceil = false)
+                val parsed = bucketOrCast(lastPredicate.value, ceil = false)
                 encode(parsed).let { it to it }
             }
             is WherePredicate.Between -> {
-                val from = encode(lastField.bucketOrGet(lastPredicate.from, ceil = false))
-                val to = encode(lastField.bucketOrGet(lastPredicate.to, ceil = true))
+                val from = encode(bucketOrCast(lastPredicate.from, ceil = false))
+                val to = encode(bucketOrCast(lastPredicate.to, ceil = true))
                 from to to
             }
             else -> throw IllegalArgumentException(
