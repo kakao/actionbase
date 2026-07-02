@@ -334,8 +334,7 @@ class V2BackedTableBinding(
                     "only `Eq` predicate is allowed for the first ${firstPairs.size} group fields, but got $predicate."
                 }
                 if (field.bucket == null) {
-                    descriptor.schema.properties
-                        .find { it.name == field.name }
+                    descriptor.schema.propertiesByName[field.name]
                         ?.type
                         ?.cast(predicate.value)
                         ?: predicate.value
@@ -475,8 +474,7 @@ class V2BackedTableBinding(
             ceil: Boolean,
         ): Any =
             if (lastField.bucket == null) {
-                descriptor.schema.properties
-                    .find { it.name == lastField.name }
+                descriptor.schema.propertiesByName[lastField.name]
                     ?.type
                     ?.cast(value) ?: value
             } else {
