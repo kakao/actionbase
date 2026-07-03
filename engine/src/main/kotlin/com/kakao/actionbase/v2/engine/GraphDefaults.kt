@@ -11,6 +11,7 @@ import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 
 import org.jetbrains.exposed.sql.Database
+
 import reactor.core.publisher.Mono
 
 interface GraphDefaults {

@@ -71,19 +71,23 @@ import com.kakao.actionbase.v2.engine.util.getLogger
 import com.kakao.actionbase.v2.engine.wal.Wal
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 import com.kakao.actionbase.v2.engine.wal.WalLog
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
+
+import java.time.Duration
+import java.util.UUID
+
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.Logger
+
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+
 import reactor.core.Disposable
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import reactor.util.Loggers
-import java.time.Duration
-import java.util.UUID
 
 @Suppress("LargeClass")
 class Graph(
@@ -964,8 +968,9 @@ class Graph(
             log.info("kafkaClientFactory: {}", kafkaClientFactory)
             log.info("webClientFactory: {}", webClientFactory)
 
-            val metastoreUri = config.consolidatedMetastoreUri
-                ?: "datastore://${config.tenant.replace("-", "_")}/actionbase_metastore"
+            val metastoreUri =
+                config.consolidatedMetastoreUri
+                    ?: "datastore://${config.tenant.replace("-", "_")}/actionbase_metastore"
 
             val consolidatedMetastore: Mono<HBaseTables> = DefaultHBaseCluster.INSTANCE.getTable(metastoreUri).cache()
 

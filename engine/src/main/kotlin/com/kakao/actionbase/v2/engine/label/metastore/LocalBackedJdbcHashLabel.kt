@@ -1,7 +1,7 @@
 package com.kakao.actionbase.v2.engine.label.metastore
 
 import com.kakao.actionbase.engine.storage.StorageOpCollector
-import com.kakao.actionbase.v2.core.code.EdgeEncoder
+import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.edge.TraceEdge
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -12,17 +12,12 @@ import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.LabelFactory
-import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
-import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 import com.kakao.actionbase.v2.engine.storage.local.LocalStorage
 import com.kakao.actionbase.v2.engine.util.getLogger
-
-import org.jetbrains.exposed.sql.Database
 
 import reactor.core.publisher.Mono
 
@@ -43,7 +38,6 @@ class LocalBackedJdbcHashLabel internal constructor(
     val log = getLogger()
 
     private var useLocalStore = true
-
 
     fun useLocalStore() {
         useLocalStore = true
@@ -183,6 +177,7 @@ class LocalBackedJdbcHashLabel internal constructor(
         // Prefix scan index with no fields — covers DdlService.getAll() (src-prefix only, no predicates)
         const val DEFAULT_SCAN_INDEX = "__default__"
         val defaultScanIndex = Index(DEFAULT_SCAN_INDEX, emptyList())
+
         override fun create(
             entity: LabelEntity,
             graph: GraphDefaults,

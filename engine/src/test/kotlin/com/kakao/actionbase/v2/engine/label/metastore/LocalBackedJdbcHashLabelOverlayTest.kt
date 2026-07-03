@@ -18,8 +18,6 @@ import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
-import com.kakao.actionbase.v2.engine.sql.ScanFilter
-import com.kakao.actionbase.v2.engine.sql.StatKey
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -29,7 +27,6 @@ import org.junit.jupiter.api.Test
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-
 import reactor.core.publisher.Mono
 import reactor.kotlin.test.test
 
@@ -55,7 +52,11 @@ class LocalBackedJdbcHashLabelOverlayTest {
     private fun frame(rows: List<Row>) = DataFrame(rows, schema.allStructType)
 
     // count row layout: (src=0, COUNT=1, dir=2)
-    private fun countRow(src: String, count: Long) = Row(arrayOf(src, count, "OUT"))
+    private fun countRow(
+        src: String,
+        count: Long,
+    ) = Row(arrayOf(src, count, "OUT"))
+
     private fun countFrame(rows: List<Row>) = DataFrame(rows, schema.structType)
 
     private val entity = mockk<LabelEntity>(relaxed = true)
@@ -84,7 +85,8 @@ class LocalBackedJdbcHashLabelOverlayTest {
                 consolidatedLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
             } returns Mono.just(emptyList())
 
-            overlay.mutate(emptyList<TraceEdge>(), EdgeOperation.INSERT)
+            overlay
+                .mutate(emptyList<TraceEdge>(), EdgeOperation.INSERT)
                 .test()
                 .assertNext { assert(it.isEmpty()) }
                 .verifyComplete()
@@ -111,7 +113,8 @@ class LocalBackedJdbcHashLabelOverlayTest {
                 globalLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
             } returns Mono.just(emptyList())
 
-            overlay.mutate(emptyList<TraceEdge>(), EdgeOperation.DELETE)
+            overlay
+                .mutate(emptyList<TraceEdge>(), EdgeOperation.DELETE)
                 .test()
                 .assertNext { assert(it == listOf(ctx)) }
                 .verifyComplete()
@@ -173,7 +176,8 @@ class LocalBackedJdbcHashLabelOverlayTest {
                     ),
                 )
 
-            overlay.getSelf(listOf("A", "B"), emptySet())
+            overlay
+                .getSelf(listOf("A", "B"), emptySet())
                 .test()
                 .assertNext { result ->
                     assert(result.rows.size == expectedSize) {
@@ -182,8 +186,7 @@ class LocalBackedJdbcHashLabelOverlayTest {
                     // allStructType: active=0, dir=1, ts=2, src=3, tgt=4, desc=5
                     val winner = result.rows.first { it[3] == hbaseSrc && it[4] == hbaseTgt }
                     assert(winner[5] == expectedWinnerDesc)
-                }
-                .verifyComplete()
+                }.verifyComplete()
         }
 
         @ObjectSourceParameterizedTest
@@ -194,22 +197,25 @@ class LocalBackedJdbcHashLabelOverlayTest {
               tgt: A
             """,
         )
-        fun `soft-deleted HBase row suppresses MySQL row`(src: String, tgt: String) {
+        fun `soft-deleted HBase row suppresses MySQL row`(
+            src: String,
+            tgt: String,
+        ) {
             every { localLabel.getSelf(any(), any()) } returns Mono.just(frame(emptyList()))
             every { consolidatedLabel.getSelf(any(), any()) } returns
                 Mono.just(frame(listOf(row(src, tgt, "hbase-deleted", active = false))))
             every { globalLabel.getSelf(any(), any()) } returns
                 Mono.just(frame(listOf(row(src, tgt, "mysql-live"))))
 
-            overlay.getSelf(listOf(src), emptySet())
+            overlay
+                .getSelf(listOf(src), emptySet())
                 .test()
                 .assertNext { result ->
                     assert(result.rows.size == 1)
                     assert(result.rows[0][5] == "hbase-deleted") {
                         "MySQL row should be suppressed by soft-deleted HBase row"
                     }
-                }
-                .verifyComplete()
+                }.verifyComplete()
         }
     }
 
@@ -253,14 +259,14 @@ class LocalBackedJdbcHashLabelOverlayTest {
                     ),
                 )
 
-            overlay.count(setOf("A", "B"), Direction.OUT)
+            overlay
+                .count(setOf("A", "B"), Direction.OUT)
                 .test()
                 .assertNext { result ->
                     assert(result.rows.size == expectedRows)
                     val countA = result.rows.first { it[0] == hbaseSrc }[1] as Long
                     assert(countA == expectedCountForA)
-                }
-                .verifyComplete()
+                }.verifyComplete()
         }
     }
 
@@ -272,7 +278,8 @@ class LocalBackedJdbcHashLabelOverlayTest {
             val lockEdge = KeyValue<Any>("key", "val")
             every { consolidatedLabel.findStaleLockAndClear(any(), any()) } returns Mono.empty()
 
-            overlay.findStaleLockAndClear(lockEdge, 5000L)
+            overlay
+                .findStaleLockAndClear(lockEdge, 5000L)
                 .test()
                 .verifyComplete()
 
