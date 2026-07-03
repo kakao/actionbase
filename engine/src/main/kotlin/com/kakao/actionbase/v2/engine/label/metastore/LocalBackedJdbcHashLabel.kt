@@ -14,6 +14,7 @@ import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.LabelFactory
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
+import com.kakao.actionbase.v2.engine.sql.Row
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
 import com.kakao.actionbase.v2.engine.storage.local.LocalStorage
@@ -67,29 +68,17 @@ class LocalBackedJdbcHashLabel internal constructor(
             }
         }
 
-    // overlay merge: HBase wins on (src, tgt) dedup; MySQL rows appear only when HBase has no entry
-    private fun mergeOverlay(
+    // HBase wins on dedup; MySQL rows appear only when HBase has no entry for that key.
+    // keyOf extracts the dedup key from a row — (src,tgt) for edges, src alone for counts.
+    private fun merge(
         hbase: Mono<DataFrame>,
         mysql: Mono<DataFrame>,
-    ): Mono<DataFrame> {
-        val srcIdx = entity.schema.srcIndex
-        val tgtIdx = entity.schema.tgtIndex
-        return hbase.zipWith(mysql) { overlay, base ->
-            val seenKeys = overlay.rows.map { row -> row[srcIdx] to row[tgtIdx] }.toHashSet()
-            val mysqlOnly = base.rows.filter { row -> (row[srcIdx] to row[tgtIdx]) !in seenKeys }
-            DataFrame(overlay.rows + mysqlOnly, overlay.schema, overlay.stats, overlay.offsets, overlay.hasNext)
-        }
-    }
-
-    // count row structure: (src=0, COUNT(1)=1, dir=2) — dedup on src only
-    private fun mergeCountOverlay(
-        hbase: Mono<DataFrame>,
-        mysql: Mono<DataFrame>,
+        keyOf: (Row) -> Any,
     ): Mono<DataFrame> =
         hbase.zipWith(mysql) { overlay, base ->
-            val seenSrcs = overlay.rows.map { row -> row[0] }.toHashSet()
-            val mysqlOnly = base.rows.filter { row -> row[0] !in seenSrcs }
-            DataFrame(overlay.rows + mysqlOnly, overlay.schema)
+            val seen = overlay.rows.mapTo(HashSet(), keyOf)
+            val mysqlOnly = base.rows.filter { keyOf(it) !in seen }
+            DataFrame(overlay.rows + mysqlOnly, overlay.schema, overlay.stats, overlay.offsets, overlay.hasNext)
         }
 
     override fun scan(
@@ -101,7 +90,7 @@ class LocalBackedJdbcHashLabel internal constructor(
         val local = localLabel.scan(scanFilter, stats)
         val hbase = consolidatedLabel.scan(hbaseScanFilter, stats)
         val mysql = globalLabel.scan(scanFilter, stats)
-        return local.zipWith(mergeOverlay(hbase, mysql)) { a, b -> a + b }
+        return local.zipWith(merge(hbase, mysql) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] }) { a, b -> a + b }
     }
 
     override fun getSelf(
@@ -111,7 +100,7 @@ class LocalBackedJdbcHashLabel internal constructor(
         val local = localLabel.getSelf(src, stats)
         val hbase = consolidatedLabel.getSelf(src, stats)
         val mysql = globalLabel.getSelf(src, stats)
-        return local.zipWith(mergeOverlay(hbase, mysql)) { a, b -> a + b }
+        return local.zipWith(merge(hbase, mysql) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] }) { a, b -> a + b }
     }
 
     override fun get(
@@ -123,7 +112,7 @@ class LocalBackedJdbcHashLabel internal constructor(
         val local = localLabel.get(src, tgt, dir, stats)
         val hbase = consolidatedLabel.get(src, tgt, dir, stats)
         val mysql = globalLabel.get(src, tgt, dir, stats)
-        return local.zipWith(mergeOverlay(hbase, mysql)) { a, b -> a + b }
+        return local.zipWith(merge(hbase, mysql) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] }) { a, b -> a + b }
     }
 
     override fun get(
@@ -135,7 +124,7 @@ class LocalBackedJdbcHashLabel internal constructor(
         val local = localLabel.get(src, tgt, dir, stats)
         val hbase = consolidatedLabel.get(src, tgt, dir, stats)
         val mysql = globalLabel.get(src, tgt, dir, stats)
-        return local.zipWith(mergeOverlay(hbase, mysql)) { a, b -> a + b }
+        return local.zipWith(merge(hbase, mysql) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] }) { a, b -> a + b }
     }
 
     override fun count(
@@ -145,7 +134,7 @@ class LocalBackedJdbcHashLabel internal constructor(
         val local = localLabel.count(src, dir)
         val hbase = consolidatedLabel.count(src, dir)
         val mysql = globalLabel.count(src, dir)
-        return local.zipWith(mergeCountOverlay(hbase, mysql)) { a, b -> a + b }
+        return local.zipWith(merge(hbase, mysql) { row -> row[0]!! }) { a, b -> a + b }
     }
 
     override fun count(
@@ -155,7 +144,7 @@ class LocalBackedJdbcHashLabel internal constructor(
         val local = localLabel.count(srcSet, dir)
         val hbase = consolidatedLabel.count(srcSet, dir)
         val mysql = globalLabel.count(srcSet, dir)
-        return local.zipWith(mergeCountOverlay(hbase, mysql)) { a, b -> a + b }
+        return local.zipWith(merge(hbase, mysql) { row -> row[0]!! }) { a, b -> a + b }
     }
 
     override fun findStaleLockAndClear(
@@ -184,32 +173,21 @@ class LocalBackedJdbcHashLabel internal constructor(
             storage: LocalStorage,
             block: LocalBackedJdbcHashLabel.() -> Unit,
         ): LocalBackedJdbcHashLabel {
+            val coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder
             // Augment entity with a default prefix-scan index so HBaseIndexedLabel.scan() works
             // for DdlService.getAll() which issues indexName=null / no predicates scans.
             val indexedEntity = entity.copy(indices = listOf(defaultScanIndex))
             val label =
                 LocalBackedJdbcHashLabel(
                     entity = entity,
-                    localLabel =
-                        JdbcHashLabel(
-                            entity = entity,
-                            coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder,
-                            database = graph.localMetastore,
-                            metadataTable = graph.metadataTable,
-                        ),
-                    globalLabel =
-                        JdbcHashLabel(
-                            entity = entity,
-                            coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder,
-                            database = graph.metastore,
-                            metadataTable = graph.metadataTable,
-                        ),
+                    localLabel = JdbcHashLabel(entity, coder, graph.localMetastore, graph.metadataTable),
+                    globalLabel = JdbcHashLabel(entity, coder, graph.metastore, graph.metadataTable),
                     consolidatedLabel =
                         HBaseIndexedLabel(
                             entity = indexedEntity,
                             coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
-                            indices = listOf(defaultScanIndex),
-                            indexNameToIndex = mapOf(DEFAULT_SCAN_INDEX to defaultScanIndex),
+                            indices = indexedEntity.indices,
+                            indexNameToIndex = indexedEntity.indices.associateBy { it.name },
                             tables = graph.consolidatedMetastore,
                             edgeRecordMapper = graph.edgeRecordMapper,
                             lockTimeout = graph.lockTimeout,
