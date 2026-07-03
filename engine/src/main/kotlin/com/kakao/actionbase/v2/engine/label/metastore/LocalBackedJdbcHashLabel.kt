@@ -12,7 +12,8 @@ import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.LabelFactory
-import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
+import com.kakao.actionbase.v2.core.code.Index
+import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
@@ -37,43 +38,12 @@ class LocalBackedJdbcHashLabel internal constructor(
     override val entity: LabelEntity,
     private val localLabel: JdbcHashLabel,
     private val globalLabel: JdbcHashLabel,
-    private val consolidatedLabel: HBaseHashLabel,
+    private val consolidatedLabel: HBaseIndexedLabel,
 ) : Label {
     val log = getLogger()
 
     private var useLocalStore = true
 
-    constructor(
-        entity: LabelEntity,
-        coder: EdgeEncoder<String>,
-        localStore: Database,
-        globalStore: Database,
-        metadataTable: MetadataTable,
-        bytesCoder: EdgeEncoder<ByteArray>,
-        consolidatedMetastore: Mono<HBaseTables>,
-    ) : this(
-        entity = entity,
-        localLabel =
-            JdbcHashLabel(
-                entity = entity,
-                coder = coder,
-                database = localStore,
-                metadataTable = metadataTable,
-            ),
-        globalLabel =
-            JdbcHashLabel(
-                entity = entity,
-                coder = coder,
-                database = globalStore,
-                metadataTable = metadataTable,
-            ),
-        consolidatedLabel =
-            HBaseHashLabel(
-                entity = entity,
-                coder = bytesCoder,
-                tables = consolidatedMetastore,
-            ),
-    )
 
     fun useLocalStore() {
         useLocalStore = true
@@ -132,8 +102,10 @@ class LocalBackedJdbcHashLabel internal constructor(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
     ): Mono<DataFrame> {
+        // DdlService.getAll() passes indexName=null; route to default prefix-scan index on HBase
+        val hbaseScanFilter = if (scanFilter.indexName == null) scanFilter.copy(indexName = DEFAULT_SCAN_INDEX) else scanFilter
         val local = localLabel.scan(scanFilter, stats)
-        val hbase = consolidatedLabel.scan(scanFilter, stats)
+        val hbase = consolidatedLabel.scan(hbaseScanFilter, stats)
         val mysql = globalLabel.scan(scanFilter, stats)
         return local.zipWith(mergeOverlay(hbase, mysql)) { a, b -> a + b }
     }
@@ -208,21 +180,45 @@ class LocalBackedJdbcHashLabel internal constructor(
     }
 
     companion object : LabelFactory<LocalBackedJdbcHashLabel, LocalStorage> {
+        // Prefix scan index with no fields — covers DdlService.getAll() (src-prefix only, no predicates)
+        const val DEFAULT_SCAN_INDEX = "__default__"
+        val defaultScanIndex = Index(DEFAULT_SCAN_INDEX, emptyList())
         override fun create(
             entity: LabelEntity,
             graph: GraphDefaults,
             storage: LocalStorage,
             block: LocalBackedJdbcHashLabel.() -> Unit,
         ): LocalBackedJdbcHashLabel {
+            // Augment entity with a default prefix-scan index so HBaseIndexedLabel.scan() works
+            // for DdlService.getAll() which issues indexName=null / no predicates scans.
+            val indexedEntity = entity.copy(indices = listOf(defaultScanIndex))
             val label =
                 LocalBackedJdbcHashLabel(
                     entity = entity,
-                    coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder,
-                    localStore = graph.localMetastore,
-                    globalStore = graph.metastore,
-                    bytesCoder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
-                    metadataTable = graph.metadataTable,
-                    consolidatedMetastore = graph.consolidatedMetastore,
+                    localLabel =
+                        JdbcHashLabel(
+                            entity = entity,
+                            coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder,
+                            database = graph.localMetastore,
+                            metadataTable = graph.metadataTable,
+                        ),
+                    globalLabel =
+                        JdbcHashLabel(
+                            entity = entity,
+                            coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder,
+                            database = graph.metastore,
+                            metadataTable = graph.metadataTable,
+                        ),
+                    consolidatedLabel =
+                        HBaseIndexedLabel(
+                            entity = indexedEntity,
+                            coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
+                            indices = listOf(defaultScanIndex),
+                            indexNameToIndex = mapOf(DEFAULT_SCAN_INDEX to defaultScanIndex),
+                            tables = graph.consolidatedMetastore,
+                            edgeRecordMapper = graph.edgeRecordMapper,
+                            lockTimeout = graph.lockTimeout,
+                        ),
                 )
             label.block()
             if (storage.options.useGlobal) {

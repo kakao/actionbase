@@ -15,7 +15,7 @@ import com.kakao.actionbase.v2.core.types.VertexType
 import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
-import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashLabel
+import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
@@ -61,7 +61,7 @@ class LocalBackedJdbcHashLabelOverlayTest {
     private val entity = mockk<LabelEntity>(relaxed = true)
     private val localLabel = mockk<JdbcHashLabel>(relaxed = true)
     private val globalLabel = mockk<JdbcHashLabel>(relaxed = true)
-    private val consolidatedLabel = mockk<HBaseHashLabel>(relaxed = true)
+    private val consolidatedLabel = mockk<HBaseIndexedLabel>(relaxed = true)
 
     private lateinit var overlay: LocalBackedJdbcHashLabel
 
