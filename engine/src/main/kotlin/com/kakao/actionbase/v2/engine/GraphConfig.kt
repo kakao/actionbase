@@ -36,6 +36,7 @@ data class GraphConfig(
     val metadataFetchLimit: Int = DdlService.DEFAULT_METADATA_LIMIT,
     val systemMutationMode: MutationMode? = null,
     val readOnly: Boolean = false,
+    val consolidatedMetastoreUri: String? = null,
 ) {
     companion object {
         val builder: Builder
@@ -66,6 +67,7 @@ data class GraphConfig(
         private var metadataFetchLimit: Int = DdlService.DEFAULT_METADATA_LIMIT
         private var systemMutationMode: MutationMode? = null
         private var readOnly: Boolean = false
+        private var consolidatedMetastoreUri: String? = null
 
         // Aligned with nginx.conf proxy_read_timeout 300
         private var mutationRequestTimeout: Long = 300_000
@@ -128,6 +130,8 @@ data class GraphConfig(
 
         fun withReadOnly(readOnly: Boolean) = apply { this.readOnly = readOnly }
 
+        fun withConsolidatedMetastoreUri(uri: String) = apply { this.consolidatedMetastoreUri = uri }
+
         fun build(): GraphConfig =
             GraphConfig(
                 phase = phase,
@@ -154,6 +158,7 @@ data class GraphConfig(
                 metadataFetchLimit = metadataFetchLimit,
                 systemMutationMode = systemMutationMode,
                 readOnly = readOnly,
+                consolidatedMetastoreUri = consolidatedMetastoreUri,
             )
     }
 }

@@ -232,6 +232,7 @@ object GraphFixtures {
         val config =
             configBuilder
                 .withMetastoreUrl("jdbc:h2:mem:${UUID.randomUUID()};DB_CLOSE_DELAY=-1;MODE=MYSQL")
+                .withConsolidatedMetastoreUri("datastore://ns_${UUID.randomUUID().toString().replace("-", "")}/actionbase_metastore")
                 .build()
 
         val graph = Graph.create(config, InMemoryWalFactory, InMemoryCdcFactory, DefaultKafkaClientFactory, DefaultWebClientFactory)

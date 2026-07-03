@@ -65,28 +65,25 @@ import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.sql.toRowFlux
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseOptions
+import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 import com.kakao.actionbase.v2.engine.util.getLogger
 import com.kakao.actionbase.v2.engine.wal.Wal
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 import com.kakao.actionbase.v2.engine.wal.WalLog
-
-import java.lang.AutoCloseable
-import java.time.Duration
-import java.util.UUID
-
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.Logger
-
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
-
 import reactor.core.Disposable
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
+import reactor.util.Loggers
+import java.time.Duration
+import java.util.UUID
 
 @Suppress("LargeClass")
 class Graph(
@@ -95,6 +92,7 @@ class Graph(
     override val localMetastore: Database,
     override val metastore: Database,
     override val metadataTable: MetadataTable,
+    override val consolidatedMetastore: Mono<HBaseTables>,
     override val edgeEncoderFactory: EdgeEncoderFactory,
     override val edgeRecordMapper: EdgeRecordMapper,
     override val datastore: DefaultHBaseCluster,
@@ -949,7 +947,7 @@ class Graph(
     companion object {
         internal val log = getLogger()
 
-        val reactorLogger = reactor.util.Loggers.getLogger(Graph::class.java)
+        val reactorLogger = Loggers.getLogger(Graph::class.java)
 
         @Suppress("LongMethod")
         fun create(
@@ -965,6 +963,11 @@ class Graph(
             log.info("graph config: {}", config)
             log.info("kafkaClientFactory: {}", kafkaClientFactory)
             log.info("webClientFactory: {}", webClientFactory)
+
+            val metastoreUri = config.consolidatedMetastoreUri
+                ?: "datastore://${config.tenant.replace("-", "_")}/actionbase_metastore"
+
+            val consolidatedMetastore: Mono<HBaseTables> = DefaultHBaseCluster.INSTANCE.getTable(metastoreUri).cache()
 
             EntityName.initialize(config.phase, config.tenant)
             WalLog.initialize(config.phase, config.tenant)
@@ -1028,6 +1031,7 @@ class Graph(
                     localMetastore,
                     metastore,
                     metadataTable,
+                    consolidatedMetastore,
                     edgeEncoderFactory,
                     edgeRecordMapper,
                     config.lockTimeout,
@@ -1093,6 +1097,7 @@ class Graph(
                 defaults.localMetastore,
                 defaults.metastore,
                 defaults.metadataTable,
+                defaults.consolidatedMetastore,
                 defaults.edgeEncoderFactory,
                 defaults.edgeRecordMapper,
                 defaults.datastore,
