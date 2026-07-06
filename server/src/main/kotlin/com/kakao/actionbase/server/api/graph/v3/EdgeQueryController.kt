@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeCountPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeCountPayload
+import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.payload.EdgeQueryGetRequest
 import com.kakao.actionbase.server.util.mapToResponseEntity
@@ -126,4 +127,26 @@ class EdgeQueryController(
         queryService
             .agg(database, table, group, start, direction, ranges, filters, features, ttl)
             .mapToResponseEntity()
+
+    @GetMapping("/graph/v3/databases/{database}/tables/{table}/edges/topk/{topk}")
+    fun query(
+        @PathVariable database: String,
+        @PathVariable table: String,
+        @PathVariable topk: String,
+        @RequestParam entity: String,
+        @RequestParam limit: Int = 10,
+        @RequestParam offset: String? = null,
+    ): Mono<ResponseEntity<DataFrameEdgePayload>> {
+        val scoreTable = TopKTableNames.scoreTableName(table)
+        return queryService
+            .scan(
+                database = database,
+                table = scoreTable,
+                index = "score_desc",
+                start = TopKTableNames.scoreSourceKey(entity, topk),
+                direction = Direction.OUT,
+                limit = limit,
+                offset = offset,
+            ).mapToResponseEntity()
+    }
 }

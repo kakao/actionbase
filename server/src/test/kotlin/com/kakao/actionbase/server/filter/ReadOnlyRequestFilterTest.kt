@@ -173,9 +173,11 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/counts",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/get",
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
+                "GET /graph/v3/databases/{database}/tables/{table}/edges/topk/{topk}",
                 "GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
                 "GET /graph/v3/databases/{database}/tables/{table}/vertices/get",
                 "GET /graph/v3/datastore",
+                "GET /graph/v3/metadata/aggregations/topk",
                 // read-only POST
                 "POST /graph/v3/query",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
@@ -226,6 +228,7 @@ class ReadOnlyRequestFilterTest {
                 "POST /graph/v3/databases/{database}/tables",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/sync",
+                "POST /graph/v3/databases/{database}/tables/{table}/edges/topk/{topk}/aggregate",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/sync",
                 "POST /graph/v3/databases/{database}/tables/{table}/vertices",
@@ -288,6 +291,7 @@ class ReadOnlyRequestFilterTest {
                 "table" to "t",
                 "tableFullName" to "t",
                 "tableName" to "t",
+                "topk" to "tk",
             )
 
         private fun resolvePath(template: String): String =
