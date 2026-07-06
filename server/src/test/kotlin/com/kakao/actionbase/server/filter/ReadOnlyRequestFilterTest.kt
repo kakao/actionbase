@@ -228,7 +228,6 @@ class ReadOnlyRequestFilterTest {
                 "POST /graph/v3/databases/{database}/tables",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/sync",
-                "POST /graph/v3/databases/{database}/tables/{table}/edges/topk/{topk}/aggregate",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/sync",
                 "POST /graph/v3/databases/{database}/tables/{table}/vertices",
