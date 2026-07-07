@@ -451,10 +451,11 @@ class EdgeAggQuerySpec :
         }
 
         /**
-         * MultiEdge lets a single (source, target) pair repeat, so `_target` is a useful
-         * group dimension. Writes encode `_target` as Long (from the schema target type);
-         * reads must cast the ranges predicate the same way to match, otherwise
-         * the qualifier bytes mismatch and the GET returns nothing.
+         * MULTI_EDGE promotes the top-level source/target fields into the persistence
+         * layer under `_source` / `_target`. Grouping on those keys is a common top-k
+         * pattern (per-entity ranking by target). The write path already stores them as
+         * the top-level primitive type; the read path must cast predicates the same way,
+         * otherwise the qualifier bytes mismatch and the GET returns no records.
          *
          * Mutation:
          * | id | source | target |
