@@ -334,7 +334,8 @@ class V2BackedTableBinding(
                     "only `Eq` predicate is allowed for the first ${firstPairs.size} group fields, but got $predicate."
                 }
                 if (field.bucket == null) {
-                    descriptor.schema.fieldType(field.name)
+                    descriptor.schema
+                        .fieldType(field.name)
                         ?.cast(predicate.value)
                         ?: predicate.value
                 } else {
