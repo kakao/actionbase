@@ -26,10 +26,12 @@ import reactor.core.publisher.Mono
 //
 // Op            | local (H2) | HBase (overlay) | MySQL (base) | Rule
 // --------------|------------|-----------------|--------------|------------------------------
-// INSERT/UPDATE | useLocal=T | useLocal=F      | never        | HBase is write target
+// INSERT/UPDATE | useLocal=T | useLocal=F      | mirrored     | HBase is write target; MySQL mirrored for rollback safety
 // DELETE        | useLocal=T | useLocal=F      | mirrored     | both layers deleted → no resurrection
-// read          | always     | always          | fallback     | HBase wins on (src,tgt) dedup
-// count         | always     | always          | fallback     | HBase wins on src dedup
+// read          | always     | always          | fallback*    | HBase wins on (src,tgt) dedup; *skipped when useJdbcMetastore=false
+// count         | always     | always          | fallback*    | HBase wins on src dedup; *skipped when useJdbcMetastore=false
+//
+// useJdbcMetastore=false: MySQL layer is bypassed entirely (writes go to HBase only, reads skip MySQL merge)
 class LocalBackedJdbcHashLabel internal constructor(
     override val entity: LabelEntity,
     private val localLabel: JdbcHashLabel,
@@ -39,6 +41,7 @@ class LocalBackedJdbcHashLabel internal constructor(
     val log = getLogger()
 
     private var useLocalStore = true
+    private var useJdbcMetastore = true
 
     fun useLocalStore() {
         useLocalStore = true
@@ -48,6 +51,10 @@ class LocalBackedJdbcHashLabel internal constructor(
         useLocalStore = false
     }
 
+    fun disableJdbcMetastore() {
+        useJdbcMetastore = false
+    }
+
     override fun mutate(
         edges: List<TraceEdge>,
         op: EdgeOperation,
@@ -55,18 +62,16 @@ class LocalBackedJdbcHashLabel internal constructor(
         bulk: Boolean,
         failOnExist: Boolean,
         newCollector: () -> StorageOpCollector?,
-    ): Mono<List<CdcContext>> =
-        if (useLocalStore) {
-            localLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
+    ): Mono<List<CdcContext>> {
+        if (useLocalStore) return localLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
+        val hbase = consolidatedLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
+        // MySQL mirrored for rollback safety; HBase result is authoritative
+        return if (useJdbcMetastore) {
+            hbase.flatMap { ctx -> globalLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = false, newCollector = newCollector).thenReturn(ctx) }
         } else {
-            val hbase = consolidatedLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = failOnExist, newCollector = newCollector)
-            // DELETE is mirrored to MySQL so deleted rows don't resurface on read (no tombstone needed)
-            if (op == EdgeOperation.DELETE || op == EdgeOperation.PURGE) {
-                hbase.flatMap { globalLabel.mutate(edges, op, alias = alias, bulk = bulk, failOnExist = false, newCollector = newCollector).thenReturn(it) }
-            } else {
-                hbase
-            }
+            hbase
         }
+    }
 
     // HBase wins on dedup; MySQL rows appear only when HBase has no entry for that key.
     // keyOf extracts the dedup key from a row — (src,tgt) for edges, src alone for counts.
@@ -81,26 +86,32 @@ class LocalBackedJdbcHashLabel internal constructor(
             DataFrame(overlay.rows + mysqlOnly, overlay.schema, overlay.stats, overlay.offsets, overlay.hasNext)
         }
 
+    private fun remoteEdges(
+        hbase: () -> Mono<DataFrame>,
+        mysql: () -> Mono<DataFrame>,
+    ): Mono<DataFrame> = if (useJdbcMetastore) merge(hbase(), mysql()) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] } else hbase()
+
+    private fun remoteCounts(
+        hbase: () -> Mono<DataFrame>,
+        mysql: () -> Mono<DataFrame>,
+    ): Mono<DataFrame> = if (useJdbcMetastore) merge(hbase(), mysql()) { row -> row[0]!! } else hbase()
+
     override fun scan(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
     ): Mono<DataFrame> {
         // DdlService.getAll() passes indexName=null; route to default prefix-scan index on HBase
         val hbaseScanFilter = if (scanFilter.indexName == null) scanFilter.copy(indexName = DEFAULT_SCAN_INDEX) else scanFilter
-        val local = localLabel.scan(scanFilter, stats)
-        val hbase = consolidatedLabel.scan(hbaseScanFilter, stats)
-        val mysql = globalLabel.scan(scanFilter, stats)
-        return local.zipWith(merge(hbase, mysql) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] }) { a, b -> a + b }
+        val remote = remoteEdges({ consolidatedLabel.scan(hbaseScanFilter, stats) }, { globalLabel.scan(scanFilter, stats) })
+        return localLabel.scan(scanFilter, stats).zipWith(remote) { a, b -> a + b }
     }
 
     override fun getSelf(
         src: List<Any>,
         stats: Set<StatKey>,
     ): Mono<DataFrame> {
-        val local = localLabel.getSelf(src, stats)
-        val hbase = consolidatedLabel.getSelf(src, stats)
-        val mysql = globalLabel.getSelf(src, stats)
-        return local.zipWith(merge(hbase, mysql) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] }) { a, b -> a + b }
+        val remote = remoteEdges({ consolidatedLabel.getSelf(src, stats) }, { globalLabel.getSelf(src, stats) })
+        return localLabel.getSelf(src, stats).zipWith(remote) { a, b -> a + b }
     }
 
     override fun get(
@@ -109,10 +120,8 @@ class LocalBackedJdbcHashLabel internal constructor(
         dir: Direction,
         stats: Set<StatKey>,
     ): Mono<DataFrame> {
-        val local = localLabel.get(src, tgt, dir, stats)
-        val hbase = consolidatedLabel.get(src, tgt, dir, stats)
-        val mysql = globalLabel.get(src, tgt, dir, stats)
-        return local.zipWith(merge(hbase, mysql) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] }) { a, b -> a + b }
+        val remote = remoteEdges({ consolidatedLabel.get(src, tgt, dir, stats) }, { globalLabel.get(src, tgt, dir, stats) })
+        return localLabel.get(src, tgt, dir, stats).zipWith(remote) { a, b -> a + b }
     }
 
     override fun get(
@@ -121,30 +130,24 @@ class LocalBackedJdbcHashLabel internal constructor(
         dir: Direction,
         stats: Set<StatKey>,
     ): Mono<DataFrame> {
-        val local = localLabel.get(src, tgt, dir, stats)
-        val hbase = consolidatedLabel.get(src, tgt, dir, stats)
-        val mysql = globalLabel.get(src, tgt, dir, stats)
-        return local.zipWith(merge(hbase, mysql) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] }) { a, b -> a + b }
+        val remote = remoteEdges({ consolidatedLabel.get(src, tgt, dir, stats) }, { globalLabel.get(src, tgt, dir, stats) })
+        return localLabel.get(src, tgt, dir, stats).zipWith(remote) { a, b -> a + b }
     }
 
     override fun count(
         src: Any,
         dir: Direction,
     ): Mono<DataFrame> {
-        val local = localLabel.count(src, dir)
-        val hbase = consolidatedLabel.count(src, dir)
-        val mysql = globalLabel.count(src, dir)
-        return local.zipWith(merge(hbase, mysql) { row -> row[0]!! }) { a, b -> a + b }
+        val remote = remoteCounts({ consolidatedLabel.count(src, dir) }, { globalLabel.count(src, dir) })
+        return localLabel.count(src, dir).zipWith(remote) { a, b -> a + b }
     }
 
     override fun count(
         srcSet: Set<Any>,
         dir: Direction,
     ): Mono<DataFrame> {
-        val local = localLabel.count(srcSet, dir)
-        val hbase = consolidatedLabel.count(srcSet, dir)
-        val mysql = globalLabel.count(srcSet, dir)
-        return local.zipWith(merge(hbase, mysql) { row -> row[0]!! }) { a, b -> a + b }
+        val remote = remoteCounts({ consolidatedLabel.count(srcSet, dir) }, { globalLabel.count(srcSet, dir) })
+        return localLabel.count(srcSet, dir).zipWith(remote) { a, b -> a + b }
     }
 
     override fun findStaleLockAndClear(
@@ -196,6 +199,9 @@ class LocalBackedJdbcHashLabel internal constructor(
             label.block()
             if (storage.options.useGlobal) {
                 label.useGlobalStore()
+            }
+            if (!graph.useJdbcMetastore) {
+                label.disableJdbcMetastore()
             }
             return label
         }

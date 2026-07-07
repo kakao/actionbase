@@ -77,34 +77,34 @@ class LocalBackedJdbcHashLabelOverlayTest {
     // ── write ─────────────────────────────────────────────────────────────────
 
     @Nested
-    @DisplayName("mutate — INSERT/UPDATE: HBase only")
-    inner class MutateInsertTest {
+    @DisplayName("mutate — all writes mirrored to HBase + MySQL")
+    inner class MutateTest {
         @Test
-        fun `INSERT goes to HBase only, MySQL never touched`() {
+        fun `INSERT is mirrored to both HBase and MySQL`() {
+            val ctx = mockk<CdcContext>(relaxed = true)
             every {
                 consolidatedLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
+            } returns Mono.just(listOf(ctx))
+            every {
+                globalLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
             } returns Mono.just(emptyList())
 
             overlay
                 .mutate(emptyList<TraceEdge>(), EdgeOperation.INSERT)
                 .test()
-                .assertNext { assert(it.isEmpty()) }
+                .assertNext { assert(it == listOf(ctx)) }
                 .verifyComplete()
 
             verify(exactly = 1) {
                 consolidatedLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
             }
-            verify(exactly = 0) {
+            verify(exactly = 1) {
                 globalLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
             }
         }
-    }
 
-    @Nested
-    @DisplayName("mutate — DELETE: HBase + MySQL mirrored")
-    inner class MutateDeleteTest {
         @Test
-        fun `DELETE is mirrored to MySQL so rows cannot resurface`() {
+        fun `DELETE is mirrored to both HBase and MySQL`() {
             val ctx = mockk<CdcContext>(relaxed = true)
             every {
                 consolidatedLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
@@ -275,6 +275,64 @@ class LocalBackedJdbcHashLabelOverlayTest {
     inner class LockTest {
         @Test
         fun `lock operations go to HBase only`() {
+            val lockEdge = KeyValue<Any>("key", "val")
+            every { consolidatedLabel.findStaleLockAndClear(any(), any()) } returns Mono.empty()
+
+            overlay
+                .findStaleLockAndClear(lockEdge, 5000L)
+                .test()
+                .verifyComplete()
+
+            verify(exactly = 1) { consolidatedLabel.findStaleLockAndClear(any(), any()) }
+            verify(exactly = 0) { globalLabel.findStaleLockAndClear(any(), any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("useJdbcMetastore=false — MySQL bypassed entirely")
+    inner class HBaseDisabledTest {
+        @BeforeEach
+        fun disableHBase() {
+            overlay.disableJdbcMetastore()
+        }
+
+        @Test
+        fun `INSERT goes to HBase only when JDBC metastore is disabled`() {
+            val ctx = mockk<CdcContext>(relaxed = true)
+            every {
+                consolidatedLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
+            } returns Mono.just(listOf(ctx))
+
+            overlay
+                .mutate(emptyList<TraceEdge>(), EdgeOperation.INSERT)
+                .test()
+                .assertNext { assert(it == listOf(ctx)) }
+                .verifyComplete()
+
+            verify(exactly = 1) {
+                consolidatedLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
+            }
+            verify(exactly = 0) {
+                globalLabel.mutate(any<List<TraceEdge>>(), any(), any(), any(), any(), any<() -> StorageOpCollector?>())
+            }
+        }
+
+        @Test
+        fun `getSelf reads from HBase only when JDBC metastore is disabled`() {
+            every { localLabel.getSelf(any(), any()) } returns Mono.just(frame(emptyList()))
+            every { consolidatedLabel.getSelf(any(), any()) } returns Mono.just(frame(listOf(row("A", "B", "hbase"))))
+
+            overlay
+                .getSelf(listOf("A"), emptySet())
+                .test()
+                .assertNext { result -> assert(result.rows.size == 1) }
+                .verifyComplete()
+
+            verify(exactly = 0) { globalLabel.getSelf(any(), any()) }
+        }
+
+        @Test
+        fun `lock delegates to HBase when JDBC metastore is disabled`() {
             val lockEdge = KeyValue<Any>("key", "val")
             every { consolidatedLabel.findStaleLockAndClear(any(), any()) } returns Mono.empty()
 

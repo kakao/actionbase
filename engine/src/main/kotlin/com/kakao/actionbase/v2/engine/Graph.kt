@@ -126,6 +126,8 @@ class Graph(
 
     override val lockTimeout: Long = config.lockTimeout
 
+    override val useJdbcMetastore: Boolean = config.useJdbcMetastore
+
     private val warmUpConfig = config.warmUp
 
     private val hostName: String = config.hostName
@@ -1037,6 +1039,7 @@ class Graph(
                     metastore,
                     metadataTable,
                     consolidatedMetastore,
+                    config.useJdbcMetastore,
                     edgeEncoderFactory,
                     edgeRecordMapper,
                     config.lockTimeout,

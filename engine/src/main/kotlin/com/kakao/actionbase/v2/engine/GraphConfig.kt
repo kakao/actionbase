@@ -37,6 +37,7 @@ data class GraphConfig(
     val systemMutationMode: MutationMode? = null,
     val readOnly: Boolean = false,
     val consolidatedMetastoreUri: String? = null,
+    val useJdbcMetastore: Boolean = true,
 ) {
     companion object {
         val builder: Builder
@@ -68,6 +69,7 @@ data class GraphConfig(
         private var systemMutationMode: MutationMode? = null
         private var readOnly: Boolean = false
         private var consolidatedMetastoreUri: String? = null
+        private var useJdbcMetastore: Boolean = true
 
         // Aligned with nginx.conf proxy_read_timeout 300
         private var mutationRequestTimeout: Long = 300_000
@@ -132,6 +134,8 @@ data class GraphConfig(
 
         fun withConsolidatedMetastoreUri(uri: String) = apply { this.consolidatedMetastoreUri = uri }
 
+        fun withUseJdbcMetastore(enabled: Boolean) = apply { this.useJdbcMetastore = enabled }
+
         fun build(): GraphConfig =
             GraphConfig(
                 phase = phase,
@@ -159,6 +163,7 @@ data class GraphConfig(
                 systemMutationMode = systemMutationMode,
                 readOnly = readOnly,
                 consolidatedMetastoreUri = consolidatedMetastoreUri,
+                useJdbcMetastore = useJdbcMetastore,
             )
     }
 }

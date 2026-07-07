@@ -19,6 +19,7 @@ interface GraphDefaults {
     val metastore: Database
     val metadataTable: MetadataTable
     val consolidatedMetastore: Mono<HBaseTables>
+    val useJdbcMetastore: Boolean
     val storages: Map<EntityName, StorageEntity>
     val edgeEncoderFactory: EdgeEncoderFactory
     val edgeRecordMapper: EdgeRecordMapper
@@ -41,6 +42,7 @@ data class AbstractGraphDefaults(
     override val metastore: Database,
     override val metadataTable: MetadataTable,
     override val consolidatedMetastore: Mono<HBaseTables>,
+    override val useJdbcMetastore: Boolean,
     override val edgeEncoderFactory: EdgeEncoderFactory,
     override val edgeRecordMapper: EdgeRecordMapper,
     override val lockTimeout: Long,
