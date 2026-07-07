@@ -22,7 +22,7 @@ sealed class ModelSchema : AbstractSchema {
     abstract val properties: List<StructField>
 
     @get:JsonIgnore
-    val propertiesByName: Map<String, StructField> by lazy { properties.associateBy { it.name } }
+    open val propertiesByName: Map<String, StructField> by lazy { properties.associateBy { it.name } }
 
     @JsonTypeName("edge")
     data class Edge(
@@ -47,7 +47,16 @@ sealed class ModelSchema : AbstractSchema {
         val groups: List<Group> = emptyList(),
         val caches: List<Cache> = emptyList(),
     ) : ModelSchema(),
-        AbstractSchema by Schema(properties.associate { it.name to it.nullable } + listOf("_source" to false, "_target" to false))
+        AbstractSchema by Schema(properties.associate { it.name to it.nullable } + listOf("_source" to false, "_target" to false)) {
+        @get:JsonIgnore
+        override val propertiesByName: Map<String, StructField> by lazy {
+            properties.associateBy { it.name } +
+                mapOf(
+                    "_source" to StructField(name = "_source", type = source.type, comment = source.comment, nullable = false),
+                    "_target" to StructField(name = "_target", type = target.type, comment = target.comment, nullable = false),
+                )
+        }
+    }
 
     @JsonTypeName("vertex")
     data class Vertex(

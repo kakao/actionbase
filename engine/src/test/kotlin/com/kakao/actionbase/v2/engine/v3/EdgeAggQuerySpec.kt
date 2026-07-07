@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.metadata.common.DirectionType as V3DirectionTyp
 
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
+import com.kakao.actionbase.core.edge.payload.MultiEdgeBulkMutationRequest
 import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
@@ -12,6 +13,11 @@ import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.LabelType
+import com.kakao.actionbase.v2.core.types.DataType
+import com.kakao.actionbase.v2.core.types.EdgeSchema
+import com.kakao.actionbase.v2.core.types.Field
+import com.kakao.actionbase.v2.core.types.VertexField
+import com.kakao.actionbase.v2.core.types.VertexType
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
@@ -437,6 +443,100 @@ class EdgeAggQuerySpec :
 
             queryService
                 .agg(database, table, groupName, listOf("1000"), Direction.OUT, ranges = "day:eq:2024-01-02")
+                .test()
+                .assertNext { payload ->
+                    payload.count shouldBe 1
+                    payload.groups[0].value shouldBe 1L
+                }.verifyComplete()
+        }
+
+        /**
+         * MultiEdge lets a single (source, target) pair repeat, so `_target` is a useful
+         * group dimension. Writes encode `_target` as Long (from the schema target type);
+         * reads must cast the ranges predicate the same way to match, otherwise
+         * the qualifier bytes mismatch and the GET returns nothing.
+         *
+         * Mutation:
+         * | id | source | target |
+         * |----|--------|--------|
+         * | 1  | 1000   | 2000   |
+         * | 2  | 1000   | 2000   |
+         * | 3  | 1000   | 2001   |
+         *
+         * EdgeGroup (source=1000, OUT, GroupType.COUNT, fields=[_target])
+         * |       row key        | qualifier (Long) | value |
+         * |----------------------|------------------|-------|
+         * | hash|1000|T|-5|OUT|G | _target=2000     |     2 |
+         * | hash|1000|T|-5|OUT|G | _target=2001     |     1 |
+         */
+        "INSERT MultiEdge → agg on `_target` group returns per-target count" {
+            val database = GraphFixtures.serviceName
+            val table = "agg_multi_edge_target"
+            val groupName = "by_target"
+
+            val multiEdgeSchema =
+                EdgeSchema(
+                    VertexField(VertexType.LONG),
+                    VertexField(VertexType.LONG),
+                    listOf(
+                        Field("_id", DataType.LONG, false),
+                    ),
+                )
+
+            val createRequest =
+                LabelCreateRequest(
+                    desc = "multi edge target agg test",
+                    type = LabelType.MULTI_EDGE,
+                    schema = multiEdgeSchema,
+                    dirType = DirectionType.BOTH,
+                    storage = GraphFixtures.datastoreStorage,
+                    readOnly = true,
+                    groups =
+                        listOf(
+                            Group(
+                                group = groupName,
+                                type = GroupType.COUNT,
+                                fields = listOf(Group.Field("_target")),
+                                directionType = V3DirectionType.OUT,
+                            ),
+                        ),
+                )
+
+            graph.labelDdl
+                .create(EntityName(database, table), createRequest)
+                .test()
+                .assertNext { it.status.name shouldBe "CREATED" }
+                .verifyComplete()
+
+            val insertRequest =
+                mapper.readValue<MultiEdgeBulkMutationRequest>(
+                    """
+                    {
+                      "mutations": [
+                        {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": 1000, "target": 2000, "properties": {}}},
+                        {"type": "INSERT", "edge": {"version": 1, "id": 2, "source": 1000, "target": 2000, "properties": {}}},
+                        {"type": "INSERT", "edge": {"version": 1, "id": 3, "source": 1000, "target": 2001, "properties": {}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                )
+
+            mutationService
+                .mutate(database, table, insertRequest.mutations)
+                .test()
+                .assertNext { }
+                .verifyComplete()
+
+            queryService
+                .agg(database, table, groupName, listOf("1000"), Direction.OUT, ranges = "_target:eq:2000")
+                .test()
+                .assertNext { payload ->
+                    payload.count shouldBe 1
+                    payload.groups[0].value shouldBe 2L
+                }.verifyComplete()
+
+            queryService
+                .agg(database, table, groupName, listOf("1000"), Direction.OUT, ranges = "_target:eq:2001")
                 .test()
                 .assertNext { payload ->
                     payload.count shouldBe 1
