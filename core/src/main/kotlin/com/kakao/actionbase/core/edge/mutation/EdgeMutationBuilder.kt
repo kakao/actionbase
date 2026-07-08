@@ -1,5 +1,6 @@
 package com.kakao.actionbase.core.edge.mutation
 
+import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeCountRecord
@@ -23,6 +24,9 @@ object EdgeMutationBuilder {
     val MULTI_EDGE_ID_CODE = XXHash32Wrapper.default.stringHash(MULTI_EDGE_ID_FIELD_NAME)
     val MULTI_EDGE_SOURCE_CODE = XXHash32Wrapper.default.stringHash(MULTI_EDGE_SOURCE_FIELD_NAME)
     val MULTI_EDGE_TARGET_CODE = XXHash32Wrapper.default.stringHash(MULTI_EDGE_TARGET_FIELD_NAME)
+
+    /** Reserved group names that never persist an EdgeGroup row on mutation. */
+    private val groupNamesExcludedFromMutation = setOf(Constants.Group.COUNT_SENTINEL)
 
     fun buildForUniqueEdge(
         before: EdgeStateRecord,
@@ -259,6 +263,7 @@ object EdgeMutationBuilder {
         val properties: Map<Int, Any?> = record.value.properties.mapValues { (_, stateValue) -> stateValue.value }
 
         return groups.flatMap { group ->
+            if (group.group in groupNamesExcludedFromMutation) return@flatMap emptyList()
             group.directionType.directions().map { direction ->
                 val value =
                     when (group.type) {
