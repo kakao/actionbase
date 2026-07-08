@@ -17,7 +17,7 @@ import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
-import com.kakao.actionbase.v2.engine.v3.V3TableDescriptor
+import com.kakao.actionbase.engine.QualifiedGroups
 
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -27,7 +27,7 @@ class AggregationService(
     private val mutationService: MutationService,
     private val engine: AggregationEngine,
 ) {
-    fun getAggregations(): List<AggregationMetadata> = engine.getAllTables().map { it.toMetadata() }
+    fun getAggregations(): List<AggregationMetadata> = engine.getAllQualifiedGroups().map { it.toMetadata() }
 
     fun aggregate(
         type: AggregationType,
@@ -39,15 +39,12 @@ class AggregationService(
             .flatMap { event -> processAggregations(event, type) }
             .collectList()
 
-    private fun V3TableDescriptor.toMetadata(): AggregationMetadata {
-        val aggregations = schema.groupsOrNull().orEmpty().mapNotNull { it.aggregations }
-
-        return AggregationMetadata(
+    private fun QualifiedGroups.toMetadata(): AggregationMetadata =
+        AggregationMetadata(
             database = database,
             table = table,
-            aggregations = aggregations,
+            aggregations = groups.map { it.aggregations },
         )
-    }
 
     private fun ModelSchema.groupsOrNull(): List<Group>? =
         when (this) {
@@ -66,7 +63,7 @@ class AggregationService(
         val groups = tb.schema.groupsOrNull().orEmpty()
 
         return groups
-            .filter { it.aggregations != null }
+            .filter { it.aggregations.topk.isNotEmpty() }
             .map { group ->
                 EdgeAggregationEvent(
                     database = item.database,
@@ -76,7 +73,7 @@ class AggregationService(
                     properties = item.edge.properties,
                     direction = group.directionType,
                     group = group,
-                    aggregations = group.aggregations!!,
+                    aggregations = group.aggregations,
                 )
             }
     }
@@ -132,10 +129,9 @@ class AggregationService(
                 status = "SKIPPED",
                 error = null,
             )
-        val scoreFqn = topk.table?.score ?: return Mono.just(base)
-        val (scoreDatabase, scoreTable) = parseFqn(scoreFqn)
+        val (scoreDatabase, scoreTable) = parseFqn(topk.table.score)
         val start = if (direction == Direction.IN) target else source
-        val resolvedRanges = topk.ranges?.let { interpolate(template = it, source, target, properties) }
+        val resolvedRanges = topk.ranges.takeIf { it.isNotEmpty() }?.let { interpolate(template = it, source, target, properties) }
 
         return queryService
             .agg(

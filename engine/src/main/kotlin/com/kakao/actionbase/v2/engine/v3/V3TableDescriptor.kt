@@ -9,6 +9,7 @@ import com.kakao.actionbase.core.metadata.common.IndexField
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.types.PrimitiveType
+import com.kakao.actionbase.engine.QualifiedGroups
 import com.kakao.actionbase.v2.core.code.hbase.Order
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.LabelType
@@ -42,6 +43,13 @@ sealed class V3TableDescriptor {
     ) : V3TableDescriptor()
 
     companion object {
+        fun getQualifiedGroups(entity: LabelEntity): QualifiedGroups =
+            QualifiedGroups(
+                database = entity.name.service,
+                table = entity.name.nameNotNull,
+                groups = entity.groups.map { it.toV3() }
+            )
+
         fun create(entity: LabelEntity): V3TableDescriptor {
             val database = entity.name.service
             val table = entity.name.nameNotNull

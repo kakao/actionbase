@@ -130,7 +130,6 @@ class EdgeSchemaSerializationTest {
                       {
                         "topk": "top_purchased_1y",
                         "ranges": "time:bt:now-365d,now",
-                        "expire": true,
                         "expireAfterMillis": 31536000000,
                         "table": {
                           "score": "commerce.order_product__topk",
@@ -163,7 +162,6 @@ class EdgeSchemaSerializationTest {
                       {
                         "topk": "top_purchased_1y",
                         "ranges": "time:bt:now-365d,now",
-                        "expire": true,
                         "expireAfterMillis": 31536000000,
                         "table": {
                           "score": "commerce.order_product__topk",
@@ -189,7 +187,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased"}]
+                    "topk": [{"topk": "top_purchased", "table": {"score": "commerce.order_product__topk", "expire": "topk.expire"}}]
                   }
                 }
               ]
@@ -206,7 +204,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased"}]
+                    "topk": [{"topk": "top_purchased", "table": {"score": "commerce.order_product__topk", "expire": "topk.expire"}}]
                   }
                 }
               ]

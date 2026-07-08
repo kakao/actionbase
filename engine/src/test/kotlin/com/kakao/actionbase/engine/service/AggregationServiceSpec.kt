@@ -16,8 +16,8 @@ import com.kakao.actionbase.core.metadata.common.TopkTable
 import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
+import com.kakao.actionbase.engine.QualifiedGroups
 import com.kakao.actionbase.engine.binding.TableBinding
-import com.kakao.actionbase.v2.engine.v3.V3TableDescriptor
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -41,7 +41,7 @@ class AggregationServiceSpec :
             // --- getAggregations ---
 
             "getAggregations returns only tables that define topk" {
-                every { engine.getAllTables() } returns
+                every { engine.getAllQualifiedGroups() } returns
                     listOf(
                         edgeSummary(database = "db", table = "with_topk", topks = listOf(topkConfig("t1"))),
                         edgeSummary(database = "db", table = "no_topk", topks = emptyList()),
@@ -55,7 +55,7 @@ class AggregationServiceSpec :
             }
 
             "getAggregations returns empty topk when no table defines any aggregation" {
-                every { engine.getAllTables() } returns
+                every { engine.getAllQualifiedGroups() } returns
                     listOf(
                         edgeSummary(database = "db", table = "no_topk", topks = emptyList()),
                         vertexSummary(database = "db", table = "vertex"),
@@ -67,24 +67,6 @@ class AggregationServiceSpec :
             }
 
             // --- aggregate ---
-
-            "aggregate returns SKIPPED when topk.table is null (no score table configured)" {
-                val topk = topkConfig(name = "t1", table = null)
-                val group =
-                    groupWithTopks(
-                        name = "g1",
-                        topks = listOf(topk),
-                        directionType = DirectionType.OUT,
-                    )
-                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
-
-                StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
-                    .assertNext { results ->
-                        results shouldHaveSize 1
-                        results[0].status shouldBe "SKIPPED"
-                    }.verifyComplete()
-            }
 
             "aggregate returns SUCCESS when mutate succeeds" {
                 val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
@@ -169,8 +151,8 @@ class AggregationServiceSpec :
 
 private fun topkConfig(
     name: String,
-    table: TopkTable? = TopkTable(score = "${name}__score", expire = "${name}__expire"),
-): Topk = Topk(topk = name, ranges = null, expire = false, expireAfterMillis = null, table = table)
+    table: TopkTable = TopkTable(score = "${name}__score", expire = "${name}__expire"),
+): Topk = Topk(topk = name, table = table)
 
 private fun groupWithTopks(
     name: String,
@@ -182,7 +164,7 @@ private fun groupWithTopks(
         type = GroupType.SUM,
         fields = emptyList(),
         directionType = directionType,
-        aggregations = if (topks.isEmpty()) null else Aggregations(topk = topks),
+        aggregations = Aggregations(topk = topks),
     )
 
 private fun stringField(): Field = Field(type = PrimitiveType.STRING, comment = "")
@@ -191,27 +173,21 @@ private fun edgeSummary(
     database: String,
     table: String,
     topks: List<Topk>,
-): V3TableDescriptor =
-    V3TableDescriptor.Edge(
+): QualifiedGroups =
+    QualifiedGroups(
         database = database,
         table = table,
-        schema =
-            ModelSchema.Edge(
-                source = stringField(),
-                target = stringField(),
-                direction = DirectionType.BOTH,
-                groups = listOf(groupWithTopks("g", topks)),
-            ),
+        groups = listOf(groupWithTopks("g", topks)),
     )
 
 private fun vertexSummary(
     database: String,
     table: String,
-): V3TableDescriptor =
-    V3TableDescriptor.Vertex(
+): QualifiedGroups =
+    QualifiedGroups(
         database = database,
         table = table,
-        schema = ModelSchema.Vertex(id = stringField()),
+        groups = emptyList(),
     )
 
 private fun stubBindingWith(

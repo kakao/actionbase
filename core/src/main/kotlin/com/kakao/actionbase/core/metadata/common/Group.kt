@@ -2,9 +2,7 @@ package com.kakao.actionbase.core.metadata.common
 
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
-
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonInclude
 
 data class Group(
     val group: String,
@@ -14,8 +12,7 @@ data class Group(
     val comment: String = Constants.DEFAULT_COMMENT,
     val directionType: DirectionType = DirectionType.BOTH,
     val ttl: Long = Constants.Group.DEFAULT_TTL,
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    val aggregations: Aggregations? = null,
+    val aggregations: Aggregations = Aggregations(),
 ) {
     @JsonIgnore
     val code = XXHash32Wrapper.default.stringHash(group)
@@ -37,25 +34,10 @@ data class Aggregations(
 
 data class Topk(
     val topk: String,
-    val ranges: String? = null,
-    val expire: Boolean = false,
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    val expireAfterMillis: Long? = null,
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    val table: TopkTable? = null,
-) {
-    init {
-        if (expire) {
-            require(expireAfterMillis != null && expireAfterMillis > 0) {
-                "topk `$topk`: expireAfterMillis must be set to a positive value when expire=true"
-            }
-        } else {
-            require(expireAfterMillis == null) {
-                "topk `$topk`: expireAfterMillis must be null when expire=false"
-            }
-        }
-    }
-}
+    val ranges: String = "",
+    val expireAfterMillis: Long = -1,
+    val table: TopkTable,
+)
 
 data class TopkTable(
     val score: String,
