@@ -260,7 +260,7 @@ object EdgeMutationBuilder {
         val properties: Map<Int, Any?> = record.value.properties.mapValues { (_, stateValue) -> stateValue.value }
 
         return groups.flatMap { group ->
-            if (group.group == Constants.Group.COUNT_SENTINEL) return@flatMap emptyList()
+            if (Constants.Group.Reserved.contains(group.group)) return@flatMap emptyList()
             group.directionType.directions().map { direction ->
                 val value =
                     when (group.type) {

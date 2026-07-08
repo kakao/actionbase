@@ -172,8 +172,8 @@ class QueryService(
         features: List<String> = emptyList(),
         ttl: Long? = null,
     ): Mono<DataFrameEdgeAggPayload> {
-        if (group == Constants.Group.COUNT_SENTINEL) {
-            require(ranges == null) { "`ranges` is not supported for group `${Constants.Group.COUNT_SENTINEL}`." }
+        if (group == Constants.Group.Reserved.COUNT_SENTINEL.groupName) {
+            require(ranges == null) { "`ranges` is not supported for group `${Constants.Group.Reserved.COUNT_SENTINEL.groupName}`." }
             return counts(database, table, start, direction, null, filters, features)
                 .map { it.toAggPayload() }
         }

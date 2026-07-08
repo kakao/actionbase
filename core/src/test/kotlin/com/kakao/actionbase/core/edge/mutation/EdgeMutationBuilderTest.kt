@@ -163,7 +163,7 @@ class EdgeMutationBuilderTest {
 
         @Test
         fun `CREATED with __count__ group produces no groupRecords`() {
-            val countSentinelGroup = Group(group = Constants.Group.COUNT_SENTINEL, type = GroupType.COUNT, fields = emptyList())
+            val countSentinelGroup = Group(group = Constants.Group.Reserved.COUNT_SENTINEL.groupName, type = GroupType.COUNT, fields = emptyList())
             val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
             val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
             val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countSentinelGroup), emptyList())
@@ -174,7 +174,7 @@ class EdgeMutationBuilderTest {
 
         @Test
         fun `__count__ group is skipped while real group is still recorded`() {
-            val countSentinelGroup = Group(group = Constants.Group.COUNT_SENTINEL, type = GroupType.COUNT, fields = emptyList())
+            val countSentinelGroup = Group(group = Constants.Group.Reserved.COUNT_SENTINEL.groupName, type = GroupType.COUNT, fields = emptyList())
             val realCountGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
             val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
             val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
@@ -331,7 +331,7 @@ class EdgeMutationBuilderTest {
 
         @Test
         fun `CREATED with __count__ group produces no groupRecords`() {
-            val countSentinelGroup = Group(group = Constants.Group.COUNT_SENTINEL, type = GroupType.COUNT, fields = emptyList())
+            val countSentinelGroup = Group(group = Constants.Group.Reserved.COUNT_SENTINEL.groupName, type = GroupType.COUNT, fields = emptyList())
             val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = false, version = 0)
             val after = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
             val result = EdgeMutationBuilder.buildForMultiEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countSentinelGroup), emptyList())
@@ -342,7 +342,7 @@ class EdgeMutationBuilderTest {
 
         @Test
         fun `__count__ group is skipped while real group is still recorded`() {
-            val countSentinelGroup = Group(group = Constants.Group.COUNT_SENTINEL, type = GroupType.COUNT, fields = emptyList())
+            val countSentinelGroup = Group(group = Constants.Group.Reserved.COUNT_SENTINEL.groupName, type = GroupType.COUNT, fields = emptyList())
             val realCountGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
             val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = false, version = 0)
             val after = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
