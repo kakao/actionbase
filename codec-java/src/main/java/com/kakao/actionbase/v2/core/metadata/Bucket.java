@@ -19,10 +19,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * bucket is supported, and only {@link #apply(Object)} (bulk-encoding time bucketing) is ported —
  * {@code handleQueryValue} is query-time only and unused by bulk encoding.
  */
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
-    property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({@JsonSubTypes.Type(value = Bucket.Date.class, name = "date")})
 public abstract class Bucket implements Serializable {
 

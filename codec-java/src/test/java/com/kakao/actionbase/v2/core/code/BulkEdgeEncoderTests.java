@@ -700,7 +700,8 @@ public class BulkEdgeEncoderTests {
           assertNotNull(kv.getField(), "group row must carry a qualifier");
           assertNull(kv.getDimensionValue());
 
-          SimplePositionedMutableByteRangeAdapter buffer = new SimplePositionedMutableByteRangeAdapter(kv.getValue());
+          SimplePositionedMutableByteRangeAdapter buffer =
+              new SimplePositionedMutableByteRangeAdapter(kv.getValue());
           assertEquals(1L, buffer.readRawLong());
         });
   }
@@ -809,7 +810,8 @@ public class BulkEdgeEncoderTests {
             .findFirst()
             .orElseThrow(() -> new AssertionError("expected 1 group row"));
 
-    Object decodedQualifierValue = ValueUtils.deserialize(new SimplePositionedMutableByteRange(groupRow.getField()));
+    Object decodedQualifierValue =
+        ValueUtils.deserialize(new SimplePositionedMutableByteRange(groupRow.getField()));
     assertEquals("2026-06-11", decodedQualifierValue);
   }
 

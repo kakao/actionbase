@@ -231,12 +231,13 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
   // --- EdgeGroup encoding
   // Row key   : xxhash32 | directedSrc | labelId | EDGE_GROUP | direction | groupCode
   // Qualifier : groupValues...(DESC-ordered, bucketed fields applied)
-  // Value     : raw 8-byte big-endian long — this edge's single contribution (COUNT=1, SUM=valueField)
+  // Value     : raw 8-byte big-endian long — this edge's single contribution (COUNT=1,
+  // SUM=valueField)
 
   /**
    * Reserved group name that delegates to the native EdgeCount query and never persists an
-   * EdgeGroup row. Matches V3's {@code Constants.Group.COUNT_SENTINEL} /
-   * {@code EdgeMutationBuilder.groupNamesExcludedFromMutation}.
+   * EdgeGroup row. Matches V3's {@code Constants.Group.COUNT_SENTINEL} / {@code
+   * EdgeMutationBuilder.groupNamesExcludedFromMutation}.
    */
   public static final String GROUP_COUNT_SENTINEL = "__count__";
 
@@ -281,12 +282,7 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
 
   @Override
   public List<KeyFieldValue<T>> encodeAllGroupEdges(
-      long ts,
-      Object src,
-      Object tgt,
-      Map<String, Object> props,
-      int labelId,
-      List<Group> groups) {
+      long ts, Object src, Object tgt, Map<String, Object> props, int labelId, List<Group> groups) {
     if (groups == null) return Collections.emptyList();
 
     return groups.stream()

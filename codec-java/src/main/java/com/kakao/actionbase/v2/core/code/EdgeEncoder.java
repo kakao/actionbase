@@ -119,8 +119,7 @@ public interface EdgeEncoder<T> {
   List<KeyFieldValue<T>> encodeAllGroupEdges(
       long ts, Object src, Object tgt, Map<String, Object> props, int labelId, List<Group> groups);
 
-  default List<KeyFieldValue<T>> encodeAllGroupEdges(
-      Edge edge, int labelId, List<Group> groups) {
+  default List<KeyFieldValue<T>> encodeAllGroupEdges(Edge edge, int labelId, List<Group> groups) {
     return encodeAllGroupEdges(
         edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), labelId, groups);
   }

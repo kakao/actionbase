@@ -12,7 +12,8 @@ public class BucketTests {
 
   @Test
   void shouldFormatEpochMillisAsDateString() {
-    Bucket.Date bucket = new Bucket.Date("created_at_day", Bucket.ValueUnit.MILLISECOND, "Asia/Seoul", "yyyy-MM-dd");
+    Bucket.Date bucket =
+        new Bucket.Date("created_at_day", Bucket.ValueUnit.MILLISECOND, "Asia/Seoul", "yyyy-MM-dd");
 
     // 2026-06-11T00:00:00+09:00
     long epochMillis = 1781103600000L;
@@ -22,14 +23,16 @@ public class BucketTests {
 
   @Test
   void shouldFormatEpochSecondsAsDateString() {
-    Bucket.Date bucket = new Bucket.Date("created_at_day", Bucket.ValueUnit.SECOND, "Asia/Seoul", "yyyy-MM-dd");
+    Bucket.Date bucket =
+        new Bucket.Date("created_at_day", Bucket.ValueUnit.SECOND, "Asia/Seoul", "yyyy-MM-dd");
 
     assertEquals("2026-06-11", bucket.apply(1781103600000L / 1000));
   }
 
   @Test
   void shouldReturnNullForNullValue() {
-    Bucket.Date bucket = new Bucket.Date("created_at_day", Bucket.ValueUnit.MILLISECOND, "Asia/Seoul", "yyyy-MM-dd");
+    Bucket.Date bucket =
+        new Bucket.Date("created_at_day", Bucket.ValueUnit.MILLISECOND, "Asia/Seoul", "yyyy-MM-dd");
 
     assertNull(bucket.apply(null));
   }
