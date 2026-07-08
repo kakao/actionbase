@@ -91,32 +91,49 @@ public class Group implements Serializable {
     @JsonProperty("name")
     final String name;
 
+    @JsonProperty("bucket")
+    final Bucket bucket;
+
     @JsonCreator
-    public Field(@JsonProperty("name") String name) {
+    public Field(@JsonProperty("name") String name, @JsonProperty("bucket") Bucket bucket) {
       this.name = name;
+      this.bucket = bucket;
+    }
+
+    public Field(String name) {
+      this(name, null);
     }
 
     public String getName() {
       return name;
     }
 
+    public Bucket getBucket() {
+      return bucket;
+    }
+
+    /** Applies {@link #bucket} to {@code value} if configured, otherwise returns it unchanged. */
+    public Object applyBucket(Object value) {
+      return bucket == null ? value : bucket.apply(value);
+    }
+
     @Override
     public String toString() {
-      return "Field{" + "name='" + name + '\'' + '}';
+      return "Field{" + "name='" + name + '\'' + ", bucket=" + bucket + '}';
     }
 
     @Override
     public boolean equals(Object obj) {
       if (obj instanceof Field) {
         Field other = (Field) obj;
-        return name.equals(other.name);
+        return name.equals(other.name) && Objects.equals(bucket, other.bucket);
       }
       return false;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(name);
+      return Objects.hash(name, bucket);
     }
   }
 
