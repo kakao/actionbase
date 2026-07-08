@@ -36,22 +36,7 @@ object Constants {
     object Group {
         const val DEFAULT_TTL = 8 * 24 * 60 * 60 * 1000L // 8 days in milliseconds (691,200,000)
 
-        /**
-         * Group names reserved for special handling by the engine. An entry here is
-         * the single source of truth: the read (AGG) and mutation paths both derive
-         * their sentinel checks from this enum, so adding a new reserved name never
-         * requires touching more than one place.
-         */
-        enum class Reserved(val groupName: String) {
-            /** Delegates to the native edge-count query instead of a real EdgeGroup lookup. */
-            COUNT_SENTINEL("__count__"),
-            ;
-
-            companion object {
-                private val names = entries.map { it.groupName }.toSet()
-
-                fun contains(groupName: String): Boolean = groupName in names
-            }
-        }
+        /** Sentinel group name that delegates to the native edge-count query. */
+        const val COUNT_SENTINEL = "__count__"
     }
 }
