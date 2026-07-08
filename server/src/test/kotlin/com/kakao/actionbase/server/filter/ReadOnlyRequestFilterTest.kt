@@ -161,6 +161,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v2/storage/{storage}",
                 // v3 GET
                 "GET /graph/v3",
+                "GET /graph/v3/aggregations",
                 "GET /graph/v3/databases",
                 "GET /graph/v3/databases/{database}",
                 "GET /graph/v3/databases/{database}/aliases",
@@ -288,6 +289,7 @@ class ReadOnlyRequestFilterTest {
                 "table" to "t",
                 "tableFullName" to "t",
                 "tableName" to "t",
+                "topk" to "tk",
             )
 
         private fun resolvePath(template: String): String =

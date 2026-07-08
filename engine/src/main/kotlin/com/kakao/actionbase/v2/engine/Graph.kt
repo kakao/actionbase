@@ -268,6 +268,8 @@ class Graph(
             } + aliases.map { it.key.toString() to "Alias(${it.value})" }
         ).toMap()
 
+    fun listLabels(): List<Label> = labels.values.toList()
+
     @Suppress("LongMethod")
     fun mutate(
         alias: EntityName,
