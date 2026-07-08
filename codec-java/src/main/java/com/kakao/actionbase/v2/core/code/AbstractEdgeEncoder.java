@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -206,6 +207,13 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
    */
   public static final String GROUP_COUNT_SENTINEL = "__count__";
 
+  /**
+   * Group names skipped when encoding EdgeGroup records, mirroring V3's {@code
+   * EdgeMutationBuilder.groupNamesExcludedFromMutation}.
+   */
+  public static final Set<String> GROUP_NAMES_EXCLUDED_FROM_ENCODING =
+      Collections.singleton(GROUP_COUNT_SENTINEL);
+
   public static void encodeGroupEdgeKeyToBuffer(
       Object directedSrc, Direction direction, int labelId, int groupCode, EdgeBuffer buffer) {
     buffer.encodeWithHash(directedSrc, labelId, EDGE_GROUP_TYPE);
@@ -303,7 +311,7 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
     if (groups == null) return Collections.emptyList();
 
     return groups.stream()
-        .filter(group -> !GROUP_COUNT_SENTINEL.equals(group.getGroup()))
+        .filter(group -> !GROUP_NAMES_EXCLUDED_FROM_ENCODING.contains(group.getGroup()))
         .flatMap(
             group ->
                 group.getDirectionType().getDirs().stream()

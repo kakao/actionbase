@@ -220,7 +220,7 @@ public class BulkEdgeEncoder {
                   .collect(Collectors.toList()));
         } else if (labelType == LabelType.MULTI_EDGE) {
           for (Group group : groups) {
-            if (AbstractEdgeEncoder.GROUP_COUNT_SENTINEL.equals(group.getGroup())) {
+            if (AbstractEdgeEncoder.GROUP_NAMES_EXCLUDED_FROM_ENCODING.contains(group.getGroup())) {
               continue;
             }
             for (Direction dir : group.getDirectionType().getDirs()) {
