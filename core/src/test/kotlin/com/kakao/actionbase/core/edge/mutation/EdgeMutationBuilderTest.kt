@@ -1,5 +1,6 @@
 package com.kakao.actionbase.core.edge.mutation
 
+import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationTestFixtures.edgeRecord
 import com.kakao.actionbase.core.edge.mutation.EdgeMutationTestFixtures.multiEdgeRecord
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
@@ -159,6 +160,43 @@ class EdgeMutationBuilderTest {
             // weight=1 * version=5 = 5
             assertTrue(result.groupRecords.all { it.value == 5L })
         }
+
+        @Test
+        fun `CREATED with __count__ group produces no groupRecords`() {
+            val countSentinelGroup =
+                Group(group = Constants.Group.COUNT_SENTINEL, type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
+            val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
+            val result = EdgeMutationBuilder.buildForUniqueEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countSentinelGroup), emptyList())
+
+            assertEquals("CREATED", result.status)
+            assertTrue(result.groupRecords.isEmpty())
+        }
+
+        @Test
+        fun `__count__ group is skipped while real group is still recorded`() {
+            val countSentinelGroup =
+                Group(group = Constants.Group.COUNT_SENTINEL, type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val realCountGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
+            val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
+            val result =
+                EdgeMutationBuilder.buildForUniqueEdge(
+                    before,
+                    after,
+                    DirectionType.BOTH,
+                    emptyList(),
+                    listOf(countSentinelGroup, realCountGroup),
+                    emptyList(),
+                )
+
+            assertEquals("CREATED", result.status)
+            // Only the real group is recorded (2 directions); the sentinel is skipped.
+            assertEquals(2, result.groupRecords.size)
+            assertTrue(result.groupRecords.all { it.key.groupCode == realCountGroup.code })
+            assertTrue(result.groupRecords.none { it.key.groupCode == countSentinelGroup.code })
+            assertTrue(result.groupRecords.all { it.value == 1L })
+        }
     }
 
     @Nested
@@ -291,6 +329,18 @@ class EdgeMutationBuilderTest {
             val incrementRecords = result.groupRecords.filter { it.value == 1L }
             assertEquals(2, decrementRecords.size)
             assertEquals(2, incrementRecords.size)
+        }
+
+        @Test
+        fun `CREATED with __count__ group produces no groupRecords`() {
+            val countSentinelGroup =
+                Group(group = Constants.Group.COUNT_SENTINEL, type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+            val before = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = false, version = 0)
+            val after = multiEdgeRecord(id = "edgeId1", source = "userA", target = "postX", active = true, version = 1)
+            val result = EdgeMutationBuilder.buildForMultiEdge(before, after, DirectionType.BOTH, emptyList(), listOf(countSentinelGroup), emptyList())
+
+            assertEquals("CREATED", result.status)
+            assertTrue(result.groupRecords.isEmpty())
         }
     }
 

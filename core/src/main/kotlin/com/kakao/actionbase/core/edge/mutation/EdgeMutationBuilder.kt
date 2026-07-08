@@ -1,5 +1,6 @@
 package com.kakao.actionbase.core.edge.mutation
 
+import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeCountRecord
@@ -259,6 +260,7 @@ object EdgeMutationBuilder {
         val properties: Map<Int, Any?> = record.value.properties.mapValues { (_, stateValue) -> stateValue.value }
 
         return groups.flatMap { group ->
+            if (group.group == Constants.Group.COUNT_SENTINEL) return@flatMap emptyList()
             group.directionType.directions().map { direction ->
                 val value =
                     when (group.type) {
