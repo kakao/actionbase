@@ -107,6 +107,110 @@ class EdgeSchemaSerializationTest {
                 }
               ]
             }
+        - name: with aggregations (per-entity with window)
+          input: |-
+            {
+              "type": "MULTI_EDGE",
+              "id": {"type": "long", "comment": ""},
+              "source": {"type": "long", "comment": "user id"},
+              "target": {"type": "long", "comment": "item id"},
+              "properties": [],
+              "direction": "BOTH",
+              "groups": [
+                {
+                  "group": "purchased_count_1y",
+                  "type": "COUNT",
+                  "fields": [
+                    {"name": "_target"},
+                    {"name": "day", "bucket": {"type": "date", "name": "time", "unit": "MILLISECOND", "timezone": "+09:00", "format": "yyyy-MM-dd"}}
+                  ],
+                  "directionType": "OUT",
+                  "aggregations": {
+                    "topk": [
+                      {
+                        "topk": "top_purchased_1y",
+                        "ranges": "time:bt:now-365d,now",
+                        "expire": true,
+                        "expireAfterMillis": 31536000000,
+                        "table": {
+                          "score": "commerce.order_product__topk",
+                          "expire": "topk.expire"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          expected: {
+              "type": "multiEdge",
+              "id": {"type": "long", "comment": ""},
+              "source": {"type": "long", "comment": "user id"},
+              "target": {"type": "long", "comment": "item id"},
+              "properties": [],
+              "direction": "BOTH",
+              "groups": [
+                {
+                  "group": "purchased_count_1y",
+                  "type": "COUNT",
+                  "fields": [
+                    {"name": "_target"},
+                    {"name": "day", "bucket": {"type": "date", "name": "time", "unit": "MILLISECOND", "timezone": "+09:00", "format": "yyyy-MM-dd"}}
+                  ],
+                  "directionType": "OUT",
+                  "aggregations": {
+                    "topk": [
+                      {
+                        "topk": "top_purchased_1y",
+                        "ranges": "time:bt:now-365d,now",
+                        "expire": true,
+                        "expireAfterMillis": 31536000000,
+                        "table": {
+                          "score": "commerce.order_product__topk",
+                          "expire": "topk.expire"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+        - name: with aggregations (no ranges)
+          input: |-
+            {
+              "type": "EDGE",
+              "source": {"type": "long", "comment": ""},
+              "target": {"type": "long", "comment": ""},
+              "properties": [],
+              "direction": "OUT",
+              "groups": [
+                {
+                  "group": "purchased_count",
+                  "type": "COUNT",
+                  "fields": [{"name": "_target"}],
+                  "aggregations": {
+                    "topk": [{"topk": "top_purchased"}]
+                  }
+                }
+              ]
+            }
+          expected: {
+              "type": "edge",
+              "source": {"type": "long", "comment": ""},
+              "target": {"type": "long", "comment": ""},
+              "properties": [],
+              "direction": "OUT",
+              "groups": [
+                {
+                  "group": "purchased_count",
+                  "type": "COUNT",
+                  "fields": [{"name": "_target"}],
+                  "aggregations": {
+                    "topk": [{"topk": "top_purchased"}]
+                  }
+                }
+              ]
+            }
         """,
     )
     fun `deserializes edge schema from JSON`(
