@@ -2,6 +2,8 @@ package com.kakao.actionbase.v2.core.code;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.kakao.actionbase.v2.core.code.hbase.SimplePositionedMutableByteRange;
+import com.kakao.actionbase.v2.core.code.hbase.ValueUtils;
 import com.kakao.actionbase.v2.core.edge.BulkLoadEdge;
 import com.kakao.actionbase.v2.core.edge.BulkLoadVertex;
 import com.kakao.actionbase.v2.core.edge.Edge;
@@ -659,5 +661,173 @@ public class BulkEdgeEncoderTests {
     // 1 hash + 2 indexed(OUT/IN) + 2 counter(OUT/IN) — no cache rows.
     assertEquals(5, encodedEdges.size());
     encodedEdges.forEach(kv -> assertNull(kv.field, "no cache rows should be produced"));
+  }
+
+  private static String withGroups(String groupsJson) {
+    return labelJsonString.replace(
+        "\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+        "\"groups\":" + groupsJson + ",\"caches\":[]");
+  }
+
+  @Test
+  void testCountGroupEmitsRowsPerDirectionWithRawLongOneValue() throws JsonProcessingException {
+    String labelJson =
+        withGroups(
+            "[{\"group\":\"permission_count\",\"type\":\"COUNT\",\"fields\":[{\"name\":\"permission\"}]}]");
+    LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    List<TypedKeyFieldValue<byte[]>> groupRows =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
+            .collect(java.util.stream.Collectors.toList());
+
+    // BOTH directionType (default) → OUT + IN group rows.
+    assertEquals(2, groupRows.size());
+    groupRows.forEach(
+        kv -> {
+          assertNotNull(kv.getKey());
+          assertTrue(kv.getKey().length > 0);
+          assertNotNull(kv.getField(), "group row must carry a qualifier");
+          assertNull(kv.getDimensionValue());
+
+          SimplePositionedMutableByteRangeAdapter buffer = new SimplePositionedMutableByteRangeAdapter(kv.getValue());
+          assertEquals(1L, buffer.readRawLong());
+        });
+  }
+
+  @Test
+  void testSumGroupEncodesValueFieldAsRawLong() throws JsonProcessingException {
+    String labelJson =
+        withGroups(
+            "[{\"group\":\"created_at_sum\",\"type\":\"SUM\",\"valueField\":\"created_at\",\"fields\":[{\"name\":\"permission\"}],\"directionType\":\"OUT\"}]");
+    LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    String edgeJson = edgeJsonString.replace("\"created_at\":1", "\"created_at\":42");
+    BulkLoadEdge edge = objectMapper.readValue(edgeJson, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    List<TypedKeyFieldValue<byte[]>> groupRows =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
+            .collect(java.util.stream.Collectors.toList());
+
+    // directionType=OUT → exactly 1 group row.
+    assertEquals(1, groupRows.size());
+    SimplePositionedMutableByteRangeAdapter buffer =
+        new SimplePositionedMutableByteRangeAdapter(groupRows.get(0).getValue());
+    assertEquals(42L, buffer.readRawLong());
+  }
+
+  @Test
+  void testCountSentinelGroupProducesNoEdgeGroupRows() throws JsonProcessingException {
+    String labelJson =
+        withGroups(
+            "[{\"group\":\"__count__\",\"type\":\"COUNT\",\"fields\":[]},"
+                + "{\"group\":\"permission_count\",\"type\":\"COUNT\",\"fields\":[{\"name\":\"permission\"}]}]");
+    LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    long groupRowCount =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
+            .count();
+
+    // __count__ sentinel is skipped; only permission_count's 2 rows (OUT/IN) remain.
+    assertEquals(2, groupRowCount);
+  }
+
+  @Test
+  void testGroupsAbsentProducesNoGroupRows() throws JsonProcessingException {
+    LabelDTO label = objectMapper.readValue(labelJsonString, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+    assertNull(newLabel.getGroups());
+
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    assertEquals(
+        0,
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
+            .count());
+  }
+
+  @Test
+  void testGroupFieldWithBucketEncodesFormattedDateInQualifier() throws JsonProcessingException {
+    String labelJson =
+        withGroups(
+            "[{\"group\":\"created_at_day_count\",\"type\":\"COUNT\",\"directionType\":\"OUT\","
+                + "\"fields\":[{\"name\":\"created_at\",\"bucket\":{\"type\":\"date\",\"name\":\"day\",\"unit\":\"MILLISECOND\",\"timezone\":\"Asia/Seoul\",\"format\":\"yyyy-MM-dd\"}}]}]");
+    LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    String edgeJson = edgeJsonString.replace("\"created_at\":1", "\"created_at\":1781103600000");
+    BulkLoadEdge edge = objectMapper.readValue(edgeJson, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    TypedKeyFieldValue<byte[]> groupRow =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("expected 1 group row"));
+
+    Object decodedQualifierValue = ValueUtils.deserialize(new SimplePositionedMutableByteRange(groupRow.getField()));
+    assertEquals("2026-06-11", decodedQualifierValue);
+  }
+
+  /** Minimal reader for the raw 8-byte big-endian long written by encodeRawInt64. */
+  private static class SimplePositionedMutableByteRangeAdapter {
+    private final byte[] bytes;
+
+    SimplePositionedMutableByteRangeAdapter(byte[] bytes) {
+      this.bytes = bytes;
+    }
+
+    long readRawLong() {
+      assertEquals(8, bytes.length, "raw long value must be exactly 8 bytes");
+      long result = 0;
+      for (byte b : bytes) {
+        result = (result << 8) | (b & 0xFF);
+      }
+      return result;
+    }
   }
 }

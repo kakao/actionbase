@@ -7,6 +7,7 @@ import com.kakao.actionbase.v2.core.metadata.Active;
 import com.kakao.actionbase.v2.core.metadata.Direction;
 import com.kakao.actionbase.v2.core.metadata.DirectionType;
 import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
+import com.kakao.actionbase.v2.core.metadata.Group;
 import com.kakao.actionbase.v2.core.metadata.LabelDTO;
 import com.kakao.actionbase.v2.core.metadata.LabelType;
 
@@ -206,6 +207,41 @@ public class BulkEdgeEncoder {
       if (labelType == LabelType.VERTEX) {
         return edges;
       }
+
+      // EdgeGroup: each group is encoded for its own directionType, independent of the label's
+      // dirType — matching V3 EdgeMutationBuilder.buildGroupRecords. Only supported on
+      // INDEXED/MULTI_EDGE, same as EdgeCache.
+      List<Group> groups = label.getGroups();
+      if (groups != null && !groups.isEmpty()) {
+        if (labelType == LabelType.INDEXED || labelType == LabelType.IMMUTABLE_INDEXED) {
+          edges.addAll(
+              encoder.encodeAllGroupEdges(castedEdge, labelId, groups).stream()
+                  .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.EDGE_GROUP_TYPE))
+                  .collect(Collectors.toList()));
+        } else if (labelType == LabelType.MULTI_EDGE) {
+          for (Group group : groups) {
+            if (AbstractEdgeEncoder.GROUP_COUNT_SENTINEL.equals(group.getGroup())) {
+              continue;
+            }
+            for (Direction dir : group.getDirectionType().getDirs()) {
+              Object groupSrc = dir == Direction.OUT ? castedEdge.getSrc() : edgeId;
+              Object groupTgt = dir == Direction.OUT ? edgeId : castedEdge.getTgt();
+              edges.add(
+                  TypedKeyFieldValue.from(
+                      encoder.encodeGroupEdge(
+                          castedEdge.getTs(),
+                          groupSrc,
+                          groupTgt,
+                          multiEdgeProps,
+                          dir,
+                          labelId,
+                          group),
+                      EncodedEdgeType.EDGE_GROUP_TYPE));
+            }
+          }
+        }
+      }
+
       if (label.getDirType() == DirectionType.BOTH) {
         T outboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.OUT, labelId);
         T inboundKey = encoder.encodeCounterEdgeKey(castedEdge, Direction.IN, labelId);

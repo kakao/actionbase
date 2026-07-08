@@ -12,6 +12,7 @@ import com.kakao.actionbase.v2.core.metadata.Group;
 import com.kakao.actionbase.v2.core.metadata.GroupType;
 import com.kakao.actionbase.v2.core.types.DataType;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -286,7 +287,7 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
       Map<String, Object> props,
       int labelId,
       List<Group> groups) {
-    if (groups == null) return java.util.Collections.emptyList();
+    if (groups == null) return Collections.emptyList();
 
     return groups.stream()
         .filter(group -> !GROUP_COUNT_SENTINEL.equals(group.getGroup()))

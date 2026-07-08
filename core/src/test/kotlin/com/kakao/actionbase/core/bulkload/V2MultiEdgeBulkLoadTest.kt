@@ -3,10 +3,12 @@ package com.kakao.actionbase.core.bulkload
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
 import com.kakao.actionbase.core.edge.mapper.EdgeCacheRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeCountRecordMapper
+import com.kakao.actionbase.core.edge.mapper.EdgeGroupRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
 import com.kakao.actionbase.core.edge.record.EdgeCacheRecord
 import com.kakao.actionbase.core.edge.record.EdgeCountRecord
+import com.kakao.actionbase.core.edge.record.EdgeGroupRecord
 import com.kakao.actionbase.core.edge.record.EdgeIndexRecord
 import com.kakao.actionbase.core.edge.record.EdgeStateRecord
 import com.kakao.actionbase.core.java.codec.common.hbase.Order
@@ -46,6 +48,7 @@ class V2MultiEdgeBulkLoadTest {
     private val indexDecoder: EdgeIndexRecordMapper.Decoder = EdgeIndexRecordMapper.create().decoder
     private val countDecoder: EdgeCountRecordMapper.Decoder = EdgeCountRecordMapper.create().decoder
     private val cacheDecoder: EdgeCacheRecordMapper.Decoder = EdgeCacheRecordMapper.create().decoder
+    private val groupDecoder: EdgeGroupRecordMapper.Decoder = EdgeGroupRecordMapper.create().decoder
 
     @Test
     fun testEdgeState() {
@@ -311,5 +314,74 @@ class V2MultiEdgeBulkLoadTest {
             )
 
         assertEquals(expected, edgeCacheRecord)
+    }
+
+    /**
+     * Round-trip verification of bulk-encoded MULTI_EDGE group row (OUT direction) via V3 decoder.
+     *
+     * Bytes captured from a MULTI_EDGE label with
+     * `groups: [{"group":"top_created_at","type":"COUNT","fields":[{"name":"created_at"}]}]`,
+     * same edge fixture as [testEdgeCacheOut]/[testEdgeCacheIn].
+     *
+     * For MULTI_EDGE OUT: directedSource = properties._source (original src = 123L). Unlike
+     * EdgeCache, EdgeGroup has no `directedTarget` in its qualifier — only bucketed group field
+     * values — and the cell value is this single edge's raw contribution (COUNT=1), matching V3's
+     * plain `buffer.long` decode (no OrderedBytes header).
+     */
+    @Test
+    fun testEdgeGroupOut() {
+        val key0 = "9a9SBiyAAAAAAAAAeyuiY3G2KXspgivvyJjC"
+        val qualifier0 = "03/////////+"
+        val value0 = "AAAAAAAAAAE="
+        val key = Base64.getDecoder().decode(key0)
+        val qualifier = Base64.getDecoder().decode(qualifier0)
+        val value = Base64.getDecoder().decode(value0)
+
+        val edgeGroupRecord = groupDecoder.decode(key, qualifier, value)
+
+        val expected =
+            EdgeGroupRecord(
+                key =
+                    EdgeGroupRecord.Key.of(
+                        directedSource = 123L,
+                        tableCode = xxHash32Wrapper.stringHash("gift.like_product_v1_20240402_132500"),
+                        direction = Direction.OUT,
+                        groupCode = xxHash32Wrapper.stringHash("top_created_at"),
+                    ),
+                qualifier = EdgeGroupRecord.Qualifier(groupValues = listOf(1L)),
+                value = 1L,
+            )
+
+        assertEquals(expected, edgeGroupRecord)
+    }
+
+    /**
+     * For MULTI_EDGE IN: directedSource = properties._target (original tgt = "Coffee10").
+     */
+    @Test
+    fun testEdgeGroupIn() {
+        val key0 = "xaGKMjRDb2ZmZWUxMAAromNxtil7KYMr78iYwg=="
+        val qualifier0 = "03/////////+"
+        val value0 = "AAAAAAAAAAE="
+        val key = Base64.getDecoder().decode(key0)
+        val qualifier = Base64.getDecoder().decode(qualifier0)
+        val value = Base64.getDecoder().decode(value0)
+
+        val edgeGroupRecord = groupDecoder.decode(key, qualifier, value)
+
+        val expected =
+            EdgeGroupRecord(
+                key =
+                    EdgeGroupRecord.Key.of(
+                        directedSource = "Coffee10",
+                        tableCode = xxHash32Wrapper.stringHash("gift.like_product_v1_20240402_132500"),
+                        direction = Direction.IN,
+                        groupCode = xxHash32Wrapper.stringHash("top_created_at"),
+                    ),
+                qualifier = EdgeGroupRecord.Qualifier(groupValues = listOf(1L)),
+                value = 1L,
+            )
+
+        assertEquals(expected, edgeGroupRecord)
     }
 }

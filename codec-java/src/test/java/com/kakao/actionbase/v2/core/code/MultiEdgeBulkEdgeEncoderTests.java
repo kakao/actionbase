@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.kakao.actionbase.v2.core.edge.BulkLoadEdge;
+import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
 import com.kakao.actionbase.v2.core.metadata.LabelDTO;
 
 import java.util.List;
@@ -136,5 +137,39 @@ public class MultiEdgeBulkEdgeEncoderTests {
     // 1 EdgeState + 2 EdgeIndex (OUT/IN) + 2 EdgeCount (OUT/IN) — no cache rows.
     assertEquals(5, encodedEdges.size());
     assertEquals(0, encodedEdges.stream().filter(kv -> kv.field != null).count());
+  }
+
+  @Test
+  void testMultiEdgeWithGroups() throws JsonProcessingException {
+    String labelJsonWithGroup =
+        labelJsonString.replace(
+            "\"caches\": [\n"
+                + "    {\n"
+                + "      \"cache\": \"top_created_at\",\n"
+                + "      \"fields\": [{\"field\": \"created_at\", \"order\": \"DESC\"}],\n"
+                + "      \"limit\": 100\n"
+                + "    }\n"
+                + "  ],\n",
+            "\"caches\": [],\n"
+                + "  \"groups\": [\n"
+                + "    {\"group\": \"top_created_at\", \"type\": \"COUNT\", \"fields\": [{\"name\": \"created_at\"}]}\n"
+                + "  ],\n");
+    LabelDTO label = objectMapper.readValue(labelJsonWithGroup, LabelDTO.class);
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label);
+
+    // 1 EdgeState + 2 EdgeIndex (OUT/IN) + 2 EdgeGroup (OUT/IN) + 2 EdgeCount (OUT/IN)
+    assertEquals(7, encodedEdges.size());
+
+    long groupRowCount =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
+            .count();
+    assertEquals(2, groupRowCount, "expected 2 group rows (OUT/IN)");
   }
 }
