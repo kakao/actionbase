@@ -2,15 +2,12 @@ package com.kakao.actionbase.engine.service
 
 import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.DirectionType
-import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
-import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkTable
-import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
-import com.kakao.actionbase.v2.engine.v3.V3TableDescriptor
+import com.kakao.actionbase.engine.QualifiedGroups
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -25,7 +22,7 @@ class AggregationServiceSpec :
             val service = AggregationService(engine)
 
             "getAggregations returns only tables that define topk" {
-                every { engine.getAllTables() } returns
+                every { engine.getAllQualifiedGroups() } returns
                     listOf(
                         edgeSummary(database = "db", table = "with_topk", topks = listOf(topkConfig("t1"))),
                         edgeSummary(database = "db", table = "no_topk", topks = emptyList()),
@@ -39,7 +36,7 @@ class AggregationServiceSpec :
             }
 
             "getAggregations returns empty topk when no table defines any aggregation" {
-                every { engine.getAllTables() } returns
+                every { engine.getAllQualifiedGroups() } returns
                     listOf(
                         edgeSummary(database = "db", table = "no_topk", topks = emptyList()),
                         vertexSummary(database = "db", table = "vertex"),
@@ -56,8 +53,8 @@ class AggregationServiceSpec :
 
 private fun topkConfig(
     name: String,
-    table: TopkTable? = TopkTable(score = "${name}__score", expire = "${name}__expire"),
-): Topk = Topk(topk = name, ranges = null, expire = false, expireAfterMillis = null, table = table)
+    table: TopkTable = TopkTable(score = "${name}__score", expire = "${name}__expire"),
+): Topk = Topk(topk = name, table = table)
 
 private fun groupWithTopks(
     name: String,
@@ -69,36 +66,28 @@ private fun groupWithTopks(
         type = GroupType.SUM,
         fields = emptyList(),
         directionType = directionType,
-        aggregations = if (topks.isEmpty()) null else Aggregations(topk = topks),
+        aggregations = Aggregations(topk = topks),
     )
-
-private fun stringField(): Field = Field(type = PrimitiveType.STRING, comment = "")
 
 private fun edgeSummary(
     database: String,
     table: String,
     topks: List<Topk>,
-): V3TableDescriptor =
-    V3TableDescriptor.Edge(
+): QualifiedGroups =
+    QualifiedGroups(
         database = database,
         table = table,
-        schema =
-            ModelSchema.Edge(
-                source = stringField(),
-                target = stringField(),
-                direction = DirectionType.BOTH,
-                groups = listOf(groupWithTopks("g", topks)),
-            ),
+        groups = listOf(groupWithTopks("g", topks)),
     )
 
 private fun vertexSummary(
     database: String,
     table: String,
-): V3TableDescriptor =
-    V3TableDescriptor.Vertex(
+): QualifiedGroups =
+    QualifiedGroups(
         database = database,
         table = table,
-        schema = ModelSchema.Vertex(id = stringField()),
+        groups = emptyList(),
     )
 
 // endregion

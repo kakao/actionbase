@@ -7,6 +7,7 @@ import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.MutationContext
 import com.kakao.actionbase.engine.MutationEngine
+import com.kakao.actionbase.engine.QualifiedGroups
 import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
@@ -14,6 +15,7 @@ import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.nil.NilLabel
+import com.kakao.actionbase.v2.engine.v3.V3TableDescriptor.Companion.getQualifiedGroups
 
 import reactor.core.publisher.Mono
 
@@ -42,10 +44,8 @@ class V2BackedEngine(
         return label.tableBinding
     }
 
-    override fun getAllTables(): List<V3TableDescriptor> =
-        graph.listLabels().map { label ->
-            V3TableDescriptor.create(label.entity)
-        }
+    override fun getAllQualifiedGroups(): List<QualifiedGroups> =
+        graph.listLabels().map { getQualifiedGroups(entity = it.entity) }
 
     private val messaging = V2BackedMessageBinding(wal = graph.wal, cdc = graph.cdc)
 
