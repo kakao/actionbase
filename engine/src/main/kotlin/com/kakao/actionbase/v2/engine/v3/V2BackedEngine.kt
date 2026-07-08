@@ -4,6 +4,7 @@ import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
 
 import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.state.State
+import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.MutationContext
 import com.kakao.actionbase.engine.MutationEngine
 import com.kakao.actionbase.engine.QueryEngine
@@ -23,7 +24,8 @@ import reactor.core.publisher.Mono
 class V2BackedEngine(
     private val graph: Graph,
 ) : MutationEngine,
-    QueryEngine {
+    QueryEngine,
+    AggregationEngine {
     override fun getTableBinding(
         database: String,
         alias: String,
@@ -39,6 +41,11 @@ class V2BackedEngine(
         }
         return label.tableBinding
     }
+
+    override fun getAllTables(): List<V3TableDescriptor> =
+        graph.listLabels().map { label ->
+            V3TableDescriptor.create(label.entity)
+        }
 
     private val messaging = V2BackedMessageBinding(wal = graph.wal, cdc = graph.cdc)
 

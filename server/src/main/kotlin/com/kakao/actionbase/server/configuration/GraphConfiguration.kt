@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.configuration
 
+import com.kakao.actionbase.engine.service.AggregationService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.client.kafka.SpringKafkaClientFactory
@@ -140,4 +141,11 @@ class GraphConfiguration {
 
     @Bean
     fun provideMutationService(engine: V2BackedEngine): MutationService = MutationService(engine)
+
+    @Bean
+    fun provideAggregationService(
+        queryService: QueryService,
+        mutationService: MutationService,
+        engine: V2BackedEngine,
+    ): AggregationService = AggregationService(queryService, mutationService, engine)
 }
