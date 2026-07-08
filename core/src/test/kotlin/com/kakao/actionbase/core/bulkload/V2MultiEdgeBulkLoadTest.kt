@@ -384,4 +384,73 @@ class V2MultiEdgeBulkLoadTest {
 
         assertEquals(expected, edgeGroupRecord)
     }
+
+    /**
+     * Round-trip verification of bulk-encoded INDEXED group row (OUT direction) via V3 decoder.
+     *
+     * Bytes captured from an INDEXED label (same edge fixture) with
+     * `groups: [{"group":"top_created_at","type":"COUNT","fields":[{"name":"created_at"}]}]`
+     * via `BulkEdgeEncoder`'s `encodeAllGroupEdges` call — a different Java code path than
+     * MULTI_EDGE's manual per-direction loop in [testEdgeGroupOut]/[testEdgeGroupIn]. The bytes
+     * happen to be byte-identical here (both resolve to src=123L/tgt="Coffee10" with no
+     * dimensioning), since both paths ultimately delegate to the same `encodeGroupEdge`
+     * implementation — this test guards the INDEXED path specifically against a future
+     * divergence in either one.
+     */
+    @Test
+    fun testEdgeGroupOutFromIndexedLabel() {
+        val key0 = "9a9SBiyAAAAAAAAAeyuiY3G2KXspgivvyJjC"
+        val qualifier0 = "03/////////+"
+        val value0 = "AAAAAAAAAAE="
+        val key = Base64.getDecoder().decode(key0)
+        val qualifier = Base64.getDecoder().decode(qualifier0)
+        val value = Base64.getDecoder().decode(value0)
+
+        val edgeGroupRecord = groupDecoder.decode(key, qualifier, value)
+
+        val expected =
+            EdgeGroupRecord(
+                key =
+                    EdgeGroupRecord.Key.of(
+                        directedSource = 123L,
+                        tableCode = xxHash32Wrapper.stringHash("gift.like_product_v1_20240402_132500"),
+                        direction = Direction.OUT,
+                        groupCode = xxHash32Wrapper.stringHash("top_created_at"),
+                    ),
+                qualifier = EdgeGroupRecord.Qualifier(groupValues = listOf(1L)),
+                value = 1L,
+            )
+
+        assertEquals(expected, edgeGroupRecord)
+    }
+
+    /**
+     * For INDEXED IN: directedSource = record.key.target (original tgt = "Coffee10").
+     */
+    @Test
+    fun testEdgeGroupInFromIndexedLabel() {
+        val key0 = "xaGKMjRDb2ZmZWUxMAAromNxtil7KYMr78iYwg=="
+        val qualifier0 = "03/////////+"
+        val value0 = "AAAAAAAAAAE="
+        val key = Base64.getDecoder().decode(key0)
+        val qualifier = Base64.getDecoder().decode(qualifier0)
+        val value = Base64.getDecoder().decode(value0)
+
+        val edgeGroupRecord = groupDecoder.decode(key, qualifier, value)
+
+        val expected =
+            EdgeGroupRecord(
+                key =
+                    EdgeGroupRecord.Key.of(
+                        directedSource = "Coffee10",
+                        tableCode = xxHash32Wrapper.stringHash("gift.like_product_v1_20240402_132500"),
+                        direction = Direction.IN,
+                        groupCode = xxHash32Wrapper.stringHash("top_created_at"),
+                    ),
+                qualifier = EdgeGroupRecord.Qualifier(groupValues = listOf(1L)),
+                value = 1L,
+            )
+
+        assertEquals(expected, edgeGroupRecord)
+    }
 }

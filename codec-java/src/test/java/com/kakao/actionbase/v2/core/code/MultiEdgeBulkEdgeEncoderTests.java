@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.kakao.actionbase.v2.core.code.hbase.SimplePositionedMutableByteRange;
+import com.kakao.actionbase.v2.core.code.hbase.ValueUtils;
 import com.kakao.actionbase.v2.core.edge.BulkLoadEdge;
 import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
 import com.kakao.actionbase.v2.core.metadata.LabelDTO;
@@ -171,5 +173,52 @@ public class MultiEdgeBulkEdgeEncoderTests {
             .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
             .count();
     assertEquals(2, groupRowCount, "expected 2 group rows (OUT/IN)");
+  }
+
+  /**
+   * MULTI_EDGE group encoding is a separate code path from INDEXED's {@code encodeAllGroupEdges}
+   * call (see {@code BulkEdgeEncoder}'s manual per-direction loop) — bucketed fields must be
+   * verified here too, not just on INDEXED (covered by {@code
+   * BulkEdgeEncoderTests#testGroupFieldWithBucketEncodesFormattedDateInQualifier}).
+   */
+  @Test
+  void testMultiEdgeGroupFieldWithBucketEncodesFormattedDateInQualifier()
+      throws JsonProcessingException {
+    String labelJsonWithBucketedGroup =
+        labelJsonString.replace(
+            "\"caches\": [\n"
+                + "    {\n"
+                + "      \"cache\": \"top_created_at\",\n"
+                + "      \"fields\": [{\"field\": \"created_at\", \"order\": \"DESC\"}],\n"
+                + "      \"limit\": 100\n"
+                + "    }\n"
+                + "  ],\n",
+            "\"caches\": [],\n"
+                + "  \"groups\": [\n"
+                + "    {\"group\": \"created_at_day_count\", \"type\": \"COUNT\", \"directionType\": \"OUT\", "
+                + "\"fields\": [{\"name\": \"created_at\", "
+                + "\"bucket\": {\"type\": \"date\", \"name\": \"day\", \"unit\": \"MILLISECOND\", "
+                + "\"timezone\": \"Asia/Seoul\", \"format\": \"yyyy-MM-dd\"}}]}\n"
+                + "  ],\n");
+    LabelDTO label = objectMapper.readValue(labelJsonWithBucketedGroup, LabelDTO.class);
+
+    String edgeJson = edgeJsonString.replace("\"created_at\": 1", "\"created_at\": 1781103600000");
+    BulkLoadEdge edge = objectMapper.readValue(edgeJson, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label);
+
+    TypedKeyFieldValue<byte[]> groupRow =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("expected 1 group row (directionType=OUT)"));
+
+    Object decodedQualifierValue =
+        ValueUtils.deserialize(new SimplePositionedMutableByteRange(groupRow.getField()));
+    assertEquals("2026-06-11", decodedQualifierValue);
   }
 }

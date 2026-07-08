@@ -815,6 +815,47 @@ public class BulkEdgeEncoderTests {
     assertEquals("2026-06-11", decodedQualifierValue);
   }
 
+  /**
+   * Group fields may reference the system properties "version"/"source"/"target" instead of an edge
+   * property name (same {@code resolveFieldValue} switch shared with EdgeCache). Verifies "target"
+   * resolves to the direction-flipped {@code directedTgt} — OUT sees the original tgt ("Coffee10"),
+   * IN sees the original src (123L) — matching V3's {@code indexValueOf}. Relies on {@code
+   * encodeAllGroupEdges} iterating {@code DirectionType.BOTH.getDirs()} as [OUT, IN], the same
+   * order group rows appear in {@code encodedEdges}.
+   */
+  @Test
+  void testGroupFieldReferencingSystemPropertyResolvesDirectedTarget()
+      throws JsonProcessingException {
+    String labelJson =
+        withGroups(
+            "[{\"group\":\"target_count\",\"type\":\"COUNT\",\"fields\":[{\"name\":\"target\"}]}]");
+    LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    List<TypedKeyFieldValue<byte[]>> groupRows =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
+            .collect(java.util.stream.Collectors.toList());
+    assertEquals(2, groupRows.size(), "BOTH directionType (default) → OUT + IN group rows");
+
+    Object outQualifierValue =
+        ValueUtils.deserialize(new SimplePositionedMutableByteRange(groupRows.get(0).getField()));
+    Object inQualifierValue =
+        ValueUtils.deserialize(new SimplePositionedMutableByteRange(groupRows.get(1).getField()));
+
+    assertEquals("Coffee10", outQualifierValue, "OUT: target = original tgt");
+    assertEquals(123L, inQualifierValue, "IN: target = original src");
+  }
+
   /** Minimal reader for the raw 8-byte big-endian long written by putRawInt64. */
   private static class SimplePositionedMutableByteRangeAdapter {
     private final byte[] bytes;
