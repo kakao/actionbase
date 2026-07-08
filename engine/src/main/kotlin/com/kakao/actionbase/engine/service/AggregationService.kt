@@ -130,7 +130,10 @@ class AggregationService(
                 error = null,
             )
         val (scoreDatabase, scoreTable) = parseFqn(topk.table.score)
-        val start = if (direction == Direction.IN) target else source
+
+        val directedSource = if (direction == Direction.IN) target else source
+        val directedTarget = if (direction == Direction.IN) source else target
+
         val resolvedRanges = topk.ranges.takeIf { it.isNotEmpty() }?.let { interpolate(template = it, source, target, properties) }
 
         return queryService
@@ -138,7 +141,7 @@ class AggregationService(
                 database = database,
                 table = table,
                 group = group.group,
-                start = listOf(start),
+                start = listOf(directedSource),
                 direction = V2Direction.valueOf(direction.name),
                 ranges = resolvedRanges,
             ).flatMap { response ->
@@ -155,8 +158,8 @@ class AggregationService(
                                     edge =
                                         Edge(
                                             version = System.currentTimeMillis(),
-                                            source = TopKTableNames.scoreSourceKey(entity = source, topk.topk),
-                                            target = target,
+                                            source = TopKTableNames.scoreSourceKey(entity = directedSource, topk.topk),
+                                            target = directedTarget,
                                             properties = mapOf("score" to score),
                                         ),
                                 ),

@@ -3,6 +3,7 @@ package com.kakao.actionbase.engine.service
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
+import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
 import com.kakao.actionbase.core.metadata.common.Aggregations
@@ -26,6 +27,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 
@@ -120,6 +122,101 @@ class AggregationServiceSpec :
                         results[0].status shouldBe "ERROR"
                         results[0].error shouldBe null
                     }.verifyComplete()
+            }
+
+            "aggregate for OUT direction uses source as entity and keeps target as ranked value" {
+                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val group =
+                    groupWithTopks(
+                        name = "g_out",
+                        topks = listOf(topk),
+                        directionType = DirectionType.OUT,
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 7))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src", source = "user1", target = "item1"))))
+                    .assertNext { results ->
+                        results shouldHaveSize 1
+                        results[0].status shouldBe "SUCCESS"
+                    }.verifyComplete()
+
+                val edge = mutations.captured.single().edge
+                edge.source shouldBe "user1|top_purchased"
+                edge.target shouldBe "item1"
+            }
+
+            "aggregate for IN direction swaps source and target so the ranking is per target entity" {
+                val topk = topkConfig(name = "top_purchased_by", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val group =
+                    groupWithTopks(
+                        name = "g_in",
+                        topks = listOf(topk),
+                        directionType = DirectionType.IN,
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 3))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src", source = "user1", target = "item1"))))
+                    .assertNext { results ->
+                        results shouldHaveSize 1
+                        results[0].status shouldBe "SUCCESS"
+                    }.verifyComplete()
+
+                val edge = mutations.captured.single().edge
+                edge.source shouldBe "item1|top_purchased_by"
+                edge.target shouldBe "user1"
+            }
+
+            "aggregate for BOTH direction fans out into one OUT and one IN mutation" {
+                val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val group =
+                    groupWithTopks(
+                        name = "g_both",
+                        topks = listOf(topk),
+                        directionType = DirectionType.BOTH,
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 5))
+
+                val mutations = mutableListOf<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src", source = "user1", target = "item1"))))
+                    .assertNext { results ->
+                        results shouldHaveSize 2
+                    }.verifyComplete()
+
+                val edges = mutations.map { it.single().edge }
+                edges.map { it.source to it.target } shouldContainExactlyInAnyOrder
+                    listOf(
+                        "user1|top_both" to "item1",
+                        "item1|top_both" to "user1",
+                    )
             }
 
             "aggregate maps thrown errors into ERROR status with the error message" {
