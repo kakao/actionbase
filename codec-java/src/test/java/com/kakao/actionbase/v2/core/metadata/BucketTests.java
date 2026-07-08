@@ -10,23 +10,42 @@ public class BucketTests {
 
   ObjectMapper objectMapper = new ObjectMapper();
 
-  @Test
-  void shouldFormatEpochMillisAsDateString() {
-    Bucket.Date bucket =
-        new Bucket.Date("created_at_day", Bucket.ValueUnit.MILLISECOND, "Asia/Seoul", "yyyy-MM-dd");
-
-    // 2026-06-11T00:00:00+09:00
-    long epochMillis = 1781103600000L;
-
-    assertEquals("2026-06-11", bucket.apply(epochMillis));
-  }
+  // 2026-06-11T00:00:00+09:00, expressed in each ValueUnit's granularity.
+  private static final long EPOCH_SECONDS = 1781103600L;
+  private static final long EPOCH_MILLIS = EPOCH_SECONDS * 1_000L;
+  private static final long EPOCH_MICROS = EPOCH_SECONDS * 1_000_000L;
+  private static final long EPOCH_NANOS = EPOCH_SECONDS * 1_000_000_000L;
 
   @Test
   void shouldFormatEpochSecondsAsDateString() {
     Bucket.Date bucket =
         new Bucket.Date("created_at_day", Bucket.ValueUnit.SECOND, "Asia/Seoul", "yyyy-MM-dd");
 
-    assertEquals("2026-06-11", bucket.apply(1781103600000L / 1000));
+    assertEquals("2026-06-11", bucket.apply(EPOCH_SECONDS));
+  }
+
+  @Test
+  void shouldFormatEpochMillisAsDateString() {
+    Bucket.Date bucket =
+        new Bucket.Date("created_at_day", Bucket.ValueUnit.MILLISECOND, "Asia/Seoul", "yyyy-MM-dd");
+
+    assertEquals("2026-06-11", bucket.apply(EPOCH_MILLIS));
+  }
+
+  @Test
+  void shouldFormatEpochMicrosAsDateString() {
+    Bucket.Date bucket =
+        new Bucket.Date("created_at_day", Bucket.ValueUnit.MICROSECOND, "Asia/Seoul", "yyyy-MM-dd");
+
+    assertEquals("2026-06-11", bucket.apply(EPOCH_MICROS));
+  }
+
+  @Test
+  void shouldFormatEpochNanosAsDateString() {
+    Bucket.Date bucket =
+        new Bucket.Date("created_at_day", Bucket.ValueUnit.NANOSECOND, "Asia/Seoul", "yyyy-MM-dd");
+
+    assertEquals("2026-06-11", bucket.apply(EPOCH_NANOS));
   }
 
   @Test
@@ -46,6 +65,6 @@ public class BucketTests {
 
     assertTrue(bucket instanceof Bucket.Date);
     assertEquals("created_at_day", bucket.getName());
-    assertEquals("2026-06-11", bucket.apply(1781103600000L));
+    assertEquals("2026-06-11", bucket.apply(EPOCH_MILLIS));
   }
 }
