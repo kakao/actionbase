@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.core.code;
 
+import com.kakao.actionbase.v2.core.code.hbase.Order;
 import com.kakao.actionbase.v2.core.code.hbase.OrderedBytes;
 import com.kakao.actionbase.v2.core.code.hbase.SimplePositionedMutableByteRange;
 import com.kakao.actionbase.v2.core.code.hbase.ValueUtils;
@@ -7,6 +8,9 @@ import com.kakao.actionbase.v2.core.metadata.Active;
 import com.kakao.actionbase.v2.core.metadata.Direction;
 import com.kakao.actionbase.v2.core.metadata.DirectionType;
 import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
+import com.kakao.actionbase.v2.core.metadata.Group;
+import com.kakao.actionbase.v2.core.metadata.GroupType;
+import com.kakao.actionbase.v2.core.types.DataType;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +27,7 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
 
   public static final byte INDEXED_EDGE_TYPE = EncodedEdgeType.INDEXED_EDGE_TYPE.getCode();
   public static final byte EDGE_CACHE_TYPE = EncodedEdgeType.EDGE_CACHE_TYPE.getCode();
+  public static final byte EDGE_GROUP_TYPE = EncodedEdgeType.EDGE_GROUP_TYPE.getCode();
 
   public static final String INSERT_TS_KEY = "__InsertTs__";
   public static final String DELETE_TS_KEY = "__DeleteTs__";
@@ -220,6 +225,76 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
       default:
         return properties.get(name);
     }
+  }
+
+  // --- EdgeGroup encoding
+  // Row key   : xxhash32 | directedSrc | labelId | EDGE_GROUP | direction | groupCode
+  // Qualifier : groupValues...(DESC-ordered, bucketed fields applied)
+  // Value     : raw 8-byte big-endian long — this edge's single contribution (COUNT=1, SUM=valueField)
+
+  /**
+   * Reserved group name that delegates to the native EdgeCount query and never persists an
+   * EdgeGroup row. Matches V3's {@code Constants.Group.COUNT_SENTINEL} /
+   * {@code EdgeMutationBuilder.groupNamesExcludedFromMutation}.
+   */
+  public static final String GROUP_COUNT_SENTINEL = "__count__";
+
+  public static void encodeGroupEdgeKeyToBuffer(
+      Object directedSrc, Direction direction, int labelId, int groupCode, EdgeBuffer buffer) {
+    buffer.encodeWithHash(directedSrc, labelId, EDGE_GROUP_TYPE);
+    buffer.encodeInt8(direction.getCode());
+    buffer.encodeInt32(groupCode);
+  }
+
+  public static void encodeGroupEdgeQualifierToBuffer(
+      Group group,
+      long ts,
+      Object directedSrc,
+      Object directedTgt,
+      Map<String, Object> properties,
+      EdgeBuffer buffer) {
+    for (Group.Field field : group.getFields()) {
+      Object value = resolveFieldValue(field.getName(), ts, directedSrc, directedTgt, properties);
+      buffer.encodeAny(field.applyBucket(value), Order.DESC);
+    }
+  }
+
+  public static void encodeGroupEdgeValueToBuffer(
+      Group group,
+      long ts,
+      Object directedSrc,
+      Object directedTgt,
+      Map<String, Object> properties,
+      EdgeBuffer buffer) {
+    long value;
+    if (group.getType() == GroupType.COUNT) {
+      value = 1L;
+    } else {
+      Object rawValue =
+          resolveFieldValue(group.getValueField(), ts, directedSrc, directedTgt, properties);
+      Object castValue = DataType.LONG.castNotNull(rawValue);
+      value = (Long) castValue;
+    }
+    buffer.encodeRawInt64(value);
+  }
+
+  @Override
+  public List<KeyFieldValue<T>> encodeAllGroupEdges(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      int labelId,
+      List<Group> groups) {
+    if (groups == null) return java.util.Collections.emptyList();
+
+    return groups.stream()
+        .filter(group -> !GROUP_COUNT_SENTINEL.equals(group.getGroup()))
+        .flatMap(
+            group ->
+                group.getDirectionType().getDirs().stream()
+                    .map(dir -> encodeGroupEdge(ts, src, tgt, props, dir, labelId, group)))
+        .collect(Collectors.toList());
   }
 
   @Override

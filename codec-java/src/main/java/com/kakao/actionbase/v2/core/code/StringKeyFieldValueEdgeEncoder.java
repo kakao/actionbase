@@ -2,6 +2,7 @@ package com.kakao.actionbase.v2.core.code;
 
 import com.kakao.actionbase.v2.core.edge.Edge;
 import com.kakao.actionbase.v2.core.metadata.Direction;
+import com.kakao.actionbase.v2.core.metadata.Group;
 
 import java.util.Base64;
 import java.util.Map;
@@ -143,6 +144,40 @@ public class StringKeyFieldValueEdgeEncoder extends AbstractEdgeEncoder<String> 
                 encodeCacheEdgeQualifierToBuffer(
                     cache, ts, directedSrc, directedTgt, props, buffer));
     String value = useAsBase64String(buffer -> encodeCacheEdgeValueToBuffer(ts, props, buffer));
+    return new KeyFieldValue<>(key, field, value);
+  }
+
+  @Override
+  public KeyFieldValue<String> encodeGroupEdge(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      Group group) {
+    Object directedSrc;
+    Object directedTgt;
+    if (dir == Direction.OUT) {
+      directedSrc = src;
+      directedTgt = tgt;
+    } else {
+      directedSrc = tgt;
+      directedTgt = src;
+    }
+    String key =
+        useAsBase64String(
+            buffer ->
+                encodeGroupEdgeKeyToBuffer(directedSrc, dir, labelId, group.getCode(), buffer));
+    String field =
+        useAsHexString(
+            buffer ->
+                encodeGroupEdgeQualifierToBuffer(
+                    group, ts, directedSrc, directedTgt, props, buffer));
+    String value =
+        useAsBase64String(
+            buffer ->
+                encodeGroupEdgeValueToBuffer(group, ts, directedSrc, directedTgt, props, buffer));
     return new KeyFieldValue<>(key, field, value);
   }
 

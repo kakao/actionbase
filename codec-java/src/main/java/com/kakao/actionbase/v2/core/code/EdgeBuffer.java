@@ -73,6 +73,15 @@ public class EdgeBuffer {
     OrderedBytes.encodeInt64(buffer, value, Order.ASC);
   }
 
+  /**
+   * Writes {@code value} as 8 raw big-endian bytes, with no {@link OrderedBytes} header. Matches
+   * V3's {@code EdgeGroupRecordMapper} cell value, which HBase {@code Increment} stores and reads
+   * back as a plain {@code long} (not order-preserving encoded).
+   */
+  public void encodeRawInt64(long value) {
+    buffer.putLong(value);
+  }
+
   public void encodeInt32(int value) {
     OrderedBytes.encodeInt32(buffer, value, Order.ASC);
   }
