@@ -78,6 +78,28 @@ public interface EdgeEncoder<T> {
         edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), dirType, labelId, indices);
   }
 
+  KeyFieldValue<T> encodeGroupEdge(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      Group group);
+
+  /**
+   * Encodes every (group, direction) pair for {@code groups}, iterating each group's own {@link
+   * Group#getDirectionType()} rather than the label's {@code dirType} — matching V3's {@code
+   * EdgeMutationBuilder.buildGroupRecords}.
+   */
+  List<KeyFieldValue<T>> encodeAllGroupEdges(
+      long ts, Object src, Object tgt, Map<String, Object> props, int labelId, List<Group> groups);
+
+  default List<KeyFieldValue<T>> encodeAllGroupEdges(Edge edge, int labelId, List<Group> groups) {
+    return encodeAllGroupEdges(
+        edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), labelId, groups);
+  }
+
   KeyFieldValue<T> encodeCacheEdge(
       long ts,
       Object src,
@@ -100,27 +122,5 @@ public interface EdgeEncoder<T> {
       Edge edge, DirectionType dirType, int labelId, List<Cache> caches) {
     return encodeAllCacheEdges(
         edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), dirType, labelId, caches);
-  }
-
-  KeyFieldValue<T> encodeGroupEdge(
-      long ts,
-      Object src,
-      Object tgt,
-      Map<String, Object> props,
-      Direction dir,
-      int labelId,
-      Group group);
-
-  /**
-   * Encodes every (group, direction) pair for {@code groups}, iterating each group's own {@link
-   * Group#getDirectionType()} rather than the label's {@code dirType} — matching V3's {@code
-   * EdgeMutationBuilder.buildGroupRecords}.
-   */
-  List<KeyFieldValue<T>> encodeAllGroupEdges(
-      long ts, Object src, Object tgt, Map<String, Object> props, int labelId, List<Group> groups);
-
-  default List<KeyFieldValue<T>> encodeAllGroupEdges(Edge edge, int labelId, List<Group> groups) {
-    return encodeAllGroupEdges(
-        edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), labelId, groups);
   }
 }

@@ -122,38 +122,6 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> {
   }
 
   @Override
-  public KeyFieldValue<byte[]> encodeCacheEdge(
-      long ts,
-      Object src,
-      Object tgt,
-      Map<String, Object> props,
-      Direction dir,
-      int labelId,
-      Cache cache) {
-    Object directedSrc;
-    Object directedTgt;
-    if (dir == Direction.OUT) {
-      directedSrc = src;
-      directedTgt = tgt;
-    } else {
-      directedSrc = tgt;
-      directedTgt = src;
-    }
-
-    byte[] key =
-        useAsByteArray(
-            buffer ->
-                encodeCacheEdgeKeyToBuffer(directedSrc, dir, labelId, cache.getCode(), buffer));
-    byte[] field =
-        useAsByteArray(
-            buffer ->
-                encodeCacheEdgeQualifierToBuffer(
-                    cache, ts, directedSrc, directedTgt, props, buffer));
-    byte[] value = useAsByteArray(buffer -> encodeCacheEdgeValueToBuffer(ts, props, buffer));
-    return new KeyFieldValue<>(key, field, value);
-  }
-
-  @Override
   public KeyFieldValue<byte[]> encodeGroupEdge(
       long ts,
       Object src,
@@ -185,6 +153,38 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> {
         useAsByteArray(
             buffer ->
                 encodeGroupEdgeValueToBuffer(group, ts, directedSrc, directedTgt, props, buffer));
+    return new KeyFieldValue<>(key, field, value);
+  }
+
+  @Override
+  public KeyFieldValue<byte[]> encodeCacheEdge(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      Cache cache) {
+    Object directedSrc;
+    Object directedTgt;
+    if (dir == Direction.OUT) {
+      directedSrc = src;
+      directedTgt = tgt;
+    } else {
+      directedSrc = tgt;
+      directedTgt = src;
+    }
+
+    byte[] key =
+        useAsByteArray(
+            buffer ->
+                encodeCacheEdgeKeyToBuffer(directedSrc, dir, labelId, cache.getCode(), buffer));
+    byte[] field =
+        useAsByteArray(
+            buffer ->
+                encodeCacheEdgeQualifierToBuffer(
+                    cache, ts, directedSrc, directedTgt, props, buffer));
+    byte[] value = useAsByteArray(buffer -> encodeCacheEdgeValueToBuffer(ts, props, buffer));
     return new KeyFieldValue<>(key, field, value);
   }
 
