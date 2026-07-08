@@ -815,7 +815,7 @@ public class BulkEdgeEncoderTests {
     assertEquals("2026-06-11", decodedQualifierValue);
   }
 
-  /** Minimal reader for the raw 8-byte big-endian long written by encodeRawInt64. */
+  /** Minimal reader for the raw 8-byte big-endian long written by putRawInt64. */
   private static class SimplePositionedMutableByteRangeAdapter {
     private final byte[] bytes;
 

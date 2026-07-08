@@ -78,7 +78,7 @@ public class EdgeBuffer {
    * V3's {@code EdgeGroupRecordMapper} cell value, which HBase {@code Increment} stores and reads
    * back as a plain {@code long} (not order-preserving encoded).
    */
-  public void encodeRawInt64(long value) {
+  public void putRawInt64(long value) {
     buffer.putLong(value);
   }
 

@@ -242,7 +242,7 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
       Object castValue = DataType.LONG.castNotNull(rawValue);
       value = (Long) castValue;
     }
-    buffer.encodeRawInt64(value);
+    buffer.putRawInt64(value);
   }
 
   // --- EdgeCache encoding
