@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class EdgeBuffer {
   // 8 KiB; stays below HBase MOB threshold (~100 KiB).
-  static final int DEFAULT_CAPACITY = 8192;
+  public static final int DEFAULT_CAPACITY = 8192;
 
   public SimplePositionedMutableByteRange buffer;
 
