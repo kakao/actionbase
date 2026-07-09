@@ -660,4 +660,81 @@ public class BulkEdgeEncoderTests {
     assertEquals(5, encodedEdges.size());
     encodedEdges.forEach(kv -> assertNull(kv.field, "no cache rows should be produced"));
   }
+
+  @Test
+  void testBulkEncodeHandlesRowsNearDefaultBufferCapacity() throws JsonProcessingException {
+    LabelDTO label = objectMapper.readValue(labelJsonString, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    int capacity = EdgeBuffer.DEFAULT_CAPACITY;
+    int lowerBound = capacity - 1024;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges = null;
+    String memo = null;
+    int hashValueSize = 0;
+    int memoLength = lowerBound;
+    while (hashValueSize < lowerBound) {
+      char[] filler = new char[memoLength];
+      Arrays.fill(filler, 'x');
+      memo = new String(filler);
+      String edgeJson =
+          "{\"active\":true,\"ts\":1,\"src\":123,\"tgt\":\"Coffee10\","
+              + "\"props\":{\"created_at\":1, \"permission\":\"public\", \"memo\":\""
+              + memo
+              + "\"}}";
+      BulkLoadEdge edge = objectMapper.readValue(edgeJson, BulkLoadEdge.class);
+      encodedEdges = BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+      hashValueSize =
+          encodedEdges.stream()
+              .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.HASH_EDGE_TYPE)
+              .mapToInt(kv -> kv.value.length)
+              .max()
+              .orElse(0);
+      memoLength += 128;
+    }
+
+    assertTrue(
+        hashValueSize >= lowerBound && hashValueSize < capacity,
+        "expected hash edge value near default buffer capacity (" + capacity + "), got " + hashValueSize);
+
+    TypedKeyFieldValue<byte[]> hashRow =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.HASH_EDGE_TYPE)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("expected a HASH_EDGE_TYPE row"));
+    DecodedEdge decoded =
+        DecodedEdge.from(KeyFieldValue.from(hashRow), newLabel.getSchema().getHashToFieldNameMap());
+    assertEquals(123L, decoded.getSrc());
+    assertEquals("Coffee10", decoded.getTgt());
+    assertEquals(memo, decoded.getPropertyAsMap().get("memo").value);
+  }
+
+  @Test
+  void testBulkEncodeThrowsWhenRowExceedsDefaultBufferCapacity() throws JsonProcessingException {
+    LabelDTO label = objectMapper.readValue(labelJsonString, LabelDTO.class);
+    LabelDTO newLabel =
+        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    // A memo well beyond the default buffer capacity must overflow the pool buffer.
+    char[] filler = new char[EdgeBuffer.DEFAULT_CAPACITY * 2];
+    Arrays.fill(filler, 'x');
+    String edgeJson =
+        "{\"active\":true,\"ts\":1,\"src\":123,\"tgt\":\"Coffee10\","
+            + "\"props\":{\"created_at\":1, \"permission\":\"public\", \"memo\":\""
+            + new String(filler)
+            + "\"}}";
+    BulkLoadEdge edge = objectMapper.readValue(edgeJson, BulkLoadEdge.class);
+
+    assertThrows(
+        ArrayIndexOutOfBoundsException.class,
+        () -> BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel));
+  }
 }

@@ -3,6 +3,7 @@ package com.kakao.actionbase.core.codec
 import com.kakao.actionbase.core.edge.EdgeState as EdgeStateKt
 import com.kakao.actionbase.core.state.StateValue as KotlinStateValue
 
+import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
 import com.kakao.actionbase.core.edge.record.EdgeStateRecord
 import com.kakao.actionbase.core.java.codec.KeyValue
@@ -31,6 +32,9 @@ import kotlin.test.Ignore
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
 class EdgeStateMapperTest {
     companion object {
@@ -369,6 +373,72 @@ class EdgeStateMapperTest {
 
         assertArrayEquals(expected.key(), actual.key)
         assertArrayEquals(expected.value(), actual.value)
+    }
+
+    @Test
+    fun `encode handles rows near the default buffer capacity`() {
+        val capacity = Constants.Codec.DEFAULT_BUFFER_SIZE
+        val lowerBound = capacity - 1024
+
+        val properties = mutableMapOf<Int, KotlinStateValue>()
+        var encoded: com.kakao.actionbase.core.storage.HBaseRecord
+        var i = 0
+        do {
+            properties[xxHash32Wrapper.stringHash("prop_$i")] =
+                KotlinStateValue(value = "value-with-some-padding-$i", version = 1L)
+            encoded =
+                encoder.encode(
+                    EdgeStateRecord(
+                        key = EdgeStateRecord.Key.of(1234L, tableCode, 5678L),
+                        value =
+                            EdgeStateRecord.Value(
+                                active = true,
+                                version = 1L,
+                                properties = properties,
+                                createdAt = 1754566668702L,
+                                deletedAt = null,
+                            ),
+                    ),
+                )
+            i++
+        } while (encoded.value.size < lowerBound)
+
+        assertTrue(encoded.value.size in lowerBound until capacity) {
+            "expected encoded value near default buffer capacity ($capacity), got ${encoded.value.size}"
+        }
+
+        val decoded = decoder.decode(encoded.key, encoded.value)
+        assertEquals(properties.size, decoded.value.properties.size)
+        properties.forEach { (hash, stateValue) ->
+            assertEquals(stateValue.value, decoded.value.properties[hash]?.value)
+            assertEquals(stateValue.version, decoded.value.properties[hash]?.version)
+        }
+    }
+
+    @Test
+    fun `encode throws when a row exceeds the default buffer capacity`() {
+        val capacity = Constants.Codec.DEFAULT_BUFFER_SIZE
+
+        // Enough padding to guarantee the encoded value overflows the pooled buffer.
+        val bigValue = "x".repeat(capacity * 2)
+        val properties = mapOf(xxHash32Wrapper.stringHash("memo") to KotlinStateValue(value = bigValue, version = 1L))
+
+        val record =
+            EdgeStateRecord(
+                key = EdgeStateRecord.Key.of(1234L, tableCode, 5678L),
+                value =
+                    EdgeStateRecord.Value(
+                        active = true,
+                        version = 1L,
+                        properties = properties,
+                        createdAt = null,
+                        deletedAt = null,
+                    ),
+            )
+
+        assertThrows(ArrayIndexOutOfBoundsException::class.java) {
+            encoder.encode(record)
+        }
     }
 
     @ObjectSourceParameterizedTest
