@@ -71,12 +71,29 @@ class V2BackedMessageBinding(
         cdc
             .write(cdcContext)
             .subscribeOn(Schedulers.boundedElastic())
-            .subscribe({}, { log.error("CDC write failed for {}/{}", ctx.database, ctx.table, it) })
+            .subscribe({}, { logCdcWriteFailure(cdcContext, it) })
     }
 
     companion object {
         private val log = LoggerFactory.getLogger(V2BackedMessageBinding::class.java)
         private const val DEFAULT_PRIMITIVE_VALUE = "0"
+
+        private fun logCdcWriteFailure(
+            cdcContext: CdcContext,
+            cause: Throwable,
+        ) {
+            log.error(
+                "CDC write failed. label={}, key={}:{}, op={}, status={}, traceId={}, requestId={}",
+                cdcContext.labelName,
+                cdcContext.edge.src,
+                cdcContext.edge.tgt,
+                cdcContext.op,
+                cdcContext.status,
+                cdcContext.edge.traceId,
+                cdcContext.requestId,
+                cause,
+            )
+        }
 
         private fun com.kakao.actionbase.engine.Audit.toV2(): V2Audit = V2Audit(actor)
 

@@ -311,7 +311,7 @@ class Graph(
                                         cdc
                                             .write(context)
                                             .subscribeOn(Schedulers.boundedElastic())
-                                            .subscribe()
+                                            .subscribe({}, { logCdcWriteFailure(context, it) })
                                     }.doOnError {
                                         val errorCdcContext =
                                             CdcContext(
@@ -329,7 +329,7 @@ class Graph(
                                         cdc
                                             .write(errorCdcContext)
                                             .subscribeOn(Schedulers.boundedElastic())
-                                            .subscribe()
+                                            .subscribe({}, { logCdcWriteFailure(errorCdcContext, it) })
                                     }.map { context ->
                                         MutationResultItem(
                                             status = context.status,
@@ -950,6 +950,23 @@ class Graph(
         internal val log = getLogger()
 
         val reactorLogger = reactor.util.Loggers.getLogger(Graph::class.java)
+
+        private fun logCdcWriteFailure(
+            cdcContext: CdcContext,
+            cause: Throwable,
+        ) {
+            log.error(
+                "CDC write failed. label={}, key={}:{}, op={}, status={}, traceId={}, requestId={}",
+                cdcContext.labelName,
+                cdcContext.edge.src,
+                cdcContext.edge.tgt,
+                cdcContext.op,
+                cdcContext.status,
+                cdcContext.edge.traceId,
+                cdcContext.requestId,
+                cause,
+            )
+        }
 
         @Suppress("LongMethod")
         fun create(
