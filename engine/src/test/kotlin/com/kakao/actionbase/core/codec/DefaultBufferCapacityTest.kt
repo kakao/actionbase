@@ -21,16 +21,14 @@ class DefaultBufferCapacityTest {
 
     @Test
     fun `v3 buffer accepts writes up to the default capacity`() {
-        val pool = ByteArrayBufferPool.create(poolSize = 1, bufferSize = BUFFER_SIZE)
-        val buffer = pool.acquire()
+        val buffer = ByteArrayBufferPool.default.acquire()
 
         buffer.put(ByteArray(BUFFER_SIZE))
     }
 
     @Test
     fun `v3 buffer throws when writing beyond the default capacity`() {
-        val pool = ByteArrayBufferPool.create(poolSize = 1, bufferSize = BUFFER_SIZE)
-        val buffer = pool.acquire()
+        val buffer = ByteArrayBufferPool.default.acquire()
 
         assertThrows(ArrayIndexOutOfBoundsException::class.java) {
             buffer.put(ByteArray(BUFFER_SIZE + 1))
