@@ -10,10 +10,21 @@ import com.kakao.actionbase.engine.MutationContext
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.metadata.MutationModeContext
 import com.kakao.actionbase.v2.engine.cdc.Cdc
-import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus
 import com.kakao.actionbase.v2.engine.v3.V2BackedMessageBinding.Companion.toV2TraceEdge
-import com.kakao.actionbase.v2.engine.wal.Wal
+
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
@@ -21,16 +32,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.AppenderBase
 import io.mockk.every
 import io.mockk.mockk
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Test
-import org.slf4j.LoggerFactory
 import reactor.core.publisher.Mono
 
 class V2BackedMessageBindingTest {
