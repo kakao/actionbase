@@ -9,7 +9,8 @@ import com.kakao.actionbase.v2.core.metadata.SystemProperties;
 import java.util.Map;
 
 public class EdgeBuffer {
-  static final int DEFAULT_CAPACITY = 5120;
+  // 8 KiB; stays below HBase MOB threshold (~100 KiB).
+  static final int DEFAULT_CAPACITY = 8192;
 
   public SimplePositionedMutableByteRange buffer;
 
