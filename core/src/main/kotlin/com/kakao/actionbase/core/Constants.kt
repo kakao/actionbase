@@ -27,7 +27,9 @@ object Constants {
 
     object Codec {
         const val DEFAULT_POOL_SIZE: Int = 100
-        const val DEFAULT_BUFFER_SIZE: Int = 5120
+
+        // 8 KiB; stays below HBase MOB threshold (~100 KiB).
+        const val DEFAULT_BUFFER_SIZE: Int = 8192
 
         const val BYTE_FALSE: Byte = 0
         const val BYTE_TRUE: Byte = 1

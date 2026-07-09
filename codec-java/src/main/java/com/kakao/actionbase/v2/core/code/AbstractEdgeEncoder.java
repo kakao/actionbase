@@ -300,7 +300,7 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
     return SerializationUtils.hex.encode(byteArray);
   }
 
-  byte[] useAsByteArray(Consumer<EdgeBuffer> block) {
+  public byte[] useAsByteArray(Consumer<EdgeBuffer> block) {
     EdgeBuffer edgeBuffer = borrow();
     edgeBuffer.reset();
     block.accept(edgeBuffer);
