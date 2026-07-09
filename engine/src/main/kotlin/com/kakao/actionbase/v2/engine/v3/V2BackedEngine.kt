@@ -44,8 +44,7 @@ class V2BackedEngine(
         return label.tableBinding
     }
 
-    override fun getAllQualifiedGroups(): List<QualifiedGroups> =
-        graph.listLabels().map { getQualifiedGroups(entity = it.entity) }
+    override fun getAllQualifiedGroups(): List<QualifiedGroups> = graph.listLabels().map { getQualifiedGroups(entity = it.entity) }
 
     private val messaging = V2BackedMessageBinding(wal = graph.wal, cdc = graph.cdc)
 

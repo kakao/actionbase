@@ -47,7 +47,7 @@ sealed class V3TableDescriptor {
             QualifiedGroups(
                 database = entity.name.service,
                 table = entity.name.nameNotNull,
-                groups = entity.groups.map { it.toV3() }
+                groups = entity.groups.map { it.toV3() },
             )
 
         fun create(entity: LabelEntity): V3TableDescriptor {
