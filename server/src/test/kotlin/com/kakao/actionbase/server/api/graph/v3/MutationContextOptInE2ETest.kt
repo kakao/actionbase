@@ -143,7 +143,7 @@ class MutationContextOptInE2ETest : E2ETestBase() {
             .header(INCLUDE_MUTATION_CONTEXT, "false")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
-                """{"mutations": [{"type": "INSERT", "edge": {"version": 1, "source": "s-false", "target": "t-false", "properties": {}}}]}""",
+                """{"mutations": [{"type": "INSERT", "edge": {"version": 1, "source": "s_false", "target": "t_false", "properties": {}}}]}""",
             ).exchange()
             .expectStatus()
             .isOk
@@ -160,7 +160,7 @@ class MutationContextOptInE2ETest : E2ETestBase() {
             .header(INCLUDE_MUTATION_CONTEXT, "true")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
-                """{"mutations": [{"type": "INSERT", "edge": {"version": 1, "source": "s-async", "target": "t-async", "properties": {}}}]}""",
+                """{"mutations": [{"type": "INSERT", "edge": {"version": 1, "source": "s_async", "target": "t_async", "properties": {}}}]}""",
             ).exchange()
             .expectStatus()
             .isOk
@@ -193,7 +193,7 @@ class MutationContextOptInE2ETest : E2ETestBase() {
             .uri("/graph/v2/edge")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
-                """{"label": "$db.$edgeTable", "edges": [{"ts": 1, "src": "s-v2-a", "tgt": "t-v2-a", "props": {}}]}""",
+                """{"label": "$db.$edgeTable", "edges": [{"ts": 1, "src": "s_v2_a", "tgt": "t_v2_a", "props": {}}]}""",
             ).exchange()
             .expectStatus()
             .isOk
@@ -210,7 +210,7 @@ class MutationContextOptInE2ETest : E2ETestBase() {
             .header(INCLUDE_MUTATION_CONTEXT, "true")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
-                """{"label": "$db.$edgeTable", "edges": [{"ts": 1, "src": "s-v2-b", "tgt": "t-v2-b", "props": {}}]}""",
+                """{"label": "$db.$edgeTable", "edges": [{"ts": 1, "src": "s_v2_b", "tgt": "t_v2_b", "props": {}}]}""",
             ).exchange()
             .expectStatus()
             .isOk

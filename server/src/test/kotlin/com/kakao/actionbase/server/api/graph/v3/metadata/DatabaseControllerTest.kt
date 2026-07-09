@@ -18,21 +18,21 @@ class DatabaseControllerTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: v3-db-basic
+            - name: v3_db_basic
               create: |
-                {"database": "v3-db-basic", "comment": "test db"}
+                {"database": "v3_db_basic", "comment": "test db"}
               expected: |
-                {"database": "v3-db-basic", "comment": "test db", "active": true}
-            - name: v3-db-empty-comment
+                {"database": "v3_db_basic", "comment": "test db", "active": true}
+            - name: v3_db_empty_comment
               create: |
-                {"database": "v3-db-empty-comment", "comment": ""}
+                {"database": "v3_db_empty_comment", "comment": ""}
               expected: |
-                {"database": "v3-db-empty-comment", "comment": "", "active": true}
-            - name: v3-db-special
+                {"database": "v3_db_empty_comment", "comment": "", "active": true}
+            - name: v3_db_special
               create: |
-                {"database": "v3-db-special", "comment": "test @#$%"}
+                {"database": "v3_db_special", "comment": "test @#$%"}
               expected: |
-                {"database": "v3-db-special", "comment": "test @#$%", "active": true}
+                {"database": "v3_db_special", "comment": "test @#$%", "active": true}
             """,
         )
         fun `create database`(
@@ -64,27 +64,27 @@ class DatabaseControllerTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: v3-db-upd-basic
+            - name: v3_db_upd_basic
               create: |
-                {"database": "v3-db-upd-basic", "comment": "test db"}
+                {"database": "v3_db_upd_basic", "comment": "test db"}
               update: |
                 {"comment": "updated comment"}
               expected: |
-                {"database": "v3-db-upd-basic", "comment": "updated comment", "active": true}
-            - name: v3-db-upd-empty
+                {"database": "v3_db_upd_basic", "comment": "updated comment", "active": true}
+            - name: v3_db_upd_empty
               create: |
-                {"database": "v3-db-upd-empty", "comment": ""}
+                {"database": "v3_db_upd_empty", "comment": ""}
               update: |
                 {"comment": "updated empty"}
               expected: |
-                {"database": "v3-db-upd-empty", "comment": "updated empty", "active": true}
-            - name: v3-db-upd-special
+                {"database": "v3_db_upd_empty", "comment": "updated empty", "active": true}
+            - name: v3_db_upd_special
               create: |
-                {"database": "v3-db-upd-special", "comment": "test @#$%"}
+                {"database": "v3_db_upd_special", "comment": "test @#$%"}
               update: |
                 {"comment": "updated special"}
               expected: |
-                {"database": "v3-db-upd-special", "comment": "updated special", "active": true}
+                {"database": "v3_db_upd_special", "comment": "updated special", "active": true}
             """,
         )
         fun `update database`(
@@ -122,16 +122,16 @@ class DatabaseControllerTest : E2ETestBase() {
                 {"active": false}
             """,
             cases = """
-            - name: v3-db-deact-basic
+            - name: v3_db_deact_basic
               create: |
-                {"database": "v3-db-deact-basic", "comment": "test db"}
+                {"database": "v3_db_deact_basic", "comment": "test db"}
               expected: |
-                {"database": "v3-db-deact-basic", "active": false}
-            - name: v3-db-deact-empty
+                {"database": "v3_db_deact_basic", "active": false}
+            - name: v3_db_deact_empty
               create: |
-                {"database": "v3-db-deact-empty", "comment": ""}
+                {"database": "v3_db_deact_empty", "comment": ""}
               expected: |
-                {"database": "v3-db-deact-empty", "active": false}
+                {"database": "v3_db_deact_empty", "active": false}
             """,
         )
         fun `deactivate database`(
@@ -171,16 +171,16 @@ class DatabaseControllerTest : E2ETestBase() {
                 {"active": true}
             """,
             cases = """
-            - name: v3-db-react-basic
+            - name: v3_db_react_basic
               create: |
-                {"database": "v3-db-react-basic", "comment": "test db"}
+                {"database": "v3_db_react_basic", "comment": "test db"}
               expected: |
-                {"database": "v3-db-react-basic", "active": true}
-            - name: v3-db-react-empty
+                {"database": "v3_db_react_basic", "active": true}
+            - name: v3_db_react_empty
               create: |
-                {"database": "v3-db-react-empty", "comment": ""}
+                {"database": "v3_db_react_empty", "comment": ""}
               expected: |
-                {"database": "v3-db-react-empty", "active": true}
+                {"database": "v3_db_react_empty", "active": true}
             """,
         )
         fun `reactivate database`(
@@ -228,12 +228,12 @@ class DatabaseControllerTest : E2ETestBase() {
                 {"active": false}
             """,
             cases = """
-            - name: v3-db-del-basic
+            - name: v3_db_del_basic
               create: |
-                {"database": "v3-db-del-basic", "comment": "test db"}
-            - name: v3-db-del-empty
+                {"database": "v3_db_del_basic", "comment": "test db"}
+            - name: v3_db_del_empty
               create: |
-                {"database": "v3-db-del-empty", "comment": ""}
+                {"database": "v3_db_del_empty", "comment": ""}
             """,
         )
         fun `delete database`(
@@ -272,7 +272,7 @@ class DatabaseControllerTest : E2ETestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class StatusFilterTest {
-        private val dbName = "v3-db-status-filter"
+        private val dbName = "v3_db_status_filter"
 
         @BeforeAll
         fun setup() {
@@ -375,7 +375,7 @@ class DatabaseControllerTest : E2ETestBase() {
         fun `get non-existent database returns 404`() {
             client
                 .get()
-                .uri("/graph/v3/databases/non-existent")
+                .uri("/graph/v3/databases/non_existent")
                 .exchange()
                 .expectStatus()
                 .isNotFound
@@ -385,7 +385,7 @@ class DatabaseControllerTest : E2ETestBase() {
         fun `invalid database name returns 400`() {
             client
                 .get()
-                .uri("/graph/v3/databases/123-invalid")
+                .uri("/graph/v3/databases/123invalid")
                 .exchange()
                 .expectStatus()
                 .isBadRequest

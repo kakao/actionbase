@@ -5,11 +5,11 @@ import org.springframework.web.server.ResponseStatusException
 
 /**
  * Validates names for V3 Metadata API to prevent injection attacks.
- * Names must start with a letter and contain only alphanumeric characters,
- * underscores, or hyphens. Maximum length is 64 characters.
+ * Names must start with a lowercase letter and contain only lowercase alphanumeric
+ * characters or underscores. Maximum length is 64 characters.
  */
 object V3NameValidator {
-    private val NAME_PATTERN = Regex("^[a-zA-Z][a-zA-Z0-9_-]{0,63}$")
+    private val NAME_PATTERN = Regex("^[a-z][a-z0-9_]{0,63}$")
 
     /**
      * Validates a name and returns it if valid.
@@ -22,7 +22,7 @@ object V3NameValidator {
         if (!name.matches(NAME_PATTERN)) {
             throw ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "Invalid $fieldName: must start with a letter, contain only alphanumeric/underscore/hyphen, max 64 chars",
+                "Invalid $fieldName: must start with a lowercase letter, contain only lowercase alphanumeric/underscore, max 64 chars",
             )
         }
         return name

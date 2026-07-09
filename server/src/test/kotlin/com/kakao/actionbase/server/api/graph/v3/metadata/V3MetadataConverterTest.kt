@@ -40,7 +40,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 
 class V3MetadataConverterTest {
-    private val tenant = "test-tenant"
+    private val tenant = "test_tenant"
 
     @Nested
     inner class DatabaseConversionTest {

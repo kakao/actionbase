@@ -11,9 +11,9 @@ import org.springframework.test.context.TestPropertySource
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestPropertySource(properties = ["kc.graph.system-mutation-mode=ASYNC"])
 class EdgeMutationForceSyncTest : E2ETestBase() {
-    private val db = "force-sync-test-db"
-    private val table = "force-sync-edge"
-    private val multiEdgeTable = "force-sync-multi-edge"
+    private val db = "force_sync_test_db"
+    private val table = "force_sync_edge"
+    private val multiEdgeTable = "force_sync_multi_edge"
 
     @BeforeAll
     fun setup() {

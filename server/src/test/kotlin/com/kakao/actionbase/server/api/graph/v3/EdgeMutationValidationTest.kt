@@ -14,9 +14,9 @@ import org.springframework.test.web.reactive.server.StatusAssertions
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EdgeMutationValidationTest : E2ETestBase() {
-    private val db = "validation-test-db"
-    private val syncTable = "validation-sync-edge"
-    private val asyncTable = "validation-async-edge"
+    private val db = "validation_test_db"
+    private val syncTable = "validation_sync_edge"
+    private val asyncTable = "validation_async_edge"
 
     // Schema: "required" (long, non-nullable), "optional" (string, nullable)
     private fun tableDdl(

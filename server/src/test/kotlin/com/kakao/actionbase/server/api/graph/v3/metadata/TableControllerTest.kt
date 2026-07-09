@@ -12,7 +12,7 @@ import org.springframework.http.MediaType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TableControllerTest : E2ETestBase() {
-    private val db = "v3-table-test-db"
+    private val db = "v3_table_test_db"
     private val baseUri = "/graph/v3/databases/$db/tables"
 
     @BeforeAll
@@ -34,10 +34,10 @@ class TableControllerTest : E2ETestBase() {
         @ObjectSource(
             """
             # Edge table - basic
-            - name: v3-edge-crud
+            - name: v3_edge_crud
               create: |
                 {
-                  "table": "v3-edge-crud",
+                  "table": "v3_edge_crud",
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "string", "comment": "src"},
@@ -56,8 +56,8 @@ class TableControllerTest : E2ETestBase() {
               expected: |
                 {
                   "type": "edge",
-                  "table": "v3-edge-crud",
-                  "database": "v3-table-test-db",
+                  "table": "v3_edge_crud",
+                  "database": "v3_table_test_db",
                   "comment": "edge table",
                   "schema": {
                     "type": "edge",
@@ -73,10 +73,10 @@ class TableControllerTest : E2ETestBase() {
                 }
 
             # MultiEdge table - basic
-            - name: v3-multiedge-crud
+            - name: v3_multiedge_crud
               create: |
                 {
-                  "table": "v3-multiedge-crud",
+                  "table": "v3_multiedge_crud",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "order id"},
@@ -94,8 +94,8 @@ class TableControllerTest : E2ETestBase() {
               expected: |
                 {
                   "type": "multiEdge",
-                  "table": "v3-multiedge-crud",
-                  "database": "v3-table-test-db",
+                  "table": "v3_multiedge_crud",
+                  "database": "v3_table_test_db",
                   "comment": "multiedge table",
                   "schema": {
                     "type": "multiEdge",
@@ -110,10 +110,10 @@ class TableControllerTest : E2ETestBase() {
                 }
 
             # Edge table with properties
-            - name: v3-edge-full
+            - name: v3_edge_full
               create: |
                 {
-                  "table": "v3-edge-full",
+                  "table": "v3_edge_full",
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "long", "comment": "user"},
@@ -133,8 +133,8 @@ class TableControllerTest : E2ETestBase() {
               expected: |
                 {
                   "type": "edge",
-                  "table": "v3-edge-full",
-                  "database": "v3-table-test-db",
+                  "table": "v3_edge_full",
+                  "database": "v3_table_test_db",
                   "comment": "full edge table",
                   "schema": {
                     "type": "edge",
@@ -151,10 +151,10 @@ class TableControllerTest : E2ETestBase() {
                 }
 
             # MultiEdge table with properties
-            - name: v3-multiedge-full
+            - name: v3_multiedge_full
               create: |
                 {
-                  "table": "v3-multiedge-full",
+                  "table": "v3_multiedge_full",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "txn id"},
@@ -175,8 +175,8 @@ class TableControllerTest : E2ETestBase() {
               expected: |
                 {
                   "type": "multiEdge",
-                  "table": "v3-multiedge-full",
-                  "database": "v3-table-test-db",
+                  "table": "v3_multiedge_full",
+                  "database": "v3_table_test_db",
                   "comment": "full multiedge table",
                   "schema": {
                     "type": "multiEdge",
@@ -223,10 +223,10 @@ class TableControllerTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: v3-edge-upd
+            - name: v3_edge_upd
               create: |
                 {
-                  "table": "v3-edge-upd",
+                  "table": "v3_edge_upd",
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "string", "comment": "src"},
@@ -243,11 +243,11 @@ class TableControllerTest : E2ETestBase() {
               update: |
                 {"comment": "updated edge"}
               expected: |
-                {"table": "v3-edge-upd", "comment": "updated edge", "active": true}
-            - name: v3-multiedge-upd
+                {"table": "v3_edge_upd", "comment": "updated edge", "active": true}
+            - name: v3_multiedge_upd
               create: |
                 {
-                  "table": "v3-multiedge-upd",
+                  "table": "v3_multiedge_upd",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "id"},
@@ -265,7 +265,7 @@ class TableControllerTest : E2ETestBase() {
               update: |
                 {"comment": "updated multiedge"}
               expected: |
-                {"table": "v3-multiedge-upd", "comment": "updated multiedge", "active": true}
+                {"table": "v3_multiedge_upd", "comment": "updated multiedge", "active": true}
             """,
         )
         fun `update table`(
@@ -303,10 +303,10 @@ class TableControllerTest : E2ETestBase() {
                 {"active": false}
             """,
             cases = """
-            - name: v3-edge-deact
+            - name: v3_edge_deact
               create: |
                 {
-                  "table": "v3-edge-deact",
+                  "table": "v3_edge_deact",
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "string", "comment": "src"},
@@ -321,11 +321,11 @@ class TableControllerTest : E2ETestBase() {
                   "comment": "edge table"
                 }
               expected: |
-                {"table": "v3-edge-deact", "active": false}
-            - name: v3-multiedge-deact
+                {"table": "v3_edge_deact", "active": false}
+            - name: v3_multiedge_deact
               create: |
                 {
-                  "table": "v3-multiedge-deact",
+                  "table": "v3_multiedge_deact",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "id"},
@@ -341,7 +341,7 @@ class TableControllerTest : E2ETestBase() {
                   "comment": "multiedge table"
                 }
               expected: |
-                {"table": "v3-multiedge-deact", "active": false}
+                {"table": "v3_multiedge_deact", "active": false}
             """,
         )
         fun `deactivate table`(
@@ -381,10 +381,10 @@ class TableControllerTest : E2ETestBase() {
                 {"active": true}
             """,
             cases = """
-            - name: v3-edge-react
+            - name: v3_edge_react
               create: |
                 {
-                  "table": "v3-edge-react",
+                  "table": "v3_edge_react",
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "string", "comment": "src"},
@@ -399,11 +399,11 @@ class TableControllerTest : E2ETestBase() {
                   "comment": "edge table"
                 }
               expected: |
-                {"table": "v3-edge-react", "active": true}
-            - name: v3-multiedge-react
+                {"table": "v3_edge_react", "active": true}
+            - name: v3_multiedge_react
               create: |
                 {
-                  "table": "v3-multiedge-react",
+                  "table": "v3_multiedge_react",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "id"},
@@ -419,7 +419,7 @@ class TableControllerTest : E2ETestBase() {
                   "comment": "multiedge table"
                 }
               expected: |
-                {"table": "v3-multiedge-react", "active": true}
+                {"table": "v3_multiedge_react", "active": true}
             """,
         )
         fun `reactivate table`(
@@ -467,10 +467,10 @@ class TableControllerTest : E2ETestBase() {
                 {"active": false}
             """,
             cases = """
-            - name: v3-edge-del
+            - name: v3_edge_del
               create: |
                 {
-                  "table": "v3-edge-del",
+                  "table": "v3_edge_del",
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "string", "comment": "src"},
@@ -484,10 +484,10 @@ class TableControllerTest : E2ETestBase() {
                   "mode": "SYNC",
                   "comment": "edge table"
                 }
-            - name: v3-multiedge-del
+            - name: v3_multiedge_del
               create: |
                 {
-                  "table": "v3-multiedge-del",
+                  "table": "v3_multiedge_del",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "id"},
@@ -540,7 +540,7 @@ class TableControllerTest : E2ETestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class StatusFilterTest {
-        private val tableName = "v3-tbl-status-filter"
+        private val tableName = "v3_tbl_status_filter"
 
         @BeforeAll
         fun setup() {
@@ -639,10 +639,10 @@ class TableControllerTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: v3-edge-cache-crud
+            - name: v3_edge_cache_crud
               create: |
                 {
-                  "table": "v3-edge-cache-crud",
+                  "table": "v3_edge_cache_crud",
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "long", "comment": "user"},
@@ -669,7 +669,7 @@ class TableControllerTest : E2ETestBase() {
               expected: |
                 {
                   "type": "edge",
-                  "table": "v3-edge-cache-crud",
+                  "table": "v3_edge_cache_crud",
                   "schema": {
                     "type": "edge",
                     "caches": [
@@ -714,10 +714,10 @@ class TableControllerTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: v3-edge-cache-upd
+            - name: v3_edge_cache_upd
               create: |
                 {
-                  "table": "v3-edge-cache-upd",
+                  "table": "v3_edge_cache_upd",
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "long", "comment": "user"},
@@ -765,7 +765,7 @@ class TableControllerTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "table": "v3-edge-cache-upd",
+                  "table": "v3_edge_cache_upd",
                   "schema": {
                     "caches": [
                       {
@@ -846,7 +846,7 @@ class TableControllerTest : E2ETestBase() {
         fun `get non-existent table returns 404`() {
             client
                 .get()
-                .uri("$baseUri/non-existent")
+                .uri("$baseUri/non_existent")
                 .exchange()
                 .expectStatus()
                 .isNotFound
@@ -856,7 +856,7 @@ class TableControllerTest : E2ETestBase() {
         fun `invalid table name returns 400`() {
             client
                 .get()
-                .uri("$baseUri/123-invalid")
+                .uri("$baseUri/123invalid")
                 .exchange()
                 .expectStatus()
                 .isBadRequest

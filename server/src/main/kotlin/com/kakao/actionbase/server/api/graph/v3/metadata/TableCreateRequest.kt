@@ -24,8 +24,8 @@ import jakarta.validation.constraints.Size
 data class TableCreateRequest(
     @field:NotBlank(message = "table is required")
     @field:Pattern(
-        regexp = "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
-        message = "table must start with a letter, contain only alphanumeric/underscore/hyphen, max 64 chars",
+        regexp = "^[a-z][a-z0-9_]{0,63}$",
+        message = "table must start with a lowercase letter, contain only lowercase alphanumeric/underscore, max 64 chars",
     )
     val table: String,
     @field:NotNull(message = "schema is required")
