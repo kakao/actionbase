@@ -443,6 +443,18 @@ class AliasControllerTest : E2ETestBase() {
         }
 
         @Test
+        fun `alias name with hyphen returns 400`() {
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"alias": "my-alias", "table": "valid_table", "comment": ""}""")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
         fun `alias name with dot returns 400`() {
             client
                 .post()

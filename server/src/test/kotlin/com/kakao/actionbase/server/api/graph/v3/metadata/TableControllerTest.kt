@@ -865,6 +865,18 @@ class TableControllerTest : E2ETestBase() {
         }
 
         @Test
+        fun `table name with hyphen returns 400`() {
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"table": "my-table", "schema": null, "storage": "", "comment": ""}""")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
         fun `table name with dot returns 400`() {
             client
                 .post()

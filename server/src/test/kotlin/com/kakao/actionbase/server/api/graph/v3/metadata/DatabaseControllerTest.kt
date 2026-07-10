@@ -394,6 +394,18 @@ class DatabaseControllerTest : E2ETestBase() {
         }
 
         @Test
+        fun `database name with hyphen returns 400`() {
+            client
+                .post()
+                .uri("/graph/v3/databases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"database": "my-db", "comment": ""}""")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
         fun `database name with dot returns 400`() {
             client
                 .post()
