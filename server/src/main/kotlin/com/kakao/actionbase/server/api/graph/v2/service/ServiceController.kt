@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.api.graph.v2.service
 
+import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -39,7 +40,7 @@ class ServiceController(
         @PathVariable service: String,
         @RequestBody request: ServiceCreateRequest,
     ): Mono<ResponseEntity<DdlStatus<ServiceEntity>>> {
-        val name = EntityName.fromOrigin(service)
+        val name = EntityName.fromOrigin(NameValidator.validate(service, "service"))
         return graph.serviceDdl.create(name, request).mapToResponseEntity()
     }
 
@@ -48,7 +49,7 @@ class ServiceController(
         @PathVariable service: String,
         @RequestBody request: ServiceUpdateRequest,
     ): Mono<ResponseEntity<DdlStatus<ServiceEntity>>> {
-        val name = EntityName.fromOrigin(service)
+        val name = EntityName.fromOrigin(NameValidator.validate(service, "service"))
         return graph.serviceDdl.update(name, request).mapToResponseEntity()
     }
 }

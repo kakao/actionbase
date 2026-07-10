@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.api.graph.v2.service
 
+import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.AliasEntity
@@ -58,7 +59,7 @@ class ServiceAliasController(
         @PathVariable alias: String,
         @Valid @RequestBody request: AliasCreateRequest,
     ): Mono<ResponseEntity<DdlStatus<AliasEntity>>> {
-        val name = EntityName(service, alias)
+        val name = EntityName(NameValidator.validate(service, "service"), NameValidator.validate(alias, "alias"))
         return graph.aliasDdl
             .create(name, request)
             .map {
@@ -72,7 +73,7 @@ class ServiceAliasController(
         @PathVariable alias: String,
         @RequestBody request: AliasUpdateRequest,
     ): Mono<ResponseEntity<DdlStatus<AliasEntity>>> {
-        val name = EntityName(service, alias)
+        val name = EntityName(NameValidator.validate(service, "service"), NameValidator.validate(alias, "alias"))
         return graph.aliasDdl
             .update(name, request)
             .map {

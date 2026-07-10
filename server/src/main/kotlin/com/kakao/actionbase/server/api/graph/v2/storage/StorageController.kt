@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.api.graph.v2.storage
 
+import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -51,7 +52,7 @@ class StorageController(
         @PathVariable storage: String,
         @RequestBody request: StorageCreateRequest,
     ): Mono<ResponseEntity<DdlStatus<StorageEntity>>> {
-        val name = EntityName.fromOrigin(storage)
+        val name = EntityName.fromOrigin(NameValidator.validate(storage, "storage"))
         return graph.storageDdl.create(name, request).mapToResponseEntity()
     }
 
@@ -63,7 +64,7 @@ class StorageController(
         @RequestParam(required = false) sync: Boolean = false,
         @RequestBody request: StorageUpdateRequest,
     ): Mono<ResponseEntity<DdlStatus<StorageEntity>>> {
-        val name = EntityName.fromOrigin(storage)
+        val name = EntityName.fromOrigin(NameValidator.validate(storage, "storage"))
         return graph.storageDdl.update(name, request).mapToResponseEntity()
     }
 }
