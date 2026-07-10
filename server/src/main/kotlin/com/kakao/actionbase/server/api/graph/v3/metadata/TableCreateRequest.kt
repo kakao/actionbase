@@ -30,10 +30,7 @@ data class TableCreateRequest(
     @field:Valid
     val schema: ModelSchema,
     @field:NotBlank(message = "storage is required")
-    @field:Pattern(
-        regexp = "^datastore://[a-z0-9_]+/[a-z0-9_]+$",
-        message = "storage must be in format datastore://<namespace>/<table> using lowercase alphanumeric/underscore only (e.g., datastore://my_namespace/my_table)",
-    )
+    @field:Pattern(regexp = Constants.Name.STORAGE_URI_PATTERN, message = Constants.Name.STORAGE_URI_MESSAGE)
     val storage: String,
     val mode: MutationMode = MutationMode.SYNC,
     @field:Size(max = 1000, message = "comment must be at most 1000 characters")
