@@ -40,7 +40,11 @@ func main() {
 
 	host, found := parser.Get(hostParamKey)
 	if !found {
-		host = DefaultHost
+		if env := os.Getenv("ACT_HOST"); env != "" {
+			host = env
+		} else {
+			host = DefaultHost
+		}
 	}
 
 	isDebugEnabled := false
@@ -49,6 +53,9 @@ func main() {
 	}
 
 	authKey, _ := parser.Get(authParamKey)
+	if authKey == "" {
+		authKey = os.Getenv("ACT_API_KEY")
+	}
 
 	if execCmd != "" {
 		util.SetPlainMode(true)
