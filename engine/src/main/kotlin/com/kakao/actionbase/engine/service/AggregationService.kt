@@ -14,6 +14,7 @@ import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
+import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
@@ -157,6 +158,7 @@ class AggregationService(
 
         val directedSource = if (direction == Direction.IN) target else source
         val directedTarget = if (direction == Direction.IN) source else target
+        val entity = if (topk.scope == TopkScope.GLOBAL) TopKTableNames.GLOBAL_ENTITY else directedSource
 
         return queryService
             .agg(
@@ -180,7 +182,7 @@ class AggregationService(
                                     edge =
                                         Edge(
                                             version = System.currentTimeMillis(),
-                                            source = TopKTableNames.scoreSourceKey(entity = directedSource, topk.topk),
+                                            source = TopKTableNames.scoreSourceKey(entity = entity, topk.topk),
                                             target = directedTarget,
                                             properties = mapOf("score" to score),
                                         ),

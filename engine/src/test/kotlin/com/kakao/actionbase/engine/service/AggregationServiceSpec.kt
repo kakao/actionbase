@@ -14,6 +14,7 @@ import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
+import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.metadata.common.TopkTable
 import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.types.PrimitiveType
@@ -185,6 +186,46 @@ class AggregationServiceSpec :
                 val edge = mutations.captured.single().edge
                 edge.source shouldBe "item1|top_purchased_by"
                 edge.target shouldBe "user1"
+            }
+
+            "aggregate for GLOBAL scope uses a fixed entity so different sources share the same score row" {
+                val topk =
+                    topkConfig(name = "top_global", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                        .copy(scope = TopkScope.GLOBAL)
+                val group =
+                    groupWithTopks(
+                        name = "g_global",
+                        topks = listOf(topk),
+                        directionType = DirectionType.OUT,
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 9))
+
+                val mutations = mutableListOf<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(
+                        service.aggregate(
+                            AggregationType.TOPK,
+                            listOf(
+                                item("db", "src", source = "user1", target = "item1"),
+                                item("db", "src", source = "user2", target = "item2"),
+                            ),
+                        ),
+                    ).assertNext { results ->
+                        results shouldHaveSize 2
+                    }.verifyComplete()
+
+                val edges = mutations.map { it.single().edge }
+                edges.map { it.source } shouldContainExactlyInAnyOrder
+                    listOf("${TopKTableNames.GLOBAL_ENTITY}|top_global", "${TopKTableNames.GLOBAL_ENTITY}|top_global")
+                edges.map { it.target } shouldContainExactlyInAnyOrder listOf("item1", "item2")
             }
 
             "aggregate for BOTH direction fans out into one OUT and one IN mutation" {
