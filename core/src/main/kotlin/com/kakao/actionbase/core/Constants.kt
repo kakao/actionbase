@@ -40,7 +40,6 @@ object Constants {
     object Name {
         const val PATTERN = "^[a-z][a-z0-9_]{0,63}$"
         const val MESSAGE = "name must start with a lowercase letter and contain only lowercase alphanumeric characters or underscores (max 64 chars)"
-        const val MAX_LENGTH = 64
 
         const val STORAGE_URI_PATTERN = "^datastore://[a-z][a-z0-9_]*/[a-z][a-z0-9_]*$"
         const val STORAGE_URI_MESSAGE = "storage must be in format datastore://<namespace>/<table> where each segment starts with a lowercase letter and contains only lowercase alphanumeric/underscore (e.g., datastore://my_namespace/my_table)"
