@@ -1,7 +1,5 @@
 package com.kakao.actionbase.engine.storage
 
-import com.kakao.actionbase.core.Constants
-
 /**
  * Utility for parsing datastore URIs.
  *
@@ -10,7 +8,6 @@ import com.kakao.actionbase.core.Constants
 object DatastoreUri {
     private const val PREFIX = "datastore://"
     private val SAFE_NAME_PATTERN = Regex("^[a-z0-9_]+$")
-    val URI_PATTERN = Regex(Constants.Name.STORAGE_URI_PATTERN)
 
     /**
      * Parses a datastore URI and returns namespace and table name.

@@ -60,7 +60,7 @@ class ServiceLabelController(
         @RequestBody request: LabelUpdateRequest,
     ): Mono<ResponseEntity<DdlStatus<LabelEntity>>> {
         getLogger().warn("update request: $request")
-        val name = EntityName(NameValidator.validate(service, "service"), NameValidator.validate(label, "label"))
+        val name = EntityName(service, label)
         return graph.labelDdl.update(name, request).mapToResponseEntity()
     }
 
@@ -71,7 +71,7 @@ class ServiceLabelController(
         @Valid @RequestBody request: LabelCopyRequest,
     ): Mono<ResponseEntity<DdlStatus<LabelEntity>>> {
         val from = EntityName(service, label)
-        val to = EntityName(NameValidator.validate(service, "service"), NameValidator.validate(request.target, "target"))
+        val to = EntityName(service, NameValidator.validate(request.target, "target"))
         return graph.labelDdl.copy(from, to, mapOf("storage" to request.storage)).mapToResponseEntity()
     }
 }

@@ -49,7 +49,7 @@ class ServiceController(
         @PathVariable service: String,
         @RequestBody request: ServiceUpdateRequest,
     ): Mono<ResponseEntity<DdlStatus<ServiceEntity>>> {
-        val name = EntityName.fromOrigin(NameValidator.validate(service, "service"))
+        val name = EntityName.fromOrigin(service)
         return graph.serviceDdl.update(name, request).mapToResponseEntity()
     }
 }

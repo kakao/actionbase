@@ -73,7 +73,7 @@ class ServiceAliasController(
         @PathVariable alias: String,
         @RequestBody request: AliasUpdateRequest,
     ): Mono<ResponseEntity<DdlStatus<AliasEntity>>> {
-        val name = EntityName(NameValidator.validate(service, "service"), NameValidator.validate(alias, "alias"))
+        val name = EntityName(service, alias)
         return graph.aliasDdl
             .update(name, request)
             .map {

@@ -64,7 +64,7 @@ class StorageController(
         @RequestParam(required = false) sync: Boolean = false,
         @RequestBody request: StorageUpdateRequest,
     ): Mono<ResponseEntity<DdlStatus<StorageEntity>>> {
-        val name = EntityName.fromOrigin(NameValidator.validate(storage, "storage"))
+        val name = EntityName.fromOrigin(storage)
         return graph.storageDdl.update(name, request).mapToResponseEntity()
     }
 }
