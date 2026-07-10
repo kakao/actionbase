@@ -33,7 +33,7 @@ data class TableCreateRequest(
     @field:Pattern(regexp = Constants.Name.STORAGE_URI_PATTERN, message = Constants.Name.STORAGE_URI_MESSAGE)
     val storage: String,
     val mode: MutationMode = MutationMode.SYNC,
-    @field:Size(max = 1000, message = "comment must be at most 1000 characters")
+    @field:Size(max = Constants.Name.COMMENT_MAX_LENGTH, message = Constants.Name.COMMENT_SIZE_MESSAGE)
     val comment: String,
 ) {
     fun toV2EdgeSchema(): EdgeSchema =
