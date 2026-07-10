@@ -6,9 +6,12 @@ object TopKTableNames {
 
     const val GLOBAL_ENTITY = "__global__"
 
-    // score table src key: entity|topk_name — supports multiple topk in one table
+    // score table source key: {database}.{table}:{topk}:{direction}:{entity}
     fun scoreSourceKey(
-        entity: String,
+        database: String,
+        table: String,
         topk: String,
-    ): String = "$entity|$topk"
+        direction: Direction,
+        entity: String,
+    ): String = "$database.$table:$topk:${direction.name}:$entity"
 }

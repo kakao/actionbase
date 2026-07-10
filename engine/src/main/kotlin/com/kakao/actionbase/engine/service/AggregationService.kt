@@ -23,6 +23,9 @@ import com.kakao.actionbase.engine.QualifiedGroups
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
 class AggregationService(
     private val queryService: QueryService,
     private val mutationService: MutationService,
@@ -170,6 +173,14 @@ class AggregationService(
                 ranges = ranges,
             ).flatMap { response ->
                 val score = response.groups.firstOrNull()?.value ?: 0L
+                val scoreSource =
+                    TopKTableNames.scoreSourceKey(
+                        database = database,
+                        table = table,
+                        topk = topk.topk,
+                        direction = direction,
+                        entity = entity,
+                    )
 
                 mutationService
                     .mutate(
@@ -182,9 +193,9 @@ class AggregationService(
                                     edge =
                                         Edge(
                                             version = System.currentTimeMillis(),
-                                            source = TopKTableNames.scoreSourceKey(entity = entity, topk.topk),
+                                            source = scoreSource,
                                             target = directedTarget,
-                                            properties = mapOf("score" to score),
+                                            properties = mapOf("segment" to encodeSegment(ranges), "score" to score.toDouble()),
                                         ),
                                 ),
                             ),
@@ -216,6 +227,8 @@ class AggregationService(
                 }
             value?.let { Regex.escapeReplacement(it) } ?: Regex.escapeReplacement(match.value)
         }
+
+    private fun encodeSegment(ranges: String?): String? = ranges?.let { URLEncoder.encode(it, StandardCharsets.UTF_8) }
 
     private fun parseFqn(fqn: String): Pair<String, String> {
         val dot = fqn.indexOf('.')

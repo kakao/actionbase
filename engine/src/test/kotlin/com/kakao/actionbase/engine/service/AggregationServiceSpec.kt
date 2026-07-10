@@ -3,10 +3,12 @@ package com.kakao.actionbase.engine.service
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
+import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
 import com.kakao.actionbase.core.metadata.common.Aggregations
+import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
@@ -126,6 +128,40 @@ class AggregationServiceSpec :
                     }.verifyComplete()
             }
 
+            "aggregate stores score as a Double and segment as the URL-encoded resolved ranges" {
+                val topk =
+                    topkConfig(name = "top_seg", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                        .copy(ranges = "gender:eq:{gender}")
+                val group =
+                    groupWithTopks(
+                        name = "g_seg",
+                        topks = listOf(topk),
+                        directionType = DirectionType.OUT,
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 3))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                val baseItem = item("db", "src", source = "user1", target = "item1")
+                val item = baseItem.copy(edge = baseItem.edge.copy(properties = mapOf("gender" to "F")))
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item)))
+                    .assertNext { results -> results shouldHaveSize 1 }
+                    .verifyComplete()
+
+                val edge = mutations.captured.single().edge
+                edge.properties["score"] shouldBe 3.0
+                edge.properties["segment"] shouldBe "gender%3Aeq%3AF"
+            }
+
             "aggregate for OUT direction uses source as entity and keeps target as ranked value" {
                 val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
                 val group =
@@ -153,7 +189,7 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "user1|top_purchased"
+                edge.source shouldBe "db.src:top_purchased:OUT:user1"
                 edge.target shouldBe "item1"
             }
 
@@ -184,7 +220,7 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "item1|top_purchased_by"
+                edge.source shouldBe "db.src:top_purchased_by:IN:item1"
                 edge.target shouldBe "user1"
             }
 
@@ -224,7 +260,10 @@ class AggregationServiceSpec :
 
                 val edges = mutations.map { it.single().edge }
                 edges.map { it.source } shouldContainExactlyInAnyOrder
-                    listOf("${TopKTableNames.GLOBAL_ENTITY}|top_global", "${TopKTableNames.GLOBAL_ENTITY}|top_global")
+                    listOf(
+                        "db.src:top_global:OUT:${TopKTableNames.GLOBAL_ENTITY}",
+                        "db.src:top_global:OUT:${TopKTableNames.GLOBAL_ENTITY}",
+                    )
                 edges.map { it.target } shouldContainExactlyInAnyOrder listOf("item1", "item2")
             }
 
@@ -256,8 +295,8 @@ class AggregationServiceSpec :
                 val edges = mutations.map { it.single().edge }
                 edges.map { it.source to it.target } shouldContainExactlyInAnyOrder
                     listOf(
-                        "user1|top_both" to "item1",
-                        "item1|top_both" to "user1",
+                        "db.src:top_both:OUT:user1" to "item1",
+                        "db.src:top_both:IN:item1" to "user1",
                     )
             }
 
@@ -306,7 +345,7 @@ class AggregationServiceSpec :
 
                 queryRanges.captured shouldBe "_target:eq:item1"
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "user1|top_purchased"
+                edge.source shouldBe "commerce.purchases:top_purchased:OUT:user1"
                 edge.target shouldBe "item1"
             }
 
@@ -460,7 +499,12 @@ private fun expireItem(properties: Map<String, Any?>): AggregationItemPayload =
             ),
     )
 
-private fun aggPayload(count: Int): DataFrameEdgeAggPayload = DataFrameEdgeAggPayload(groups = emptyList(), count = count, context = emptyMap())
+private fun aggPayload(count: Int): DataFrameEdgeAggPayload =
+    DataFrameEdgeAggPayload(
+        groups = listOf(EdgeAggPayload(start = "unused", direction = Direction.OUT, value = count.toLong(), context = emptyMap())),
+        count = 1,
+        context = emptyMap(),
+    )
 
 private fun mutationResult(status: String): MutationResult = MutationResult.of(key = MutationKey.SourceTarget("s", "t"), count = 1, status = status)
 
