@@ -40,10 +40,9 @@ func main() {
 
 	host, found := parser.Get(hostParamKey)
 	if !found {
+		host = DefaultHost
 		if env := os.Getenv("ACT_HOST"); env != "" {
 			host = env
-		} else {
-			host = DefaultHost
 		}
 	}
 
