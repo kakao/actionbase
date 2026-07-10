@@ -17,7 +17,7 @@ const (
 
 	hostParamKey = "host"
 	authParamKey = "authKey"
-	execParamKey = "e"
+	execParamKey = "exec"
 )
 
 func main() {
