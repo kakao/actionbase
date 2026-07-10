@@ -152,7 +152,9 @@ func (r *ActionbaseCommandLineRunner) RunCommand(input string) (*model.Response,
 	result := r.executeCommand(cmdName, args)
 	elapsed := time.Since(start).Seconds()
 
-	util.Print("\033[90m(Took %.4f seconds)\033[0m\n\n", elapsed)
+	if !util.IsPlainMode() {
+		util.Print("\033[90m(Took %.4f seconds)\033[0m\n\n", elapsed)
+	}
 	return result, elapsed
 }
 

@@ -17,6 +17,7 @@ const (
 
 	hostParamKey = "host"
 	authParamKey = "authKey"
+	execParamKey = "e"
 )
 
 func main() {
@@ -37,11 +38,23 @@ func main() {
 		isDebugEnabled = true
 	}
 
+	authKey, _ := parser.Get(authParamKey)
+
+	if cmd, found := parser.Get(execParamKey); found {
+		util.SetPlainMode(true)
+		console := runner.NewActionbaseCommandLineRunner(Version, host, &authKey, "", false, isDebugEnabled)
+		console.CheckConnection()
+		resp, _ := console.RunCommand(cmd)
+		if resp == nil || !resp.IsSuccess {
+			os.Exit(1)
+		}
+		return
+	}
+
 	if _, found := parser.GetLenient("plain"); found {
 		util.SetPlainMode(true)
 	}
 
-	authKey, _ := parser.Get(authParamKey)
 	console := runner.NewActionbaseCommandLineRunner(Version, host, &authKey, "", false, isDebugEnabled)
 	console.CheckConnection()
 	console.StartServer(parser)
