@@ -75,6 +75,11 @@ var (
 		name:    "guide",
 		command: "guide start <name>",
 	}
+
+	TypeDoctor = Type{
+		name:    "doctor",
+		command: "doctor <names>",
+	}
 )
 
 func (t Type) GetName() string {
