@@ -1,20 +1,12 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.core.Constants
 import org.springframework.http.HttpStatus
 import org.springframework.web.server.ResponseStatusException
 
-/**
- * Validates names for V3 Metadata API to prevent injection attacks.
- * Names must start with a lowercase letter and contain only lowercase alphanumeric
- * characters or underscores. Maximum length is 64 characters.
- */
 object V3NameValidator {
-    private val NAME_PATTERN = Regex("^[a-z][a-z0-9_]{0,63}$")
+    private val NAME_PATTERN = Regex(Constants.Name.PATTERN)
 
-    /**
-     * Validates a name and returns it if valid.
-     * @throws ResponseStatusException with 400 Bad Request if invalid
-     */
     fun validate(
         name: String,
         fieldName: String,
@@ -22,7 +14,7 @@ object V3NameValidator {
         if (!name.matches(NAME_PATTERN)) {
             throw ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "Invalid $fieldName: must start with a lowercase letter, contain only lowercase alphanumeric/underscore, max 64 chars",
+                "Invalid $fieldName: ${Constants.Name.MESSAGE}",
             )
         }
         return name

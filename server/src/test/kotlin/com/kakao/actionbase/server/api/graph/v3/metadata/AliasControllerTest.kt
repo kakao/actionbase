@@ -465,5 +465,29 @@ class AliasControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isBadRequest
         }
+
+        @Test
+        fun `update alias with hyphenated table name returns 400`() {
+            client
+                .put()
+                .uri("$baseUri/valid_alias")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"table": "my-table"}""")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
+        fun `update alias with uppercase table name returns 400`() {
+            client
+                .put()
+                .uri("$baseUri/valid_alias")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"table": "MyTable"}""")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
     }
 }
