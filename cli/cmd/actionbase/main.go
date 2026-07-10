@@ -17,11 +17,21 @@ const (
 
 	hostParamKey = "host"
 	authParamKey = "authKey"
-	execParamKey = "exec"
 )
 
 func main() {
-	parser := util.ParseArgs(os.Args)
+	// Extract -e before ParseArgs, which only handles --key flags.
+	var execCmd string
+	args := os.Args
+	for i, arg := range args {
+		if arg == "-e" && i+1 < len(args) {
+			execCmd = args[i+1]
+			args = append(args[:i:i], args[i+2:]...)
+			break
+		}
+	}
+
+	parser := util.ParseArgs(args)
 
 	if _, found := parser.GetLenient("version"); found {
 		fmt.Println("v" + Version)
@@ -40,11 +50,11 @@ func main() {
 
 	authKey, _ := parser.Get(authParamKey)
 
-	if cmd, found := parser.Get(execParamKey); found {
+	if execCmd != "" {
 		util.SetPlainMode(true)
 		console := runner.NewActionbaseCommandLineRunner(Version, host, &authKey, "", false, isDebugEnabled)
 		console.CheckConnection()
-		resp, _ := console.RunCommand(cmd)
+		resp, _ := console.RunCommand(execCmd)
 		if resp == nil || !resp.IsSuccess {
 			os.Exit(1)
 		}
