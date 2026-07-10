@@ -384,8 +384,10 @@ class DatabaseControllerTest : E2ETestBase() {
         @Test
         fun `invalid database name returns 400`() {
             client
-                .get()
-                .uri("/graph/v3/databases/123invalid")
+                .post()
+                .uri("/graph/v3/databases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"database": "123invalid", "comment": ""}""")
                 .exchange()
                 .expectStatus()
                 .isBadRequest
@@ -394,8 +396,10 @@ class DatabaseControllerTest : E2ETestBase() {
         @Test
         fun `database name with dot returns 400`() {
             client
-                .get()
-                .uri("/graph/v3/databases/db.injection")
+                .post()
+                .uri("/graph/v3/databases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"database": "db.injection", "comment": ""}""")
                 .exchange()
                 .expectStatus()
                 .isBadRequest

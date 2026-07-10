@@ -855,8 +855,10 @@ class TableControllerTest : E2ETestBase() {
         @Test
         fun `invalid table name returns 400`() {
             client
-                .get()
-                .uri("$baseUri/123invalid")
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"table": "123invalid", "schema": null, "storage": "", "comment": ""}""")
                 .exchange()
                 .expectStatus()
                 .isBadRequest
@@ -865,8 +867,10 @@ class TableControllerTest : E2ETestBase() {
         @Test
         fun `table name with dot returns 400`() {
             client
-                .get()
-                .uri("$baseUri/table.injection")
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"table": "table.injection", "schema": null, "storage": "", "comment": ""}""")
                 .exchange()
                 .expectStatus()
                 .isBadRequest

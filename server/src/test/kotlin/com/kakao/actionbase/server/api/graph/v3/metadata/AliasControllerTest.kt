@@ -433,8 +433,10 @@ class AliasControllerTest : E2ETestBase() {
         @Test
         fun `invalid alias name returns 400`() {
             client
-                .get()
-                .uri("$baseUri/123invalid")
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"alias": "123invalid", "table": "valid_table", "comment": ""}""")
                 .exchange()
                 .expectStatus()
                 .isBadRequest
@@ -443,8 +445,10 @@ class AliasControllerTest : E2ETestBase() {
         @Test
         fun `alias name with dot returns 400`() {
             client
-                .get()
-                .uri("$baseUri/alias.injection")
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"alias": "alias.injection", "table": "valid_table", "comment": ""}""")
                 .exchange()
                 .expectStatus()
                 .isBadRequest
