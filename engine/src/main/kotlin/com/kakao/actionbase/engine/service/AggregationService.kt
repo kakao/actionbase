@@ -172,7 +172,7 @@ class AggregationService(
                 direction = V2Direction.valueOf(direction.name),
                 ranges = ranges,
             ).flatMap { response ->
-                val score = response.groups.firstOrNull()?.value ?: 0L
+                val score = response.groups.firstOrNull()?.value?.toDouble() ?: 0.0
                 val scoreSource =
                     TopKTableNames.scoreSourceKey(
                         database = database,
@@ -195,7 +195,7 @@ class AggregationService(
                                             version = System.currentTimeMillis(),
                                             source = scoreSource,
                                             target = directedTarget,
-                                            properties = mapOf("segment" to encodeSegment(ranges), "score" to score.toDouble()),
+                                            properties = mapOf("segment" to encodeSegment(ranges), "score" to score),
                                         ),
                                 ),
                             ),
