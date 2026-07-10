@@ -6,6 +6,8 @@ import com.kakao.actionbase.core.edge.Edge
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationResult
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
+import com.kakao.actionbase.core.edge.payload.EdgePayload
+import com.kakao.actionbase.core.edge.payload.MutationResult
 import com.kakao.actionbase.core.metadata.AggregationMetadata
 import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Direction
@@ -19,6 +21,7 @@ import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.QualifiedGroups
+import com.kakao.actionbase.v2.engine.util.objectMapper
 
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -36,10 +39,11 @@ class AggregationService(
     fun aggregate(
         type: AggregationType,
         items: List<AggregationItemPayload>,
+        isExpire: Boolean = false,
     ): Mono<List<AggregationResult>> =
         Flux
             .fromIterable(items)
-            .flatMapIterable { item -> createEvent(type, item) }
+            .flatMapIterable { item -> createEvent(type, item, isExpire) }
             .flatMap { event -> processAggregations(event, type) }
             .collectList()
 
@@ -60,25 +64,17 @@ class AggregationService(
     private fun createEvent(
         type: AggregationType,
         item: AggregationItemPayload,
+        isExpire: Boolean,
     ): List<EdgeAggregationEvent> =
         when (type) {
-            AggregationType.TOPK -> createTopkEvent(item)
+            AggregationType.TOPK -> createTopkEvent(item, isExpire)
         }
 
-    private fun createTopkEvent(item: AggregationItemPayload): List<EdgeAggregationEvent> {
-        val isExpire = item.database == TopKTableNames.EXPIRE_TABLE_DATABASE && item.table == TopKTableNames.EXPIRE_TABLE_NAME
-
-        val (database, table) =
-            if (isExpire) {
-                require(item.edge.properties.containsKey("table")) {
-                    "table property is required for expire edges"
-                }
-                parseFqn(item.edge.properties["table"] as String)
-            } else {
-                item.database to item.table
-            }
-
-        val tb = engine.getTableBinding(database = database, alias = table)
+    private fun createTopkEvent(
+        item: AggregationItemPayload,
+        isExpire: Boolean,
+    ): List<EdgeAggregationEvent> {
+        val tb = engine.getTableBinding(database = item.database, alias = item.table)
 
         require(tb.schema is ModelSchema.Edge || tb.schema is ModelSchema.MultiEdge) {
             "Aggregation is only supported for Edge and MultiEdge tables."
@@ -86,15 +82,14 @@ class AggregationService(
 
         val groups = tb.schema.groupsOrNull().orEmpty()
 
+        // When item.topk is set, only that named topk is re-aggregated (used to refresh a single
+        // expired topk without recomputing its siblings declared on the same group).
         return groups
-            .filter { it.aggregations.topk.isNotEmpty() }
-            .map { group ->
-                if (isExpire) {
-                    EdgeAggregationEvent.of(type = AggregationType.TOPK, database, table, properties = item.edge.properties, group)
-                } else {
-                    EdgeAggregationEvent.of(type = AggregationType.TOPK, database = item.database, table = item.table, item, group)
-                }
-            }
+            .mapNotNull { group ->
+                val topks =
+                    if (item.topk != null) group.aggregations.topk.filter { it.topk == item.topk } else group.aggregations.topk
+                if (topks.isEmpty()) null else group.copy(aggregations = group.aggregations.copy(topk = topks))
+            }.map { group -> EdgeAggregationEvent.of(type = AggregationType.TOPK, item, group, isExpire) }
     }
 
     private fun processAggregations(
@@ -117,21 +112,13 @@ class AggregationService(
             .fromIterable(directionTopkPairs)
             .flatMap { (direction, topk) ->
                 val ranges =
-                    if (item.isExpire) {
-                        item.properties["ranges"]?.toString()
-                    } else {
-                        topk.ranges.takeIf { it.isNotEmpty() }?.let {
-                            interpolate(template = it, source = item.source, target = item.target, properties = item.properties)
-                        }
+                    topk.ranges.takeIf { it.isNotEmpty() }?.let {
+                        interpolate(template = it, source = item.source, target = item.target, properties = item.properties)
                     }
 
                 aggregateTopk(
-                    database = item.database,
-                    table = item.table,
-                    source = item.source,
-                    target = item.target,
+                    item = item,
                     direction = direction,
-                    group = item.group,
                     ranges = ranges,
                     topk = topk,
                 )
@@ -139,15 +126,15 @@ class AggregationService(
     }
 
     private fun aggregateTopk(
-        database: String,
-        table: String,
-        source: String,
-        target: String,
+        item: EdgeAggregationEvent,
         direction: Direction,
-        group: Group,
         ranges: String?,
         topk: Topk,
     ): Mono<AggregationResult> {
+        val database = item.database
+        val table = item.table
+        val source = item.source
+        val target = item.target
         val base =
             AggregationResult(
                 database = database,
@@ -167,7 +154,7 @@ class AggregationService(
             .agg(
                 database = database,
                 table = table,
-                group = group.group,
+                group = item.group.group,
                 start = listOf(directedSource),
                 direction = V2Direction.valueOf(direction.name),
                 ranges = ranges,
@@ -199,12 +186,77 @@ class AggregationService(
                                         ),
                                 ),
                             ),
-                    ).map { results ->
-                        base.copy(status = if (results.any { it.status == "ERROR" }) "ERROR" else "SUCCESS")
+                    ).flatMap { results ->
+                        val result = base.copy(status = if (results.any { it.status == "ERROR" }) "ERROR" else "SUCCESS")
+                        if (result.status != "SUCCESS" || topk.expireAfterMillis < 0 || item.isExpire) {
+                            Mono.just(result)
+                        } else {
+                            writeExpireEntry(item, direction, entity, topk).map { result }
+                        }
                     }
             }.onErrorResume { err ->
                 Mono.just(base.copy(status = "ERROR", error = err.message))
             }
+    }
+
+    // Records when this topk must be re-aggregated. Exactly one expire row exists per
+    // (database, table, topk, direction, entity): the stable target key makes a later replay
+    // upsert this row (extending expiredAt) instead of leaving a second, stale expire row behind.
+    // The row keeps the original AggregationItemPayload in `properties.payload` so the expire
+    // sweeper can re-trigger the aggregation without knowing anything about this group's schema.
+    private fun writeExpireEntry(
+        item: EdgeAggregationEvent,
+        direction: Direction,
+        entity: String,
+        topk: Topk,
+    ): Mono<List<MutationResult>> {
+        val (expireDatabase, expireTable) = parseFqn(topk.table.expire)
+        val expiredAt = System.currentTimeMillis() + topk.expireAfterMillis
+        val partition =
+            TopKTableNames.expirePartition(
+                database = item.database,
+                table = item.table,
+                topk = topk.topk,
+                direction = direction,
+                entity = entity,
+            )
+        val expireTarget =
+            TopKTableNames.expireTargetKey(
+                database = item.database,
+                table = item.table,
+                topk = topk.topk,
+                direction = direction,
+                entity = entity,
+            )
+        val payload =
+            AggregationItemPayload(
+                database = item.database,
+                table = item.table,
+                edge = item.edge,
+                topk = topk.topk,
+            )
+
+        return mutationService.mutate(
+            database = expireDatabase,
+            alias = expireTable,
+            unresolvedEvents =
+                listOf(
+                    MutationItem(
+                        type = EventType.INSERT,
+                        edge =
+                            Edge(
+                                version = System.currentTimeMillis(),
+                                source = partition,
+                                target = expireTarget,
+                                properties =
+                                    mapOf(
+                                        "expiredAt" to expiredAt,
+                                        "payload" to objectMapper.writeValueAsString(payload),
+                                    ),
+                            ),
+                    ),
+                ),
+        )
     }
 
     /**
@@ -245,56 +297,36 @@ class AggregationService(
 
 data class EdgeAggregationEvent(
     val type: AggregationType,
-    val isExpire: Boolean = false,
     val database: String,
     val table: String,
     val source: String,
     val target: String,
     val properties: Map<String, Any?>,
+    val edge: EdgePayload,
     val direction: DirectionType,
     val group: Group,
     val aggregations: Aggregations,
+    val isExpire: Boolean = false,
 ) {
     companion object {
         fun of(
             type: AggregationType,
-            database: String,
-            table: String,
             item: AggregationItemPayload,
             group: Group,
+            isExpire: Boolean = false,
         ): EdgeAggregationEvent =
             EdgeAggregationEvent(
                 type = type,
-                database = database,
-                table = table,
+                database = item.database,
+                table = item.table,
                 source = item.edge.source.toString(),
                 target = item.edge.target.toString(),
                 properties = item.edge.properties,
+                edge = item.edge,
                 direction = group.directionType,
                 group = group,
                 aggregations = group.aggregations,
-            )
-
-        fun of(
-            type: AggregationType,
-            database: String,
-            table: String,
-            properties: Map<String, Any?>,
-            group: Group,
-        ): EdgeAggregationEvent =
-            EdgeAggregationEvent(
-                type = type,
-                isExpire = true,
-                database = database,
-                table = table,
-                source = checkNotNull(properties["source"]?.toString()) { "`source` property is required for expire events" },
-                target = checkNotNull(properties["target"]?.toString()) { "`target` property is required for expire events" },
-                properties = properties,
-                direction =
-                    checkNotNull(properties["direction"]?.toString()) { "`direction` property is required for expire events" }
-                        .let { DirectionType.valueOf(it) },
-                group = group,
-                aggregations = group.aggregations,
+                isExpire = isExpire,
             )
     }
 }

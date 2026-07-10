@@ -33,6 +33,10 @@ class MetadataAggController(
         @RequestBody aggregationItemRequest: AggregationItemRequest,
     ): Mono<ResponseEntity<AggregationsItemResponse>> =
         aggregationService
-            .aggregate(type = aggregationItemRequest.type, items = aggregationItemRequest.items)
+            .aggregate(
+                type = aggregationItemRequest.type,
+                items = aggregationItemRequest.items,
+                isExpire = aggregationItemRequest.isExpire,
+            )
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 }
