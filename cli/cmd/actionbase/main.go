@@ -20,7 +20,6 @@ const (
 )
 
 func main() {
-	// Extract -e before ParseArgs, which only handles --key flags.
 	var execCmd string
 	args := os.Args
 	for i, arg := range args {
