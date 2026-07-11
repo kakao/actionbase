@@ -24,8 +24,6 @@ object Metadata {
 
     const val sysServiceName = "sys"
 
-    const val localOnlyStorageName = "local_only_storage"
-
     const val localBackedMetastoreName = "local_backed_metastore"
 
     const val metastoreName = "metastore"
@@ -46,22 +44,11 @@ object Metadata {
 
     const val heartBeatLabelName = "heartbeat"
 
-    const val sysOnlineMetadataLabelName = "online_metadata"
-
     const val sysOnlineMetadataLabelV2Name = "online_metadata_v2"
 
     const val sysNilLabelName = "nil"
 
     val heartBeatEntityName = EntityName(sysServiceName, heartBeatLabelName)
-
-    val localOnlyStorageEntity =
-        StorageEntity(
-            active = true,
-            name = EntityName.fromOrigin(localOnlyStorageName),
-            desc = "local storage",
-            type = StorageType.LOCAL,
-            conf = jackson.createObjectNode().apply { put("useGlobal", false) },
-        )
 
     val localBackedMetastoreEntity =
         StorageEntity(

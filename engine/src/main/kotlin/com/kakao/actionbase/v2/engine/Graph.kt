@@ -1017,7 +1017,6 @@ class Graph(
 
             val storageEntities =
                 listOfNotNull(
-                    Metadata.localOnlyStorageEntity,
                     Metadata.localBackedMetastoreEntity,
                     Metadata.metastoreStorageEntity,
                     defaultHBaseStorageEntity,
@@ -1042,8 +1041,7 @@ class Graph(
 
             val storageLabel =
                 Metadata.storageLabelEntity.materialize(defaults) {
-                    mutate(Metadata.localOnlyStorageEntity.toEdge(), EdgeOperation.INSERT)
-                        .then(mutate(Metadata.localBackedMetastoreEntity.toEdge(), EdgeOperation.INSERT))
+                    mutate(Metadata.localBackedMetastoreEntity.toEdge(), EdgeOperation.INSERT)
                         .then(mutate(Metadata.metastoreStorageEntity.toEdge(), EdgeOperation.INSERT))
                         .let { chain ->
                             if (defaultHBaseStorageEntity != null) {
