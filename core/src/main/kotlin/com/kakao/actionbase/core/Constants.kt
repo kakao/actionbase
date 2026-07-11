@@ -35,6 +35,21 @@ object Constants {
         const val BYTE_TRUE: Byte = 1
     }
 
+    /**
+     * Naming policy for all Actionbase metadata entities (database, table, alias, service, label, storage).
+     * Rationale: URL path safety + HBase naming constraints both require lowercase alphanumeric and underscore only.
+     */
+    object Name {
+        const val PATTERN = "^[a-z][a-z0-9_]{0,63}$"
+        const val MESSAGE = "name must start with a lowercase letter and contain only lowercase alphanumeric characters or underscores (max 64 chars)"
+
+        const val COMMENT_MAX_LENGTH = 1000
+        const val COMMENT_SIZE_MESSAGE = "comment must be at most $COMMENT_MAX_LENGTH characters"
+
+        const val STORAGE_URI_PATTERN = "^datastore://[a-z][a-z0-9_]*/[a-z][a-z0-9_]*$"
+        const val STORAGE_URI_MESSAGE = "storage must be in format datastore://<namespace>/<table> where each segment starts with a lowercase letter and contains only lowercase alphanumeric/underscore (e.g., datastore://my_namespace/my_table)"
+    }
+
     object Group {
         const val DEFAULT_TTL = 8 * 24 * 60 * 60 * 1000L // 8 days in milliseconds (691,200,000)
 

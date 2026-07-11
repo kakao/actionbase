@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.api.graph.v2.service
 
+import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -48,7 +49,7 @@ class ServiceLabelController(
         @PathVariable label: String,
         @Valid @RequestBody request: LabelCreateRequest,
     ): Mono<ResponseEntity<DdlStatus<LabelEntity>>> {
-        val name = EntityName(service, label)
+        val name = EntityName(NameValidator.validate(service, "service"), NameValidator.validate(label, "label"))
         return graph.labelDdl.create(name, request).mapToResponseEntity()
     }
 
@@ -70,7 +71,7 @@ class ServiceLabelController(
         @Valid @RequestBody request: LabelCopyRequest,
     ): Mono<ResponseEntity<DdlStatus<LabelEntity>>> {
         val from = EntityName(service, label)
-        val to = EntityName(service, request.target)
+        val to = EntityName(service, NameValidator.validate(request.target, "target"))
         return graph.labelDdl.copy(from, to, mapOf("storage" to request.storage)).mapToResponseEntity()
     }
 }

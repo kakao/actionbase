@@ -14,7 +14,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EdgeAggCountSentinelE2ETest : E2ETestBase() {
-    private val db = "test-agg-count-db"
+    private val db = "test_agg_count_db"
     private val table = "follows"
     private val objectMapper = jacksonObjectMapper()
 

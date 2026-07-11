@@ -9,7 +9,7 @@ import org.springframework.http.MediaType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VertexIntegrationTest : E2ETestBase() {
-    private val db = "vertex-db"
+    private val db = "vertex_db"
     private val vertexTable = "users"
     private val longIdTable = "users_long"
 

@@ -29,7 +29,7 @@ class TableController(
         @RequestParam(required = false, defaultValue = "ACTIVE") status: MetadataStatus,
     ): Mono<ResponseEntity<List<TableDescriptor<*>>>> =
         v3CompatService
-            .getTables(V3NameValidator.validateDatabase(database), status)
+            .getTables(database, status)
             .map { ResponseEntity.ok(it) }
 
     @GetMapping("/graph/v3/databases/{database}/tables/{table}")
@@ -38,7 +38,7 @@ class TableController(
         @PathVariable table: String,
     ): Mono<ResponseEntity<TableDescriptor<*>>> =
         v3CompatService
-            .getTable(V3NameValidator.validateDatabase(database), V3NameValidator.validateTable(table))
+            .getTable(database, table)
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
@@ -62,8 +62,8 @@ class TableController(
     ): Mono<ResponseEntity<TableDescriptor<*>>> =
         v3CompatService
             .updateTable(
-                V3NameValidator.validateDatabase(database),
-                V3NameValidator.validateTable(table),
+                database,
+                table,
                 request,
             ).map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
@@ -74,6 +74,6 @@ class TableController(
         @PathVariable table: String,
     ): Mono<ResponseEntity<Void>> =
         v3CompatService
-            .deleteTable(V3NameValidator.validateDatabase(database), V3NameValidator.validateTable(table))
+            .deleteTable(database, table)
             .then(Mono.just(ResponseEntity.noContent().build<Void>()))
 }

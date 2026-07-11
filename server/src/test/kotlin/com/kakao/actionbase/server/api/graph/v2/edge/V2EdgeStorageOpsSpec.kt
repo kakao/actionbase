@@ -10,8 +10,8 @@ import org.springframework.http.MediaType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class V2EdgeStorageOpsSpec : E2ETestBase() {
-    private val service = "v2-storage-ops-svc"
-    private val label = "v2-storage-ops-label"
+    private val service = "v2_storage_ops_svc"
+    private val label = "v2_storage_ops_label"
     private val name = "$service.$label"
 
     @BeforeAll
