@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.metadata
 
+import com.kakao.actionbase.engine.EngineConstants
 import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.code.hbase.Order
 import com.kakao.actionbase.v2.core.metadata.DirectionType
@@ -12,7 +13,6 @@ import com.kakao.actionbase.v2.core.types.VertexType
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
-import com.kakao.actionbase.v2.engine.entity.StorageEntity
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
@@ -23,12 +23,6 @@ object Metadata {
     const val origin = "origin"
 
     const val sysServiceName = "sys"
-
-    const val localOnlyStorageName = "local_only_storage"
-
-    const val localBackedMetastoreName = "local_backed_metastore"
-
-    const val metastoreName = "metastore"
 
     const val defaultHBaseStorageName = "default_hbase_storage"
 
@@ -54,33 +48,6 @@ object Metadata {
 
     val heartBeatEntityName = EntityName(sysServiceName, heartBeatLabelName)
 
-    val localOnlyStorageEntity =
-        StorageEntity(
-            active = true,
-            name = EntityName.fromOrigin(localOnlyStorageName),
-            desc = "local storage",
-            type = StorageType.LOCAL,
-            conf = jackson.createObjectNode().apply { put("useGlobal", false) },
-        )
-
-    val localBackedMetastoreEntity =
-        StorageEntity(
-            active = true,
-            name = EntityName.fromOrigin(localBackedMetastoreName),
-            desc = "Local backed JDBC storage",
-            type = StorageType.LOCAL,
-            conf = jackson.createObjectNode().apply { put("useGlobal", true) },
-        )
-
-    val metastoreStorageEntity =
-        StorageEntity(
-            active = true,
-            name = EntityName.fromOrigin(metastoreName),
-            desc = "Metastore storage",
-            type = StorageType.JDBC,
-            conf = jackson.createObjectNode(),
-        )
-
     val sysServiceEntity =
         ServiceEntity(
             active = true,
@@ -104,7 +71,7 @@ object Metadata {
                     ),
                 ),
             dirType = DirectionType.OUT,
-            storage = localBackedMetastoreName,
+            storage = EngineConstants.METASTORE_URI,
         )
 
     val storageLabelEntity =
@@ -125,7 +92,7 @@ object Metadata {
                     ),
                 ),
             dirType = DirectionType.OUT,
-            storage = localBackedMetastoreName,
+            storage = EngineConstants.METASTORE_URI,
         )
 
     val labelLabelEntity =
@@ -154,7 +121,7 @@ object Metadata {
                     ),
                 ),
             dirType = DirectionType.OUT,
-            storage = localBackedMetastoreName,
+            storage = EngineConstants.METASTORE_URI,
         )
 
     val infoLabelEntity =
@@ -194,7 +161,7 @@ object Metadata {
                     ),
                 ),
             dirType = DirectionType.OUT,
-            storage = metastoreName,
+            storage = EngineConstants.METASTORE_URI,
         )
 
     val aliasLabelEntity =
@@ -214,7 +181,7 @@ object Metadata {
                     ),
                 ),
             dirType = DirectionType.OUT,
-            storage = metastoreName,
+            storage = EngineConstants.METASTORE_URI,
         )
 
     val onlineMetadataLabelV2Entity =

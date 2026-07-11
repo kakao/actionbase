@@ -1015,13 +1015,11 @@ class Graph(
                     Metadata.onlineMetadataLabelV2Entity.copy(type = LabelType.NIL, storage = "")
                 }
 
+            // LOCAL/JDBC system storages are addressed by URI scheme (local://,
+            // jdbc://) and resolved in getStorage; only the config-driven HBase
+            // storage remains a named entity in the map.
             val storageEntities =
-                listOfNotNull(
-                    Metadata.localOnlyStorageEntity,
-                    Metadata.localBackedMetastoreEntity,
-                    Metadata.metastoreStorageEntity,
-                    defaultHBaseStorageEntity,
-                ).associateBy { it.name }
+                listOfNotNull(defaultHBaseStorageEntity).associateBy { it.name }
 
             val defaults =
                 AbstractGraphDefaults(
@@ -1042,16 +1040,12 @@ class Graph(
 
             val storageLabel =
                 Metadata.storageLabelEntity.materialize(defaults) {
-                    mutate(Metadata.localOnlyStorageEntity.toEdge(), EdgeOperation.INSERT)
-                        .then(mutate(Metadata.localBackedMetastoreEntity.toEdge(), EdgeOperation.INSERT))
-                        .then(mutate(Metadata.metastoreStorageEntity.toEdge(), EdgeOperation.INSERT))
-                        .let { chain ->
-                            if (defaultHBaseStorageEntity != null) {
-                                chain.then(mutate(defaultHBaseStorageEntity.toEdge(), EdgeOperation.INSERT))
-                            } else {
-                                chain
-                            }
-                        }.block()
+                    // LOCAL/JDBC system storages are no longer seeded — they are
+                    // scheme URIs resolved in getStorage. Only the config-driven
+                    // HBase storage is still written to the metastore.
+                    defaultHBaseStorageEntity?.let {
+                        mutate(it.toEdge(), EdgeOperation.INSERT).block()
+                    }
                 }
 
             val infoLabel =

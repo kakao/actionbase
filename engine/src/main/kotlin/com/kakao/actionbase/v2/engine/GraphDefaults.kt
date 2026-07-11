@@ -11,6 +11,8 @@ import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 
 import org.jetbrains.exposed.sql.Database
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+
 interface GraphDefaults {
     val localMetastore: Database
     val metastore: Database
@@ -21,14 +23,22 @@ interface GraphDefaults {
     val lockTimeout: Long
     val datastore: DefaultHBaseCluster
 
+    // A label's storage is a datastore:// URI resolved directly by namespace:
+    // __sys__/metastore is the RDB-backed system metastore, everything else is
+    // the HBase datastore. Bare names are legacy references to metastore-stored
+    // Storage entities, kept until migration retires them.
     fun getStorage(uri: String): StorageEntity? =
         when {
-            uri.startsWith(EngineConstants.DATASTORE_URI_PREFIX) -> {
+            uri == EngineConstants.METASTORE_URI ->
+                StorageEntity.empty.copy(
+                    active = true,
+                    type = StorageType.LOCAL,
+                    conf = jacksonObjectMapper().createObjectNode().apply { put("useGlobal", true) },
+                )
+            uri.startsWith(EngineConstants.DATASTORE_URI_PREFIX) ->
                 StorageEntity.empty.copy(active = true, type = StorageType.DATASTORE)
-            }
-            else -> {
+            else ->
                 storages[EntityName.fromOrigin(uri)]
-            }
         }
 }
 

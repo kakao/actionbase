@@ -7,17 +7,14 @@ import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.edge.SchemaEdge
 import com.kakao.actionbase.v2.core.metadata.Direction
-import com.kakao.actionbase.v2.engine.GraphDefaults
 import com.kakao.actionbase.v2.engine.edge.decodeMetastore
 import com.kakao.actionbase.v2.engine.edge.toRow
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.AbstractLabel
-import com.kakao.actionbase.v2.engine.label.LabelFactory
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
 import com.kakao.actionbase.v2.engine.sql.StatKey
 import com.kakao.actionbase.v2.engine.storage.jdbc.BaseTableConstants
-import com.kakao.actionbase.v2.engine.storage.jdbc.JdbcStorage
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 
 import org.jetbrains.exposed.exceptions.ExposedSQLException
@@ -281,19 +278,4 @@ open class JdbcHashLabel(
         srcAndKeys: List<Pair<Any, String>>,
         dir: Direction,
     ): Mono<List<Row>> = Mono.just(srcAndKeys.map { Row(arrayOf(it.first, -1L, dir)) })
-
-    companion object : LabelFactory<JdbcHashLabel, JdbcStorage> {
-        override fun create(
-            entity: LabelEntity,
-            graph: GraphDefaults,
-            storage: JdbcStorage,
-            block: JdbcHashLabel.() -> Unit,
-        ): JdbcHashLabel =
-            JdbcHashLabel(
-                entity = entity,
-                coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder,
-                database = graph.metastore,
-                metadataTable = graph.metadataTable,
-            )
-    }
 }

@@ -17,7 +17,6 @@ import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
-import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.metadata.StorageType
 import com.kakao.actionbase.v2.engine.service.ddl.DdlStatus
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
@@ -224,13 +223,6 @@ class LabelSpec :
             }
         }
 
-        "scan ignore dirty data - jdbc" {
-            scanIgnoreDirtyData(jdbc) { label, edge ->
-                val kfv = (label as JdbcHashLabel).coder.encodeHashEdgeKey(edge, label.entity.id)
-                label.create(EncodedKey(kfv.key, kfv.field), "dirtyData").block()
-            }
-        }
-
         "read only label fail mutate edge" {
             graph.labelDdl
                 .create(
@@ -377,7 +369,7 @@ class LabelSpec :
                 .assertNext { it.status shouldBe EdgeOperationStatus.IDLE }
                 .verifyComplete()
 
-            GraphFixtures.createStorage(graph, testStorageName, StorageType.JDBC, GraphFixtures.mockStorageConf())
+            GraphFixtures.createStorage(graph, testStorageName, StorageType.HBASE, GraphFixtures.mockStorageConf())
 
             graph.updateLabels().test().verifyComplete()
 

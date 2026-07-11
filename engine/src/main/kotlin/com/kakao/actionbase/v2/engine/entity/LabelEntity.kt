@@ -19,14 +19,12 @@ import com.kakao.actionbase.v2.engine.label.DatastoreIndexedLabel
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashOnlyIndexedLabel
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
-import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.metastore.LocalBackedJdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.nil.NilLabel
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.sql.RowWithSchema
 import com.kakao.actionbase.v2.engine.storage.DatastoreStorage
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
-import com.kakao.actionbase.v2.engine.storage.jdbc.JdbcStorage
 import com.kakao.actionbase.v2.engine.storage.local.LocalStorage
 import com.kakao.actionbase.v2.engine.util.getLogger
 
@@ -89,12 +87,11 @@ data class LabelEntity(
                 LabelType.HASH -> {
                     when (storage) {
                         is LocalStorage -> LocalBackedJdbcHashLabel.create(this, graph, storage, block)
-                        is JdbcStorage -> JdbcHashLabel.create(this, graph, storage, block)
                         is HBaseStorage -> HBaseHashOnlyIndexedLabel.create(this, graph, storage)
                         is DatastoreStorage -> DatastoreHashLabel.create(this, graph, block)
                         else -> {
                             logger.error(
-                                "{} supports only Local, Jdbc, HBase storage types. {} is not supported. Fallback to NilLabel",
+                                "{} supports only Local, HBase, Datastore storage types. {} is not supported. Fallback to NilLabel",
                                 type,
                                 storage,
                             )
