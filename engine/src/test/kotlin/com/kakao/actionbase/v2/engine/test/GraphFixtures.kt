@@ -258,7 +258,6 @@ object GraphFixtures {
 
     val defaultStorages =
         listOf(
-            EntityName.fromOrigin(Metadata.localOnlyStorageName),
             EntityName.fromOrigin(Metadata.localBackedMetastoreName),
             EntityName.fromOrigin(Metadata.metastoreName),
         )
@@ -280,11 +279,6 @@ object GraphFixtures {
             // "origin" -> "service"
             listOf(EntityName.withPhase(Metadata.origin, Metadata.sysServiceName), Metadata.serviceLabelEntity.id, null),
             // "origin" -> storage
-            listOf(
-                EntityName.withPhase(Metadata.origin, Metadata.localOnlyStorageName),
-                Metadata.storageLabelEntity.id,
-                null,
-            ),
             listOf(
                 EntityName.withPhase(Metadata.origin, Metadata.localBackedMetastoreName),
                 Metadata.storageLabelEntity.id,
