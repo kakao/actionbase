@@ -26,8 +26,6 @@ object Metadata {
 
     const val localBackedMetastoreName = "local_backed_metastore"
 
-    const val metastoreName = "metastore"
-
     const val defaultHBaseStorageName = "default_hbase_storage"
 
     const val sysServiceLabelName = "service"
@@ -57,15 +55,6 @@ object Metadata {
             desc = "Local backed JDBC storage",
             type = StorageType.LOCAL,
             conf = jackson.createObjectNode().apply { put("useGlobal", true) },
-        )
-
-    val metastoreStorageEntity =
-        StorageEntity(
-            active = true,
-            name = EntityName.fromOrigin(metastoreName),
-            desc = "Metastore storage",
-            type = StorageType.JDBC,
-            conf = jackson.createObjectNode(),
         )
 
     val sysServiceEntity =
@@ -181,7 +170,7 @@ object Metadata {
                     ),
                 ),
             dirType = DirectionType.OUT,
-            storage = metastoreName,
+            storage = localBackedMetastoreName,
         )
 
     val aliasLabelEntity =
@@ -201,7 +190,7 @@ object Metadata {
                     ),
                 ),
             dirType = DirectionType.OUT,
-            storage = metastoreName,
+            storage = localBackedMetastoreName,
         )
 
     val onlineMetadataLabelV2Entity =

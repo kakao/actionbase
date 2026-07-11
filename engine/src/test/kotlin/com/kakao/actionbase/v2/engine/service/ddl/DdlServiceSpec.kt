@@ -63,7 +63,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = Metadata.localBackedMetastoreName,
                 )
 
             graph.labelDdl
@@ -91,7 +91,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = Metadata.localBackedMetastoreName,
                 )
 
             graph.labelDdl
@@ -472,7 +472,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = Metadata.localBackedMetastoreName,
                 )
 
             val labelUpdateRequest =
@@ -557,7 +557,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = Metadata.localBackedMetastoreName,
                 )
 
             graph
@@ -704,7 +704,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = Metadata.localBackedMetastoreName,
                 )
 
             graph.labelDdl
@@ -767,7 +767,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = Metadata.localBackedMetastoreName,
                 )
 
             graph.labelDdl
@@ -836,7 +836,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = Metadata.localBackedMetastoreName,
                 )
 
             graph.labelDdl
@@ -1052,7 +1052,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = Metadata.localBackedMetastoreName,
                 )
 
             graph.labelDdl
@@ -1180,7 +1180,7 @@ class DdlServiceSpec :
                             ),
                         dirType = DirectionType.OUT,
                         indices = emptyList(),
-                        storage = Metadata.metastoreName,
+                        storage = Metadata.localBackedMetastoreName,
                     )
 
                 graph.labelDdl

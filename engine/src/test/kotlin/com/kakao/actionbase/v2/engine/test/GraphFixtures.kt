@@ -259,7 +259,6 @@ object GraphFixtures {
     val defaultStorages =
         listOf(
             EntityName.fromOrigin(Metadata.localBackedMetastoreName),
-            EntityName.fromOrigin(Metadata.metastoreName),
         )
 
     val defaultLabels =
@@ -284,7 +283,6 @@ object GraphFixtures {
                 Metadata.storageLabelEntity.id,
                 null,
             ),
-            listOf(EntityName.withPhase(Metadata.origin, Metadata.metastoreName), Metadata.storageLabelEntity.id, null),
             // (service -> label) edges for label label (includes label information)
             listOf(
                 EntityName.withPhase(Metadata.sysServiceName, Metadata.sysServiceLabelName),
@@ -357,7 +355,7 @@ class GraphTestFixtures(
                     ),
                 dirType = DirectionType.OUT,
                 indices = emptyList(),
-                storage = Metadata.metastoreName,
+                storage = Metadata.localBackedMetastoreName,
             )
 
         graph.labelDdl

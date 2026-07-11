@@ -41,13 +41,6 @@ class StorageSpec :
             graph.testFixtures.createStorage(EntityName.fromOrigin("test"))
 
             graph.storageDdl
-                .getSingle(EntityName.fromOrigin(Metadata.metastoreName))
-                .test()
-                .assertNext { storageDTO ->
-                    storageDTO.name shouldBe EntityName.fromOrigin(Metadata.metastoreName)
-                }.verifyComplete()
-
-            graph.storageDdl
                 .getSingle(EntityName.fromOrigin("test"))
                 .test()
                 .assertNext { storageDTO ->
@@ -113,7 +106,7 @@ class StorageSpec :
                 )
 
             graph.storageDdl
-                .update(EntityName.fromOrigin(Metadata.metastoreName), updateRequest)
+                .update(EntityName.fromOrigin(Metadata.localBackedMetastoreName), updateRequest)
                 .test()
                 .assertNext { ddlResult ->
                     ddlResult.status shouldBe DdlStatus.Status.IDLE
@@ -144,7 +137,7 @@ class StorageSpec :
 
         "delete should not allow mutation on LocalBackedJdbcHashLabel" {
             graph.storageDdl
-                .delete(EntityName.fromOrigin(Metadata.metastoreName), StorageDeleteRequest())
+                .delete(EntityName.fromOrigin(Metadata.localBackedMetastoreName), StorageDeleteRequest())
                 .test()
                 .verifyError(IllegalArgumentException::class.java)
         }
