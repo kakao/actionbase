@@ -5,13 +5,11 @@ import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.AliasEntity
 import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.service.ddl.AliasCreateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.AliasDeleteRequest
 import com.kakao.actionbase.v2.engine.service.ddl.AliasUpdateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.DdlPage
 import com.kakao.actionbase.v2.engine.service.ddl.DdlStatus
-import com.kakao.actionbase.v2.engine.service.ddl.LabelCopyRequest
 
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -92,26 +90,5 @@ class ServiceAliasController(
             .map {
                 it.copy(result = it.result?.withLabel(graph))
             }.mapToResponseEntity()
-    }
-
-    @PostMapping("/graph/v2/service/{service}/alias/{alias}/new-label")
-    fun newLabel(
-        @PathVariable service: String,
-        @PathVariable alias: String,
-        @Valid @RequestBody request: LabelCopyRequest,
-    ): Mono<ResponseEntity<DdlStatus<LabelEntity>>> {
-        val name = EntityName(service, alias)
-        return graph.aliasDdl
-            .getSingle(name)
-            .map { it.withLabel(graph) }
-            .flatMap {
-                val from = it.label?.name
-                if (from != null) {
-                    val to = EntityName(service, request.target)
-                    graph.labelDdl.copy(from, to, mapOf("storage" to request.storage)).mapToResponseEntity()
-                } else {
-                    Mono.just(ResponseEntity.badRequest().build())
-                }
-            }
     }
 }

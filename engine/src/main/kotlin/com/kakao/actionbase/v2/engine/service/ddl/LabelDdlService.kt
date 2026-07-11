@@ -150,8 +150,3 @@ data class LabelDeleteRequest(
 ) : DdlRequest {
     override fun toEdge(name: EntityName): TraceEdge = name.toTraceEdge()
 }
-
-data class LabelCopyRequest(
-    val target: String,
-    val storage: String,
-)
