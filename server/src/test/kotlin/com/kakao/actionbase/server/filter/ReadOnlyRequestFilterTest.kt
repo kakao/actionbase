@@ -205,7 +205,6 @@ class ReadOnlyRequestFilterTest {
                 "POST /graph/v2/service/{service}/label/{label}/edge/purge",
                 "POST /graph/v2/service/{service}/label/{label}/edge/sync",
                 "POST /graph/v2/service/{service}/query/{query}",
-                "POST /graph/v2/storage/{storage}",
                 "PUT /graph/v2/admin/hbase/cluster/{cluster}/table/{tableFullName}",
                 "PUT /graph/v2/edge",
                 "PUT /graph/v2/service/{service}",
