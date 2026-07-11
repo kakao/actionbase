@@ -1,10 +1,10 @@
 package com.kakao.actionbase.server.api.graph.v3.datastore.hbase
 
-import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.engine.datastore.hbase.admin.HBaseAdmin
 import com.kakao.actionbase.engine.datastore.hbase.admin.HBaseTableInfo
 import com.kakao.actionbase.engine.datastore.hbase.admin.HBaseTableSchema
 import com.kakao.actionbase.server.configuration.ConditionalOnHBaseDatastore
+import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
