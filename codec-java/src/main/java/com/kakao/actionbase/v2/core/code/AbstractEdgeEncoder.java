@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
 
@@ -310,13 +311,34 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
       long ts, Object src, Object tgt, Map<String, Object> props, int labelId, List<Group> groups) {
     if (groups == null) return Collections.emptyList();
 
-    return groups.stream()
-        .filter(group -> !GROUP_NAMES_EXCLUDED_FROM_ENCODING.contains(group.getGroup()))
+    return persistableGroups(groups)
         .flatMap(
             group ->
                 group.getDirectionType().getDirs().stream()
                     .map(dir -> encodeGroupEdge(ts, src, tgt, props, dir, labelId, group)))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<KeyFieldValue<T>> encodeGroupEdgesForDirection(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      List<Group> groups) {
+    if (groups == null) return Collections.emptyList();
+
+    return persistableGroups(groups)
+        .filter(group -> group.getDirectionType().getDirs().contains(dir))
+        .map(group -> encodeGroupEdge(ts, src, tgt, props, dir, labelId, group))
+        .collect(Collectors.toList());
+  }
+
+  private static Stream<Group> persistableGroups(List<Group> groups) {
+    return groups.stream()
+        .filter(group -> !GROUP_NAMES_EXCLUDED_FROM_ENCODING.contains(group.getGroup()));
   }
 
   @Override

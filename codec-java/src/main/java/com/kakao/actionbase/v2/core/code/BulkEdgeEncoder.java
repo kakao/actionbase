@@ -210,7 +210,9 @@ public class BulkEdgeEncoder {
 
       // EdgeGroup: each group is encoded for its own directionType, independent of the label's
       // dirType — matching V3 EdgeMutationBuilder.buildGroupRecords. Only supported on
-      // INDEXED/MULTI_EDGE, same as EdgeCache.
+      // INDEXED/MULTI_EDGE, same as EdgeCache. For MULTI_EDGE, both outEdge/inEdge are always
+      // built (unlike the label-dirType-gated indexed/cache blocks above) since a group's own
+      // directionType may include a direction the label's dirType excludes.
       List<Group> groups = label.getGroups();
       if (groups != null && !groups.isEmpty()) {
         if (labelType == LabelType.INDEXED || labelType == LabelType.IMMUTABLE_INDEXED) {
@@ -219,26 +221,16 @@ public class BulkEdgeEncoder {
                   .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.EDGE_GROUP_TYPE))
                   .collect(Collectors.toList()));
         } else if (labelType == LabelType.MULTI_EDGE) {
-          for (Group group : groups) {
-            if (AbstractEdgeEncoder.GROUP_NAMES_EXCLUDED_FROM_ENCODING.contains(group.getGroup())) {
-              continue;
-            }
-            for (Direction dir : group.getDirectionType().getDirs()) {
-              Object groupSrc = dir == Direction.OUT ? castedEdge.getSrc() : edgeId;
-              Object groupTgt = dir == Direction.OUT ? edgeId : castedEdge.getTgt();
-              edges.add(
-                  TypedKeyFieldValue.from(
-                      encoder.encodeGroupEdge(
-                          castedEdge.getTs(),
-                          groupSrc,
-                          groupTgt,
-                          multiEdgeProps,
-                          dir,
-                          labelId,
-                          group),
-                      EncodedEdgeType.EDGE_GROUP_TYPE));
-            }
-          }
+          Edge outEdge = new Edge(castedEdge.getTs(), castedEdge.getSrc(), edgeId, multiEdgeProps);
+          Edge inEdge = new Edge(castedEdge.getTs(), edgeId, castedEdge.getTgt(), multiEdgeProps);
+          edges.addAll(
+              encoder.encodeGroupEdgesForDirection(outEdge, Direction.OUT, labelId, groups).stream()
+                  .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.EDGE_GROUP_TYPE))
+                  .collect(Collectors.toList()));
+          edges.addAll(
+              encoder.encodeGroupEdgesForDirection(inEdge, Direction.IN, labelId, groups).stream()
+                  .map(v -> TypedKeyFieldValue.from(v, EncodedEdgeType.EDGE_GROUP_TYPE))
+                  .collect(Collectors.toList()));
         }
       }
 

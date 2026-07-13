@@ -141,21 +141,29 @@ public class MultiEdgeBulkEdgeEncoderTests {
     assertEquals(0, encodedEdges.stream().filter(kv -> kv.field != null).count());
   }
 
+  /** Table name for the group tests below — a generic name, not a real production table. */
+  private static final String GROUP_TEST_TABLE_NAME = "example.group_test_multi_edge_v1";
+
+  private static String withGroupTestTableName(String json) {
+    return json.replace("gift.like_product_v1_20240402_132500", GROUP_TEST_TABLE_NAME);
+  }
+
   @Test
   void testMultiEdgeWithGroups() throws JsonProcessingException {
     String labelJsonWithGroup =
-        labelJsonString.replace(
-            "\"caches\": [\n"
-                + "    {\n"
-                + "      \"cache\": \"top_created_at\",\n"
-                + "      \"fields\": [{\"field\": \"created_at\", \"order\": \"DESC\"}],\n"
-                + "      \"limit\": 100\n"
-                + "    }\n"
-                + "  ],\n",
-            "\"caches\": [],\n"
-                + "  \"groups\": [\n"
-                + "    {\"group\": \"top_created_at\", \"type\": \"COUNT\", \"fields\": [{\"name\": \"created_at\"}]}\n"
-                + "  ],\n");
+        withGroupTestTableName(
+            labelJsonString.replace(
+                "\"caches\": [\n"
+                    + "    {\n"
+                    + "      \"cache\": \"top_created_at\",\n"
+                    + "      \"fields\": [{\"field\": \"created_at\", \"order\": \"DESC\"}],\n"
+                    + "      \"limit\": 100\n"
+                    + "    }\n"
+                    + "  ],\n",
+                "\"caches\": [],\n"
+                    + "  \"groups\": [\n"
+                    + "    {\"group\": \"top_created_at\", \"type\": \"COUNT\", \"fields\": [{\"name\": \"created_at\"}]}\n"
+                    + "  ],\n"));
     LabelDTO label = objectMapper.readValue(labelJsonWithGroup, LabelDTO.class);
     BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
 
@@ -176,30 +184,31 @@ public class MultiEdgeBulkEdgeEncoderTests {
   }
 
   /**
-   * MULTI_EDGE group encoding is a separate code path from INDEXED's {@code encodeAllGroupEdges}
-   * call (see {@code BulkEdgeEncoder}'s manual per-direction loop) — bucketed fields must be
-   * verified here too, not just on INDEXED (covered by {@code
-   * BulkEdgeEncoderTests#testGroupFieldWithBucketEncodesFormattedDateInQualifier}).
+   * MULTI_EDGE group encoding goes through {@code encodeGroupEdgesForDirection} (per-direction
+   * outEdge/inEdge, mirroring how EdgeCache is encoded for MULTI_EDGE) rather than INDEXED's
+   * {@code encodeAllGroupEdges} — bucketed fields must be verified here too, not just on INDEXED
+   * (covered by {@code BulkEdgeEncoderTests#testGroupFieldWithBucketEncodesFormattedDateInQualifier}).
    */
   @Test
   void testMultiEdgeGroupFieldWithBucketEncodesFormattedDateInQualifier()
       throws JsonProcessingException {
     String labelJsonWithBucketedGroup =
-        labelJsonString.replace(
-            "\"caches\": [\n"
-                + "    {\n"
-                + "      \"cache\": \"top_created_at\",\n"
-                + "      \"fields\": [{\"field\": \"created_at\", \"order\": \"DESC\"}],\n"
-                + "      \"limit\": 100\n"
-                + "    }\n"
-                + "  ],\n",
-            "\"caches\": [],\n"
-                + "  \"groups\": [\n"
-                + "    {\"group\": \"created_at_day_count\", \"type\": \"COUNT\", \"directionType\": \"OUT\", "
-                + "\"fields\": [{\"name\": \"created_at\", "
-                + "\"bucket\": {\"type\": \"date\", \"name\": \"day\", \"unit\": \"MILLISECOND\", "
-                + "\"timezone\": \"Asia/Seoul\", \"format\": \"yyyy-MM-dd\"}}]}\n"
-                + "  ],\n");
+        withGroupTestTableName(
+            labelJsonString.replace(
+                "\"caches\": [\n"
+                    + "    {\n"
+                    + "      \"cache\": \"top_created_at\",\n"
+                    + "      \"fields\": [{\"field\": \"created_at\", \"order\": \"DESC\"}],\n"
+                    + "      \"limit\": 100\n"
+                    + "    }\n"
+                    + "  ],\n",
+                "\"caches\": [],\n"
+                    + "  \"groups\": [\n"
+                    + "    {\"group\": \"created_at_day_count\", \"type\": \"COUNT\", \"directionType\": \"OUT\", "
+                    + "\"fields\": [{\"name\": \"created_at\", "
+                    + "\"bucket\": {\"type\": \"date\", \"name\": \"day\", \"unit\": \"MILLISECOND\", "
+                    + "\"timezone\": \"Asia/Seoul\", \"format\": \"yyyy-MM-dd\"}}]}\n"
+                    + "  ],\n"));
     LabelDTO label = objectMapper.readValue(labelJsonWithBucketedGroup, LabelDTO.class);
 
     String edgeJson = edgeJsonString.replace("\"created_at\": 1", "\"created_at\": 1781103600000");
@@ -220,5 +229,48 @@ public class MultiEdgeBulkEdgeEncoderTests {
     Object decodedQualifierValue =
         ValueUtils.deserialize(new SimplePositionedMutableByteRange(groupRow.getField()));
     assertEquals("2026-06-11", decodedQualifierValue);
+  }
+
+  /**
+   * A group's own {@code directionType} is independent of the label's {@code dirType} — matching V3
+   * {@code EdgeMutationBuilder.buildGroupRecords}, which never gates group direction on the label.
+   * A label with {@code dirType=OUT} still emits both OUT and IN group rows for a group whose
+   * {@code directionType=BOTH} (the default).
+   */
+  @Test
+  void testMultiEdgeGroupDirectionIsIndependentOfLabelDirType() throws JsonProcessingException {
+    String labelJsonWithGroup =
+        withGroupTestTableName(
+            labelJsonString
+                .replace("\"dirType\": \"BOTH\"", "\"dirType\": \"OUT\"")
+                .replace(
+                    "\"caches\": [\n"
+                        + "    {\n"
+                        + "      \"cache\": \"top_created_at\",\n"
+                        + "      \"fields\": [{\"field\": \"created_at\", \"order\": \"DESC\"}],\n"
+                        + "      \"limit\": 100\n"
+                        + "    }\n"
+                        + "  ],\n",
+                    "\"caches\": [],\n"
+                        + "  \"groups\": [\n"
+                        + "    {\"group\": \"top_created_at\", \"type\": \"COUNT\", \"fields\": [{\"name\": \"created_at\"}]}\n"
+                        + "  ],\n"));
+    LabelDTO label = objectMapper.readValue(labelJsonWithGroup, LabelDTO.class);
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, label);
+
+    long groupRowCount =
+        encodedEdges.stream()
+            .filter(kv -> kv.getEncodedEdgeType() == EncodedEdgeType.EDGE_GROUP_TYPE)
+            .count();
+    assertEquals(
+        2,
+        groupRowCount,
+        "group's own BOTH directionType must produce OUT+IN rows even though label dirType=OUT");
   }
 }

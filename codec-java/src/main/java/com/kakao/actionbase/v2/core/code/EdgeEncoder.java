@@ -100,6 +100,27 @@ public interface EdgeEncoder<T> {
         edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), labelId, groups);
   }
 
+  /**
+   * Encodes only the groups whose {@link Group#getDirectionType()} includes {@code dir}, given
+   * {@code src}/{@code tgt} already positioned correctly for {@code dir} — the same per-direction
+   * dispatch convention {@link #encodeAllCacheEdges} relies on for MULTI_EDGE's outEdge/inEdge
+   * calls, since a MULTI_EDGE label has no single edge object valid for every direction at once.
+   */
+  List<KeyFieldValue<T>> encodeGroupEdgesForDirection(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      List<Group> groups);
+
+  default List<KeyFieldValue<T>> encodeGroupEdgesForDirection(
+      Edge edge, Direction dir, int labelId, List<Group> groups) {
+    return encodeGroupEdgesForDirection(
+        edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), dir, labelId, groups);
+  }
+
   KeyFieldValue<T> encodeCacheEdge(
       long ts,
       Object src,
