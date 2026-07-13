@@ -663,6 +663,9 @@ public class BulkEdgeEncoderTests {
     encodedEdges.forEach(kv -> assertNull(kv.field, "no cache rows should be produced"));
   }
 
+  /** Table name for the group tests below — a generic name, not a real production table. */
+  private static final String GROUP_TEST_TABLE_NAME = "example.group_test_v1";
+
   private static String withGroups(String groupsJson) {
     return labelJsonString.replace(
         "\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
@@ -675,8 +678,7 @@ public class BulkEdgeEncoderTests {
         withGroups(
             "[{\"group\":\"permission_count\",\"type\":\"COUNT\",\"fields\":[{\"name\":\"permission\"}]}]");
     LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
-    LabelDTO newLabel =
-        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+    LabelDTO newLabel = label.copy(GROUP_TEST_TABLE_NAME, GROUP_TEST_TABLE_NAME);
 
     BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
 
@@ -712,8 +714,7 @@ public class BulkEdgeEncoderTests {
         withGroups(
             "[{\"group\":\"created_at_sum\",\"type\":\"SUM\",\"valueField\":\"created_at\",\"fields\":[{\"name\":\"permission\"}],\"directionType\":\"OUT\"}]");
     LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
-    LabelDTO newLabel =
-        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+    LabelDTO newLabel = label.copy(GROUP_TEST_TABLE_NAME, GROUP_TEST_TABLE_NAME);
 
     String edgeJson = edgeJsonString.replace("\"created_at\":1", "\"created_at\":42");
     BulkLoadEdge edge = objectMapper.readValue(edgeJson, BulkLoadEdge.class);
@@ -743,8 +744,7 @@ public class BulkEdgeEncoderTests {
             "[{\"group\":\"__count__\",\"type\":\"COUNT\",\"fields\":[]},"
                 + "{\"group\":\"permission_count\",\"type\":\"COUNT\",\"fields\":[{\"name\":\"permission\"}]}]");
     LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
-    LabelDTO newLabel =
-        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+    LabelDTO newLabel = label.copy(GROUP_TEST_TABLE_NAME, GROUP_TEST_TABLE_NAME);
 
     BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
 
@@ -766,8 +766,7 @@ public class BulkEdgeEncoderTests {
   @Test
   void testGroupsAbsentProducesNoGroupRows() throws JsonProcessingException {
     LabelDTO label = objectMapper.readValue(labelJsonString, LabelDTO.class);
-    LabelDTO newLabel =
-        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+    LabelDTO newLabel = label.copy(GROUP_TEST_TABLE_NAME, GROUP_TEST_TABLE_NAME);
     assertNull(newLabel.getGroups());
 
     BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
@@ -792,8 +791,7 @@ public class BulkEdgeEncoderTests {
             "[{\"group\":\"created_at_day_count\",\"type\":\"COUNT\",\"directionType\":\"OUT\","
                 + "\"fields\":[{\"name\":\"created_at\",\"bucket\":{\"type\":\"date\",\"name\":\"day\",\"unit\":\"MILLISECOND\",\"timezone\":\"Asia/Seoul\",\"format\":\"yyyy-MM-dd\"}}]}]");
     LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
-    LabelDTO newLabel =
-        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+    LabelDTO newLabel = label.copy(GROUP_TEST_TABLE_NAME, GROUP_TEST_TABLE_NAME);
 
     String edgeJson = edgeJsonString.replace("\"created_at\":1", "\"created_at\":1781103600000");
     BulkLoadEdge edge = objectMapper.readValue(edgeJson, BulkLoadEdge.class);
@@ -830,8 +828,7 @@ public class BulkEdgeEncoderTests {
         withGroups(
             "[{\"group\":\"target_count\",\"type\":\"COUNT\",\"fields\":[{\"name\":\"target\"}]}]");
     LabelDTO label = objectMapper.readValue(labelJson, LabelDTO.class);
-    LabelDTO newLabel =
-        label.copy("gift.like_product_v1_20240402_132500", "gift.like_product_v1_20240402_132500");
+    LabelDTO newLabel = label.copy(GROUP_TEST_TABLE_NAME, GROUP_TEST_TABLE_NAME);
 
     BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
 
