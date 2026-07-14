@@ -25,10 +25,14 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.longs.shouldBeGreaterThanOrEqual
+import io.kotest.matchers.longs.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 
@@ -292,6 +296,184 @@ class AggregationServiceSpec :
                     .create(service.aggregate(AggregationType.TOPK, listOf(expireItem)))
                     .expectErrorMatches { it is IllegalStateException && it.message!!.contains("`source` property is required") }
                     .verify()
+            }
+
+            // --- aggregate (expire write) ---
+
+            "aggregate writes an expire row after the score row when expireAfterMillis is positive" {
+                val expireAfter = 60_000L
+                val topk =
+                    Topk(
+                        topk = "top_purchased",
+                        expireAfterMillis = expireAfter,
+                        table = TopkTable(score = "commerce.score_tbl", expire = "commerce.exp_tbl"),
+                    )
+                val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 4))
+
+                val scoreMutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate("commerce", "score_tbl", capture(scoreMutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                val expireMutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(
+                        AggregationConstants.TOPK_DATABASE,
+                        AggregationConstants.TOPK_EXPIRE_TABLE,
+                        capture(expireMutations),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                    )
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                val before = System.currentTimeMillis()
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item("commerce", "purchases", source = "user1", target = "item1"))))
+                    .assertNext { results ->
+                        results shouldHaveSize 1
+                        results[0].status shouldBe "SUCCESS"
+                    }.verifyComplete()
+                val after = System.currentTimeMillis()
+
+                scoreMutations.captured.single().edge.source shouldBe "user1|top_purchased"
+                scoreMutations.captured.single().edge.target shouldBe "item1"
+
+                val expireEdge = expireMutations.captured.single().edge
+                expireEdge.source shouldBe
+                    AggregationConstants.expireSource(
+                        table = "commerce.purchases",
+                        topk = "top_purchased",
+                        entity = "user1",
+                        target = "item1",
+                    )
+                val expiresAt = expireEdge.properties["expiresAt"] as Long
+                expiresAt shouldBeGreaterThanOrEqual (before + expireAfter)
+                expiresAt shouldBeLessThanOrEqual (after + expireAfter)
+                expireEdge.target shouldBe
+                    AggregationConstants.expireTarget(
+                        table = "commerce.purchases",
+                        topk = "top_purchased",
+                        entity = "user1",
+                        target = "item1",
+                        expiresAt = expiresAt,
+                    )
+                expireEdge.properties["table"] shouldBe "commerce.purchases"
+                expireEdge.properties["topk"] shouldBe "top_purchased"
+                expireEdge.properties["start"] shouldBe "user1"
+                expireEdge.properties["direction"] shouldBe "OUT"
+                expireEdge.properties["processed"] shouldBe false
+            }
+
+            "aggregate skips the expire write when expireAfterMillis is not positive" {
+                clearMocks(mutationService)
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 1))
+
+                every {
+                    mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
+                    .assertNext { it.single().status shouldBe "SUCCESS" }
+                    .verifyComplete()
+
+                verify(exactly = 0) {
+                    mutationService.mutate(
+                        AggregationConstants.TOPK_DATABASE,
+                        AggregationConstants.TOPK_EXPIRE_TABLE,
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                    )
+                }
+            }
+
+            "aggregate skips the expire write when the score mutate reports ERROR" {
+                clearMocks(mutationService)
+                val topk =
+                    Topk(
+                        topk = "t1",
+                        expireAfterMillis = 60_000L,
+                        table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"),
+                    )
+                val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 1))
+
+                every {
+                    mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "ERROR")))
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
+                    .assertNext { it.single().status shouldBe "ERROR" }
+                    .verifyComplete()
+
+                verify(exactly = 0) {
+                    mutationService.mutate(
+                        AggregationConstants.TOPK_DATABASE,
+                        AggregationConstants.TOPK_EXPIRE_TABLE,
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                    )
+                }
+            }
+
+            "aggregate reports ERROR when the expire mutate reports ERROR" {
+                val topk =
+                    Topk(
+                        topk = "t1",
+                        expireAfterMillis = 60_000L,
+                        table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"),
+                    )
+                val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 1))
+
+                every {
+                    mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                every {
+                    mutationService.mutate(
+                        AggregationConstants.TOPK_DATABASE,
+                        AggregationConstants.TOPK_EXPIRE_TABLE,
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                    )
+                } returns Mono.just(listOf(mutationResult(status = "ERROR")))
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
+                    .assertNext { it.single().status shouldBe "ERROR" }
+                    .verifyComplete()
             }
 
             "aggregate maps thrown errors into ERROR status with the error message" {

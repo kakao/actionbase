@@ -161,6 +161,7 @@ class AggregationService(
             ).flatMap { response ->
                 val score = response.groups.firstOrNull()?.value ?: 0L
 
+                val version = System.currentTimeMillis()
                 mutationService
                     .mutate(
                         database = scoreDatabase,
@@ -171,15 +172,48 @@ class AggregationService(
                                     type = EventType.INSERT,
                                     edge =
                                         Edge(
-                                            version = System.currentTimeMillis(),
-                                            source = AggregationConstants.scoreSourceKey(entity = directedSource, topk.topk),
+                                            version = version,
+                                            source = AggregationConstants.scoreSource(entity = directedSource, topk.topk),
                                             target = directedTarget,
                                             properties = mapOf("score" to score),
                                         ),
                                 ),
                             ),
-                    ).map { results ->
-                        base.copy(status = if (results.any { it.status == "ERROR" }) "ERROR" else "SUCCESS")
+                    ).flatMap { scoreResults ->
+                        val scoreStatus = if (scoreResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS"
+                        if (scoreStatus == "ERROR" || topk.expireAfterMillis <= 0) {
+                            return@flatMap Mono.just(base.copy(status = scoreStatus))
+                        }
+
+                        val expiresAt = version + topk.expireAfterMillis
+
+                        mutationService.mutate(
+                            database = AggregationConstants.TOPK_DATABASE,
+                            alias = AggregationConstants.TOPK_EXPIRE_TABLE,
+                            unresolvedEvents = listOf(
+                                MutationItem(
+                                    type = EventType.INSERT,
+                                    edge = Edge(
+                                        version = System.currentTimeMillis(),
+                                        source = AggregationConstants.expireSource(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget),
+                                        target = AggregationConstants.expireTarget(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget, expiresAt = expiresAt),
+                                        properties = mapOf(
+                                            "expiresAt" to expiresAt,
+                                            "table" to "$database.$table",
+                                            "topk" to topk.topk,
+                                            "start" to directedSource,
+                                            "direction" to direction.name,
+                                            "ranges" to ranges,
+                                            "processed" to false,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ).map { expireResults ->
+                            base.copy(
+                                status = if (expireResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS",
+                            )
+                        }
                     }
             }.onErrorResume { err ->
                 Mono.just(base.copy(status = "ERROR", error = err.message))
