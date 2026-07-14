@@ -32,6 +32,6 @@ object AggregationConstants {
         topk: String,
         entity: String,
         target: String,
-        expiresAt: Long
+        expiresAt: Long,
     ): String = "$table|$topk|$entity|$target|$expiresAt"
 }

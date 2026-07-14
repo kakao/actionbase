@@ -1,8 +1,10 @@
 package com.kakao.actionbase.engine.service
 
 import com.kakao.actionbase.core.edge.MutationKey
+import com.kakao.actionbase.core.edge.payload.AggregationExpireItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
@@ -342,8 +344,12 @@ class AggregationServiceSpec :
                     }.verifyComplete()
                 val after = System.currentTimeMillis()
 
-                scoreMutations.captured.single().edge.source shouldBe "user1|top_purchased"
-                scoreMutations.captured.single().edge.target shouldBe "item1"
+                scoreMutations.captured
+                    .single()
+                    .edge.source shouldBe "user1|top_purchased"
+                scoreMutations.captured
+                    .single()
+                    .edge.target shouldBe "item1"
 
                 val expireEdge = expireMutations.captured.single().edge
                 expireEdge.source shouldBe
@@ -476,6 +482,182 @@ class AggregationServiceSpec :
                     .verifyComplete()
             }
 
+            // --- expires ---
+
+            "expires scans by (database, table, source) with expiresAt lte and deletes every scanned edge" {
+                val scanDatabase = slot<String>()
+                val scanTable = slot<String>()
+                val scanStart = slot<Any>()
+                val scanRanges = slot<String>()
+                every {
+                    queryService.scan(
+                        capture(scanDatabase),
+                        capture(scanTable),
+                        any(),
+                        capture(scanStart),
+                        any(),
+                        any(),
+                        any(),
+                        ranges = capture(scanRanges),
+                        any(),
+                        any(),
+                    )
+                } returns
+                    Mono.just(
+                        dataFramePayload(
+                            listOf(
+                                edgePayload(source = "user1|top", target = "item1", properties = mapOf("expiresAt" to 100L)),
+                                edgePayload(source = "user1|top", target = "item2", properties = mapOf("expiresAt" to 150L)),
+                            ),
+                        ),
+                    )
+
+                val mutations = slot<List<MutationItem>>()
+                val mutateDatabase = slot<String>()
+                val mutateTable = slot<String>()
+                every {
+                    mutationService.mutate(
+                        capture(mutateDatabase),
+                        capture(mutateTable),
+                        capture(mutations),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                    )
+                } returns
+                    Mono.just(
+                        listOf(
+                            mutationResult(status = "DELETED"),
+                            mutationResult(status = "DELETED"),
+                        ),
+                    )
+
+                StepVerifier
+                    .create(
+                        service.expires(
+                            listOf(
+                                expirePayload("topk", "expire", source = "user1|top", target = "item1", expiresAt = 200L),
+                            ),
+                        ),
+                    ).assertNext { results ->
+                        results shouldHaveSize 1
+                        results[0].database shouldBe "topk"
+                        results[0].table shouldBe "expire"
+                        results[0].source shouldBe "user1|top"
+                        results[0].status shouldBe "SUCCESS"
+                        results[0].error shouldBe null
+                    }.verifyComplete()
+
+                scanDatabase.captured shouldBe "topk"
+                scanTable.captured shouldBe "expire"
+                scanStart.captured shouldBe "user1|top"
+                scanRanges.captured shouldBe "expiresAt:lte:200"
+
+                mutateDatabase.captured shouldBe "topk"
+                mutateTable.captured shouldBe "expire"
+                mutations.captured shouldHaveSize 2
+                mutations.captured.map { it.edge.source to it.edge.target } shouldContainExactlyInAnyOrder
+                    listOf(
+                        "user1|top" to "item1",
+                        "user1|top" to "item2",
+                    )
+            }
+
+            "expires dedupes items by (database, table, source) and takes the maximum expiresAt" {
+                val scanRanges = mutableListOf<String>()
+                val scanStarts = mutableListOf<Any>()
+                val startSlot = slot<Any>()
+                val rangesSlot = slot<String>()
+                every {
+                    queryService.scan(
+                        any(),
+                        any(),
+                        any(),
+                        capture(startSlot),
+                        any(),
+                        any(),
+                        any(),
+                        ranges = capture(rangesSlot),
+                        any(),
+                        any(),
+                    )
+                } answers {
+                    scanStarts += startSlot.captured
+                    scanRanges += rangesSlot.captured
+                    Mono.just(dataFramePayload(emptyList()))
+                }
+
+                every {
+                    mutationService.mutate(any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(emptyList())
+
+                val items =
+                    listOf(
+                        expirePayload("topk", "expire", source = "user1|top", target = "item1", expiresAt = 100L),
+                        expirePayload("topk", "expire", source = "user1|top", target = "item2", expiresAt = 250L),
+                        expirePayload("topk", "expire", source = "user1|top", target = "item3", expiresAt = 180L),
+                        expirePayload("topk", "expire", source = "user2|top", target = "item9", expiresAt = 300L),
+                    )
+
+                StepVerifier
+                    .create(service.expires(items))
+                    .assertNext { results ->
+                        results shouldHaveSize 2
+                        results.map { it.source } shouldContainExactlyInAnyOrder listOf("user1|top", "user2|top")
+                    }.verifyComplete()
+
+                scanStarts shouldContainExactlyInAnyOrder listOf<Any>("user1|top", "user2|top")
+                scanRanges shouldContainExactlyInAnyOrder listOf("expiresAt:lte:250", "expiresAt:lte:300")
+            }
+
+            "expires reports ERROR when the delete mutate reports ERROR" {
+                clearMocks(mutationService, queryService)
+                every {
+                    queryService.scan(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+                } returns
+                    Mono.just(
+                        dataFramePayload(
+                            listOf(edgePayload(source = "user1|top", target = "item1", properties = mapOf("expiresAt" to 100L))),
+                        ),
+                    )
+
+                every {
+                    mutationService.mutate(any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "ERROR")))
+
+                StepVerifier
+                    .create(
+                        service.expires(
+                            listOf(expirePayload("topk", "expire", source = "user1|top", target = "item1", expiresAt = 200L)),
+                        ),
+                    ).assertNext { results ->
+                        results.single().status shouldBe "ERROR"
+                        results.single().error shouldBe null
+                    }.verifyComplete()
+            }
+
+            "expires maps thrown errors into ERROR status with the error message" {
+                clearMocks(mutationService, queryService)
+                every {
+                    queryService.scan(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.error(RuntimeException("scan boom"))
+
+                StepVerifier
+                    .create(
+                        service.expires(
+                            listOf(expirePayload("topk", "expire", source = "user1|top", target = "item1", expiresAt = 200L)),
+                        ),
+                    ).assertNext { results ->
+                        results.single().status shouldBe "ERROR"
+                        results.single().error shouldBe "scan boom"
+                    }.verifyComplete()
+
+                verify(exactly = 0) {
+                    mutationService.mutate(any(), any(), any(), any(), any(), any(), any())
+                }
+            }
+
             "aggregate maps thrown errors into ERROR status with the error message" {
                 val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
                 val group =
@@ -577,5 +759,48 @@ private fun expireItem(properties: Map<String, Any?>): AggregationItemPayload =
 private fun aggPayload(count: Int): DataFrameEdgeAggPayload = DataFrameEdgeAggPayload(groups = emptyList(), count = count, context = emptyMap())
 
 private fun mutationResult(status: String): MutationResult = MutationResult.of(key = MutationKey.SourceTarget("s", "t"), count = 1, status = status)
+
+private fun expirePayload(
+    database: String,
+    table: String,
+    source: String,
+    target: String,
+    expiresAt: Long,
+): AggregationExpireItemPayload =
+    AggregationExpireItemPayload(
+        database = database,
+        table = table,
+        edge =
+            EdgePayload(
+                version = 1L,
+                source = source,
+                target = target,
+                properties = mapOf("expiresAt" to expiresAt),
+                context = emptyMap(),
+            ),
+    )
+
+private fun edgePayload(
+    source: String,
+    target: String,
+    properties: Map<String, Any?> = emptyMap(),
+): EdgePayload =
+    EdgePayload(
+        version = 1L,
+        source = source,
+        target = target,
+        properties = properties,
+        context = emptyMap(),
+    )
+
+private fun dataFramePayload(edges: List<EdgePayload>): DataFrameEdgePayload =
+    DataFrameEdgePayload(
+        edges = edges,
+        count = edges.size,
+        total = edges.size.toLong(),
+        offset = null,
+        hasNext = false,
+        context = emptyMap(),
+    )
 
 // endregion

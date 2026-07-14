@@ -1,6 +1,8 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.core.edge.payload.AggregationExpireItemRequest
 import com.kakao.actionbase.core.edge.payload.AggregationItemRequest
+import com.kakao.actionbase.core.edge.payload.AggregationsExpireResponse
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
@@ -35,4 +37,12 @@ class MetadataAggController(
         aggregationService
             .aggregate(type = aggregationItemRequest.type, items = aggregationItemRequest.items)
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
+
+    @PostMapping("/graph/v3/aggregations/expire")
+    fun expires(
+        @RequestBody aggregationExpireItemRequest: AggregationExpireItemRequest,
+    ): Mono<ResponseEntity<AggregationsExpireResponse>> =
+        aggregationService
+            .expires(items = aggregationExpireItemRequest.items)
+            .map { results -> ResponseEntity.ok(AggregationsExpireResponse.from(results)) }
 }

@@ -3,6 +3,8 @@ package com.kakao.actionbase.engine.service
 import com.kakao.actionbase.v2.core.metadata.Direction as V2Direction
 
 import com.kakao.actionbase.core.edge.Edge
+import com.kakao.actionbase.core.edge.payload.AggregationExpireItemPayload
+import com.kakao.actionbase.core.edge.payload.AggregationExpireResult
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationResult
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
@@ -34,8 +36,24 @@ class AggregationService(
     ): Mono<List<AggregationResult>> =
         Flux
             .fromIterable(items)
-            .flatMapIterable { item -> createEvent(type, item) }
+            .flatMapIterable { it.createEvent(type) }
             .flatMap { event -> processAggregations(event, type) }
+            .collectList()
+
+    fun expires(items: List<AggregationExpireItemPayload>): Mono<List<AggregationExpireResult>> =
+        Flux
+            .fromIterable(
+                items
+                    .groupBy { Triple(it.database, it.table, it.edge.source.toString()) }
+                    .map { (key, group) ->
+                        AggregationExpireEvent(
+                            database = key.first,
+                            table = key.second,
+                            source = key.third,
+                            expiresAt = group.maxOf { (it.edge.properties["expiresAt"] as Number).toLong() },
+                        )
+                    },
+            ).flatMap { processExpire(it) }
             .collectList()
 
     private fun ModelSchema.groupsOrNull(): List<Group>? =
@@ -45,12 +63,9 @@ class AggregationService(
             else -> null
         }
 
-    private fun createEvent(
-        type: AggregationType,
-        item: AggregationItemPayload,
-    ): List<EdgeAggregationEvent> =
+    fun AggregationItemPayload.createEvent(type: AggregationType): List<EdgeAggregationEvent> =
         when (type) {
-            AggregationType.TOPK -> createTopkEvent(item)
+            AggregationType.TOPK -> createTopkEvent(this)
         }
 
     private fun createTopkEvent(item: AggregationItemPayload): List<EdgeAggregationEvent> {
@@ -187,33 +202,37 @@ class AggregationService(
 
                         val expiresAt = version + topk.expireAfterMillis
 
-                        mutationService.mutate(
-                            database = AggregationConstants.TOPK_DATABASE,
-                            alias = AggregationConstants.TOPK_EXPIRE_TABLE,
-                            unresolvedEvents = listOf(
-                                MutationItem(
-                                    type = EventType.INSERT,
-                                    edge = Edge(
-                                        version = System.currentTimeMillis(),
-                                        source = AggregationConstants.expireSource(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget),
-                                        target = AggregationConstants.expireTarget(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget, expiresAt = expiresAt),
-                                        properties = mapOf(
-                                            "expiresAt" to expiresAt,
-                                            "table" to "$database.$table",
-                                            "topk" to topk.topk,
-                                            "start" to directedSource,
-                                            "direction" to direction.name,
-                                            "ranges" to ranges,
-                                            "processed" to false,
+                        mutationService
+                            .mutate(
+                                database = AggregationConstants.TOPK_DATABASE,
+                                alias = AggregationConstants.TOPK_EXPIRE_TABLE,
+                                unresolvedEvents =
+                                    listOf(
+                                        MutationItem(
+                                            type = EventType.INSERT,
+                                            edge =
+                                                Edge(
+                                                    version = System.currentTimeMillis(),
+                                                    source = AggregationConstants.expireSource(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget),
+                                                    target = AggregationConstants.expireTarget(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget, expiresAt = expiresAt),
+                                                    properties =
+                                                        mapOf(
+                                                            "expiresAt" to expiresAt,
+                                                            "table" to "$database.$table",
+                                                            "topk" to topk.topk,
+                                                            "start" to directedSource,
+                                                            "direction" to direction.name,
+                                                            "ranges" to ranges,
+                                                            "processed" to false,
+                                                        ),
+                                                ),
                                         ),
                                     ),
-                                ),
-                            ),
-                        ).map { expireResults ->
-                            base.copy(
-                                status = if (expireResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS",
-                            )
-                        }
+                            ).map { expireResults ->
+                                base.copy(
+                                    status = if (expireResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS",
+                                )
+                            }
                     }
             }.onErrorResume { err ->
                 Mono.just(base.copy(status = "ERROR", error = err.message))
@@ -249,7 +268,50 @@ class AggregationService(
         return fqn.substring(0, dot) to fqn.substring(dot + 1)
     }
 
-    private companion object {
+    private fun processExpire(event: AggregationExpireEvent): Mono<AggregationExpireResult> {
+        val base =
+            AggregationExpireResult(
+                database = event.database,
+                table = event.table,
+                source = event.source,
+                status = "SKIPPED",
+                error = null,
+            )
+
+        return queryService
+            .scan(
+                database = event.database,
+                table = event.table,
+                index = AggregationConstants.TOPK_EXPIRE_TABLE_INDEX,
+                start = event.source,
+                direction = V2Direction.OUT,
+                ranges = "expiresAt:lte:${event.expiresAt}",
+            ).map {
+                val version = System.currentTimeMillis()
+
+                it.edges.map { edge ->
+                    Edge(
+                        version = version,
+                        source = edge.source.toString(),
+                        target = edge.target.toString(),
+                        properties = edge.properties,
+                    )
+                }
+            }.flatMap { edge ->
+                mutationService
+                    .mutate(
+                        database = event.database,
+                        alias = event.table,
+                        unresolvedEvents = edge.map { edge -> MutationItem(type = EventType.DELETE, edge = edge) },
+                    ).map { response ->
+                        base.copy(status = if (response.any { it.status == "ERROR" }) "ERROR" else "SUCCESS")
+                    }
+            }.onErrorResume { err ->
+                Mono.just(base.copy(status = "ERROR", error = err.message))
+            }
+    }
+
+    companion object {
         private val PLACEHOLDER = Regex("""\{([a-zA-Z_][a-zA-Z0-9_]*)}""")
     }
 }
@@ -309,3 +371,10 @@ data class EdgeAggregationEvent(
             )
     }
 }
+
+data class AggregationExpireEvent(
+    val database: String,
+    val table: String,
+    val source: String,
+    val expiresAt: Long,
+)
