@@ -15,7 +15,6 @@ import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Group
-import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
@@ -79,11 +78,7 @@ class AggregationService(
 
         val tb = engine.getTableBinding(database = database, alias = table)
 
-        require(tb.schema is ModelSchema.Edge || tb.schema is ModelSchema.MultiEdge) {
-            "Aggregation is only supported for Edge and MultiEdge tables."
-        }
-
-        val groups = tb.schema.groupsOrNull().orEmpty()
+        val groups = tb.schema.groups
 
         return groups
             .filter { it.aggregations.topk.isNotEmpty() }
