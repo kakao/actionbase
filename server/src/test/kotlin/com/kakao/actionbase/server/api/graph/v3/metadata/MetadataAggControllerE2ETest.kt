@@ -136,11 +136,11 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 {
                   "mutations": [
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user1|item1|100",
-                      "properties": {"expiresAt": 100, "table": "commerce.purchases", "topk": "top_purchased", "source": "user1", "target": "item1", "direction": "OUT", "ranges": "_target:eq:item1", "processed": false}}},
+                      "properties": {"expiresAt": 100, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user1", "directedTarget": "item1", "direction": "OUT", "ranges": "_target:eq:item1", "processed": false}}},
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user1|item2|200",
-                      "properties": {"expiresAt": 200, "table": "commerce.purchases", "topk": "top_purchased", "source": "user1", "target": "item2", "direction": "OUT", "ranges": "_target:eq:item2", "processed": false}}},
+                      "properties": {"expiresAt": 200, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user1", "directedTarget": "item2", "direction": "OUT", "ranges": "_target:eq:item2", "processed": false}}},
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user1|item3|500",
-                      "properties": {"expiresAt": 500, "table": "commerce.purchases", "topk": "top_purchased", "source": "user1", "target": "item3", "direction": "OUT", "ranges": "_target:eq:item3", "processed": false}}}
+                      "properties": {"expiresAt": 500, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user1", "directedTarget": "item3", "direction": "OUT", "ranges": "_target:eq:item3", "processed": false}}}
                   ]
                 }
                 """.trimIndent(),
@@ -215,9 +215,9 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 {
                   "mutations": [
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user9|item1|100",
-                      "properties": {"expiresAt": 100, "table": "commerce.purchases", "topk": "top_purchased", "source": "user9", "target": "item1", "direction": "OUT", "ranges": "_target:eq:item1", "processed": false}}},
+                      "properties": {"expiresAt": 100, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user9", "directedTarget": "item1", "direction": "OUT", "ranges": "_target:eq:item1", "processed": false}}},
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user9|item2|300",
-                      "properties": {"expiresAt": 300, "table": "commerce.purchases", "topk": "top_purchased", "source": "user9", "target": "item2", "direction": "OUT", "ranges": "_target:eq:item2", "processed": false}}}
+                      "properties": {"expiresAt": 300, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user9", "directedTarget": "item2", "direction": "OUT", "ranges": "_target:eq:item2", "processed": false}}}
                   ]
                 }
                 """.trimIndent(),
