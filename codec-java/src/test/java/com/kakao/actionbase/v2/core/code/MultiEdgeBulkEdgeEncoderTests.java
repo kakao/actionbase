@@ -185,9 +185,9 @@ public class MultiEdgeBulkEdgeEncoderTests {
 
   /**
    * MULTI_EDGE group encoding goes through {@code encodeGroupEdgesForDirection} (per-direction
-   * outEdge/inEdge, mirroring how EdgeCache is encoded for MULTI_EDGE) rather than INDEXED's
-   * {@code encodeAllGroupEdges} — bucketed fields must be verified here too, not just on INDEXED
-   * (covered by {@code BulkEdgeEncoderTests#testGroupFieldWithBucketEncodesFormattedDateInQualifier}).
+   * outEdge/inEdge, mirroring how EdgeCache is encoded for MULTI_EDGE) rather than INDEXED's {@code
+   * encodeAllGroupEdges} — bucketed fields must be verified here too, not just on INDEXED (covered
+   * by {@code BulkEdgeEncoderTests#testGroupFieldWithBucketEncodesFormattedDateInQualifier}).
    */
   @Test
   void testMultiEdgeGroupFieldWithBucketEncodesFormattedDateInQualifier()
