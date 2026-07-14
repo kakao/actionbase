@@ -123,6 +123,7 @@ class AggregationService(
                     group = item.group,
                     ranges = ranges,
                     topk = topk,
+                    isExpire = item.isExpire,
                 )
             }
     }
@@ -137,6 +138,7 @@ class AggregationService(
         group: Group,
         ranges: String?,
         topk: Topk,
+        isExpire: Boolean,
     ): Mono<AggregationResult> {
         val base =
             AggregationResult(
@@ -149,15 +151,12 @@ class AggregationService(
             )
         val (scoreDatabase, scoreTable) = parseFqn(topk.table.score)
 
-        val directedSource = if (direction == Direction.IN) target else source
-        val directedTarget =
-            scoreTargetOf(
-                group = group,
-                source = source,
-                target = target,
-                properties = properties,
-                fallback = if (direction == Direction.IN) source else target,
-            )
+        val (directedSource, directedTarget) =
+            if (isExpire) {
+                source to target
+            } else {
+                getSourceTargetPair(source, direction, target, group, properties)
+            }
 
         return queryService
             .agg(
@@ -214,8 +213,8 @@ class AggregationService(
                                                             "expiresAt" to expiresAt,
                                                             "table" to "$database.$table",
                                                             "topk" to topk.topk,
-                                                            "source" to source,
-                                                            "target" to target,
+                                                            "directedSource" to directedSource,
+                                                            "directedTarget" to directedTarget,
                                                             "direction" to direction.name,
                                                             "ranges" to ranges,
                                                             "processed" to false,
@@ -232,6 +231,26 @@ class AggregationService(
             }.onErrorResume { err ->
                 Mono.just(base.copy(status = "ERROR", error = err.message))
             }
+    }
+
+    private fun getSourceTargetPair(
+        source: String,
+        direction: Direction,
+        target: String,
+        group: Group,
+        properties: Map<String, Any?>,
+    ): Pair<String, String> {
+        val directedSource = if (direction == Direction.IN) target else source
+        val directedTarget =
+            scoreTargetOf(
+                group = group,
+                source = source,
+                target = target,
+                properties = properties,
+                fallback = if (direction == Direction.IN) source else target,
+            )
+
+        return directedSource to directedTarget
     }
 
     /**
@@ -336,8 +355,8 @@ data class EdgeAggregationEvent(
                 isExpire = true,
                 database = database,
                 table = table,
-                source = checkNotNull(properties["source"]?.toString()) { "`source` property is required for expire events" },
-                target = checkNotNull(properties["target"]?.toString()) { "`target` property is required for expire events" },
+                source = checkNotNull(properties["directedSource"]?.toString()) { "`directedSource` property is required for expire events" },
+                target = checkNotNull(properties["directedTarget"]?.toString()) { "`directedTarget` property is required for expire events" },
                 properties = properties,
                 direction =
                     checkNotNull(properties["direction"]?.toString()) { "`direction` property is required for expire events" }
