@@ -9,6 +9,8 @@ import com.kakao.actionbase.v2.engine.entity.StorageEntity
 import com.kakao.actionbase.v2.engine.metadata.StorageType
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 
+import java.time.Clock
+
 import org.jetbrains.exposed.sql.Database
 
 interface GraphDefaults {
@@ -20,6 +22,7 @@ interface GraphDefaults {
     val edgeRecordMapper: EdgeRecordMapper
     val lockTimeout: Long
     val datastore: DefaultHBaseCluster
+    val clock: Clock
 
     fun getStorage(uri: String): StorageEntity? =
         when {
@@ -41,4 +44,5 @@ data class AbstractGraphDefaults(
     override val lockTimeout: Long,
     override val storages: Map<EntityName, StorageEntity>,
     override val datastore: DefaultHBaseCluster,
+    override val clock: Clock = Clock.systemUTC(),
 ) : GraphDefaults

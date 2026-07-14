@@ -113,6 +113,7 @@ class Graph(
     aliasLabel: Label,
     onlineMetadataLabel: Label,
     private val nilLabel: Label,
+    override val clock: java.time.Clock = java.time.Clock.systemUTC(),
 ) : GraphDefaults,
     LabelProvider,
     AutoCloseable {
@@ -973,6 +974,7 @@ class Graph(
             cdcFactory: CdcFactory,
             kafkaClientFactory: KafkaClientFactory,
             webClientFactory: WebClientFactory,
+            clock: java.time.Clock = java.time.Clock.systemUTC(),
         ): Graph {
             DefaultHBaseCluster.initialize(config.hbase)
             log.info("phase: {}", config.phase)
@@ -1048,6 +1050,7 @@ class Graph(
                     config.lockTimeout,
                     storageEntities,
                     DefaultHBaseCluster.INSTANCE,
+                    clock,
                 )
 
             val serviceLabel =
@@ -1121,6 +1124,7 @@ class Graph(
                 aliasLabel,
                 onlineMetadataLabel,
                 nilLabel,
+                clock,
             )
         }
 

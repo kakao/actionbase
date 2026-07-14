@@ -2,6 +2,7 @@ package com.kakao.actionbase.core.metadata.common
 
 import com.kakao.actionbase.core.types.PrimitiveType
 
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -28,6 +29,7 @@ sealed class Bucket {
     abstract fun handleQueryValue(
         value: Any,
         ceil: Boolean,
+        clock: Clock = Clock.systemUTC(),
     ): Any
 
     data class Date(
@@ -65,6 +67,7 @@ sealed class Bucket {
         override fun handleQueryValue(
             value: Any,
             ceil: Boolean,
+            clock: Clock,
         ): Any {
             if (value !is String) return value
 
@@ -72,7 +75,7 @@ sealed class Bucket {
 
             val instant =
                 if (input == "now") {
-                    Instant.now()
+                    Instant.now(clock)
                 } else {
                     val matcher = pattern.matcher(input)
 
@@ -84,7 +87,7 @@ sealed class Bucket {
                     val amount = matcher.group(2).toLong() // number
                     val timeUnit = matcher.group(3) // m, h, d
 
-                    val now = if (ceil) ceilToFormatPrecision(Instant.now()) else Instant.now()
+                    val now = if (ceil) ceilToFormatPrecision(Instant.now(clock)) else Instant.now(clock)
 
                     val duration =
                         when (timeUnit) {
