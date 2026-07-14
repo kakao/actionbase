@@ -50,7 +50,23 @@ data class Topk(
     val ranges: String = "",
     val expireAfterMillis: Long = -1,
     val table: TopkTable,
-)
+) {
+    @get:JsonIgnore
+    val scoreFqn: Pair<String, String> by lazy { parseFqn(table.score) }
+
+    @get:JsonIgnore
+    val expireFqn: Pair<String, String> by lazy { parseFqn(table.expire) }
+
+    private companion object {
+        private fun parseFqn(fqn: String): Pair<String, String> {
+            val dot = fqn.indexOf('.')
+            require(dot > 0 && dot < fqn.lastIndex) {
+                "table must be a fully-qualified `database.table`, got: $fqn"
+            }
+            return fqn.substring(0, dot) to fqn.substring(dot + 1)
+        }
+    }
+}
 
 data class TopkTable(
     val score: String,

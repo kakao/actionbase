@@ -20,6 +20,8 @@ import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
 
+import java.time.Clock
+
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
@@ -27,6 +29,7 @@ class AggregationService(
     private val queryService: QueryService,
     private val mutationService: MutationService,
     private val engine: AggregationEngine,
+    private val clock: Clock = Clock.systemUTC(),
 ) {
     fun getAggregations(type: AggregationType? = null): List<QualifiedAggregations> = engine.getListWithAggregations(type)
 
@@ -153,7 +156,7 @@ class AggregationService(
                 status = "SKIPPED",
                 error = null,
             )
-        val (scoreDatabase, scoreTable) = parseFqn(topk.table.score)
+        val (scoreDatabase, scoreTable) = topk.scoreFqn
 
         val directedSource = if (direction == Direction.IN) target else source
         val directedTarget = if (direction == Direction.IN) source else target
@@ -169,7 +172,7 @@ class AggregationService(
             ).flatMap { response ->
                 val score = response.groups.firstOrNull()?.value ?: 0L
 
-                val version = System.currentTimeMillis()
+                val version = clock.millis()
                 mutationService
                     .mutate(
                         database = scoreDatabase,
@@ -205,7 +208,7 @@ class AggregationService(
                                             type = EventType.INSERT,
                                             edge =
                                                 Edge(
-                                                    version = System.currentTimeMillis(),
+                                                    version = clock.millis(),
                                                     source = AggregationConstants.expireSource(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget),
                                                     target = AggregationConstants.expireTarget(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget, expiresAt = expiresAt),
                                                     properties =
@@ -273,7 +276,7 @@ class AggregationService(
                 direction = V2Direction.OUT,
                 ranges = "expiresAt:lte:${event.expiresAt}",
             ).map {
-                val version = System.currentTimeMillis()
+                val version = clock.millis()
 
                 it.edges.map { edge ->
                     Edge(

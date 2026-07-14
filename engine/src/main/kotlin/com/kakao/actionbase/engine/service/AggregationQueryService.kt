@@ -20,26 +20,24 @@ class AggregationQueryService(
         entity: String,
         limit: Int = ScanFilter.defaultLimit,
         offset: String? = null,
-    ): Mono<DataFrameEdgePayload> {
-        val tb = engine.getTableBinding(database = database, alias = table)
-        val topkConfig =
-            tb.schema
-                .groupsOrNull()
-                .orEmpty()
-                .flatMap { it.aggregations.topk }
-                .firstOrNull { it.topk == topk }
-                ?: throw IllegalArgumentException("Unknown topk `$topk` for $database.$table.")
+    ): Mono<DataFrameEdgePayload> =
+        Mono
+            .fromCallable {
+                val tb = engine.getTableBinding(database = database, alias = table)
+                val topkConfig =
+                    tb.schema.topkByName[topk]
+                        ?: throw IllegalArgumentException("Unknown topk `$topk` for $database.$table.")
 
-        val (scoreDatabase, scoreTable) = parseFqn(fqn = topkConfig.table.score)
-
-        return queryService.scan(
-            database = scoreDatabase,
-            table = scoreTable,
-            index = AggregationConstants.TOPK_SCORE_TABLE_INDEX,
-            start = AggregationConstants.scoreSource(entity = entity, topk = topk),
-            direction = V2Direction.OUT,
-            limit = limit,
-            offset = offset,
-        )
-    }
+                topkConfig.scoreFqn
+            }.flatMap { (scoreDatabase, scoreTable) ->
+                queryService.scan(
+                    database = scoreDatabase,
+                    table = scoreTable,
+                    index = AggregationConstants.TOPK_SCORE_TABLE_INDEX,
+                    start = AggregationConstants.scoreSource(entity = entity, topk = topk),
+                    direction = V2Direction.OUT,
+                    limit = limit,
+                    offset = offset,
+                )
+            }
 }
