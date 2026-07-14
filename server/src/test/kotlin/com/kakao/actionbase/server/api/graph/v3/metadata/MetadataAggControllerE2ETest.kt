@@ -1,84 +1,36 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_EXPIRE_TABLE
+import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
 import com.kakao.actionbase.server.test.E2ETestBase
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.http.MediaType
+import org.springframework.test.web.reactive.server.expectBody
 
-/**
- * End-to-end coverage for GET /graph/v3/aggregations.
- *
- * Two tables are created: one with a topk aggregation declared, one without.
- * The response should list the first and omit the second.
- */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MetadataAggControllerE2ETest : E2ETestBase() {
     private val db = "commerce"
-    private val sourceTable = "purchases"
-    private val plainTable = "misc"
-    private val scoreTable = "${sourceTable}__topk"
-    private val scoreFqn = "$db.$scoreTable"
+    private val table = "purchases"
+    private val scoreFqn = "$db.${table}__topk"
+    private val expireFqn = "$TOPK_DATABASE.$TOPK_EXPIRE_TABLE"
 
     @BeforeAll
     fun setup() {
-        createDatabase(db)
-        createMultiEdgeSourceTable()
-        createEdgeTable(
-            database = db,
-            table = plainTable,
-            propertiesJson = """{"name": "category", "type": "string", "comment": "cat", "nullable": true}""",
-            groupsJson = """{"group": "by_target", "type": "COUNT", "fields": [{"name": "_target"}]}""",
-        )
-    }
-
-    @Test
-    fun `GET aggregations lists tables that declare a topk`() {
-        client
-            .get()
-            .uri("/graph/v3/aggregations")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody()
-            .jsonPath("$.topk[?(@.database == '$db' && @.table == '$sourceTable')]")
-            .exists()
-            .jsonPath("$.topk[?(@.database == '$db' && @.table == '$plainTable')]")
-            .doesNotExist()
-    }
-
-    // region fixtures
-
-    private fun createDatabase(database: String) {
         client
             .post()
             .uri("/graph/v3/databases")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"database": "$database", "comment": "test"}""")
+            .bodyValue("""{"database": "$db", "comment": "test"}""")
             .exchange()
             .expectStatus()
             .isOk
-    }
 
-    private fun createMultiEdgeSourceTable() {
-        val group =
-            """
-            {
-              "group": "purchased_count",
-              "type": "COUNT",
-              "fields": [{"name": "_target"}],
-              "directionType": "OUT",
-              "aggregations": {
-                "topk": [{
-                  "topk": "top_purchased",
-                  "ranges": "_target:eq:{_target}",
-                  "expire": false,
-                  "table": {"score": "$scoreFqn", "expire": "expire_tbl"}
-                }]
-              }
-            }
-            """.trimIndent()
         client
             .post()
             .uri("/graph/v3/databases/$db/tables")
@@ -86,7 +38,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .bodyValue(
                 """
                 {
-                  "table": "$sourceTable",
+                  "table": "$table",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "purchase id"},
@@ -95,10 +47,23 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                     "properties": [],
                     "direction": "BOTH",
                     "indexes": [],
-                    "groups": [$group],
+                    "groups": [{
+                      "group": "purchased_count",
+                      "type": "COUNT",
+                      "fields": [{"name": "_target"}],
+                      "directionType": "OUT",
+                      "aggregations": {
+                        "topk": [{
+                          "topk": "top_purchased",
+                          "ranges": "_target:eq:{_target}",
+                          "expire": false,
+                          "table": {"score": "$scoreFqn", "expire": "$expireFqn"}
+                        }]
+                      }
+                    }],
                     "caches": []
                   },
-                  "storage": "datastore://test_namespace/$sourceTable",
+                  "storage": "datastore://test_namespace/$table",
                   "mode": "SYNC",
                   "comment": "purchases"
                 }
@@ -106,35 +71,47 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             ).exchange()
             .expectStatus()
             .isOk
-    }
 
-    private fun createEdgeTable(
-        database: String,
-        table: String,
-        propertiesJson: String,
-        groupsJson: String,
-    ) {
         client
             .post()
-            .uri("/graph/v3/databases/$database/tables")
+            .uri("/graph/v3/databases")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"database": "$TOPK_DATABASE", "comment": "test"}""")
+            .exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$TOPK_DATABASE/tables")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
                 {
-                  "table": "$table",
+                  "table": "$TOPK_EXPIRE_TABLE",
                   "schema": {
                     "type": "EDGE",
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
-                    "properties": [$propertiesJson],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": [$groupsJson],
+                    "source": {"type": "long", "comment": "partition = hash(table,topk,entity,target) % 2310"},
+                    "target": {"type": "string", "comment": "table|topk|entity|target|expired_at"},
+                    "properties": [
+                      {"name": "expiredAt", "type": "long", "comment": "expire time ms", "nullable": false},
+                      {"name": "table", "type": "string", "comment": "source table", "nullable": false},
+                      {"name": "topk", "type": "string", "comment": "topk name", "nullable": false},
+                      {"name": "start", "type": "string", "comment": "start", "nullable": false},
+                      {"name": "direction", "type": "string", "comment": "direction", "nullable": false},
+                      {"name": "ranges", "type": "string", "comment": "interpolated ranges", "nullable": false},
+                      {"name": "processed", "type": "boolean", "comment": "processed", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [
+                      {"index": "expired_at_asc", "fields": [{"field": "expiredAt", "order": "ASC"}]}
+                    ],
+                    "groups": [],
                     "caches": []
                   },
-                  "storage": "datastore://test_namespace/$table",
+                  "storage": "datastore://test_namespace/$TOPK_EXPIRE_TABLE",
                   "mode": "SYNC",
-                  "comment": "test"
+                  "comment": "TopK expire tracker"
                 }
                 """.trimIndent(),
             ).exchange()
@@ -142,5 +119,31 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .isOk
     }
 
-    // endregion
+    @Test
+    fun `GET aggregations exposes topk tables with the correct expire flag`() {
+        val response =
+            client
+                .get()
+                .uri("/graph/v3/aggregations")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<AggregationsListResponse>()
+                .returnResult()
+                .responseBody!!
+
+        val databaseTablePair = response.topk.associateBy { it.database to it.table }
+
+        val source = databaseTablePair[db to table]
+        assertNotNull(source)
+        assertEquals(db, source?.database)
+        assertEquals(table, source?.table)
+        assertEquals(false, source?.expire)
+
+        val expire = databaseTablePair[TOPK_DATABASE to TOPK_EXPIRE_TABLE]
+        assertNotNull(expire)
+        assertEquals(TOPK_DATABASE, expire?.database)
+        assertEquals(TOPK_EXPIRE_TABLE, expire?.table)
+        assertEquals(true, expire?.expire)
+    }
 }

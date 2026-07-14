@@ -3,11 +3,12 @@ package com.kakao.actionbase.v2.engine.v3
 import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
 
 import com.kakao.actionbase.core.edge.MutationEvent
+import com.kakao.actionbase.core.metadata.QualifiedAggregations
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.state.State
 import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.MutationContext
 import com.kakao.actionbase.engine.MutationEngine
-import com.kakao.actionbase.engine.QualifiedGroups
 import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.metadata.MutationMode
@@ -15,7 +16,6 @@ import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.label.nil.NilLabel
-import com.kakao.actionbase.v2.engine.v3.V3TableDescriptor.Companion.getQualifiedGroups
 
 import reactor.core.publisher.Mono
 
@@ -44,8 +44,7 @@ class V2BackedEngine(
         return label.tableBinding
     }
 
-    override fun getAllQualifiedGroups(): List<QualifiedGroups> =
-        graph.listLabels().map { getQualifiedGroups(entity = it.entity) }
+    override fun getListWithAggregations(type: AggregationType?): List<QualifiedAggregations> = graph.listWithAggregations(type) + graph.listWithSystemAggregations(type)
 
     private val messaging = V2BackedMessageBinding(wal = graph.wal, cdc = graph.cdc)
 

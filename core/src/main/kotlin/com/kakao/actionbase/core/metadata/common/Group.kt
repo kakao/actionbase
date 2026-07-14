@@ -2,6 +2,7 @@ package com.kakao.actionbase.core.metadata.common
 
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
+
 import com.fasterxml.jackson.annotation.JsonIgnore
 
 data class Group(
@@ -12,7 +13,7 @@ data class Group(
     val comment: String = Constants.DEFAULT_COMMENT,
     val directionType: DirectionType = DirectionType.BOTH,
     val ttl: Long = Constants.Group.DEFAULT_TTL,
-    val aggregations: Aggregations = Aggregations(),
+    val aggregations: Aggregations = Aggregations.EMPTY,
 ) {
     @JsonIgnore
     val code = XXHash32Wrapper.default.stringHash(group)
@@ -30,7 +31,19 @@ data class Group(
 
 data class Aggregations(
     val topk: List<Topk> = emptyList(),
-)
+) {
+    @JsonIgnore
+    fun isEmpty(): Boolean = supportedTypes.isEmpty()
+
+    @get:JsonIgnore
+    val supportedTypes: Set<AggregationType> by lazy {
+        setOfNotNull(AggregationType.TOPK.takeIf { topk.isNotEmpty() })
+    }
+
+    companion object {
+        val EMPTY = Aggregations()
+    }
+}
 
 data class Topk(
     val topk: String,
@@ -43,3 +56,7 @@ data class TopkTable(
     val score: String,
     val expire: String,
 )
+
+enum class AggregationType {
+    TOPK,
+}

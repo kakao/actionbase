@@ -9,6 +9,8 @@ import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
+import com.kakao.actionbase.core.metadata.QualifiedAggregations
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
@@ -35,6 +37,10 @@ import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.entity.QueryEntity
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
+import com.kakao.actionbase.v2.engine.entity.hasAggregation
+import com.kakao.actionbase.v2.engine.entity.isSystemTable
+import com.kakao.actionbase.v2.engine.entity.toQualifiedAggregations
+import com.kakao.actionbase.v2.engine.entity.toSystemQualifiedAggregations
 import com.kakao.actionbase.v2.engine.exception.MutationError
 import com.kakao.actionbase.v2.engine.fake.fakeEdges
 import com.kakao.actionbase.v2.engine.label.DeleteEdgeRequest
@@ -71,7 +77,6 @@ import com.kakao.actionbase.v2.engine.wal.Wal
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 import com.kakao.actionbase.v2.engine.wal.WalLog
 
-import java.lang.AutoCloseable
 import java.time.Duration
 import java.util.UUID
 
@@ -268,8 +273,6 @@ class Graph(
             } + aliases.map { it.key.toString() to "Alias(${it.value})" }
         ).toMap()
 
-    fun listLabels(): List<Label> = labels.values.toList()
-
     @Suppress("LongMethod")
     fun mutate(
         alias: EntityName,
@@ -380,6 +383,16 @@ class Graph(
             .cache(Duration.ZERO)
             .subscribeOn(Schedulers.boundedElastic())
     }
+
+    fun listWithAggregations(type: AggregationType? = null): List<QualifiedAggregations> =
+        labels.values
+            .filter { it.entity.hasAggregation(type) }
+            .flatMap { it.entity.toQualifiedAggregations(type) }
+
+    fun listWithSystemAggregations(type: AggregationType? = null): List<QualifiedAggregations> =
+        labels.values
+            .filter { it.entity.isSystemTable() }
+            .flatMap { it.entity.toSystemQualifiedAggregations(type) }
 
     /**
      * For `system=ASYNC + label=SYNC` (no force), return the SYNC-shaped status derived from the

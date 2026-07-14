@@ -1,6 +1,6 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.metadata.payload.AggregationType
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
 import com.kakao.actionbase.engine.service.AggregationService
 
@@ -17,8 +17,8 @@ class MetadataAggController(
     fun getAggregations(
         @RequestParam(required = false) type: AggregationType?,
     ): ResponseEntity<AggregationsListResponse> {
-        val aggregations = aggregationService.getAggregations()
+        val aggregations = aggregationService.getAggregations(type)
 
-        return ResponseEntity.ok(AggregationsListResponse.of(type, metadata = aggregations))
+        return ResponseEntity.ok(AggregationsListResponse.of(aggregations))
     }
 }

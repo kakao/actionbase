@@ -1,5 +1,7 @@
 package com.kakao.actionbase.engine
 
+import com.kakao.actionbase.core.metadata.QualifiedAggregations
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.engine.binding.TableBinding
 
 interface AggregationEngine {
@@ -8,5 +10,5 @@ interface AggregationEngine {
         alias: String,
     ): TableBinding
 
-    fun getAllQualifiedGroups(): List<QualifiedGroups>
+    fun getListWithAggregations(type: AggregationType? = null): List<QualifiedAggregations>
 }
