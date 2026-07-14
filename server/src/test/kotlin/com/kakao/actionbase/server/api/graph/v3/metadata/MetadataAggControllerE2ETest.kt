@@ -98,7 +98,8 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                       {"name": "expiresAt", "type": "long", "comment": "expire time ms", "nullable": false},
                       {"name": "table", "type": "string", "comment": "source table", "nullable": false},
                       {"name": "topk", "type": "string", "comment": "topk name", "nullable": false},
-                      {"name": "start", "type": "string", "comment": "start", "nullable": false},
+                      {"name": "source", "type": "string", "comment": "original source", "nullable": false},
+                      {"name": "target", "type": "string", "comment": "original target", "nullable": false},
                       {"name": "direction", "type": "string", "comment": "direction", "nullable": false},
                       {"name": "ranges", "type": "string", "comment": "interpolated ranges", "nullable": false},
                       {"name": "processed", "type": "boolean", "comment": "processed", "nullable": false}
