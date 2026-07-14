@@ -36,6 +36,8 @@ import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.sql.toJsonFormat
 
+import java.time.Clock
+
 import org.apache.hadoop.hbase.client.Delete
 import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Increment
@@ -52,6 +54,7 @@ class V2BackedTableBinding(
     private val label: HBaseIndexedLabel,
     private val mapper: EdgeRecordMapper,
     private val lockTimeout: Long,
+    private val clock: Clock = Clock.systemUTC(),
 ) : TableBinding {
     override val table: String = descriptor.table
     override val schema: ModelSchema = descriptor.schema
@@ -405,7 +408,7 @@ class V2BackedTableBinding(
                         ?.cast(predicate.value)
                         ?: predicate.value
                 } else {
-                    field.bucketOrGet(predicate.value, ceil = false)
+                    field.bucketOrGet(predicate.value, ceil = false, clock = clock)
                 }
             }
 
@@ -547,7 +550,7 @@ class V2BackedTableBinding(
             if (lastField.bucket == null) {
                 descriptor.schema.fieldType(lastField.name)?.cast(value) ?: value
             } else {
-                lastField.bucketOrGet(value, ceil)
+                lastField.bucketOrGet(value, ceil, clock = clock)
             }
 
         return when (lastPredicate) {
