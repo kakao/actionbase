@@ -1,5 +1,7 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
 import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_EXPIRE_TABLE
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
@@ -118,6 +120,160 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             ).exchange()
             .expectStatus()
             .isOk
+    }
+
+    @Test
+    fun `aggregate joins non-bucket group fields into the score row target and skips bucket fields`() {
+        val bucketedDb = "commerce-bucket"
+        val bucketedTable = "orders"
+        val bucketedScore = "orders__topk"
+        val bucketedScoreFqn = "$bucketedDb.$bucketedScore"
+        val topkName = "top_purchased_1y"
+
+        client
+            .post()
+            .uri("/graph/v3/databases")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"database": "$bucketedDb", "comment": "test"}""")
+            .exchange()
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$bucketedDb/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$bucketedScore",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "entity|topk"},
+                    "target": {"type": "string", "comment": "ranked target"},
+                    "properties": [
+                      {"name": "score", "type": "long", "comment": "score", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [
+                      {"index": "score_desc", "fields": [{"field": "score", "order": "DESC"}]}
+                    ],
+                    "groups": [],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$bucketedScore",
+                  "mode": "SYNC",
+                  "comment": "topk score"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$bucketedDb/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$bucketedTable",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "order id"},
+                    "source": {"type": "string", "comment": "user"},
+                    "target": {"type": "string", "comment": "item"},
+                    "properties": [
+                      {"name": "category", "type": "string", "comment": "category", "nullable": false},
+                      {"name": "purchasedAt", "type": "long", "comment": "purchase time ms", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": [{
+                      "group": "purchased_bucketed",
+                      "type": "COUNT",
+                      "fields": [
+                        {"name": "_target"},
+                        {"name": "category"},
+                        {"name": "purchasedAt", "bucket": {"type": "date", "name": "day", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
+                      ],
+                      "directionType": "OUT",
+                      "aggregations": {
+                        "topk": [{
+                          "topk": "$topkName",
+                          "ranges": "_target:eq:{_target};category:eq:{category};day:bt:1700000000000,1731536000000",
+                          "table": {"score": "$bucketedScoreFqn", "expire": "$expireFqn"}
+                        }]
+                      }
+                    }],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$bucketedTable",
+                  "mode": "SYNC",
+                  "comment": "bucketed"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$bucketedDb/tables/$bucketedTable/multi-edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1",
+                      "properties": {"category": "fruit", "purchasedAt": 1710000000000}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/aggregations")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "type": "TOPK",
+                  "items": [
+                    {"database": "$bucketedDb", "table": "$bucketedTable",
+                     "edge": {"version": 1, "source": "user1", "target": "item1",
+                              "properties": {"category": "fruit", "purchasedAt": 1710000000000}, "context": {}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<AggregationsItemResponse>()
+            .returnResult()
+
+        client
+            .get()
+            .uri(
+                "/graph/v3/databases/$bucketedDb/tables/$bucketedScore/edges/scan/score_desc" +
+                    "?start=user1|$topkName&direction=OUT",
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<DataFrameEdgePayload>()
+            .returnResult()
+            .responseBody!!
+            .let { payload ->
+                assertEquals(1, payload.count)
+                assertEquals(
+                    "item1|fruit",
+                    payload.edges
+                        .single()
+                        .target
+                        .toString(),
+                )
+            }
     }
 
     @Test

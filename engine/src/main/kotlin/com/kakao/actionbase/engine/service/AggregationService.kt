@@ -118,6 +118,7 @@ class AggregationService(
                     table = item.table,
                     source = item.source,
                     target = item.target,
+                    properties = item.properties,
                     direction = direction,
                     group = item.group,
                     ranges = ranges,
@@ -131,6 +132,7 @@ class AggregationService(
         table: String,
         source: String,
         target: String,
+        properties: Map<String, Any?>,
         direction: Direction,
         group: Group,
         ranges: String?,
@@ -148,7 +150,14 @@ class AggregationService(
         val (scoreDatabase, scoreTable) = parseFqn(topk.table.score)
 
         val directedSource = if (direction == Direction.IN) target else source
-        val directedTarget = if (direction == Direction.IN) source else target
+        val directedTarget =
+            scoreTargetOf(
+                group = group,
+                source = source,
+                target = target,
+                properties = properties,
+                fallback = if (direction == Direction.IN) source else target,
+            )
 
         return queryService
             .agg(
@@ -245,6 +254,30 @@ class AggregationService(
                 }
             value?.let { Regex.escapeReplacement(it) } ?: Regex.escapeReplacement(match.value)
         }
+
+    /**
+     * Segments the score row's `target` by joining the group's non-bucket fields with `|`.
+     * Bucket fields are consumed by `ranges`. `_source` / `_target` resolve to the edge
+     * endpoints; other names read from `properties`. Falls back to [fallback] when the group
+     * has no non-bucket field.
+     */
+    private fun scoreTargetOf(
+        group: Group,
+        source: String,
+        target: String,
+        properties: Map<String, Any?>,
+        fallback: String,
+    ): String {
+        val bucketless = group.fields.filter { it.bucket == null }
+        if (bucketless.isEmpty()) return fallback
+        return bucketless.joinToString("|") { field ->
+            when (field.name) {
+                "_source" -> source
+                "_target" -> target
+                else -> properties[field.name]?.toString().orEmpty()
+            }
+        }
+    }
 
     private fun parseFqn(fqn: String): Pair<String, String> {
         val dot = fqn.indexOf('.')
