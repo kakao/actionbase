@@ -151,7 +151,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
               "topk": "top_purchased",
               "ranges": "_target:eq:{_target}",
               "expire": false,
-              "table": {"score": "$scoreFqn", "expire": "expire_tbl"}
+              "table": {"score": "$scoreFqn", "refresh": "refresh_tbl"}
             }]
           }
         }
@@ -173,7 +173,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
               "topk": "top_purchased_seg",
               "ranges": "gender:eq:{gender};age:eq:{age};_target:eq:{_target}",
               "expire": false,
-              "table": {"score": "$scoreFqn", "expire": "expire_tbl"}
+              "table": {"score": "$scoreFqn", "refresh": "refresh_tbl"}
             }]
           }
         }
@@ -200,7 +200,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
               "topk": "top_purchased_1y",
               "ranges": "_target:eq:{_target};time:bt:now-365d,now",
               "expire": false,
-              "table": {"score": "$scoreFqn", "expire": "expire_tbl"}
+              "table": {"score": "$scoreFqn", "refresh": "refresh_tbl"}
             }]
           }
         }
@@ -229,7 +229,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
               "topk": "top_purchased_seg_1y",
               "ranges": "gender:eq:{gender};age:eq:{age};_target:eq:{_target};time:bt:now-365d,now",
               "expire": false,
-              "table": {"score": "$scoreFqn", "expire": "expire_tbl"}
+              "table": {"score": "$scoreFqn", "refresh": "refresh_tbl"}
             }]
           }
         }

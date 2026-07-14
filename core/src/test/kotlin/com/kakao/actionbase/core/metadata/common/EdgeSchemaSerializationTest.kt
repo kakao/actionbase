@@ -130,10 +130,10 @@ class EdgeSchemaSerializationTest {
                       {
                         "topk": "top_purchased_1y",
                         "ranges": "time:bt:now-365d,now",
-                        "expireAfterMillis": 31536000000,
+                        "refreshAfterMillis": 31536000000,
                         "table": {
                           "score": "commerce.order_product__topk",
-                          "expire": "topk.expire"
+                          "refresh": "topk.refresh"
                         }
                       }
                     ]
@@ -162,10 +162,10 @@ class EdgeSchemaSerializationTest {
                       {
                         "topk": "top_purchased_1y",
                         "ranges": "time:bt:now-365d,now",
-                        "expireAfterMillis": 31536000000,
+                        "refreshAfterMillis": 31536000000,
                         "table": {
                           "score": "commerce.order_product__topk",
-                          "expire": "topk.expire"
+                          "refresh": "topk.refresh"
                         }
                       }
                     ]
@@ -187,7 +187,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased", "table": {"score": "commerce.order_product__topk", "expire": "topk.expire"}}]
+                    "topk": [{"topk": "top_purchased", "table": {"score": "commerce.order_product__topk", "refresh": "topk.refresh"}}]
                   }
                 }
               ]
@@ -204,7 +204,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased", "table": {"score": "commerce.order_product__topk", "expire": "topk.expire"}}]
+                    "topk": [{"topk": "top_purchased", "table": {"score": "commerce.order_product__topk", "refresh": "topk.refresh"}}]
                   }
                 }
               ]

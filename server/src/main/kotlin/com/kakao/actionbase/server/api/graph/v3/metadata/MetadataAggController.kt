@@ -4,7 +4,7 @@ import com.kakao.actionbase.core.edge.payload.AggregationItemRequest
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
 import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
-import com.kakao.actionbase.core.metadata.payload.ExpireTablesResponse
+import com.kakao.actionbase.core.metadata.payload.RefreshTablesResponse
 import com.kakao.actionbase.engine.service.AggregationService
 
 import org.springframework.http.ResponseEntity
@@ -29,9 +29,9 @@ class MetadataAggController(
         return ResponseEntity.ok(AggregationsListResponse.of(type, metadata = aggregations))
     }
 
-    @GetMapping("/graph/v3/aggregations/expires")
-    fun getExpireTables(): ResponseEntity<ExpireTablesResponse> =
-        ResponseEntity.ok(ExpireTablesResponse(tables = aggregationService.getExpireTables()))
+    @GetMapping("/graph/v3/aggregations/refresh")
+    fun getRefreshTables(): ResponseEntity<RefreshTablesResponse> =
+        ResponseEntity.ok(RefreshTablesResponse(tables = aggregationService.getRefreshTables()))
 
     @PostMapping("/graph/v3/aggregations")
     fun aggregations(
@@ -47,12 +47,12 @@ class MetadataAggController(
     @PostMapping("/graph/v3/aggregations/sweep")
     fun sweep(
         @RequestParam type: AggregationType,
-        @RequestParam expireDatabase: String,
-        @RequestParam expireTable: String,
+        @RequestParam refreshDatabase: String,
+        @RequestParam refreshTable: String,
         @RequestParam partition: Long,
         @RequestParam now: Long,
     ): Mono<ResponseEntity<AggregationsItemResponse>> =
         aggregationService
-            .sweep(type = type, expireDatabase = expireDatabase, expireTable = expireTable, partition = partition, now = now)
+            .sweep(type = type, refreshDatabase = refreshDatabase, refreshTable = refreshTable, partition = partition, now = now)
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 }

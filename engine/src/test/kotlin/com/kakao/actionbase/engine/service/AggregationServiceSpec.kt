@@ -20,7 +20,7 @@ import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.metadata.common.TopkTable
 import com.kakao.actionbase.core.metadata.payload.AggregationType
-import com.kakao.actionbase.core.metadata.payload.ExpireTableRef
+import com.kakao.actionbase.core.metadata.payload.RefreshTableRef
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
@@ -77,9 +77,9 @@ class AggregationServiceSpec :
                 result.flatMap { md -> md.aggregations.flatMap { it.topk } }.shouldBeEmpty()
             }
 
-            // --- getExpireTables ---
+            // --- getRefreshTables ---
 
-            "getExpireTables returns distinct expire tables across all topk declarations" {
+            "getRefreshTables returns distinct refresh tables across all topk declarations" {
                 every { engine.getAllQualifiedGroups() } returns
                     listOf(
                         edgeSummary(
@@ -87,25 +87,25 @@ class AggregationServiceSpec :
                             table = "t1",
                             topks =
                                 listOf(
-                                    topkConfig("a", table = TopkTable(score = "db.a__score", expire = "topk.expire")),
-                                    topkConfig("b", table = TopkTable(score = "db.b__score", expire = "topk.expire")),
+                                    topkConfig("a", table = TopkTable(score = "db.a__score", refresh = "topk.refresh")),
+                                    topkConfig("b", table = TopkTable(score = "db.b__score", refresh = "topk.refresh")),
                                 ),
                         ),
                         edgeSummary(
                             database = "db",
                             table = "t2",
-                            topks = listOf(topkConfig("c", table = TopkTable(score = "db.c__score", expire = ""))),
+                            topks = listOf(topkConfig("c", table = TopkTable(score = "db.c__score", refresh = ""))),
                         ),
                         vertexSummary(database = "db", table = "vertex"),
                     )
 
-                service.getExpireTables() shouldBe listOf(ExpireTableRef(database = "topk", table = "expire"))
+                service.getRefreshTables() shouldBe listOf(RefreshTableRef(database = "topk", table = "refresh"))
             }
 
             // --- aggregate ---
 
             "aggregate returns SUCCESS when mutate succeeds" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -132,7 +132,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate returns ERROR when mutate reports ERROR status" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -160,7 +160,7 @@ class AggregationServiceSpec :
 
             "aggregate stores score as a Double and segment as the URL-encoded resolved ranges" {
                 val topk =
-                    topkConfig(name = "top_seg", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                    topkConfig(name = "top_seg", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                         .copy(ranges = "gender:eq:{gender}")
                 val group =
                     groupWithTopks(
@@ -193,7 +193,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate for OUT direction uses source as entity and keeps target as ranked value" {
-                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_out",
@@ -224,7 +224,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate for IN direction swaps source and target so the ranking is per target entity" {
-                val topk = topkConfig(name = "top_purchased_by", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "top_purchased_by", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_in",
@@ -256,7 +256,7 @@ class AggregationServiceSpec :
 
             "aggregate for GLOBAL scope uses a fixed entity so different sources share the same score row" {
                 val topk =
-                    topkConfig(name = "top_global", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                    topkConfig(name = "top_global", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                         .copy(scope = TopkScope.GLOBAL)
                 val group =
                     groupWithTopks(
@@ -298,7 +298,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate for BOTH direction fans out into one OUT and one IN mutation" {
-                val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_both",
@@ -331,7 +331,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate maps thrown errors into ERROR status with the error message" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -353,10 +353,10 @@ class AggregationServiceSpec :
                     }.verifyComplete()
             }
 
-            // --- aggregate (expire row bookkeeping) ---
+            // --- aggregate (refresh row bookkeeping) ---
 
-            "aggregate does not write an expire entry when the topk has no expiry configured" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+            "aggregate does not write a refresh entry when the topk has no refresh configured" {
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
@@ -372,13 +372,13 @@ class AggregationServiceSpec :
                     .assertNext { results -> results shouldHaveSize 1 }
                     .verifyComplete()
 
-                verify(exactly = 0) { mutationService.mutate("db", "exp_tbl", any(), any(), any(), any(), any()) }
+                verify(exactly = 0) { mutationService.mutate("db", "refresh_tbl", any(), any(), any(), any(), any()) }
             }
 
-            "aggregate writes one event-scoped expire entry keyed by expiredAt when the topk configures expiry" {
+            "aggregate writes one event-scoped refresh entry keyed by refreshAt when the topk configures refresh" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
-                        .copy(expireAfterMillis = 60_000L)
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                        .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
@@ -389,9 +389,9 @@ class AggregationServiceSpec :
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
-                val expireMutations = slot<List<MutationItem>>()
+                val refreshMutations = slot<List<MutationItem>>()
                 every {
-                    mutationService.mutate("db", "exp_tbl", capture(expireMutations), any(), any(), any(), any())
+                    mutationService.mutate("db", "refresh_tbl", capture(refreshMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 val eventItem = item("db", "src", source = "user1", target = "item1", version = 1_000L)
@@ -401,15 +401,15 @@ class AggregationServiceSpec :
                     .assertNext { results -> results shouldHaveSize 1 }
                     .verifyComplete()
 
-                val expireEdge = expireMutations.captured.single().edge
-                expireEdge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
-                expireEdge.properties["expiredAt"] shouldBe 61_000L
+                val refreshEdge = refreshMutations.captured.single().edge
+                refreshEdge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
+                refreshEdge.properties["refreshAt"] shouldBe 61_000L
             }
 
-            "aggregate writing two events for the same entity produces two independent expire entries" {
+            "aggregate writing two events for the same entity produces two independent refresh entries" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
-                        .copy(expireAfterMillis = 60_000L)
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                        .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
@@ -420,9 +420,9 @@ class AggregationServiceSpec :
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
-                val expireMutations = mutableListOf<List<MutationItem>>()
+                val refreshMutations = mutableListOf<List<MutationItem>>()
                 every {
-                    mutationService.mutate("db", "exp_tbl", capture(expireMutations), any(), any(), any(), any())
+                    mutationService.mutate("db", "refresh_tbl", capture(refreshMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 val firstEvent = item("db", "src", source = "user1", target = "item1", version = 1_000L)
@@ -433,7 +433,7 @@ class AggregationServiceSpec :
                     .assertNext { results -> results shouldHaveSize 2 }
                     .verifyComplete()
 
-                val targets = expireMutations.map { it.single().edge.target }
+                val targets = refreshMutations.map { it.single().edge.target }
                 targets shouldContainExactlyInAnyOrder
                     listOf(
                         "db.src:top_purchased:OUT:user1:item1:61000",
@@ -443,15 +443,15 @@ class AggregationServiceSpec :
 
             // --- sweep ---
 
-            "sweep re-aggregates an expired row from its stored payload, deletes it, and skips it if scanned again" {
+            "sweep re-aggregates a due row from its stored payload, deletes it, and skips it if scanned again" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", expire = "topk.expire"))
-                        .copy(expireAfterMillis = 60_000L)
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
+                        .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 val storedEdge = item("db", "src", source = "user1", target = "item1", version = 1_000L).edge
-                val expirePayloadJson =
+                val refreshPayloadJson =
                     objectMapper.writeValueAsString(
                         mapOf(
                             "type" to "TOPK",
@@ -463,20 +463,20 @@ class AggregationServiceSpec :
                             "edge" to storedEdge,
                         ),
                     )
-                val expiredRow =
+                val dueRow =
                     EdgePayload(
                         version = 1L,
                         source = 42L,
                         target = "db.src:top_purchased:OUT:user1:item1:61000",
-                        properties = mapOf("expiredAt" to 61_000L, "payload" to expirePayloadJson),
+                        properties = mapOf("refreshAt" to 61_000L, "payload" to refreshPayloadJson),
                         context = emptyMap(),
                     )
 
                 every {
-                    queryService.scan("topk", "expire", "expired_at_asc", 42L, any<Direction>(), 10, null, "expiredAt:lte:70000", null, emptyList())
+                    queryService.scan("topk", "refresh", "refresh_at_asc", 42L, any<Direction>(), 10, null, "refreshAt:lte:70000", null, emptyList())
                 } returns
                     Mono.just(
-                        DataFrameEdgePayload(edges = listOf(expiredRow), count = 1, total = 1, offset = null, hasNext = false, context = emptyMap()),
+                        DataFrameEdgePayload(edges = listOf(dueRow), count = 1, total = 1, offset = null, hasNext = false, context = emptyMap()),
                     )
 
                 every {
@@ -488,11 +488,11 @@ class AggregationServiceSpec :
 
                 val deleteMutations = slot<List<MutationItem>>()
                 every {
-                    mutationService.mutate("topk", "expire", capture(deleteMutations), any(), any(), any(), any())
+                    mutationService.mutate("topk", "refresh", capture(deleteMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(type = AggregationType.TOPK, expireDatabase = "topk", expireTable = "expire", partition = 42L, now = 70_000L))
+                    .create(service.sweep(type = AggregationType.TOPK, refreshDatabase = "topk", refreshTable = "refresh", partition = 42L, now = 70_000L))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
@@ -503,18 +503,18 @@ class AggregationServiceSpec :
                 delete.edge.source shouldBe 42L
                 delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
 
-                // sweep never re-tracks expiry for the item it just refreshed.
-                verify(exactly = 1) { mutationService.mutate("topk", "expire", any(), any(), any(), any(), any()) }
+                // sweep never re-tracks a refresh for the item it just refreshed.
+                verify(exactly = 1) { mutationService.mutate("topk", "refresh", any(), any(), any(), any(), any()) }
             }
 
             "sweep pages through the scan when a partition holds more rows than one page returns" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", expire = "topk.expire"))
-                        .copy(expireAfterMillis = 60_000L)
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
+                        .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
-                fun expiredRowFor(target: String): EdgePayload {
+                fun dueRowFor(target: String): EdgePayload {
                     val storedEdge = item("db", "src", source = "user1", target = target, version = 1_000L).edge
                     val payloadJson =
                         objectMapper.writeValueAsString(
@@ -532,17 +532,17 @@ class AggregationServiceSpec :
                         version = 1L,
                         source = 42L,
                         target = "db.src:top_purchased:OUT:user1:$target:61000",
-                        properties = mapOf("expiredAt" to 61_000L, "payload" to payloadJson),
+                        properties = mapOf("refreshAt" to 61_000L, "payload" to payloadJson),
                         context = emptyMap(),
                     )
                 }
 
                 every {
-                    queryService.scan("topk", "expire", "expired_at_asc", 42L, any<Direction>(), 10, null, "expiredAt:lte:70000", null, emptyList())
+                    queryService.scan("topk", "refresh", "refresh_at_asc", 42L, any<Direction>(), 10, null, "refreshAt:lte:70000", null, emptyList())
                 } returns
                     Mono.just(
                         DataFrameEdgePayload(
-                            edges = listOf(expiredRowFor("item1")),
+                            edges = listOf(dueRowFor("item1")),
                             count = 1,
                             total = 2,
                             offset = "cursor-1",
@@ -553,20 +553,20 @@ class AggregationServiceSpec :
                 every {
                     queryService.scan(
                         "topk",
-                        "expire",
-                        "expired_at_asc",
+                        "refresh",
+                        "refresh_at_asc",
                         42L,
                         any<Direction>(),
                         10,
                         "cursor-1",
-                        "expiredAt:lte:70000",
+                        "refreshAt:lte:70000",
                         null,
                         emptyList(),
                     )
                 } returns
                     Mono.just(
                         DataFrameEdgePayload(
-                            edges = listOf(expiredRowFor("item2")),
+                            edges = listOf(dueRowFor("item2")),
                             count = 1,
                             total = 2,
                             offset = null,
@@ -582,11 +582,11 @@ class AggregationServiceSpec :
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
                 every {
-                    mutationService.mutate("topk", "expire", any(), any(), any(), any(), any())
+                    mutationService.mutate("topk", "refresh", any(), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(type = AggregationType.TOPK, expireDatabase = "topk", expireTable = "expire", partition = 42L, now = 70_000L))
+                    .create(service.sweep(type = AggregationType.TOPK, refreshDatabase = "topk", refreshTable = "refresh", partition = 42L, now = 70_000L))
                     .assertNext { results -> results shouldHaveSize 2 }
                     .verifyComplete()
             }
@@ -597,7 +597,7 @@ class AggregationServiceSpec :
 
 private fun topkConfig(
     name: String,
-    table: TopkTable = TopkTable(score = "${name}__score", expire = "${name}__expire"),
+    table: TopkTable = TopkTable(score = "${name}__score", refresh = "${name}__refresh"),
 ): Topk = Topk(topk = name, table = table)
 
 private fun groupWithTopks(
