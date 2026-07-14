@@ -116,7 +116,15 @@ class AggregationService(
         expired: EdgePayload,
     ): Mono<AggregationResult> {
         val payload = objectMapper.readValue(expired.properties["payload"] as String, ExpirePayload::class.java)
-        val target = toResolvedTarget(type, payload) ?: return Mono.empty()
+        // A payload whose own type doesn't match the type this sweep call was scoped to is left
+        // alone entirely — same treatment as an unresolvable topk/group below — so it's picked up
+        // by a later call for its own type instead.
+        if (payload.type != type) return Mono.empty()
+
+        val target =
+            when (type) {
+                AggregationType.TOPK -> payload.resolveAsTopkTarget()
+            } ?: return Mono.empty()
 
         return aggregateTopk(target.event, target.direction, target.topk, writeExpireOnSuccess = false)
             .flatMap { result ->
@@ -135,41 +143,28 @@ class AggregationService(
             }
     }
 
-    // Dispatches a stored expire payload to the resolver for its aggregation kind. A payload whose
-    // own type doesn't match the type this sweep call was scoped to is left alone entirely — same
-    // treatment as an unresolvable topk/group below — so it's picked up by a later call instead.
-    private fun toResolvedTarget(
-        type: AggregationType,
-        payload: ExpirePayload,
-    ): ResolvedTopkTarget? {
-        if (payload.type != type) return null
-        return when (type) {
-            AggregationType.TOPK -> toTopkTarget(payload)
-        }
-    }
-
     // Resolves a sweep payload back to the exact (group, topk, direction) it was written for. The
     // payload travels with a group/topk name rather than the schema itself, so this stays correct
     // even if the schema's group ordering or other topks change between the write and the sweep.
     // Unlike the CDC path, sweep already knows the single topk/direction to redo, so it resolves
     // straight to that pair instead of fanning out over the group's whole aggregation list.
-    private fun toTopkTarget(payload: ExpirePayload): ResolvedTopkTarget? {
-        val tb = engine.getTableBinding(database = payload.database, alias = payload.table)
+    private fun ExpirePayload.resolveAsTopkTarget(): ResolvedTopkTarget? {
+        val tb = engine.getTableBinding(database = database, alias = table)
         if (tb.schema !is ModelSchema.Edge && tb.schema !is ModelSchema.MultiEdge) return null
 
-        val group = tb.schema.groupsOrNull().orEmpty().firstOrNull { it.group == payload.group } ?: return null
-        val topk = group.aggregations.topk.firstOrNull { it.topk == payload.topk } ?: return null
+        val group = tb.schema.groupsOrNull().orEmpty().firstOrNull { it.group == this.group } ?: return null
+        val topk = group.aggregations.topk.firstOrNull { it.topk == this.topk } ?: return null
 
         return ResolvedTopkTarget(
             event =
                 EdgeAggregationEvent(
                     type = AggregationType.TOPK,
-                    database = payload.database,
-                    table = payload.table,
-                    edge = payload.edge,
+                    database = database,
+                    table = table,
+                    edge = edge,
                     group = group,
                 ),
-            direction = payload.direction,
+            direction = direction,
             topk = topk,
         )
     }
