@@ -16,8 +16,9 @@ import org.springframework.http.MediaType
  *
  * A single MULTI_EDGE source table (`purchases`) declares one group per case.
  * All groups target the same score table (`purchases__topk`); each topk carries a
- * distinct name so the rowkey `${entity}|${topkName}` in the score table keeps the
- * ranked entries of each case separated:
+ * distinct name so the rowkey `{database}.{table}:{topk}:{direction}:{entity}` in the
+ * score table (see TopKTableNames.scoreSourceKey) keeps the ranked entries of each case
+ * separated:
  *
  *   Case                              | Group                     | Topk name
  *   --------------------------------- | ------------------------- | -------------------
@@ -26,17 +27,17 @@ import org.springframework.http.MediaType
  *   3. Per-entity + window            | purchased_1y              | top_purchased_1y
  *   4. Per-entity + segment + window  | purchased_by_segment_1y   | top_purchased_seg_1y
  *
- * Score table (`purchases__topk`) after aggregation. Rowkey is `${entity}|${topkName}`
- * (see TopKTableNames.scoreSourceKey) and the score_desc index sorts entries by
- * descending score so the topk read endpoint can scan the top rows directly:
+ * Score table (`purchases__topk`) after aggregation. Rowkey is
+ * `{database}.{table}:{topk}:{direction}:{entity}` and the score_desc index sorts entries
+ * by descending score so the topk read endpoint can scan the top rows directly:
  *
- *   rowkey                    | score_desc cq | value  -> logical (source, target, score)
- *   ------------------------- | ------------- | -----
- *   1|top_purchased           | 100           | 4      -> (1, 100, 4)
- *   1|top_purchased           | 200           | 1      -> (1, 200, 1)
- *   1|top_purchased_seg       | 100           | 3
- *   1|top_purchased_1y        | 100           | 3
- *   1|top_purchased_seg_1y    | 100           | 2
+ *   rowkey                                       | score_desc cq | value  -> logical (source, target, score)
+ *   --------------------------------------------- | ------------- | -----
+ *   commerce.purchases:top_purchased:OUT:1        | 100           | 4      -> (1, 100, 4)
+ *   commerce.purchases:top_purchased:OUT:1        | 200           | 1      -> (1, 200, 1)
+ *   commerce.purchases:top_purchased_seg:OUT:1    | 100           | 3
+ *   commerce.purchases:top_purchased_1y:OUT:1     | 100           | 3
+ *   commerce.purchases:top_purchased_seg_1y:OUT:1 | 100           | 2
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MetadataAggControllerE2ETest : E2ETestBase() {
@@ -327,11 +328,12 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
     // TODO: switch to `/edges/topk/{topk}` once the topk read endpoint lands (see follow-up PR).
     //       For now, scan the score table directly by the `score_desc` index using the
-    //       `${entity}|${topkName}` rowkey convention.
+    //       `{database}.{table}:{topk}:{direction}:{entity}` rowkey convention
+    //       (see TopKTableNames.scoreSourceKey).
     private fun readTopk(topk: String) =
         client
             .get()
-            .uri("/graph/v3/databases/$db/tables/$scoreTable/edges/scan/score_desc?start=$user|$topk&direction=OUT&limit=10")
+            .uri("/graph/v3/databases/$db/tables/$scoreTable/edges/scan/score_desc?start=$db.$sourceTable:$topk:OUT:$user&direction=OUT&limit=10")
             .exchange()
             .expectStatus()
             .isOk
