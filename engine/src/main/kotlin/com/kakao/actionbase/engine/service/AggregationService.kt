@@ -10,6 +10,7 @@ import com.kakao.actionbase.core.metadata.AggregationMetadata
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
+import com.kakao.actionbase.core.metadata.common.RankTarget
 import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkScope
@@ -225,9 +226,20 @@ class AggregationService(
             )
         val (scoreDatabase, scoreTable) = parseFqn(topk.table.score)
 
+        // The AGG query always scores `directedSource` (the row `direction` points the group at).
+        // `rankedValue`/`entity` are independent of that — they read the raw edge endpoints
+        // directly, because which endpoint is "who" vs. "what's being ranked" is a property of
+        // the topk declaration, not of the direction chosen to avoid a fat AGG row.
         val directedSource = if (direction == Direction.IN) target else source
-        val directedTarget = if (direction == Direction.IN) source else target
-        val entity = if (topk.scope == TopkScope.GLOBAL) TopKTableNames.GLOBAL_ENTITY else directedSource
+        val rankedValue = if (topk.rankTarget == RankTarget.TARGET) target else source
+        val entity =
+            if (topk.scope == TopkScope.GLOBAL) {
+                TopKTableNames.GLOBAL_ENTITY
+            } else if (topk.rankTarget == RankTarget.TARGET) {
+                source
+            } else {
+                target
+            }
         val ranges =
             topk.ranges.takeIf { it.isNotEmpty() }?.let {
                 interpolate(template = it, source = source, target = target, properties = event.edge.properties)
@@ -264,7 +276,7 @@ class AggregationService(
                                         Edge(
                                             version = System.currentTimeMillis(),
                                             source = scoreSource,
-                                            target = directedTarget,
+                                            target = rankedValue,
                                             properties = mapOf("segment" to encodeSegment(ranges), "score" to score),
                                         ),
                                 ),
@@ -274,7 +286,7 @@ class AggregationService(
                         if (result.status != "SUCCESS" || topk.refreshAfterMillis < 0 || !writeRefreshOnSuccess) {
                             Mono.just(result)
                         } else {
-                            writeRefreshEntry(event, direction, topk, entity, directedTarget).map { result }
+                            writeRefreshEntry(event, direction, topk, entity, rankedValue).map { result }
                         }
                     }
             }.onErrorResume { err ->
@@ -287,7 +299,7 @@ class AggregationService(
         direction: Direction,
         topk: Topk,
         entity: String,
-        directedTarget: String,
+        rankedValue: String,
     ): Mono<List<MutationResult>> {
         val (refreshDatabase, refreshTable) = parseFqn(topk.table.refresh)
         val refreshAt = event.edge.version + topk.refreshAfterMillis
@@ -298,7 +310,7 @@ class AggregationService(
                 topk = topk.topk,
                 direction = direction,
                 entity = entity,
-                target = directedTarget,
+                target = rankedValue,
             )
         val refreshTarget =
             TopKTableNames.refreshTargetKey(
@@ -307,7 +319,7 @@ class AggregationService(
                 topk = topk.topk,
                 direction = direction,
                 entity = entity,
-                target = directedTarget,
+                target = rankedValue,
                 refreshAt = refreshAt,
             )
         val payload =

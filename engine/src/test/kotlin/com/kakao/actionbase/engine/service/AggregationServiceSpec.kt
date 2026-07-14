@@ -15,6 +15,7 @@ import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.ModelSchema
+import com.kakao.actionbase.core.metadata.common.RankTarget
 import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkScope
@@ -223,7 +224,10 @@ class AggregationServiceSpec :
                 edge.target shouldBe "item1"
             }
 
-            "aggregate for IN direction swaps source and target so the ranking is per target entity" {
+            "aggregate for IN direction with default rankTarget still ranks target scoped by source" {
+                // direction only picks which physical Group row the AGG query scores (here,
+                // directedSource=target under IN); it no longer swaps entity/rankedValue — those
+                // come from rankTarget alone (default TARGET), same as the OUT case.
                 val topk = topkConfig(name = "top_purchased_by", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                 val group =
                     groupWithTopks(
@@ -250,11 +254,15 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "db.src:top_purchased_by:IN:item1"
-                edge.target shouldBe "user1"
+                edge.source shouldBe "db.src:top_purchased_by:IN:user1"
+                edge.target shouldBe "item1"
             }
 
-            "aggregate for GLOBAL scope uses a fixed entity so different sources share the same score row" {
+            "aggregate for GLOBAL scope ranks the item itself, scored from its own IN row" {
+                // GLOBAL pairs with IN here because the AGG score must come from the item's own
+                // row (directedSource=item under IN); rankTarget=TARGET (default) then ranks that
+                // same item. A GLOBAL topk declared OUT would score per-user rows instead, which
+                // isn't what "global popularity" means for this table's source(user)/target(item).
                 val topk =
                     topkConfig(name = "top_global", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                         .copy(scope = TopkScope.GLOBAL)
@@ -262,7 +270,7 @@ class AggregationServiceSpec :
                     groupWithTopks(
                         name = "g_global",
                         topks = listOf(topk),
-                        directionType = DirectionType.OUT,
+                        directionType = DirectionType.IN,
                     )
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
@@ -291,13 +299,47 @@ class AggregationServiceSpec :
                 val edges = mutations.map { it.single().edge }
                 edges.map { it.source } shouldContainExactlyInAnyOrder
                     listOf(
-                        "db.src:top_global:OUT:${TopKTableNames.GLOBAL_ENTITY}",
-                        "db.src:top_global:OUT:${TopKTableNames.GLOBAL_ENTITY}",
+                        "db.src:top_global:IN:${TopKTableNames.GLOBAL_ENTITY}",
+                        "db.src:top_global:IN:${TopKTableNames.GLOBAL_ENTITY}",
                     )
                 edges.map { it.target } shouldContainExactlyInAnyOrder listOf("item1", "item2")
             }
 
-            "aggregate for BOTH direction fans out into one OUT and one IN mutation" {
+            "aggregate for rankTarget SOURCE ranks the source endpoint and scopes by target" {
+                val topk =
+                    topkConfig(name = "top_by_target", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                        .copy(rankTarget = RankTarget.SOURCE)
+                val group =
+                    groupWithTopks(
+                        name = "g_flip",
+                        topks = listOf(topk),
+                        directionType = DirectionType.IN,
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 6))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src", source = "user1", target = "item1"))))
+                    .assertNext { results -> results shouldHaveSize 1 }
+                    .verifyComplete()
+
+                val edge = mutations.captured.single().edge
+                edge.source shouldBe "db.src:top_by_target:IN:item1"
+                edge.target shouldBe "user1"
+            }
+
+            "aggregate for BOTH direction fans out into one OUT and one IN mutation, both ranking the same target" {
+                // rankTarget (default TARGET) fixes entity=user1/rankedValue=item1 regardless of
+                // direction, so both fan-out mutations rank the same item1 — only the score key's
+                // embedded direction (and whichever physical Group row backs each score) differs.
                 val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
                 val group =
                     groupWithTopks(
@@ -326,7 +368,7 @@ class AggregationServiceSpec :
                 edges.map { it.source to it.target } shouldContainExactlyInAnyOrder
                     listOf(
                         "db.src:top_both:OUT:user1" to "item1",
-                        "db.src:top_both:IN:item1" to "user1",
+                        "db.src:top_both:IN:user1" to "item1",
                     )
             }
 

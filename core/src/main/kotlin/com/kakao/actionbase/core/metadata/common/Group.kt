@@ -36,6 +36,7 @@ data class Aggregations(
 data class Topk(
     val topk: String,
     val scope: TopkScope = TopkScope.LOCAL,
+    val rankTarget: RankTarget = RankTarget.TARGET,
     val ranges: String = "",
     val refreshAfterMillis: Long = -1,
     val table: TopkTable,
@@ -49,4 +50,12 @@ data class TopkTable(
 enum class TopkScope {
     LOCAL,
     GLOBAL,
+}
+
+// Which raw edge endpoint (source or target, independent of the group's declared direction) is
+// the ranked value. The other endpoint is the entity a LOCAL topk is scoped to; it's meaningless
+// for GLOBAL, where every event ranks into the same fixed entity regardless of rankTarget.
+enum class RankTarget {
+    SOURCE,
+    TARGET,
 }
