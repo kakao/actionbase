@@ -6,18 +6,17 @@ import com.kakao.actionbase.core.edge.Edge
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationResult
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
-import com.kakao.actionbase.core.metadata.AggregationMetadata
+import com.kakao.actionbase.core.metadata.QualifiedAggregations
+import com.kakao.actionbase.core.metadata.common.AggregationConstants
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
-import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
-import com.kakao.actionbase.engine.QualifiedGroups
 
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -27,7 +26,7 @@ class AggregationService(
     private val mutationService: MutationService,
     private val engine: AggregationEngine,
 ) {
-    fun getAggregations(): List<AggregationMetadata> = engine.getAllQualifiedGroups().map { it.toMetadata() }
+    fun getAggregations(type: AggregationType? = null): List<QualifiedAggregations> = engine.getListWithAggregations(type)
 
     fun aggregate(
         type: AggregationType,
@@ -38,13 +37,6 @@ class AggregationService(
             .flatMapIterable { item -> createEvent(type, item) }
             .flatMap { event -> processAggregations(event, type) }
             .collectList()
-
-    private fun QualifiedGroups.toMetadata(): AggregationMetadata =
-        AggregationMetadata(
-            database = database,
-            table = table,
-            aggregations = groups.map { it.aggregations },
-        )
 
     private fun ModelSchema.groupsOrNull(): List<Group>? =
         when (this) {
@@ -62,7 +54,7 @@ class AggregationService(
         }
 
     private fun createTopkEvent(item: AggregationItemPayload): List<EdgeAggregationEvent> {
-        val isExpire = item.database == TopKTableNames.EXPIRE_TABLE_DATABASE && item.table == TopKTableNames.EXPIRE_TABLE_NAME
+        val isExpire = item.database == AggregationConstants.TOPK_DATABASE && item.table == AggregationConstants.TOPK_EXPIRE_TABLE
 
         val (database, table) =
             if (isExpire) {
@@ -180,7 +172,7 @@ class AggregationService(
                                     edge =
                                         Edge(
                                             version = System.currentTimeMillis(),
-                                            source = TopKTableNames.scoreSourceKey(entity = directedSource, topk.topk),
+                                            source = AggregationConstants.scoreSourceKey(entity = directedSource, topk.topk),
                                             target = directedTarget,
                                             properties = mapOf("score" to score),
                                         ),

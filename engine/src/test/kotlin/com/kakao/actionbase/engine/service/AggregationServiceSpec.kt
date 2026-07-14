@@ -6,19 +6,19 @@ import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
+import com.kakao.actionbase.core.metadata.QualifiedAggregations
+import com.kakao.actionbase.core.metadata.common.AggregationConstants
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkTable
-import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
-import com.kakao.actionbase.engine.QualifiedGroups
 import com.kakao.actionbase.engine.binding.TableBinding
 
 import io.kotest.core.spec.style.StringSpec
@@ -43,30 +43,24 @@ class AggregationServiceSpec :
 
             // --- getAggregations ---
 
-            "getAggregations returns only tables that define topk" {
-                every { engine.getAllQualifiedGroups() } returns
-                    listOf(
-                        edgeSummary(database = "db", table = "with_topk", topks = listOf(topkConfig("t1"))),
-                        edgeSummary(database = "db", table = "no_topk", topks = emptyList()),
-                        vertexSummary(database = "db", table = "vertex"),
-                    )
+            "getAggregations forwards results from the engine" {
+                val entry = QualifiedAggregations(type = AggregationType.TOPK, database = "db", table = "with_topk")
+                every { engine.getListWithAggregations(null) } returns listOf(entry)
 
-                val result = service.getAggregations()
-
-                val topks = result.flatMap { md -> md.aggregations.flatMap { it.topk } }
-                topks shouldContainExactlyInAnyOrder listOf(topkConfig("t1"))
+                service.getAggregations() shouldContainExactlyInAnyOrder listOf(entry)
             }
 
-            "getAggregations returns empty topk when no table defines any aggregation" {
-                every { engine.getAllQualifiedGroups() } returns
-                    listOf(
-                        edgeSummary(database = "db", table = "no_topk", topks = emptyList()),
-                        vertexSummary(database = "db", table = "vertex"),
-                    )
+            "getAggregations returns empty when the engine has nothing to report" {
+                every { engine.getListWithAggregations(null) } returns emptyList()
 
-                val result = service.getAggregations()
+                service.getAggregations().shouldBeEmpty()
+            }
 
-                result.flatMap { md -> md.aggregations.flatMap { it.topk } }.shouldBeEmpty()
+            "getAggregations forwards the requested type filter to the engine" {
+                val entry = QualifiedAggregations(type = AggregationType.TOPK, database = "db", table = "with_topk")
+                every { engine.getListWithAggregations(AggregationType.TOPK) } returns listOf(entry)
+
+                service.getAggregations(AggregationType.TOPK) shouldContainExactlyInAnyOrder listOf(entry)
             }
 
             // --- aggregate ---
@@ -347,27 +341,6 @@ private fun groupWithTopks(
 
 private fun stringField(): Field = Field(type = PrimitiveType.STRING, comment = "")
 
-private fun edgeSummary(
-    database: String,
-    table: String,
-    topks: List<Topk>,
-): QualifiedGroups =
-    QualifiedGroups(
-        database = database,
-        table = table,
-        groups = listOf(groupWithTopks("g", topks)),
-    )
-
-private fun vertexSummary(
-    database: String,
-    table: String,
-): QualifiedGroups =
-    QualifiedGroups(
-        database = database,
-        table = table,
-        groups = emptyList(),
-    )
-
 private fun stubBindingWith(
     engine: AggregationEngine,
     database: String,
@@ -407,8 +380,8 @@ private fun item(
 
 private fun expireItem(properties: Map<String, Any?>): AggregationItemPayload =
     AggregationItemPayload(
-        database = TopKTableNames.EXPIRE_TABLE_DATABASE,
-        table = TopKTableNames.EXPIRE_TABLE_NAME,
+        database = AggregationConstants.TOPK_DATABASE,
+        table = AggregationConstants.TOPK_EXPIRE_TABLE,
         edge =
             EdgePayload(
                 version = 1L,
