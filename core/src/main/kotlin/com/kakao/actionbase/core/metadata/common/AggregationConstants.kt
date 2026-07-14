@@ -15,13 +15,13 @@ object AggregationConstants {
         topk: String,
         entity: String,
         target: String,
-    ): String = ("$table|$topk|$entity|$target".hashCode() / 2310 ).toString()
+    ): String = ("$table|$topk|$entity|$target".hashCode() / 2310).toString()
 
     fun expireTarget(
         table: String,
         topk: String,
         entity: String,
         target: String,
-        expiresAt: Long
+        expiresAt: Long,
     ): String = "$table|$topk|$entity|$target|$expiresAt"
 }

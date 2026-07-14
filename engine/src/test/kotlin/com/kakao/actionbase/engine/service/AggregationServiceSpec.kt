@@ -342,8 +342,12 @@ class AggregationServiceSpec :
                     }.verifyComplete()
                 val after = System.currentTimeMillis()
 
-                scoreMutations.captured.single().edge.source shouldBe "user1|top_purchased"
-                scoreMutations.captured.single().edge.target shouldBe "item1"
+                scoreMutations.captured
+                    .single()
+                    .edge.source shouldBe "user1|top_purchased"
+                scoreMutations.captured
+                    .single()
+                    .edge.target shouldBe "item1"
 
                 val expireEdge = expireMutations.captured.single().edge
                 expireEdge.source shouldBe
@@ -366,7 +370,8 @@ class AggregationServiceSpec :
                     )
                 expireEdge.properties["table"] shouldBe "commerce.purchases"
                 expireEdge.properties["topk"] shouldBe "top_purchased"
-                expireEdge.properties["start"] shouldBe "user1"
+                expireEdge.properties["source"] shouldBe "user1"
+                expireEdge.properties["target"] shouldBe "item1"
                 expireEdge.properties["direction"] shouldBe "OUT"
                 expireEdge.properties["processed"] shouldBe false
             }

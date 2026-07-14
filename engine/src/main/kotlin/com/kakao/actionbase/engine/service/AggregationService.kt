@@ -187,33 +187,38 @@ class AggregationService(
 
                         val expiresAt = version + topk.expireAfterMillis
 
-                        mutationService.mutate(
-                            database = AggregationConstants.TOPK_DATABASE,
-                            alias = AggregationConstants.TOPK_EXPIRE_TABLE,
-                            unresolvedEvents = listOf(
-                                MutationItem(
-                                    type = EventType.INSERT,
-                                    edge = Edge(
-                                        version = System.currentTimeMillis(),
-                                        source = AggregationConstants.expireSource(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget),
-                                        target = AggregationConstants.expireTarget(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget, expiresAt = expiresAt),
-                                        properties = mapOf(
-                                            "expiresAt" to expiresAt,
-                                            "table" to "$database.$table",
-                                            "topk" to topk.topk,
-                                            "start" to directedSource,
-                                            "direction" to direction.name,
-                                            "ranges" to ranges,
-                                            "processed" to false,
+                        mutationService
+                            .mutate(
+                                database = AggregationConstants.TOPK_DATABASE,
+                                alias = AggregationConstants.TOPK_EXPIRE_TABLE,
+                                unresolvedEvents =
+                                    listOf(
+                                        MutationItem(
+                                            type = EventType.INSERT,
+                                            edge =
+                                                Edge(
+                                                    version = System.currentTimeMillis(),
+                                                    source = AggregationConstants.expireSource(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget),
+                                                    target = AggregationConstants.expireTarget(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget, expiresAt = expiresAt),
+                                                    properties =
+                                                        mapOf(
+                                                            "expiresAt" to expiresAt,
+                                                            "table" to "$database.$table",
+                                                            "topk" to topk.topk,
+                                                            "source" to source,
+                                                            "target" to target,
+                                                            "direction" to direction.name,
+                                                            "ranges" to ranges,
+                                                            "processed" to false,
+                                                        ),
+                                                ),
                                         ),
                                     ),
-                                ),
-                            ),
-                        ).map { expireResults ->
-                            base.copy(
-                                status = if (expireResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS",
-                            )
-                        }
+                            ).map { expireResults ->
+                                base.copy(
+                                    status = if (expireResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS",
+                                )
+                            }
                     }
             }.onErrorResume { err ->
                 Mono.just(base.copy(status = "ERROR", error = err.message))

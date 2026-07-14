@@ -92,19 +92,20 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "long", "comment": "partition = hash(table,topk,entity,target) % 2310"},
-                    "target": {"type": "string", "comment": "table|topk|entity|target|expired_at"},
+                    "target": {"type": "string", "comment": "table|topk|entity|target|expires_at"},
                     "properties": [
-                      {"name": "expiredAt", "type": "long", "comment": "expire time ms", "nullable": false},
+                      {"name": "expiresAt", "type": "long", "comment": "expire time ms", "nullable": false},
                       {"name": "table", "type": "string", "comment": "source table", "nullable": false},
                       {"name": "topk", "type": "string", "comment": "topk name", "nullable": false},
-                      {"name": "start", "type": "string", "comment": "start", "nullable": false},
+                      {"name": "source", "type": "string", "comment": "original source", "nullable": false},
+                      {"name": "target", "type": "string", "comment": "original target", "nullable": false},
                       {"name": "direction", "type": "string", "comment": "direction", "nullable": false},
                       {"name": "ranges", "type": "string", "comment": "interpolated ranges", "nullable": false},
                       {"name": "processed", "type": "boolean", "comment": "processed", "nullable": false}
                     ],
                     "direction": "OUT",
                     "indexes": [
-                      {"index": "expired_at_asc", "fields": [{"field": "expiredAt", "order": "ASC"}]}
+                      {"index": "expires_at_asc", "fields": [{"field": "expiresAt", "order": "ASC"}]}
                     ],
                     "groups": [],
                     "caches": []
