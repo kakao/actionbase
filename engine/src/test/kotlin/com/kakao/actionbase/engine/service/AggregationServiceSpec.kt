@@ -12,6 +12,7 @@ import com.kakao.actionbase.core.metadata.QualifiedAggregations
 import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
+import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
@@ -218,6 +219,152 @@ class AggregationServiceSpec :
                         "user1|top_both" to "item1",
                         "item1|top_both" to "user1",
                     )
+            }
+
+            "aggregate uses non-bucket group fields for the score row target, skipping bucket fields" {
+                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val group =
+                    groupWithTopks(
+                        name = "g_bucketed",
+                        topks = listOf(topk),
+                        directionType = DirectionType.OUT,
+                        fields =
+                            listOf(
+                                Group.Field(name = "_target"),
+                                Group.Field(
+                                    name = "purchasedAt",
+                                    bucket = Bucket.Date(name = "day", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"),
+                                ),
+                            ),
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 4))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(
+                        service.aggregate(
+                            AggregationType.TOPK,
+                            listOf(item("db", "src", source = "user1", target = "item1", properties = mapOf("purchasedAt" to 1_700_000_000_000L))),
+                        ),
+                    ).assertNext { results ->
+                        results shouldHaveSize 1
+                        results[0].status shouldBe "SUCCESS"
+                    }.verifyComplete()
+
+                val edge = mutations.captured.single().edge
+                edge.source shouldBe "user1|top_purchased_1y"
+                edge.target shouldBe "item1"
+            }
+
+            "aggregate builds the score row target from a properties-backed field when the group has no endpoint field" {
+                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val group =
+                    groupWithTopks(
+                        name = "g_props_only",
+                        topks = listOf(topk),
+                        directionType = DirectionType.OUT,
+                        fields =
+                            listOf(
+                                Group.Field(name = "category"),
+                                Group.Field(
+                                    name = "purchasedAt",
+                                    bucket = Bucket.Date(name = "day", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"),
+                                ),
+                            ),
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 3))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(
+                        service.aggregate(
+                            AggregationType.TOPK,
+                            listOf(
+                                item(
+                                    "db",
+                                    "src",
+                                    source = "user1",
+                                    target = "item1",
+                                    properties = mapOf("category" to "fruit", "purchasedAt" to 1_700_000_000_000L),
+                                ),
+                            ),
+                        ),
+                    ).assertNext { results ->
+                        results shouldHaveSize 1
+                        results[0].status shouldBe "SUCCESS"
+                    }.verifyComplete()
+
+                val edge = mutations.captured.single().edge
+                edge.source shouldBe "user1|top_purchased_1y"
+                edge.target shouldBe "fruit"
+            }
+
+            "aggregate joins multiple non-bucket group fields for the score row target" {
+                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val group =
+                    groupWithTopks(
+                        name = "g_multi",
+                        topks = listOf(topk),
+                        directionType = DirectionType.OUT,
+                        fields =
+                            listOf(
+                                Group.Field(name = "_target"),
+                                Group.Field(name = "category"),
+                                Group.Field(
+                                    name = "purchasedAt",
+                                    bucket = Bucket.Date(name = "day", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"),
+                                ),
+                            ),
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 2))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(
+                        service.aggregate(
+                            AggregationType.TOPK,
+                            listOf(
+                                item(
+                                    "db",
+                                    "src",
+                                    source = "user1",
+                                    target = "item1",
+                                    properties = mapOf("category" to "fruit", "purchasedAt" to 1_700_000_000_000L),
+                                ),
+                            ),
+                        ),
+                    ).assertNext { results ->
+                        results shouldHaveSize 1
+                        results[0].status shouldBe "SUCCESS"
+                    }.verifyComplete()
+
+                val edge = mutations.captured.single().edge
+                edge.source shouldBe "user1|top_purchased_1y"
+                edge.target shouldBe "item1|fruit"
             }
 
             // --- aggregate (expire CDC) ---
@@ -519,11 +666,12 @@ private fun groupWithTopks(
     name: String,
     topks: List<Topk>,
     directionType: DirectionType = DirectionType.BOTH,
+    fields: List<Group.Field> = emptyList(),
 ): Group =
     Group(
         group = name,
         type = GroupType.SUM,
-        fields = emptyList(),
+        fields = fields,
         directionType = directionType,
         aggregations = Aggregations(topk = topks),
     )
@@ -553,6 +701,7 @@ private fun item(
     table: String,
     source: String = "s",
     target: String = "t",
+    properties: Map<String, Any?> = emptyMap(),
 ): AggregationItemPayload =
     AggregationItemPayload(
         database = database,
@@ -562,7 +711,7 @@ private fun item(
                 version = 1L,
                 source = source,
                 target = target,
-                properties = emptyMap(),
+                properties = properties,
                 context = emptyMap(),
             ),
     )
