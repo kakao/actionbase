@@ -315,11 +315,223 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
         assertEquals(2L, (before.edges.single().properties["score"] as Number).toLong())
     }
 
+    @Test
+    fun `expire CDC re-aggregate drops targets that fall out of the rolling window`() {
+        val windowedDb = "commerce-window"
+        val windowedTable = "orders_window"
+        val windowedScore = "orders_window__topk"
+        val windowedScoreFqn = "$windowedDb.$windowedScore"
+        val windowedTopk = "top_purchased_1y"
+        val entity = "userR"
+
+        // Setup: score companion + original table whose topk uses a rolling `now`-based window.
+        client
+            .post()
+            .uri("/graph/v3/databases")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"database": "$windowedDb", "comment": "test"}""")
+            .exchange()
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$windowedDb/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$windowedScore",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "entity|topk"},
+                    "target": {"type": "string", "comment": "ranked target"},
+                    "properties": [
+                      {"name": "score", "type": "long", "comment": "score", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [
+                      {"index": "score_desc", "fields": [{"field": "score", "order": "DESC"}]}
+                    ],
+                    "groups": [],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$windowedScore",
+                  "mode": "SYNC",
+                  "comment": "topk score"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$windowedDb/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$windowedTable",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "order id"},
+                    "source": {"type": "string", "comment": "user"},
+                    "target": {"type": "string", "comment": "item"},
+                    "properties": [
+                      {"name": "purchasedAt", "type": "long", "comment": "purchase time (yyyy-MM-dd from `now`)", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": [{
+                      "group": "purchased_rolling_1y",
+                      "type": "COUNT",
+                      "fields": [
+                        {"name": "_target"},
+                        {"name": "purchasedAt", "bucket": {"type": "date", "name": "day", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
+                      ],
+                      "directionType": "OUT",
+                      "aggregations": {
+                        "topk": [{
+                          "topk": "$windowedTopk",
+                          "ranges": "_target:eq:{_target};day:bt:now-365d,now",
+                          "expireAfterMillis": 31536000000,
+                          "table": {"score": "$windowedScoreFqn", "expire": "$expireFqn"}
+                        }]
+                      }
+                    }],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$windowedTable",
+                  "mode": "SYNC",
+                  "comment": "orders with a rolling 1y window"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        // t0 = 2026-06-01. Seed: item1 x3 back on 2026-05-01 (inside window),
+        // item2 x1 today. After clock advances one year, item1's day falls out of `now-365d,now`.
+        val t0 = Instant.parse("2026-06-01T00:00:00Z")
+        clock.setInstant(t0)
+        val item1Day = Instant.parse("2026-05-01T00:00:00Z").toEpochMilli()
+        val item2Day = t0.toEpochMilli()
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$windowedDb/tables/$windowedTable/multi-edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 1, "id": 200, "source": "$entity", "target": "item1", "properties": {"purchasedAt": $item1Day}}},
+                    {"type": "INSERT", "edge": {"version": 2, "id": 201, "source": "$entity", "target": "item1", "properties": {"purchasedAt": $item1Day}}},
+                    {"type": "INSERT", "edge": {"version": 3, "id": 202, "source": "$entity", "target": "item1", "properties": {"purchasedAt": $item1Day}}},
+                    {"type": "INSERT", "edge": {"version": 4, "id": 203, "source": "$entity", "target": "item2", "properties": {"purchasedAt": $item2Day}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        for ((target, day) in listOf("item1" to item1Day, "item2" to item2Day)) {
+            client
+                .post()
+                .uri("/graph/v3/aggregations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    """
+                    {
+                      "type": "TOPK",
+                      "items": [
+                        {"database": "$windowedDb", "table": "$windowedTable",
+                         "edge": {"version": 1, "source": "$entity", "target": "$target", "properties": {"purchasedAt": $day}, "context": {}}}
+                      ]
+                    }
+                    """.trimIndent(),
+                ).exchange()
+                .expectStatus()
+                .isOk
+        }
+
+        val initial =
+            client
+                .get()
+                .uri(
+                    "/graph/v3/databases/$windowedDb/tables/$windowedTable/aggregations/topk/$windowedTopk" +
+                        "?entity=$entity&limit=10",
+                ).exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<DataFrameEdgePayload>()
+                .returnResult()
+                .responseBody!!
+        val initialScores =
+            initial.edges.associate { it.target.toString() to (it.properties["score"] as Number).toLong() }
+        assertEquals(3L, initialScores["item1"])
+        assertEquals(1L, initialScores["item2"])
+
+        // Advance the clock by ~13 months so item1's day (2026-05-01) sits outside `now-365d,now`.
+        clock.setInstant(t0.plusSeconds(60L * 60 * 24 * 400))
+
+        // Touch-line CDC surrogate: aggregate against `topk.expire` with `processed=true`,
+        // carrying the ranges captured at write time. The service resolves the original table
+        // from `properties.table` and re-runs aggregate — `now`-based ranges now exclude item1.
+        client
+            .post()
+            .uri("/graph/v3/aggregations")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "type": "TOPK",
+                  "items": [
+                    {"database": "$TOPK_DATABASE", "table": "$TOPK_EXPIRE_TABLE",
+                     "edge": {"version": 1, "source": "unused", "target": "unused",
+                              "properties": {
+                                "table": "$windowedDb.$windowedTable",
+                                "topk": "$windowedTopk",
+                                "source": "$entity",
+                                "target": "item1",
+                                "direction": "OUT",
+                                "ranges": "_target:eq:item1;day:bt:now-365d,now",
+                                "processed": true
+                              }, "context": {}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        val after =
+            client
+                .get()
+                .uri(
+                    "/graph/v3/databases/$windowedDb/tables/$windowedTable/aggregations/topk/$windowedTopk" +
+                        "?entity=$entity&limit=10",
+                ).exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<DataFrameEdgePayload>()
+                .returnResult()
+                .responseBody!!
+        val positive = after.edges.filter { (it.properties["score"] as Number).toLong() > 0L }
+        assertEquals(
+            listOf("item2" to 1L),
+            positive.map { it.target.toString() to (it.properties["score"] as Number).toLong() },
+        )
+    }
+
     @TestConfiguration
     class MutableClockConfig {
         @Bean
-        @Primary
         fun mutableClock(): MutableClock = MutableClock(Instant.parse("2026-01-01T00:00:00Z"))
+
+        @Bean
+        @Primary
+        fun clock(mutableClock: MutableClock): Clock = mutableClock
 
         @Bean
         @Primary
@@ -327,8 +539,8 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
             queryService: QueryService,
             mutationService: MutationService,
             engine: AggregationEngine,
-            clock: MutableClock,
-        ): AggregationService = AggregationService(queryService, mutationService, engine, clock)
+            mutableClock: MutableClock,
+        ): AggregationService = AggregationService(queryService, mutationService, engine, mutableClock)
     }
 
     class MutableClock(
