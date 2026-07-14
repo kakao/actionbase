@@ -30,7 +30,7 @@ object TopKTableNames {
         entity: String,
         target: String,
         expiredAt: Long,
-    ): String = "$database.$table|$topk|${direction.name}|$entity|$target|$expiredAt"
+    ): String = "$database.$table:$topk:${direction.name}:$entity:$target:$expiredAt"
 
     // expire table partition, hashed from the full event coordinates (excluding expiredAt) so
     // events spread across the fixed partition space instead of collapsing onto one entity.

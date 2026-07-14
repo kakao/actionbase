@@ -402,7 +402,7 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 val expireEdge = expireMutations.captured.single().edge
-                expireEdge.target shouldBe "db.src|top_purchased|OUT|user1|item1|61000"
+                expireEdge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
                 expireEdge.properties["expiredAt"] shouldBe 61_000L
             }
 
@@ -436,8 +436,8 @@ class AggregationServiceSpec :
                 val targets = expireMutations.map { it.single().edge.target }
                 targets shouldContainExactlyInAnyOrder
                     listOf(
-                        "db.src|top_purchased|OUT|user1|item1|61000",
-                        "db.src|top_purchased|OUT|user1|item2|62000",
+                        "db.src:top_purchased:OUT:user1:item1:61000",
+                        "db.src:top_purchased:OUT:user1:item2:62000",
                     )
             }
 
@@ -454,6 +454,7 @@ class AggregationServiceSpec :
                 val expirePayloadJson =
                     objectMapper.writeValueAsString(
                         mapOf(
+                            "type" to "TOPK",
                             "database" to "db",
                             "table" to "src",
                             "group" to "g1",
@@ -466,7 +467,7 @@ class AggregationServiceSpec :
                     EdgePayload(
                         version = 1L,
                         source = 42L,
-                        target = "db.src|top_purchased|OUT|user1|item1|61000",
+                        target = "db.src:top_purchased:OUT:user1:item1:61000",
                         properties = mapOf("expiredAt" to 61_000L, "payload" to expirePayloadJson),
                         context = emptyMap(),
                     )
@@ -491,7 +492,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(expireDatabase = "topk", expireTable = "expire", partition = 42L, now = 70_000L))
+                    .create(service.sweep(type = AggregationType.TOPK, expireDatabase = "topk", expireTable = "expire", partition = 42L, now = 70_000L))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
@@ -500,7 +501,7 @@ class AggregationServiceSpec :
                 val delete = deleteMutations.captured.single()
                 delete.type shouldBe EventType.DELETE
                 delete.edge.source shouldBe 42L
-                delete.edge.target shouldBe "db.src|top_purchased|OUT|user1|item1|61000"
+                delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
 
                 // sweep never re-tracks expiry for the item it just refreshed.
                 verify(exactly = 1) { mutationService.mutate("topk", "expire", any(), any(), any(), any(), any()) }
@@ -518,6 +519,7 @@ class AggregationServiceSpec :
                     val payloadJson =
                         objectMapper.writeValueAsString(
                             mapOf(
+                                "type" to "TOPK",
                                 "database" to "db",
                                 "table" to "src",
                                 "group" to "g1",
@@ -529,7 +531,7 @@ class AggregationServiceSpec :
                     return EdgePayload(
                         version = 1L,
                         source = 42L,
-                        target = "db.src|top_purchased|OUT|user1|$target|61000",
+                        target = "db.src:top_purchased:OUT:user1:$target:61000",
                         properties = mapOf("expiredAt" to 61_000L, "payload" to payloadJson),
                         context = emptyMap(),
                     )
@@ -584,7 +586,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(expireDatabase = "topk", expireTable = "expire", partition = 42L, now = 70_000L))
+                    .create(service.sweep(type = AggregationType.TOPK, expireDatabase = "topk", expireTable = "expire", partition = 42L, now = 70_000L))
                     .assertNext { results -> results shouldHaveSize 2 }
                     .verifyComplete()
             }

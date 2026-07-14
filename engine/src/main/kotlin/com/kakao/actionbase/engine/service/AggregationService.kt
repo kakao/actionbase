@@ -18,7 +18,8 @@ import com.kakao.actionbase.core.metadata.payload.ExpireTableRef
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.QualifiedGroups
-import com.kakao.actionbase.v2.engine.util.objectMapper
+
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -55,25 +56,30 @@ class AggregationService(
         Flux
             .fromIterable(items)
             .flatMapIterable { item -> createEvent(type, item) }
-            .flatMap { event -> processAggregations(event, type) }
+            .flatMap { event -> processAggregations(event) }
             .collectList()
 
     // B) Sweep path: scan one fixed expire-table partition for rows whose expiredAt has passed,
     // re-aggregate each directly from its stored payload (no CDC round-trip, no public endpoint
     // call), and delete the row once its score has been refreshed. Never re-writes an expire row
     // for the item it just processed. Safe to call repeatedly/concurrently for the same partition:
-    // a row another call already deleted is simply absent from the next scan.
+    // a row another call already deleted is simply absent from the next scan. `type` scopes this
+    // call to rows of that aggregation kind — a physical expire table could one day hold rows for
+    // more than one type, and a row whose stored type doesn't match is left untouched (and
+    // undeleted) for a future call with the matching type to pick up.
     fun sweep(
+        type: AggregationType,
         expireDatabase: String,
         expireTable: String,
         partition: Long,
         now: Long,
-    ): Mono<List<AggregationResult>> = sweepPage(expireDatabase, expireTable, partition, now, offset = null)
+    ): Mono<List<AggregationResult>> = sweepPage(type, expireDatabase, expireTable, partition, now, offset = null)
 
     // Pages through the scan since one partition can hold more expired rows than a single scan
     // page returns. Deleting each row as it's swept means a later page never re-sees an earlier
     // one, so paging by the scan's own offset (rather than re-scanning from the start) is safe.
     private fun sweepPage(
+        type: AggregationType,
         expireDatabase: String,
         expireTable: String,
         partition: Long,
@@ -92,26 +98,27 @@ class AggregationService(
             ).flatMap { page ->
                 Flux
                     .fromIterable(page.edges)
-                    .flatMap { expired -> sweepOne(expireDatabase, expireTable, expired) }
+                    .flatMap { expired -> sweepOne(type, expireDatabase, expireTable, expired) }
                     .collectList()
                     .flatMap { results ->
                         if (!page.hasNext) {
                             Mono.just(results)
                         } else {
-                            sweepPage(expireDatabase, expireTable, partition, now, offset = page.offset).map { results + it }
+                            sweepPage(type, expireDatabase, expireTable, partition, now, offset = page.offset).map { results + it }
                         }
                     }
             }
 
     private fun sweepOne(
+        type: AggregationType,
         expireDatabase: String,
         expireTable: String,
         expired: EdgePayload,
     ): Mono<AggregationResult> {
         val payload = objectMapper.readValue(expired.properties["payload"] as String, ExpirePayload::class.java)
-        val event = toEvent(payload) ?: return Mono.empty()
+        val target = toResolvedTarget(type, payload) ?: return Mono.empty()
 
-        return aggregateTopk(event, writeExpireOnSuccess = false)
+        return aggregateTopk(target.event, target.direction, target.topk, writeExpireOnSuccess = false)
             .flatMap { result ->
                 mutationService
                     .mutate(
@@ -128,21 +135,40 @@ class AggregationService(
             }
     }
 
-    // Resolves a sweep payload back to the exact (group, topk) it was written for. The payload
-    // travels with a group/topk name rather than the schema itself, so this stays correct even if
-    // the schema's group ordering or other topks change between the write and the sweep.
-    private fun toEvent(payload: ExpirePayload): EdgeAggregationEvent? {
+    // Dispatches a stored expire payload to the resolver for its aggregation kind. A payload whose
+    // own type doesn't match the type this sweep call was scoped to is left alone entirely — same
+    // treatment as an unresolvable topk/group below — so it's picked up by a later call instead.
+    private fun toResolvedTarget(
+        type: AggregationType,
+        payload: ExpirePayload,
+    ): ResolvedTopkTarget? {
+        if (payload.type != type) return null
+        return when (type) {
+            AggregationType.TOPK -> toTopkTarget(payload)
+        }
+    }
+
+    // Resolves a sweep payload back to the exact (group, topk, direction) it was written for. The
+    // payload travels with a group/topk name rather than the schema itself, so this stays correct
+    // even if the schema's group ordering or other topks change between the write and the sweep.
+    // Unlike the CDC path, sweep already knows the single topk/direction to redo, so it resolves
+    // straight to that pair instead of fanning out over the group's whole aggregation list.
+    private fun toTopkTarget(payload: ExpirePayload): ResolvedTopkTarget? {
         val tb = engine.getTableBinding(database = payload.database, alias = payload.table)
         if (tb.schema !is ModelSchema.Edge && tb.schema !is ModelSchema.MultiEdge) return null
 
         val group = tb.schema.groupsOrNull().orEmpty().firstOrNull { it.group == payload.group } ?: return null
         val topk = group.aggregations.topk.firstOrNull { it.topk == payload.topk } ?: return null
 
-        return EdgeAggregationEvent(
-            database = payload.database,
-            table = payload.table,
-            edge = payload.edge,
-            group = group,
+        return ResolvedTopkTarget(
+            event =
+                EdgeAggregationEvent(
+                    type = AggregationType.TOPK,
+                    database = payload.database,
+                    table = payload.table,
+                    edge = payload.edge,
+                    group = group,
+                ),
             direction = payload.direction,
             topk = topk,
         )
@@ -179,45 +205,47 @@ class AggregationService(
 
         val groups = tb.schema.groupsOrNull().orEmpty()
 
-        return groups.flatMap { group ->
-            group.aggregations.topk.flatMap { topk ->
-                group.directionType.directions().map { direction ->
-                    EdgeAggregationEvent(
-                        database = item.database,
-                        table = item.table,
-                        edge = item.edge,
-                        group = group,
-                        direction = direction,
-                        topk = topk,
-                    )
-                }
-            }
+        return groups.map { group ->
+            EdgeAggregationEvent(
+                type = AggregationType.TOPK,
+                database = item.database,
+                table = item.table,
+                edge = item.edge,
+                group = group,
+            )
         }
     }
 
-    private fun processAggregations(
-        event: EdgeAggregationEvent,
-        type: AggregationType,
-    ): Mono<AggregationResult> =
-        when (type) {
+    // Fans a matched group's whole aggregation set (today: just topk) out into its individual
+    // (topk, direction) work items. A future aggregation kind (e.g. trend) would get its own case
+    // here rather than another field flattened onto EdgeAggregationEvent.
+    private fun processAggregations(event: EdgeAggregationEvent): Flux<AggregationResult> =
+        when (event.type) {
             AggregationType.TOPK -> processTopk(event, writeExpireOnSuccess = true)
         }
 
     private fun processTopk(
         event: EdgeAggregationEvent,
         writeExpireOnSuccess: Boolean,
-    ): Mono<AggregationResult> = aggregateTopk(event, writeExpireOnSuccess)
+    ): Flux<AggregationResult> {
+        val directionTopkPairs =
+            event.group.aggregations.topk.flatMap { topk -> event.group.directionType.directions().map { it to topk } }
+
+        return Flux
+            .fromIterable(directionTopkPairs)
+            .flatMap { (direction, topk) -> aggregateTopk(event, direction, topk, writeExpireOnSuccess) }
+    }
 
     private fun aggregateTopk(
         event: EdgeAggregationEvent,
+        direction: Direction,
+        topk: Topk,
         writeExpireOnSuccess: Boolean,
     ): Mono<AggregationResult> {
         val database = event.database
         val table = event.table
         val source = event.edge.source.toString()
         val target = event.edge.target.toString()
-        val direction = event.direction
-        val topk = event.topk
         val base =
             AggregationResult(
                 database = database,
@@ -278,7 +306,7 @@ class AggregationService(
                         if (result.status != "SUCCESS" || topk.expireAfterMillis < 0 || !writeExpireOnSuccess) {
                             Mono.just(result)
                         } else {
-                            writeExpireEntry(event, entity, directedTarget).map { result }
+                            writeExpireEntry(event, direction, topk, entity, directedTarget).map { result }
                         }
                     }
             }.onErrorResume { err ->
@@ -293,10 +321,11 @@ class AggregationService(
     // `properties.payload` so sweep can re-trigger this exact aggregation without needing a CDC.
     private fun writeExpireEntry(
         event: EdgeAggregationEvent,
+        direction: Direction,
+        topk: Topk,
         entity: String,
         directedTarget: String,
     ): Mono<List<MutationResult>> {
-        val topk = event.topk
         val (expireDatabase, expireTable) = parseFqn(topk.table.expire)
         val expiredAt = event.edge.version + topk.expireAfterMillis
         val partition =
@@ -304,7 +333,7 @@ class AggregationService(
                 database = event.database,
                 table = event.table,
                 topk = topk.topk,
-                direction = event.direction,
+                direction = direction,
                 entity = entity,
                 target = directedTarget,
             )
@@ -313,18 +342,19 @@ class AggregationService(
                 database = event.database,
                 table = event.table,
                 topk = topk.topk,
-                direction = event.direction,
+                direction = direction,
                 entity = entity,
                 target = directedTarget,
                 expiredAt = expiredAt,
             )
         val payload =
             ExpirePayload(
+                type = event.type,
                 database = event.database,
                 table = event.table,
                 group = event.group.group,
                 topk = topk.topk,
-                direction = event.direction,
+                direction = direction,
                 edge = event.edge,
             )
 
@@ -385,24 +415,37 @@ class AggregationService(
     private companion object {
         private val PLACEHOLDER = Regex("""\{([a-zA-Z_][a-zA-Z0-9_]*)}""")
         private const val EXPIRED_AT_INDEX = "expired_at_asc"
+        private val objectMapper = jacksonObjectMapper()
     }
 }
 
-// One (group, topk, direction) worth of work against a single source edge. Built either straight
-// from an incoming CDC item (one event per topk × direction the matching groups declare) or
-// reconstructed from a stored expire payload during sweep.
+// One matched (table, group) pair for a single source edge, ahead of fanning out into the
+// group's aggregations for the given type (today: topk × direction; a future aggregation kind
+// gets its own fan-out in processAggregations rather than another field flattened in here). Built
+// either straight from an incoming CDC item or reconstructed from a stored expire payload during
+// sweep.
 data class EdgeAggregationEvent(
+    val type: AggregationType,
     val database: String,
     val table: String,
     val edge: EdgePayload,
     val group: Group,
+)
+
+// A single topk/direction resolved out of a sweep payload — the one pair sweep already knows it
+// must redo, as opposed to the full fan-out the CDC path runs via processAggregations.
+private data class ResolvedTopkTarget(
+    val event: EdgeAggregationEvent,
     val direction: Direction,
     val topk: Topk,
 )
 
 // What an expire row remembers about the event that created it, so sweep can redo exactly this
-// aggregation without needing the schema, a CDC, or a public API call.
+// aggregation without needing the schema, a CDC, or a public API call. `type` travels alongside
+// topk/direction so a future non-TOPK aggregation kind can be told apart the moment its payload
+// is read back, before any topk-specific field is even looked at.
 private data class ExpirePayload(
+    val type: AggregationType,
     val database: String,
     val table: String,
     val group: String,
