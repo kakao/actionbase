@@ -18,26 +18,32 @@ object TopKTableNames {
         entity: String,
     ): String = "$database.$table:$topk:${direction.name}:$entity"
 
-    // expire row target: a stable single key per (database, table, topk, direction, entity),
-    // so replaying the same coordinates upserts the existing expire row instead of adding a new one.
+    // expire row target: one row per event, so a sliding window can independently track when
+    // each contributing event falls out of range. expiredAt is embedded in the key itself: two
+    // events for the same (database, table, topk, direction, entity, target) never collide even
+    // if their expiry times differ.
     fun expireTargetKey(
         database: String,
         table: String,
         topk: String,
         direction: Direction,
         entity: String,
-    ): String = scoreSourceKey(database, table, topk, direction, entity)
+        target: String,
+        expiredAt: Long,
+    ): String = "$database.$table|$topk|${direction.name}|$entity|$target|$expiredAt"
 
-    // expire table partition, hashed from the same coordinates as the score row it protects.
+    // expire table partition, hashed from the full event coordinates (excluding expiredAt) so
+    // events spread across the fixed partition space instead of collapsing onto one entity.
     fun expirePartition(
         database: String,
         table: String,
         topk: String,
         direction: Direction,
         entity: String,
+        target: String,
     ): Long =
         Math.floorMod(
-            "$database.$table:$topk:${direction.name}:$entity".hashCode(),
+            "$database.$table:$topk:${direction.name}:$entity:$target".hashCode(),
             EXPIRE_PARTITION_COUNT,
         ).toLong()
 }
