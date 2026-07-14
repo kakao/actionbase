@@ -20,6 +20,7 @@ import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.metadata.common.TopkTable
 import com.kakao.actionbase.core.metadata.payload.AggregationType
+import com.kakao.actionbase.core.metadata.payload.ExpireTableRef
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
@@ -98,7 +99,7 @@ class AggregationServiceSpec :
                         vertexSummary(database = "db", table = "vertex"),
                     )
 
-                service.getExpireTables() shouldBe listOf("topk.expire")
+                service.getExpireTables() shouldBe listOf(ExpireTableRef(database = "topk", table = "expire"))
             }
 
             // --- aggregate ---
@@ -114,7 +115,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 42))
 
                 every {
@@ -141,7 +142,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 1))
 
                 every {
@@ -170,7 +171,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 3))
 
                 val mutations = slot<List<MutationItem>>()
@@ -202,7 +203,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 7))
 
                 val mutations = slot<List<MutationItem>>()
@@ -233,7 +234,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 3))
 
                 val mutations = slot<List<MutationItem>>()
@@ -266,7 +267,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 9))
 
                 val mutations = mutableListOf<List<MutationItem>>()
@@ -307,7 +308,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 5))
 
                 val mutations = mutableListOf<List<MutationItem>>()
@@ -340,7 +341,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.error(RuntimeException("agg boom"))
 
                 StepVerifier
@@ -360,7 +361,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 1))
                 every {
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
@@ -382,7 +383,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 1))
                 every {
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
@@ -413,7 +414,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 1))
                 every {
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
@@ -471,14 +472,14 @@ class AggregationServiceSpec :
                     )
 
                 every {
-                    queryService.scan("topk", "expire", "expired_at_asc", 42L, any(), 10, null, "expiredAt:lte:70000", null, emptyList())
+                    queryService.scan("topk", "expire", "expired_at_asc", 42L, any<Direction>(), 10, null, "expiredAt:lte:70000", null, emptyList())
                 } returns
                     Mono.just(
                         DataFrameEdgePayload(edges = listOf(expiredRow), count = 1, total = 1, offset = null, hasNext = false, context = emptyMap()),
                     )
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 5))
                 every {
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
@@ -490,7 +491,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(expireTable = "topk.expire", partition = 42L, now = 70_000L))
+                    .create(service.sweep(expireDatabase = "topk", expireTable = "expire", partition = 42L, now = 70_000L))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
@@ -535,7 +536,7 @@ class AggregationServiceSpec :
                 }
 
                 every {
-                    queryService.scan("topk", "expire", "expired_at_asc", 42L, any(), 10, null, "expiredAt:lte:70000", null, emptyList())
+                    queryService.scan("topk", "expire", "expired_at_asc", 42L, any<Direction>(), 10, null, "expiredAt:lte:70000", null, emptyList())
                 } returns
                     Mono.just(
                         DataFrameEdgePayload(
@@ -553,7 +554,7 @@ class AggregationServiceSpec :
                         "expire",
                         "expired_at_asc",
                         42L,
-                        any(),
+                        any<Direction>(),
                         10,
                         "cursor-1",
                         "expiredAt:lte:70000",
@@ -573,7 +574,7 @@ class AggregationServiceSpec :
                     )
 
                 every {
-                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 5))
                 every {
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
@@ -583,7 +584,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(expireTable = "topk.expire", partition = 42L, now = 70_000L))
+                    .create(service.sweep(expireDatabase = "topk", expireTable = "expire", partition = 42L, now = 70_000L))
                     .assertNext { results -> results shouldHaveSize 2 }
                     .verifyComplete()
             }

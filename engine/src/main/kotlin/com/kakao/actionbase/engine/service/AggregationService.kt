@@ -1,7 +1,5 @@
 package com.kakao.actionbase.engine.service
 
-import com.kakao.actionbase.v2.core.metadata.Direction as V2Direction
-
 import com.kakao.actionbase.core.edge.Edge
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationResult
@@ -16,6 +14,7 @@ import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.metadata.payload.AggregationType
+import com.kakao.actionbase.core.metadata.payload.ExpireTableRef
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.QualifiedGroups
@@ -37,7 +36,7 @@ class AggregationService(
     // Distinct physical expire tables declared across every topk. An external sweeper scans this
     // list — not the topk metadata itself — so it never needs to know which topk/group/table an
     // expire row originated from; that context already travels with the row (see writeExpireEntry).
-    fun getExpireTables(): List<String> =
+    fun getExpireTables(): List<ExpireTableRef> =
         engine
             .getAllQualifiedGroups()
             .flatMap { it.groups }
@@ -45,6 +44,7 @@ class AggregationService(
             .map { it.table.expire }
             .filter { it.isNotBlank() }
             .distinct()
+            .map { fqn -> parseFqn(fqn).let { (database, table) -> ExpireTableRef(database, table) } }
 
     // A) Original-CDC path: re-aggregate every topk declared on the matching groups and, when a
     // topk configures expiry, record when this event must be re-checked (see writeExpireEntry).
@@ -55,7 +55,7 @@ class AggregationService(
         Flux
             .fromIterable(items)
             .flatMapIterable { item -> createEvent(type, item) }
-            .flatMap { event -> processTopk(event, writeExpireOnSuccess = true) }
+            .flatMap { event -> processAggregations(event, type) }
             .collectList()
 
     // B) Sweep path: scan one fixed expire-table partition for rows whose expiredAt has passed,
@@ -64,20 +64,18 @@ class AggregationService(
     // for the item it just processed. Safe to call repeatedly/concurrently for the same partition:
     // a row another call already deleted is simply absent from the next scan.
     fun sweep(
+        expireDatabase: String,
         expireTable: String,
         partition: Long,
         now: Long,
-    ): Mono<List<AggregationResult>> {
-        val (expireDatabase, expireAlias) = parseFqn(expireTable)
-        return sweepPage(expireDatabase, expireAlias, partition, now, offset = null)
-    }
+    ): Mono<List<AggregationResult>> = sweepPage(expireDatabase, expireTable, partition, now, offset = null)
 
     // Pages through the scan since one partition can hold more expired rows than a single scan
     // page returns. Deleting each row as it's swept means a later page never re-sees an earlier
     // one, so paging by the scan's own offset (rather than re-scanning from the start) is safe.
     private fun sweepPage(
         expireDatabase: String,
-        expireAlias: String,
+        expireTable: String,
         partition: Long,
         now: Long,
         offset: String?,
@@ -85,29 +83,29 @@ class AggregationService(
         queryService
             .scan(
                 database = expireDatabase,
-                table = expireAlias,
+                table = expireTable,
                 index = EXPIRED_AT_INDEX,
                 start = partition,
-                direction = V2Direction.OUT,
+                direction = Direction.OUT,
                 offset = offset,
                 ranges = "expiredAt:lte:$now",
             ).flatMap { page ->
                 Flux
                     .fromIterable(page.edges)
-                    .flatMap { expired -> sweepOne(expireDatabase, expireAlias, expired) }
+                    .flatMap { expired -> sweepOne(expireDatabase, expireTable, expired) }
                     .collectList()
                     .flatMap { results ->
                         if (!page.hasNext) {
                             Mono.just(results)
                         } else {
-                            sweepPage(expireDatabase, expireAlias, partition, now, offset = page.offset).map { results + it }
+                            sweepPage(expireDatabase, expireTable, partition, now, offset = page.offset).map { results + it }
                         }
                     }
             }
 
     private fun sweepOne(
         expireDatabase: String,
-        expireAlias: String,
+        expireTable: String,
         expired: EdgePayload,
     ): Mono<AggregationResult> {
         val payload = objectMapper.readValue(expired.properties["payload"] as String, ExpirePayload::class.java)
@@ -118,7 +116,7 @@ class AggregationService(
                 mutationService
                     .mutate(
                         database = expireDatabase,
-                        alias = expireAlias,
+                        alias = expireTable,
                         unresolvedEvents =
                             listOf(
                                 MutationItem(
@@ -197,6 +195,14 @@ class AggregationService(
         }
     }
 
+    private fun processAggregations(
+        event: EdgeAggregationEvent,
+        type: AggregationType,
+    ): Mono<AggregationResult> =
+        when (type) {
+            AggregationType.TOPK -> processTopk(event, writeExpireOnSuccess = true)
+        }
+
     private fun processTopk(
         event: EdgeAggregationEvent,
         writeExpireOnSuccess: Boolean,
@@ -237,7 +243,7 @@ class AggregationService(
                 table = table,
                 group = event.group.group,
                 start = listOf(directedSource),
-                direction = V2Direction.valueOf(direction.name),
+                direction = direction,
                 ranges = ranges,
             ).flatMap { response ->
                 val score = response.groups.firstOrNull()?.value?.toDouble() ?: 0.0

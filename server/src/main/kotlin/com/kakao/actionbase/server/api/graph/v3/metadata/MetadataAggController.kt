@@ -56,11 +56,12 @@ class MetadataAggController(
     // external cron to call repeatedly per (expireTable, partition).
     @PostMapping("/graph/v3/aggregations/sweep")
     fun sweep(
+        @RequestParam expireDatabase: String,
         @RequestParam expireTable: String,
         @RequestParam partition: Long,
         @RequestParam now: Long,
     ): Mono<ResponseEntity<AggregationsItemResponse>> =
         aggregationService
-            .sweep(expireTable = expireTable, partition = partition, now = now)
+            .sweep(expireDatabase = expireDatabase, expireTable = expireTable, partition = partition, now = now)
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 }

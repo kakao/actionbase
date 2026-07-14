@@ -144,6 +144,19 @@ class QueryService(
             .scan(index, start, direction, limit, offset, ranges, filters, features)
             .map { it.toEdgePayload(flip = direction == Direction.IN) }
 
+    fun scan(
+        database: String,
+        table: String,
+        index: String,
+        start: Any,
+        direction: com.kakao.actionbase.core.metadata.common.Direction,
+        limit: Int = ScanFilter.defaultLimit,
+        offset: String? = null,
+        ranges: String? = null,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+    ): Mono<DataFrameEdgePayload> = scan(database, table, index, start, direction.toV2(), limit, offset, ranges, filters, features)
+
     fun seek(
         database: String,
         table: String,
@@ -180,6 +193,18 @@ class QueryService(
         requireNotNull(ranges) { "`ranges` is required for group `$group`." }
         return engine.getTableBinding(database, table).agg(group, start, direction, ranges, filters, features, ttl)
     }
+
+    fun agg(
+        database: String,
+        table: String,
+        group: String,
+        start: List<Any>,
+        direction: com.kakao.actionbase.core.metadata.common.Direction,
+        ranges: String? = null,
+        filters: String? = null,
+        features: List<String> = emptyList(),
+        ttl: Long? = null,
+    ): Mono<DataFrameEdgeAggPayload> = agg(database, table, group, start, direction.toV2(), ranges, filters, features, ttl)
 
     fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = queryExecutor.query(request)
 
@@ -219,6 +244,12 @@ class QueryService(
             when (this) {
                 Direction.OUT -> com.kakao.actionbase.core.metadata.common.Direction.OUT
                 Direction.IN -> com.kakao.actionbase.core.metadata.common.Direction.IN
+            }
+
+        private fun com.kakao.actionbase.core.metadata.common.Direction.toV2(): Direction =
+            when (this) {
+                com.kakao.actionbase.core.metadata.common.Direction.OUT -> Direction.OUT
+                com.kakao.actionbase.core.metadata.common.Direction.IN -> Direction.IN
             }
 
         fun empty(direction: Direction): EdgeCountPayload =

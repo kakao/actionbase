@@ -31,7 +31,7 @@ import org.springframework.http.MediaType
  * `{database}.{table}:{topk}:{direction}:{entity}` and the score_desc index sorts entries
  * by descending score so the topk read endpoint can scan the top rows directly:
  *
- *   rowkey                                       | score_desc cq | value  -> logical (source, target, score)
+ *   rowkey                                        | score_desc cq | value  -> logical (source, target, score)
  *   --------------------------------------------- | ------------- | -----
  *   commerce.purchases:top_purchased:OUT:1        | 100           | 4      -> (1, 100, 4)
  *   commerce.purchases:top_purchased:OUT:1        | 200           | 1      -> (1, 200, 1)
