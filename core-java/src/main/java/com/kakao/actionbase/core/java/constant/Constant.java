@@ -84,7 +84,7 @@ public class Constant {
   public static class Codec {
     public static final int DEFAULT_POOL_SIZE = 100;
 
-    public static final int DEFAULT_BUFFER_SIZE = 5120;
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
 
     public static final Byte BYTE_FALSE = 0;
     public static final Byte BYTE_TRUE = 1;

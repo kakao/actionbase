@@ -9,7 +9,7 @@ import com.kakao.actionbase.v2.core.metadata.SystemProperties;
 import java.util.Map;
 
 public class EdgeBuffer {
-  static final int DEFAULT_CAPACITY = 5120;
+  static final int DEFAULT_CAPACITY = 8192;
 
   public SimplePositionedMutableByteRange buffer;
 
