@@ -394,8 +394,8 @@ class AggregationServiceSpec :
                         properties =
                             mapOf(
                                 "table" to "commerce.purchases",
-                                "source" to "user1",
-                                "target" to "item1",
+                                "directedSource" to "user1",
+                                "directedTarget" to "item1",
                                 "direction" to "OUT",
                                 "ranges" to "_target:eq:item1",
                             ),
@@ -417,7 +417,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate rejects an expire CDC item missing the `table` property" {
-                val expireItem = expireItem(properties = mapOf("source" to "u", "target" to "t", "direction" to "OUT"))
+                val expireItem = expireItem(properties = mapOf("directedSource" to "u", "directedTarget" to "t", "direction" to "OUT"))
 
                 StepVerifier
                     .create(service.aggregate(AggregationType.TOPK, listOf(expireItem)))
@@ -425,7 +425,7 @@ class AggregationServiceSpec :
                     .verify()
             }
 
-            "aggregate rejects an expire CDC item missing the `source` property" {
+            "aggregate rejects an expire CDC item missing the `directedSource` property" {
                 val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "commerce.score_tbl", expire = "commerce.exp_tbl"))
                 val group = groupWithTopks(name = "g", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
@@ -435,7 +435,7 @@ class AggregationServiceSpec :
                         properties =
                             mapOf(
                                 "table" to "commerce.purchases",
-                                "target" to "item1",
+                                "directedTarget" to "item1",
                                 "direction" to "OUT",
                                 "ranges" to "_target:eq:item1",
                             ),
@@ -443,7 +443,7 @@ class AggregationServiceSpec :
 
                 StepVerifier
                     .create(service.aggregate(AggregationType.TOPK, listOf(expireItem)))
-                    .expectErrorMatches { it is IllegalStateException && it.message!!.contains("`source` property is required") }
+                    .expectErrorMatches { it is IllegalStateException && it.message!!.contains("`directedSource` property is required") }
                     .verify()
             }
 
@@ -519,8 +519,8 @@ class AggregationServiceSpec :
                     )
                 expireEdge.properties["table"] shouldBe "commerce.purchases"
                 expireEdge.properties["topk"] shouldBe "top_purchased"
-                expireEdge.properties["source"] shouldBe "user1"
-                expireEdge.properties["target"] shouldBe "item1"
+                expireEdge.properties["directedSource"] shouldBe "user1"
+                expireEdge.properties["directedTarget"] shouldBe "item1"
                 expireEdge.properties["direction"] shouldBe "OUT"
                 expireEdge.properties["processed"] shouldBe false
             }
