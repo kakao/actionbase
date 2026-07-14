@@ -100,8 +100,8 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                       {"name": "expiresAt", "type": "long", "comment": "expire time ms", "nullable": false},
                       {"name": "table", "type": "string", "comment": "source table", "nullable": false},
                       {"name": "topk", "type": "string", "comment": "topk name", "nullable": false},
-                      {"name": "source", "type": "string", "comment": "original source", "nullable": false},
-                      {"name": "target", "type": "string", "comment": "original target", "nullable": false},
+                      {"name": "directedSource", "type": "string", "comment": "directed source (already swapped)", "nullable": false},
+                      {"name": "directedTarget", "type": "string", "comment": "directed target = score row segment", "nullable": false},
                       {"name": "direction", "type": "string", "comment": "direction", "nullable": false},
                       {"name": "ranges", "type": "string", "comment": "interpolated ranges", "nullable": false},
                       {"name": "processed", "type": "boolean", "comment": "processed", "nullable": false}
@@ -136,11 +136,11 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 {
                   "mutations": [
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user1|item1|100",
-                      "properties": {"expiresAt": 100, "table": "commerce.purchases", "topk": "top_purchased", "source": "user1", "target": "item1", "direction": "OUT", "ranges": "_target:eq:item1", "processed": false}}},
+                      "properties": {"expiresAt": 100, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user1", "directedTarget": "item1", "direction": "OUT", "ranges": "_target:eq:item1", "processed": false}}},
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user1|item2|200",
-                      "properties": {"expiresAt": 200, "table": "commerce.purchases", "topk": "top_purchased", "source": "user1", "target": "item2", "direction": "OUT", "ranges": "_target:eq:item2", "processed": false}}},
+                      "properties": {"expiresAt": 200, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user1", "directedTarget": "item2", "direction": "OUT", "ranges": "_target:eq:item2", "processed": false}}},
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user1|item3|500",
-                      "properties": {"expiresAt": 500, "table": "commerce.purchases", "topk": "top_purchased", "source": "user1", "target": "item3", "direction": "OUT", "ranges": "_target:eq:item3", "processed": false}}}
+                      "properties": {"expiresAt": 500, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user1", "directedTarget": "item3", "direction": "OUT", "ranges": "_target:eq:item3", "processed": false}}}
                   ]
                 }
                 """.trimIndent(),
@@ -215,9 +215,9 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 {
                   "mutations": [
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user9|item1|100",
-                      "properties": {"expiresAt": 100, "table": "commerce.purchases", "topk": "top_purchased", "source": "user9", "target": "item1", "direction": "OUT", "ranges": "_target:eq:item1", "processed": false}}},
+                      "properties": {"expiresAt": 100, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user9", "directedTarget": "item1", "direction": "OUT", "ranges": "_target:eq:item1", "processed": false}}},
                     {"type": "INSERT", "edge": {"version": 1, "source": $source, "target": "commerce.purchases|top_purchased|user9|item2|300",
-                      "properties": {"expiresAt": 300, "table": "commerce.purchases", "topk": "top_purchased", "source": "user9", "target": "item2", "direction": "OUT", "ranges": "_target:eq:item2", "processed": false}}}
+                      "properties": {"expiresAt": 300, "table": "commerce.purchases", "topk": "top_purchased", "directedSource": "user9", "directedTarget": "item2", "direction": "OUT", "ranges": "_target:eq:item2", "processed": false}}}
                   ]
                 }
                 """.trimIndent(),
@@ -423,6 +423,159 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 assertEquals(1, payload.count)
                 assertEquals(
                     "item1|fruit",
+                    payload.edges
+                        .single()
+                        .target
+                        .toString(),
+                )
+            }
+    }
+
+    @Test
+    fun `aggregate builds the score row target from a properties-backed segment field when the group has no endpoint field`() {
+        val segmentDb = "commerce-segment"
+        val segmentTable = "orders_segment"
+        val segmentScore = "orders_segment__topk"
+        val segmentScoreFqn = "$segmentDb.$segmentScore"
+        val topkName = "top_purchased_by_category"
+
+        client
+            .post()
+            .uri("/graph/v3/databases")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"database": "$segmentDb", "comment": "test"}""")
+            .exchange()
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$segmentDb/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$segmentScore",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "entity|topk"},
+                    "target": {"type": "string", "comment": "ranked segment"},
+                    "properties": [
+                      {"name": "score", "type": "long", "comment": "score", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [
+                      {"index": "score_desc", "fields": [{"field": "score", "order": "DESC"}]}
+                    ],
+                    "groups": [],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$segmentScore",
+                  "mode": "SYNC",
+                  "comment": "topk score"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$segmentDb/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$segmentTable",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "order id"},
+                    "source": {"type": "string", "comment": "user"},
+                    "target": {"type": "string", "comment": "item"},
+                    "properties": [
+                      {"name": "category", "type": "string", "comment": "category", "nullable": false},
+                      {"name": "purchasedAt", "type": "long", "comment": "purchase time ms", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": [{
+                      "group": "purchased_by_category",
+                      "type": "COUNT",
+                      "fields": [
+                        {"name": "category"},
+                        {"name": "purchasedAt", "bucket": {"type": "date", "name": "day", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
+                      ],
+                      "directionType": "OUT",
+                      "aggregations": {
+                        "topk": [{
+                          "topk": "$topkName",
+                          "ranges": "category:eq:{category};day:bt:1700000000000,1731536000000",
+                          "table": {"score": "$segmentScoreFqn", "expire": "$expireFqn"}
+                        }]
+                      }
+                    }],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$segmentTable",
+                  "mode": "SYNC",
+                  "comment": "segment-only"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$segmentDb/tables/$segmentTable/multi-edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1",
+                      "properties": {"category": "fruit", "purchasedAt": 1710000000000}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/aggregations")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "type": "TOPK",
+                  "items": [
+                    {"database": "$segmentDb", "table": "$segmentTable",
+                     "edge": {"version": 1, "source": "user1", "target": "item1",
+                              "properties": {"category": "fruit", "purchasedAt": 1710000000000}, "context": {}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<AggregationsItemResponse>()
+            .returnResult()
+
+        client
+            .get()
+            .uri(
+                "/graph/v3/databases/$segmentDb/tables/$segmentScore/edges/scan/score_desc" +
+                    "?start=user1|$topkName&direction=OUT",
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<DataFrameEdgePayload>()
+            .returnResult()
+            .responseBody!!
+            .let { payload ->
+                assertEquals(1, payload.count)
+                assertEquals(
+                    "fruit",
                     payload.edges
                         .single()
                         .target
