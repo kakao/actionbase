@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.configuration
 
+import com.kakao.actionbase.engine.service.AggregationQueryService
 import com.kakao.actionbase.engine.service.AggregationService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
@@ -148,4 +149,10 @@ class GraphConfiguration {
         mutationService: MutationService,
         engine: V2BackedEngine,
     ): AggregationService = AggregationService(queryService, mutationService, engine)
+
+    @Bean
+    fun provideAggregationQueryService(
+        queryService: QueryService,
+        engine: V2BackedEngine,
+    ): AggregationQueryService = AggregationQueryService(queryService, engine)
 }

@@ -56,13 +56,6 @@ class AggregationService(
             ).flatMap { processExpire(it) }
             .collectList()
 
-    private fun ModelSchema.groupsOrNull(): List<Group>? =
-        when (this) {
-            is ModelSchema.Edge -> groups
-            is ModelSchema.MultiEdge -> groups
-            else -> null
-        }
-
     fun AggregationItemPayload.createEvent(type: AggregationType): List<EdgeAggregationEvent> =
         when (type) {
             AggregationType.TOPK -> createTopkEvent(this)
@@ -260,14 +253,6 @@ class AggregationService(
                 }
             value?.let { Regex.escapeReplacement(it) } ?: Regex.escapeReplacement(match.value)
         }
-
-    private fun parseFqn(fqn: String): Pair<String, String> {
-        val dot = fqn.indexOf('.')
-        require(dot > 0 && dot < fqn.lastIndex) {
-            "score table must be a fully-qualified `database.table`, got: $fqn"
-        }
-        return fqn.substring(0, dot) to fqn.substring(dot + 1)
-    }
 
     private fun processExpire(event: AggregationExpireEvent): Mono<AggregationExpireResult> {
         val base =

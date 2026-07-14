@@ -7,6 +7,7 @@ object AggregationConstants {
     const val TOPK_EXPIRE_TABLE = "expire"
 
     const val TOPK_EXPIRE_TABLE_INDEX = "expires_at_asc"
+    const val TOPK_SCORE_TABLE_INDEX = "score_desc"
 
     const val TOPK_EXPIRE_PARTITIONS = 2310
 
