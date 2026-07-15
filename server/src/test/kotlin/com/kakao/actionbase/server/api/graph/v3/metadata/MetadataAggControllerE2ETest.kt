@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.server.test.E2ETestBase
 
 import java.time.Instant
@@ -63,6 +64,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
         createMultiEdgeSourceTable()
         createScoreTable(database = db, table = scoreTable)
+        createRefreshTable(database = db, table = refreshTable)
         createEdgeTable(
             database = db,
             table = plainTable,
@@ -139,6 +141,35 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .expectBody()
             .jsonPath("$.items.length()")
             .isEqualTo(0)
+    }
+
+    @Test
+    fun `GET aggregation refresh entries returns parsed entries for worker-owned partitions`() {
+        insertRefreshEntry(partition = 42L, refreshAt = 61_000L)
+
+        client
+            .get()
+            .uri(
+                "/graph/v3/aggregations/refresh/entries" +
+                    "?refreshDatabase=$db&refreshTable=$refreshTable" +
+                    "&workerCount=10&workerNumber=${TopKTableNames.refreshWorkerNumberFor(42L, 10)}" +
+                    "&refreshAtLte=61000&limit=100",
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.entries.length()")
+            .isEqualTo(1)
+            .jsonPath("$.entries[0].partition")
+            .isEqualTo(42)
+            .jsonPath("$.entries[0].key")
+            .isEqualTo("$db.$sourceTable:top_purchased:OUT:$user:$itemA:61000")
+            .jsonPath("$.entries[0].aggregation.database")
+            .isEqualTo(db)
+            .jsonPath("$.entries[0].aggregation.table")
+            .isEqualTo(sourceTable)
+            .jsonPath("$.entries[0].aggregation.topk")
+            .isEqualTo("top_purchased")
     }
 
     @Test
@@ -344,6 +375,55 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         }
         """.trimIndent()
 
+    private fun insertRefreshEntry(
+        partition: Long,
+        refreshAt: Long,
+    ) {
+        val payload =
+            """
+            {
+              "type": "TOPK",
+              "database": "$db",
+              "table": "$sourceTable",
+              "group": "purchased_count",
+              "topk": "top_purchased",
+              "direction": "OUT",
+              "edge": {
+                "version": 1000,
+                "source": $user,
+                "target": $itemA,
+                "properties": {},
+                "context": {}
+              }
+            }
+            """.trimIndent()
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables/$refreshTable/edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [{
+                    "type": "INSERT",
+                    "edge": {
+                      "version": 1,
+                      "source": $partition,
+                      "target": "$db.$sourceTable:top_purchased:OUT:$user:$itemA:$refreshAt",
+                      "properties": {
+                        "refreshAt": $refreshAt,
+                        "payload": ${payload.toJsonString()}
+                      }
+                    }
+                  }]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+    }
+
     private fun aggregate(
         target: Long,
         gender: String,
@@ -516,5 +596,48 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .isOk
     }
 
+    private fun createRefreshTable(
+        database: String,
+        table: String,
+    ) {
+        client
+            .post()
+            .uri("/graph/v3/databases/$database/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$table",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "long", "comment": "refresh partition"},
+                    "target": {"type": "string", "comment": "refresh target key"},
+                    "properties": [
+                      {"name": "refreshAt", "type": "long", "comment": "refresh at", "nullable": false},
+                      {"name": "payload", "type": "string", "comment": "refresh payload", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [
+                      {"index": "refresh_at_asc", "fields": [{"field": "refreshAt", "order": "ASC"}]}
+                    ],
+                    "groups": [],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$table",
+                  "mode": "SYNC",
+                  "comment": "topk refresh table"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+    }
+
     // endregion
 }
+
+private fun String.toJsonString(): String =
+    replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .let { "\"$it\"" }

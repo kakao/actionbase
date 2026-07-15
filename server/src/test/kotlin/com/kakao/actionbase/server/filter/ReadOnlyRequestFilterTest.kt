@@ -163,6 +163,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3",
                 "GET /graph/v3/aggregations",
                 "GET /graph/v3/aggregations/refresh",
+                "GET /graph/v3/aggregations/refresh/entries",
                 "GET /graph/v3/databases",
                 "GET /graph/v3/databases/{database}",
                 "GET /graph/v3/databases/{database}/aliases",

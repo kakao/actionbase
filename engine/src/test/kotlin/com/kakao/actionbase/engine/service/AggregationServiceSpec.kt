@@ -3,6 +3,7 @@ package com.kakao.actionbase.engine.service
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
+import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
@@ -160,10 +161,10 @@ class AggregationServiceSpec :
                     }.verifyComplete()
             }
 
-            "aggregate stores score as a Double and segment as the URL-encoded resolved ranges" {
+            "aggregate stores a GLOBAL topk segment in the source key and keeps only score as a property" {
                 val topk =
                     topkConfig(name = "top_seg", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
-                        .copy(ranges = "gender:eq:{gender}")
+                        .copy(scope = TopkScope.GLOBAL, ranges = "gender:eq:{gender}")
                 val group =
                     groupWithTopks(
                         name = "g_seg",
@@ -190,8 +191,9 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 val edge = mutations.captured.single().edge
+                edge.source shouldBe "db.src:top_seg:OUT:${TopKTableNames.GLOBAL_ENTITY}:gender%3Aeq%3AF"
                 edge.properties["score"] shouldBe 3.0
-                edge.properties["segment"] shouldBe "gender%3Aeq%3AF"
+                edge.properties.containsKey("segment") shouldBe false
             }
 
             "aggregate for OUT direction uses source as entity and keeps target as ranked value" {
@@ -500,6 +502,72 @@ class AggregationServiceSpec :
                     direction = Direction.OUT,
                     edge = storedEdge,
                 )
+            }
+
+            "getRefreshEntries scans only the worker-owned refresh partitions and returns parsed entries" {
+                val aggregation = refreshEntryAggregationFor("item1")
+                val scannedPartitions = mutableListOf<Long>()
+                val refreshRow =
+                    EdgePayload(
+                        version = 1L,
+                        source = 42L,
+                        target = "db.src:top_purchased:OUT:user1:item1:61000",
+                        properties = mapOf("refreshAt" to 61_000L, "payload" to objectMapper.writeValueAsString(aggregation)),
+                        context = emptyMap(),
+                    )
+
+                every {
+                    queryService.scan(
+                        database = "topk",
+                        table = "refresh",
+                        index = "refresh_at_asc",
+                        start = any<Long>(),
+                        direction = Direction.OUT,
+                        limit = 100,
+                        offset = null,
+                        ranges = "refreshAt:lte:61000",
+                        filters = null,
+                        features = emptyList(),
+                    )
+                } answers {
+                    val partition = arg<Long>(3)
+                    scannedPartitions += partition
+                    Mono.just(
+                        DataFrameEdgePayload(
+                            edges = if (partition == 42L) listOf(refreshRow) else emptyList(),
+                            count = if (partition == 42L) 1 else 0,
+                            total = if (partition == 42L) 1 else 0,
+                            offset = null,
+                            hasNext = false,
+                            context = emptyMap(),
+                        ),
+                    )
+                }
+
+                StepVerifier
+                    .create(
+                        service.getRefreshEntries(
+                            refreshDatabase = "topk",
+                            refreshTable = "refresh",
+                            workerCount = 10,
+                            workerNumber = 3,
+                            refreshAtLte = 61_000L,
+                            limit = 100,
+                        ),
+                    ).assertNext { entries ->
+                        entries shouldBe
+                            listOf(
+                                RefreshEntryPayload(
+                                    partition = 42L,
+                                    key = "db.src:top_purchased:OUT:user1:item1:61000",
+                                    aggregation = aggregation,
+                                ),
+                            )
+                    }.verifyComplete()
+
+                scannedPartitions shouldHaveSize TopKTableNames.REFRESH_PARTITION_COUNT / 10
+                scannedPartitions.take(5) shouldBe listOf(2L, 12L, 22L, 32L, 42L)
+                scannedPartitions.last() shouldBe 2302L
             }
 
             "refresh re-aggregates one entry from its stored payload and deletes exactly that entry" {

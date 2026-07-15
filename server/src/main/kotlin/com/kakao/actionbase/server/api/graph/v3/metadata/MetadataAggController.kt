@@ -2,6 +2,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 
 import com.kakao.actionbase.core.edge.payload.AggregationItemRequest
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
+import com.kakao.actionbase.core.edge.payload.RefreshEntriesResponse
 import com.kakao.actionbase.core.edge.payload.RefreshRequest
 import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
@@ -33,6 +34,25 @@ class MetadataAggController(
     @GetMapping("/graph/v3/aggregations/refresh")
     fun getRefreshTables(): ResponseEntity<RefreshTablesResponse> =
         ResponseEntity.ok(RefreshTablesResponse(tables = aggregationService.getRefreshTables()))
+
+    @GetMapping("/graph/v3/aggregations/refresh/entries")
+    fun getRefreshEntries(
+        @RequestParam refreshDatabase: String,
+        @RequestParam refreshTable: String,
+        @RequestParam workerCount: Int,
+        @RequestParam workerNumber: Int,
+        @RequestParam refreshAtLte: Long,
+        @RequestParam(defaultValue = "100") limit: Int,
+    ): Mono<ResponseEntity<RefreshEntriesResponse>> =
+        aggregationService
+            .getRefreshEntries(
+                refreshDatabase = refreshDatabase,
+                refreshTable = refreshTable,
+                workerCount = workerCount,
+                workerNumber = workerNumber,
+                refreshAtLte = refreshAtLte,
+                limit = limit,
+            ).map { entries -> ResponseEntity.ok(RefreshEntriesResponse(entries = entries)) }
 
     @PostMapping("/graph/v3/aggregations")
     fun aggregations(

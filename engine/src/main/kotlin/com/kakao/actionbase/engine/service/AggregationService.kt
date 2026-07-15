@@ -23,6 +23,7 @@ import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.QualifiedGroups
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -46,6 +47,31 @@ class AggregationService(
             .filter { it.isNotBlank() }
             .distinct()
             .map { fqn -> parseFqn(fqn).let { (database, table) -> RefreshTableRef(database, table) } }
+
+    fun getRefreshEntries(
+        refreshDatabase: String,
+        refreshTable: String,
+        workerCount: Int,
+        workerNumber: Int,
+        refreshAtLte: Long,
+        limit: Int,
+    ): Mono<List<RefreshEntryPayload>> =
+        Flux
+            .fromIterable(TopKTableNames.refreshPartitionsFor(workerCount, workerNumber))
+            .concatMap { partition ->
+                queryService.scan(
+                    database = refreshDatabase,
+                    table = refreshTable,
+                    index = "refresh_at_asc",
+                    start = partition,
+                    direction = Direction.OUT,
+                    limit = limit,
+                    ranges = "refreshAt:lte:$refreshAtLte",
+                )
+            }.flatMapIterable { it.edges }
+            .take(limit.toLong())
+            .map { edge -> edge.toRefreshEntryPayload() }
+            .collectList()
 
     fun aggregate(
         type: AggregationType,
@@ -222,6 +248,7 @@ class AggregationService(
             topk.ranges.takeIf { it.isNotEmpty() }?.let {
                 interpolate(template = it, source = source, target = target, properties = event.edge.properties)
             }
+        val segment = if (topk.scope == TopkScope.GLOBAL) encodeSegment(ranges) else null
 
         return queryService
             .agg(
@@ -240,6 +267,7 @@ class AggregationService(
                         topk = topk.topk,
                         direction = direction,
                         entity = entity,
+                        segment = segment,
                     )
 
                 mutationService
@@ -255,7 +283,7 @@ class AggregationService(
                                             version = System.currentTimeMillis(),
                                             source = scoreSource,
                                             target = rankedValue,
-                                            properties = mapOf("segment" to encodeSegment(ranges), "score" to score),
+                                            properties = mapOf("score" to score),
                                         ),
                                 ),
                             ),
@@ -264,7 +292,7 @@ class AggregationService(
                         if (result.status != "SUCCESS" || topk.refreshAfterMillis < 0 || !writeRefreshOnSuccess) {
                             Mono.just(result)
                         } else {
-                            writeRefreshEntry(event, direction, topk, entity, rankedValue).map { result }
+                            writeRefreshEntry(event, direction, topk, entity, segment, rankedValue).map { result }
                         }
                     }
             }.onErrorResume { err ->
@@ -277,6 +305,7 @@ class AggregationService(
         direction: Direction,
         topk: Topk,
         entity: String,
+        segment: String?,
         rankedValue: String,
     ): Mono<List<MutationResult>> {
         val (refreshDatabase, refreshTable) = parseFqn(topk.table.refresh)
@@ -288,6 +317,7 @@ class AggregationService(
                 topk = topk.topk,
                 direction = direction,
                 entity = entity,
+                segment = segment,
                 target = rankedValue,
             )
         val refreshTarget =
@@ -297,6 +327,7 @@ class AggregationService(
                 topk = topk.topk,
                 direction = direction,
                 entity = entity,
+                segment = segment,
                 target = rankedValue,
                 refreshAt = refreshAt,
             )
@@ -351,6 +382,13 @@ class AggregationService(
         }
 
     private fun encodeSegment(ranges: String?): String? = ranges?.let { URLEncoder.encode(it, StandardCharsets.UTF_8) }
+
+    private fun EdgePayload.toRefreshEntryPayload(): RefreshEntryPayload =
+        RefreshEntryPayload(
+            partition = source.toString().toLong(),
+            key = target.toString(),
+            aggregation = objectMapper.readValue(properties["payload"] as String),
+        )
 
     private fun parseFqn(fqn: String): Pair<String, String> {
         val dot = fqn.indexOf('.')

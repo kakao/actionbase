@@ -9,6 +9,10 @@ data class RefreshRequest(
     val entries: List<RefreshEntryPayload>,
 )
 
+data class RefreshEntriesResponse(
+    val entries: List<RefreshEntryPayload>,
+)
+
 data class RefreshEntryPayload(
     val partition: Long,
     val key: String,
