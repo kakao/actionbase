@@ -3,11 +3,12 @@ package com.kakao.actionbase.engine.service
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
-import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
+import com.kakao.actionbase.core.edge.payload.SweepAggregationPayload
+import com.kakao.actionbase.core.edge.payload.SweepEntryPayload
 import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
@@ -485,40 +486,34 @@ class AggregationServiceSpec :
 
             // --- sweep ---
 
-            "sweep re-aggregates a due row from its stored payload, deletes it, and skips it if scanned again" {
+            fun refreshEntryAggregationFor(
+                target: String,
+                topk: String = "top_purchased",
+            ): SweepAggregationPayload {
+                val storedEdge = item("db", "src", source = "user1", target = target, version = 1_000L).edge
+                return SweepAggregationPayload(
+                    type = AggregationType.TOPK,
+                    database = "db",
+                    table = "src",
+                    group = "g1",
+                    topk = topk,
+                    direction = Direction.OUT,
+                    edge = storedEdge,
+                )
+            }
+
+            "sweep re-aggregates one entry from its stored payload and deletes exactly that entry" {
                 val topk =
                     topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
                         .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
-                val storedEdge = item("db", "src", source = "user1", target = "item1", version = 1_000L).edge
-                val refreshPayloadJson =
-                    objectMapper.writeValueAsString(
-                        mapOf(
-                            "type" to "TOPK",
-                            "database" to "db",
-                            "table" to "src",
-                            "group" to "g1",
-                            "topk" to "top_purchased",
-                            "direction" to "OUT",
-                            "edge" to storedEdge,
-                        ),
-                    )
-                val dueRow =
-                    EdgePayload(
-                        version = 1L,
-                        source = 42L,
-                        target = "db.src:top_purchased:OUT:user1:item1:61000",
-                        properties = mapOf("refreshAt" to 61_000L, "payload" to refreshPayloadJson),
-                        context = emptyMap(),
-                    )
-
-                every {
-                    queryService.scan("topk", "refresh", "refresh_at_asc", 42L, any<Direction>(), 10, null, "refreshAt:lte:70000", null, emptyList())
-                } returns
-                    Mono.just(
-                        DataFrameEdgePayload(edges = listOf(dueRow), count = 1, total = 1, offset = null, hasNext = false, context = emptyMap()),
+                val entry =
+                    SweepEntryPayload(
+                        partition = 42L,
+                        key = "db.src:top_purchased:OUT:user1:item1:61000",
+                        aggregation = refreshEntryAggregationFor("item1"),
                     )
 
                 every {
@@ -528,92 +523,44 @@ class AggregationServiceSpec :
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
-                val deleteMutations = slot<List<MutationItem>>()
+                val deleteMutations = mutableListOf<List<MutationItem>>()
                 every {
                     mutationService.mutate("topk", "refresh", capture(deleteMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(type = AggregationType.TOPK, refreshDatabase = "topk", refreshTable = "refresh", partition = 42L, now = 70_000L))
+                    .create(service.sweep(refreshDatabase = "topk", refreshTable = "refresh", entries = listOf(entry)))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
                     }.verifyComplete()
 
-                val delete = deleteMutations.captured.single()
+                val delete = deleteMutations.single().single()
                 delete.type shouldBe EventType.DELETE
                 delete.edge.source shouldBe 42L
                 delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
 
-                // sweep never re-tracks a refresh for the item it just refreshed.
-                verify(exactly = 1) { mutationService.mutate("topk", "refresh", any(), any(), any(), any(), any()) }
+                deleteMutations shouldHaveSize 1
             }
 
-            "sweep pages through the scan when a partition holds more rows than one page returns" {
+            "sweep processes a batch of entries independently and deletes all of them in one bulk mutation" {
                 val topk =
                     topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
                         .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
-                fun dueRowFor(target: String): EdgePayload {
-                    val storedEdge = item("db", "src", source = "user1", target = target, version = 1_000L).edge
-                    val payloadJson =
-                        objectMapper.writeValueAsString(
-                            mapOf(
-                                "type" to "TOPK",
-                                "database" to "db",
-                                "table" to "src",
-                                "group" to "g1",
-                                "topk" to "top_purchased",
-                                "direction" to "OUT",
-                                "edge" to storedEdge,
-                            ),
-                        )
-                    return EdgePayload(
-                        version = 1L,
-                        source = 42L,
-                        target = "db.src:top_purchased:OUT:user1:$target:61000",
-                        properties = mapOf("refreshAt" to 61_000L, "payload" to payloadJson),
-                        context = emptyMap(),
-                    )
-                }
-
-                every {
-                    queryService.scan("topk", "refresh", "refresh_at_asc", 42L, any<Direction>(), 10, null, "refreshAt:lte:70000", null, emptyList())
-                } returns
-                    Mono.just(
-                        DataFrameEdgePayload(
-                            edges = listOf(dueRowFor("item1")),
-                            count = 1,
-                            total = 2,
-                            offset = "cursor-1",
-                            hasNext = true,
-                            context = emptyMap(),
+                val entries =
+                    listOf(
+                        SweepEntryPayload(
+                            partition = 42L,
+                            key = "db.src:top_purchased:OUT:user1:item1:61000",
+                            aggregation = refreshEntryAggregationFor("item1"),
                         ),
-                    )
-                every {
-                    queryService.scan(
-                        "topk",
-                        "refresh",
-                        "refresh_at_asc",
-                        42L,
-                        any<Direction>(),
-                        10,
-                        "cursor-1",
-                        "refreshAt:lte:70000",
-                        null,
-                        emptyList(),
-                    )
-                } returns
-                    Mono.just(
-                        DataFrameEdgePayload(
-                            edges = listOf(dueRowFor("item2")),
-                            count = 1,
-                            total = 2,
-                            offset = null,
-                            hasNext = false,
-                            context = emptyMap(),
+                        SweepEntryPayload(
+                            partition = 42L,
+                            key = "db.src:top_purchased:OUT:user1:item2:61000",
+                            aggregation = refreshEntryAggregationFor("item2"),
                         ),
                     )
 
@@ -623,14 +570,65 @@ class AggregationServiceSpec :
                 every {
                     mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                val deleteMutations = mutableListOf<List<MutationItem>>()
                 every {
-                    mutationService.mutate("topk", "refresh", any(), any(), any(), any(), any())
+                    mutationService.mutate("topk", "refresh", capture(deleteMutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "DELETED"), mutationResult(status = "DELETED")))
+
+                StepVerifier
+                    .create(service.sweep(refreshDatabase = "topk", refreshTable = "refresh", entries = entries))
+                    .assertNext { results -> results shouldHaveSize 2 }
+                    .verifyComplete()
+
+                deleteMutations shouldHaveSize 1
+                deleteMutations.single() shouldHaveSize 2
+            }
+
+            "sweep excludes an unresolved entry from delete" {
+                val topk =
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
+                        .copy(refreshAfterMillis = 60_000L)
+                val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                val unresolvedEntry =
+                    SweepEntryPayload(
+                        partition = 42L,
+                        key = "db.src:top_purchased:OUT:user1:item1:61000",
+                        aggregation = refreshEntryAggregationFor("item1", topk = "missing_topk"),
+                    )
+                val validEntry =
+                    SweepEntryPayload(
+                        partition = 42L,
+                        key = "db.src:top_purchased:OUT:user1:item2:61000",
+                        aggregation = refreshEntryAggregationFor("item2"),
+                    )
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 5))
+                every {
+                    mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                val deleteMutations = mutableListOf<List<MutationItem>>()
+                every {
+                    mutationService.mutate("topk", "refresh", capture(deleteMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(type = AggregationType.TOPK, refreshDatabase = "topk", refreshTable = "refresh", partition = 42L, now = 70_000L))
-                    .assertNext { results -> results shouldHaveSize 2 }
+                    .create(
+                        service.sweep(
+                            refreshDatabase = "topk",
+                            refreshTable = "refresh",
+                            entries = listOf(unresolvedEntry, validEntry),
+                        ),
+                    ).assertNext { results -> results shouldHaveSize 1 }
                     .verifyComplete()
+
+                val delete = deleteMutations.single().single()
+                delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:item2:61000"
             }
         },
     )

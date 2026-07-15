@@ -2,6 +2,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 
 import com.kakao.actionbase.core.edge.payload.AggregationItemRequest
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
+import com.kakao.actionbase.core.edge.payload.SweepRequest
 import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
 import com.kakao.actionbase.core.metadata.payload.RefreshTablesResponse
@@ -46,13 +47,12 @@ class MetadataAggController(
 
     @PostMapping("/graph/v3/aggregations/sweep")
     fun sweep(
-        @RequestParam type: AggregationType,
-        @RequestParam refreshDatabase: String,
-        @RequestParam refreshTable: String,
-        @RequestParam partition: Long,
-        @RequestParam now: Long,
+        @RequestBody sweepRequest: SweepRequest,
     ): Mono<ResponseEntity<AggregationsItemResponse>> =
         aggregationService
-            .sweep(type = type, refreshDatabase = refreshDatabase, refreshTable = refreshTable, partition = partition, now = now)
-            .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
+            .sweep(
+                refreshDatabase = sweepRequest.refreshDatabase,
+                refreshTable = sweepRequest.refreshTable,
+                entries = sweepRequest.entries,
+            ).map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 }

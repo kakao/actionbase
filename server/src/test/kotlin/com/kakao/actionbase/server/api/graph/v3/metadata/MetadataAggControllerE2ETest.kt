@@ -45,7 +45,9 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     private val sourceTable = "purchases"
     private val plainTable = "misc"
     private val scoreTable = "${sourceTable}__topk"
+    private val refreshTable = "${sourceTable}__refresh"
     private val scoreFqn = "$db.$scoreTable"
+    private val refreshFqn = "$db.$refreshTable"
 
     private val user = 1L
     private val itemA = 100L
@@ -84,6 +86,59 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .exists()
             .jsonPath("$.topk[?(@.database == '$db' && @.table == '$plainTable')]")
             .doesNotExist()
+    }
+
+    @Test
+    fun `GET aggregation refresh lists physical refresh tables`() {
+        client
+            .get()
+            .uri("/graph/v3/aggregations/refresh")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.tables[?(@.database == '$db' && @.table == '$refreshTable')]")
+            .exists()
+    }
+
+    @Test
+    fun `POST aggregation sweep accepts explicit entry body`() {
+        client
+            .post()
+            .uri("/graph/v3/aggregations/sweep")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "refreshDatabase": "$db",
+                  "refreshTable": "$refreshTable",
+                  "entries": [{
+                    "partition": 42,
+                    "key": "$db.$sourceTable:missing_topk:OUT:$user:$itemA:61000",
+                    "aggregation": {
+                      "type": "TOPK",
+                      "database": "$db",
+                      "table": "$sourceTable",
+                      "group": "purchased_count",
+                      "topk": "missing_topk",
+                      "direction": "OUT",
+                      "edge": {
+                        "version": 1000,
+                        "source": $user,
+                        "target": $itemA,
+                        "properties": {},
+                        "context": {}
+                      }
+                    }
+                  }]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.items.length()")
+            .isEqualTo(0)
     }
 
     @Test
@@ -150,8 +205,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             "topk": [{
               "topk": "top_purchased",
               "ranges": "_target:eq:{_target}",
-              "expire": false,
-              "table": {"score": "$scoreFqn", "refresh": "refresh_tbl"}
+              "table": {"score": "$scoreFqn", "refresh": "$refreshFqn"}
             }]
           }
         }
@@ -172,8 +226,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             "topk": [{
               "topk": "top_purchased_seg",
               "ranges": "gender:eq:{gender};age:eq:{age};_target:eq:{_target}",
-              "expire": false,
-              "table": {"score": "$scoreFqn", "refresh": "refresh_tbl"}
+              "table": {"score": "$scoreFqn", "refresh": "$refreshFqn"}
             }]
           }
         }
@@ -199,8 +252,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             "topk": [{
               "topk": "top_purchased_1y",
               "ranges": "_target:eq:{_target};time:bt:now-365d,now",
-              "expire": false,
-              "table": {"score": "$scoreFqn", "refresh": "refresh_tbl"}
+              "table": {"score": "$scoreFqn", "refresh": "$refreshFqn"}
             }]
           }
         }
@@ -228,8 +280,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             "topk": [{
               "topk": "top_purchased_seg_1y",
               "ranges": "gender:eq:{gender};age:eq:{age};_target:eq:{_target};time:bt:now-365d,now",
-              "expire": false,
-              "table": {"score": "$scoreFqn", "refresh": "refresh_tbl"}
+              "table": {"score": "$scoreFqn", "refresh": "$refreshFqn"}
             }]
           }
         }
