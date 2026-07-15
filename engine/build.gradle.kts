@@ -50,6 +50,7 @@ dependencies {
     implementation(Dependencies.Exposed.JAVA_TIME)
     implementation(Dependencies.Exposed.DAO)
     implementation(Dependencies.Exposed.JDBC)
+    // The global metastore falls back to an in-memory H2 database when no metastoreUrl is set.
     runtimeOnly(Dependencies.Database.H2)
 
     // test

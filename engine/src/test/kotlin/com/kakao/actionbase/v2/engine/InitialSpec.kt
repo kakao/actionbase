@@ -30,14 +30,7 @@ class InitialSpec :
             graph shouldContainStoragesExactly GraphFixtures.defaultStorages
             graph shouldContainSystemLabelsExactly GraphFixtures.defaultLabels
 
-            // use toString for equality check
-            graph.testFixtures
-                .getLocalMetadata()
-                .map {
-                    println("decodedValue: $it")
-                }.collectList()
-                .block()
-
+            // System metadata is written to the in-memory local store.
             graph.testFixtures
                 .getLocalMetadata()
                 .filter { it.labelId != Metadata.infoLabelEntity.id }
@@ -48,7 +41,7 @@ class InitialSpec :
                     it shouldContainExactlyInAnyOrder GraphFixtures.defaultMetadata
                 }.verifyComplete()
 
-            // global metadata is empty
+            // The global JDBC metastore stays empty until data is promoted from local.
             graph.testFixtures
                 .getGlobalMetadata()
                 .test()

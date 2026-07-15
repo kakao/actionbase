@@ -1,7 +1,7 @@
 package com.kakao.actionbase.v2.engine.label.metastore
 
 import com.kakao.actionbase.engine.storage.StorageOpCollector
-import com.kakao.actionbase.v2.core.code.EdgeEncoder
+import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.edge.TraceEdge
 import com.kakao.actionbase.v2.core.metadata.Direction
@@ -12,43 +12,23 @@ import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.LabelFactory
+import com.kakao.actionbase.v2.engine.label.bytearray.ByteArrayIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
-import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 import com.kakao.actionbase.v2.engine.storage.local.LocalStorage
 import com.kakao.actionbase.v2.engine.util.getLogger
-
-import org.jetbrains.exposed.sql.Database
 
 import reactor.core.publisher.Mono
 
 class LocalBackedJdbcHashLabel(
     override val entity: LabelEntity,
-    coder: EdgeEncoder<String>,
-    localStore: Database,
-    globalStore: Database,
-    metadataTable: MetadataTable,
+    private val localLabel: Label,
+    private val globalLabel: JdbcHashLabel,
 ) : Label {
     val log = getLogger()
 
     private var useLocalStore = true
-
-    private val localLabel =
-        JdbcHashLabel(
-            entity = entity,
-            coder = coder,
-            database = localStore,
-            metadataTable = metadataTable,
-        )
-
-    private val globalLabel =
-        JdbcHashLabel(
-            entity = entity,
-            coder = coder,
-            database = globalStore,
-            metadataTable = metadataTable,
-        )
 
     fun useLocalStore() {
         useLocalStore = true
@@ -76,7 +56,10 @@ class LocalBackedJdbcHashLabel(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
     ): Mono<DataFrame> {
-        val local = localLabel.scan(scanFilter, stats)
+        // DdlService.getAll() passes indexName=null; the indexed local store needs an explicit
+        // prefix-scan index, so route null to the synthetic __default__ index for the local side.
+        val localScanFilter = if (scanFilter.indexName == null) scanFilter.copy(indexName = DEFAULT_SCAN_INDEX) else scanFilter
+        val local = localLabel.scan(localScanFilter, stats)
         val global = globalLabel.scan(scanFilter, stats)
         return local.zipWith(global) { a, b ->
             a + b
@@ -158,19 +141,35 @@ class LocalBackedJdbcHashLabel(
     }
 
     companion object : LabelFactory<LocalBackedJdbcHashLabel, LocalStorage> {
+        // Prefix-scan index with no fields — covers DdlService.getAll() (src-prefix only, no predicates).
+        const val DEFAULT_SCAN_INDEX = "__default__"
+        val defaultScanIndex = Index(DEFAULT_SCAN_INDEX, emptyList())
+
         override fun create(
             entity: LabelEntity,
             graph: GraphDefaults,
             storage: LocalStorage,
             block: LocalBackedJdbcHashLabel.() -> Unit,
         ): LocalBackedJdbcHashLabel {
+            // Augment the entity with a default prefix-scan index so the indexed local store's
+            // scan() works for DdlService.getAll(), which issues indexName=null / no-predicate scans.
+            val localEntity = entity.copy(indices = listOf(defaultScanIndex))
             val label =
                 LocalBackedJdbcHashLabel(
                     entity = entity,
-                    coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder,
-                    localStore = graph.localMetastore,
-                    globalStore = graph.metastore,
-                    metadataTable = graph.metadataTable,
+                    localLabel =
+                        ByteArrayIndexedLabel.create(
+                            entity = localEntity,
+                            coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
+                            store = graph.localStore,
+                        ),
+                    globalLabel =
+                        JdbcHashLabel(
+                            entity = entity,
+                            coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder,
+                            database = graph.metastore,
+                            metadataTable = graph.metadataTable,
+                        ),
                 )
             label.block()
             if (storage.options.useGlobal) {
