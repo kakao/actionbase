@@ -48,7 +48,6 @@ import com.kakao.actionbase.v2.engine.metadata.StorageType
 import com.kakao.actionbase.v2.engine.metadata.sync.MetadataSyncEntity
 import com.kakao.actionbase.v2.engine.metadata.sync.MetadataSyncStatus
 import com.kakao.actionbase.v2.engine.metadata.sync.MetadataType
-import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.migration.Migration
 import com.kakao.actionbase.v2.engine.service.ddl.AliasDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.LabelDdlService
@@ -162,8 +161,6 @@ class Graph(
     val aliasDdl = AliasDdlService(this, aliasLabel, AliasEntity)
 
     fun isReady(): Boolean = metadataInitialized
-
-    val metastoreInspector = MetastoreInspector(this.metastore, this.metadataTable)
 
     val encoderPoolSize = config.encoderPoolSize
 
