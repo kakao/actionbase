@@ -594,11 +594,6 @@ class V2BackedTableBinding(
                 Direction.IN -> com.kakao.actionbase.core.metadata.common.Direction.IN
             }
 
-        /**
-         * Resolves the primitive type of a field addressable by [name] in this schema.
-         * Covers user-declared properties for all schemas, plus MULTI_EDGE's promoted
-         * `_source` / `_target` keys which are not part of [ModelSchema.propertiesByName].
-         */
         internal fun ModelSchema.fieldType(name: String): PrimitiveType? =
             when {
                 this is ModelSchema.MultiEdge && name == "_source" -> source.type
