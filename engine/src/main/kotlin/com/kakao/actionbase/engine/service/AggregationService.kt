@@ -6,8 +6,8 @@ import com.kakao.actionbase.core.edge.payload.AggregationResult
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
-import com.kakao.actionbase.core.edge.payload.SweepAggregationPayload
-import com.kakao.actionbase.core.edge.payload.SweepEntryPayload
+import com.kakao.actionbase.core.edge.payload.RefreshAggregationPayload
+import com.kakao.actionbase.core.edge.payload.RefreshEntryPayload
 import com.kakao.actionbase.core.metadata.AggregationMetadata
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.Group
@@ -57,25 +57,25 @@ class AggregationService(
             .flatMap { event -> processAggregations(event) }
             .collectList()
 
-    fun sweep(
+    fun refresh(
         refreshDatabase: String,
         refreshTable: String,
-        entries: List<SweepEntryPayload>,
+        entries: List<RefreshEntryPayload>,
     ): Mono<List<AggregationResult>> =
         Flux
             .fromIterable(entries)
-            .flatMap { entry -> sweepOne(entry).map { result -> entry to result } }
+            .flatMap { entry -> refreshOne(entry).map { result -> entry to result } }
             .collectList()
-            .flatMap { swept ->
-                if (swept.isEmpty()) {
+            .flatMap { refreshed ->
+                if (refreshed.isEmpty()) {
                     Mono.just(emptyList())
                 } else {
-                    deleteSweptEntries(refreshDatabase, refreshTable, swept.map { it.first })
-                        .thenReturn(swept.map { it.second })
+                    deleteRefreshedEntries(refreshDatabase, refreshTable, refreshed.map { it.first })
+                        .thenReturn(refreshed.map { it.second })
                 }
             }
 
-    private fun sweepOne(entry: SweepEntryPayload): Mono<AggregationResult> {
+    private fun refreshOne(entry: RefreshEntryPayload): Mono<AggregationResult> {
         val payload = entry.aggregation
 
         val target =
@@ -86,10 +86,10 @@ class AggregationService(
         return aggregateTopk(target.event, target.direction, target.topk, writeRefreshOnSuccess = false)
     }
 
-    private fun deleteSweptEntries(
+    private fun deleteRefreshedEntries(
         refreshDatabase: String,
         refreshTable: String,
-        entries: List<SweepEntryPayload>,
+        entries: List<RefreshEntryPayload>,
     ): Mono<List<MutationResult>> =
         mutationService.mutate(
             database = refreshDatabase,
@@ -103,7 +103,7 @@ class AggregationService(
                 },
         )
 
-    private fun SweepAggregationPayload.resolveAsTopkTarget(): ResolvedTopkTarget? {
+    private fun RefreshAggregationPayload.resolveAsTopkTarget(): ResolvedTopkTarget? {
         val tb = engine.getTableBinding(database = database, alias = table)
         if (tb.schema !is ModelSchema.Edge && tb.schema !is ModelSchema.MultiEdge) return null
 
@@ -301,7 +301,7 @@ class AggregationService(
                 refreshAt = refreshAt,
             )
         val payload =
-            SweepAggregationPayload(
+            RefreshAggregationPayload(
                 type = event.type,
                 database = event.database,
                 table = event.table,

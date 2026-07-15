@@ -102,10 +102,10 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     }
 
     @Test
-    fun `POST aggregation sweep accepts explicit entry body`() {
+    fun `POST aggregation refresh accepts explicit entry body`() {
         client
             .post()
-            .uri("/graph/v3/aggregations/sweep")
+            .uri("/graph/v3/aggregations/refresh")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """

@@ -7,8 +7,8 @@ import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
-import com.kakao.actionbase.core.edge.payload.SweepAggregationPayload
-import com.kakao.actionbase.core.edge.payload.SweepEntryPayload
+import com.kakao.actionbase.core.edge.payload.RefreshAggregationPayload
+import com.kakao.actionbase.core.edge.payload.RefreshEntryPayload
 import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
@@ -484,14 +484,14 @@ class AggregationServiceSpec :
                     )
             }
 
-            // --- sweep ---
+            // --- refresh ---
 
             fun refreshEntryAggregationFor(
                 target: String,
                 topk: String = "top_purchased",
-            ): SweepAggregationPayload {
+            ): RefreshAggregationPayload {
                 val storedEdge = item("db", "src", source = "user1", target = target, version = 1_000L).edge
-                return SweepAggregationPayload(
+                return RefreshAggregationPayload(
                     type = AggregationType.TOPK,
                     database = "db",
                     table = "src",
@@ -502,7 +502,7 @@ class AggregationServiceSpec :
                 )
             }
 
-            "sweep re-aggregates one entry from its stored payload and deletes exactly that entry" {
+            "refresh re-aggregates one entry from its stored payload and deletes exactly that entry" {
                 val topk =
                     topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
                         .copy(refreshAfterMillis = 60_000L)
@@ -510,7 +510,7 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 val entry =
-                    SweepEntryPayload(
+                    RefreshEntryPayload(
                         partition = 42L,
                         key = "db.src:top_purchased:OUT:user1:item1:61000",
                         aggregation = refreshEntryAggregationFor("item1"),
@@ -529,7 +529,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(refreshDatabase = "topk", refreshTable = "refresh", entries = listOf(entry)))
+                    .create(service.refresh(refreshDatabase = "topk", refreshTable = "refresh", entries = listOf(entry)))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
@@ -543,7 +543,7 @@ class AggregationServiceSpec :
                 deleteMutations shouldHaveSize 1
             }
 
-            "sweep processes a batch of entries independently and deletes all of them in one bulk mutation" {
+            "refresh processes a batch of entries independently and deletes all of them in one bulk mutation" {
                 val topk =
                     topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
                         .copy(refreshAfterMillis = 60_000L)
@@ -552,12 +552,12 @@ class AggregationServiceSpec :
 
                 val entries =
                     listOf(
-                        SweepEntryPayload(
+                        RefreshEntryPayload(
                             partition = 42L,
                             key = "db.src:top_purchased:OUT:user1:item1:61000",
                             aggregation = refreshEntryAggregationFor("item1"),
                         ),
-                        SweepEntryPayload(
+                        RefreshEntryPayload(
                             partition = 42L,
                             key = "db.src:top_purchased:OUT:user1:item2:61000",
                             aggregation = refreshEntryAggregationFor("item2"),
@@ -577,7 +577,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "DELETED"), mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.sweep(refreshDatabase = "topk", refreshTable = "refresh", entries = entries))
+                    .create(service.refresh(refreshDatabase = "topk", refreshTable = "refresh", entries = entries))
                     .assertNext { results -> results shouldHaveSize 2 }
                     .verifyComplete()
 
@@ -585,7 +585,7 @@ class AggregationServiceSpec :
                 deleteMutations.single() shouldHaveSize 2
             }
 
-            "sweep excludes an unresolved entry from delete" {
+            "refresh excludes an unresolved entry from delete" {
                 val topk =
                     topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
                         .copy(refreshAfterMillis = 60_000L)
@@ -593,13 +593,13 @@ class AggregationServiceSpec :
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
                 val unresolvedEntry =
-                    SweepEntryPayload(
+                    RefreshEntryPayload(
                         partition = 42L,
                         key = "db.src:top_purchased:OUT:user1:item1:61000",
                         aggregation = refreshEntryAggregationFor("item1", topk = "missing_topk"),
                     )
                 val validEntry =
-                    SweepEntryPayload(
+                    RefreshEntryPayload(
                         partition = 42L,
                         key = "db.src:top_purchased:OUT:user1:item2:61000",
                         aggregation = refreshEntryAggregationFor("item2"),
@@ -619,7 +619,7 @@ class AggregationServiceSpec :
 
                 StepVerifier
                     .create(
-                        service.sweep(
+                        service.refresh(
                             refreshDatabase = "topk",
                             refreshTable = "refresh",
                             entries = listOf(unresolvedEntry, validEntry),

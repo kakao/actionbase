@@ -2,7 +2,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 
 import com.kakao.actionbase.core.edge.payload.AggregationItemRequest
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
-import com.kakao.actionbase.core.edge.payload.SweepRequest
+import com.kakao.actionbase.core.edge.payload.RefreshRequest
 import com.kakao.actionbase.core.metadata.payload.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
 import com.kakao.actionbase.core.metadata.payload.RefreshTablesResponse
@@ -45,14 +45,14 @@ class MetadataAggController(
             )
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 
-    @PostMapping("/graph/v3/aggregations/sweep")
-    fun sweep(
-        @RequestBody sweepRequest: SweepRequest,
+    @PostMapping("/graph/v3/aggregations/refresh")
+    fun refresh(
+        @RequestBody refreshRequest: RefreshRequest,
     ): Mono<ResponseEntity<AggregationsItemResponse>> =
         aggregationService
-            .sweep(
-                refreshDatabase = sweepRequest.refreshDatabase,
-                refreshTable = sweepRequest.refreshTable,
-                entries = sweepRequest.entries,
+            .refresh(
+                refreshDatabase = refreshRequest.refreshDatabase,
+                refreshTable = refreshRequest.refreshTable,
+                entries = refreshRequest.entries,
             ).map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 }
