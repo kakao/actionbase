@@ -9,6 +9,7 @@ import com.kakao.actionbase.core.edge.payload.MutationResult
 import com.kakao.actionbase.core.edge.payload.RefreshAggregationPayload
 import com.kakao.actionbase.core.edge.payload.RefreshEntryPayload
 import com.kakao.actionbase.core.metadata.AggregationMetadata
+import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
@@ -309,7 +310,7 @@ class AggregationService(
         rankedValue: String,
     ): Mono<List<MutationResult>> {
         val (refreshDatabase, refreshTable) = parseFqn(topk.table.refresh)
-        val refreshAt = event.edge.version + topk.refreshAfterMillis
+        val refreshAt = edgeVersionMillis(event.group, event.edge.version) + topk.refreshAfterMillis
         val partition =
             TopKTableNames.refreshPartition(
                 database = event.database,
@@ -382,6 +383,27 @@ class AggregationService(
         }
 
     private fun encodeSegment(ranges: String?): String? = ranges?.let { URLEncoder.encode(it, StandardCharsets.UTF_8) }
+
+    private fun edgeVersionMillis(
+        group: Group,
+        version: Long,
+    ): Long =
+        when (versionUnit(group)) {
+            Bucket.ValueUnit.SECOND -> Math.multiplyExact(version, 1_000L)
+            Bucket.ValueUnit.MILLISECOND -> version
+            Bucket.ValueUnit.MICROSECOND -> Math.floorDiv(version, 1_000L)
+            Bucket.ValueUnit.NANOSECOND -> Math.floorDiv(version, 1_000_000L)
+        }
+
+    private fun versionUnit(group: Group): Bucket.ValueUnit =
+        group.fields
+            .firstNotNullOfOrNull { field ->
+                if (field.name == "version") {
+                    (field.bucket as? Bucket.Date)?.unit
+                } else {
+                    null
+                }
+            } ?: Bucket.ValueUnit.MILLISECOND
 
     private fun EdgePayload.toRefreshEntryPayload(): RefreshEntryPayload =
         RefreshEntryPayload(

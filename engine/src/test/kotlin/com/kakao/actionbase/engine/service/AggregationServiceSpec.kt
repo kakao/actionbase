@@ -11,6 +11,7 @@ import com.kakao.actionbase.core.edge.payload.MutationResult
 import com.kakao.actionbase.core.edge.payload.RefreshAggregationPayload
 import com.kakao.actionbase.core.edge.payload.RefreshEntryPayload
 import com.kakao.actionbase.core.metadata.common.Aggregations
+import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
@@ -451,6 +452,55 @@ class AggregationServiceSpec :
                 refreshEdge.properties["refreshAt"] shouldBe 61_000L
             }
 
+            "aggregate stores refreshAt as epoch millis even when edge versions are nanos" {
+                val topk =
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                        .copy(refreshAfterMillis = 60_000L)
+                val group =
+                    groupWithTopks(
+                        name = "g1",
+                        topks = listOf(topk),
+                        directionType = DirectionType.OUT,
+                        fields =
+                            listOf(
+                                Group.Field(
+                                    name = "version",
+                                    bucket =
+                                        Bucket.Date(
+                                            name = "time",
+                                            unit = Bucket.ValueUnit.NANOSECOND,
+                                            timezone = "+00:00",
+                                            format = "yyyyMMdd'T'HH",
+                                        ),
+                                ),
+                            ),
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 1))
+                every {
+                    mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                val refreshMutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate("db", "refresh_tbl", capture(refreshMutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                val eventItem = item("db", "src", source = "user1", target = "item1", version = 1_000_000_000L)
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(eventItem)))
+                    .assertNext { results -> results shouldHaveSize 1 }
+                    .verifyComplete()
+
+                val refreshEdge = refreshMutations.captured.single().edge
+                refreshEdge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
+                refreshEdge.properties["refreshAt"] shouldBe 61_000L
+            }
+
             "aggregate writing two events for the same entity produces two independent refresh entries" {
                 val topk =
                     topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
@@ -712,11 +762,12 @@ private fun groupWithTopks(
     name: String,
     topks: List<Topk>,
     directionType: DirectionType = DirectionType.BOTH,
+    fields: List<Group.Field> = emptyList(),
 ): Group =
     Group(
         group = name,
         type = GroupType.SUM,
-        fields = emptyList(),
+        fields = fields,
         directionType = directionType,
         aggregations = Aggregations(topk = topks),
     )
