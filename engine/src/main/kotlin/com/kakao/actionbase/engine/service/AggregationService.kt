@@ -54,17 +54,8 @@ class AggregationService(
         }
 
     private fun createTopkEvent(item: AggregationItemPayload): List<EdgeAggregationEvent> {
-        val isExpire = item.database == AggregationConstants.TOPK_DATABASE && item.table == AggregationConstants.TOPK_EXPIRE_TABLE
-
-        val (database, table) =
-            if (isExpire) {
-                require(item.edge.properties.containsKey("table")) {
-                    "table property is required for expire edges"
-                }
-                parseFqn(item.edge.properties["table"] as String)
-            } else {
-                item.database to item.table
-            }
+        val database = item.database
+        val table = item.table
 
         val tb = engine.getTableBinding(database = database, alias = table)
 
@@ -77,11 +68,7 @@ class AggregationService(
         return groups
             .filter { it.aggregations.topk.isNotEmpty() }
             .map { group ->
-                if (isExpire) {
-                    EdgeAggregationEvent.of(type = AggregationType.TOPK, database, table, properties = item.edge.properties, group)
-                } else {
-                    EdgeAggregationEvent.of(type = AggregationType.TOPK, database = item.database, table = item.table, item, group)
-                }
+                EdgeAggregationEvent.of(type = AggregationType.TOPK, database = item.database, table = item.table, item, group)
             }
     }
 
@@ -105,12 +92,8 @@ class AggregationService(
             .fromIterable(directionTopkPairs)
             .flatMap { (direction, topk) ->
                 val ranges =
-                    if (item.isExpire) {
-                        item.properties["ranges"]?.toString()
-                    } else {
-                        topk.ranges.takeIf { it.isNotEmpty() }?.let {
-                            interpolate(template = it, source = item.source, target = item.target, properties = item.properties)
-                        }
+                    topk.ranges.takeIf { it.isNotEmpty() }?.let {
+                        interpolate(template = it, source = item.source, target = item.target, properties = item.properties)
                     }
 
                 aggregateTopk(
@@ -123,7 +106,6 @@ class AggregationService(
                     group = item.group,
                     ranges = ranges,
                     topk = topk,
-                    isExpire = item.isExpire,
                 )
             }
     }
@@ -138,7 +120,6 @@ class AggregationService(
         group: Group,
         ranges: String?,
         topk: Topk,
-        isExpire: Boolean,
     ): Mono<AggregationResult> {
         val base =
             AggregationResult(
@@ -151,12 +132,7 @@ class AggregationService(
             )
         val (scoreDatabase, scoreTable) = parseFqn(topk.table.score)
 
-        val (directedSource, directedTarget) =
-            if (isExpire) {
-                source to target
-            } else {
-                getSourceTargetPair(source, direction, target, group, properties)
-            }
+        val (directedSource, directedTarget) = getSourceTargetPair(source, direction, target, group, properties)
 
         return queryService
             .agg(
@@ -313,7 +289,6 @@ class AggregationService(
 
 data class EdgeAggregationEvent(
     val type: AggregationType,
-    val isExpire: Boolean = false,
     val database: String,
     val table: String,
     val source: String,
@@ -339,28 +314,6 @@ data class EdgeAggregationEvent(
                 target = item.edge.target.toString(),
                 properties = item.edge.properties,
                 direction = group.directionType,
-                group = group,
-                aggregations = group.aggregations,
-            )
-
-        fun of(
-            type: AggregationType,
-            database: String,
-            table: String,
-            properties: Map<String, Any?>,
-            group: Group,
-        ): EdgeAggregationEvent =
-            EdgeAggregationEvent(
-                type = type,
-                isExpire = true,
-                database = database,
-                table = table,
-                source = checkNotNull(properties["directedSource"]?.toString()) { "`directedSource` property is required for expire events" },
-                target = checkNotNull(properties["directedTarget"]?.toString()) { "`directedTarget` property is required for expire events" },
-                properties = properties,
-                direction =
-                    checkNotNull(properties["direction"]?.toString()) { "`direction` property is required for expire events" }
-                        .let { DirectionType.valueOf(it) },
                 group = group,
                 aggregations = group.aggregations,
             )

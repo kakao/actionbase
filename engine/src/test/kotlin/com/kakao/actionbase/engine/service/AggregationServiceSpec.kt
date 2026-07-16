@@ -365,86 +365,6 @@ class AggregationServiceSpec :
                 edge.target shouldBe "item1|fruit"
             }
 
-            // --- aggregate (expire CDC) ---
-
-            "aggregate resolves original table from properties[table] when the item comes from the expire CDC" {
-                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "commerce.score_tbl"))
-                val group =
-                    groupWithTopks(
-                        name = "g_out",
-                        topks = listOf(topk),
-                        directionType = DirectionType.BOTH,
-                    )
-                stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
-
-                val queryRanges = slot<String>()
-                every {
-                    queryService.agg(any(), any(), any(), any(), any(), capture(queryRanges), any(), any())
-                } returns Mono.just(aggPayload(count = 4))
-
-                val mutations = slot<List<MutationItem>>()
-                every {
-                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
-                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
-
-                val expireItem =
-                    expireItem(
-                        properties =
-                            mapOf(
-                                "table" to "commerce.purchases",
-                                "directedSource" to "user1",
-                                "directedTarget" to "item1",
-                                "direction" to "OUT",
-                                "ranges" to "_target:eq:item1",
-                            ),
-                    )
-
-                StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(expireItem)))
-                    .assertNext { results ->
-                        results shouldHaveSize 1
-                        results[0].status shouldBe "SUCCESS"
-                        results[0].database shouldBe "commerce"
-                        results[0].table shouldBe "purchases"
-                    }.verifyComplete()
-
-                queryRanges.captured shouldBe "_target:eq:item1"
-                val edge = mutations.captured.single().edge
-                edge.source shouldBe "user1|top_purchased"
-                edge.target shouldBe "item1"
-            }
-
-            "aggregate rejects an expire CDC item missing the `table` property" {
-                val expireItem = expireItem(properties = mapOf("directedSource" to "u", "directedTarget" to "t", "direction" to "OUT"))
-
-                StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(expireItem)))
-                    .expectErrorMatches { it is IllegalArgumentException && it.message!!.contains("table property is required") }
-                    .verify()
-            }
-
-            "aggregate rejects an expire CDC item missing the `directedSource` property" {
-                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "commerce.score_tbl"))
-                val group = groupWithTopks(name = "g", topks = listOf(topk), directionType = DirectionType.OUT)
-                stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
-
-                val expireItem =
-                    expireItem(
-                        properties =
-                            mapOf(
-                                "table" to "commerce.purchases",
-                                "directedTarget" to "item1",
-                                "direction" to "OUT",
-                                "ranges" to "_target:eq:item1",
-                            ),
-                    )
-
-                StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(expireItem)))
-                    .expectErrorMatches { it is IllegalStateException && it.message!!.contains("`directedSource` property is required") }
-                    .verify()
-            }
-
             // --- aggregate (expire write) ---
 
             "aggregate writes an expire row after the score row when expireAfterMillis is positive" {
@@ -709,20 +629,6 @@ private fun item(
                 version = 1L,
                 source = source,
                 target = target,
-                properties = properties,
-                context = emptyMap(),
-            ),
-    )
-
-private fun expireItem(properties: Map<String, Any?>): AggregationItemPayload =
-    AggregationItemPayload(
-        database = AggregationConstants.TOPK_DATABASE,
-        table = AggregationConstants.TOPK_EXPIRE_TABLE,
-        edge =
-            EdgePayload(
-                version = 1L,
-                source = "unused",
-                target = "unused",
                 properties = properties,
                 context = emptyMap(),
             ),
