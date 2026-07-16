@@ -9,7 +9,6 @@ data class AggregationsListResponse(
     data class Item(
         val database: String,
         val table: String,
-        val refresh: Boolean = false,
     )
 
     companion object {
@@ -21,6 +20,6 @@ data class AggregationsListResponse(
                         .map { it.toItem() },
             )
 
-        private fun QualifiedAggregations.toItem(): Item = Item(database = database, table = table, refresh = refresh)
+        private fun QualifiedAggregations.toItem(): Item = Item(database = database, table = table)
     }
 }

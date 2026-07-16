@@ -38,9 +38,7 @@ import com.kakao.actionbase.v2.engine.entity.QueryEntity
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
 import com.kakao.actionbase.v2.engine.entity.hasAggregation
-import com.kakao.actionbase.v2.engine.entity.isSystemTable
 import com.kakao.actionbase.v2.engine.entity.toQualifiedAggregations
-import com.kakao.actionbase.v2.engine.entity.toSystemQualifiedAggregations
 import com.kakao.actionbase.v2.engine.exception.MutationError
 import com.kakao.actionbase.v2.engine.fake.fakeEdges
 import com.kakao.actionbase.v2.engine.label.DeleteEdgeRequest
@@ -388,11 +386,6 @@ class Graph(
         labels.values
             .filter { it.entity.hasAggregation(type) }
             .flatMap { it.entity.toQualifiedAggregations(type) }
-
-    fun listWithSystemAggregations(type: AggregationType? = null): List<QualifiedAggregations> =
-        labels.values
-            .filter { it.entity.isSystemTable() }
-            .flatMap { it.entity.toSystemQualifiedAggregations(type) }
 
     /**
      * For `system=ASYNC + label=SYNC` (no force), return the SYNC-shaped status derived from the

@@ -2,8 +2,6 @@ package com.kakao.actionbase.v2.engine.entity
 
 import com.kakao.actionbase.core.metadata.common.DirectionType as GroupDirectionType
 
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_REFRESH_TABLE
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Group
@@ -36,24 +34,12 @@ class LabelEntityFunctionsSpec :
             labelWithTopks(emptyList()).hasAggregation().shouldBeFalse()
         }
 
-        "hasAggregation ignores the system table registry" {
-            labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList()).hasAggregation().shouldBeFalse()
-        }
-
         "hasAggregation(type=TOPK) returns true when a group defines topk" {
             labelWithTopks(listOf(topk("t1"))).hasAggregation(AggregationType.TOPK).shouldBeTrue()
         }
 
         "hasAggregation(type=TOPK) returns false when a user label defines no topk" {
             labelWithTopks(emptyList()).hasAggregation(AggregationType.TOPK).shouldBeFalse()
-        }
-
-        "isSystemTable returns true for the topk expire table" {
-            labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList()).isSystemTable().shouldBeTrue()
-        }
-
-        "isSystemTable returns false for a user table" {
-            labelWithTopks(emptyList()).isSystemTable().shouldBeFalse()
         }
 
         "toQualifiedAggregations emits one entry per kind on a user table" {
@@ -75,15 +61,10 @@ class LabelEntityFunctionsSpec :
             result.single().type shouldBe AggregationType.TOPK
             result.single().database shouldBe "db"
             result.single().table shouldBe "orders"
-            result.single().refresh.shouldBeFalse()
         }
 
         "toQualifiedAggregations returns empty for a user table with no topk" {
             labelWithTopks(emptyList()).toQualifiedAggregations().shouldBeEmpty()
-        }
-
-        "toQualifiedAggregations returns empty for a system table (system path is separate)" {
-            labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList()).toQualifiedAggregations().shouldBeEmpty()
         }
 
         "toQualifiedAggregations(type=TOPK) keeps a user label that defines topk" {
@@ -91,31 +72,6 @@ class LabelEntityFunctionsSpec :
 
             result shouldHaveSize 1
             result.single().type shouldBe AggregationType.TOPK
-        }
-
-        "toSystemQualifiedAggregations emits an expire entry for the topk system table" {
-            val result =
-                labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList())
-                    .toSystemQualifiedAggregations()
-
-            result shouldHaveSize 1
-            result.single().type shouldBe AggregationType.TOPK
-            result.single().database shouldBe TOPK_DATABASE
-            result.single().table shouldBe TOPK_REFRESH_TABLE
-            result.single().refresh.shouldBeTrue()
-        }
-
-        "toSystemQualifiedAggregations returns empty for a user table" {
-            labelWithTopks(listOf(topk("t1"))).toSystemQualifiedAggregations().shouldBeEmpty()
-        }
-
-        "toSystemQualifiedAggregations(type=TOPK) emits the topk expire entry" {
-            val result =
-                labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList())
-                    .toSystemQualifiedAggregations(AggregationType.TOPK)
-
-            result shouldHaveSize 1
-            result.single().refresh.shouldBeTrue()
         }
     }) {
     companion object {
