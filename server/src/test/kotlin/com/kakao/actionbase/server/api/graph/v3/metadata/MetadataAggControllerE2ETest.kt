@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
 import com.kakao.actionbase.server.test.E2ETestBase
 
@@ -84,10 +85,11 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 .returnResult()
                 .responseBody!!
 
-        val databaseTablePair = response.topk.associateBy { it.database to it.table }
+        val byLocation = response.items.associateBy { it.database to it.table }
 
-        val source = databaseTablePair[db to table]
+        val source = byLocation[db to table]
         assertNotNull(source)
+        assertEquals(AggregationType.TOPK, source?.type)
         assertEquals(db, source?.database)
         assertEquals(table, source?.table)
     }
