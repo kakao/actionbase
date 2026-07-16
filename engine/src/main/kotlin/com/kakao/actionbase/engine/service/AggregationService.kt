@@ -244,7 +244,8 @@ class AggregationService(
                         ?.toDouble() ?: 0.0
                 val scoreSource =
                     AggregationConstants.scoreSource(
-                        table = "$database.$table",
+                        database = database,
+                        table = table,
                         topk = topk.topk,
                         direction = direction,
                         entity = entity,
@@ -292,7 +293,8 @@ class AggregationService(
         val refreshAt = edgeVersionMillis(event.group, event.edge.version) + topk.refreshAfterMillis
         val partition =
             AggregationConstants.refreshSource(
-                table = "${event.database}.${event.table}",
+                database = event.database,
+                table = event.table,
                 topk = topk.topk,
                 direction = direction,
                 entity = entity,
@@ -301,7 +303,8 @@ class AggregationService(
             )
         val refreshTarget =
             AggregationConstants.refreshTarget(
-                table = "${event.database}.${event.table}",
+                database = event.database,
+                table = event.table,
                 topk = topk.topk,
                 direction = direction,
                 entity = entity,

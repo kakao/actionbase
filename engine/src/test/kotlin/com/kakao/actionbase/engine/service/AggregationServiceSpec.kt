@@ -192,7 +192,7 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "db.src:top_purchased:OUT:user1"
+                edge.source shouldBe "db.src:top_purchased:OUT:user1:__all__"
                 edge.target shouldBe "item1"
             }
 
@@ -226,7 +226,7 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "db.src:top_purchased_by:IN:user1"
+                edge.source shouldBe "db.src:top_purchased_by:IN:user1:__all__"
                 edge.target shouldBe "item1"
             }
 
@@ -271,8 +271,8 @@ class AggregationServiceSpec :
                 val edges = mutations.map { it.single().edge }
                 edges.map { it.source } shouldContainExactlyInAnyOrder
                     listOf(
-                        "db.src:top_global:IN:${AggregationConstants.GLOBAL_ENTITY}",
-                        "db.src:top_global:IN:${AggregationConstants.GLOBAL_ENTITY}",
+                        "db.src:top_global:IN:${AggregationConstants.GLOBAL_ENTITY}:${AggregationConstants.ALL_SEGMENT}",
+                        "db.src:top_global:IN:${AggregationConstants.GLOBAL_ENTITY}:${AggregationConstants.ALL_SEGMENT}",
                     )
                 edges.map { it.target } shouldContainExactlyInAnyOrder listOf("item1", "item2")
             }
@@ -304,7 +304,7 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "db.src:top_by_target:IN:item1"
+                edge.source shouldBe "db.src:top_by_target:IN:item1:__all__"
                 edge.target shouldBe "user1"
             }
 
@@ -339,8 +339,8 @@ class AggregationServiceSpec :
                 val edges = mutations.map { it.single().edge }
                 edges.map { it.source to it.target } shouldContainExactlyInAnyOrder
                     listOf(
-                        "db.src:top_both:OUT:user1" to "item1",
-                        "db.src:top_both:IN:user1" to "item1",
+                        "db.src:top_both:OUT:user1:__all__" to "item1",
+                        "db.src:top_both:IN:user1:__all__" to "item1",
                     )
             }
 
@@ -416,7 +416,7 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 val refreshEdge = refreshMutations.captured.single().edge
-                refreshEdge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
+                refreshEdge.target shouldBe "db.src:top_purchased:OUT:user1:__all__:item1:61000"
                 refreshEdge.properties["refreshAt"] shouldBe 61_000L
             }
 
@@ -465,7 +465,7 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 val refreshEdge = refreshMutations.captured.single().edge
-                refreshEdge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
+                refreshEdge.target shouldBe "db.src:top_purchased:OUT:user1:__all__:item1:61000"
                 refreshEdge.properties["refreshAt"] shouldBe 61_000L
             }
 
@@ -499,8 +499,8 @@ class AggregationServiceSpec :
                 val targets = refreshMutations.map { it.single().edge.target }
                 targets shouldContainExactlyInAnyOrder
                     listOf(
-                        "db.src:top_purchased:OUT:user1:item1:61000",
-                        "db.src:top_purchased:OUT:user1:item2:62000",
+                        "db.src:top_purchased:OUT:user1:__all__:item1:61000",
+                        "db.src:top_purchased:OUT:user1:__all__:item2:62000",
                     )
             }
 
@@ -529,7 +529,7 @@ class AggregationServiceSpec :
                     EdgePayload(
                         version = 1L,
                         source = 42L,
-                        target = "db.src:top_purchased:OUT:user1:item1:61000",
+                        target = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
                         properties = mapOf("refreshAt" to 61_000L, "payload" to objectMapper.writeValueAsString(aggregation)),
                         context = emptyMap(),
                     )
@@ -575,7 +575,7 @@ class AggregationServiceSpec :
                             listOf(
                                 RefreshEntryPayload(
                                     partition = 42L,
-                                    key = "db.src:top_purchased:OUT:user1:item1:61000",
+                                    key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
                                     aggregation = aggregation,
                                 ),
                             )
@@ -596,7 +596,7 @@ class AggregationServiceSpec :
                 val entry =
                     RefreshEntryPayload(
                         partition = 42L,
-                        key = "db.src:top_purchased:OUT:user1:item1:61000",
+                        key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
                         aggregation = refreshEntryAggregationFor("item1"),
                     )
 
@@ -622,7 +622,7 @@ class AggregationServiceSpec :
                 val delete = deleteMutations.single().single()
                 delete.type shouldBe EventType.DELETE
                 delete.edge.source shouldBe 42L
-                delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:item1:61000"
+                delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:__all__:item1:61000"
 
                 deleteMutations shouldHaveSize 1
             }
@@ -638,12 +638,12 @@ class AggregationServiceSpec :
                     listOf(
                         RefreshEntryPayload(
                             partition = 42L,
-                            key = "db.src:top_purchased:OUT:user1:item1:61000",
+                            key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
                             aggregation = refreshEntryAggregationFor("item1"),
                         ),
                         RefreshEntryPayload(
                             partition = 42L,
-                            key = "db.src:top_purchased:OUT:user1:item2:61000",
+                            key = "db.src:top_purchased:OUT:user1:__all__:item2:61000",
                             aggregation = refreshEntryAggregationFor("item2"),
                         ),
                     )
@@ -679,13 +679,13 @@ class AggregationServiceSpec :
                 val unresolvedEntry =
                     RefreshEntryPayload(
                         partition = 42L,
-                        key = "db.src:top_purchased:OUT:user1:item1:61000",
+                        key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
                         aggregation = refreshEntryAggregationFor("item1", topk = "missing_topk"),
                     )
                 val validEntry =
                     RefreshEntryPayload(
                         partition = 42L,
-                        key = "db.src:top_purchased:OUT:user1:item2:61000",
+                        key = "db.src:top_purchased:OUT:user1:__all__:item2:61000",
                         aggregation = refreshEntryAggregationFor("item2"),
                     )
 
@@ -710,7 +710,7 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 val delete = deleteMutations.single().single()
-                delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:item2:61000"
+                delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:__all__:item2:61000"
             }
         },
     )
