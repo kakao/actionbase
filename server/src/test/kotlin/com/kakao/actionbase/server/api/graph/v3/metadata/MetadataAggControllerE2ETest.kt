@@ -100,8 +100,13 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 """
                 {
                   "entries": [{
-                    "partition": 42,
-                    "key": "$db.$sourceTable:missing_topk:OUT:$user:__all__:$itemA:61000"
+                    "database": "$db",
+                    "table": "$sourceTable",
+                    "topk": "missing_topk",
+                    "direction": "OUT",
+                    "entity": "$user",
+                    "target": "$itemA",
+                    "refreshAt": 61000
                   }]
                 }
                 """.trimIndent(),
@@ -128,10 +133,20 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .expectBody()
             .jsonPath("$.entries.length()")
             .isEqualTo(1)
-            .jsonPath("$.entries[0].partition")
-            .isEqualTo(42)
-            .jsonPath("$.entries[0].key")
-            .isEqualTo("$db.$sourceTable:top_purchased:OUT:$user:__all__:$itemA:61000")
+            .jsonPath("$.entries[0].database")
+            .isEqualTo(db)
+            .jsonPath("$.entries[0].table")
+            .isEqualTo(sourceTable)
+            .jsonPath("$.entries[0].topk")
+            .isEqualTo("top_purchased")
+            .jsonPath("$.entries[0].direction")
+            .isEqualTo("OUT")
+            .jsonPath("$.entries[0].entity")
+            .isEqualTo(user.toString())
+            .jsonPath("$.entries[0].target")
+            .isEqualTo(itemA.toString())
+            .jsonPath("$.entries[0].refreshAt")
+            .isEqualTo(61000)
     }
 
     @Test

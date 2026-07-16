@@ -14,9 +14,7 @@ import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.RankTarget
 import com.kakao.actionbase.core.metadata.common.Topk
-import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
 
@@ -49,7 +47,7 @@ class AggregationService(
                 direction = Direction.OUT,
                 limit = limit,
                 ranges = "refreshAt:lte:$now",
-            ).map { response -> response.edges.map { edge -> edge.toRefreshEntryPayload() } }
+            ).map { response -> response.edges.mapNotNull { edge -> edge.toRefreshEntryPayload() } }
     }
 
     fun aggregate(
@@ -76,13 +74,11 @@ class AggregationService(
                 }
             }
 
-    // The entry's key carries the full refresh coordinate — no aggregation payload travels with
-    // it. Unresolvable entries (unparseable key, missing metadata, inputs the key can't express)
-    // are skipped and left in the refresh table, matching the previous unresolved behavior.
+    // The entry itself is the parsed refresh coordinate. Unresolvable entries (missing metadata,
+    // inputs the coordinate can't express) are skipped and left in the refresh table, so the
+    // next cycle retries them.
     private fun refreshOne(entry: RefreshEntryPayload): Mono<AggregationResult> {
-        val parsed = AggregationConstants.parseRefreshTarget(entry.key) ?: return Mono.empty()
-
-        val tb = engine.getTableBinding(database = parsed.database, alias = parsed.table)
+        val tb = engine.getTableBinding(database = entry.database, alias = entry.table)
         if (tb.schema !is ModelSchema.Edge && tb.schema !is ModelSchema.MultiEdge) return Mono.empty()
         val (group, topk) =
             tb.schema
@@ -90,50 +86,51 @@ class AggregationService(
                 .orEmpty()
                 .firstNotNullOfOrNull { group ->
                     group.aggregations.topk
-                        .firstOrNull { it.topk == parsed.topk }
+                        .firstOrNull { it.topk == entry.topk }
                         ?.let { group to it }
                 } ?: return Mono.empty()
 
-        val entity = parsed.entity
-        val rankedValue = parsed.target
+        val entity = entry.entity
+        val rankedValue = entry.target
+
+        // Reconstruct the edge endpoints the declared field refs pin down; a property-backed
+        // ref carries no endpoint information.
+        val edgeSource =
+            when {
+                topk.entity == AggregationConstants.SOURCE_FIELD -> entity
+                topk.rankedField == AggregationConstants.SOURCE_FIELD -> rankedValue
+                else -> null
+            }
+        val edgeTarget =
+            when {
+                topk.entity == AggregationConstants.TARGET_FIELD -> entity
+                topk.rankedField == AggregationConstants.TARGET_FIELD -> rankedValue
+                else -> null
+            }
         val directedSource =
-            if (topk.scope == TopkScope.GLOBAL) {
-                // The key holds no raw endpoint besides rankedValue, so the AGG start is only
-                // recoverable when the scored endpoint is the ranked one.
-                when {
-                    parsed.direction == Direction.IN && topk.rankTarget == RankTarget.TARGET -> rankedValue
-                    parsed.direction == Direction.OUT && topk.rankTarget == RankTarget.SOURCE -> rankedValue
-                    else -> return Mono.empty()
-                }
-            } else if (parsed.direction == Direction.IN) {
-                if (topk.rankTarget == RankTarget.TARGET) rankedValue else entity
-            } else {
-                if (topk.rankTarget == RankTarget.TARGET) entity else rankedValue
-            }
+            (if (entry.direction == Direction.IN) edgeTarget else edgeSource) ?: return Mono.empty()
         val ranges =
-            if (topk.scope == TopkScope.GLOBAL) {
+            if (topk.entity == AggregationConstants.GLOBAL_ENTITY) {
                 // A GLOBAL segment is the interpolated ranges verbatim — reuse it as-is.
-                parsed.segment
+                entry.segment
             } else {
-                val source = if (topk.rankTarget == RankTarget.TARGET) entity else rankedValue
-                val target = if (topk.rankTarget == RankTarget.TARGET) rankedValue else entity
                 topk.ranges.takeIf { it.isNotEmpty() }?.let {
-                    interpolate(template = it, source = source, target = target, properties = emptyMap())
+                    interpolate(template = it, source = edgeSource, target = edgeTarget, properties = emptyMap())
                 }
             }
-        // A property placeholder that survived interpolation means the key can't reproduce the
+        // A placeholder that survived interpolation means the coordinate can't reproduce the
         // original AGG scope — skip rather than aggregate against a garbage predicate.
         if (ranges != null && PLACEHOLDER.containsMatchIn(ranges)) return Mono.empty()
 
         return aggregateTopk(
-            database = parsed.database,
-            table = parsed.table,
+            database = entry.database,
+            table = entry.table,
             group = group,
             topk = topk,
-            direction = parsed.direction,
+            direction = entry.direction,
             directedSource = directedSource,
             entity = entity,
-            segment = parsed.segment,
+            segment = entry.segment,
             rankedValue = rankedValue,
             ranges = ranges,
             reportSource = entity,
@@ -150,9 +147,37 @@ class AggregationService(
                 entries.map { entry ->
                     MutationItem(
                         type = EventType.DELETE,
-                        edge = Edge(version = System.currentTimeMillis(), source = entry.partition, target = entry.key),
+                        edge =
+                            Edge(
+                                version = System.currentTimeMillis(),
+                                source = entry.toRefreshSource(),
+                                target = entry.toRefreshTarget(),
+                            ),
                     )
                 },
+        )
+
+    private fun RefreshEntryPayload.toRefreshSource(): Long =
+        AggregationConstants.refreshSource(
+            database = database,
+            table = table,
+            topk = topk,
+            direction = direction,
+            entity = entity,
+            segment = segment,
+            target = target,
+        )
+
+    private fun RefreshEntryPayload.toRefreshTarget(): String =
+        AggregationConstants.refreshTarget(
+            database = database,
+            table = table,
+            topk = topk,
+            direction = direction,
+            entity = entity,
+            segment = segment,
+            target = target,
+            refreshAt = refreshAt,
         )
 
     private fun ModelSchema.groupsOrNull(): List<Group>? =
@@ -222,24 +247,35 @@ class AggregationService(
         val target = event.edge.target.toString()
 
         // The AGG query always scores `directedSource` (the row `direction` points the group at).
-        // `rankedValue`/`entity` are independent of that — they read the raw edge endpoints
-        // directly, because which endpoint is "who" vs. "what's being ranked" is a property of
-        // the topk declaration, not of the direction chosen to avoid a fat AGG row.
+        // `entity`/`rankedValue` are independent of that — the topk declaration names the fields
+        // they read ("whose ranking is it" vs. "what's being ranked"), not the direction chosen
+        // to avoid a fat AGG row.
         val directedSource = if (direction == Direction.IN) target else source
-        val rankedValue = if (topk.rankTarget == RankTarget.TARGET) target else source
         val entity =
-            if (topk.scope == TopkScope.GLOBAL) {
+            if (topk.entity == AggregationConstants.GLOBAL_ENTITY) {
                 AggregationConstants.GLOBAL_ENTITY
-            } else if (topk.rankTarget == RankTarget.TARGET) {
-                source
             } else {
-                target
+                resolveFieldRef(topk.entity, source, target, event.edge.properties)
             }
+        val rankedValue = resolveFieldRef(topk.rankedField, source, target, event.edge.properties)
+        if (entity == null || rankedValue == null) {
+            // The event doesn't carry the declared entity/rankedField value — nothing to rank.
+            return Mono.just(
+                AggregationResult(
+                    database = event.database,
+                    table = event.table,
+                    source = source,
+                    target = target,
+                    status = "SKIPPED",
+                    error = null,
+                ),
+            )
+        }
         val ranges =
             topk.ranges.takeIf { it.isNotEmpty() }?.let {
                 interpolate(template = it, source = source, target = target, properties = event.edge.properties)
             }
-        val segment = if (topk.scope == TopkScope.GLOBAL) ranges else null
+        val segment = if (topk.entity == AggregationConstants.GLOBAL_ENTITY) ranges else null
 
         return aggregateTopk(
             database = event.database,
@@ -392,10 +428,22 @@ class AggregationService(
         )
     }
 
-    private fun interpolate(
-        template: String,
+    private fun resolveFieldRef(
+        ref: String,
         source: String,
         target: String,
+        properties: Map<String, Any?>,
+    ): String? =
+        when (ref) {
+            AggregationConstants.SOURCE_FIELD -> source
+            AggregationConstants.TARGET_FIELD -> target
+            else -> properties[ref]?.toString()
+        }
+
+    private fun interpolate(
+        template: String,
+        source: String?,
+        target: String?,
         properties: Map<String, Any?>,
     ): String =
         PLACEHOLDER.replace(template) { match ->
@@ -429,11 +477,19 @@ class AggregationService(
                 }
             } ?: Bucket.ValueUnit.MILLISECOND
 
-    private fun EdgePayload.toRefreshEntryPayload(): RefreshEntryPayload =
-        RefreshEntryPayload(
-            partition = source.toString().toLong(),
-            key = target.toString(),
-        )
+    private fun EdgePayload.toRefreshEntryPayload(): RefreshEntryPayload? =
+        AggregationConstants.parseRefreshTarget(target.toString())?.let {
+            RefreshEntryPayload(
+                database = it.database,
+                table = it.table,
+                topk = it.topk,
+                direction = it.direction,
+                entity = it.entity,
+                segment = it.segment,
+                target = it.target,
+                refreshAt = it.refreshAt,
+            )
+        }
 
     private fun parseFqn(fqn: String): Pair<String, String> {
         val dot = fqn.indexOf('.')

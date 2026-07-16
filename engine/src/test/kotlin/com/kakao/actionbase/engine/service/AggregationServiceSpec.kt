@@ -20,9 +20,7 @@ import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.RankTarget
 import com.kakao.actionbase.core.metadata.common.Topk
-import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.metadata.common.TopkTable
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.types.PrimitiveType
@@ -132,7 +130,7 @@ class AggregationServiceSpec :
             "aggregate stores a GLOBAL topk segment in the source key and keeps only score as a property" {
                 val topk =
                     topkConfig(name = "top_seg", table = TopkTable(score = "db.score_tbl"))
-                        .copy(scope = TopkScope.GLOBAL, ranges = "gender:eq:{gender}")
+                        .copy(entity = AggregationConstants.GLOBAL_ENTITY, ranges = "gender:eq:{gender}")
                 val group =
                     groupWithTopks(
                         name = "g_seg",
@@ -229,14 +227,14 @@ class AggregationServiceSpec :
                 edge.target shouldBe "item1"
             }
 
-            "aggregate for GLOBAL scope ranks the item itself, scored from its own IN row" {
-                // GLOBAL pairs with IN here because the AGG score must come from the item's own
-                // row (directedSource=item under IN); rankTarget=TARGET (default) then ranks that
-                // same item. A GLOBAL topk declared OUT would score per-user rows instead, which
-                // isn't what "global popularity" means for this table's source(user)/target(item).
+            "aggregate for a GLOBAL entity ranks the item itself, scored from its own IN row" {
+                // __global__ pairs with IN here because the AGG score must come from the item's
+                // own row (directedSource=item under IN); rankedField=_target (default) then ranks
+                // that same item. A GLOBAL topk declared OUT would score per-user rows instead,
+                // which isn't what "global popularity" means for this table's user→item edges.
                 val topk =
                     topkConfig(name = "top_global", table = TopkTable(score = "db.score_tbl"))
-                        .copy(scope = TopkScope.GLOBAL)
+                        .copy(entity = AggregationConstants.GLOBAL_ENTITY)
                 val group =
                     groupWithTopks(
                         name = "g_global",
@@ -276,10 +274,10 @@ class AggregationServiceSpec :
                 edges.map { it.target } shouldContainExactlyInAnyOrder listOf("item1", "item2")
             }
 
-            "aggregate for rankTarget SOURCE ranks the source endpoint and scopes by target" {
+            "aggregate for rankedField _source ranks the source endpoint and scopes by target" {
                 val topk =
                     topkConfig(name = "top_by_target", table = TopkTable(score = "db.score_tbl"))
-                        .copy(rankTarget = RankTarget.SOURCE)
+                        .copy(entity = AggregationConstants.TARGET_FIELD, rankedField = AggregationConstants.SOURCE_FIELD)
                 val group =
                     groupWithTopks(
                         name = "g_flip",
@@ -307,8 +305,64 @@ class AggregationServiceSpec :
                 edge.target shouldBe "user1"
             }
 
+            "aggregate ranks a property value when rankedField references one" {
+                val topk =
+                    topkConfig(name = "top_brand", table = TopkTable(score = "db.score_tbl"))
+                        .copy(rankedField = "brandId")
+                val group =
+                    groupWithTopks(
+                        name = "g_brand",
+                        topks = listOf(topk),
+                        directionType = DirectionType.OUT,
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 7))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                val baseItem = item("db", "src", source = "user1", target = "item1")
+                val item = baseItem.copy(edge = baseItem.edge.copy(properties = mapOf("brandId" to "brand42")))
+
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item)))
+                    .assertNext { results -> results shouldHaveSize 1 }
+                    .verifyComplete()
+
+                val edge = mutations.captured.single().edge
+                edge.source shouldBe "db.src:top_brand:OUT:user1:__all__"
+                edge.target shouldBe "brand42"
+            }
+
+            "aggregate skips the event when the declared rankedField value is missing" {
+                val topk =
+                    topkConfig(name = "top_brand", table = TopkTable(score = "db.score_tbl"))
+                        .copy(rankedField = "brandId")
+                val group =
+                    groupWithTopks(
+                        name = "g_brand",
+                        topks = listOf(topk),
+                        directionType = DirectionType.OUT,
+                    )
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                // SKIPPED (not SUCCESS) proves the short-circuit: the shared mocks would happily
+                // serve the agg/mutate path if it were taken.
+                StepVerifier
+                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src", source = "user1", target = "item1"))))
+                    .assertNext { results ->
+                        results shouldHaveSize 1
+                        results[0].status shouldBe "SKIPPED"
+                    }.verifyComplete()
+            }
+
             "aggregate for BOTH direction fans out into one OUT and one IN mutation, both ranking the same target" {
-                // rankTarget (default TARGET) fixes entity=user1/rankedValue=item1 regardless of
+                // rankedField (default _target) fixes entity=user1/rankedValue=item1 regardless of
                 // direction, so both fan-out mutations rank the same item1 — only the score key's
                 // embedded direction (and whichever physical Group row backs each score) differs.
                 val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl"))
@@ -505,6 +559,22 @@ class AggregationServiceSpec :
 
             // --- refresh ---
 
+            fun refreshEntry(
+                topk: String = "top_purchased",
+                target: String,
+                refreshAt: Long = 61_000L,
+            ): RefreshEntryPayload =
+                RefreshEntryPayload(
+                    database = "db",
+                    table = "src",
+                    topk = topk,
+                    direction = Direction.OUT,
+                    entity = "user1",
+                    segment = null,
+                    target = target,
+                    refreshAt = refreshAt,
+                )
+
             "getRefreshEntries scans exactly the requested partition and returns parsed entries" {
                 val scannedPartitions = mutableListOf<Long>()
                 val refreshRow =
@@ -552,13 +622,7 @@ class AggregationServiceSpec :
                             limit = 100,
                         ),
                     ).assertNext { entries ->
-                        entries shouldBe
-                            listOf(
-                                RefreshEntryPayload(
-                                    partition = 42L,
-                                    key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
-                                ),
-                            )
+                        entries shouldBe listOf(refreshEntry(target = "item1"))
                     }.verifyComplete()
 
                 scannedPartitions shouldBe listOf(42L)
@@ -581,11 +645,7 @@ class AggregationServiceSpec :
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
-                val entry =
-                    RefreshEntryPayload(
-                        partition = 42L,
-                        key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
-                    )
+                val entry = refreshEntry(target = "item1")
 
                 every {
                     queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
@@ -613,7 +673,16 @@ class AggregationServiceSpec :
 
                 val delete = deleteMutations.single().single()
                 delete.type shouldBe EventType.DELETE
-                delete.edge.source shouldBe 42L
+                delete.edge.source shouldBe
+                    AggregationConstants.refreshSource(
+                        database = "db",
+                        table = "src",
+                        topk = "top_purchased",
+                        direction = Direction.OUT,
+                        entity = "user1",
+                        segment = null,
+                        target = "item1",
+                    )
                 delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:__all__:item1:61000"
 
                 deleteMutations shouldHaveSize 1
@@ -626,17 +695,7 @@ class AggregationServiceSpec :
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
-                val entries =
-                    listOf(
-                        RefreshEntryPayload(
-                            partition = 42L,
-                            key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
-                        ),
-                        RefreshEntryPayload(
-                            partition = 42L,
-                            key = "db.src:top_purchased:OUT:user1:__all__:item2:61000",
-                        ),
-                    )
+                val entries = listOf(refreshEntry(target = "item1"), refreshEntry(target = "item2"))
 
                 every {
                     queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
@@ -666,16 +725,8 @@ class AggregationServiceSpec :
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
-                val unresolvedEntry =
-                    RefreshEntryPayload(
-                        partition = 42L,
-                        key = "db.src:missing_topk:OUT:user1:__all__:item1:61000",
-                    )
-                val validEntry =
-                    RefreshEntryPayload(
-                        partition = 42L,
-                        key = "db.src:top_purchased:OUT:user1:__all__:item2:61000",
-                    )
+                val unresolvedEntry = refreshEntry(topk = "missing_topk", target = "item1")
+                val validEntry = refreshEntry(target = "item2")
 
                 every {
                     queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())

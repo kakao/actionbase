@@ -9,6 +9,11 @@ object AggregationConstants {
     const val GLOBAL_ENTITY = "__global__"
     const val ALL_SEGMENT = "__all__"
 
+    // Field references usable in Topk.entity/Topk.rankedField: the raw edge endpoints, or any
+    // property name.
+    const val SOURCE_FIELD = "_source"
+    const val TARGET_FIELD = "_target"
+
     const val TOPK_REFRESH_PARTITIONS = 2310
 
     // score table src key = {database}.{table}:{topk}:{direction}:{entity}:{segment} — supports

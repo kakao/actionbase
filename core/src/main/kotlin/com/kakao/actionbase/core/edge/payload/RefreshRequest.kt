@@ -1,5 +1,7 @@
 package com.kakao.actionbase.core.edge.payload
 
+import com.kakao.actionbase.core.metadata.common.Direction
+
 data class RefreshRequest(
     val entries: List<RefreshEntryPayload>,
 )
@@ -8,10 +10,16 @@ data class RefreshEntriesResponse(
     val entries: List<RefreshEntryPayload>,
 )
 
-// (partition, key) is the refresh row's full coordinate: the key alone carries everything a
-// refresh needs (see AggregationConstants.parseRefreshTarget), and partition is where the row
-// lives, so no aggregation payload travels with the entry.
+// A refresh row's key, parsed into its components (see AggregationConstants.parseRefreshTarget).
+// This is the full refresh coordinate: it names the topk to re-aggregate, the score row to
+// rewrite, and — rebuilt through the key builders — the refresh row to delete afterwards.
 data class RefreshEntryPayload(
-    val partition: Long,
-    val key: String,
+    val database: String,
+    val table: String,
+    val topk: String,
+    val direction: Direction,
+    val entity: String,
+    val segment: String? = null,
+    val target: String,
+    val refreshAt: Long,
 )

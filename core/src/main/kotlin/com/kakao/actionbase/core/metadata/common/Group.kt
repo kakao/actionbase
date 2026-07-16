@@ -45,10 +45,14 @@ data class Aggregations(
     }
 }
 
+// `entity` names the field whose value the ranking is scoped to (the score key's entity block):
+// "_source"/"_target" for the raw edge endpoints (independent of the group's declared direction),
+// a property name, or the __global__ sentinel for a single ranking across all events.
+// `rankedField` names the field whose value is being ranked (the score row's target).
 data class Topk(
     val topk: String,
-    val scope: TopkScope = TopkScope.LOCAL,
-    val rankTarget: RankTarget = RankTarget.TARGET,
+    val entity: String = AggregationConstants.SOURCE_FIELD,
+    val rankedField: String = AggregationConstants.TARGET_FIELD,
     val ranges: String = "",
     val refreshAfterMillis: Long = -1,
     val table: TopkTable,
@@ -57,19 +61,6 @@ data class Topk(
 data class TopkTable(
     val score: String,
 )
-
-enum class TopkScope {
-    LOCAL,
-    GLOBAL,
-}
-
-// Which raw edge endpoint (source or target, independent of the group's declared direction) is
-// the ranked value. The other endpoint is the entity a LOCAL topk is scoped to; it's meaningless
-// for GLOBAL, where every event ranks into the same fixed entity regardless of rankTarget.
-enum class RankTarget {
-    SOURCE,
-    TARGET,
-}
 
 enum class AggregationType {
     TOPK,
