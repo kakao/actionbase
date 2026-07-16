@@ -173,7 +173,7 @@ class LocalBackedJdbcHashLabel internal constructor(
                         ByteArrayIndexedLabel.create(
                             entity = indexedEntity,
                             coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
-                            store = graph.localStore,
+                            table = graph.localStore,
                         ),
                     globalLabel =
                         JdbcHashLabel(
@@ -186,7 +186,7 @@ class LocalBackedJdbcHashLabel internal constructor(
                         ByteArrayIndexedLabel.create(
                             entity = indexedEntity,
                             coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
-                            store = graph.consolidatedStore,
+                            table = graph.consolidatedStore,
                         ),
                 )
             label.block()
