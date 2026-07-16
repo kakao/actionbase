@@ -34,28 +34,27 @@ class AggregationService(
 ) {
     fun getAggregations(type: AggregationType? = null): List<QualifiedAggregations> = engine.getListWithAggregations(type)
 
+    // The caller owns partition assignment: a cron worker knows the fixed partition count
+    // (AggregationConstants.TOPK_REFRESH_PARTITIONS) and asks for one partition at a time.
     fun getRefreshEntries(
-        workerCount: Int,
-        workerNumber: Int,
+        partition: Long,
         refreshAtLte: Long,
         limit: Int,
-    ): Mono<List<RefreshEntryPayload>> =
-        Flux
-            .fromIterable(AggregationConstants.refreshPartitionsFor(workerCount, workerNumber))
-            .concatMap { partition ->
-                queryService.scan(
-                    database = AggregationConstants.TOPK_DATABASE,
-                    table = AggregationConstants.TOPK_REFRESH_TABLE,
-                    index = "refresh_at_asc",
-                    start = partition,
-                    direction = Direction.OUT,
-                    limit = limit,
-                    ranges = "refreshAt:lte:$refreshAtLte",
-                )
-            }.flatMapIterable { it.edges }
-            .take(limit.toLong())
-            .map { edge -> edge.toRefreshEntryPayload() }
-            .collectList()
+    ): Mono<List<RefreshEntryPayload>> {
+        require(partition in 0 until AggregationConstants.TOPK_REFRESH_PARTITIONS) {
+            "partition must be in [0, ${AggregationConstants.TOPK_REFRESH_PARTITIONS}), got: $partition"
+        }
+        return queryService
+            .scan(
+                database = AggregationConstants.TOPK_DATABASE,
+                table = AggregationConstants.TOPK_REFRESH_TABLE,
+                index = "refresh_at_asc",
+                start = partition,
+                direction = Direction.OUT,
+                limit = limit,
+                ranges = "refreshAt:lte:$refreshAtLte",
+            ).map { response -> response.edges.map { edge -> edge.toRefreshEntryPayload() } }
+    }
 
     fun aggregate(
         type: AggregationType,

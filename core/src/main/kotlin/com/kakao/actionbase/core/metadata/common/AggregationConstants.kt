@@ -51,26 +51,5 @@ object AggregationConstants {
         refreshAt: Long,
     ): String = "${scoreSource(database, table, topk, direction, entity, segment)}:$target:$refreshAt"
 
-    fun refreshPartitionsFor(
-        workerCount: Int,
-        workerNumber: Int,
-    ): List<Long> {
-        require(workerCount > 0) { "workerCount must be greater than 0." }
-        require(workerNumber in 1..workerCount) { "workerNumber must be between 1 and workerCount." }
-
-        val workerIndex = workerNumber - 1
-        return (0 until TOPK_REFRESH_PARTITIONS)
-            .filter { partition -> partition % workerCount == workerIndex }
-            .map { it.toLong() }
-    }
-
-    fun refreshWorkerNumberFor(
-        partition: Long,
-        workerCount: Int,
-    ): Int {
-        require(workerCount > 0) { "workerCount must be greater than 0." }
-        return Math.floorMod(partition, workerCount.toLong()).toInt() + 1
-    }
-
     private fun segmentBlock(segment: String?): String = segment?.takeIf { it.isNotBlank() } ?: ALL_SEGMENT
 }

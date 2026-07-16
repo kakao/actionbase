@@ -31,6 +31,7 @@ import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.v2.engine.util.objectMapper
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -522,7 +523,7 @@ class AggregationServiceSpec :
                 )
             }
 
-            "getRefreshEntries scans only the worker-owned refresh partitions and returns parsed entries" {
+            "getRefreshEntries scans exactly the requested partition and returns parsed entries" {
                 val aggregation = refreshEntryAggregationFor("item1")
                 val scannedPartitions = mutableListOf<Long>()
                 val refreshRow =
@@ -565,8 +566,7 @@ class AggregationServiceSpec :
                 StepVerifier
                     .create(
                         service.getRefreshEntries(
-                            workerCount = 10,
-                            workerNumber = 3,
+                            partition = 42L,
                             refreshAtLte = 61_000L,
                             limit = 100,
                         ),
@@ -581,9 +581,17 @@ class AggregationServiceSpec :
                             )
                     }.verifyComplete()
 
-                scannedPartitions shouldHaveSize AggregationConstants.TOPK_REFRESH_PARTITIONS / 10
-                scannedPartitions.take(5) shouldBe listOf(2L, 12L, 22L, 32L, 42L)
-                scannedPartitions.last() shouldBe 2302L
+                scannedPartitions shouldBe listOf(42L)
+            }
+
+            "getRefreshEntries rejects a partition outside the fixed partition range" {
+                shouldThrow<IllegalArgumentException> {
+                    service.getRefreshEntries(
+                        partition = AggregationConstants.TOPK_REFRESH_PARTITIONS.toLong(),
+                        refreshAtLte = 0L,
+                        limit = 100,
+                    )
+                }
             }
 
             "refresh re-aggregates one entry from its stored payload and deletes exactly that entry" {

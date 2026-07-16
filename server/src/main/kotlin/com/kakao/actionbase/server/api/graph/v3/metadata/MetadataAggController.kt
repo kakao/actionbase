@@ -32,15 +32,13 @@ class MetadataAggController(
 
     @GetMapping("/graph/v3/aggregations/refresh/entries")
     fun getRefreshEntries(
-        @RequestParam workerCount: Int,
-        @RequestParam workerNumber: Int,
+        @RequestParam partition: Long,
         @RequestParam refreshAtLte: Long,
         @RequestParam(defaultValue = "100") limit: Int,
     ): Mono<ResponseEntity<RefreshEntriesResponse>> =
         aggregationService
             .getRefreshEntries(
-                workerCount = workerCount,
-                workerNumber = workerNumber,
+                partition = partition,
                 refreshAtLte = refreshAtLte,
                 limit = limit,
             ).map { entries -> ResponseEntity.ok(RefreshEntriesResponse(entries = entries)) }

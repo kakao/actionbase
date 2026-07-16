@@ -136,8 +136,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .get()
             .uri(
                 "/graph/v3/aggregations/refresh/entries" +
-                    "?workerCount=10&workerNumber=${AggregationConstants.refreshWorkerNumberFor(42L, 10)}" +
-                    "&refreshAtLte=61000&limit=100",
+                    "?partition=42&refreshAtLte=61000&limit=100",
             ).exchange()
             .expectStatus()
             .isOk
