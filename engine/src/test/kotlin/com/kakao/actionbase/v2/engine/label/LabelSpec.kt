@@ -165,6 +165,8 @@ class LabelSpec :
         }
 
         fun testEmptySrcScan(label: Label) {
+            // Metastore-backed HASH labels only support the default prefix scan (indexName=null
+            // routes to __default__); the ByteArray-backed local store rejects unknown index names.
             val scanFilter =
                 ScanFilter(
                     name = label.name,
@@ -172,7 +174,7 @@ class LabelSpec :
                     dir = Direction.OUT,
                     limit = 999,
                     offset = "100",
-                    indexName = "created_at_desc",
+                    indexName = null,
                 )
             val dfMono = label.scan(scanFilter, emptySet())
             dfMono
