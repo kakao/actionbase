@@ -334,8 +334,8 @@ class V2BackedTableBinding(
                     "only `Eq` predicate is allowed for the first ${firstPairs.size} group fields, but got $predicate."
                 }
                 if (field.bucket == null) {
-                    descriptor.schema.propertiesByName[field.name]
-                        ?.type
+                    descriptor.schema
+                        .fieldType(field.name)
                         ?.cast(predicate.value)
                         ?: predicate.value
                 } else {
@@ -474,9 +474,7 @@ class V2BackedTableBinding(
             ceil: Boolean,
         ): Any =
             if (lastField.bucket == null) {
-                descriptor.schema.propertiesByName[lastField.name]
-                    ?.type
-                    ?.cast(value) ?: value
+                descriptor.schema.fieldType(lastField.name)?.cast(value) ?: value
             } else {
                 lastField.bucketOrGet(value, ceil)
             }
@@ -594,6 +592,13 @@ class V2BackedTableBinding(
             when (this) {
                 Direction.OUT -> com.kakao.actionbase.core.metadata.common.Direction.OUT
                 Direction.IN -> com.kakao.actionbase.core.metadata.common.Direction.IN
+            }
+
+        internal fun ModelSchema.fieldType(name: String): PrimitiveType? =
+            when {
+                this is ModelSchema.MultiEdge && name == "_source" -> source.type
+                this is ModelSchema.MultiEdge && name == "_target" -> target.type
+                else -> propertiesByName[name]?.type
             }
     }
 }
