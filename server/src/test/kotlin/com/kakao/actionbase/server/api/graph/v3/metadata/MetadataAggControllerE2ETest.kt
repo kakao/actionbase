@@ -105,7 +105,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                     "topk": "missing_topk",
                     "direction": "OUT",
                     "entity": "$user",
-                    "target": "$itemA",
+                    "rankedField": "$itemA",
                     "refreshAt": 61000
                   }]
                 }
@@ -143,7 +143,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .isEqualTo("OUT")
             .jsonPath("$.entries[0].entity")
             .isEqualTo(user.toString())
-            .jsonPath("$.entries[0].target")
+            .jsonPath("$.entries[0].rankedField")
             .isEqualTo(itemA.toString())
             .jsonPath("$.entries[0].refreshAt")
             .isEqualTo(61000)

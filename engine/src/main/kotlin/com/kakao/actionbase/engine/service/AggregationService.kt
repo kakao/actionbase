@@ -91,7 +91,7 @@ class AggregationService(
                 } ?: return Mono.empty()
 
         val entity = entry.entity
-        val rankedValue = entry.target
+        val rankedValue = entry.rankedField
 
         // Reconstruct the edge endpoints the declared field refs pin down; a property-backed
         // ref carries no endpoint information.
@@ -165,7 +165,7 @@ class AggregationService(
             direction = direction,
             entity = entity,
             segment = segment,
-            target = target,
+            rankedField = rankedField,
         )
 
     private fun RefreshEntryPayload.toRefreshTarget(): String =
@@ -176,7 +176,7 @@ class AggregationService(
             direction = direction,
             entity = entity,
             segment = segment,
-            target = target,
+            rankedField = rankedField,
             refreshAt = refreshAt,
         )
 
@@ -396,7 +396,7 @@ class AggregationService(
                 direction = direction,
                 entity = entity,
                 segment = segment,
-                target = rankedValue,
+                rankedField = rankedValue,
             )
         val refreshTarget =
             AggregationConstants.refreshTarget(
@@ -406,7 +406,7 @@ class AggregationService(
                 direction = direction,
                 entity = entity,
                 segment = segment,
-                target = rankedValue,
+                rankedField = rankedValue,
                 refreshAt = refreshAt,
             )
         return mutationService.mutate(
@@ -486,7 +486,7 @@ class AggregationService(
                 direction = it.direction,
                 entity = it.entity,
                 segment = it.segment,
-                target = it.target,
+                rankedField = it.rankedField,
                 refreshAt = it.refreshAt,
             )
         }

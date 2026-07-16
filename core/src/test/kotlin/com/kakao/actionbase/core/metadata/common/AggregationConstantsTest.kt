@@ -15,7 +15,7 @@ class AggregationConstantsTest {
                 direction = Direction.IN,
                 entity = AggregationConstants.GLOBAL_ENTITY,
                 segment = "eventType:eq:like;time:bt:now-3h,now",
-                target = "1001",
+                rankedField = "1001",
                 refreshAt = 61_000L,
             )
 
@@ -27,7 +27,7 @@ class AggregationConstantsTest {
                 direction = Direction.IN,
                 entity = AggregationConstants.GLOBAL_ENTITY,
                 segment = "eventType:eq:like;time:bt:now-3h,now",
-                target = "1001",
+                rankedField = "1001",
                 refreshAt = 61_000L,
             ),
             AggregationConstants.parseRefreshTarget(key),
@@ -44,7 +44,7 @@ class AggregationConstantsTest {
                 direction = Direction.OUT,
                 entity = "user1",
                 segment = null,
-                target = "item1",
+                rankedField = "item1",
                 refreshAt = 61_000L,
             )
 
@@ -52,7 +52,7 @@ class AggregationConstantsTest {
 
         assertEquals("user1", parsed?.entity)
         assertNull(parsed?.segment)
-        assertEquals("item1", parsed?.target)
+        assertEquals("item1", parsed?.rankedField)
     }
 
     @Test

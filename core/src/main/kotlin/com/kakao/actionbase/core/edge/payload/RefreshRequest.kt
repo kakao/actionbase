@@ -20,6 +20,6 @@ data class RefreshEntryPayload(
     val direction: Direction,
     val entity: String,
     val segment: String? = null,
-    val target: String,
+    val rankedField: String,
     val refreshAt: Long,
 )

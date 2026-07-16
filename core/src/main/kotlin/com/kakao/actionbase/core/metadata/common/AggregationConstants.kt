@@ -36,10 +36,10 @@ object AggregationConstants {
         direction: Direction,
         entity: String,
         segment: String?,
-        target: String,
+        rankedField: String,
     ): Long =
         XXHash32Wrapper.default
-            .stringHash("${scoreSource(database, table, topk, direction, entity, segment)}:$target")
+            .stringHash("${scoreSource(database, table, topk, direction, entity, segment)}:$rankedField")
             .mod(TOPK_REFRESH_PARTITIONS)
             .toLong()
 
@@ -52,13 +52,13 @@ object AggregationConstants {
         direction: Direction,
         entity: String,
         segment: String?,
-        target: String,
+        rankedField: String,
         refreshAt: Long,
-    ): String = "${scoreSource(database, table, topk, direction, entity, segment)}:$target:$refreshAt"
+    ): String = "${scoreSource(database, table, topk, direction, entity, segment)}:$rankedField:$refreshAt"
 
     // Inverse of refreshTarget. The segment block is the only elastic component (it may itself
     // contain ':'), so the key is parsed 4 blocks from the left and 2 from the right — which is
-    // also why entity and target values must not contain ':'.
+    // also why entity and rankedField values must not contain ':'.
     fun parseRefreshTarget(key: String): RefreshTargetKey? {
         val head = key.split(":", limit = 4)
         if (head.size < 4) return null
@@ -67,13 +67,13 @@ object AggregationConstants {
         if (dot <= 0 || dot >= fqn.lastIndex) return null
         val direction = runCatching { Direction.valueOf(head[2]) }.getOrNull() ?: return null
 
-        // rest = {entity}:{segment}:{target}:{refreshAt}
+        // rest = {entity}:{segment}:{rankedField}:{refreshAt}
         val rest = head[3]
         val entityEnd = rest.indexOf(':')
         if (entityEnd <= 0) return null
         val refreshAtStart = rest.lastIndexOf(':')
-        val targetStart = rest.lastIndexOf(':', refreshAtStart - 1)
-        if (targetStart <= entityEnd) return null
+        val rankedFieldStart = rest.lastIndexOf(':', refreshAtStart - 1)
+        if (rankedFieldStart <= entityEnd) return null
         val refreshAt = rest.substring(refreshAtStart + 1).toLongOrNull() ?: return null
 
         return RefreshTargetKey(
@@ -82,8 +82,8 @@ object AggregationConstants {
             topk = head[1],
             direction = direction,
             entity = rest.substring(0, entityEnd),
-            segment = rest.substring(entityEnd + 1, targetStart).takeIf { it != ALL_SEGMENT },
-            target = rest.substring(targetStart + 1, refreshAtStart),
+            segment = rest.substring(entityEnd + 1, rankedFieldStart).takeIf { it != ALL_SEGMENT },
+            rankedField = rest.substring(rankedFieldStart + 1, refreshAtStart),
             refreshAt = refreshAt,
         )
     }
@@ -95,7 +95,7 @@ object AggregationConstants {
         val direction: Direction,
         val entity: String,
         val segment: String?,
-        val target: String,
+        val rankedField: String,
         val refreshAt: Long,
     )
 

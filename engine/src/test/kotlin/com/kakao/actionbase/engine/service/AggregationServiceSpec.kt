@@ -561,7 +561,7 @@ class AggregationServiceSpec :
 
             fun refreshEntry(
                 topk: String = "top_purchased",
-                target: String,
+                rankedField: String,
                 refreshAt: Long = 61_000L,
             ): RefreshEntryPayload =
                 RefreshEntryPayload(
@@ -571,7 +571,7 @@ class AggregationServiceSpec :
                     direction = Direction.OUT,
                     entity = "user1",
                     segment = null,
-                    target = target,
+                    rankedField = rankedField,
                     refreshAt = refreshAt,
                 )
 
@@ -622,7 +622,7 @@ class AggregationServiceSpec :
                             limit = 100,
                         ),
                     ).assertNext { entries ->
-                        entries shouldBe listOf(refreshEntry(target = "item1"))
+                        entries shouldBe listOf(refreshEntry(rankedField = "item1"))
                     }.verifyComplete()
 
                 scannedPartitions shouldBe listOf(42L)
@@ -645,7 +645,7 @@ class AggregationServiceSpec :
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
-                val entry = refreshEntry(target = "item1")
+                val entry = refreshEntry(rankedField = "item1")
 
                 every {
                     queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
@@ -681,7 +681,7 @@ class AggregationServiceSpec :
                         direction = Direction.OUT,
                         entity = "user1",
                         segment = null,
-                        target = "item1",
+                        rankedField = "item1",
                     )
                 delete.edge.target shouldBe "db.src:top_purchased:OUT:user1:__all__:item1:61000"
 
@@ -695,7 +695,7 @@ class AggregationServiceSpec :
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
-                val entries = listOf(refreshEntry(target = "item1"), refreshEntry(target = "item2"))
+                val entries = listOf(refreshEntry(rankedField = "item1"), refreshEntry(rankedField = "item2"))
 
                 every {
                     queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
@@ -725,8 +725,8 @@ class AggregationServiceSpec :
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
-                val unresolvedEntry = refreshEntry(topk = "missing_topk", target = "item1")
-                val validEntry = refreshEntry(target = "item2")
+                val unresolvedEntry = refreshEntry(topk = "missing_topk", rankedField = "item1")
+                val validEntry = refreshEntry(rankedField = "item2")
 
                 every {
                     queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
