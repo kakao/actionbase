@@ -1,9 +1,9 @@
 package com.kakao.actionbase.v2.engine.entity
 
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.REFRESH_TABLE_DATABASE as TOPK_DATABASE
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.REFRESH_TABLE_NAME as TOPK_EXPIRE_TABLE
 import com.kakao.actionbase.core.metadata.common.DirectionType as GroupDirectionType
 
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_REFRESH_TABLE
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Group
@@ -37,7 +37,7 @@ class LabelEntityFunctionsSpec :
         }
 
         "hasAggregation ignores the system table registry" {
-            labelAt(TOPK_DATABASE, TOPK_EXPIRE_TABLE, groups = emptyList()).hasAggregation().shouldBeFalse()
+            labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList()).hasAggregation().shouldBeFalse()
         }
 
         "hasAggregation(type=TOPK) returns true when a group defines topk" {
@@ -49,7 +49,7 @@ class LabelEntityFunctionsSpec :
         }
 
         "isSystemTable returns true for the topk expire table" {
-            labelAt(TOPK_DATABASE, TOPK_EXPIRE_TABLE, groups = emptyList()).isSystemTable().shouldBeTrue()
+            labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList()).isSystemTable().shouldBeTrue()
         }
 
         "isSystemTable returns false for a user table" {
@@ -83,7 +83,7 @@ class LabelEntityFunctionsSpec :
         }
 
         "toQualifiedAggregations returns empty for a system table (system path is separate)" {
-            labelAt(TOPK_DATABASE, TOPK_EXPIRE_TABLE, groups = emptyList()).toQualifiedAggregations().shouldBeEmpty()
+            labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList()).toQualifiedAggregations().shouldBeEmpty()
         }
 
         "toQualifiedAggregations(type=TOPK) keeps a user label that defines topk" {
@@ -95,13 +95,13 @@ class LabelEntityFunctionsSpec :
 
         "toSystemQualifiedAggregations emits an expire entry for the topk system table" {
             val result =
-                labelAt(TOPK_DATABASE, TOPK_EXPIRE_TABLE, groups = emptyList())
+                labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList())
                     .toSystemQualifiedAggregations()
 
             result shouldHaveSize 1
             result.single().type shouldBe AggregationType.TOPK
             result.single().database shouldBe TOPK_DATABASE
-            result.single().table shouldBe TOPK_EXPIRE_TABLE
+            result.single().table shouldBe TOPK_REFRESH_TABLE
             result.single().refresh.shouldBeTrue()
         }
 
@@ -111,7 +111,7 @@ class LabelEntityFunctionsSpec :
 
         "toSystemQualifiedAggregations(type=TOPK) emits the topk expire entry" {
             val result =
-                labelAt(TOPK_DATABASE, TOPK_EXPIRE_TABLE, groups = emptyList())
+                labelAt(TOPK_DATABASE, TOPK_REFRESH_TABLE, groups = emptyList())
                     .toSystemQualifiedAggregations(AggregationType.TOPK)
 
             result shouldHaveSize 1

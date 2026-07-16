@@ -18,7 +18,7 @@ import org.springframework.http.MediaType
  * A single MULTI_EDGE source table (`purchases`) declares one group per case.
  * All groups target the same score table (`purchases__topk`); each topk carries a
  * distinct name so the rowkey `{database}.{table}:{topk}:{direction}:{entity}` in the
- * score table (see AggregationConstants.scoreSourceKey) keeps the ranked entries of each case
+ * score table (see AggregationConstants.scoreSource) keeps the ranked entries of each case
  * separated:
  *
  *   Case                              | Group                     | Topk name
@@ -59,11 +59,11 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     @BeforeAll
     fun setup() {
         createDatabase(db)
-        createDatabase(AggregationConstants.REFRESH_TABLE_DATABASE)
+        createDatabase(AggregationConstants.TOPK_DATABASE)
 
         createMultiEdgeSourceTable()
         createScoreTable(database = db, table = scoreTable)
-        createRefreshTable(database = AggregationConstants.REFRESH_TABLE_DATABASE, table = AggregationConstants.REFRESH_TABLE_NAME)
+        createRefreshTable(database = AggregationConstants.TOPK_DATABASE, table = AggregationConstants.TOPK_REFRESH_TABLE)
         createEdgeTable(
             database = db,
             table = plainTable,
@@ -383,7 +383,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
         client
             .post()
-            .uri("/graph/v3/databases/${AggregationConstants.REFRESH_TABLE_DATABASE}/tables/${AggregationConstants.REFRESH_TABLE_NAME}/edges")
+            .uri("/graph/v3/databases/${AggregationConstants.TOPK_DATABASE}/tables/${AggregationConstants.TOPK_REFRESH_TABLE}/edges")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
@@ -443,7 +443,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     // TODO: switch to `/edges/topk/{topk}` once the topk read endpoint lands (see follow-up PR).
     //       For now, scan the score table directly by the `score_desc` index using the
     //       `{database}.{table}:{topk}:{direction}:{entity}` rowkey convention
-    //       (see AggregationConstants.scoreSourceKey).
+    //       (see AggregationConstants.scoreSource).
     private fun readTopk(topk: String) =
         client
             .get()

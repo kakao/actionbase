@@ -3,38 +3,24 @@ package com.kakao.actionbase.core.metadata.common
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
 
 object AggregationConstants {
-    const val REFRESH_TABLE_DATABASE = "topk"
-    const val REFRESH_TABLE_NAME = "refresh"
+    const val TOPK_DATABASE = "topk"
+    const val TOPK_REFRESH_TABLE = "refresh"
 
     const val GLOBAL_ENTITY = "__global__"
 
-    // 2 x 3 x 5 x 7 x 11
-    const val REFRESH_PARTITION_COUNT = 2310
+    const val TOPK_REFRESH_PARTITIONS = 2310
 
-    fun scoreSourceKey(
-        database: String,
+    // score table src key = {table}:{topk}:{direction}:{entity}[:{segment}] — supports multiple
+    // topk in one table; segment (GLOBAL scope only) is appended raw, unencoded.
+    fun scoreSource(
         table: String,
         topk: String,
         direction: Direction,
         entity: String,
         segment: String? = null,
-    ): String = appendSegment("$database.$table:$topk:${direction.name}:$entity", segment)
+    ): String = appendSegment("$table:$topk:${direction.name}:$entity", segment)
 
-    // refreshAt is embedded in the key so two events for the same coordinates never collide
-    // even when their refresh times differ.
-    fun refreshTargetKey(
-        database: String,
-        table: String,
-        topk: String,
-        direction: Direction,
-        entity: String,
-        segment: String? = null,
-        target: String,
-        refreshAt: Long,
-    ): String = "${appendSegment("$database.$table:$topk:${direction.name}:$entity", segment)}:$target:$refreshAt"
-
-    fun refreshPartition(
-        database: String,
+    fun refreshSource(
         table: String,
         topk: String,
         direction: Direction,
@@ -43,9 +29,21 @@ object AggregationConstants {
         target: String,
     ): Long =
         XXHash32Wrapper.default
-            .stringHash("${appendSegment("$database.$table:$topk:${direction.name}:$entity", segment)}:$target")
-            .mod(REFRESH_PARTITION_COUNT)
+            .stringHash("${appendSegment("$table:$topk:${direction.name}:$entity", segment)}:$target")
+            .mod(TOPK_REFRESH_PARTITIONS)
             .toLong()
+
+    // refreshAt is embedded in the key so two events for the same coordinates never collide
+    // even when their refresh times differ.
+    fun refreshTarget(
+        table: String,
+        topk: String,
+        direction: Direction,
+        entity: String,
+        segment: String? = null,
+        target: String,
+        refreshAt: Long,
+    ): String = "${appendSegment("$table:$topk:${direction.name}:$entity", segment)}:$target:$refreshAt"
 
     fun refreshPartitionsFor(
         workerCount: Int,
@@ -55,7 +53,7 @@ object AggregationConstants {
         require(workerNumber in 1..workerCount) { "workerNumber must be between 1 and workerCount." }
 
         val workerIndex = workerNumber - 1
-        return (0 until REFRESH_PARTITION_COUNT)
+        return (0 until TOPK_REFRESH_PARTITIONS)
             .filter { partition -> partition % workerCount == workerIndex }
             .map { it.toLong() }
     }

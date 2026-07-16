@@ -44,8 +44,8 @@ class AggregationService(
             .fromIterable(AggregationConstants.refreshPartitionsFor(workerCount, workerNumber))
             .concatMap { partition ->
                 queryService.scan(
-                    database = AggregationConstants.REFRESH_TABLE_DATABASE,
-                    table = AggregationConstants.REFRESH_TABLE_NAME,
+                    database = AggregationConstants.TOPK_DATABASE,
+                    table = AggregationConstants.TOPK_REFRESH_TABLE,
                     index = "refresh_at_asc",
                     start = partition,
                     direction = Direction.OUT,
@@ -94,8 +94,8 @@ class AggregationService(
 
     private fun deleteRefreshedEntries(entries: List<RefreshEntryPayload>): Mono<List<MutationResult>> =
         mutationService.mutate(
-            database = AggregationConstants.REFRESH_TABLE_DATABASE,
-            alias = AggregationConstants.REFRESH_TABLE_NAME,
+            database = AggregationConstants.TOPK_DATABASE,
+            alias = AggregationConstants.TOPK_REFRESH_TABLE,
             unresolvedEvents =
                 entries.map { entry ->
                     MutationItem(
@@ -243,9 +243,8 @@ class AggregationService(
                         ?.value
                         ?.toDouble() ?: 0.0
                 val scoreSource =
-                    AggregationConstants.scoreSourceKey(
-                        database = database,
-                        table = table,
+                    AggregationConstants.scoreSource(
+                        table = "$database.$table",
                         topk = topk.topk,
                         direction = direction,
                         entity = entity,
@@ -292,9 +291,8 @@ class AggregationService(
     ): Mono<List<MutationResult>> {
         val refreshAt = edgeVersionMillis(event.group, event.edge.version) + topk.refreshAfterMillis
         val partition =
-            AggregationConstants.refreshPartition(
-                database = event.database,
-                table = event.table,
+            AggregationConstants.refreshSource(
+                table = "${event.database}.${event.table}",
                 topk = topk.topk,
                 direction = direction,
                 entity = entity,
@@ -302,9 +300,8 @@ class AggregationService(
                 target = rankedValue,
             )
         val refreshTarget =
-            AggregationConstants.refreshTargetKey(
-                database = event.database,
-                table = event.table,
+            AggregationConstants.refreshTarget(
+                table = "${event.database}.${event.table}",
                 topk = topk.topk,
                 direction = direction,
                 entity = entity,
@@ -324,8 +321,8 @@ class AggregationService(
             )
 
         return mutationService.mutate(
-            database = AggregationConstants.REFRESH_TABLE_DATABASE,
-            alias = AggregationConstants.REFRESH_TABLE_NAME,
+            database = AggregationConstants.TOPK_DATABASE,
+            alias = AggregationConstants.TOPK_REFRESH_TABLE,
             unresolvedEvents =
                 listOf(
                     MutationItem(

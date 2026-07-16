@@ -1,12 +1,12 @@
 package com.kakao.actionbase.core.metadata.common
 
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.REFRESH_TABLE_DATABASE
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.REFRESH_TABLE_NAME
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_REFRESH_TABLE
 
 object AggregationSystemTables {
     private val SYSTEM_TABLES: Map<Pair<String, String>, AggregationType> =
         mapOf(
-            (REFRESH_TABLE_DATABASE to REFRESH_TABLE_NAME) to AggregationType.TOPK,
+            (TOPK_DATABASE to TOPK_REFRESH_TABLE) to AggregationType.TOPK,
         )
 
     fun typeOf(

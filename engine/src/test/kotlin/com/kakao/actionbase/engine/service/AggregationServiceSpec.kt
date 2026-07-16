@@ -581,7 +581,7 @@ class AggregationServiceSpec :
                             )
                     }.verifyComplete()
 
-                scannedPartitions shouldHaveSize AggregationConstants.REFRESH_PARTITION_COUNT / 10
+                scannedPartitions shouldHaveSize AggregationConstants.TOPK_REFRESH_PARTITIONS / 10
                 scannedPartitions.take(5) shouldBe listOf(2L, 12L, 22L, 32L, 42L)
                 scannedPartitions.last() shouldBe 2302L
             }
