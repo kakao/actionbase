@@ -147,4 +147,47 @@ abstract class AbstractLabelCompatibilityTest {
             .assertNext { assertEquals(listOf("v1", "v2"), it) }
             .verifyComplete()
     }
+
+    @Test
+    fun `indexed - offset pagination resumes strictly after the cursor`() {
+        val label = indexedLabel()
+
+        label
+            .mutate(
+                listOf(
+                    edge("u1", "v1", 100L),
+                    edge("u1", "v2", 200L),
+                    edge("u1", "v3", 300L),
+                    edge("u1", "v4", 400L),
+                ),
+                EdgeOperation.INSERT,
+            ).block()
+
+        fun page(offset: String?) =
+            ScanFilter(
+                name = label.name,
+                srcSet = setOf("u1"),
+                dir = Direction.OUT,
+                indexName = "createdAt_asc",
+                limit = 2,
+                offset = offset,
+            )
+
+        val df1 = label.scan(page(null), emptySet<StatKey>()).block()!!
+        val page1 = df1.toRowWithSchema().map { it["tgt"] }
+        val cursor = df1.offsets.singleOrNull()
+
+        val page2 =
+            label
+                .scan(page(cursor), emptySet<StatKey>())
+                .block()!!
+                .toRowWithSchema()
+                .map { it["tgt"] }
+
+        // The scan start is exclusive: page 2 resumes strictly after page 1's last row, so the
+        // boundary row is neither duplicated nor skipped. This contract is shared by every backend.
+        assertEquals(listOf("v1", "v2"), page1)
+        assertEquals(listOf("v3", "v4"), page2)
+        assertEquals(listOf("v1", "v2", "v3", "v4"), page1 + page2)
+    }
 }
