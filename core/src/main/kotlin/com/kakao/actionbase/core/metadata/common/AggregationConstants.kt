@@ -16,7 +16,10 @@ object AggregationConstants {
 
     const val TOPK_REFRESH_PARTITIONS = 2310
 
-    // score table src key = {database}.{table}:{topk}:{direction}:{entity}:{segment} — supports
+    // Distinct from the ranges syntax (':' ';' ','); entity/rankedField values must not contain it.
+    const val KEY_DELIMITER = '|'
+
+    // score table src key = {database}.{table}|{topk}|{direction}|{entity}|{segment} — supports
     // multiple topk in one table. The segment block is always present: a segment is stored raw,
     // unencoded; a topk without a segment fills the block with the __all__ sentinel (the score
     // ranks across all events).
@@ -27,7 +30,7 @@ object AggregationConstants {
         direction: Direction,
         entity: String,
         segment: String?,
-    ): String = "$database.$table:$topk:${direction.name}:$entity:${segmentBlock(segment)}"
+    ): String = "$database.$table|$topk|${direction.name}|$entity|${segmentBlock(segment)}"
 
     fun refreshSource(
         database: String,
@@ -39,7 +42,7 @@ object AggregationConstants {
         rankedField: String,
     ): Long =
         XXHash32Wrapper.default
-            .stringHash("${scoreSource(database, table, topk, direction, entity, segment)}:$rankedField")
+            .stringHash("${scoreSource(database, table, topk, direction, entity, segment)}|$rankedField")
             .mod(TOPK_REFRESH_PARTITIONS)
             .toLong()
 
@@ -54,25 +57,25 @@ object AggregationConstants {
         segment: String?,
         rankedField: String,
         refreshAt: Long,
-    ): String = "${scoreSource(database, table, topk, direction, entity, segment)}:$rankedField:$refreshAt"
+    ): String = "${scoreSource(database, table, topk, direction, entity, segment)}|$rankedField|$refreshAt"
 
     // Inverse of refreshTarget. The segment block is the only elastic component (it may itself
-    // contain ':'), so the key is parsed 4 blocks from the left and 2 from the right — which is
-    // also why entity and rankedField values must not contain ':'.
+    // contain the delimiter), so the key is parsed 4 blocks from the left and 2 from the right —
+    // which is also why entity and rankedField values must not contain the delimiter.
     fun parseRefreshTarget(key: String): RefreshTargetKey? {
-        val head = key.split(":", limit = 4)
+        val head = key.split(KEY_DELIMITER, limit = 4)
         if (head.size < 4) return null
         val fqn = head[0]
         val dot = fqn.indexOf('.')
         if (dot <= 0 || dot >= fqn.lastIndex) return null
         val direction = runCatching { Direction.valueOf(head[2]) }.getOrNull() ?: return null
 
-        // rest = {entity}:{segment}:{rankedField}:{refreshAt}
+        // rest = {entity}|{segment}|{rankedField}|{refreshAt}
         val rest = head[3]
-        val entityEnd = rest.indexOf(':')
+        val entityEnd = rest.indexOf(KEY_DELIMITER)
         if (entityEnd <= 0) return null
-        val refreshAtStart = rest.lastIndexOf(':')
-        val rankedFieldStart = rest.lastIndexOf(':', refreshAtStart - 1)
+        val refreshAtStart = rest.lastIndexOf(KEY_DELIMITER)
+        val rankedFieldStart = rest.lastIndexOf(KEY_DELIMITER, refreshAtStart - 1)
         if (rankedFieldStart <= entityEnd) return null
         val refreshAt = rest.substring(refreshAtStart + 1).toLongOrNull() ?: return null
 

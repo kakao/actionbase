@@ -17,7 +17,7 @@ import org.springframework.http.MediaType
  *
  * A single MULTI_EDGE source table (`purchases`) declares one group per case.
  * All groups target the same score table (`purchases__topk`); each topk carries a
- * distinct name so the rowkey `{database}.{table}:{topk}:{direction}:{entity}:{segment}` in the
+ * distinct name so the rowkey `{database}.{table}|{topk}|{direction}|{entity}|{segment}` in the
  * score table (see AggregationConstants.scoreSource) keeps the ranked entries of each case
  * separated:
  *
@@ -29,17 +29,17 @@ import org.springframework.http.MediaType
  *   4. Per-entity + segment + window  | purchased_by_segment_1y   | top_purchased_seg_1y
  *
  * Score table (`purchases__topk`) after aggregation. Rowkey is
- * `{database}.{table}:{topk}:{direction}:{entity}:{segment}` (these topks declare no
+ * `{database}.{table}|{topk}|{direction}|{entity}|{segment}` (these topks declare no
  * segment, so the block holds __all__) and the score_desc index sorts entries by
  * descending score so the topk read endpoint can scan the top rows directly:
  *
  *   rowkey                                                | score_desc cq | value  -> logical (source, target, score)
  *   ----------------------------------------------------- | ------------- | -----
- *   commerce.purchases:top_purchased:OUT:1:__all__        | 100           | 4      -> (1, 100, 4)
- *   commerce.purchases:top_purchased:OUT:1:__all__        | 200           | 1      -> (1, 200, 1)
- *   commerce.purchases:top_purchased_seg:OUT:1:__all__    | 100           | 3
- *   commerce.purchases:top_purchased_1y:OUT:1:__all__     | 100           | 3
- *   commerce.purchases:top_purchased_seg_1y:OUT:1:__all__ | 100           | 2
+ *   commerce.purchases|top_purchased|OUT|1|__all__        | 100           | 4      -> (1, 100, 4)
+ *   commerce.purchases|top_purchased|OUT|1|__all__        | 200           | 1      -> (1, 200, 1)
+ *   commerce.purchases|top_purchased_seg|OUT|1|__all__    | 100           | 3
+ *   commerce.purchases|top_purchased_1y|OUT|1|__all__     | 100           | 3
+ *   commerce.purchases|top_purchased_seg_1y|OUT|1|__all__ | 100           | 2
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MetadataAggControllerE2ETest : E2ETestBase() {
@@ -368,7 +368,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                     "edge": {
                       "version": 1,
                       "source": $partition,
-                      "target": "$db.$sourceTable:top_purchased:OUT:$user:__all__:$itemA:$refreshAt",
+                      "target": "$db.$sourceTable|top_purchased|OUT|$user|__all__|$itemA|$refreshAt",
                       "properties": {
                         "refreshAt": $refreshAt
                       }
@@ -416,12 +416,12 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
     // TODO: switch to `/edges/topk/{topk}` once the topk read endpoint lands (see follow-up PR).
     //       For now, scan the score table directly by the `score_desc` index using the
-    //       `{database}.{table}:{topk}:{direction}:{entity}:{segment}` rowkey convention
+    //       `{database}.{table}|{topk}|{direction}|{entity}|{segment}` rowkey convention
     //       (see AggregationConstants.scoreSource).
     private fun readTopk(topk: String) =
         client
             .get()
-            .uri("/graph/v3/databases/$db/tables/$scoreTable/edges/scan/score_desc?start=$db.$sourceTable:$topk:OUT:$user:__all__&direction=OUT&limit=10")
+            .uri("/graph/v3/databases/$db/tables/$scoreTable/edges/scan/score_desc?start=$db.$sourceTable|$topk|OUT|$user|__all__&direction=OUT&limit=10")
             .exchange()
             .expectStatus()
             .isOk
@@ -531,7 +531,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                   "table": "$table",
                   "schema": {
                     "type": "EDGE",
-                    "source": {"type": "string", "comment": "{database}.{table}:{topk}:{direction}:{entity}:{segment}"},
+                    "source": {"type": "string", "comment": "{database}.{table}|{topk}|{direction}|{entity}|{segment}"},
                     "target": {"type": "string", "comment": "ranked value"},
                     "properties": [
                       {"name": "score", "type": "long", "comment": "aggregated score", "nullable": false}

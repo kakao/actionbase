@@ -260,16 +260,13 @@ class AggregationService(
         val rankedValue = resolveFieldRef(topk.rankedField, source, target, event.edge.properties)
         if (entity == null || rankedValue == null) {
             // The event doesn't carry the declared entity/rankedField value — nothing to rank.
-            return Mono.just(
-                AggregationResult(
-                    database = event.database,
-                    table = event.table,
-                    source = source,
-                    target = target,
-                    status = "SKIPPED",
-                    error = null,
-                ),
-            )
+            return Mono.just(skippedResult(event, source, target))
+        }
+        if (topk.refreshAfterMillis >= 0 &&
+            (entity.contains(AggregationConstants.KEY_DELIMITER) || rankedValue.contains(AggregationConstants.KEY_DELIMITER))
+        ) {
+            // The delimiter inside these values would mis-split the refresh key parse.
+            return Mono.just(skippedResult(event, source, target))
         }
         val ranges =
             topk.ranges.takeIf { it.isNotEmpty() }?.let {
@@ -427,6 +424,20 @@ class AggregationService(
                 ),
         )
     }
+
+    private fun skippedResult(
+        event: EdgeAggregationEvent,
+        source: String,
+        target: String,
+    ): AggregationResult =
+        AggregationResult(
+            database = event.database,
+            table = event.table,
+            source = source,
+            target = target,
+            status = "SKIPPED",
+            error = null,
+        )
 
     private fun resolveFieldRef(
         ref: String,

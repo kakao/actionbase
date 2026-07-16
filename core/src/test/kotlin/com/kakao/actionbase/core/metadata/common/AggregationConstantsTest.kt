@@ -58,8 +58,8 @@ class AggregationConstantsTest {
     @Test
     fun `parseRefreshTarget rejects malformed keys`() {
         assertNull(AggregationConstants.parseRefreshTarget("garbage"))
-        assertNull(AggregationConstants.parseRefreshTarget("no-dot:topk:OUT:e:__all__:t:1"))
-        assertNull(AggregationConstants.parseRefreshTarget("db.src:topk:SIDEWAYS:e:__all__:t:1"))
-        assertNull(AggregationConstants.parseRefreshTarget("db.src:topk:OUT:e:__all__:t:not-a-number"))
+        assertNull(AggregationConstants.parseRefreshTarget("no-dot|topk|OUT|e|__all__|t|1"))
+        assertNull(AggregationConstants.parseRefreshTarget("db.src|topk|SIDEWAYS|e|__all__|t|1"))
+        assertNull(AggregationConstants.parseRefreshTarget("db.src|topk|OUT|e|__all__|t|not-a-number"))
     }
 }
