@@ -3,11 +3,13 @@ package com.kakao.actionbase.v2.engine.test
 import com.kakao.actionbase.v2.core.code.DecodedEdge
 import com.kakao.actionbase.v2.core.code.EncodedKey
 import com.kakao.actionbase.v2.core.code.Index
+import com.kakao.actionbase.v2.core.code.KeyFieldValue
 import com.kakao.actionbase.v2.core.code.KeyValue
 import com.kakao.actionbase.v2.core.code.hbase.Order
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
+import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType
 import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
@@ -413,9 +415,15 @@ class GraphTestFixtures(
                 .map { DecodedEdge.fromMetastore(KeyValue(it[metadataTable.k], it[metadataTable.v]), emptyMap()) }
         }.toFlux()
 
-    fun getLocalMetadata(): Flux<DecodedEdge> = getMetadata(graph.localMetastore, graph.metadataTable)
-
     fun getGlobalMetadata(): Flux<DecodedEdge> = getMetadata(graph.metastore, graph.metadataTable)
+
+    fun getLocalMetadata(): Flux<DecodedEdge> =
+        graph.localStore
+            .prefixScan(ByteArray(0))
+            .mapNotNull { record ->
+                runCatching { DecodedEdge.from(KeyFieldValue(record.key, record.value), emptyMap()) }.getOrNull()
+            }.filter { it.type == EncodedEdgeType.HASH_EDGE_TYPE }
+            .toFlux()
 }
 
 infix fun Graph.shouldContainServicesExactly(names: List<EntityName>) {
