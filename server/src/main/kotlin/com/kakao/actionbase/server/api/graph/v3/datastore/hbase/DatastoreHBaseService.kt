@@ -4,6 +4,7 @@ import com.kakao.actionbase.engine.datastore.hbase.admin.HBaseAdmin
 import com.kakao.actionbase.engine.datastore.hbase.admin.HBaseTableInfo
 import com.kakao.actionbase.engine.datastore.hbase.admin.HBaseTableSchema
 import com.kakao.actionbase.server.configuration.ConditionalOnHBaseDatastore
+import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
@@ -61,6 +62,7 @@ class DatastoreHBaseService(
         request: HBaseTableCreateRequest?,
     ): Mono<Void> =
         withValidatedTableName(optionalFullQualifierTableName) { tableName ->
+            NameValidator.validate(tableName.qualifierAsString, "table")
             val schema = request?.toHBaseTableSchema() ?: HBaseTableSchema.DEFAULT
             hBaseAdmin.createTable(tableName.namespaceAsString, tableName.qualifierAsString, schema)
         }

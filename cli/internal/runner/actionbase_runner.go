@@ -72,6 +72,7 @@ func NewActionbaseCommandLineRunner(version, host string, authKey *string, curre
 	runner.RegisterCommand(command.TypeLoad.GetName(), command.NewLoad(runner, actionbaseClient))
 	runner.RegisterCommand(command.TypeDebug.GetName(), command.NewDebug(runner))
 	runner.RegisterCommand(command.TypeGuide.GetName(), command.NewGuide(runner, actionbaseClient))
+	runner.RegisterCommand(command.TypeDoctor.GetName(), command.NewDoctor(actionbaseClient))
 
 	return runner
 }
@@ -152,7 +153,9 @@ func (r *ActionbaseCommandLineRunner) RunCommand(input string) (*model.Response,
 	result := r.executeCommand(cmdName, args)
 	elapsed := time.Since(start).Seconds()
 
-	util.Print("\033[90m(Took %.4f seconds)\033[0m\n\n", elapsed)
+	if !util.IsPlainMode() {
+		util.Print("\033[90m(Took %.4f seconds)\033[0m\n\n", elapsed)
+	}
 	return result, elapsed
 }
 

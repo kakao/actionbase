@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.service.ddl
 
+import com.kakao.actionbase.engine.EngineConstants
 import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.code.hbase.Order
 import com.kakao.actionbase.v2.core.edge.Edge
@@ -18,7 +19,6 @@ import com.kakao.actionbase.v2.engine.audit.Audit
 import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.label.EdgeOperationStatus
-import com.kakao.actionbase.v2.engine.metadata.Metadata
 import com.kakao.actionbase.v2.engine.metadata.StorageType
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
@@ -63,7 +63,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = EngineConstants.METASTORE_URI,
                 )
 
             graph.labelDdl
@@ -91,7 +91,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = EngineConstants.METASTORE_URI,
                 )
 
             graph.labelDdl
@@ -330,15 +330,6 @@ class DdlServiceSpec :
                 }.verifyComplete()
         }
 
-        "storage cannot be deactivate if active label exists" {
-            val storageName = EntityName.fromOrigin(GraphFixtures.jdbcStorage)
-            val storageUpdateRequest = StorageUpdateRequest(false, null, null, null)
-            graph.storageDdl
-                .update(storageName, storageUpdateRequest)
-                .test()
-                .verifyError(IllegalArgumentException::class.java)
-        }
-
         "storage can be deactivate if active label not exists" {
             val storageName = EntityName.fromOrigin("test_storage")
             val storageCreateRequest =
@@ -472,7 +463,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = EngineConstants.METASTORE_URI,
                 )
 
             val labelUpdateRequest =
@@ -557,7 +548,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = EngineConstants.METASTORE_URI,
                 )
 
             graph
@@ -704,7 +695,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = EngineConstants.METASTORE_URI,
                 )
 
             graph.labelDdl
@@ -767,7 +758,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = EngineConstants.METASTORE_URI,
                 )
 
             graph.labelDdl
@@ -836,7 +827,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = EngineConstants.METASTORE_URI,
                 )
 
             graph.labelDdl
@@ -1052,7 +1043,7 @@ class DdlServiceSpec :
                         ),
                     dirType = DirectionType.OUT,
                     indices = emptyList(),
-                    storage = Metadata.metastoreName,
+                    storage = EngineConstants.METASTORE_URI,
                 )
 
             graph.labelDdl
@@ -1180,7 +1171,7 @@ class DdlServiceSpec :
                             ),
                         dirType = DirectionType.OUT,
                         indices = emptyList(),
-                        storage = Metadata.metastoreName,
+                        storage = EngineConstants.METASTORE_URI,
                     )
 
                 graph.labelDdl

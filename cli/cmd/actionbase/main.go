@@ -20,7 +20,17 @@ const (
 )
 
 func main() {
-	parser := util.ParseArgs(os.Args)
+	var execCmd string
+	args := os.Args
+	for i, arg := range args {
+		if arg == "-e" && i+1 < len(args) {
+			execCmd = args[i+1]
+			args = append(args[:i:i], args[i+2:]...)
+			break
+		}
+	}
+
+	parser := util.ParseArgs(args)
 
 	if _, found := parser.GetLenient("version"); found {
 		fmt.Println("v" + Version)
@@ -30,6 +40,9 @@ func main() {
 	host, found := parser.Get(hostParamKey)
 	if !found {
 		host = DefaultHost
+		if env := os.Getenv("ACT_HOST"); env != "" {
+			host = env
+		}
 	}
 
 	isDebugEnabled := false
@@ -37,11 +50,26 @@ func main() {
 		isDebugEnabled = true
 	}
 
+	authKey, _ := parser.Get(authParamKey)
+	if authKey == "" {
+		authKey = os.Getenv("ACT_API_KEY")
+	}
+
+	if execCmd != "" {
+		util.SetPlainMode(true)
+		console := runner.NewActionbaseCommandLineRunner(Version, host, &authKey, "", false, isDebugEnabled)
+		console.CheckConnection()
+		resp, _ := console.RunCommand(execCmd)
+		if resp == nil || !resp.IsSuccess {
+			os.Exit(1)
+		}
+		return
+	}
+
 	if _, found := parser.GetLenient("plain"); found {
 		util.SetPlainMode(true)
 	}
 
-	authKey, _ := parser.Get(authParamKey)
 	console := runner.NewActionbaseCommandLineRunner(Version, host, &authKey, "", false, isDebugEnabled)
 	console.CheckConnection()
 	console.StartServer(parser)

@@ -28,21 +28,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: db-v2v3-basic
+            - name: db_v2v3_basic
               create: |
                 {"desc": "test database"}
               expected: |
-                {"database": "db-v2v3-basic", "comment": "test database", "active": true}
-            - name: db-v2v3-empty
+                {"database": "db_v2v3_basic", "comment": "test database", "active": true}
+            - name: db_v2v3_empty
               create: |
                 {"desc": ""}
               expected: |
-                {"database": "db-v2v3-empty", "comment": "", "active": true}
-            - name: db-v2v3-special
+                {"database": "db_v2v3_empty", "comment": "", "active": true}
+            - name: db_v2v3_special
               create: |
                 {"desc": "test @#$%"}
               expected: |
-                {"database": "db-v2v3-special", "comment": "test @#$%", "active": true}
+                {"database": "db_v2v3_special", "comment": "test @#$%", "active": true}
             """,
         )
         fun `V2 create - V3 get`(
@@ -72,21 +72,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: db-v3v2-basic
+            - name: db_v3v2_basic
               create: |
-                {"database": "db-v3v2-basic", "comment": "test database"}
+                {"database": "db_v3v2_basic", "comment": "test database"}
               expected: |
-                {"name": "db-v3v2-basic", "desc": "test database", "active": true}
-            - name: db-v3v2-empty
+                {"name": "db_v3v2_basic", "desc": "test database", "active": true}
+            - name: db_v3v2_empty
               create: |
-                {"database": "db-v3v2-empty", "comment": ""}
+                {"database": "db_v3v2_empty", "comment": ""}
               expected: |
-                {"name": "db-v3v2-empty", "desc": "", "active": true}
-            - name: db-v3v2-special
+                {"name": "db_v3v2_empty", "desc": "", "active": true}
+            - name: db_v3v2_special
               create: |
-                {"database": "db-v3v2-special", "comment": "test @#$%"}
+                {"database": "db_v3v2_special", "comment": "test @#$%"}
               expected: |
-                {"name": "db-v3v2-special", "desc": "test @#$%", "active": true}
+                {"name": "db_v3v2_special", "desc": "test @#$%", "active": true}
             """,
         )
         fun `V3 create - V2 get`(
@@ -117,7 +117,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class TableCompatibilityTest {
-        private val db = "tbl-compat-db"
+        private val db = "tbl_compat_db"
 
         @BeforeAll
         fun setup() {
@@ -135,7 +135,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             # Direction: OUT
-            - name: tbl-v2v3-out
+            - name: tbl_v2v3_out
               create: |
                 {
                   "desc": "direction out",
@@ -150,7 +150,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "table": "tbl-v2v3-out",
+                  "table": "tbl_v2v3_out",
                   "comment": "direction out",
                   "schema": {
                     "type": "edge",
@@ -164,7 +164,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # Direction: IN
-            - name: tbl-v2v3-in
+            - name: tbl_v2v3_in
               create: |
                 {
                   "desc": "direction in",
@@ -179,7 +179,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "table": "tbl-v2v3-in",
+                  "table": "tbl_v2v3_in",
                   "comment": "direction in",
                   "schema": {
                     "type": "edge",
@@ -193,7 +193,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # Direction: BOTH
-            - name: tbl-v2v3-both
+            - name: tbl_v2v3_both
               create: |
                 {
                   "desc": "direction both",
@@ -208,7 +208,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "table": "tbl-v2v3-both",
+                  "table": "tbl_v2v3_both",
                   "comment": "direction both",
                   "schema": {
                     "type": "edge",
@@ -222,7 +222,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # With properties
-            - name: tbl-v2v3-props
+            - name: tbl_v2v3_props
               create: |
                 {
                   "desc": "with props",
@@ -240,7 +240,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "table": "tbl-v2v3-props",
+                  "table": "tbl_v2v3_props",
                   "comment": "with props",
                   "schema": {
                     "type": "edge",
@@ -257,7 +257,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # LONG keys
-            - name: tbl-v2v3-long
+            - name: tbl_v2v3_long
               create: |
                 {
                   "desc": "long keys",
@@ -272,7 +272,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "table": "tbl-v2v3-long",
+                  "table": "tbl_v2v3_long",
                   "comment": "long keys",
                   "schema": {
                     "type": "edge",
@@ -314,10 +314,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             # Direction: OUT
-            - name: tbl-v3v2-out
+            - name: tbl_v3v2_out
               create: |
                 {
-                  "table": "tbl-v3v2-out",
+                  "table": "tbl_v3v2_out",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "source"},
@@ -333,7 +333,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "name": "tbl-compat-db.tbl-v3v2-out",
+                  "name": "tbl_compat_db.tbl_v3v2_out",
                   "desc": "direction out",
                   "schema": {
                     "src": {"type": "STRING", "desc": "source"},
@@ -346,10 +346,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # Direction: IN
-            - name: tbl-v3v2-in
+            - name: tbl_v3v2_in
               create: |
                 {
-                  "table": "tbl-v3v2-in",
+                  "table": "tbl_v3v2_in",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "source"},
@@ -365,7 +365,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "name": "tbl-compat-db.tbl-v3v2-in",
+                  "name": "tbl_compat_db.tbl_v3v2_in",
                   "desc": "direction in",
                   "schema": {
                     "src": {"type": "STRING", "desc": "source"},
@@ -378,10 +378,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # Direction: BOTH
-            - name: tbl-v3v2-both
+            - name: tbl_v3v2_both
               create: |
                 {
-                  "table": "tbl-v3v2-both",
+                  "table": "tbl_v3v2_both",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "source"},
@@ -397,7 +397,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "name": "tbl-compat-db.tbl-v3v2-both",
+                  "name": "tbl_compat_db.tbl_v3v2_both",
                   "desc": "direction both",
                   "schema": {
                     "src": {"type": "STRING", "desc": "source"},
@@ -410,10 +410,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # With properties
-            - name: tbl-v3v2-props
+            - name: tbl_v3v2_props
               create: |
                 {
-                  "table": "tbl-v3v2-props",
+                  "table": "tbl_v3v2_props",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "string", "comment": "user"},
@@ -432,7 +432,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "name": "tbl-compat-db.tbl-v3v2-props",
+                  "name": "tbl_compat_db.tbl_v3v2_props",
                   "desc": "with props",
                   "schema": {
                     "src": {"type": "STRING", "desc": "user"},
@@ -448,10 +448,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # LONG keys
-            - name: tbl-v3v2-long
+            - name: tbl_v3v2_long
               create: |
                 {
-                  "table": "tbl-v3v2-long",
+                  "table": "tbl_v3v2_long",
                   "schema": {
                     "type": "edge",
                     "source": {"type": "long", "comment": "uid"},
@@ -467,7 +467,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "name": "tbl-compat-db.tbl-v3v2-long",
+                  "name": "tbl_compat_db.tbl_v3v2_long",
                   "desc": "long keys",
                   "schema": {
                     "src": {"type": "LONG", "desc": "uid"},
@@ -508,8 +508,8 @@ class V2V3CompatibilityTest : E2ETestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class AliasCompatibilityTest {
-        private val db = "als-compat-db"
-        private val table = "als-target"
+        private val db = "als_compat_db"
+        private val table = "als_target"
 
         @BeforeAll
         fun setup() {
@@ -552,21 +552,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: als-v2v3-basic
+            - name: als_v2v3_basic
               create: |
-                {"desc": "test alias", "target": "als-compat-db.als-target"}
+                {"desc": "test alias", "target": "als_compat_db.als_target"}
               expected: |
-                {"alias": "als-v2v3-basic", "table": "als-target", "comment": "test alias", "active": true}
-            - name: als-v2v3-empty
+                {"alias": "als_v2v3_basic", "table": "als_target", "comment": "test alias", "active": true}
+            - name: als_v2v3_empty
               create: |
-                {"desc": "", "target": "als-compat-db.als-target"}
+                {"desc": "", "target": "als_compat_db.als_target"}
               expected: |
-                {"alias": "als-v2v3-empty", "table": "als-target", "comment": "", "active": true}
-            - name: als-v2v3-special
+                {"alias": "als_v2v3_empty", "table": "als_target", "comment": "", "active": true}
+            - name: als_v2v3_special
               create: |
-                {"desc": "alias @#", "target": "als-compat-db.als-target"}
+                {"desc": "alias @#", "target": "als_compat_db.als_target"}
               expected: |
-                {"alias": "als-v2v3-special", "table": "als-target", "comment": "alias @#", "active": true}
+                {"alias": "als_v2v3_special", "table": "als_target", "comment": "alias @#", "active": true}
             """,
         )
         fun `V2 create - V3 get`(
@@ -596,21 +596,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: als-v3v2-basic
+            - name: als_v3v2_basic
               create: |
-                {"alias": "als-v3v2-basic", "table": "als-target", "comment": "test alias"}
+                {"alias": "als_v3v2_basic", "table": "als_target", "comment": "test alias"}
               expected: |
-                {"name": "als-compat-db.als-v3v2-basic", "target": "als-compat-db.als-target", "desc": "test alias", "active": true}
-            - name: als-v3v2-empty
+                {"name": "als_compat_db.als_v3v2_basic", "target": "als_compat_db.als_target", "desc": "test alias", "active": true}
+            - name: als_v3v2_empty
               create: |
-                {"alias": "als-v3v2-empty", "table": "als-target", "comment": ""}
+                {"alias": "als_v3v2_empty", "table": "als_target", "comment": ""}
               expected: |
-                {"name": "als-compat-db.als-v3v2-empty", "target": "als-compat-db.als-target", "desc": "", "active": true}
-            - name: als-v3v2-special
+                {"name": "als_compat_db.als_v3v2_empty", "target": "als_compat_db.als_target", "desc": "", "active": true}
+            - name: als_v3v2_special
               create: |
-                {"alias": "als-v3v2-special", "table": "als-target", "comment": "alias @#"}
+                {"alias": "als_v3v2_special", "table": "als_target", "comment": "alias @#"}
               expected: |
-                {"name": "als-compat-db.als-v3v2-special", "target": "als-compat-db.als-target", "desc": "alias @#", "active": true}
+                {"name": "als_compat_db.als_v3v2_special", "target": "als_compat_db.als_target", "desc": "alias @#", "active": true}
             """,
         )
         fun `V3 create - V2 get`(
@@ -641,7 +641,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class MultiEdgeCompatibilityTest {
-        private val db = "me-compat-db"
+        private val db = "me_compat_db"
 
         @BeforeAll
         fun setup() {
@@ -659,7 +659,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             # Basic MultiEdge - direction BOTH
-            - name: me-v2v3-basic
+            - name: me_v2v3_basic
               create: |
                 {
                   "desc": "basic multiedge",
@@ -678,7 +678,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
               expected: |
                 {
                   "type": "multiEdge",
-                  "table": "me-v2v3-basic",
+                  "table": "me_v2v3_basic",
                   "comment": "basic multiedge",
                   "schema": {
                     "type": "multiEdge",
@@ -693,7 +693,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # MultiEdge with properties
-            - name: me-v2v3-props
+            - name: me_v2v3_props
               create: |
                 {
                   "desc": "multiedge with props",
@@ -714,7 +714,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
               expected: |
                 {
                   "type": "multiEdge",
-                  "table": "me-v2v3-props",
+                  "table": "me_v2v3_props",
                   "comment": "multiedge with props",
                   "schema": {
                     "type": "multiEdge",
@@ -732,7 +732,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # MultiEdge with STRING keys
-            - name: me-v2v3-string
+            - name: me_v2v3_string
               create: |
                 {
                   "desc": "string key multiedge",
@@ -751,7 +751,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
               expected: |
                 {
                   "type": "multiEdge",
-                  "table": "me-v2v3-string",
+                  "table": "me_v2v3_string",
                   "comment": "string key multiedge",
                   "schema": {
                     "type": "multiEdge",
@@ -794,10 +794,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSource(
             """
             # Basic MultiEdge - V3 create -> V2 get
-            - name: me-v3v2-basic
+            - name: me_v3v2_basic
               create: |
                 {
-                  "table": "me-v3v2-basic",
+                  "table": "me_v3v2_basic",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "order id"},
@@ -814,7 +814,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "name": "me-compat-db.me-v3v2-basic",
+                  "name": "me_compat_db.me_v3v2_basic",
                   "desc": "basic multiedge",
                   "schema": {
                     "src": {"type": "LONG", "desc": "sender"},
@@ -829,10 +829,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # MultiEdge with properties - V3 create -> V2 get
-            - name: me-v3v2-props
+            - name: me_v3v2_props
               create: |
                 {
-                  "table": "me-v3v2-props",
+                  "table": "me_v3v2_props",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "txn id"},
@@ -852,7 +852,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "name": "me-compat-db.me-v3v2-props",
+                  "name": "me_compat_db.me_v3v2_props",
                   "desc": "multiedge with props",
                   "schema": {
                     "src": {"type": "LONG", "desc": "user"},
@@ -869,10 +869,10 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
 
             # MultiEdge with STRING keys - V3 create -> V2 get
-            - name: me-v3v2-string
+            - name: me_v3v2_string
               create: |
                 {
-                  "table": "me-v3v2-string",
+                  "table": "me_v3v2_string",
                   "schema": {
                     "type": "MULTI_EDGE",
                     "id": {"type": "long", "comment": "msg id"},
@@ -889,7 +889,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "name": "me-compat-db.me-v3v2-string",
+                  "name": "me_compat_db.me_v3v2_string",
                   "desc": "string key multiedge",
                   "schema": {
                     "src": {"type": "STRING", "desc": "from"},

@@ -38,7 +38,7 @@ class DatabaseController(
         @PathVariable database: String,
     ): Mono<ResponseEntity<DatabaseDescriptor>> =
         v3CompatService
-            .getDatabase(V3NameValidator.validateDatabase(database))
+            .getDatabase(database)
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
@@ -56,7 +56,7 @@ class DatabaseController(
         @Valid @RequestBody request: DatabaseUpdateRequest,
     ): Mono<ResponseEntity<DatabaseDescriptor>> =
         v3CompatService
-            .updateDatabase(V3NameValidator.validateDatabase(database), request)
+            .updateDatabase(database, request)
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
@@ -65,6 +65,6 @@ class DatabaseController(
         @PathVariable database: String,
     ): Mono<ResponseEntity<Void>> =
         v3CompatService
-            .deleteDatabase(V3NameValidator.validateDatabase(database))
+            .deleteDatabase(database)
             .then(Mono.just(ResponseEntity.noContent().build<Void>()))
 }

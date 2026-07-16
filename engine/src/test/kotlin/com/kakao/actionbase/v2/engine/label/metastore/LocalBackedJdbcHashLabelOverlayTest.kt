@@ -220,53 +220,25 @@ class LocalBackedJdbcHashLabelOverlayTest {
     }
 
     @Nested
-    @DisplayName("count — HBase wins on src dedup")
+    @DisplayName("count — local + HBase overlay, MySQL excluded")
     inner class CountTest {
-        @ObjectSourceParameterizedTest
-        @ObjectSource(
-            cases = """
-            - name: HBase count wins; MySQL-only src is included
-              hbaseSrc: A
-              hbaseCount: 5
-              mysqlSameSrc: A
-              mysqlSameCount: 3
-              mysqlOnlySrc: B
-              mysqlOnlyCount: 2
-              expectedRows: 2
-              expectedCountForA: 5
-            """,
-        )
-        fun `HBase count wins, MySQL-only src is included`(
-            hbaseSrc: String,
-            hbaseCount: Long,
-            mysqlSameSrc: String,
-            mysqlSameCount: Long,
-            mysqlOnlySrc: String,
-            mysqlOnlyCount: Long,
-            expectedRows: Int,
-            expectedCountForA: Long,
-        ) {
+        @Test
+        fun `count merges local and HBase overlay and never consults MySQL`() {
             every { localLabel.count(any<Set<Any>>(), any()) } returns Mono.just(countFrame(emptyList()))
             every { consolidatedLabel.count(any<Set<Any>>(), any()) } returns
-                Mono.just(countFrame(listOf(countRow(hbaseSrc, hbaseCount))))
-            every { globalLabel.count(any<Set<Any>>(), any()) } returns
-                Mono.just(
-                    countFrame(
-                        listOf(
-                            countRow(mysqlSameSrc, mysqlSameCount),
-                            countRow(mysqlOnlySrc, mysqlOnlyCount),
-                        ),
-                    ),
-                )
+                Mono.just(countFrame(listOf(countRow("A", 5))))
 
             overlay
-                .count(setOf("A", "B"), Direction.OUT)
+                .count(setOf("A"), Direction.OUT)
                 .test()
                 .assertNext { result ->
-                    assert(result.rows.size == expectedRows)
-                    val countA = result.rows.first { it[0] == hbaseSrc }[1] as Long
-                    assert(countA == expectedCountForA)
+                    assert(result.rows.size == 1)
+                    assert(result.rows.first()[0] == "A")
+                    assert(result.rows.first()[1] == 5L)
                 }.verifyComplete()
+
+            // MySQL (JdbcHashLabel) cannot count — it returns a -1 sentinel — so it is never consulted.
+            verify(exactly = 0) { globalLabel.count(any<Set<Any>>(), any()) }
         }
     }
 

@@ -95,8 +95,7 @@ public class DecodedEdge {
       } else {
         throw new IllegalArgumentException("Invalid encodedValue: " + encodedValue);
       }
-    } else if (encodedEdgeType == EncodedEdgeType.INDEXED_EDGE_TYPE
-        || encodedEdgeType == EncodedEdgeType.IMMUTABLE_INDEXED_EDGE_TYPE) {
+    } else if (encodedEdgeType == EncodedEdgeType.INDEXED_EDGE_TYPE) {
       // direction, indexId, indexValues, tgt
       byte directionCode = OrderedBytes.decodeInt8(k);
       direction = Direction.of(directionCode);
@@ -161,7 +160,6 @@ public class DecodedEdge {
       return new DecodedEdge(
           true, ts, src, tgt, propertyAsMap, direction, labelId, encodedEdgeType);
     } else {
-      // encodedEdgeType == EncodedEdgeType.IMMUTABLE_INDEXED_EDGE_TYPE
       throw new IllegalArgumentException("Unknown encodedEdgeType: " + encodedEdgeType);
     }
   }

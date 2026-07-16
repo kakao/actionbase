@@ -22,8 +22,6 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
   public static final byte COUNTER_EDGE_TYPE = EncodedEdgeType.COUNTER_EDGE_TYPE.getCode();
 
   public static final byte INDEXED_EDGE_TYPE = EncodedEdgeType.INDEXED_EDGE_TYPE.getCode();
-  public static final byte IMMUTABLE_INDEXED_EDGE_TYPE =
-      EncodedEdgeType.IMMUTABLE_INDEXED_EDGE_TYPE.getCode();
   public static final byte EDGE_CACHE_TYPE = EncodedEdgeType.EDGE_CACHE_TYPE.getCode();
 
   public static final String INSERT_TS_KEY = "__InsertTs__";
@@ -302,7 +300,7 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
     return SerializationUtils.hex.encode(byteArray);
   }
 
-  byte[] useAsByteArray(Consumer<EdgeBuffer> block) {
+  public byte[] useAsByteArray(Consumer<EdgeBuffer> block) {
     EdgeBuffer edgeBuffer = borrow();
     edgeBuffer.reset();
     block.accept(edgeBuffer);

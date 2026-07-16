@@ -12,6 +12,7 @@ import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.LabelFactory
+import com.kakao.actionbase.v2.engine.label.bytearray.ByteArrayIndexedLabel
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
@@ -24,17 +25,17 @@ import reactor.core.publisher.Mono
 
 // Merge policy (Phase 1 overlay):
 //
-// Op            | local (H2) | HBase (overlay) | MySQL (base) | Rule
-// --------------|------------|-----------------|--------------|------------------------------
-// INSERT/UPDATE | useLocal=T | useLocal=F      | mirrored     | HBase is write target; MySQL mirrored for rollback safety
-// DELETE        | useLocal=T | useLocal=F      | mirrored     | both layers deleted → no resurrection
-// read          | always     | always          | fallback*    | HBase wins on (src,tgt) dedup; *skipped when useJdbcMetastore=false
-// count         | always     | always          | fallback*    | HBase wins on src dedup; *skipped when useJdbcMetastore=false
+// Op            | local (seed) | HBase (overlay) | MySQL (base) | Rule
+// --------------|--------------|-----------------|--------------|------------------------------
+// INSERT/UPDATE | useLocal=T   | useLocal=F      | mirrored     | HBase is write target; MySQL mirrored for rollback safety
+// DELETE        | useLocal=T   | useLocal=F      | mirrored     | both layers deleted → no resurrection
+// read          | always       | always          | fallback*    | HBase wins on (src,tgt) dedup; *skipped when useJdbcMetastore=false
+// count         | always       | always          | never        | local + HBase; MySQL cannot count (JdbcHashLabel returns a -1 sentinel)
 //
 // useJdbcMetastore=false: MySQL layer is bypassed entirely (writes go to HBase only, reads skip MySQL merge)
 class LocalBackedJdbcHashLabel internal constructor(
     override val entity: LabelEntity,
-    private val localLabel: JdbcHashLabel,
+    private val localLabel: Label,
     private val globalLabel: JdbcHashLabel,
     private val consolidatedLabel: HBaseIndexedLabel,
 ) : Label {
@@ -91,19 +92,15 @@ class LocalBackedJdbcHashLabel internal constructor(
         mysql: () -> Mono<DataFrame>,
     ): Mono<DataFrame> = if (useJdbcMetastore) merge(hbase(), mysql()) { row -> row[entity.schema.srcIndex] to row[entity.schema.tgtIndex] } else hbase()
 
-    private fun remoteCounts(
-        hbase: () -> Mono<DataFrame>,
-        mysql: () -> Mono<DataFrame>,
-    ): Mono<DataFrame> = if (useJdbcMetastore) merge(hbase(), mysql()) { row -> row[0]!! } else hbase()
-
     override fun scan(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
     ): Mono<DataFrame> {
-        // DdlService.getAll() passes indexName=null; route to default prefix-scan index on HBase
-        val hbaseScanFilter = if (scanFilter.indexName == null) scanFilter.copy(indexName = DEFAULT_SCAN_INDEX) else scanFilter
-        val remote = remoteEdges({ consolidatedLabel.scan(hbaseScanFilter, stats) }, { globalLabel.scan(scanFilter, stats) })
-        return localLabel.scan(scanFilter, stats).zipWith(remote) { a, b -> a + b }
+        // DdlService.getAll() passes indexName=null; both indexed backends need the default
+        // prefix-scan index. MySQL (globalLabel) ignores the index name, so it keeps the original.
+        val defaultScanFilter = if (scanFilter.indexName == null) scanFilter.copy(indexName = DEFAULT_SCAN_INDEX) else scanFilter
+        val remote = remoteEdges({ consolidatedLabel.scan(defaultScanFilter, stats) }, { globalLabel.scan(scanFilter, stats) })
+        return localLabel.scan(defaultScanFilter, stats).zipWith(remote) { a, b -> a + b }
     }
 
     override fun getSelf(
@@ -134,21 +131,12 @@ class LocalBackedJdbcHashLabel internal constructor(
         return localLabel.get(src, tgt, dir, stats).zipWith(remote) { a, b -> a + b }
     }
 
-    override fun count(
-        src: Any,
-        dir: Direction,
-    ): Mono<DataFrame> {
-        val remote = remoteCounts({ consolidatedLabel.count(src, dir) }, { globalLabel.count(src, dir) })
-        return localLabel.count(src, dir).zipWith(remote) { a, b -> a + b }
-    }
-
+    // local + HBase overlay only. The global JdbcHashLabel does not support counting and would
+    // otherwise merge in a -1 sentinel row per src.
     override fun count(
         srcSet: Set<Any>,
         dir: Direction,
-    ): Mono<DataFrame> {
-        val remote = remoteCounts({ consolidatedLabel.count(srcSet, dir) }, { globalLabel.count(srcSet, dir) })
-        return localLabel.count(srcSet, dir).zipWith(remote) { a, b -> a + b }
-    }
+    ): Mono<DataFrame> = localLabel.count(srcSet, dir).zipWith(consolidatedLabel.count(srcSet, dir)) { a, b -> a + b }
 
     override fun findStaleLockAndClear(
         lockEdge: KeyValue<Any>,
@@ -166,7 +154,6 @@ class LocalBackedJdbcHashLabel internal constructor(
     }
 
     companion object : LabelFactory<LocalBackedJdbcHashLabel, LocalStorage> {
-        // Prefix scan index with no fields — covers DdlService.getAll() (src-prefix only, no predicates)
         const val DEFAULT_SCAN_INDEX = "__default__"
         val defaultScanIndex = Index(DEFAULT_SCAN_INDEX, emptyList())
 
@@ -176,15 +163,23 @@ class LocalBackedJdbcHashLabel internal constructor(
             storage: LocalStorage,
             block: LocalBackedJdbcHashLabel.() -> Unit,
         ): LocalBackedJdbcHashLabel {
-            val coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder
-            // Augment entity with a default prefix-scan index so HBaseIndexedLabel.scan() works
-            // for DdlService.getAll() which issues indexName=null / no predicates scans.
             val indexedEntity = entity.copy(indices = listOf(defaultScanIndex))
             val label =
                 LocalBackedJdbcHashLabel(
                     entity = entity,
-                    localLabel = JdbcHashLabel(entity, coder, graph.localMetastore, graph.metadataTable),
-                    globalLabel = JdbcHashLabel(entity, coder, graph.metastore, graph.metadataTable),
+                    localLabel =
+                        ByteArrayIndexedLabel.create(
+                            entity = indexedEntity,
+                            coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
+                            store = graph.localStore,
+                        ),
+                    globalLabel =
+                        JdbcHashLabel(
+                            entity = entity,
+                            coder = graph.edgeEncoderFactory.stringKeyFieldValueEncoder,
+                            database = graph.metastore,
+                            metadataTable = graph.metadataTable,
+                        ),
                     consolidatedLabel =
                         HBaseIndexedLabel(
                             entity = indexedEntity,
