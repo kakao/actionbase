@@ -101,22 +101,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 {
                   "entries": [{
                     "partition": 42,
-                    "key": "$db.$sourceTable:missing_topk:OUT:$user:__all__:$itemA:61000",
-                    "aggregation": {
-                      "type": "TOPK",
-                      "database": "$db",
-                      "table": "$sourceTable",
-                      "group": "purchased_count",
-                      "topk": "missing_topk",
-                      "direction": "OUT",
-                      "edge": {
-                        "version": 1000,
-                        "source": $user,
-                        "target": $itemA,
-                        "properties": {},
-                        "context": {}
-                      }
-                    }
+                    "key": "$db.$sourceTable:missing_topk:OUT:$user:__all__:$itemA:61000"
                   }]
                 }
                 """.trimIndent(),
@@ -129,14 +114,14 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     }
 
     @Test
-    fun `GET aggregation refresh entries returns parsed entries for worker-owned partitions`() {
+    fun `GET aggregation refresh entries returns due entries for the requested partition`() {
         insertRefreshEntry(partition = 42L, refreshAt = 61_000L)
 
         client
             .get()
             .uri(
                 "/graph/v3/aggregations/refresh/entries" +
-                    "?partition=42&refreshAtLte=61000&limit=100",
+                    "?partition=42&now=61000&limit=100",
             ).exchange()
             .expectStatus()
             .isOk
@@ -147,12 +132,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .isEqualTo(42)
             .jsonPath("$.entries[0].key")
             .isEqualTo("$db.$sourceTable:top_purchased:OUT:$user:__all__:$itemA:61000")
-            .jsonPath("$.entries[0].aggregation.database")
-            .isEqualTo(db)
-            .jsonPath("$.entries[0].aggregation.table")
-            .isEqualTo(sourceTable)
-            .jsonPath("$.entries[0].aggregation.topk")
-            .isEqualTo("top_purchased")
     }
 
     @Test
@@ -362,25 +341,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         partition: Long,
         refreshAt: Long,
     ) {
-        val payload =
-            """
-            {
-              "type": "TOPK",
-              "database": "$db",
-              "table": "$sourceTable",
-              "group": "purchased_count",
-              "topk": "top_purchased",
-              "direction": "OUT",
-              "edge": {
-                "version": 1000,
-                "source": $user,
-                "target": $itemA,
-                "properties": {},
-                "context": {}
-              }
-            }
-            """.trimIndent()
-
         client
             .post()
             .uri("/graph/v3/databases/${AggregationConstants.TOPK_DATABASE}/tables/${AggregationConstants.TOPK_REFRESH_TABLE}/edges")
@@ -395,8 +355,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                       "source": $partition,
                       "target": "$db.$sourceTable:top_purchased:OUT:$user:__all__:$itemA:$refreshAt",
                       "properties": {
-                        "refreshAt": $refreshAt,
-                        "payload": ${payload.toJsonString()}
+                        "refreshAt": $refreshAt
                       }
                     }
                   }]
@@ -596,8 +555,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                     "source": {"type": "long", "comment": "refresh partition"},
                     "target": {"type": "string", "comment": "refresh target key"},
                     "properties": [
-                      {"name": "refreshAt", "type": "long", "comment": "refresh at", "nullable": false},
-                      {"name": "payload", "type": "string", "comment": "refresh payload", "nullable": false}
+                      {"name": "refreshAt", "type": "long", "comment": "refresh at", "nullable": false}
                     ],
                     "direction": "OUT",
                     "indexes": [
@@ -618,9 +576,3 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
     // endregion
 }
-
-private fun String.toJsonString(): String =
-    replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-        .replace("\n", "\\n")
-        .let { "\"$it\"" }

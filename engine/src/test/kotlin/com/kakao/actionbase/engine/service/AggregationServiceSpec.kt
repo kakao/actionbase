@@ -8,7 +8,6 @@ import com.kakao.actionbase.core.edge.payload.EdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
-import com.kakao.actionbase.core.edge.payload.RefreshAggregationPayload
 import com.kakao.actionbase.core.edge.payload.RefreshEntryPayload
 import com.kakao.actionbase.core.metadata.QualifiedAggregations
 import com.kakao.actionbase.core.metadata.common.AggregationConstants
@@ -29,7 +28,6 @@ import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.binding.TableBinding
-import com.kakao.actionbase.v2.engine.util.objectMapper
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
@@ -507,31 +505,14 @@ class AggregationServiceSpec :
 
             // --- refresh ---
 
-            fun refreshEntryAggregationFor(
-                target: String,
-                topk: String = "top_purchased",
-            ): RefreshAggregationPayload {
-                val storedEdge = item("db", "src", source = "user1", target = target, version = 1_000L).edge
-                return RefreshAggregationPayload(
-                    type = AggregationType.TOPK,
-                    database = "db",
-                    table = "src",
-                    group = "g1",
-                    topk = topk,
-                    direction = Direction.OUT,
-                    edge = storedEdge,
-                )
-            }
-
             "getRefreshEntries scans exactly the requested partition and returns parsed entries" {
-                val aggregation = refreshEntryAggregationFor("item1")
                 val scannedPartitions = mutableListOf<Long>()
                 val refreshRow =
                     EdgePayload(
                         version = 1L,
                         source = 42L,
                         target = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
-                        properties = mapOf("refreshAt" to 61_000L, "payload" to objectMapper.writeValueAsString(aggregation)),
+                        properties = mapOf("refreshAt" to 61_000L),
                         context = emptyMap(),
                     )
 
@@ -567,7 +548,7 @@ class AggregationServiceSpec :
                     .create(
                         service.getRefreshEntries(
                             partition = 42L,
-                            refreshAtLte = 61_000L,
+                            now = 61_000L,
                             limit = 100,
                         ),
                     ).assertNext { entries ->
@@ -576,7 +557,6 @@ class AggregationServiceSpec :
                                 RefreshEntryPayload(
                                     partition = 42L,
                                     key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
-                                    aggregation = aggregation,
                                 ),
                             )
                     }.verifyComplete()
@@ -588,13 +568,13 @@ class AggregationServiceSpec :
                 shouldThrow<IllegalArgumentException> {
                     service.getRefreshEntries(
                         partition = AggregationConstants.TOPK_REFRESH_PARTITIONS.toLong(),
-                        refreshAtLte = 0L,
+                        now = 0L,
                         limit = 100,
                     )
                 }
             }
 
-            "refresh re-aggregates one entry from its stored payload and deletes exactly that entry" {
+            "refresh re-aggregates one entry from its key alone and deletes exactly that entry" {
                 val topk =
                     topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
                         .copy(refreshAfterMillis = 60_000L)
@@ -605,14 +585,14 @@ class AggregationServiceSpec :
                     RefreshEntryPayload(
                         partition = 42L,
                         key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
-                        aggregation = refreshEntryAggregationFor("item1"),
                     )
 
                 every {
                     queryService.agg(any(), any(), any(), any(), any<Direction>(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 5))
+                val scoreMutations = slot<List<MutationItem>>()
                 every {
-                    mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
+                    mutationService.mutate("db", "score_tbl", capture(scoreMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 val deleteMutations = mutableListOf<List<MutationItem>>()
@@ -626,6 +606,10 @@ class AggregationServiceSpec :
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
                     }.verifyComplete()
+
+                val scoreEdge = scoreMutations.captured.single().edge
+                scoreEdge.source shouldBe "db.src:top_purchased:OUT:user1:__all__"
+                scoreEdge.target shouldBe "item1"
 
                 val delete = deleteMutations.single().single()
                 delete.type shouldBe EventType.DELETE
@@ -647,12 +631,10 @@ class AggregationServiceSpec :
                         RefreshEntryPayload(
                             partition = 42L,
                             key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
-                            aggregation = refreshEntryAggregationFor("item1"),
                         ),
                         RefreshEntryPayload(
                             partition = 42L,
                             key = "db.src:top_purchased:OUT:user1:__all__:item2:61000",
-                            aggregation = refreshEntryAggregationFor("item2"),
                         ),
                     )
 
@@ -687,14 +669,12 @@ class AggregationServiceSpec :
                 val unresolvedEntry =
                     RefreshEntryPayload(
                         partition = 42L,
-                        key = "db.src:top_purchased:OUT:user1:__all__:item1:61000",
-                        aggregation = refreshEntryAggregationFor("item1", topk = "missing_topk"),
+                        key = "db.src:missing_topk:OUT:user1:__all__:item1:61000",
                     )
                 val validEntry =
                     RefreshEntryPayload(
                         partition = 42L,
                         key = "db.src:top_purchased:OUT:user1:__all__:item2:61000",
-                        aggregation = refreshEntryAggregationFor("item2"),
                     )
 
                 every {
