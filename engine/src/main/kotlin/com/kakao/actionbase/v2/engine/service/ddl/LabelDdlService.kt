@@ -34,7 +34,7 @@ class LabelDdlService(
     ): Array<Mono<List<String>>> =
         arrayOf(
             graph.checkAliasExists(name).map { if (!it) listOf() else listOf(aliasNameAlreadyExists(name)) },
-            if (request.storage.startsWith(EngineConstants.DATASTORE_URI_PREFIX)) {
+            if (EngineConstants.isSchemeUri(request.storage)) {
                 Mono.just(listOf())
             } else {
                 val storageName = EntityName.fromOrigin(request.storage)
@@ -150,8 +150,3 @@ data class LabelDeleteRequest(
 ) : DdlRequest {
     override fun toEdge(name: EntityName): TraceEdge = name.toTraceEdge()
 }
-
-data class LabelCopyRequest(
-    val target: String,
-    val storage: String,
-)

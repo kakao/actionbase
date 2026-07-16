@@ -21,8 +21,8 @@ import org.springframework.http.MediaType
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ActionbaseQueryE2ETest : E2ETestBase() {
-    private val db1 = "multihop-db1"
-    private val db2 = "multihop-db2"
+    private val db1 = "multihop_db1"
+    private val db2 = "multihop_db2"
     private val hop1Table = "follows"
     private val hop2Table = "wishlist"
 

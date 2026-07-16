@@ -13,7 +13,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 class EdgeCacheQueryE2ETest : E2ETestBase() {
     private val objectMapper = jacksonObjectMapper()
 
-    private val db = "test-db"
+    private val db = "test_db"
     private val edgeTable = "wishlist"
     private val multiEdgeTable = "orders"
 

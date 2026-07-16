@@ -1,6 +1,5 @@
 package com.kakao.actionbase.v2.engine.service.ddl
 
-import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Active
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
@@ -152,34 +151,6 @@ abstract class DdlService<Entity : EdgeEntity, Create : DdlRequest, Update : Ddl
             }
         }
     }
-
-    fun copy(
-        from: EntityName,
-        to: EntityName,
-        props: Map<String, String>,
-    ): Mono<DdlStatus<Entity>> =
-        getSingle(from)
-            .flatMap {
-                val fromEdge = it.toEdge()
-                val edge =
-                    Edge(
-                        fromEdge.ts,
-                        to.phaseServiceName,
-                        to.name,
-                        fromEdge.props + props,
-                    ).toTraceEdge()
-                graph
-                    .mutate(label.name, label, listOf(edge), EdgeOperation.INSERT, mode = MutationMode.SYNC, force = true)
-                    .map {
-                        val result = it.result.first()
-                        DdlStatus.fromEdgeOperationStatus(
-                            result.status,
-                            if (result.edge?.active == Active.ACTIVE) toEntity(result.edge) else null,
-                        )
-                    }.flatMap { ddlResult ->
-                        sync().thenReturn(ddlResult)
-                    }
-            }.defaultIfEmpty(DdlStatus.fromEdgeOperationStatus(EdgeOperationStatus.IDLE))
 
     fun getAll(name: EntityName): Mono<DdlPage<Entity>> {
         val scanFilter =

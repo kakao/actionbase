@@ -16,6 +16,10 @@ func SetPlainMode(enabled bool) {
 	plainMode.Store(enabled)
 }
 
+func IsPlainMode() bool {
+	return plainMode.Load()
+}
+
 func getPrefix() string {
 	if plainMode.Load() {
 		return ""

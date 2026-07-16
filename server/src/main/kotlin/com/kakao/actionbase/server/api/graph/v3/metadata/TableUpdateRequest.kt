@@ -3,6 +3,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 import com.kakao.actionbase.v2.core.code.Index as V2Index
 import com.kakao.actionbase.v2.core.types.Field as V2Field
 
+import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
@@ -21,7 +22,7 @@ data class TableUpdateRequest(
     @field:Valid
     val schema: ModelSchema? = null,
     val mode: MutationMode? = null,
-    @field:Size(max = 1000, message = "comment must be at most 1000 characters")
+    @field:Size(max = Constants.Name.COMMENT_MAX_LENGTH, message = Constants.Name.COMMENT_SIZE_MESSAGE)
     val comment: String? = null,
 ) {
     fun toV2EdgeSchema(): EdgeSchema? =

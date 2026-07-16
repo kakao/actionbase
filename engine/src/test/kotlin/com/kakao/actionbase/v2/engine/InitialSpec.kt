@@ -26,24 +26,9 @@ class InitialSpec :
         }
 
         "check initial state" {
-            graph.metastoreInspector
-                .dumpMetastore(10, 0)
-                .map { it.forEach(::println) }
-                .test()
-                .expectNextCount(1)
-                .verifyComplete()
-
             graph shouldContainServicesExactly GraphFixtures.defaultServices
             graph shouldContainStoragesExactly GraphFixtures.defaultStorages
             graph shouldContainSystemLabelsExactly GraphFixtures.defaultLabels
-
-            // use toString for equality check
-            graph.testFixtures
-                .getLocalMetadata()
-                .map {
-                    println("decodedValue: $it")
-                }.collectList()
-                .block()
 
             graph.testFixtures
                 .getLocalMetadata()
@@ -55,7 +40,6 @@ class InitialSpec :
                     it shouldContainExactlyInAnyOrder GraphFixtures.defaultMetadata
                 }.verifyComplete()
 
-            // global metadata is empty
             graph.testFixtures
                 .getGlobalMetadata()
                 .test()

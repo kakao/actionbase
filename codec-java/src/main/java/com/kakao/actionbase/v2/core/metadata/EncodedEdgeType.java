@@ -7,7 +7,7 @@ public enum EncodedEdgeType {
   COUNTER_EDGE_TYPE((byte) -2),
   HASH_EDGE_TYPE((byte) -3),
   INDEXED_EDGE_TYPE((byte) -4),
-  IMMUTABLE_INDEXED_EDGE_TYPE((byte) -5),
+  EDGE_GROUP_TYPE((byte) -5),
   EDGE_CACHE_TYPE((byte) -6),
   ;
 
