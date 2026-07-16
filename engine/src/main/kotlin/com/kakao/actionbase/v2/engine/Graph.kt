@@ -11,6 +11,7 @@ import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
 import com.kakao.actionbase.engine.datastore.impl.ByteArrayStore
 import com.kakao.actionbase.engine.query.LabelProvider
+import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
 import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.edge.Edge
@@ -960,6 +961,7 @@ class Graph(
             webClientFactory: WebClientFactory,
         ): Graph {
             DefaultHBaseCluster.initialize(config.hbase)
+            DefaultStorageBackendFactory.initialize(config.hbase)
             log.info("phase: {}", config.phase)
             log.info("tenant: {}", config.tenant)
             log.info("graph config: {}", config)
