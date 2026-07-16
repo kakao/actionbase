@@ -417,8 +417,6 @@ class GraphTestFixtures(
 
     fun getGlobalMetadata(): Flux<DecodedEdge> = getMetadata(graph.metastore, graph.metadataTable)
 
-    // The single local store holds hash, indexed and counter edges together; only hash edges
-    // carry the (src, tgt, labelId) system metadata the H2-backed store used to expose.
     fun getLocalMetadata(): Flux<DecodedEdge> =
         graph.localStore
             .prefixScan(ByteArray(0))

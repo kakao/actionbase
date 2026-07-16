@@ -56,8 +56,6 @@ class LocalBackedJdbcHashLabel(
         scanFilter: ScanFilter,
         stats: Set<StatKey>,
     ): Mono<DataFrame> {
-        // DdlService.getAll() passes indexName=null; the indexed local store needs an explicit
-        // prefix-scan index, so route null to the synthetic __default__ index for the local side.
         val localScanFilter = if (scanFilter.indexName == null) scanFilter.copy(indexName = DEFAULT_SCAN_INDEX) else scanFilter
         val local = localLabel.scan(localScanFilter, stats)
         val global = globalLabel.scan(scanFilter, stats)
@@ -141,7 +139,6 @@ class LocalBackedJdbcHashLabel(
     }
 
     companion object : LabelFactory<LocalBackedJdbcHashLabel, LocalStorage> {
-        // Prefix-scan index with no fields — covers DdlService.getAll() (src-prefix only, no predicates).
         const val DEFAULT_SCAN_INDEX = "__default__"
         val defaultScanIndex = Index(DEFAULT_SCAN_INDEX, emptyList())
 
@@ -151,8 +148,6 @@ class LocalBackedJdbcHashLabel(
             storage: LocalStorage,
             block: LocalBackedJdbcHashLabel.() -> Unit,
         ): LocalBackedJdbcHashLabel {
-            // Augment the entity with a default prefix-scan index so the indexed local store's
-            // scan() works for DdlService.getAll(), which issues indexName=null / no-predicate scans.
             val localEntity = entity.copy(indices = listOf(defaultScanIndex))
             val label =
                 LocalBackedJdbcHashLabel(

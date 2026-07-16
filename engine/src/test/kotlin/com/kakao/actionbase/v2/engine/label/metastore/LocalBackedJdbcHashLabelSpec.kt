@@ -25,11 +25,8 @@ class LocalBackedJdbcHashLabelSpec :
 
         lateinit var graph: Graph
 
-        // serviceLabelEntity is a HASH label on the local-backed metastore, so
-        // graph.getLabel returns a LocalBackedJdbcHashLabel in local-store mode.
         fun localLabel(): LocalBackedJdbcHashLabel = graph.getLabel(Metadata.serviceLabelEntity.name) as LocalBackedJdbcHashLabel
 
-        // (origin -> serviceName) edge with the required non-null `desc` prop.
         fun serviceEdge(
             serviceName: String,
             desc: String,
@@ -62,8 +59,6 @@ class LocalBackedJdbcHashLabelSpec :
             val label = localLabel()
             val edge = serviceEdge("scan_probe", "scan-route")
 
-            // ScanFilter with no indexName mirrors DdlService.getAll(); the local indexed store
-            // needs the __default__ index, so this asserts the routing in scan() works.
             val scanFilter =
                 ScanFilter(
                     name = label.name,

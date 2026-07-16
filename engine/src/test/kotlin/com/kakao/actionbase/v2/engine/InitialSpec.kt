@@ -30,7 +30,6 @@ class InitialSpec :
             graph shouldContainStoragesExactly GraphFixtures.defaultStorages
             graph shouldContainSystemLabelsExactly GraphFixtures.defaultLabels
 
-            // System metadata is written to the in-memory local store.
             graph.testFixtures
                 .getLocalMetadata()
                 .filter { it.labelId != Metadata.infoLabelEntity.id }
@@ -41,7 +40,6 @@ class InitialSpec :
                     it shouldContainExactlyInAnyOrder GraphFixtures.defaultMetadata
                 }.verifyComplete()
 
-            // The global JDBC metastore stays empty until data is promoted from local.
             graph.testFixtures
                 .getGlobalMetadata()
                 .test()
