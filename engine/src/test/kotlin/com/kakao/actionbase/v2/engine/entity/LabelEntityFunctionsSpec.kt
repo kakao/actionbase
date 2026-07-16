@@ -1,10 +1,10 @@
 package com.kakao.actionbase.v2.engine.entity
 
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.REFRESH_TABLE_DATABASE as TOPK_DATABASE
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.REFRESH_TABLE_NAME as TOPK_EXPIRE_TABLE
 import com.kakao.actionbase.core.metadata.common.DirectionType as GroupDirectionType
 
 import com.kakao.actionbase.core.metadata.common.AggregationType
-import com.kakao.actionbase.core.metadata.common.TopKTableNames.REFRESH_TABLE_DATABASE as TOPK_DATABASE
-import com.kakao.actionbase.core.metadata.common.TopKTableNames.REFRESH_TABLE_NAME as TOPK_EXPIRE_TABLE
 import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType

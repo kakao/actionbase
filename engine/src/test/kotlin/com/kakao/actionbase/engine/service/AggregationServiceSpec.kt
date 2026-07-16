@@ -11,8 +11,9 @@ import com.kakao.actionbase.core.edge.payload.MutationResult
 import com.kakao.actionbase.core.edge.payload.RefreshAggregationPayload
 import com.kakao.actionbase.core.edge.payload.RefreshEntryPayload
 import com.kakao.actionbase.core.metadata.QualifiedAggregations
-import com.kakao.actionbase.core.metadata.common.Aggregations
+import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.core.metadata.common.AggregationType
+import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
@@ -21,7 +22,6 @@ import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.RankTarget
-import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.metadata.common.TopkTable
@@ -160,7 +160,7 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "db.src:top_seg:OUT:${TopKTableNames.GLOBAL_ENTITY}:gender:eq:F"
+                edge.source shouldBe "db.src:top_seg:OUT:${AggregationConstants.GLOBAL_ENTITY}:gender:eq:F"
                 edge.properties["score"] shouldBe 3.0
                 edge.properties.containsKey("segment") shouldBe false
             }
@@ -271,8 +271,8 @@ class AggregationServiceSpec :
                 val edges = mutations.map { it.single().edge }
                 edges.map { it.source } shouldContainExactlyInAnyOrder
                     listOf(
-                        "db.src:top_global:IN:${TopKTableNames.GLOBAL_ENTITY}",
-                        "db.src:top_global:IN:${TopKTableNames.GLOBAL_ENTITY}",
+                        "db.src:top_global:IN:${AggregationConstants.GLOBAL_ENTITY}",
+                        "db.src:top_global:IN:${AggregationConstants.GLOBAL_ENTITY}",
                     )
                 edges.map { it.target } shouldContainExactlyInAnyOrder listOf("item1", "item2")
             }
@@ -581,7 +581,7 @@ class AggregationServiceSpec :
                             )
                     }.verifyComplete()
 
-                scannedPartitions shouldHaveSize TopKTableNames.REFRESH_PARTITION_COUNT / 10
+                scannedPartitions shouldHaveSize AggregationConstants.REFRESH_PARTITION_COUNT / 10
                 scannedPartitions.take(5) shouldBe listOf(2L, 12L, 22L, 32L, 42L)
                 scannedPartitions.last() shouldBe 2302L
             }

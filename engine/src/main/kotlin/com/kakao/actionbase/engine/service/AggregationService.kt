@@ -9,13 +9,13 @@ import com.kakao.actionbase.core.edge.payload.MutationResult
 import com.kakao.actionbase.core.edge.payload.RefreshAggregationPayload
 import com.kakao.actionbase.core.edge.payload.RefreshEntryPayload
 import com.kakao.actionbase.core.metadata.QualifiedAggregations
+import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.RankTarget
-import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.state.EventType
@@ -41,11 +41,11 @@ class AggregationService(
         limit: Int,
     ): Mono<List<RefreshEntryPayload>> =
         Flux
-            .fromIterable(TopKTableNames.refreshPartitionsFor(workerCount, workerNumber))
+            .fromIterable(AggregationConstants.refreshPartitionsFor(workerCount, workerNumber))
             .concatMap { partition ->
                 queryService.scan(
-                    database = TopKTableNames.REFRESH_TABLE_DATABASE,
-                    table = TopKTableNames.REFRESH_TABLE_NAME,
+                    database = AggregationConstants.REFRESH_TABLE_DATABASE,
+                    table = AggregationConstants.REFRESH_TABLE_NAME,
                     index = "refresh_at_asc",
                     start = partition,
                     direction = Direction.OUT,
@@ -94,8 +94,8 @@ class AggregationService(
 
     private fun deleteRefreshedEntries(entries: List<RefreshEntryPayload>): Mono<List<MutationResult>> =
         mutationService.mutate(
-            database = TopKTableNames.REFRESH_TABLE_DATABASE,
-            alias = TopKTableNames.REFRESH_TABLE_NAME,
+            database = AggregationConstants.REFRESH_TABLE_DATABASE,
+            alias = AggregationConstants.REFRESH_TABLE_NAME,
             unresolvedEvents =
                 entries.map { entry ->
                     MutationItem(
@@ -216,7 +216,7 @@ class AggregationService(
         val rankedValue = if (topk.rankTarget == RankTarget.TARGET) target else source
         val entity =
             if (topk.scope == TopkScope.GLOBAL) {
-                TopKTableNames.GLOBAL_ENTITY
+                AggregationConstants.GLOBAL_ENTITY
             } else if (topk.rankTarget == RankTarget.TARGET) {
                 source
             } else {
@@ -243,7 +243,7 @@ class AggregationService(
                         ?.value
                         ?.toDouble() ?: 0.0
                 val scoreSource =
-                    TopKTableNames.scoreSourceKey(
+                    AggregationConstants.scoreSourceKey(
                         database = database,
                         table = table,
                         topk = topk.topk,
@@ -292,7 +292,7 @@ class AggregationService(
     ): Mono<List<MutationResult>> {
         val refreshAt = edgeVersionMillis(event.group, event.edge.version) + topk.refreshAfterMillis
         val partition =
-            TopKTableNames.refreshPartition(
+            AggregationConstants.refreshPartition(
                 database = event.database,
                 table = event.table,
                 topk = topk.topk,
@@ -302,7 +302,7 @@ class AggregationService(
                 target = rankedValue,
             )
         val refreshTarget =
-            TopKTableNames.refreshTargetKey(
+            AggregationConstants.refreshTargetKey(
                 database = event.database,
                 table = event.table,
                 topk = topk.topk,
@@ -324,8 +324,8 @@ class AggregationService(
             )
 
         return mutationService.mutate(
-            database = TopKTableNames.REFRESH_TABLE_DATABASE,
-            alias = TopKTableNames.REFRESH_TABLE_NAME,
+            database = AggregationConstants.REFRESH_TABLE_DATABASE,
+            alias = AggregationConstants.REFRESH_TABLE_NAME,
             unresolvedEvents =
                 listOf(
                     MutationItem(

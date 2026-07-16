@@ -1,7 +1,7 @@
 package com.kakao.actionbase.core.metadata.common
 
-import com.kakao.actionbase.core.metadata.common.TopKTableNames.REFRESH_TABLE_DATABASE
-import com.kakao.actionbase.core.metadata.common.TopKTableNames.REFRESH_TABLE_NAME
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.REFRESH_TABLE_DATABASE
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.REFRESH_TABLE_NAME
 
 object AggregationSystemTables {
     private val SYSTEM_TABLES: Map<Pair<String, String>, AggregationType> =

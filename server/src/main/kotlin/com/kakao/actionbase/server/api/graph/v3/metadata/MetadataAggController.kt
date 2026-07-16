@@ -53,8 +53,7 @@ class MetadataAggController(
             .aggregate(
                 type = aggregationItemRequest.type,
                 items = aggregationItemRequest.items,
-            )
-            .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
+            ).map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 
     @PostMapping("/graph/v3/aggregations/refresh")
     fun refresh(

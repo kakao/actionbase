@@ -1,6 +1,6 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.metadata.common.TopKTableNames
+import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.server.test.E2ETestBase
 
 import java.time.Instant
@@ -18,7 +18,7 @@ import org.springframework.http.MediaType
  * A single MULTI_EDGE source table (`purchases`) declares one group per case.
  * All groups target the same score table (`purchases__topk`); each topk carries a
  * distinct name so the rowkey `{database}.{table}:{topk}:{direction}:{entity}` in the
- * score table (see TopKTableNames.scoreSourceKey) keeps the ranked entries of each case
+ * score table (see AggregationConstants.scoreSourceKey) keeps the ranked entries of each case
  * separated:
  *
  *   Case                              | Group                     | Topk name
@@ -59,11 +59,11 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     @BeforeAll
     fun setup() {
         createDatabase(db)
-        createDatabase(TopKTableNames.REFRESH_TABLE_DATABASE)
+        createDatabase(AggregationConstants.REFRESH_TABLE_DATABASE)
 
         createMultiEdgeSourceTable()
         createScoreTable(database = db, table = scoreTable)
-        createRefreshTable(database = TopKTableNames.REFRESH_TABLE_DATABASE, table = TopKTableNames.REFRESH_TABLE_NAME)
+        createRefreshTable(database = AggregationConstants.REFRESH_TABLE_DATABASE, table = AggregationConstants.REFRESH_TABLE_NAME)
         createEdgeTable(
             database = db,
             table = plainTable,
@@ -135,7 +135,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .get()
             .uri(
                 "/graph/v3/aggregations/refresh/entries" +
-                    "?workerCount=10&workerNumber=${TopKTableNames.refreshWorkerNumberFor(42L, 10)}" +
+                    "?workerCount=10&workerNumber=${AggregationConstants.refreshWorkerNumberFor(42L, 10)}" +
                     "&refreshAtLte=61000&limit=100",
             ).exchange()
             .expectStatus()
@@ -383,7 +383,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
         client
             .post()
-            .uri("/graph/v3/databases/${TopKTableNames.REFRESH_TABLE_DATABASE}/tables/${TopKTableNames.REFRESH_TABLE_NAME}/edges")
+            .uri("/graph/v3/databases/${AggregationConstants.REFRESH_TABLE_DATABASE}/tables/${AggregationConstants.REFRESH_TABLE_NAME}/edges")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
@@ -443,7 +443,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     // TODO: switch to `/edges/topk/{topk}` once the topk read endpoint lands (see follow-up PR).
     //       For now, scan the score table directly by the `score_desc` index using the
     //       `{database}.{table}:{topk}:{direction}:{entity}` rowkey convention
-    //       (see TopKTableNames.scoreSourceKey).
+    //       (see AggregationConstants.scoreSourceKey).
     private fun readTopk(topk: String) =
         client
             .get()

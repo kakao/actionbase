@@ -2,7 +2,7 @@ package com.kakao.actionbase.core.metadata.common
 
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
 
-object TopKTableNames {
+object AggregationConstants {
     const val REFRESH_TABLE_DATABASE = "topk"
     const val REFRESH_TABLE_NAME = "refresh"
 
