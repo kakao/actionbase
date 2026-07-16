@@ -1012,11 +1012,7 @@ class Graph(
                 }
 
             val storageEntities =
-                listOfNotNull(
-                    Metadata.localBackedMetastoreEntity,
-                    Metadata.metastoreStorageEntity,
-                    defaultHBaseStorageEntity,
-                ).associateBy { it.name }
+                listOfNotNull(defaultHBaseStorageEntity).associateBy { it.name }
 
             val defaults =
                 AbstractGraphDefaults(
@@ -1037,15 +1033,9 @@ class Graph(
 
             val storageLabel =
                 Metadata.storageLabelEntity.materialize(defaults) {
-                    mutate(Metadata.localBackedMetastoreEntity.toEdge(), EdgeOperation.INSERT)
-                        .then(mutate(Metadata.metastoreStorageEntity.toEdge(), EdgeOperation.INSERT))
-                        .let { chain ->
-                            if (defaultHBaseStorageEntity != null) {
-                                chain.then(mutate(defaultHBaseStorageEntity.toEdge(), EdgeOperation.INSERT))
-                            } else {
-                                chain
-                            }
-                        }.block()
+                    defaultHBaseStorageEntity?.let {
+                        mutate(it.toEdge(), EdgeOperation.INSERT).block()
+                    }
                 }
 
             val infoLabel =

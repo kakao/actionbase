@@ -12,6 +12,8 @@ import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 
 import org.jetbrains.exposed.sql.Database
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+
 interface GraphDefaults {
     val localStore: ByteArrayStore
     val metastore: Database
@@ -24,12 +26,16 @@ interface GraphDefaults {
 
     fun getStorage(uri: String): StorageEntity? =
         when {
-            uri.startsWith(EngineConstants.DATASTORE_URI_PREFIX) -> {
+            uri == EngineConstants.METASTORE_URI ->
+                StorageEntity.empty.copy(
+                    active = true,
+                    type = StorageType.LOCAL,
+                    conf = jacksonObjectMapper().createObjectNode().apply { put("useGlobal", true) },
+                )
+            uri.startsWith(EngineConstants.DATASTORE_URI_PREFIX) ->
                 StorageEntity.empty.copy(active = true, type = StorageType.DATASTORE)
-            }
-            else -> {
+            else ->
                 storages[EntityName.fromOrigin(uri)]
-            }
         }
 }
 

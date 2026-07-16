@@ -17,7 +17,6 @@ import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
-import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.metadata.StorageType
 import com.kakao.actionbase.v2.engine.service.ddl.DdlStatus
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
@@ -166,6 +165,8 @@ class LabelSpec :
         }
 
         fun testEmptySrcScan(label: Label) {
+            // Metastore-backed HASH labels only support the default prefix scan (indexName=null
+            // routes to __default__); the ByteArray-backed local store rejects unknown index names.
             val scanFilter =
                 ScanFilter(
                     name = label.name,
@@ -173,7 +174,7 @@ class LabelSpec :
                     dir = Direction.OUT,
                     limit = 999,
                     offset = "100",
-                    indexName = "created_at_desc",
+                    indexName = null,
                 )
             val dfMono = label.scan(scanFilter, emptySet())
             dfMono
@@ -221,13 +222,6 @@ class LabelSpec :
                         label.indexNameToIndex["created_at_desc"],
                     )
                 label.create(EncodedKey(kfv.key, kfv.field), "dirtyData".toByteArray()).block()
-            }
-        }
-
-        "scan ignore dirty data - jdbc" {
-            scanIgnoreDirtyData(jdbc) { label, edge ->
-                val kfv = (label as JdbcHashLabel).coder.encodeHashEdgeKey(edge, label.entity.id)
-                label.create(EncodedKey(kfv.key, kfv.field), "dirtyData").block()
             }
         }
 
@@ -377,7 +371,7 @@ class LabelSpec :
                 .assertNext { it.status shouldBe EdgeOperationStatus.IDLE }
                 .verifyComplete()
 
-            GraphFixtures.createStorage(graph, testStorageName, StorageType.JDBC, GraphFixtures.mockStorageConf())
+            GraphFixtures.createStorage(graph, testStorageName, StorageType.HBASE, GraphFixtures.mockStorageConf())
 
             graph.updateLabels().test().verifyComplete()
 

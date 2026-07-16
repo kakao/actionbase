@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.test
 
+import com.kakao.actionbase.engine.EngineConstants
 import com.kakao.actionbase.v2.core.code.DecodedEdge
 import com.kakao.actionbase.v2.core.code.EncodedKey
 import com.kakao.actionbase.v2.core.code.Index
@@ -61,7 +62,7 @@ object GraphFixtures {
 
     const val serviceName = "test"
 
-    const val jdbcStorage = "mock_jdbc"
+    const val jdbcStorage = EngineConstants.METASTORE_URI
 
     const val hbaseStorage = "mock_hbase"
 
@@ -241,10 +242,9 @@ object GraphFixtures {
         if (withTestData) {
             createService(graph, serviceName)
 
-            createStorage(graph, jdbcStorage, StorageType.JDBC, mockStorageConf())
             createStorage(graph, hbaseStorage, StorageType.HBASE, mockStorageConf())
 
-            performSampleDDLAndDML(graph, serviceName, jdbcHash, LabelType.HASH, jdbcStorage)
+            performSampleDDLAndDML(graph, serviceName, jdbcHash, LabelType.HASH, EngineConstants.METASTORE_URI)
 
             performSampleDDLAndDML(graph, serviceName, hbaseHash, LabelType.HASH, hbaseStorage)
             performSampleDDLAndDML(graph, serviceName, hbaseIndexed, LabelType.INDEXED, datastoreStorage)
@@ -258,11 +258,7 @@ object GraphFixtures {
             EntityName.fromOrigin(Metadata.sysServiceName),
         )
 
-    val defaultStorages =
-        listOf(
-            EntityName.fromOrigin(Metadata.localBackedMetastoreName),
-            EntityName.fromOrigin(Metadata.metastoreName),
-        )
+    val defaultStorages = emptyList<EntityName>()
 
     val defaultLabels =
         listOf(
@@ -280,13 +276,6 @@ object GraphFixtures {
         listOf(
             // "origin" -> "service"
             listOf(EntityName.withPhase(Metadata.origin, Metadata.sysServiceName), Metadata.serviceLabelEntity.id, null),
-            // "origin" -> storage
-            listOf(
-                EntityName.withPhase(Metadata.origin, Metadata.localBackedMetastoreName),
-                Metadata.storageLabelEntity.id,
-                null,
-            ),
-            listOf(EntityName.withPhase(Metadata.origin, Metadata.metastoreName), Metadata.storageLabelEntity.id, null),
             // (service -> label) edges for label label (includes label information)
             listOf(
                 EntityName.withPhase(Metadata.sysServiceName, Metadata.sysServiceLabelName),
@@ -359,7 +348,7 @@ class GraphTestFixtures(
                     ),
                 dirType = DirectionType.OUT,
                 indices = emptyList(),
-                storage = Metadata.metastoreName,
+                storage = EngineConstants.METASTORE_URI,
             )
 
         graph.labelDdl
