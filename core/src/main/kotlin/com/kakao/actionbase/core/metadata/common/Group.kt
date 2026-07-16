@@ -46,13 +46,12 @@ data class Aggregations(
 data class Topk(
     val topk: String,
     val ranges: String = "",
-    val expireAfterMillis: Long = -1,
+    val refreshAfterMillis: Long = -1,
     val table: TopkTable,
 )
 
 data class TopkTable(
     val score: String,
-    val expire: String,
 )
 
 enum class AggregationType {

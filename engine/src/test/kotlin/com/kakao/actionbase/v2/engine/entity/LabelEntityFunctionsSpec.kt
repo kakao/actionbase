@@ -77,7 +77,7 @@ class LabelEntityFunctionsSpec :
     companion object {
         private fun topk(
             name: String,
-            table: TopkTable = TopkTable(score = "${name}__topk", expire = "topk.expire"),
+            table: TopkTable = TopkTable(score = "${name}__topk"),
         ): Topk = Topk(topk = name, table = table)
 
         private fun groupWithTopks(

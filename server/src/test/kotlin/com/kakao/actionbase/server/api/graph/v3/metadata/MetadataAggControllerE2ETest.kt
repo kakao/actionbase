@@ -17,7 +17,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     private val db = "commerce"
     private val table = "purchases"
     private val scoreFqn = "$db.${table}__topk"
-    private val expireFqn = "topk.expire"
 
     @BeforeAll
     fun setup() {
@@ -55,8 +54,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                         "topk": [{
                           "topk": "top_purchased",
                           "ranges": "_target:eq:{_target}",
-                          "expire": false,
-                          "table": {"score": "$scoreFqn", "expire": "$expireFqn"}
+                          "table": {"score": "$scoreFqn"}
                         }]
                       }
                     }],

@@ -26,6 +26,6 @@ class AggregationsTest {
     }
 
     companion object {
-        private val topk = Topk(topk = "topk", table = TopkTable(score = "db.table__topk", expire = "topk.expire"))
+        private val topk = Topk(topk = "topk", table = TopkTable(score = "db.table__topk"))
     }
 }
