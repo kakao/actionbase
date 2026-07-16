@@ -969,7 +969,7 @@ class Graph(
 
             val metastoreUri =
                 config.consolidatedMetastoreUri
-                    ?: "datastore://${config.tenant.replace("-", "_")}/actionbase_metastore"
+                    ?: "datastore://${DefaultHBaseCluster.NAMESPACE_SENTINEL}/actionbase_metastore"
 
             val consolidatedMetastore: Mono<HBaseTables> = DefaultHBaseCluster.INSTANCE.getTable(metastoreUri).cache()
 

@@ -49,10 +49,12 @@ class DefaultHBaseCluster private constructor(
             }
         }
 
-    // URI format: datastore://{namespace}/{tableName}
+    // URI format: datastore://{namespace}/{tableName}. The NAMESPACE_SENTINEL resolves to this
+    // cluster's configured namespace.
     fun getTable(uri: String): Mono<HBaseTables> {
         val (namespace, tableName) = parseDatastoreUri(uri)
-        return getTable(namespace, tableName)
+        val resolvedNamespace = if (namespace == NAMESPACE_SENTINEL) this.namespace else namespace
+        return getTable(resolvedNamespace, tableName)
     }
 
     private fun parseDatastoreUri(uri: String): Pair<String, String> {
@@ -67,6 +69,10 @@ class DefaultHBaseCluster private constructor(
 
     companion object {
         const val DEFAULT_HBASE_NAMESPACE = "default"
+
+        // Sentinel namespace in a datastore:// URI that resolves to this cluster's configured
+        // namespace, so callers need not know the concrete tenant namespace.
+        const val NAMESPACE_SENTINEL = "__default__"
         const val DEFAULT_HBASE_CLUSTER_NAME = "__DEFAULT_HBASE_CLUSTER__"
         const val LEGACY_DEFAULT_KERBEROS_REALM = "KAKAO.HADOOP"
 
