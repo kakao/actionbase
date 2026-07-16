@@ -40,8 +40,6 @@ object Metadata {
 
     const val heartBeatLabelName = "heartbeat"
 
-    const val sysOnlineMetadataLabelName = "online_metadata"
-
     const val sysOnlineMetadataLabelV2Name = "online_metadata_v2"
 
     const val sysNilLabelName = "nil"
