@@ -2,6 +2,7 @@ package com.kakao.actionbase.v2.engine
 
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.engine.EngineConstants
+import com.kakao.actionbase.engine.datastore.impl.ByteArrayStore
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
 import com.kakao.actionbase.v2.engine.entity.EntityName
@@ -14,7 +15,7 @@ import org.jetbrains.exposed.sql.Database
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 interface GraphDefaults {
-    val localMetastore: Database
+    val localStore: ByteArrayStore
     val metastore: Database
     val metadataTable: MetadataTable
     val storages: Map<EntityName, StorageEntity>
@@ -43,7 +44,7 @@ interface GraphDefaults {
 }
 
 data class AbstractGraphDefaults(
-    override val localMetastore: Database,
+    override val localStore: ByteArrayStore,
     override val metastore: Database,
     override val metadataTable: MetadataTable,
     override val edgeEncoderFactory: EdgeEncoderFactory,
