@@ -270,6 +270,37 @@ class EdgeSchemaSerializationTest {
               "groups": [],
               "caches": []
             }
+        - schema: {
+              "type": "edge",
+              "source": {"type": "long", "comment": ""},
+              "target": {"type": "long", "comment": ""},
+              "properties": [],
+              "direction": "OUT",
+              "groups": [
+                {"group": "purchased_count", "type": "COUNT", "fields": [{"name": "_target"}]}
+              ]
+            }
+          expected: |-
+            {
+              "type": "edge",
+              "source": {"type": "long", "comment": ""},
+              "target": {"type": "long", "comment": ""},
+              "properties": [],
+              "direction": "OUT",
+              "indexes": [],
+              "groups": [
+                {
+                  "group": "purchased_count",
+                  "type": "COUNT",
+                  "fields": [{"name": "_target", "bucket": null}],
+                  "valueField": "-",
+                  "comment": "",
+                  "directionType": "BOTH",
+                  "ttl": 691200000
+                }
+              ],
+              "caches": []
+            }
         """,
     )
     fun `serializes edge schema to JSON`(

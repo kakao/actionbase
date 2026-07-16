@@ -113,8 +113,7 @@ class TableSerializationTest {
                     "valueField": "-",
                     "comment": "group by day",
                     "directionType": "BOTH",
-                    "ttl": 691200000,
-                    "aggregations": {"topk": []}
+                    "ttl": 691200000
                   }
                 ],
                 "caches": []

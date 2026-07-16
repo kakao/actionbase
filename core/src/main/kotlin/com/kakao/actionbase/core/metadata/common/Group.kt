@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonInclude
 
 data class Group(
     val group: String,
@@ -13,6 +14,7 @@ data class Group(
     val comment: String = Constants.DEFAULT_COMMENT,
     val directionType: DirectionType = DirectionType.BOTH,
     val ttl: Long = Constants.Group.DEFAULT_TTL,
+    @field:JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = Aggregations.EmptyFilter::class)
     val aggregations: Aggregations = Aggregations.EMPTY,
 ) {
     @JsonIgnore
@@ -42,6 +44,14 @@ data class Aggregations(
 
     companion object {
         val EMPTY = Aggregations()
+    }
+
+    // Jackson valueFilter: a value equal to this filter is dropped from serialization, so
+    // groups without any aggregation declaration serialize without the aggregations key.
+    class EmptyFilter {
+        override fun equals(other: Any?): Boolean = other is Aggregations && other.isEmpty()
+
+        override fun hashCode(): Int = javaClass.hashCode()
     }
 }
 
