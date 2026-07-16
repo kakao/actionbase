@@ -9,10 +9,11 @@ import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
-import com.kakao.actionbase.engine.datastore.impl.ByteArrayStore
 import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
 import com.kakao.actionbase.engine.storage.StorageOpCollector
+import com.kakao.actionbase.engine.storage.StorageTable
+import com.kakao.actionbase.engine.storage.memory.MemoryStorageBackend
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.edge.TraceEdge
@@ -92,10 +93,10 @@ import reactor.util.Loggers
 class Graph(
     val wal: Wal,
     val cdc: Cdc,
-    override val localStore: ByteArrayStore,
+    override val localStore: StorageTable,
     override val metastore: Database,
     override val metadataTable: MetadataTable,
-    override val consolidatedStore: ByteArrayStore,
+    override val consolidatedStore: StorageTable,
     override val edgeEncoderFactory: EdgeEncoderFactory,
     override val edgeRecordMapper: EdgeRecordMapper,
     override val datastore: DefaultHBaseCluster,
@@ -1019,12 +1020,19 @@ class Graph(
             val storageEntities =
                 listOfNotNull(defaultHBaseStorageEntity).associateBy { it.name }
 
+            // System metastore stores are in-memory and acquired through the StorageBackend seam by
+            // distinct URIs (seed vs overlay); routing the operational overlay through the configured
+            // backend is a later, migration-gated step.
+            val systemStorageBackend = MemoryStorageBackend()
+            val localStore = systemStorageBackend.getStorageTable("datastore://metastore/seed").block()!!
+            val consolidatedStore = systemStorageBackend.getStorageTable("datastore://metastore/overlay").block()!!
+
             val defaults =
                 AbstractGraphDefaults(
-                    ByteArrayStore(),
+                    localStore,
                     metastore,
                     metadataTable,
-                    ByteArrayStore(),
+                    consolidatedStore,
                     config.useJdbcMetastore,
                     edgeEncoderFactory,
                     edgeRecordMapper,
