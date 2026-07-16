@@ -5,12 +5,16 @@ import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.core.code.hbase.Order
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
+import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.DataType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.VertexField
 import com.kakao.actionbase.v2.core.types.VertexType
+import com.kakao.actionbase.v2.engine.entity.EntityName
+import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
 import com.kakao.actionbase.v2.engine.sql.StatKey
 import com.kakao.actionbase.v2.engine.sql.toRowFlux
@@ -40,6 +44,29 @@ abstract class AbstractLabelCompatibilityTest {
 
     protected val indices =
         listOf(Index("createdAt_asc", listOf(Index.Field("createdAt", Order.ASC))))
+
+    protected val hashEntity =
+        LabelEntity(
+            active = true,
+            name = EntityName("test", "hash"),
+            desc = "hash label",
+            type = LabelType.HASH,
+            schema = schema,
+            dirType = DirectionType.OUT,
+            storage = "mock",
+        )
+
+    protected val indexedEntity =
+        LabelEntity(
+            active = true,
+            name = EntityName("test", "indexed"),
+            desc = "indexed label",
+            type = LabelType.INDEXED,
+            schema = schema,
+            dirType = DirectionType.BOTH,
+            storage = "mock",
+            indices = indices,
+        )
 
     protected abstract fun hashLabel(): AbstractLabel<*>
 
