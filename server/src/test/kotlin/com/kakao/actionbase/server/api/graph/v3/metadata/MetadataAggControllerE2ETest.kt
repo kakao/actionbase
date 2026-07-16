@@ -200,8 +200,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .isEqualTo(2)
     }
 
-    // region topk definitions
-
     private fun perEntityGroup() =
         """
         {
@@ -293,10 +291,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
           }
         }
         """.trimIndent()
-
-    // endregion
-
-    // region data setup
 
     /**
      * Source table (`purchases`, HBase-style rowkey). Purchases from user 1 land as
@@ -426,10 +420,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .expectStatus()
             .isOk
             .expectBody()
-
-    // endregion
-
-    // region table creation
 
     private fun createDatabase(database: String) {
         client
@@ -588,6 +578,4 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .expectStatus()
             .isOk
     }
-
-    // endregion
 }
