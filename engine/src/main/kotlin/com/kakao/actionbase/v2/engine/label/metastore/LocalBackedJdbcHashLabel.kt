@@ -13,7 +13,6 @@ import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.LabelFactory
 import com.kakao.actionbase.v2.engine.label.bytearray.ByteArrayIndexedLabel
-import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.DataFrame
 import com.kakao.actionbase.v2.engine.sql.Row
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
@@ -25,19 +24,22 @@ import reactor.core.publisher.Mono
 
 // Merge policy (Phase 1 overlay):
 //
-// Op            | local (seed) | HBase (overlay) | MySQL (base) | Rule
-// --------------|--------------|-----------------|--------------|------------------------------
-// INSERT/UPDATE | useLocal=T   | useLocal=F      | mirrored     | HBase is write target; MySQL mirrored for rollback safety
-// DELETE        | useLocal=T   | useLocal=F      | mirrored     | both layers deleted → no resurrection
-// read          | always       | always          | fallback*    | HBase wins on (src,tgt) dedup; *skipped when useJdbcMetastore=false
-// count         | always       | always          | never        | local + HBase; MySQL cannot count (JdbcHashLabel returns a -1 sentinel)
+// Op            | local (seed) | overlay (memory) | MySQL (base) | Rule
+// --------------|--------------|------------------|--------------|------------------------------
+// INSERT/UPDATE | useLocal=T   | useLocal=F       | mirrored     | overlay is write target; MySQL mirrored for rollback safety
+// DELETE        | useLocal=T   | useLocal=F       | mirrored     | both layers deleted → no resurrection
+// read          | always       | always           | fallback*    | overlay wins on (src,tgt) dedup; *skipped when useJdbcMetastore=false
+// count         | always       | always           | never        | local + overlay; MySQL cannot count (JdbcHashLabel returns a -1 sentinel)
 //
-// useJdbcMetastore=false: MySQL layer is bypassed entirely (writes go to HBase only, reads skip MySQL merge)
+// The overlay is an in-memory ByteArrayIndexedLabel: durable state stays in MySQL (mirrored), so
+// this version is deploy/rollback-safe and needs no HBase provisioning. Swapping the overlay to a
+// persistent HBase-backed label is a later step.
+// useJdbcMetastore=false: MySQL layer is bypassed entirely (writes go to the overlay only, reads skip MySQL merge)
 class LocalBackedJdbcHashLabel internal constructor(
     override val entity: LabelEntity,
     private val localLabel: Label,
     private val globalLabel: JdbcHashLabel,
-    private val consolidatedLabel: HBaseIndexedLabel,
+    private val consolidatedLabel: Label,
 ) : Label {
     val log = getLogger()
 
@@ -181,14 +183,10 @@ class LocalBackedJdbcHashLabel internal constructor(
                             metadataTable = graph.metadataTable,
                         ),
                     consolidatedLabel =
-                        HBaseIndexedLabel(
+                        ByteArrayIndexedLabel.create(
                             entity = indexedEntity,
                             coder = graph.edgeEncoderFactory.bytesKeyValueEncoder,
-                            indices = indexedEntity.indices,
-                            indexNameToIndex = indexedEntity.indices.associateBy { it.name },
-                            tables = graph.consolidatedMetastore,
-                            edgeRecordMapper = graph.edgeRecordMapper,
-                            lockTimeout = graph.lockTimeout,
+                            store = graph.consolidatedStore,
                         ),
                 )
             label.block()

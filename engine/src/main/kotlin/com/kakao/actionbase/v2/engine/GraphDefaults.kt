@@ -8,20 +8,17 @@ import com.kakao.actionbase.v2.engine.compat.DefaultHBaseCluster
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
 import com.kakao.actionbase.v2.engine.metadata.StorageType
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 
 import org.jetbrains.exposed.sql.Database
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
-import reactor.core.publisher.Mono
-
 interface GraphDefaults {
     val localStore: ByteArrayStore
     val metastore: Database
     val metadataTable: MetadataTable
-    val consolidatedMetastore: Mono<HBaseTables>
+    val consolidatedStore: ByteArrayStore
     val useJdbcMetastore: Boolean
     val storages: Map<EntityName, StorageEntity>
     val edgeEncoderFactory: EdgeEncoderFactory
@@ -48,7 +45,7 @@ data class AbstractGraphDefaults(
     override val localStore: ByteArrayStore,
     override val metastore: Database,
     override val metadataTable: MetadataTable,
-    override val consolidatedMetastore: Mono<HBaseTables>,
+    override val consolidatedStore: ByteArrayStore,
     override val useJdbcMetastore: Boolean,
     override val edgeEncoderFactory: EdgeEncoderFactory,
     override val edgeRecordMapper: EdgeRecordMapper,

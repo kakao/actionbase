@@ -65,7 +65,6 @@ import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.sql.toRowFlux
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseOptions
-import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 import com.kakao.actionbase.v2.engine.storage.jdbc.MetadataTable
 import com.kakao.actionbase.v2.engine.util.getLogger
 import com.kakao.actionbase.v2.engine.wal.Wal
@@ -95,7 +94,7 @@ class Graph(
     override val localStore: ByteArrayStore,
     override val metastore: Database,
     override val metadataTable: MetadataTable,
-    override val consolidatedMetastore: Mono<HBaseTables>,
+    override val consolidatedStore: ByteArrayStore,
     override val edgeEncoderFactory: EdgeEncoderFactory,
     override val edgeRecordMapper: EdgeRecordMapper,
     override val datastore: DefaultHBaseCluster,
@@ -967,12 +966,6 @@ class Graph(
             log.info("kafkaClientFactory: {}", kafkaClientFactory)
             log.info("webClientFactory: {}", webClientFactory)
 
-            val metastoreUri =
-                config.consolidatedMetastoreUri
-                    ?: "datastore://${DefaultHBaseCluster.NAMESPACE_SENTINEL}/actionbase_metastore"
-
-            val consolidatedMetastore: Mono<HBaseTables> = DefaultHBaseCluster.INSTANCE.getTable(metastoreUri).cache()
-
             EntityName.initialize(config.phase, config.tenant)
             WalLog.initialize(config.phase, config.tenant)
             CdcContext.initialize(config.phase, config.tenant)
@@ -1029,7 +1022,7 @@ class Graph(
                     ByteArrayStore(),
                     metastore,
                     metadataTable,
-                    consolidatedMetastore,
+                    ByteArrayStore(),
                     config.useJdbcMetastore,
                     edgeEncoderFactory,
                     edgeRecordMapper,
@@ -1089,7 +1082,7 @@ class Graph(
                 defaults.localStore,
                 defaults.metastore,
                 defaults.metadataTable,
-                defaults.consolidatedMetastore,
+                defaults.consolidatedStore,
                 defaults.edgeEncoderFactory,
                 defaults.edgeRecordMapper,
                 defaults.datastore,
