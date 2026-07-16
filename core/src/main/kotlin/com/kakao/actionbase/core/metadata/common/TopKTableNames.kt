@@ -1,5 +1,7 @@
 package com.kakao.actionbase.core.metadata.common
 
+import com.kakao.actionbase.core.codec.XXHash32Wrapper
+
 object TopKTableNames {
     const val REFRESH_TABLE_DATABASE = "topk"
     const val REFRESH_TABLE_NAME = "refresh"
@@ -40,10 +42,10 @@ object TopKTableNames {
         segment: String? = null,
         target: String,
     ): Long =
-        Math.floorMod(
-            "${appendSegment("$database.$table:$topk:${direction.name}:$entity", segment)}:$target".hashCode(),
-            REFRESH_PARTITION_COUNT,
-        ).toLong()
+        XXHash32Wrapper.default
+            .stringHash("${appendSegment("$database.$table:$topk:${direction.name}:$entity", segment)}:$target")
+            .mod(REFRESH_PARTITION_COUNT)
+            .toLong()
 
     fun refreshPartitionsFor(
         workerCount: Int,

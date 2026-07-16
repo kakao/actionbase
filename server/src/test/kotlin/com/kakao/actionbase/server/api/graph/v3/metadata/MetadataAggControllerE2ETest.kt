@@ -46,9 +46,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     private val sourceTable = "purchases"
     private val plainTable = "misc"
     private val scoreTable = "${sourceTable}__topk"
-    private val refreshTable = "${sourceTable}__refresh"
     private val scoreFqn = "$db.$scoreTable"
-    private val refreshFqn = "$db.$refreshTable"
 
     private val user = 1L
     private val itemA = 100L
@@ -61,10 +59,11 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     @BeforeAll
     fun setup() {
         createDatabase(db)
+        createDatabase(TopKTableNames.REFRESH_TABLE_DATABASE)
 
         createMultiEdgeSourceTable()
         createScoreTable(database = db, table = scoreTable)
-        createRefreshTable(database = db, table = refreshTable)
+        createRefreshTable(database = TopKTableNames.REFRESH_TABLE_DATABASE, table = TopKTableNames.REFRESH_TABLE_NAME)
         createEdgeTable(
             database = db,
             table = plainTable,
@@ -91,19 +90,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     }
 
     @Test
-    fun `GET aggregation refresh lists physical refresh tables`() {
-        client
-            .get()
-            .uri("/graph/v3/aggregations/refresh")
-            .exchange()
-            .expectStatus()
-            .isOk
-            .expectBody()
-            .jsonPath("$.tables[?(@.database == '$db' && @.table == '$refreshTable')]")
-            .exists()
-    }
-
-    @Test
     fun `POST aggregation refresh accepts explicit entry body`() {
         client
             .post()
@@ -112,8 +98,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .bodyValue(
                 """
                 {
-                  "refreshDatabase": "$db",
-                  "refreshTable": "$refreshTable",
                   "entries": [{
                     "partition": 42,
                     "key": "$db.$sourceTable:missing_topk:OUT:$user:$itemA:61000",
@@ -151,8 +135,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .get()
             .uri(
                 "/graph/v3/aggregations/refresh/entries" +
-                    "?refreshDatabase=$db&refreshTable=$refreshTable" +
-                    "&workerCount=10&workerNumber=${TopKTableNames.refreshWorkerNumberFor(42L, 10)}" +
+                    "?workerCount=10&workerNumber=${TopKTableNames.refreshWorkerNumberFor(42L, 10)}" +
                     "&refreshAtLte=61000&limit=100",
             ).exchange()
             .expectStatus()
@@ -236,7 +219,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             "topk": [{
               "topk": "top_purchased",
               "ranges": "_target:eq:{_target}",
-              "table": {"score": "$scoreFqn", "refresh": "$refreshFqn"}
+              "table": {"score": "$scoreFqn"}
             }]
           }
         }
@@ -257,7 +240,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             "topk": [{
               "topk": "top_purchased_seg",
               "ranges": "gender:eq:{gender};age:eq:{age};_target:eq:{_target}",
-              "table": {"score": "$scoreFqn", "refresh": "$refreshFqn"}
+              "table": {"score": "$scoreFqn"}
             }]
           }
         }
@@ -283,7 +266,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             "topk": [{
               "topk": "top_purchased_1y",
               "ranges": "_target:eq:{_target};time:bt:now-365d,now",
-              "table": {"score": "$scoreFqn", "refresh": "$refreshFqn"}
+              "table": {"score": "$scoreFqn"}
             }]
           }
         }
@@ -311,7 +294,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             "topk": [{
               "topk": "top_purchased_seg_1y",
               "ranges": "gender:eq:{gender};age:eq:{age};_target:eq:{_target};time:bt:now-365d,now",
-              "table": {"score": "$scoreFqn", "refresh": "$refreshFqn"}
+              "table": {"score": "$scoreFqn"}
             }]
           }
         }
@@ -400,7 +383,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
         client
             .post()
-            .uri("/graph/v3/databases/$db/tables/$refreshTable/edges")
+            .uri("/graph/v3/databases/${TopKTableNames.REFRESH_TABLE_DATABASE}/tables/${TopKTableNames.REFRESH_TABLE_NAME}/edges")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """

@@ -1,11 +1,9 @@
 package com.kakao.actionbase.core.edge.payload
 
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Direction
-import com.kakao.actionbase.core.metadata.payload.AggregationType
 
 data class RefreshRequest(
-    val refreshDatabase: String,
-    val refreshTable: String,
     val entries: List<RefreshEntryPayload>,
 )
 

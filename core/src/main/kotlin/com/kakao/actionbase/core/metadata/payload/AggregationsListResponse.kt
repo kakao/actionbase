@@ -1,6 +1,7 @@
 package com.kakao.actionbase.core.metadata.payload
 
-import com.kakao.actionbase.core.metadata.AggregationMetadata
+import com.kakao.actionbase.core.metadata.QualifiedAggregations
+import com.kakao.actionbase.core.metadata.common.AggregationType
 
 data class AggregationsListResponse(
     val topk: List<Item>,
@@ -8,27 +9,18 @@ data class AggregationsListResponse(
     data class Item(
         val database: String,
         val table: String,
+        val refresh: Boolean = false,
     )
 
     companion object {
-        fun of(
-            type: AggregationType?,
-            metadata: List<AggregationMetadata>,
-        ): AggregationsListResponse =
-            when (type) {
-                AggregationType.TOPK -> AggregationsListResponse(topk = topkItems(metadata))
-                else -> AggregationsListResponse(topk = topkItems(metadata))
-            }
+        fun of(aggregations: List<QualifiedAggregations>): AggregationsListResponse =
+            AggregationsListResponse(
+                topk =
+                    aggregations
+                        .filter { it.type == AggregationType.TOPK }
+                        .map { it.toItem() },
+            )
 
-        private fun topkItems(metadata: List<AggregationMetadata>): List<Item> =
-            metadata
-                .filter { md -> md.aggregations.any { it.topk.isNotEmpty() } }
-                .map { it.toItem() }
-
-        private fun AggregationMetadata.toItem(): Item = Item(database = database, table = table)
+        private fun QualifiedAggregations.toItem(): Item = Item(database = database, table = table, refresh = refresh)
     }
-}
-
-enum class AggregationType {
-    TOPK,
 }

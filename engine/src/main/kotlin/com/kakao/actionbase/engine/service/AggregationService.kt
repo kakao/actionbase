@@ -8,7 +8,8 @@ import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
 import com.kakao.actionbase.core.edge.payload.RefreshAggregationPayload
 import com.kakao.actionbase.core.edge.payload.RefreshEntryPayload
-import com.kakao.actionbase.core.metadata.AggregationMetadata
+import com.kakao.actionbase.core.metadata.QualifiedAggregations
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.Group
@@ -17,11 +18,8 @@ import com.kakao.actionbase.core.metadata.common.RankTarget
 import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkScope
-import com.kakao.actionbase.core.metadata.payload.AggregationType
-import com.kakao.actionbase.core.metadata.payload.RefreshTableRef
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
-import com.kakao.actionbase.engine.QualifiedGroups
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -34,21 +32,9 @@ class AggregationService(
     private val mutationService: MutationService,
     private val engine: AggregationEngine,
 ) {
-    fun getAggregations(): List<AggregationMetadata> = engine.getAllQualifiedGroups().map { it.toMetadata() }
-
-    fun getRefreshTables(): List<RefreshTableRef> =
-        engine
-            .getAllQualifiedGroups()
-            .flatMap { it.groups }
-            .flatMap { it.aggregations.topk }
-            .map { it.table.refresh }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .map { fqn -> parseFqn(fqn).let { (database, table) -> RefreshTableRef(database, table) } }
+    fun getAggregations(type: AggregationType? = null): List<QualifiedAggregations> = engine.getListWithAggregations(type)
 
     fun getRefreshEntries(
-        refreshDatabase: String,
-        refreshTable: String,
         workerCount: Int,
         workerNumber: Int,
         refreshAtLte: Long,
@@ -58,8 +44,8 @@ class AggregationService(
             .fromIterable(TopKTableNames.refreshPartitionsFor(workerCount, workerNumber))
             .concatMap { partition ->
                 queryService.scan(
-                    database = refreshDatabase,
-                    table = refreshTable,
+                    database = TopKTableNames.REFRESH_TABLE_DATABASE,
+                    table = TopKTableNames.REFRESH_TABLE_NAME,
                     index = "refresh_at_asc",
                     start = partition,
                     direction = Direction.OUT,
@@ -81,11 +67,7 @@ class AggregationService(
             .flatMap { event -> processAggregations(event) }
             .collectList()
 
-    fun refresh(
-        refreshDatabase: String,
-        refreshTable: String,
-        entries: List<RefreshEntryPayload>,
-    ): Mono<List<AggregationResult>> =
+    fun refresh(entries: List<RefreshEntryPayload>): Mono<List<AggregationResult>> =
         Flux
             .fromIterable(entries)
             .flatMap { entry -> refreshOne(entry).map { result -> entry to result } }
@@ -94,7 +76,7 @@ class AggregationService(
                 if (refreshed.isEmpty()) {
                     Mono.just(emptyList())
                 } else {
-                    deleteRefreshedEntries(refreshDatabase, refreshTable, refreshed.map { it.first })
+                    deleteRefreshedEntries(refreshed.map { it.first })
                         .thenReturn(refreshed.map { it.second })
                 }
             }
@@ -110,14 +92,10 @@ class AggregationService(
         return aggregateTopk(target.event, target.direction, target.topk, writeRefreshOnSuccess = false)
     }
 
-    private fun deleteRefreshedEntries(
-        refreshDatabase: String,
-        refreshTable: String,
-        entries: List<RefreshEntryPayload>,
-    ): Mono<List<MutationResult>> =
+    private fun deleteRefreshedEntries(entries: List<RefreshEntryPayload>): Mono<List<MutationResult>> =
         mutationService.mutate(
-            database = refreshDatabase,
-            alias = refreshTable,
+            database = TopKTableNames.REFRESH_TABLE_DATABASE,
+            alias = TopKTableNames.REFRESH_TABLE_NAME,
             unresolvedEvents =
                 entries.map { entry ->
                     MutationItem(
@@ -151,13 +129,6 @@ class AggregationService(
             topk = topk,
         )
     }
-
-    private fun QualifiedGroups.toMetadata(): AggregationMetadata =
-        AggregationMetadata(
-            database = database,
-            table = table,
-            aggregations = groups.map { it.aggregations },
-        )
 
     private fun ModelSchema.groupsOrNull(): List<Group>? =
         when (this) {
@@ -319,7 +290,6 @@ class AggregationService(
         segment: String?,
         rankedValue: String,
     ): Mono<List<MutationResult>> {
-        val (refreshDatabase, refreshTable) = parseFqn(topk.table.refresh)
         val refreshAt = edgeVersionMillis(event.group, event.edge.version) + topk.refreshAfterMillis
         val partition =
             TopKTableNames.refreshPartition(
@@ -354,8 +324,8 @@ class AggregationService(
             )
 
         return mutationService.mutate(
-            database = refreshDatabase,
-            alias = refreshTable,
+            database = TopKTableNames.REFRESH_TABLE_DATABASE,
+            alias = TopKTableNames.REFRESH_TABLE_NAME,
             unresolvedEvents =
                 listOf(
                     MutationItem(

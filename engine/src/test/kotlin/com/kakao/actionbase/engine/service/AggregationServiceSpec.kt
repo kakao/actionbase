@@ -10,7 +10,9 @@ import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
 import com.kakao.actionbase.core.edge.payload.RefreshAggregationPayload
 import com.kakao.actionbase.core.edge.payload.RefreshEntryPayload
+import com.kakao.actionbase.core.metadata.QualifiedAggregations
 import com.kakao.actionbase.core.metadata.common.Aggregations
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
@@ -23,12 +25,9 @@ import com.kakao.actionbase.core.metadata.common.TopKTableNames
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.core.metadata.common.TopkTable
-import com.kakao.actionbase.core.metadata.payload.AggregationType
-import com.kakao.actionbase.core.metadata.payload.RefreshTableRef
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
-import com.kakao.actionbase.engine.QualifiedGroups
 import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.v2.engine.util.objectMapper
 
@@ -55,61 +54,30 @@ class AggregationServiceSpec :
 
             // --- getAggregations ---
 
-            "getAggregations returns only tables that define topk" {
-                every { engine.getAllQualifiedGroups() } returns
-                    listOf(
-                        edgeSummary(database = "db", table = "with_topk", topks = listOf(topkConfig("t1"))),
-                        edgeSummary(database = "db", table = "no_topk", topks = emptyList()),
-                        vertexSummary(database = "db", table = "vertex"),
-                    )
+            "getAggregations forwards results from the engine" {
+                val entry = QualifiedAggregations(type = AggregationType.TOPK, database = "db", table = "with_topk")
+                every { engine.getListWithAggregations(null) } returns listOf(entry)
 
-                val result = service.getAggregations()
-
-                val topks = result.flatMap { md -> md.aggregations.flatMap { it.topk } }
-                topks shouldContainExactlyInAnyOrder listOf(topkConfig("t1"))
+                service.getAggregations() shouldContainExactlyInAnyOrder listOf(entry)
             }
 
-            "getAggregations returns empty topk when no table defines any aggregation" {
-                every { engine.getAllQualifiedGroups() } returns
-                    listOf(
-                        edgeSummary(database = "db", table = "no_topk", topks = emptyList()),
-                        vertexSummary(database = "db", table = "vertex"),
-                    )
+            "getAggregations returns empty when the engine has nothing to report" {
+                every { engine.getListWithAggregations(null) } returns emptyList()
 
-                val result = service.getAggregations()
-
-                result.flatMap { md -> md.aggregations.flatMap { it.topk } }.shouldBeEmpty()
+                service.getAggregations().shouldBeEmpty()
             }
 
-            // --- getRefreshTables ---
+            "getAggregations forwards the requested type filter to the engine" {
+                val entry = QualifiedAggregations(type = AggregationType.TOPK, database = "db", table = "with_topk")
+                every { engine.getListWithAggregations(AggregationType.TOPK) } returns listOf(entry)
 
-            "getRefreshTables returns distinct refresh tables across all topk declarations" {
-                every { engine.getAllQualifiedGroups() } returns
-                    listOf(
-                        edgeSummary(
-                            database = "db",
-                            table = "t1",
-                            topks =
-                                listOf(
-                                    topkConfig("a", table = TopkTable(score = "db.a__score", refresh = "topk.refresh")),
-                                    topkConfig("b", table = TopkTable(score = "db.b__score", refresh = "topk.refresh")),
-                                ),
-                        ),
-                        edgeSummary(
-                            database = "db",
-                            table = "t2",
-                            topks = listOf(topkConfig("c", table = TopkTable(score = "db.c__score", refresh = ""))),
-                        ),
-                        vertexSummary(database = "db", table = "vertex"),
-                    )
-
-                service.getRefreshTables() shouldBe listOf(RefreshTableRef(database = "topk", table = "refresh"))
+                service.getAggregations(AggregationType.TOPK) shouldContainExactlyInAnyOrder listOf(entry)
             }
 
             // --- aggregate ---
 
             "aggregate returns SUCCESS when mutate succeeds" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -136,7 +104,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate returns ERROR when mutate reports ERROR status" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -164,7 +132,7 @@ class AggregationServiceSpec :
 
             "aggregate stores a GLOBAL topk segment in the source key and keeps only score as a property" {
                 val topk =
-                    topkConfig(name = "top_seg", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                    topkConfig(name = "top_seg", table = TopkTable(score = "db.score_tbl"))
                         .copy(scope = TopkScope.GLOBAL, ranges = "gender:eq:{gender}")
                 val group =
                     groupWithTopks(
@@ -198,7 +166,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate for OUT direction uses source as entity and keeps target as ranked value" {
-                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_out",
@@ -232,7 +200,7 @@ class AggregationServiceSpec :
                 // direction only picks which physical Group row the AGG query scores (here,
                 // directedSource=target under IN); it no longer swaps entity/rankedValue — those
                 // come from rankTarget alone (default TARGET), same as the OUT case.
-                val topk = topkConfig(name = "top_purchased_by", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                val topk = topkConfig(name = "top_purchased_by", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_in",
@@ -268,7 +236,7 @@ class AggregationServiceSpec :
                 // same item. A GLOBAL topk declared OUT would score per-user rows instead, which
                 // isn't what "global popularity" means for this table's source(user)/target(item).
                 val topk =
-                    topkConfig(name = "top_global", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                    topkConfig(name = "top_global", table = TopkTable(score = "db.score_tbl"))
                         .copy(scope = TopkScope.GLOBAL)
                 val group =
                     groupWithTopks(
@@ -311,7 +279,7 @@ class AggregationServiceSpec :
 
             "aggregate for rankTarget SOURCE ranks the source endpoint and scopes by target" {
                 val topk =
-                    topkConfig(name = "top_by_target", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                    topkConfig(name = "top_by_target", table = TopkTable(score = "db.score_tbl"))
                         .copy(rankTarget = RankTarget.SOURCE)
                 val group =
                     groupWithTopks(
@@ -344,7 +312,7 @@ class AggregationServiceSpec :
                 // rankTarget (default TARGET) fixes entity=user1/rankedValue=item1 regardless of
                 // direction, so both fan-out mutations rank the same item1 — only the score key's
                 // embedded direction (and whichever physical Group row backs each score) differs.
-                val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_both",
@@ -377,7 +345,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate maps thrown errors into ERROR status with the error message" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -402,7 +370,7 @@ class AggregationServiceSpec :
             // --- aggregate (refresh row bookkeeping) ---
 
             "aggregate does not write a refresh entry when the topk has no refresh configured" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
@@ -418,12 +386,12 @@ class AggregationServiceSpec :
                     .assertNext { results -> results shouldHaveSize 1 }
                     .verifyComplete()
 
-                verify(exactly = 0) { mutationService.mutate("db", "refresh_tbl", any(), any(), any(), any(), any()) }
+                verify(exactly = 0) { mutationService.mutate("topk", "refresh", any(), any(), any(), any(), any()) }
             }
 
             "aggregate writes one event-scoped refresh entry keyed by refreshAt when the topk configures refresh" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
                         .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -437,7 +405,7 @@ class AggregationServiceSpec :
 
                 val refreshMutations = slot<List<MutationItem>>()
                 every {
-                    mutationService.mutate("db", "refresh_tbl", capture(refreshMutations), any(), any(), any(), any())
+                    mutationService.mutate("topk", "refresh", capture(refreshMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 val eventItem = item("db", "src", source = "user1", target = "item1", version = 1_000L)
@@ -454,7 +422,7 @@ class AggregationServiceSpec :
 
             "aggregate stores refreshAt as epoch millis even when edge versions are nanos" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
                         .copy(refreshAfterMillis = 60_000L)
                 val group =
                     groupWithTopks(
@@ -486,7 +454,7 @@ class AggregationServiceSpec :
 
                 val refreshMutations = slot<List<MutationItem>>()
                 every {
-                    mutationService.mutate("db", "refresh_tbl", capture(refreshMutations), any(), any(), any(), any())
+                    mutationService.mutate("topk", "refresh", capture(refreshMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 val eventItem = item("db", "src", source = "user1", target = "item1", version = 1_000_000_000L)
@@ -503,7 +471,7 @@ class AggregationServiceSpec :
 
             "aggregate writing two events for the same entity produces two independent refresh entries" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "db.refresh_tbl"))
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
                         .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -517,7 +485,7 @@ class AggregationServiceSpec :
 
                 val refreshMutations = mutableListOf<List<MutationItem>>()
                 every {
-                    mutationService.mutate("db", "refresh_tbl", capture(refreshMutations), any(), any(), any(), any())
+                    mutationService.mutate("topk", "refresh", capture(refreshMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 val firstEvent = item("db", "src", source = "user1", target = "item1", version = 1_000L)
@@ -597,8 +565,6 @@ class AggregationServiceSpec :
                 StepVerifier
                     .create(
                         service.getRefreshEntries(
-                            refreshDatabase = "topk",
-                            refreshTable = "refresh",
                             workerCount = 10,
                             workerNumber = 3,
                             refreshAtLte = 61_000L,
@@ -622,7 +588,7 @@ class AggregationServiceSpec :
 
             "refresh re-aggregates one entry from its stored payload and deletes exactly that entry" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
                         .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -647,7 +613,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.refresh(refreshDatabase = "topk", refreshTable = "refresh", entries = listOf(entry)))
+                    .create(service.refresh(entries = listOf(entry)))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
@@ -663,7 +629,7 @@ class AggregationServiceSpec :
 
             "refresh processes a batch of entries independently and deletes all of them in one bulk mutation" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
                         .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -695,7 +661,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "DELETED"), mutationResult(status = "DELETED")))
 
                 StepVerifier
-                    .create(service.refresh(refreshDatabase = "topk", refreshTable = "refresh", entries = entries))
+                    .create(service.refresh(entries = entries))
                     .assertNext { results -> results shouldHaveSize 2 }
                     .verifyComplete()
 
@@ -705,7 +671,7 @@ class AggregationServiceSpec :
 
             "refresh excludes an unresolved entry from delete" {
                 val topk =
-                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", refresh = "topk.refresh"))
+                    topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
                         .copy(refreshAfterMillis = 60_000L)
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -738,8 +704,6 @@ class AggregationServiceSpec :
                 StepVerifier
                     .create(
                         service.refresh(
-                            refreshDatabase = "topk",
-                            refreshTable = "refresh",
                             entries = listOf(unresolvedEntry, validEntry),
                         ),
                     ).assertNext { results -> results shouldHaveSize 1 }
@@ -755,7 +719,7 @@ class AggregationServiceSpec :
 
 private fun topkConfig(
     name: String,
-    table: TopkTable = TopkTable(score = "${name}__score", refresh = "${name}__refresh"),
+    table: TopkTable = TopkTable(score = "${name}__score"),
 ): Topk = Topk(topk = name, table = table)
 
 private fun groupWithTopks(
@@ -773,27 +737,6 @@ private fun groupWithTopks(
     )
 
 private fun stringField(): Field = Field(type = PrimitiveType.STRING, comment = "")
-
-private fun edgeSummary(
-    database: String,
-    table: String,
-    topks: List<Topk>,
-): QualifiedGroups =
-    QualifiedGroups(
-        database = database,
-        table = table,
-        groups = listOf(groupWithTopks("g", topks)),
-    )
-
-private fun vertexSummary(
-    database: String,
-    table: String,
-): QualifiedGroups =
-    QualifiedGroups(
-        database = database,
-        table = table,
-        groups = emptyList(),
-    )
 
 private fun stubBindingWith(
     engine: AggregationEngine,

@@ -4,9 +4,8 @@ import com.kakao.actionbase.core.edge.payload.AggregationItemRequest
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
 import com.kakao.actionbase.core.edge.payload.RefreshEntriesResponse
 import com.kakao.actionbase.core.edge.payload.RefreshRequest
-import com.kakao.actionbase.core.metadata.payload.AggregationType
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
-import com.kakao.actionbase.core.metadata.payload.RefreshTablesResponse
 import com.kakao.actionbase.engine.service.AggregationService
 
 import org.springframework.http.ResponseEntity
@@ -26,19 +25,13 @@ class MetadataAggController(
     fun getAggregations(
         @RequestParam(required = false) type: AggregationType?,
     ): ResponseEntity<AggregationsListResponse> {
-        val aggregations = aggregationService.getAggregations()
+        val aggregations = aggregationService.getAggregations(type)
 
-        return ResponseEntity.ok(AggregationsListResponse.of(type, metadata = aggregations))
+        return ResponseEntity.ok(AggregationsListResponse.of(aggregations))
     }
-
-    @GetMapping("/graph/v3/aggregations/refresh")
-    fun getRefreshTables(): ResponseEntity<RefreshTablesResponse> =
-        ResponseEntity.ok(RefreshTablesResponse(tables = aggregationService.getRefreshTables()))
 
     @GetMapping("/graph/v3/aggregations/refresh/entries")
     fun getRefreshEntries(
-        @RequestParam refreshDatabase: String,
-        @RequestParam refreshTable: String,
         @RequestParam workerCount: Int,
         @RequestParam workerNumber: Int,
         @RequestParam refreshAtLte: Long,
@@ -46,8 +39,6 @@ class MetadataAggController(
     ): Mono<ResponseEntity<RefreshEntriesResponse>> =
         aggregationService
             .getRefreshEntries(
-                refreshDatabase = refreshDatabase,
-                refreshTable = refreshTable,
                 workerCount = workerCount,
                 workerNumber = workerNumber,
                 refreshAtLte = refreshAtLte,
@@ -70,9 +61,6 @@ class MetadataAggController(
         @RequestBody refreshRequest: RefreshRequest,
     ): Mono<ResponseEntity<AggregationsItemResponse>> =
         aggregationService
-            .refresh(
-                refreshDatabase = refreshRequest.refreshDatabase,
-                refreshTable = refreshRequest.refreshTable,
-                entries = refreshRequest.entries,
-            ).map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
+            .refresh(entries = refreshRequest.entries)
+            .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 }
