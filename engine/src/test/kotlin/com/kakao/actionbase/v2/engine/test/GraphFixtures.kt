@@ -62,8 +62,6 @@ object GraphFixtures {
 
     const val serviceName = "test"
 
-    // Metastore-backed labels now reference the metastore URI directly instead
-    // of a named JDBC storage entity.
     const val jdbcStorage = EngineConstants.METASTORE_URI
 
     const val hbaseStorage = "mock_hbase"
@@ -260,9 +258,6 @@ object GraphFixtures {
             EntityName.fromOrigin(Metadata.sysServiceName),
         )
 
-    // LOCAL/JDBC system storages are no longer seeded as entities; they are
-    // resolved from scheme URIs (local://, jdbc://). No storage is seeded by
-    // default when there is no HBase datastore configured.
     val defaultStorages = emptyList<EntityName>()
 
     val defaultLabels =
@@ -281,7 +276,6 @@ object GraphFixtures {
         listOf(
             // "origin" -> "service"
             listOf(EntityName.withPhase(Metadata.origin, Metadata.sysServiceName), Metadata.serviceLabelEntity.id, null),
-            // LOCAL/JDBC system storages are no longer seeded (scheme URIs now).
             // (service -> label) edges for label label (includes label information)
             listOf(
                 EntityName.withPhase(Metadata.sysServiceName, Metadata.sysServiceLabelName),

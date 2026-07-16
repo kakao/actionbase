@@ -24,10 +24,6 @@ interface GraphDefaults {
     val lockTimeout: Long
     val datastore: DefaultHBaseCluster
 
-    // A label's storage is a datastore:// URI resolved directly by namespace:
-    // __sys__/metastore is the RDB-backed system metastore, everything else is
-    // the HBase datastore. Bare names are legacy references to metastore-stored
-    // Storage entities, kept until migration retires them.
     fun getStorage(uri: String): StorageEntity? =
         when {
             uri == EngineConstants.METASTORE_URI ->

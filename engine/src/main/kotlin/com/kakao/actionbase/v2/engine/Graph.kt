@@ -1011,9 +1011,6 @@ class Graph(
                     Metadata.onlineMetadataLabelV2Entity.copy(type = LabelType.NIL, storage = "")
                 }
 
-            // LOCAL/JDBC system storages are addressed by URI scheme (local://,
-            // jdbc://) and resolved in getStorage; only the config-driven HBase
-            // storage remains a named entity in the map.
             val storageEntities =
                 listOfNotNull(defaultHBaseStorageEntity).associateBy { it.name }
 
@@ -1036,9 +1033,6 @@ class Graph(
 
             val storageLabel =
                 Metadata.storageLabelEntity.materialize(defaults) {
-                    // LOCAL/JDBC system storages are no longer seeded — they are
-                    // scheme URIs resolved in getStorage. Only the config-driven
-                    // HBase storage is still written to the metastore.
                     defaultHBaseStorageEntity?.let {
                         mutate(it.toEdge(), EdgeOperation.INSERT).block()
                     }
