@@ -101,27 +101,12 @@ class LocalBackedJdbcHashLabel(
         }
     }
 
-    override fun count(
-        src: Any,
-        dir: Direction,
-    ): Mono<DataFrame> {
-        val local = localLabel.count(src, dir)
-        val global = globalLabel.count(src, dir)
-        return local.zipWith(global) { a, b ->
-            a + b
-        }
-    }
-
+    // Count only the local store: the global JdbcHashLabel does not support counting and would
+    // otherwise merge in a -1 sentinel row per src.
     override fun count(
         srcSet: Set<Any>,
         dir: Direction,
-    ): Mono<DataFrame> {
-        val local = localLabel.count(srcSet, dir)
-        val global = globalLabel.count(srcSet, dir)
-        return local.zipWith(global) { a, b ->
-            a + b
-        }
-    }
+    ): Mono<DataFrame> = localLabel.count(srcSet, dir)
 
     override fun findStaleLockAndClear(
         lockEdge: KeyValue<Any>,
