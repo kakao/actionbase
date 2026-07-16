@@ -56,7 +56,7 @@ data class Aggregations(
 }
 
 // `entity` names the field whose value the ranking is scoped to (the score key's entity block):
-// "_source"/"_target" for the raw edge endpoints (independent of the group's declared direction),
+// "source"/"target" for the raw edge endpoints (independent of the group's declared direction),
 // a property name, or the __global__ sentinel for a single ranking across all events.
 // `rankedField` names the field whose value is being ranked (the score row's target).
 data class Topk(

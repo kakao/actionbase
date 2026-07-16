@@ -10,9 +10,9 @@ object AggregationConstants {
     const val ALL_SEGMENT = "__all__"
 
     // Field references usable in Topk.entity/Topk.rankedField: the raw edge endpoints, or any
-    // property name.
-    const val SOURCE_FIELD = "_source"
-    const val TARGET_FIELD = "_target"
+    // property name. The endpoint refs win over a property that happens to share the name.
+    const val SOURCE_FIELD = "source"
+    const val TARGET_FIELD = "target"
 
     const val TOPK_REFRESH_PARTITIONS = 2310
 
