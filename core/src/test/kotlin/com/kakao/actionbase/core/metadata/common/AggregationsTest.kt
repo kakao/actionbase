@@ -1,8 +1,5 @@
 package com.kakao.actionbase.core.metadata.common
 
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_EXPIRE_TABLE
-
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -34,6 +31,6 @@ class AggregationsTest {
     }
 
     companion object {
-        private val topk = Topk(topk = "topk", table = TopkTable(score = "db.table__topk", expire = "${TOPK_DATABASE}.${TOPK_EXPIRE_TABLE}"))
+        private val topk = Topk(topk = "topk", table = TopkTable(score = "db.table__topk", expire = "topk.expire"))
     }
 }
