@@ -169,12 +169,12 @@ class AggregationService(
                             return@flatMap Mono.just(base.copy(status = scoreStatus))
                         }
 
-                        val expiresAt = version + topk.refreshAfterMillis
+                        val refreshAt = version + topk.refreshAfterMillis
 
                         mutationService
                             .mutate(
                                 database = AggregationConstants.TOPK_DATABASE,
-                                alias = AggregationConstants.TOPK_EXPIRE_TABLE,
+                                alias = AggregationConstants.TOPK_REFRESH_TABLE,
                                 unresolvedEvents =
                                     listOf(
                                         MutationItem(
@@ -182,11 +182,11 @@ class AggregationService(
                                             edge =
                                                 Edge(
                                                     version = System.currentTimeMillis(),
-                                                    source = AggregationConstants.expireSource(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget),
-                                                    target = AggregationConstants.expireTarget(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget, expiresAt = expiresAt),
+                                                    source = AggregationConstants.refreshSource(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget),
+                                                    target = AggregationConstants.refreshTarget(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget, refreshAt = refreshAt),
                                                     properties =
                                                         mapOf(
-                                                            "expiresAt" to expiresAt,
+                                                            "refreshAt" to refreshAt,
                                                             "table" to "$database.$table",
                                                             "topk" to topk.topk,
                                                             "directedSource" to directedSource,
@@ -198,9 +198,9 @@ class AggregationService(
                                                 ),
                                         ),
                                     ),
-                            ).map { expireResults ->
+                            ).map { refreshResults ->
                                 base.copy(
-                                    status = if (expireResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS",
+                                    status = if (refreshResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS",
                                 )
                             }
                     }

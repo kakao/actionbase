@@ -3,7 +3,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_EXPIRE_TABLE
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_REFRESH_TABLE
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
 import com.kakao.actionbase.server.test.E2ETestBase
@@ -89,13 +89,13 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .bodyValue(
                 """
                 {
-                  "table": "$TOPK_EXPIRE_TABLE",
+                  "table": "$TOPK_REFRESH_TABLE",
                   "schema": {
                     "type": "EDGE",
                     "source": {"type": "long", "comment": "partition = hash(table,topk,entity,target) % 2310"},
-                    "target": {"type": "string", "comment": "table|topk|entity|target|expires_at"},
+                    "target": {"type": "string", "comment": "table|topk|entity|target|refresh_at"},
                     "properties": [
-                      {"name": "expiresAt", "type": "long", "comment": "expire time ms", "nullable": false},
+                      {"name": "refreshAt", "type": "long", "comment": "next refresh time ms", "nullable": false},
                       {"name": "table", "type": "string", "comment": "source table", "nullable": false},
                       {"name": "topk", "type": "string", "comment": "topk name", "nullable": false},
                       {"name": "directedSource", "type": "string", "comment": "directed source (already swapped)", "nullable": false},
@@ -106,14 +106,14 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                     ],
                     "direction": "OUT",
                     "indexes": [
-                      {"index": "expires_at_asc", "fields": [{"field": "expiresAt", "order": "ASC"}]}
+                      {"index": "refresh_at_asc", "fields": [{"field": "refreshAt", "order": "ASC"}]}
                     ],
                     "groups": [],
                     "caches": []
                   },
-                  "storage": "datastore://test_namespace/$TOPK_EXPIRE_TABLE",
+                  "storage": "datastore://test_namespace/$TOPK_REFRESH_TABLE",
                   "mode": "SYNC",
-                  "comment": "TopK expire tracker"
+                  "comment": "TopK refresh tracker"
                 }
                 """.trimIndent(),
             ).exchange()

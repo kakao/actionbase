@@ -365,14 +365,14 @@ class AggregationServiceSpec :
                 edge.target shouldBe "item1|fruit"
             }
 
-            // --- aggregate (expire write) ---
+            // --- aggregate (refresh write) ---
 
-            "aggregate writes an expire row after the score row when expireAfterMillis is positive" {
-                val expireAfter = 60_000L
+            "aggregate writes a refresh row after the score row when refreshAfterMillis is positive" {
+                val refreshAfter = 60_000L
                 val topk =
                     Topk(
                         topk = "top_purchased",
-                        refreshAfterMillis = expireAfter,
+                        refreshAfterMillis = refreshAfter,
                         table = TopkTable(score = "commerce.score_tbl"),
                     )
                 val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
@@ -387,12 +387,12 @@ class AggregationServiceSpec :
                     mutationService.mutate("commerce", "score_tbl", capture(scoreMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
-                val expireMutations = slot<List<MutationItem>>()
+                val refreshMutations = slot<List<MutationItem>>()
                 every {
                     mutationService.mutate(
                         AggregationConstants.TOPK_DATABASE,
-                        AggregationConstants.TOPK_EXPIRE_TABLE,
-                        capture(expireMutations),
+                        AggregationConstants.TOPK_REFRESH_TABLE,
+                        capture(refreshMutations),
                         any(),
                         any(),
                         any(),
@@ -416,34 +416,34 @@ class AggregationServiceSpec :
                     .single()
                     .edge.target shouldBe "item1"
 
-                val expireEdge = expireMutations.captured.single().edge
-                expireEdge.source shouldBe
-                    AggregationConstants.expireSource(
+                val refreshEdge = refreshMutations.captured.single().edge
+                refreshEdge.source shouldBe
+                    AggregationConstants.refreshSource(
                         table = "commerce.purchases",
                         topk = "top_purchased",
                         entity = "user1",
                         target = "item1",
                     )
-                val expiresAt = expireEdge.properties["expiresAt"] as Long
-                expiresAt shouldBeGreaterThanOrEqual (before + expireAfter)
-                expiresAt shouldBeLessThanOrEqual (after + expireAfter)
-                expireEdge.target shouldBe
-                    AggregationConstants.expireTarget(
+                val refreshAt = refreshEdge.properties["refreshAt"] as Long
+                refreshAt shouldBeGreaterThanOrEqual (before + refreshAfter)
+                refreshAt shouldBeLessThanOrEqual (after + refreshAfter)
+                refreshEdge.target shouldBe
+                    AggregationConstants.refreshTarget(
                         table = "commerce.purchases",
                         topk = "top_purchased",
                         entity = "user1",
                         target = "item1",
-                        expiresAt = expiresAt,
+                        refreshAt = refreshAt,
                     )
-                expireEdge.properties["table"] shouldBe "commerce.purchases"
-                expireEdge.properties["topk"] shouldBe "top_purchased"
-                expireEdge.properties["directedSource"] shouldBe "user1"
-                expireEdge.properties["directedTarget"] shouldBe "item1"
-                expireEdge.properties["direction"] shouldBe "OUT"
-                expireEdge.properties["processed"] shouldBe false
+                refreshEdge.properties["table"] shouldBe "commerce.purchases"
+                refreshEdge.properties["topk"] shouldBe "top_purchased"
+                refreshEdge.properties["directedSource"] shouldBe "user1"
+                refreshEdge.properties["directedTarget"] shouldBe "item1"
+                refreshEdge.properties["direction"] shouldBe "OUT"
+                refreshEdge.properties["processed"] shouldBe false
             }
 
-            "aggregate skips the expire write when expireAfterMillis is not positive" {
+            "aggregate skips the refresh write when refreshAfterMillis is not positive" {
                 clearMocks(mutationService)
                 val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
@@ -465,7 +465,7 @@ class AggregationServiceSpec :
                 verify(exactly = 0) {
                     mutationService.mutate(
                         AggregationConstants.TOPK_DATABASE,
-                        AggregationConstants.TOPK_EXPIRE_TABLE,
+                        AggregationConstants.TOPK_REFRESH_TABLE,
                         any(),
                         any(),
                         any(),
@@ -475,7 +475,7 @@ class AggregationServiceSpec :
                 }
             }
 
-            "aggregate skips the expire write when the score mutate reports ERROR" {
+            "aggregate skips the refresh write when the score mutate reports ERROR" {
                 clearMocks(mutationService)
                 val topk =
                     Topk(
@@ -502,7 +502,7 @@ class AggregationServiceSpec :
                 verify(exactly = 0) {
                     mutationService.mutate(
                         AggregationConstants.TOPK_DATABASE,
-                        AggregationConstants.TOPK_EXPIRE_TABLE,
+                        AggregationConstants.TOPK_REFRESH_TABLE,
                         any(),
                         any(),
                         any(),
@@ -512,7 +512,7 @@ class AggregationServiceSpec :
                 }
             }
 
-            "aggregate reports ERROR when the expire mutate reports ERROR" {
+            "aggregate reports ERROR when the refresh mutate reports ERROR" {
                 val topk =
                     Topk(
                         topk = "t1",
@@ -533,7 +533,7 @@ class AggregationServiceSpec :
                 every {
                     mutationService.mutate(
                         AggregationConstants.TOPK_DATABASE,
-                        AggregationConstants.TOPK_EXPIRE_TABLE,
+                        AggregationConstants.TOPK_REFRESH_TABLE,
                         any(),
                         any(),
                         any(),

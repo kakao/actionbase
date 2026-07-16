@@ -4,9 +4,9 @@ import com.kakao.actionbase.core.codec.XXHash32Wrapper
 
 object AggregationConstants {
     const val TOPK_DATABASE = "topk"
-    const val TOPK_EXPIRE_TABLE = "expire"
+    const val TOPK_REFRESH_TABLE = "refresh"
 
-    const val TOPK_EXPIRE_PARTITIONS = 2310
+    const val TOPK_REFRESH_PARTITIONS = 2310
 
     // score table src key: entity|topk_name — supports multiple topk in one table
     fun scoreSource(
@@ -14,7 +14,7 @@ object AggregationConstants {
         topk: String,
     ): String = "$entity|$topk"
 
-    fun expireSource(
+    fun refreshSource(
         table: String,
         topk: String,
         entity: String,
@@ -22,14 +22,14 @@ object AggregationConstants {
     ): String =
         XXHash32Wrapper.default
             .stringHash("$table|$topk|$entity|$target")
-            .mod(TOPK_EXPIRE_PARTITIONS)
+            .mod(TOPK_REFRESH_PARTITIONS)
             .toString()
 
-    fun expireTarget(
+    fun refreshTarget(
         table: String,
         topk: String,
         entity: String,
         target: String,
-        expiresAt: Long,
-    ): String = "$table|$topk|$entity|$target|$expiresAt"
+        refreshAt: Long,
+    ): String = "$table|$topk|$entity|$target|$refreshAt"
 }
