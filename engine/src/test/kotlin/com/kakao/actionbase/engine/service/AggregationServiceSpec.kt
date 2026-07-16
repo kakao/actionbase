@@ -192,7 +192,7 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "db.src:top_seg:OUT:${TopKTableNames.GLOBAL_ENTITY}:gender%3Aeq%3AF"
+                edge.source shouldBe "db.src:top_seg:OUT:${TopKTableNames.GLOBAL_ENTITY}:gender:eq:F"
                 edge.properties["score"] shouldBe 3.0
                 edge.properties.containsKey("segment") shouldBe false
             }

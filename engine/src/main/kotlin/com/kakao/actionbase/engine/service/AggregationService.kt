@@ -29,9 +29,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-
 class AggregationService(
     private val queryService: QueryService,
     private val mutationService: MutationService,
@@ -134,7 +131,11 @@ class AggregationService(
         val tb = engine.getTableBinding(database = database, alias = table)
         if (tb.schema !is ModelSchema.Edge && tb.schema !is ModelSchema.MultiEdge) return null
 
-        val group = tb.schema.groupsOrNull().orEmpty().firstOrNull { it.group == this.group } ?: return null
+        val group =
+            tb.schema
+                .groupsOrNull()
+                .orEmpty()
+                .firstOrNull { it.group == this.group } ?: return null
         val topk = group.aggregations.topk.firstOrNull { it.topk == this.topk } ?: return null
 
         return ResolvedTopkTarget(
@@ -203,7 +204,12 @@ class AggregationService(
         writeRefreshOnSuccess: Boolean,
     ): Flux<AggregationResult> {
         val directionTopkPairs =
-            event.group.aggregations.topk.flatMap { topk -> event.group.directionType.directions().map { it to topk } }
+            event.group.aggregations.topk
+                .flatMap { topk ->
+                    event.group.directionType
+                        .directions()
+                        .map { it to topk }
+                }
 
         return Flux
             .fromIterable(directionTopkPairs)
@@ -249,7 +255,7 @@ class AggregationService(
             topk.ranges.takeIf { it.isNotEmpty() }?.let {
                 interpolate(template = it, source = source, target = target, properties = event.edge.properties)
             }
-        val segment = if (topk.scope == TopkScope.GLOBAL) encodeSegment(ranges) else null
+        val segment = if (topk.scope == TopkScope.GLOBAL) ranges else null
 
         return queryService
             .agg(
@@ -260,7 +266,11 @@ class AggregationService(
                 direction = direction,
                 ranges = ranges,
             ).flatMap { response ->
-                val score = response.groups.firstOrNull()?.value?.toDouble() ?: 0.0
+                val score =
+                    response.groups
+                        .firstOrNull()
+                        ?.value
+                        ?.toDouble() ?: 0.0
                 val scoreSource =
                     TopKTableNames.scoreSourceKey(
                         database = database,
@@ -381,8 +391,6 @@ class AggregationService(
                 }
             value?.let { Regex.escapeReplacement(it) } ?: Regex.escapeReplacement(match.value)
         }
-
-    private fun encodeSegment(ranges: String?): String? = ranges?.let { URLEncoder.encode(it, StandardCharsets.UTF_8) }
 
     private fun edgeVersionMillis(
         group: Group,
