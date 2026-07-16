@@ -440,7 +440,6 @@ class AggregationServiceSpec :
                 refreshEdge.properties["directedSource"] shouldBe "user1"
                 refreshEdge.properties["directedTarget"] shouldBe "item1"
                 refreshEdge.properties["direction"] shouldBe "OUT"
-                refreshEdge.properties["processed"] shouldBe false
             }
 
             "aggregate skips the refresh write when refreshAfterMillis is not positive" {

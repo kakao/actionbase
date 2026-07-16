@@ -101,8 +101,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                       {"name": "directedSource", "type": "string", "comment": "directed source (already swapped)", "nullable": false},
                       {"name": "directedTarget", "type": "string", "comment": "directed target = score row segment", "nullable": false},
                       {"name": "direction", "type": "string", "comment": "direction", "nullable": false},
-                      {"name": "ranges", "type": "string", "comment": "interpolated ranges", "nullable": false},
-                      {"name": "processed", "type": "boolean", "comment": "processed", "nullable": false}
+                      {"name": "ranges", "type": "string", "comment": "interpolated ranges", "nullable": false}
                     ],
                     "direction": "OUT",
                     "indexes": [

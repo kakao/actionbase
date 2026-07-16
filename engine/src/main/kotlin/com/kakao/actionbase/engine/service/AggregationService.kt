@@ -193,7 +193,6 @@ class AggregationService(
                                                             "directedTarget" to directedTarget,
                                                             "direction" to direction.name,
                                                             "ranges" to ranges,
-                                                            "processed" to false,
                                                         ),
                                                 ),
                                         ),
