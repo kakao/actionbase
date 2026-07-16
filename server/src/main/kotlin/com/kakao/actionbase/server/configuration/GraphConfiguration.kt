@@ -83,6 +83,7 @@ class GraphConfiguration {
                 properties.metadataFetchLimit?.let { withMetadataFetchLimit(it) }
                 properties.systemMutationMode?.let { withSystemMutationMode(it) }
                 withReadOnly(serverProperties.readOnly)
+                withUseJdbcMetastore(properties.useJdbcMetastore)
             }
         return builder.build()
     }

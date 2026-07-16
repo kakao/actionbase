@@ -71,7 +71,6 @@ import com.kakao.actionbase.v2.engine.wal.Wal
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 import com.kakao.actionbase.v2.engine.wal.WalLog
 
-import java.lang.AutoCloseable
 import java.time.Duration
 
 import org.jetbrains.exposed.sql.Database
@@ -86,6 +85,7 @@ import reactor.core.Disposable
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
+import reactor.util.Loggers
 
 @Suppress("LargeClass")
 class Graph(
@@ -94,6 +94,7 @@ class Graph(
     override val localStore: ByteArrayStore,
     override val metastore: Database,
     override val metadataTable: MetadataTable,
+    override val consolidatedStore: ByteArrayStore,
     override val edgeEncoderFactory: EdgeEncoderFactory,
     override val edgeRecordMapper: EdgeRecordMapper,
     override val datastore: DefaultHBaseCluster,
@@ -122,6 +123,8 @@ class Graph(
     private val artifactInfo: String = config.artifactInfo ?: "no artifact info"
 
     override val lockTimeout: Long = config.lockTimeout
+
+    override val useJdbcMetastore: Boolean = config.useJdbcMetastore
 
     private val warmUpConfig = config.warmUp
 
@@ -946,7 +949,7 @@ class Graph(
     companion object {
         internal val log = getLogger()
 
-        val reactorLogger = reactor.util.Loggers.getLogger(Graph::class.java)
+        val reactorLogger = Loggers.getLogger(Graph::class.java)
 
         @Suppress("LongMethod")
         fun create(
@@ -1019,6 +1022,8 @@ class Graph(
                     ByteArrayStore(),
                     metastore,
                     metadataTable,
+                    ByteArrayStore(),
+                    config.useJdbcMetastore,
                     edgeEncoderFactory,
                     edgeRecordMapper,
                     config.lockTimeout,
@@ -1077,6 +1082,7 @@ class Graph(
                 defaults.localStore,
                 defaults.metastore,
                 defaults.metadataTable,
+                defaults.consolidatedStore,
                 defaults.edgeEncoderFactory,
                 defaults.edgeRecordMapper,
                 defaults.datastore,
