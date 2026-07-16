@@ -29,7 +29,7 @@ class AliasController(
         @RequestParam(required = false, defaultValue = "ACTIVE") status: MetadataStatus,
     ): Mono<ResponseEntity<List<AliasDescriptor>>> =
         v3CompatService
-            .getAliases(V3NameValidator.validateDatabase(database), status)
+            .getAliases(database, status)
             .map { ResponseEntity.ok(it) }
 
     @GetMapping("/graph/v3/databases/{database}/aliases/{alias}")
@@ -38,7 +38,7 @@ class AliasController(
         @PathVariable alias: String,
     ): Mono<ResponseEntity<AliasDescriptor>> =
         v3CompatService
-            .getAlias(V3NameValidator.validateDatabase(database), V3NameValidator.validateAlias(alias))
+            .getAlias(database, alias)
             .map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
 
@@ -62,8 +62,8 @@ class AliasController(
     ): Mono<ResponseEntity<AliasDescriptor>> =
         v3CompatService
             .updateAlias(
-                V3NameValidator.validateDatabase(database),
-                V3NameValidator.validateAlias(alias),
+                database,
+                alias,
                 request,
             ).map { ResponseEntity.ok(it) }
             .defaultIfEmpty(ResponseEntity.notFound().build())
@@ -74,6 +74,6 @@ class AliasController(
         @PathVariable alias: String,
     ): Mono<ResponseEntity<Void>> =
         v3CompatService
-            .deleteAlias(V3NameValidator.validateDatabase(database), V3NameValidator.validateAlias(alias))
+            .deleteAlias(database, alias)
             .then(Mono.just(ResponseEntity.noContent().build<Void>()))
 }

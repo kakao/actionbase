@@ -4,23 +4,18 @@ import com.kakao.actionbase.core.metadata.QualifiedAggregations
 import com.kakao.actionbase.core.metadata.common.AggregationType
 
 data class AggregationsListResponse(
-    val topk: List<Item>,
+    val items: List<Item>,
 ) {
     data class Item(
+        val type: AggregationType,
         val database: String,
         val table: String,
-        val expire: Boolean = false,
     )
 
     companion object {
         fun of(aggregations: List<QualifiedAggregations>): AggregationsListResponse =
             AggregationsListResponse(
-                topk =
-                    aggregations
-                        .filter { it.type == AggregationType.TOPK }
-                        .map { it.toItem() },
+                items = aggregations.map { Item(type = it.type, database = it.database, table = it.table) },
             )
-
-        private fun QualifiedAggregations.toItem(): Item = Item(database = database, table = table, expire = expire)
     }
 }

@@ -8,7 +8,6 @@ import com.kakao.actionbase.v2.engine.sql.RowWithSchema
 import com.kakao.actionbase.v2.engine.storage.DatastoreStorage
 import com.kakao.actionbase.v2.engine.storage.Storage
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
-import com.kakao.actionbase.v2.engine.storage.jdbc.JdbcStorage
 import com.kakao.actionbase.v2.engine.storage.local.LocalStorage
 import com.kakao.actionbase.v2.engine.storage.nil.NilStorage
 import com.kakao.actionbase.v2.engine.util.getLogger
@@ -34,9 +33,6 @@ data class StorageEntity(
         when (type) {
             StorageType.LOCAL -> {
                 LocalStorage(this)
-            }
-            StorageType.JDBC -> {
-                JdbcStorage(this)
             }
             StorageType.HBASE -> {
                 HBaseStorage(this)

@@ -44,7 +44,7 @@ class V2BackedEngine(
         return label.tableBinding
     }
 
-    override fun getListWithAggregations(type: AggregationType?): List<QualifiedAggregations> = graph.listWithAggregations(type) + graph.listWithSystemAggregations(type)
+    override fun getListWithAggregations(type: AggregationType?): List<QualifiedAggregations> = graph.listWithAggregations(type)
 
     private val messaging = V2BackedMessageBinding(wal = graph.wal, cdc = graph.cdc)
 

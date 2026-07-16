@@ -33,12 +33,10 @@ data class Aggregations(
     val topk: List<Topk> = emptyList(),
 ) {
     @JsonIgnore
-    fun isEmpty(): Boolean = supportedTypes.isEmpty()
+    fun isEmpty(): Boolean = AggregationType.entries.none { it.has(this) }
 
-    @get:JsonIgnore
-    val supportedTypes: Set<AggregationType> by lazy {
-        setOfNotNull(AggregationType.TOPK.takeIf { topk.isNotEmpty() })
-    }
+    @JsonIgnore
+    fun supports(type: AggregationType): Boolean = type.has(this)
 
     companion object {
         val EMPTY = Aggregations()
@@ -48,15 +46,18 @@ data class Aggregations(
 data class Topk(
     val topk: String,
     val ranges: String = "",
-    val expireAfterMillis: Long = -1,
+    val refreshAfterMillis: Long = -1,
     val table: TopkTable,
 )
 
 data class TopkTable(
     val score: String,
-    val expire: String,
 )
 
 enum class AggregationType {
-    TOPK,
+    TOPK {
+        override fun has(aggregations: Aggregations): Boolean = aggregations.topk.isNotEmpty()
+    }, ;
+
+    abstract fun has(aggregations: Aggregations): Boolean
 }

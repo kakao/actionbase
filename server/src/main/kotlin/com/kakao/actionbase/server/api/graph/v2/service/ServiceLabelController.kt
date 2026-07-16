@@ -1,12 +1,12 @@
 package com.kakao.actionbase.server.api.graph.v2.service
 
+import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.service.ddl.DdlPage
 import com.kakao.actionbase.v2.engine.service.ddl.DdlStatus
-import com.kakao.actionbase.v2.engine.service.ddl.LabelCopyRequest
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.service.ddl.LabelUpdateRequest
 import com.kakao.actionbase.v2.engine.util.getLogger
@@ -48,7 +48,7 @@ class ServiceLabelController(
         @PathVariable label: String,
         @Valid @RequestBody request: LabelCreateRequest,
     ): Mono<ResponseEntity<DdlStatus<LabelEntity>>> {
-        val name = EntityName(service, label)
+        val name = EntityName(NameValidator.validate(service, "service"), NameValidator.validate(label, "label"))
         return graph.labelDdl.create(name, request).mapToResponseEntity()
     }
 
@@ -61,16 +61,5 @@ class ServiceLabelController(
         getLogger().warn("update request: $request")
         val name = EntityName(service, label)
         return graph.labelDdl.update(name, request).mapToResponseEntity()
-    }
-
-    @PostMapping("/graph/v2/service/{service}/label/{label}/copy")
-    fun copy(
-        @PathVariable service: String,
-        @PathVariable label: String,
-        @Valid @RequestBody request: LabelCopyRequest,
-    ): Mono<ResponseEntity<DdlStatus<LabelEntity>>> {
-        val from = EntityName(service, label)
-        val to = EntityName(service, request.target)
-        return graph.labelDdl.copy(from, to, mapOf("storage" to request.storage)).mapToResponseEntity()
     }
 }

@@ -6,5 +6,4 @@ data class QualifiedAggregations(
     val type: AggregationType,
     val database: String,
     val table: String,
-    val expire: Boolean = false,
 )

@@ -71,7 +71,7 @@ class AggregationServiceSpec :
             // --- aggregate ---
 
             "aggregate returns SUCCESS when mutate succeeds" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -98,7 +98,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate returns ERROR when mutate reports ERROR status" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -125,7 +125,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate for OUT direction uses source as entity and keeps target as ranked value" {
-                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_out",
@@ -156,7 +156,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate for IN direction swaps source and target so the ranking is per target entity" {
-                val topk = topkConfig(name = "top_purchased_by", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "top_purchased_by", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_in",
@@ -187,7 +187,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate for BOTH direction fans out into one OUT and one IN mutation" {
-                val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_both",
@@ -220,7 +220,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate uses non-bucket group fields for the score row target, skipping bucket fields" {
-                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_bucketed",
@@ -263,7 +263,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate builds the score row target from a properties-backed field when the group has no endpoint field" {
-                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_props_only",
@@ -314,7 +314,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate joins multiple non-bucket group fields for the score row target" {
-                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_multi",
@@ -368,7 +368,7 @@ class AggregationServiceSpec :
             // --- aggregate (expire CDC) ---
 
             "aggregate resolves original table from properties[table] when the item comes from the expire CDC" {
-                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "commerce.score_tbl", expire = "commerce.exp_tbl"))
+                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "commerce.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g_out",
@@ -424,7 +424,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate rejects an expire CDC item missing the `directedSource` property" {
-                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "commerce.score_tbl", expire = "commerce.exp_tbl"))
+                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "commerce.score_tbl"))
                 val group = groupWithTopks(name = "g", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
 
@@ -452,8 +452,8 @@ class AggregationServiceSpec :
                 val topk =
                     Topk(
                         topk = "top_purchased",
-                        expireAfterMillis = expireAfter,
-                        table = TopkTable(score = "commerce.score_tbl", expire = "commerce.exp_tbl"),
+                        refreshAfterMillis = expireAfter,
+                        table = TopkTable(score = "commerce.score_tbl"),
                     )
                 val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
@@ -525,7 +525,7 @@ class AggregationServiceSpec :
 
             "aggregate skips the expire write when expireAfterMillis is not positive" {
                 clearMocks(mutationService)
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
@@ -560,8 +560,8 @@ class AggregationServiceSpec :
                 val topk =
                     Topk(
                         topk = "t1",
-                        expireAfterMillis = 60_000L,
-                        table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"),
+                        refreshAfterMillis = 60_000L,
+                        table = TopkTable(score = "db.score_tbl"),
                     )
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -596,8 +596,8 @@ class AggregationServiceSpec :
                 val topk =
                     Topk(
                         topk = "t1",
-                        expireAfterMillis = 60_000L,
-                        table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"),
+                        refreshAfterMillis = 60_000L,
+                        table = TopkTable(score = "db.score_tbl"),
                     )
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -629,7 +629,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate maps thrown errors into ERROR status with the error message" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl", expire = "db.exp_tbl"))
+                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -657,7 +657,7 @@ class AggregationServiceSpec :
 
 private fun topkConfig(
     name: String,
-    table: TopkTable = TopkTable(score = "${name}__score", expire = "${name}__expire"),
+    table: TopkTable = TopkTable(score = "${name}__score"),
 ): Topk = Topk(topk = name, table = table)
 
 private fun groupWithTopks(

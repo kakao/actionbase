@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
 import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_EXPIRE_TABLE
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
 import com.kakao.actionbase.server.test.E2ETestBase
 
@@ -20,7 +21,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     private val db = "commerce"
     private val table = "purchases"
     private val scoreFqn = "$db.${table}__topk"
-    private val expireFqn = "$TOPK_DATABASE.$TOPK_EXPIRE_TABLE"
 
     @BeforeAll
     fun setup() {
@@ -58,8 +58,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                         "topk": [{
                           "topk": "top_purchased",
                           "ranges": "_target:eq:{_target}",
-                          "expire": false,
-                          "table": {"score": "$scoreFqn", "expire": "$expireFqn"}
+                          "table": {"score": "$scoreFqn"}
                         }]
                       }
                     }],
@@ -124,7 +123,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
     @Test
     fun `aggregate joins non-bucket group fields into the score row target and skips bucket fields`() {
-        val bucketedDb = "commerce-bucket"
+        val bucketedDb = "commerce_bucket"
         val bucketedTable = "orders"
         val bucketedScore = "orders__topk"
         val bucketedScoreFqn = "$bucketedDb.$bucketedScore"
@@ -200,7 +199,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                         "topk": [{
                           "topk": "$topkName",
                           "ranges": "_target:eq:{_target};category:eq:{category};day:bt:1700000000000,1731536000000",
-                          "table": {"score": "$bucketedScoreFqn", "expire": "$expireFqn"}
+                          "table": {"score": "$bucketedScoreFqn"}
                         }]
                       }
                     }],
@@ -278,7 +277,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
     @Test
     fun `aggregate builds the score row target from a properties-backed segment field when the group has no endpoint field`() {
-        val segmentDb = "commerce-segment"
+        val segmentDb = "commerce_segment"
         val segmentTable = "orders_segment"
         val segmentScore = "orders_segment__topk"
         val segmentScoreFqn = "$segmentDb.$segmentScore"
@@ -353,7 +352,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                         "topk": [{
                           "topk": "$topkName",
                           "ranges": "category:eq:{category};day:bt:1700000000000,1731536000000",
-                          "table": {"score": "$segmentScoreFqn", "expire": "$expireFqn"}
+                          "table": {"score": "$segmentScoreFqn"}
                         }]
                       }
                     }],
@@ -430,7 +429,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     }
 
     @Test
-    fun `GET aggregations exposes topk tables with the correct expire flag`() {
+    fun `GET aggregations exposes tables with topk aggregations`() {
         val response =
             client
                 .get()
@@ -442,18 +441,12 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 .returnResult()
                 .responseBody!!
 
-        val databaseTablePair = response.topk.associateBy { it.database to it.table }
+        val byLocation = response.items.associateBy { it.database to it.table }
 
-        val source = databaseTablePair[db to table]
+        val source = byLocation[db to table]
         assertNotNull(source)
+        assertEquals(AggregationType.TOPK, source?.type)
         assertEquals(db, source?.database)
         assertEquals(table, source?.table)
-        assertEquals(false, source?.expire)
-
-        val expire = databaseTablePair[TOPK_DATABASE to TOPK_EXPIRE_TABLE]
-        assertNotNull(expire)
-        assertEquals(TOPK_DATABASE, expire?.database)
-        assertEquals(TOPK_EXPIRE_TABLE, expire?.table)
-        assertEquals(true, expire?.expire)
     }
 }

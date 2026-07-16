@@ -12,8 +12,8 @@ import org.springframework.http.MediaType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AliasControllerTest : E2ETestBase() {
-    private val db = "v3-alias-test-db"
-    private val table = "v3-alias-target-table"
+    private val db = "v3_alias_test_db"
+    private val table = "v3_alias_target_table"
     private val baseUri = "/graph/v3/databases/$db/aliases"
 
     @BeforeAll
@@ -60,21 +60,21 @@ class AliasControllerTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: v3-alias-basic
+            - name: v3_alias_basic
               create: |
-                {"alias": "v3-alias-basic", "table": "v3-alias-target-table", "comment": "test alias"}
+                {"alias": "v3_alias_basic", "table": "v3_alias_target_table", "comment": "test alias"}
               expected: |
-                {"alias": "v3-alias-basic", "table": "v3-alias-target-table", "comment": "test alias", "active": true}
-            - name: v3-alias-empty
+                {"alias": "v3_alias_basic", "table": "v3_alias_target_table", "comment": "test alias", "active": true}
+            - name: v3_alias_empty
               create: |
-                {"alias": "v3-alias-empty", "table": "v3-alias-target-table", "comment": ""}
+                {"alias": "v3_alias_empty", "table": "v3_alias_target_table", "comment": ""}
               expected: |
-                {"alias": "v3-alias-empty", "table": "v3-alias-target-table", "comment": "", "active": true}
-            - name: v3-alias-special
+                {"alias": "v3_alias_empty", "table": "v3_alias_target_table", "comment": "", "active": true}
+            - name: v3_alias_special
               create: |
-                {"alias": "v3-alias-special", "table": "v3-alias-target-table", "comment": "alias @#"}
+                {"alias": "v3_alias_special", "table": "v3_alias_target_table", "comment": "alias @#"}
               expected: |
-                {"alias": "v3-alias-special", "table": "v3-alias-target-table", "comment": "alias @#", "active": true}
+                {"alias": "v3_alias_special", "table": "v3_alias_target_table", "comment": "alias @#", "active": true}
             """,
         )
         fun `create alias`(
@@ -106,27 +106,27 @@ class AliasControllerTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            - name: v3-alias-upd-basic
+            - name: v3_alias_upd_basic
               create: |
-                {"alias": "v3-alias-upd-basic", "table": "v3-alias-target-table", "comment": "test alias"}
+                {"alias": "v3_alias_upd_basic", "table": "v3_alias_target_table", "comment": "test alias"}
               update: |
                 {"comment": "updated comment"}
               expected: |
-                {"alias": "v3-alias-upd-basic", "comment": "updated comment", "active": true}
-            - name: v3-alias-upd-empty
+                {"alias": "v3_alias_upd_basic", "comment": "updated comment", "active": true}
+            - name: v3_alias_upd_empty
               create: |
-                {"alias": "v3-alias-upd-empty", "table": "v3-alias-target-table", "comment": ""}
+                {"alias": "v3_alias_upd_empty", "table": "v3_alias_target_table", "comment": ""}
               update: |
                 {"comment": "updated empty"}
               expected: |
-                {"alias": "v3-alias-upd-empty", "comment": "updated empty", "active": true}
-            - name: v3-alias-upd-special
+                {"alias": "v3_alias_upd_empty", "comment": "updated empty", "active": true}
+            - name: v3_alias_upd_special
               create: |
-                {"alias": "v3-alias-upd-special", "table": "v3-alias-target-table", "comment": "alias @#"}
+                {"alias": "v3_alias_upd_special", "table": "v3_alias_target_table", "comment": "alias @#"}
               update: |
                 {"comment": "updated special"}
               expected: |
-                {"alias": "v3-alias-upd-special", "comment": "updated special", "active": true}
+                {"alias": "v3_alias_upd_special", "comment": "updated special", "active": true}
             """,
         )
         fun `update alias`(
@@ -164,21 +164,21 @@ class AliasControllerTest : E2ETestBase() {
                 {"active": false}
             """,
             cases = """
-            - name: v3-alias-deact-basic
+            - name: v3_alias_deact_basic
               create: |
-                {"alias": "v3-alias-deact-basic", "table": "v3-alias-target-table", "comment": "test alias"}
+                {"alias": "v3_alias_deact_basic", "table": "v3_alias_target_table", "comment": "test alias"}
               expected: |
-                {"alias": "v3-alias-deact-basic", "active": false}
-            - name: v3-alias-deact-empty
+                {"alias": "v3_alias_deact_basic", "active": false}
+            - name: v3_alias_deact_empty
               create: |
-                {"alias": "v3-alias-deact-empty", "table": "v3-alias-target-table", "comment": ""}
+                {"alias": "v3_alias_deact_empty", "table": "v3_alias_target_table", "comment": ""}
               expected: |
-                {"alias": "v3-alias-deact-empty", "active": false}
-            - name: v3-alias-deact-special
+                {"alias": "v3_alias_deact_empty", "active": false}
+            - name: v3_alias_deact_special
               create: |
-                {"alias": "v3-alias-deact-special", "table": "v3-alias-target-table", "comment": "alias @#"}
+                {"alias": "v3_alias_deact_special", "table": "v3_alias_target_table", "comment": "alias @#"}
               expected: |
-                {"alias": "v3-alias-deact-special", "active": false}
+                {"alias": "v3_alias_deact_special", "active": false}
             """,
         )
         fun `deactivate alias`(
@@ -218,16 +218,16 @@ class AliasControllerTest : E2ETestBase() {
                 {"active": true}
             """,
             cases = """
-            - name: v3-alias-react-basic
+            - name: v3_alias_react_basic
               create: |
-                {"alias": "v3-alias-react-basic", "table": "v3-alias-target-table", "comment": "test alias"}
+                {"alias": "v3_alias_react_basic", "table": "v3_alias_target_table", "comment": "test alias"}
               expected: |
-                {"alias": "v3-alias-react-basic", "active": true}
-            - name: v3-alias-react-empty
+                {"alias": "v3_alias_react_basic", "active": true}
+            - name: v3_alias_react_empty
               create: |
-                {"alias": "v3-alias-react-empty", "table": "v3-alias-target-table", "comment": ""}
+                {"alias": "v3_alias_react_empty", "table": "v3_alias_target_table", "comment": ""}
               expected: |
-                {"alias": "v3-alias-react-empty", "active": true}
+                {"alias": "v3_alias_react_empty", "active": true}
             """,
         )
         fun `reactivate alias`(
@@ -275,15 +275,15 @@ class AliasControllerTest : E2ETestBase() {
                 {"active": false}
             """,
             cases = """
-            - name: v3-alias-del-basic
+            - name: v3_alias_del_basic
               create: |
-                {"alias": "v3-alias-del-basic", "table": "v3-alias-target-table", "comment": "test alias"}
-            - name: v3-alias-del-empty
+                {"alias": "v3_alias_del_basic", "table": "v3_alias_target_table", "comment": "test alias"}
+            - name: v3_alias_del_empty
               create: |
-                {"alias": "v3-alias-del-empty", "table": "v3-alias-target-table", "comment": ""}
-            - name: v3-alias-del-special
+                {"alias": "v3_alias_del_empty", "table": "v3_alias_target_table", "comment": ""}
+            - name: v3_alias_del_special
               create: |
-                {"alias": "v3-alias-del-special", "table": "v3-alias-target-table", "comment": "alias @#"}
+                {"alias": "v3_alias_del_special", "table": "v3_alias_target_table", "comment": "alias @#"}
             """,
         )
         fun `delete alias`(
@@ -322,7 +322,7 @@ class AliasControllerTest : E2ETestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class StatusFilterTest {
-        private val aliasName = "v3-alias-status-filter"
+        private val aliasName = "v3_alias_status_filter"
 
         @BeforeAll
         fun setup() {
@@ -424,7 +424,7 @@ class AliasControllerTest : E2ETestBase() {
         fun `get non-existent alias returns 404`() {
             client
                 .get()
-                .uri("$baseUri/non-existent")
+                .uri("$baseUri/non_existent")
                 .exchange()
                 .expectStatus()
                 .isNotFound
@@ -433,8 +433,22 @@ class AliasControllerTest : E2ETestBase() {
         @Test
         fun `invalid alias name returns 400`() {
             client
-                .get()
-                .uri("$baseUri/123-invalid")
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"alias": "123invalid", "table": "valid_table", "comment": ""}""")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
+        fun `alias name with hyphen returns 400`() {
+            client
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"alias": "my-alias", "table": "valid_table", "comment": ""}""")
                 .exchange()
                 .expectStatus()
                 .isBadRequest
@@ -443,8 +457,34 @@ class AliasControllerTest : E2ETestBase() {
         @Test
         fun `alias name with dot returns 400`() {
             client
-                .get()
-                .uri("$baseUri/alias.injection")
+                .post()
+                .uri(baseUri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"alias": "alias.injection", "table": "valid_table", "comment": ""}""")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
+        fun `update alias with hyphenated table name returns 400`() {
+            client
+                .put()
+                .uri("$baseUri/valid_alias")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"table": "my-table"}""")
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+        }
+
+        @Test
+        fun `update alias with uppercase table name returns 400`() {
+            client
+                .put()
+                .uri("$baseUri/valid_alias")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""{"table": "MyTable"}""")
                 .exchange()
                 .expectStatus()
                 .isBadRequest

@@ -4,6 +4,7 @@ import com.kakao.actionbase.v2.core.code.Index as V2Index
 import com.kakao.actionbase.v2.core.metadata.DirectionType as V2DirectionType
 import com.kakao.actionbase.v2.core.types.Field as V2Field
 
+import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.Constants.VERTEX_TARGET_COMMENT
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
@@ -23,22 +24,16 @@ import jakarta.validation.constraints.Size
 
 data class TableCreateRequest(
     @field:NotBlank(message = "table is required")
-    @field:Pattern(
-        regexp = "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
-        message = "table must start with a letter, contain only alphanumeric/underscore/hyphen, max 64 chars",
-    )
+    @field:Pattern(regexp = Constants.Name.PATTERN, message = Constants.Name.MESSAGE)
     val table: String,
     @field:NotNull(message = "schema is required")
     @field:Valid
     val schema: ModelSchema,
     @field:NotBlank(message = "storage is required")
-    @field:Pattern(
-        regexp = "^datastore://[a-z_]+/[a-zA-Z0-9_]+$",
-        message = "storage must be in format datastore://<namespace>/<table> (e.g., datastore://my_namespace/my_table)",
-    )
+    @field:Pattern(regexp = Constants.Name.STORAGE_URI_PATTERN, message = Constants.Name.STORAGE_URI_MESSAGE)
     val storage: String,
     val mode: MutationMode = MutationMode.SYNC,
-    @field:Size(max = 1000, message = "comment must be at most 1000 characters")
+    @field:Size(max = Constants.Name.COMMENT_MAX_LENGTH, message = Constants.Name.COMMENT_SIZE_MESSAGE)
     val comment: String,
 ) {
     fun toV2EdgeSchema(): EdgeSchema =

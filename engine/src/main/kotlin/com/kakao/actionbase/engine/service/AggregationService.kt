@@ -189,11 +189,11 @@ class AggregationService(
                             ),
                     ).flatMap { scoreResults ->
                         val scoreStatus = if (scoreResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS"
-                        if (scoreStatus == "ERROR" || topk.expireAfterMillis <= 0) {
+                        if (scoreStatus == "ERROR" || topk.refreshAfterMillis <= 0) {
                             return@flatMap Mono.just(base.copy(status = scoreStatus))
                         }
 
-                        val expiresAt = version + topk.expireAfterMillis
+                        val expiresAt = version + topk.refreshAfterMillis
 
                         mutationService
                             .mutate(

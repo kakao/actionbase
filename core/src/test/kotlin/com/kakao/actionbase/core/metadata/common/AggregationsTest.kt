@@ -1,26 +1,18 @@
 package com.kakao.actionbase.core.metadata.common
 
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_EXPIRE_TABLE
-
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class AggregationsTest {
     @Test
-    fun `supportedTypes contains TOPK when topk is present`() {
-        val aggregations = Aggregations(topk = listOf(topk))
-
-        assertEquals(setOf(AggregationType.TOPK), aggregations.supportedTypes)
+    fun `supports TOPK when topk is present`() {
+        assertTrue(Aggregations(topk = listOf(topk)).supports(AggregationType.TOPK))
     }
 
     @Test
-    fun `supportedTypes is empty when no aggregation is defined`() {
-        val aggregations = Aggregations()
-
-        assertTrue(aggregations.supportedTypes.isEmpty())
+    fun `does not support TOPK when topk is empty`() {
+        assertFalse(Aggregations().supports(AggregationType.TOPK))
     }
 
     @Test
@@ -34,6 +26,6 @@ class AggregationsTest {
     }
 
     companion object {
-        private val topk = Topk(topk = "topk", table = TopkTable(score = "db.table__topk", expire = "${TOPK_DATABASE}.${TOPK_EXPIRE_TABLE}"))
+        private val topk = Topk(topk = "topk", table = TopkTable(score = "db.table__topk"))
     }
 }
