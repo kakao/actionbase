@@ -2,7 +2,9 @@ package com.kakao.actionbase.server.configuration
 
 import com.kakao.actionbase.core.metadata.DatastoreDescriptor
 import com.kakao.actionbase.core.metadata.common.DatastoreType
+import com.kakao.actionbase.core.metadata.common.TableFeature
 
+import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 // NOTE: If DatastoreProperties is placed in a submodule, IntelliJ's application.yaml -> code navigation does not work.
@@ -12,7 +14,33 @@ data class ServerProperties(
     val tenant: String,
     val datastore: DatastoreProperties,
     val readOnly: Boolean = false,
+    val databaseLevelFeatures: List<DatabaseFeatures> = emptyList(),
 ) {
+    private val featuresByDatabase: Map<String, Set<TableFeature>>
+
+    init {
+        val duplicates =
+            databaseLevelFeatures
+                .groupingBy { it.database }
+                .eachCount()
+                .filterValues { it > 1 }
+                .keys
+        require(duplicates.isEmpty()) {
+            "Duplicate database entries in actionbase.database-level-features: $duplicates"
+        }
+        featuresByDatabase = databaseLevelFeatures.associate { it.database to it.features }
+        if (featuresByDatabase.isNotEmpty()) {
+            log.info("database-level-features: {}", featuresByDatabase)
+        }
+    }
+
+    fun featuresOf(database: String): Set<TableFeature> = featuresByDatabase[database] ?: emptySet()
+
+    data class DatabaseFeatures(
+        val database: String,
+        val features: Set<TableFeature> = emptySet(),
+    )
+
     data class DatastoreProperties(
         val type: DatastoreType,
         val configuration: Map<String, String> = emptyMap(),
@@ -26,5 +54,9 @@ data class ServerProperties(
         companion object {
             const val CONFIG_KEY_ACTIONBASE_HBASE_NAMESPACE = "actionbase.hbase.namespace"
         }
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(ServerProperties::class.java)
     }
 }
