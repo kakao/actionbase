@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.configuration
 
+import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.metadata.DatastoreDescriptor
 import com.kakao.actionbase.core.metadata.common.DatastoreType
 import com.kakao.actionbase.core.metadata.common.TableFeature
@@ -19,6 +20,10 @@ data class ServerProperties(
     private val featuresByDatabase: Map<String, Set<TableFeature>>
 
     init {
+        val invalidNames = databaseLevelFeatures.map { it.database }.filterNot { it.matches(DATABASE_NAME_REGEX) }
+        require(invalidNames.isEmpty()) {
+            "Invalid database names in actionbase.database-level-features: $invalidNames (must match ${Constants.Name.PATTERN})"
+        }
         val duplicates =
             databaseLevelFeatures
                 .groupingBy { it.database }
@@ -58,5 +63,6 @@ data class ServerProperties(
 
     companion object {
         private val log = LoggerFactory.getLogger(ServerProperties::class.java)
+        private val DATABASE_NAME_REGEX = Regex(Constants.Name.PATTERN)
     }
 }

@@ -73,6 +73,26 @@ class ServerPropertiesTest {
     }
 
     @Test
+    fun `invalid database name fails binding`() {
+        val exception =
+            assertFailsWith<BindException> {
+                bind(
+                    mapOf(
+                        "actionbase.database-level-features[0].database" to "fanin-svc",
+                        "actionbase.database-level-features[0].features[0]" to "INSERT_MERGE",
+                    ),
+                )
+            }
+
+        assertTrue(
+            exception.cause!!
+                .cause!!
+                .message!!
+                .contains("Invalid database names"),
+        )
+    }
+
+    @Test
     fun `duplicate database entries fail binding`() {
         val exception =
             assertFailsWith<BindException> {
