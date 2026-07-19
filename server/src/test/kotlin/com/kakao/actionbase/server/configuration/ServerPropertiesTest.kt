@@ -1,6 +1,6 @@
 package com.kakao.actionbase.server.configuration
 
-import com.kakao.actionbase.core.metadata.common.TableFeature
+import com.kakao.actionbase.core.metadata.features.TableFeature
 
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

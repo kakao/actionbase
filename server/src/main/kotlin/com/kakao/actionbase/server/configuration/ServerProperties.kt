@@ -3,7 +3,7 @@ package com.kakao.actionbase.server.configuration
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.metadata.DatastoreDescriptor
 import com.kakao.actionbase.core.metadata.common.DatastoreType
-import com.kakao.actionbase.core.metadata.common.TableFeature
+import com.kakao.actionbase.core.metadata.features.TableFeature
 
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.ConfigurationProperties
