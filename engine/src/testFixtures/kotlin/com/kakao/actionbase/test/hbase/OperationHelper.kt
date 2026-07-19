@@ -17,7 +17,8 @@ object OperationHelper {
         val table = this
         // HBase row tombstones cover cells with timestamp <= tombstone timestamp, so a Put that lands
         // in the same millisecond as a preceding Delete gets shadowed by it. Track the Delete's
-        // timestamp so the next plain Put is forced strictly after it instead of racing the clock.
+        // timestamp so the next Put (plain or TTL'd) is forced strictly after it instead of racing
+        // the clock.
         var previousDeleteTimestamp: Long? = null
         operations.split(", ").withIndex().forEach { (index, op) ->
             when {
@@ -33,7 +34,9 @@ object OperationHelper {
                 op.startsWith("Put(") -> {
                     val ttl = op.substringAfter("Put(").substringBefore(")").toLong()
                     val put = Put(rowKey)
-                    put.addColumn(family, qualifier, Bytes.toBytes("${valuePrefix}$index"))
+                    val value = Bytes.toBytes("${valuePrefix}$index")
+                    previousDeleteTimestamp?.let { put.addColumn(family, qualifier, it + 1, value) }
+                        ?: put.addColumn(family, qualifier, value)
                     put.ttl = ttl
                     table.put(put)
                     previousDeleteTimestamp = null
