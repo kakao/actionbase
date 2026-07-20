@@ -17,8 +17,9 @@ data class QueueCreateRequest(
     val comment: String = "",
 ) {
     companion object {
-        // 480 = 2^5 · 3 · 5 — many small divisors keep shard=k/N assignments balanced.
-        const val DEFAULT_PARTITION_COUNT = 480
+        // 30 = 2 · 3 · 5 — divisors 1,2,3,5,6,10,15,30 keep shard=k/N splits balanced while
+        // keeping single-shard poll fan-out cheap.
+        const val DEFAULT_PARTITION_COUNT = 30
         const val DEFAULT_ORDER_BY = "seq"
     }
 }
