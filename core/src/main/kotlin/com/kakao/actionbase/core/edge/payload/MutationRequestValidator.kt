@@ -4,22 +4,18 @@ import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.state.EventType
 
 /**
- * Validates payload-deterministic nullability constraints against the schema.
- *
- * Rules by event type:
- * - INSERT: every non-nullable field must be present and non-null.
- * - UPDATE: every non-nullable field, if present in the payload, must be non-null.
- *   Absent fields are legal (they retain their existing value).
- * - DELETE: no property validation (tombstone semantics).
- *
- * Throws [IllegalArgumentException] on violation so the global exception handler maps it to 400.
+ * Validates payload nullability against the schema (throws [IllegalArgumentException] -> 400):
+ * INSERT (snapshot) requires every non-nullable field present and non-null; INSERT_MERGE and
+ * UPDATE only require present non-nullable fields to be non-null (row completeness is checked
+ * later in `State.transit`); DELETE validates nothing.
  */
 internal fun checkNonNullableFields(
     eventType: EventType,
     properties: List<StructField>,
     payload: Map<String, Any?>,
+    insertMerge: Boolean = false,
 ) {
-    if (eventType == EventType.INSERT) {
+    if (eventType == EventType.INSERT && !insertMerge) {
         for (field in properties) {
             if (field.nullable) continue
             require(payload.containsKey(field.name)) {
@@ -29,7 +25,7 @@ internal fun checkNonNullableFields(
                 "Property '${field.name}' cannot be null"
             }
         }
-    } else if (eventType == EventType.UPDATE) {
+    } else if (eventType == EventType.INSERT || eventType == EventType.UPDATE) {
         for (field in properties) {
             if (field.nullable) continue
             if (payload.containsKey(field.name)) {

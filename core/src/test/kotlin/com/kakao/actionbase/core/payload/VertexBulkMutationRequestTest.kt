@@ -65,6 +65,19 @@ class VertexBulkMutationRequestTest {
     }
 
     @Test
+    fun `INSERT missing non-nullable field succeeds with insertMerge (completeness enforced at activation)`() {
+        val event = item(EventType.INSERT, properties = mapOf("age" to 20L)).createEvent(schema, insertMerge = true)
+        assertTrue(event.event.properties.containsKey("age"))
+    }
+
+    @Test
+    fun `INSERT with explicit null for non-nullable field throws even with insertMerge`() {
+        assertFailsWith<IllegalArgumentException> {
+            item(EventType.INSERT, properties = mapOf("name" to null)).createEvent(schema, insertMerge = true)
+        }
+    }
+
+    @Test
     fun `UPDATE missing non-nullable field succeeds (keeps existing value)`() {
         val event = item(EventType.UPDATE, properties = mapOf("age" to 21L)).createEvent(schema)
         assertTrue(event.event.properties.containsKey("age"))
