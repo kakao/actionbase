@@ -46,6 +46,14 @@ data class TableCreateRequest(
                         V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
                     },
                 )
+            is ModelSchema.ImmutableEdge ->
+                EdgeSchema(
+                    VertexField(schema.source.type.toV2VertexType(), schema.source.comment),
+                    VertexField(schema.target.type.toV2VertexType(), schema.target.comment),
+                    schema.properties.map {
+                        V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
+                    },
+                )
             is ModelSchema.MultiEdge -> {
                 val idField = V2Field("_id", schema.id.type.toV2DataType(), false, schema.id.comment)
                 EdgeSchema(
@@ -70,6 +78,7 @@ data class TableCreateRequest(
     fun toV2DirectionType(): V2DirectionType =
         when (schema) {
             is ModelSchema.Edge -> schema.direction.toV2DirectionType()
+            is ModelSchema.ImmutableEdge -> schema.direction.toV2DirectionType()
             is ModelSchema.MultiEdge -> schema.direction.toV2DirectionType()
             is ModelSchema.Vertex -> V2DirectionType.OUT
         }
@@ -77,6 +86,7 @@ data class TableCreateRequest(
     fun toV2Indices(): List<V2Index> =
         when (schema) {
             is ModelSchema.Edge -> schema.indexes.map { it.toV2Index() }
+            is ModelSchema.ImmutableEdge -> schema.indexes.map { it.toV2Index() }
             is ModelSchema.MultiEdge -> schema.indexes.map { it.toV2Index() }
             is ModelSchema.Vertex -> emptyList()
         }
@@ -84,6 +94,7 @@ data class TableCreateRequest(
     fun labelType(): LabelType =
         when (schema) {
             is ModelSchema.Edge -> LabelType.INDEXED
+            is ModelSchema.ImmutableEdge -> LabelType.IMMUTABLE_INDEXED
             is ModelSchema.MultiEdge -> LabelType.MULTI_EDGE
             is ModelSchema.Vertex -> LabelType.VERTEX
         }

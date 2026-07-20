@@ -1,10 +1,14 @@
 package com.kakao.actionbase.core.metadata.common
 
+import com.kakao.actionbase.core.java.codec.common.hbase.Order
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 import com.kakao.actionbase.test.json.PrettyObjectWriter
 
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+import org.junit.jupiter.api.Test
 
 import com.fasterxml.jackson.module.kotlin.readValue
 
@@ -12,6 +16,24 @@ class EdgeSchemaSerializationTest {
     val prettyWriter = PrettyObjectWriter.DEFAULT
 
     val objectMapper = prettyWriter.objectMapper
+
+    @Test
+    fun `immutable edge schema round-trips under the immutableEdge discriminator`() {
+        val schema =
+            ModelSchema.ImmutableEdge(
+                source = Field(type = com.kakao.actionbase.core.types.PrimitiveType.INT, comment = "partition"),
+                target = Field(type = com.kakao.actionbase.core.types.PrimitiveType.STRING, comment = "message id"),
+                properties = listOf(StructField(name = "ts", type = com.kakao.actionbase.core.types.PrimitiveType.LONG, comment = "enqueue ts", nullable = false)),
+                direction = DirectionType.OUT,
+                indexes = listOf(Index(index = "by_ts", fields = listOf(IndexField(field = "ts", order = Order.ASC)))),
+            )
+
+        val json = objectMapper.writeValueAsString(schema)
+        assertTrue(json.contains("\"immutableEdge\""), "discriminator must be immutableEdge, was: $json")
+        assertTrue(!json.contains("caches"), "immutable edge schema must not carry a caches field")
+
+        assertEquals(schema, objectMapper.readValue<ModelSchema>(json))
+    }
 
     @ObjectSourceParameterizedTest
     @ObjectSource(

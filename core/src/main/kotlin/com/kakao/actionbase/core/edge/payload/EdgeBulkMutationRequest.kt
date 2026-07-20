@@ -18,16 +18,24 @@ data class EdgeBulkMutationRequest(
             schema: ModelSchema,
             insertMerge: Boolean,
         ): EdgeEvent {
-            require(schema is ModelSchema.Edge) { "Expected ModelSchema.Edge, but got ${schema::class.simpleName}" }
-            val source = schema.source.type.cast(edge.source)
-            val target = schema.target.type.cast(edge.target)
-            checkNonNullableFields(type, schema.properties, edge.properties, insertMerge)
+            val (sourceField, targetField, properties) =
+                when (schema) {
+                    is ModelSchema.Edge -> Triple(schema.source, schema.target, schema.properties)
+                    is ModelSchema.ImmutableEdge -> {
+                        require(type == EventType.INSERT) { "immutable edge tables support only INSERT (append), got $type" }
+                        Triple(schema.source, schema.target, schema.properties)
+                    }
+                    else -> throw IllegalArgumentException("Expected ModelSchema.Edge or ImmutableEdge, but got ${schema::class.simpleName}")
+                }
+            val source = sourceField.type.cast(edge.source)
+            val target = targetField.type.cast(edge.target)
+            checkNonNullableFields(type, properties, edge.properties, insertMerge)
             val event =
                 Event.create(
                     type = type,
                     version = edge.version,
                     properties =
-                        schema.properties
+                        properties
                             .filter { field -> field.name in edge.properties.keys }
                             .associate { field ->
                                 val value = edge.properties[field.name]
