@@ -36,3 +36,29 @@ data class QueueDescriptorResponse(
     val orderBy: String,
     val storage: String,
 )
+
+/**
+ * Enqueue a batch of messages. `key` is the routing key hashed to a partition, `id` the message
+ * id (stored as `target`), `orderBy` the per-partition order value, and `payload` the schema fields.
+ */
+data class EnqueueRequest(
+    val messages: List<EnqueueMessage>,
+)
+
+data class EnqueueMessage(
+    val key: String,
+    val id: String,
+    val orderBy: Long,
+    val payload: Map<String, Any?> = emptyMap(),
+)
+
+data class EnqueueResponse(
+    val accepted: Int,
+    val results: List<EnqueueResult>,
+)
+
+data class EnqueueResult(
+    val partition: Int,
+    val id: String,
+    val status: String,
+)
