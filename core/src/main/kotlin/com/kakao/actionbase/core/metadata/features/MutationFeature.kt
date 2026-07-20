@@ -1,6 +1,6 @@
 package com.kakao.actionbase.core.metadata.features
 
-enum class TableFeature {
+enum class MutationFeature : Feature {
     /**
      * INSERT merges into the existing row: an omitted field keeps its current value instead of
      * being cleared to UNSET (snapshot).

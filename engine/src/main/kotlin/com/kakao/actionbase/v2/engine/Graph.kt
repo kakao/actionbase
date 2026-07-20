@@ -9,6 +9,7 @@ import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
+import com.kakao.actionbase.core.metadata.features.FeatureFlags
 import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
 import com.kakao.actionbase.engine.storage.StorageOpCollector
@@ -115,6 +116,8 @@ class Graph(
     AutoCloseable {
     internal val mutationRequestTimeout = config.mutationRequestTimeout
     internal val readOnly = config.readOnly
+
+    val featureFlags = FeatureFlags(config.featureFlags)
 
     private var metadataInitialized = false
 
