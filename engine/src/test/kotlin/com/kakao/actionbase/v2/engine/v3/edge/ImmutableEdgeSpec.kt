@@ -119,6 +119,18 @@ class ImmutableEdgeSpec :
                 .verifyError(UnsupportedOperationException::class.java)
         }
 
+        "immutable edge rejects non-INSERT mutations" {
+            val deleteRequest =
+                """
+                {"mutations": [{"type": "DELETE", "edge": {"version": 2000, "source": 1, "target": "m1", "properties": {}}}]}
+                """.trimIndent()
+            val request = mapper.readValue<EdgeBulkMutationRequest>(deleteRequest)
+            mutationService
+                .mutate(database, table, request.mutations, syncMode = EngineMutationMode.SYNC)
+                .test()
+                .verifyError(IllegalArgumentException::class.java)
+        }
+
         "immutable edge produces no count records" {
             val request = mapper.readValue<EdgeBulkMutationRequest>(appendRequest)
             mutationService

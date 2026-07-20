@@ -21,7 +21,10 @@ data class EdgeBulkMutationRequest(
             val (sourceField, targetField, properties) =
                 when (schema) {
                     is ModelSchema.Edge -> Triple(schema.source, schema.target, schema.properties)
-                    is ModelSchema.ImmutableEdge -> Triple(schema.source, schema.target, schema.properties)
+                    is ModelSchema.ImmutableEdge -> {
+                        require(type == EventType.INSERT) { "immutable edge tables support only INSERT (append), got $type" }
+                        Triple(schema.source, schema.target, schema.properties)
+                    }
                     else -> throw IllegalArgumentException("Expected ModelSchema.Edge or ImmutableEdge, but got ${schema::class.simpleName}")
                 }
             val source = sourceField.type.cast(edge.source)
