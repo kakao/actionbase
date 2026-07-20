@@ -1,7 +1,6 @@
 package com.kakao.actionbase.server.api.queue.v1
 
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 import org.junit.jupiter.api.Test
@@ -36,7 +35,11 @@ class QueuePollE2ETest : QueueE2ESupport() {
         assertEquals(listOf("m1", "m2", "m3"), page.messages.map { it.id })
         assertEquals(listOf("a", "b", "c"), page.messages.map { it.payload["payload"] })
         assertTrue(!page.hasNext, "a fully-read page must not report more")
-        assertNull(page.cursor)
+
+        // Re-polling from the drained cursor must not re-read anything (forward-only).
+        val drained = poll(queue, shard = "0/1", limit = 10, cursor = page.cursor)
+        assertTrue(drained.messages.isEmpty(), "drained partitions must not be re-read")
+        assertTrue(!drained.hasNext)
     }
 
     @Test

@@ -7,14 +7,16 @@ import java.io.DataOutputStream
 import java.util.Base64
 
 /**
- * Forward-only poll cursor: per-partition scan offsets accumulated across polls. Serialized as
- * a versioned binary blob, base64url-encoded so it survives as a query-string token. Partitions
- * with no further pages are simply absent — the cursor only ever carries partitions still in flight.
+ * Forward-only poll cursor: the last-consumed `orderBy` value per partition. A poll resumes each
+ * partition strictly after its recorded position (`orderBy > position`), so drained partitions are
+ * never re-read and simply yield nothing until higher-ordered messages arrive. Serialized as a
+ * versioned binary blob, base64url-encoded so it survives as a query-string token. Requires
+ * `orderBy` to be unique per partition (a monotonic sequence), which a queue log guarantees.
  */
 data class QueueCursor(
-    val offsets: Map<Int, String>,
+    val positions: Map<Int, Long>,
 ) {
-    fun offsetFor(partition: Int): String? = offsets[partition]
+    fun positionOf(partition: Int): Long? = positions[partition]
 
     fun encode(): String {
         val bytes =
@@ -22,10 +24,10 @@ data class QueueCursor(
                 .also { baos ->
                     DataOutputStream(baos).use { out ->
                         out.writeByte(VERSION)
-                        out.writeInt(offsets.size)
-                        offsets.toSortedMap().forEach { (partition, offset) ->
+                        out.writeInt(positions.size)
+                        positions.toSortedMap().forEach { (partition, position) ->
                             out.writeInt(partition)
-                            out.writeUTF(offset)
+                            out.writeLong(position)
                         }
                     }
                 }.toByteArray()
@@ -46,12 +48,12 @@ data class QueueCursor(
                 val version = input.readByte().toInt()
                 require(version == VERSION) { "unsupported queue cursor version: $version" }
                 val size = input.readInt()
-                val offsets = LinkedHashMap<Int, String>(size)
+                val positions = LinkedHashMap<Int, Long>(size)
                 repeat(size) {
                     val partition = input.readInt()
-                    offsets[partition] = input.readUTF()
+                    positions[partition] = input.readLong()
                 }
-                return QueueCursor(offsets)
+                return QueueCursor(positions)
             }
         }
     }

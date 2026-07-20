@@ -75,11 +75,12 @@ class QueueService(
                             start = partition.toLong(),
                             direction = Direction.OUT,
                             limit = limit,
-                            offset = resumeFrom.offsetFor(partition),
+                            // Resume strictly after the last consumed order value; forward-only, no re-reads.
+                            ranges = resumeFrom.positionOf(partition)?.let { "${meta.orderBy}:gt:$it" },
                         ).map { page -> partition to page }
                 }, POLL_CONCURRENCY)
                 .collectList()
-                .map { pages -> pages.toPollResponse(meta.orderBy) }
+                .map { pages -> pages.toPollResponse(meta.orderBy, resumeFrom) }
         }
 
     private fun queueMeta(
@@ -104,7 +105,10 @@ class QueueService(
         return EnqueueResponse(accepted = results.count { it.status == "CREATED" }, results = results)
     }
 
-    private fun List<Pair<Int, DataFrameEdgePayload>>.toPollResponse(orderBy: String): PollResponse {
+    private fun List<Pair<Int, DataFrameEdgePayload>>.toPollResponse(
+        orderBy: String,
+        resumeFrom: QueueCursor,
+    ): PollResponse {
         val messages =
             flatMap { (partition, page) ->
                 page.edges.map { edge ->
@@ -116,11 +120,14 @@ class QueueService(
                     )
                 }
             }.sortedBy { it.orderBy }
-        val nextOffsets = mapNotNull { (partition, page) -> page.offset?.takeIf { page.hasNext }?.let { partition to it } }.toMap()
+        // Carry every prior position forward, advancing the partitions that yielded messages.
+        val positions = resumeFrom.positions.toMutableMap()
+        messages.forEach { message -> positions.merge(message.partition, message.orderBy, ::maxOf) }
+        val hasNext = any { (_, page) -> page.hasNext }
         return PollResponse(
             messages = messages,
-            cursor = if (nextOffsets.isEmpty()) null else QueueCursor(nextOffsets).encode(),
-            hasNext = nextOffsets.isNotEmpty(),
+            cursor = if (positions.isEmpty()) null else QueueCursor(positions).encode(),
+            hasNext = hasNext,
         )
     }
 

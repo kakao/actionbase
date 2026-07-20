@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 class QueueCursorTest {
     @Test
     fun `round-trips through encode and decode`() {
-        val cursor = QueueCursor(mapOf(0 to "offset-a", 3 to "offset-b", 9 to "offset-c"))
+        val cursor = QueueCursor(mapOf(0 to 1000L, 3 to 42L, 9 to Long.MAX_VALUE))
         assertEquals(cursor, QueueCursor.decode(cursor.encode()))
     }
 
@@ -26,15 +26,15 @@ class QueueCursorTest {
     }
 
     @Test
-    fun `offsetFor returns null for an absent partition`() {
-        val cursor = QueueCursor(mapOf(0 to "offset-a"))
-        assertEquals("offset-a", cursor.offsetFor(0))
-        assertNull(cursor.offsetFor(1))
+    fun `positionOf returns null for an absent partition`() {
+        val cursor = QueueCursor(mapOf(0 to 1000L))
+        assertEquals(1000L, cursor.positionOf(0))
+        assertNull(cursor.positionOf(1))
     }
 
     @Test
     fun `encoded token is url-safe`() {
-        val cursor = QueueCursor((0 until 50).associateWith { "off/set+$it=" })
+        val cursor = QueueCursor((0 until 50).associateWith { it * 1_000_000L })
         val token = cursor.encode()
         assert(token.all { it.isLetterOrDigit() || it == '-' || it == '_' }) { "not url-safe: $token" }
         assertEquals(cursor, QueueCursor.decode(token))
