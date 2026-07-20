@@ -31,7 +31,7 @@ sealed interface EdgeMutationStrategy {
         buildCountRecords: (EdgeStateRecord, DirectionType, Long) -> List<EdgeCountRecord>,
     ): List<EdgeCountRecord>
 
-    /** Strategies whose source/target come straight from the state key: Edge, Vertex. */
+    /** Strategies whose source/target come straight from the state key: Edge, ImmutableEdge, Vertex. */
     sealed interface KeyBased : EdgeMutationStrategy {
         override fun directedSource(
             record: EdgeStateRecord,
@@ -66,6 +66,10 @@ sealed interface EdgeMutationStrategy {
 
     data object Edge : KeyBased {
         override val producesCount: Boolean = true
+    }
+
+    data object ImmutableEdge : KeyBased {
+        override val producesCount: Boolean = false
     }
 
     data object Vertex : KeyBased {
