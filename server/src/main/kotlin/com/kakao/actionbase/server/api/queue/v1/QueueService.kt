@@ -60,8 +60,9 @@ class QueueService(
         shard: Shard,
         limit: Int,
         cursor: String?,
-    ): Mono<PollResponse> =
-        queueMeta(database, queue).flatMap { meta ->
+    ): Mono<PollResponse> {
+        require(limit in 1..MAX_POLL_LIMIT) { "limit must be in 1..$MAX_POLL_LIMIT, got $limit" }
+        return queueMeta(database, queue).flatMap { meta ->
             val partitions = shard.partitionsFor(meta.partitionCount)
             val resumeFrom = QueueCursor.decode(cursor)
             Flux
@@ -82,6 +83,7 @@ class QueueService(
                 .collectList()
                 .map { pages -> pages.toPollResponse(meta.orderBy, resumeFrom) }
         }
+    }
 
     private fun queueMeta(
         database: String,
@@ -133,5 +135,8 @@ class QueueService(
 
     private companion object {
         const val POLL_CONCURRENCY = 8
+
+        // Per-partition fetch bound; caps total fan-out work at MAX_POLL_LIMIT * partitions.
+        const val MAX_POLL_LIMIT = 1000
     }
 }

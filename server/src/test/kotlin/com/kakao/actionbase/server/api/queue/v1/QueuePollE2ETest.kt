@@ -88,6 +88,20 @@ class QueuePollE2ETest : QueueE2ESupport() {
         assertEquals(ids.toSet(), (shard0 + shard1).toSet())
     }
 
+    @Test
+    fun `poll rejects an out-of-range limit`() {
+        val queue = "limited"
+        createDatabase(db)
+        createQueue(db, queue, partitionCount = 4)
+
+        client
+            .get()
+            .uri("/queue/v1/databases/$db/queues/$queue/poll?shard=0/1&limit=0")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
     private fun poll(
         queue: String,
         shard: String,
