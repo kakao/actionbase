@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 class PartitionHasherTest {
     @Test
     fun `partition is always within bounds`() {
-        val partitionCount = 480
+        val partitionCount = 30
         repeat(10_000) { i ->
             val p = PartitionHasher.partition("key-$i", partitionCount)
             assertTrue(p in 0 until partitionCount, "partition $p out of bounds for key-$i")
@@ -19,8 +19,8 @@ class PartitionHasherTest {
     @Test
     fun `partition is deterministic for the same key`() {
         assertEquals(
-            PartitionHasher.partition("user-42", 480),
-            PartitionHasher.partition("user-42", 480),
+            PartitionHasher.partition("user-42", 30),
+            PartitionHasher.partition("user-42", 30),
         )
     }
 

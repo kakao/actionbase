@@ -16,9 +16,9 @@ class ShardTest {
     @Test
     fun `every partition is owned by exactly one shard`() {
         val count = 4
-        val owned = (0 until count).flatMap { Shard(it, count).partitionsFor(480) }
-        assertEquals((0 until 480).toList(), owned.sorted())
-        assertEquals(480, owned.toSet().size)
+        val owned = (0 until count).flatMap { Shard(it, count).partitionsFor(30) }
+        assertEquals((0 until 30).toList(), owned.sorted())
+        assertEquals(30, owned.toSet().size)
     }
 
     @Test
