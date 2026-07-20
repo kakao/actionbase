@@ -24,9 +24,9 @@ class QueuePollE2ETest : QueueE2ESupport() {
             queue,
             """
             [
-              {"key": "u", "id": "m1", "orderBy": 1000, "payload": {"payload": "a"}},
-              {"key": "u", "id": "m2", "orderBy": 1001, "payload": {"payload": "b"}},
-              {"key": "u", "id": "m3", "orderBy": 1002, "payload": {"payload": "c"}}
+              {"key": "u", "id": "m1", "payload": {"seq": 1000, "payload": "a"}},
+              {"key": "u", "id": "m2", "payload": {"seq": 1001, "payload": "b"}},
+              {"key": "u", "id": "m3", "payload": {"seq": 1002, "payload": "c"}}
             ]
             """.trimIndent(),
         )
@@ -52,10 +52,10 @@ class QueuePollE2ETest : QueueE2ESupport() {
             queue,
             """
             [
-              {"key": "u", "id": "m1", "orderBy": 1, "payload": {"payload": "a"}},
-              {"key": "u", "id": "m2", "orderBy": 2, "payload": {"payload": "b"}},
-              {"key": "u", "id": "m3", "orderBy": 3, "payload": {"payload": "c"}},
-              {"key": "u", "id": "m4", "orderBy": 4, "payload": {"payload": "d"}}
+              {"key": "u", "id": "m1", "payload": {"seq": 1, "payload": "a"}},
+              {"key": "u", "id": "m2", "payload": {"seq": 2, "payload": "b"}},
+              {"key": "u", "id": "m3", "payload": {"seq": 3, "payload": "c"}},
+              {"key": "u", "id": "m4", "payload": {"seq": 4, "payload": "d"}}
             ]
             """.trimIndent(),
         )
@@ -78,7 +78,7 @@ class QueuePollE2ETest : QueueE2ESupport() {
             db,
             queue,
             ids.joinToString(prefix = "[", postfix = "]") { id ->
-                """{"key": "$id", "id": "$id", "orderBy": ${id.drop(1)}, "payload": {"payload": "$id"}}"""
+                """{"key": "$id", "id": "$id", "payload": {"seq": ${id.drop(1)}, "payload": "$id"}}"""
             },
         )
 

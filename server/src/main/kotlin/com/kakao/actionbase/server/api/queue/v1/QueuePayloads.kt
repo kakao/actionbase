@@ -3,9 +3,10 @@ package com.kakao.actionbase.server.api.queue.v1
 import com.kakao.actionbase.core.types.PrimitiveType
 
 /**
- * Create a queue: a partitioned, append-only log backed by an immutable edge table. `source` is
- * the partition, `target` the message id, and `orderBy` a LONG property indexed for per-partition
- * order. `properties` are the message payload fields.
+ * Create a queue: a partitioned, append-only log backed by an immutable edge table. `source` is the
+ * partition and `target` the message id. `orderBy` names one of the declared [properties] — it must
+ * be a non-nullable LONG — which is indexed for per-partition order; poll resumes on it via a range
+ * predicate. It is a reference to a caller-declared field, not an injected one.
  */
 data class QueueCreateRequest(
     val queue: String,
@@ -38,8 +39,9 @@ data class QueueDescriptorResponse(
 )
 
 /**
- * Enqueue a batch of messages. `key` is the routing key hashed to a partition, `id` the message
- * id (stored as `target`), `orderBy` the per-partition order value, and `payload` the schema fields.
+ * Enqueue a batch of messages. `key` is the routing key hashed to a partition, `id` the message id
+ * (stored as `target`), and `payload` the declared schema fields — including the queue's `orderBy`
+ * field, which supplies the per-partition order value.
  */
 data class EnqueueRequest(
     val messages: List<EnqueueMessage>,
@@ -48,7 +50,6 @@ data class EnqueueRequest(
 data class EnqueueMessage(
     val key: String,
     val id: String,
-    val orderBy: Long,
     val payload: Map<String, Any?> = emptyMap(),
 )
 

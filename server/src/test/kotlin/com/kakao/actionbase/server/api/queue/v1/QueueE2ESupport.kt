@@ -35,7 +35,10 @@ abstract class QueueE2ESupport : E2ETestBase() {
                   "storage": "datastore://${db}_ns/$queue",
                   "partitionCount": $partitionCount,
                   "orderBy": "$orderBy",
-                  "properties": [{"name": "payload", "type": "string", "nullable": true, "comment": "payload"}],
+                  "properties": [
+                    {"name": "$orderBy", "type": "long", "nullable": false, "comment": "order"},
+                    {"name": "payload", "type": "string", "nullable": true, "comment": "payload"}
+                  ],
                   "comment": "queue e2e"
                 }
                 """.trimIndent(),

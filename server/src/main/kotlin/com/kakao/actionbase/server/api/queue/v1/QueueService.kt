@@ -38,14 +38,17 @@ class QueueService(
             val items =
                 request.messages.map { message ->
                     val partition = PartitionHasher.partition(message.key, meta.partitionCount)
+                    val order =
+                        (message.payload[meta.orderBy] as? Number)?.toLong()
+                            ?: throw IllegalArgumentException("message `${message.id}` payload must carry a numeric `${meta.orderBy}`")
                     EdgeBulkMutationRequest.MutationItem(
                         type = EventType.INSERT,
                         edge =
                             Edge(
-                                version = message.orderBy,
+                                version = order,
                                 source = partition.toLong(),
                                 target = message.id,
-                                properties = message.payload + (meta.orderBy to message.orderBy),
+                                properties = message.payload,
                             ),
                     )
                 }
@@ -118,7 +121,8 @@ class QueueService(
                         partition = partition,
                         id = edge.target.toString(),
                         orderBy = (edge.properties[orderBy] as Number).toLong(),
-                        payload = edge.properties.filterKeys { it != orderBy },
+                        // Keep the declared properties intact; `orderBy` above is a convenience projection.
+                        payload = edge.properties,
                     )
                 }
             }.sortedBy { it.orderBy }

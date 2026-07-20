@@ -36,9 +36,7 @@ class QueueAdminService(
             ModelSchema.ImmutableEdge(
                 source = Field(type = PrimitiveType.LONG, comment = "partition"),
                 target = Field(type = PrimitiveType.STRING, comment = "message id"),
-                properties =
-                    listOf(StructField(request.orderBy, PrimitiveType.LONG, "queue order key", nullable = false)) +
-                        request.properties.map { StructField(it.name, it.type, it.comment, it.nullable) },
+                properties = request.properties.map { StructField(it.name, it.type, it.comment, it.nullable) },
                 direction = DirectionType.OUT,
                 indexes = listOf(Index(ORDER_INDEX, listOf(IndexField(request.orderBy, Order.ASC)))),
             )
@@ -70,11 +68,16 @@ class QueueAdminService(
 
     private fun validate(request: QueueCreateRequest) {
         require(request.partitionCount > 0) { "partitionCount must be positive, got ${request.partitionCount}" }
-        require(request.orderBy !in RESERVED_FIELDS) { "orderBy must not be a reserved field name $RESERVED_FIELDS, got `${request.orderBy}`" }
         request.properties.forEach { field ->
             require(field.name !in RESERVED_FIELDS) { "property `${field.name}` collides with a reserved field name $RESERVED_FIELDS" }
-            require(field.name != request.orderBy) { "property `${field.name}` collides with the orderBy field" }
         }
+        val orderField =
+            request.properties.find { it.name == request.orderBy }
+                ?: throw IllegalArgumentException(
+                    "orderBy `${request.orderBy}` must name one of the declared properties ${request.properties.map { it.name }}",
+                )
+        require(orderField.type == PrimitiveType.LONG) { "orderBy field `${request.orderBy}` must be LONG, got ${orderField.type}" }
+        require(!orderField.nullable) { "orderBy field `${request.orderBy}` must be non-nullable" }
     }
 
     private fun TableDescriptor<*>.toQueueResponse(): QueueDescriptorResponse {

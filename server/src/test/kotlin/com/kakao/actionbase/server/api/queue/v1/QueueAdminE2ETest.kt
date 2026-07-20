@@ -32,7 +32,10 @@ class QueueAdminE2ETest : E2ETestBase() {
           "storage": "datastore://queue_admin_ns/$queue",
           "partitionCount": 12,
           "orderBy": "$orderBy",
-          "properties": [{"name": "payload", "type": "string", "nullable": true, "comment": "payload"}],
+          "properties": [
+            {"name": "seq", "type": "long", "nullable": false, "comment": "order"},
+            {"name": "payload", "type": "string", "nullable": true, "comment": "payload"}
+          ],
           "comment": "admin lifecycle"
         }
         """.trimIndent()
@@ -77,14 +80,37 @@ class QueueAdminE2ETest : E2ETestBase() {
     }
 
     @Test
-    fun `reserved orderBy name is rejected`() {
+    fun `orderBy referencing an undeclared property is rejected`() {
         createDb()
         client
             .post()
             .uri("/queue/v1/databases/$db/queues")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(createQueueBody("bad_queue", orderBy = "ts"))
+            .bodyValue(createQueueBody("bad_queue", orderBy = "missing"))
             .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `non-LONG orderBy property is rejected`() {
+        createDb()
+        client
+            .post()
+            .uri("/queue/v1/databases/$db/queues")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "queue": "bad_type_queue",
+                  "storage": "datastore://queue_admin_ns/bad_type_queue",
+                  "partitionCount": 12,
+                  "orderBy": "payload",
+                  "properties": [{"name": "payload", "type": "string", "nullable": true, "comment": "payload"}],
+                  "comment": "admin lifecycle"
+                }
+                """.trimIndent(),
+            ).exchange()
             .expectStatus()
             .isBadRequest
     }

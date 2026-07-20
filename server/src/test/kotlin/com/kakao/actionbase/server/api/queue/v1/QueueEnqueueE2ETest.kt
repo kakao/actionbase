@@ -26,9 +26,9 @@ class QueueEnqueueE2ETest : QueueE2ESupport() {
                 """
                 {
                   "messages": [
-                    {"key": "user-1", "id": "m1", "orderBy": 1000, "payload": {"payload": "a"}},
-                    {"key": "user-1", "id": "m2", "orderBy": 1001, "payload": {"payload": "b"}},
-                    {"key": "user-2", "id": "m3", "orderBy": 1002, "payload": {"payload": "c"}}
+                    {"key": "user-1", "id": "m1", "payload": {"seq": 1000, "payload": "a"}},
+                    {"key": "user-1", "id": "m2", "payload": {"seq": 1001, "payload": "b"}},
+                    {"key": "user-2", "id": "m3", "payload": {"seq": 1002, "payload": "c"}}
                   ]
                 }
                 """.trimIndent(),
