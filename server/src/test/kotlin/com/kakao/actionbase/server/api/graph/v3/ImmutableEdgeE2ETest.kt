@@ -62,7 +62,7 @@ class ImmutableEdgeE2ETest : E2ETestBase() {
     private fun append() {
         client
             .post()
-            .uri("/graph/v3/databases/$db/tables/$table/edges/sync")
+            .uri("/graph/v3/databases/$db/tables/$table/edges")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
@@ -120,10 +120,23 @@ class ImmutableEdgeE2ETest : E2ETestBase() {
     }
 
     @Test
-    fun `non-INSERT mutation is rejected with 400`() {
+    fun `UPDATE mutation is rejected with 400`() {
         client
             .post()
-            .uri("/graph/v3/databases/$db/tables/$table/edges/sync")
+            .uri("/graph/v3/databases/$db/tables/$table/edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """{"mutations": [{"type": "UPDATE", "edge": {"version": 2000, "source": 1, "target": "m1", "properties": {"seq": 2000}}}]}""",
+            ).exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `DELETE mutation is rejected with 400`() {
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables/$table/edges")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """{"mutations": [{"type": "DELETE", "edge": {"version": 2000, "source": 1, "target": "m1", "properties": {}}}]}""",
