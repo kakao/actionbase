@@ -62,3 +62,21 @@ data class EnqueueResult(
     val id: String,
     val status: String,
 )
+
+/**
+ * A poll page. `cursor` carries the forward-only per-partition offsets to resume the next poll;
+ * it is null once every owned partition is drained. `limit` is applied per partition, so ordering
+ * is guaranteed within a partition and best-effort across partitions within a page.
+ */
+data class PollResponse(
+    val messages: List<PolledMessage>,
+    val cursor: String?,
+    val hasNext: Boolean,
+)
+
+data class PolledMessage(
+    val partition: Int,
+    val id: String,
+    val orderBy: Long,
+    val payload: Map<String, Any?>,
+)

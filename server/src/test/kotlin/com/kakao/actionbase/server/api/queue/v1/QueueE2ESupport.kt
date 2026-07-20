@@ -43,4 +43,19 @@ abstract class QueueE2ESupport : E2ETestBase() {
             .expectStatus()
             .isOk
     }
+
+    protected fun enqueue(
+        db: String,
+        queue: String,
+        messagesJson: String,
+    ) {
+        client
+            .post()
+            .uri("/queue/v1/databases/$db/queues/$queue/messages")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"messages": $messagesJson}""")
+            .exchange()
+            .expectStatus()
+            .isOk
+    }
 }
