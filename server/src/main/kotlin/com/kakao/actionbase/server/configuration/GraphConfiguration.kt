@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.configuration
 
+import com.kakao.actionbase.core.metadata.features.FeatureFlags
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.client.kafka.SpringKafkaClientFactory
@@ -84,6 +85,11 @@ class GraphConfiguration {
                 properties.systemMutationMode?.let { withSystemMutationMode(it) }
                 withReadOnly(serverProperties.readOnly)
                 withUseJdbcMetastore(properties.useJdbcMetastore)
+                withFeatureFlags(
+                    serverProperties.featureFlags.map {
+                        FeatureFlags.Item(it.feature, it.scope.databases)
+                    },
+                )
             }
         return builder.build()
     }

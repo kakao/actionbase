@@ -1,6 +1,6 @@
 package com.kakao.actionbase.server.configuration
 
-import com.kakao.actionbase.core.metadata.features.TableFeature
+import com.kakao.actionbase.core.metadata.features.MutationFeature
 
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -25,36 +25,65 @@ class ServerPropertiesTest {
     }
 
     @Test
-    fun `binds database-level-features entries from kebab-case keys`() {
+    fun `binds feature-flags entries from kebab-case keys`() {
         val bound =
             bind(
                 mapOf(
-                    "actionbase.database-level-features[0].database" to "fanin",
-                    "actionbase.database-level-features[0].features[0]" to "INSERT_MERGE",
+                    "actionbase.feature-flags[0].feature" to "INSERT_MERGE",
+                    "actionbase.feature-flags[0].scope.databases[0]" to "fanin",
                 ),
             )
 
-        assertEquals(setOf(TableFeature.INSERT_MERGE), bound.featuresOf("fanin"))
+        assertEquals(
+            listOf(
+                ServerProperties.FeatureFlag(
+                    MutationFeature.INSERT_MERGE,
+                    ServerProperties.Scope(setOf("fanin")),
+                ),
+            ),
+            bound.featureFlags,
+        )
     }
 
     @Test
-    fun `featuresOf returns empty set for an unlisted database`() {
+    fun `a feature with no scope binds to an empty scope`() {
         val bound =
             bind(
                 mapOf(
-                    "actionbase.database-level-features[0].database" to "fanin",
-                    "actionbase.database-level-features[0].features[0]" to "INSERT_MERGE",
+                    "actionbase.feature-flags[0].feature" to "INSERT_MERGE",
                 ),
             )
 
-        assertEquals(emptySet(), bound.featuresOf("other"))
+        assertEquals(
+            listOf(ServerProperties.FeatureFlag(MutationFeature.INSERT_MERGE, ServerProperties.Scope())),
+            bound.featureFlags,
+        )
+    }
+
+    @Test
+    fun `a feature can target multiple databases`() {
+        val bound =
+            bind(
+                mapOf(
+                    "actionbase.feature-flags[0].feature" to "INSERT_MERGE",
+                    "actionbase.feature-flags[0].scope.databases[0]" to "fanin",
+                    "actionbase.feature-flags[0].scope.databases[1]" to "timeline",
+                ),
+            )
+
+        assertEquals(
+            setOf("fanin", "timeline"),
+            bound.featureFlags
+                .single()
+                .scope.databases,
+        )
     }
 
     @Test
     fun `no entries binds to an empty gate`() {
         val bound = bind(emptyMap())
 
-        assertEquals(emptySet(), bound.featuresOf("fanin"))
+        assertEquals(emptyList(), bound.featureFlags)
     }
 
     @Test
@@ -63,23 +92,25 @@ class ServerPropertiesTest {
             assertFailsWith<BindException> {
                 bind(
                     mapOf(
-                        "actionbase.database-level-features[0].database" to "fanin",
-                        "actionbase.database-level-features[0].features[0]" to "INSERT_MEGRE",
+                        "actionbase.feature-flags[0].feature" to "INSERT_MEGRE",
+                        "actionbase.feature-flags[0].scope.databases[0]" to "fanin",
                     ),
                 )
             }
 
-        assertTrue(exception.message!!.contains("database-level-features"))
+        assertTrue(exception.message!!.contains("feature-flags"))
     }
 
     @Test
-    fun `invalid database name fails binding`() {
+    fun `duplicate feature entries fail binding`() {
         val exception =
             assertFailsWith<BindException> {
                 bind(
                     mapOf(
-                        "actionbase.database-level-features[0].database" to "fanin-svc",
-                        "actionbase.database-level-features[0].features[0]" to "INSERT_MERGE",
+                        "actionbase.feature-flags[0].feature" to "INSERT_MERGE",
+                        "actionbase.feature-flags[0].scope.databases[0]" to "fanin",
+                        "actionbase.feature-flags[1].feature" to "INSERT_MERGE",
+                        "actionbase.feature-flags[1].scope.databases[0]" to "timeline",
                     ),
                 )
             }
@@ -88,29 +119,7 @@ class ServerPropertiesTest {
             exception.cause!!
                 .cause!!
                 .message!!
-                .contains("Invalid database names"),
-        )
-    }
-
-    @Test
-    fun `duplicate database entries fail binding`() {
-        val exception =
-            assertFailsWith<BindException> {
-                bind(
-                    mapOf(
-                        "actionbase.database-level-features[0].database" to "fanin",
-                        "actionbase.database-level-features[0].features[0]" to "INSERT_MERGE",
-                        "actionbase.database-level-features[1].database" to "fanin",
-                        "actionbase.database-level-features[1].features[0]" to "INSERT_MERGE",
-                    ),
-                )
-            }
-
-        assertTrue(
-            exception.cause!!
-                .cause!!
-                .message!!
-                .contains("Duplicate database entries"),
+                .contains("Duplicate feature entries"),
         )
     }
 }
