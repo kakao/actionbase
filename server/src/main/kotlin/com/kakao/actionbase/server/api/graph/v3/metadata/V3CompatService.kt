@@ -112,16 +112,16 @@ class V3CompatService(
         val groups =
             when (val s = request.schema) {
                 is ModelSchema.Edge -> s.groups
+                is ModelSchema.ImmutableEdge -> s.groups
                 is ModelSchema.MultiEdge -> s.groups
                 is ModelSchema.Vertex -> emptyList()
-                is ModelSchema.ImmutableEdge -> s.groups
             }
         val caches =
             when (val s = request.schema) {
                 is ModelSchema.Edge -> s.caches
+                is ModelSchema.ImmutableEdge -> emptyList()
                 is ModelSchema.MultiEdge -> s.caches
                 is ModelSchema.Vertex -> emptyList()
-                is ModelSchema.ImmutableEdge -> emptyList()
             }
         val v2Request =
             V2LabelCreateRequest(

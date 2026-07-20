@@ -100,9 +100,7 @@ data class LabelEntity(
                     }
                 }
                 LabelType.INDEXED, LabelType.MULTI_EDGE, LabelType.VERTEX, LabelType.IMMUTABLE_INDEXED -> {
-                    // MultiEdge, Vertex, and ImmutableEdge are all backed by the INDEXED storage path
-                    // in the v2 engine; immutable-edge behavior (index-only writes, scan-delete) is
-                    // differentiated in the v3 binding, keyed off ModelSchema.ImmutableEdge.
+                    // MultiEdge, Vertex, and ImmutableEdge all share the INDEXED storage path; their behavior is differentiated in the v3 binding.
                     if (type == LabelType.MULTI_EDGE && !readOnly) {
                         logger.error("MULTI_EDGE type should be read-only in the v2 engine. Fallback to NilLabel")
                         return NilLabel(this.copy(type = LabelType.NIL))

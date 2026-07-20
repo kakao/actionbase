@@ -29,6 +29,12 @@ sealed class V3TableDescriptor {
         override val schema: ModelSchema.Edge,
     ) : V3TableDescriptor()
 
+    data class ImmutableEdge(
+        override val database: String,
+        override val table: String,
+        override val schema: ModelSchema.ImmutableEdge,
+    ) : V3TableDescriptor()
+
     data class MultiEdge(
         override val database: String,
         override val table: String,
@@ -39,12 +45,6 @@ sealed class V3TableDescriptor {
         override val database: String,
         override val table: String,
         override val schema: ModelSchema.Vertex,
-    ) : V3TableDescriptor()
-
-    data class ImmutableEdge(
-        override val database: String,
-        override val table: String,
-        override val schema: ModelSchema.ImmutableEdge,
     ) : V3TableDescriptor()
 
     companion object {

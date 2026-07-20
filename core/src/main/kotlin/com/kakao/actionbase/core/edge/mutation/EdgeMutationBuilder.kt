@@ -37,6 +37,14 @@ object EdgeMutationBuilder {
         caches: List<Cache>,
     ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.Edge, before, after, directionType, indexes, groups, caches)
 
+    fun buildForImmutableEdge(
+        before: EdgeStateRecord,
+        after: EdgeStateRecord,
+        directionType: DirectionType,
+        indexes: List<Index>,
+        groups: List<Group>,
+    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.ImmutableEdge, before, after, directionType, indexes, groups, emptyList())
+
     fun buildForMultiEdge(
         before: EdgeStateRecord,
         after: EdgeStateRecord,
@@ -50,19 +58,6 @@ object EdgeMutationBuilder {
         before: EdgeStateRecord,
         after: EdgeStateRecord,
     ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.Vertex, before, after, DirectionType.OUT, emptyList(), emptyList(), emptyList())
-
-    /**
-     * Immutable edge: emits index (+group) records only — no count (strategy suppresses it)
-     * and no cache (caches are always empty here). The state record is still carried in
-     * [EdgeMutationRecords.stateRecord] but the binding skips the state `Put` for this kind.
-     */
-    fun buildForImmutableEdge(
-        before: EdgeStateRecord,
-        after: EdgeStateRecord,
-        directionType: DirectionType,
-        indexes: List<Index>,
-        groups: List<Group>,
-    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.ImmutableEdge, before, after, directionType, indexes, groups, emptyList())
 
     private fun buildWith(
         strategy: EdgeMutationStrategy,
