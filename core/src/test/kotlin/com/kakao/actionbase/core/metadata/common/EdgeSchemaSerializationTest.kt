@@ -129,11 +129,11 @@ class EdgeSchemaSerializationTest {
                     "topk": [
                       {
                         "topk": "top_purchased_1y",
+                        "scope": "LOCAL",
                         "ranges": "time:bt:now-365d,now",
+                        "dimensionValue": "banana",
                         "refreshAfterMillis": 31536000000,
-                        "table": {
-                          "score": "commerce.order_product__topk"
-                        }
+                        "score": "commerce.order_product__topk"
                       }
                     ]
                   }
@@ -160,11 +160,11 @@ class EdgeSchemaSerializationTest {
                     "topk": [
                       {
                         "topk": "top_purchased_1y",
+                        "scope": "LOCAL",
                         "ranges": "time:bt:now-365d,now",
+                        "dimensionValue": "banana",
                         "refreshAfterMillis": 31536000000,
-                        "table": {
-                          "score": "commerce.order_product__topk"
-                        }
+                        "score": "commerce.order_product__topk"
                       }
                     ]
                   }
@@ -185,7 +185,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased", "table": {"score": "commerce.order_product__topk"}}]
+                    "topk": [{"topk": "top_purchased", "scope": "GLOBAL", "dimensionValue": "banana", "score": "commerce.order_product__topk"}]
                   }
                 }
               ]
@@ -202,7 +202,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased", "table": {"score": "commerce.order_product__topk"}}]
+                    "topk": [{"topk": "top_purchased", "scope": "GLOBAL", "dimensionValue": "banana", "score": "commerce.order_product__topk"}]
                   }
                 }
               ]
