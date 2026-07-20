@@ -88,10 +88,23 @@ object V3MetadataConverter {
             comment = desc,
         )
 
+    fun LabelEntity.toV3TableDescriptorImmutableEdge(tenant: String): TableDescriptor.ImmutableEdge =
+        TableDescriptor.ImmutableEdge(
+            tenant = tenant,
+            database = name.service,
+            table = name.nameNotNull,
+            schema = schema.toV3ModelSchemaImmutableEdge(dirType.toV3DirectionType(), indices, groups),
+            mode = mode.toV3MutationMode(),
+            storage = storage,
+            active = active,
+            comment = desc,
+        )
+
     fun LabelEntity.toV3TableDescriptor(tenant: String): TableDescriptor<*> =
         when (type) {
             LabelType.MULTI_EDGE -> toV3TableDescriptorMultiEdge(tenant)
             LabelType.VERTEX -> toV3TableDescriptorVertex(tenant)
+            LabelType.IMMUTABLE_INDEXED -> toV3TableDescriptorImmutableEdge(tenant)
             else -> toV3TableDescriptorEdge(tenant)
         }
 
@@ -124,6 +137,22 @@ object V3MetadataConverter {
             groups = schema.groups,
             event = false,
             readOnly = true,
+            mode = mode.toV2MutationMode(),
+        )
+
+    fun TableDescriptor.ImmutableEdge.toV2LabelEntity(): LabelEntity =
+        LabelEntity(
+            active = active,
+            name = EntityName(database, table),
+            desc = comment,
+            type = LabelType.IMMUTABLE_INDEXED,
+            schema = schema.toV2EdgeSchema(),
+            dirType = schema.direction.toV2DirectionType(),
+            storage = storage,
+            indices = schema.indexes.map { it.toV2Index() },
+            groups = schema.groups,
+            event = false,
+            readOnly = false,
             mode = mode.toV2MutationMode(),
         )
 
@@ -253,7 +282,36 @@ object V3MetadataConverter {
         )
     }
 
+    fun EdgeSchema.toV3ModelSchemaImmutableEdge(
+        direction: V3DirectionType,
+        indices: List<V2Index>,
+        groups: List<Group>,
+    ): ModelSchema.ImmutableEdge =
+        ModelSchema.ImmutableEdge(
+            source =
+                V3Field(
+                    type = src.type.toV3PrimitiveType(),
+                    comment = src.desc,
+                ),
+            target =
+                V3Field(
+                    type = tgt.type.toV3PrimitiveType(),
+                    comment = tgt.desc,
+                ),
+            properties = fields.map { it.toV3StructField() },
+            direction = direction,
+            indexes = indices.map { it.toV3Index() },
+            groups = groups,
+        )
+
     fun ModelSchema.Edge.toV2EdgeSchema(): EdgeSchema =
+        EdgeSchema(
+            VertexField(source.type.toV2VertexType(), source.comment),
+            VertexField(target.type.toV2VertexType(), target.comment),
+            properties.map { it.toV2Field() },
+        )
+
+    fun ModelSchema.ImmutableEdge.toV2EdgeSchema(): EdgeSchema =
         EdgeSchema(
             VertexField(source.type.toV2VertexType(), source.comment),
             VertexField(target.type.toV2VertexType(), target.comment),

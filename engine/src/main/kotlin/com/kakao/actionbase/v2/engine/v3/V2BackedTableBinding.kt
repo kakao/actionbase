@@ -18,6 +18,7 @@ import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.state.SpecialStateValue
 import com.kakao.actionbase.core.state.State
+import com.kakao.actionbase.core.state.StateValue
 import com.kakao.actionbase.core.storage.HBaseRecord
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.binding.MutationRecordsSummary
@@ -29,7 +30,9 @@ import com.kakao.actionbase.engine.sql.Row
 import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.metadata.Direction
+import com.kakao.actionbase.v2.core.metadata.SystemProperties
 import com.kakao.actionbase.v2.engine.entity.EntityName
+import com.kakao.actionbase.v2.engine.sql.RowWithSchema
 import com.kakao.actionbase.v2.engine.label.LockAcquisitionFailedException
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
@@ -59,6 +62,9 @@ class V2BackedTableBinding(
     private val groupRecordMapper = mapper.group
     private val cacheRecordMapper = mapper.cache
 
+    /** Immutable edge tables persist index rows only — no `State`, no point get, delete via scan. */
+    private val isImmutable: Boolean = descriptor.schema is ModelSchema.ImmutableEdge
+
     // -- mutation
 
     override fun <T> withLock(
@@ -81,6 +87,10 @@ class V2BackedTableBinding(
     }
 
     override fun read(key: MutationKey): Mono<State> {
+        // No State row exists for immutable edges, so every mutation reads the initial (empty)
+        // state — the read-modify-write skeleton then treats it as a pure append (CREATE).
+        // Short-circuit to avoid a wasted storage Get for a row that is never written.
+        if (isImmutable) return Mono.just(State.initial)
         val (source, target) = key.toSourceTarget()
         with(label) {
             val compatibleEdge = Edge(0L, source, target)
@@ -132,6 +142,11 @@ class V2BackedTableBinding(
         keys: List<Pair<Any, Any>>,
         filters: String?,
     ): Mono<DataFrame> {
+        if (isImmutable) {
+            return Mono.error(
+                UnsupportedOperationException("point get is not supported on immutable edge tables; use scan"),
+            )
+        }
         val postPredicates = filters?.let { WherePredicate.parse(it, label.entity.schema) }?.toSet() ?: emptySet()
 
         val hbaseGets =
@@ -219,6 +234,80 @@ class V2BackedTableBinding(
                 val total = tuple.t2
                 df.applyPredicates(postPredicates).toV3(total)
             }.switchIfEmpty(EMPTY_DATAFRAME)
+    }
+
+    override fun scanAndDelete(
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        offset: String?,
+        ranges: String?,
+        filters: String?,
+    ): Mono<Long> {
+        val schema =
+            descriptor.schema as? ModelSchema.ImmutableEdge
+                ?: return super.scanAndDelete(index, start, direction, limit, offset, ranges, filters)
+
+        val indexEntity =
+            label.entity.indices.find { it.name == index }
+                ?: return Mono.error(IllegalArgumentException("index `$index` is not found in label `${label.entity.name}`."))
+
+        val indexPredicates = ranges?.let { WherePredicate.parse(it) }?.toSet() ?: emptySet()
+        val indexPredicateKeys = indexPredicates.map { it.key }
+        val indexFieldNames = indexEntity.fields.map { it.name }
+        require(indexPredicateKeys.size <= indexFieldNames.size) {
+            "valid `ranges` order for the index `$index` is $indexFieldNames. input was: $indexPredicateKeys."
+        }
+        indexPredicateKeys.zip(indexFieldNames).forEach { (predicateFieldName, indexFieldName) ->
+            require(predicateFieldName == indexFieldName) {
+                "valid `ranges` order for the index `$index` is $indexFieldNames. input was: $indexPredicateKeys."
+            }
+        }
+        require(filters == null) { "`filters` is not supported in scan-and-delete." }
+
+        val scanFilter =
+            ScanFilter(
+                name = EntityName(descriptor.database, descriptor.table),
+                srcSet = setOf(start),
+                dir = direction,
+                limit = limit,
+                offset = offset,
+                indexName = index,
+                otherPredicates = indexPredicates,
+            )
+
+        return label
+            .scan(scanFilter, emptySet())
+            .flatMap { df ->
+                val rows = df.toRowWithSchema()
+                if (rows.isEmpty()) {
+                    Mono.just(0L)
+                } else {
+                    val mutations = rows.flatMap { row -> buildDeleteMutations(schema, row) }
+                    label
+                        .handleDeferredRequests(mutations, null)
+                        .thenReturn(rows.size.toLong())
+                }
+            }.switchIfEmpty(Mono.just(0L))
+    }
+
+    // Reconstructs the stored edge from a scanned row and derives its delete mutations
+    // (index-row deletes + group decrements) by running the immutable mutation builder in
+    // reverse — active `before`, inactive `after` — so deletes stay symmetric with appends.
+    private fun buildDeleteMutations(
+        schema: ModelSchema.ImmutableEdge,
+        row: RowWithSchema,
+    ): List<Mutation> {
+        val source = row[SystemProperties.SRC.str]
+        val target = row[SystemProperties.TGT.str]
+        val version = row.getLong(SystemProperties.TS.str)
+        val properties = schema.properties.map { it.name to StateValue(version, row.getOrNull(it.name)) }
+        val activeState = State.create(active = true, version = version, properties = properties)
+        val before = EdgeStateRecord.of(source, target, activeState, label.entity.id)
+        val after = EdgeStateRecord.of(source, target, activeState.copy(active = false), label.entity.id)
+        val records = EdgeMutationBuilder.buildForImmutableEdge(before, after, schema.direction, schema.indexes, schema.groups)
+        return buildHBaseMutations(records)
     }
 
     override fun seek(
@@ -386,6 +475,8 @@ class V2BackedTableBinding(
                 EdgeMutationBuilder.buildForMultiEdge(before, after, schema.direction, schema.indexes, schema.groups, schema.caches)
             is ModelSchema.Vertex ->
                 EdgeMutationBuilder.buildForVertex(before, after)
+            is ModelSchema.ImmutableEdge ->
+                EdgeMutationBuilder.buildForImmutableEdge(before, after, schema.direction, schema.indexes, schema.groups)
         }
     }
 
@@ -406,10 +497,13 @@ class V2BackedTableBinding(
 
     private fun buildHBaseMutations(mutationRecords: EdgeMutationRecords): List<Mutation> {
         val mutations = mutableListOf<Mutation>()
-        val record = mapper.state.encoder.encode(mutationRecords.stateRecord)
-        mutations +=
-            Put(record.key)
-                .addColumn(HBaseConstants.DEFAULT_COLUMN_FAMILY, HBaseConstants.DEFAULT_QUALIFIER, record.value)
+        // Immutable edges persist no State row — index (+group) records only.
+        if (!isImmutable) {
+            val record = mapper.state.encoder.encode(mutationRecords.stateRecord)
+            mutations +=
+                Put(record.key)
+                    .addColumn(HBaseConstants.DEFAULT_COLUMN_FAMILY, HBaseConstants.DEFAULT_QUALIFIER, record.value)
+        }
         mutations +=
             mutationRecords.createIndexRecords.map {
                 val record = mapper.index.encoder.encode(it)

@@ -48,6 +48,14 @@ data class TableUpdateRequest(
                     )
                 }
                 is ModelSchema.Vertex -> null
+                is ModelSchema.ImmutableEdge ->
+                    EdgeSchema(
+                        VertexField(it.source.type.toV2VertexType(), it.source.comment),
+                        VertexField(it.target.type.toV2VertexType(), it.target.comment),
+                        it.properties.map { prop ->
+                            V2Field(prop.name, prop.type.toV2DataType(), prop.nullable, prop.comment)
+                        },
+                    )
             }
         }
 
@@ -59,6 +67,7 @@ data class TableUpdateRequest(
                 // Vertex has no indices; return null so LabelUpdateRequest treats it as no-op
                 // instead of overwriting any existing serialized list with `[]`.
                 is ModelSchema.Vertex -> null
+                is ModelSchema.ImmutableEdge -> it.indexes.map { idx -> idx.toV2Index() }
             }
         }
 
@@ -68,6 +77,7 @@ data class TableUpdateRequest(
                 is ModelSchema.Edge -> it.groups
                 is ModelSchema.MultiEdge -> it.groups
                 is ModelSchema.Vertex -> null
+                is ModelSchema.ImmutableEdge -> it.groups
             }
         }
 
@@ -77,6 +87,8 @@ data class TableUpdateRequest(
                 is ModelSchema.Edge -> it.caches
                 is ModelSchema.MultiEdge -> it.caches
                 is ModelSchema.Vertex -> null
+                // Immutable edges have no caches; null keeps the update a no-op for this field.
+                is ModelSchema.ImmutableEdge -> null
             }
         }
 }
