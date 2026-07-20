@@ -111,6 +111,35 @@ public class BulkEdgeEncoderTests {
   }
 
   @Test
+  void testImmutableIndexedEncodesIndexOnly() throws JsonProcessingException {
+    // Immutable edge (IMMUTABLE_INDEXED): index rows only — no hash state, no cache, no counter.
+    String immutableLabelJson =
+        labelJsonString
+            .replace("\"type\":\"INDEXED\"", "\"type\":\"IMMUTABLE_INDEXED\"")
+            .replace(
+                "\"caches\":[{\"cache\":\"top_created_at\",\"fields\":[{\"field\":\"created_at\",\"order\":\"DESC\"}],\"limit\":100}]",
+                "\"caches\":[]");
+    LabelDTO label = objectMapper.readValue(immutableLabelJson, LabelDTO.class);
+    LabelDTO newLabel = label.copy("gift.imm_v1_20240402", "gift.imm_v1_20240402");
+
+    BulkLoadEdge edge = objectMapper.readValue(edgeJsonString, BulkLoadEdge.class);
+
+    EdgeEncoderFactory factory = new EdgeEncoderFactory(1);
+    EdgeEncoder<byte[]> encoder = factory.bytesKeyValueEdgeEncoder;
+
+    List<TypedKeyFieldValue<byte[]>> encodedEdges =
+        BulkEdgeEncoder.bulkEncodeAll(encoder, edge, newLabel);
+
+    // dirType BOTH: 2 indexed rows (OUT/IN) only — no hash state, no cache, no counter.
+    assertEquals(2, encodedEdges.size());
+    for (TypedKeyFieldValue<byte[]> kv : encodedEdges) {
+      assertNull(kv.field, "immutable edge must not emit cache rows");
+      DecodedEdge decodedEdge = DecodedEdge.from(KeyFieldValue.from(kv), Collections.emptyMap());
+      assertEquals(EncodedEdgeType.INDEXED_EDGE_TYPE, decodedEdge.getType());
+    }
+  }
+
+  @Test
   void testFetchIndexedLabelAndEncodeEdgesOutboundOnly() throws JsonProcessingException {
     String labelJsonString1 =
         labelJsonString.replace("\"dirType\":\"BOTH\"", "\"dirType\":\"OUT\"");
