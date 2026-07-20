@@ -4,6 +4,8 @@ import com.kakao.actionbase.core.Constants.VERTEX_MARKER
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
+import com.kakao.actionbase.core.metadata.features.FeatureFlags
+import com.kakao.actionbase.core.metadata.features.MutationFeature
 import com.kakao.actionbase.core.vertex.payload.VertexBulkMutationRequest
 import com.kakao.actionbase.core.vertex.payload.VertexMutationResponse
 import com.kakao.actionbase.engine.service.MutationService
@@ -32,12 +34,18 @@ class MutationServiceSpec :
 
         lateinit var graph: Graph
         lateinit var mutationService: MutationService
+        lateinit var mergeMutationService: MutationService
         lateinit var queryService: QueryService
 
         beforeTest {
             graph = GraphFixtures.create()
             val engine = V2BackedEngine(graph)
             mutationService = MutationService(engine)
+            mergeMutationService =
+                MutationService(
+                    engine,
+                    FeatureFlags(listOf(FeatureFlags.Item(MutationFeature.INSERT_MERGE, setOf(GraphFixtures.serviceName)))),
+                )
             queryService = QueryService(engine)
         }
 
@@ -544,6 +552,83 @@ class MutationServiceSpec :
                     .block()!!
             afterDeleteResult.edges.size shouldBe 1
             afterDeleteResult.edges[0].source.toString() shouldBe "user1"
+        }
+
+        "INSERT missing non-nullable field with INSERT_MERGE surfaces INVALID at transit" {
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.hbaseIndexed // createdAt: LONG, nullable=false
+
+            // With the merge gate an omitted field passes request validation (it may be supplied
+            // by a prior write); on this empty row completeness fails at transit, post-WAL, and
+            // surfaces as a per-item INVALID (permanent) status instead of a transient ERROR.
+            val request =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 10, "source": "4000", "target": "9000", "properties": {"permission": "na"}}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+
+            mergeMutationService
+                .mutate(database, table, request.mutations)
+                .test()
+                .assertNext { results ->
+                    results.size shouldBe 1
+                    results[0].status shouldBe "INVALID"
+                }.verifyComplete()
+
+            // No row should be persisted
+            queryService
+                .gets(database, table, listOf("4000"), listOf("9000"))
+                .test()
+                .assertNext { it.edges.isEmpty() shouldBe true }
+                .verifyComplete()
+        }
+
+        "partial INSERTs with INSERT_MERGE merge into one row (fan-in)" {
+            val database = GraphFixtures.serviceName
+            val table = GraphFixtures.hbaseIndexed
+
+            val first =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 10, "source": "5000", "target": "9000", "properties": {"permission": "na", "createdAt": 10}}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+            val second =
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 20, "source": "5000", "target": "9000", "properties": {"permission": "nb"}}}
+                  ]
+                }
+                """.trimIndent().toEdgeBulkMutationRequest()
+
+            mergeMutationService
+                .mutate(database, table, first.mutations)
+                .test()
+                .assertNext { it[0].status shouldBe "CREATED" }
+                .verifyComplete()
+
+            // The second INSERT omits the non-nullable createdAt — legal under merge: the value
+            // written by the first source is kept, the row stays active.
+            mergeMutationService
+                .mutate(database, table, second.mutations)
+                .test()
+                .assertNext { it[0].status shouldBe "UPDATED" }
+                .verifyComplete()
+
+            queryService
+                .gets(database, table, listOf("5000"), listOf("9000"))
+                .test()
+                .assertNext { payload ->
+                    payload.edges.size shouldBe 1
+                    payload.edges[0].properties["permission"] shouldBe "nb"
+                    payload.edges[0].properties["createdAt"] shouldBe 10L
+                }.verifyComplete()
         }
     }) {
     companion object {

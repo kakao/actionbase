@@ -4,7 +4,10 @@ import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.UnresolvedEvent
 import com.kakao.actionbase.core.edge.payload.MutationResult
+import com.kakao.actionbase.core.metadata.features.FeatureFlags
+import com.kakao.actionbase.core.metadata.features.MutationFeature
 import com.kakao.actionbase.core.state.EventType
+import com.kakao.actionbase.core.state.InvalidMutationException
 import com.kakao.actionbase.core.state.transit
 import com.kakao.actionbase.engine.Audit
 import com.kakao.actionbase.engine.MutationContext
@@ -25,6 +28,7 @@ import reactor.core.publisher.Mono
 
 class MutationService(
     private val engine: MutationEngine,
+    private val featureFlags: FeatureFlags = FeatureFlags(emptyList()),
 ) {
     fun mutate(
         database: String,
@@ -34,8 +38,9 @@ class MutationService(
         syncMode: MutationMode? = null,
         forceSyncMode: Boolean = false,
         requestContext: RequestContext = RequestContext.DEFAULT,
-    ): Mono<List<MutationResult>> =
-        Mono
+    ): Mono<List<MutationResult>> {
+        val insertMerge = featureFlags.has(FeatureFlags.Scope(database), MutationFeature.INSERT_MERGE)
+        return Mono
             .fromCallable {
                 val tb = engine.getTableBinding(database, alias)
                 val ctx =
@@ -51,7 +56,7 @@ class MutationService(
             }.flatMap { (ctx, tb) ->
                 Flux
                     .fromIterable(unresolvedEvents)
-                    .map { it.createEvent(tb.schema) }
+                    .map { it.createEvent(tb.schema, insertMerge) }
                     .collectList()
                     .flatMapMany { Flux.fromIterable(it) }
                     .flatMap { event -> engine.writeWal(ctx, event).thenReturn(event) }
@@ -62,12 +67,14 @@ class MutationService(
                         } else {
                             groupMono.flatMap { group ->
                                 val sorted = group.sortedBy { it.event.version }
-                                readModifyWrite(tb, key, sorted, acquireLock, requestContext.newCollector())
+                                readModifyWrite(tb, key, sorted, acquireLock, requestContext.newCollector(), insertMerge)
                                     .doOnNext { result ->
                                         engine.writeCdc(ctx, sorted, result.status, result.before, result.after, result.acc)
-                                    }.onErrorResume {
-                                        tb.handleMutationError(it)
-                                        Mono.just(MutationResult.of(key, 0, ERROR))
+                                    }.onErrorResume { error ->
+                                        tb.handleMutationError(error)
+                                        // Permanent (bad input) vs transient (retryable).
+                                        val status = if (error.isInvalidMutation()) INVALID else ERROR
+                                        Mono.just(MutationResult.of(key, 0, status))
                                     }
                             }
                         }
@@ -75,6 +82,7 @@ class MutationService(
                     .timeout(Duration.ofMillis(engine.mutationRequestTimeout))
                     .runEvenIfCancelled()
             }
+    }
 
     /**
      * For `system=ASYNC + label=SYNC` (no force), return the SYNC-shaped status derived from
@@ -103,12 +111,13 @@ class MutationService(
         sorted: List<MutationEvent>,
         acquireLock: Boolean,
         collector: StorageOpCollector?,
+        insertMerge: Boolean,
     ): Mono<MutationResult> {
         val rwm = {
             tb
                 .read(key)
                 .flatMap { state ->
-                    val after = sorted.fold(state) { acc, m -> acc.transit(m.event, tb.schema) }
+                    val after = sorted.fold(state) { acc, m -> acc.transit(m.event, tb.schema, insertMerge) }
                     tb.write(key, state, after, collector)
                 }.map { summary ->
                     val context = collector?.toContextMap()
@@ -121,5 +130,8 @@ class MutationService(
     private companion object {
         const val QUEUED = "QUEUED"
         const val ERROR = "ERROR"
+        const val INVALID = "INVALID"
+
+        private fun Throwable.isInvalidMutation(): Boolean = generateSequence(this) { it.cause }.any { it is InvalidMutationException }
     }
 }

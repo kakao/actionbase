@@ -139,5 +139,8 @@ class GraphConfiguration {
     fun provideQueryService(engine: V2BackedEngine): QueryService = QueryService(engine)
 
     @Bean
-    fun provideMutationService(engine: V2BackedEngine): MutationService = MutationService(engine)
+    fun provideMutationService(
+        engine: V2BackedEngine,
+        graph: Graph,
+    ): MutationService = MutationService(engine, graph.featureFlags)
 }
