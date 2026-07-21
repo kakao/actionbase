@@ -18,6 +18,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import reactor.kotlin.test.test
 
@@ -142,6 +143,17 @@ class ImmutableEdgeSpec :
                 .test()
                 .assertNext { result -> result.count shouldBe 0L }
                 .verifyComplete()
+        }
+
+        "immutable edge emits no CDC on append" {
+            val request = mapper.readValue<EdgeBulkMutationRequest>(appendRequest)
+            val results =
+                mutationService
+                    .mutate(database, table, request.mutations, syncMode = EngineMutationMode.SYNC)
+                    .block()!!
+            results.all { it.status == "CREATED" } shouldBe true
+
+            (graph.cdc as InMemoryCdc).readCdc().filter { it.label == labelName }.shouldBeEmpty()
         }
     }) {
     companion object {
