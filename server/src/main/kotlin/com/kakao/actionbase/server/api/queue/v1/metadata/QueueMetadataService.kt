@@ -16,6 +16,7 @@ import com.kakao.actionbase.engine.queue.QueueSchema
 import com.kakao.actionbase.server.api.graph.v3.metadata.TableCreateRequest
 import com.kakao.actionbase.server.api.graph.v3.metadata.TableUpdateRequest
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3CompatService
+import com.kakao.actionbase.v2.engine.Graph
 
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -27,6 +28,7 @@ import reactor.core.publisher.Mono
 @Service
 class QueueMetadataService(
     private val compat: V3CompatService,
+    private val graph: Graph,
 ) {
     fun createQueue(
         namespace: String,
@@ -52,7 +54,12 @@ class QueueMetadataService(
                 mode = MutationMode.SYNC,
                 comment = QueueDescriptorCodec.encode(QueueMeta(request.partitions)),
             )
-        return compat.createTable(namespace, request.queue, tableRequest).map { it.toQueueResponse() }
+        return compat
+            .createTable(namespace, request.queue, tableRequest)
+            // Force a label-registry sync so the runtime (Graph.getLabel) sees the new queue at once,
+            // rather than waiting for the next metastore reload (which may be disabled locally).
+            .flatMap { descriptor -> graph.updateLabels().thenReturn(descriptor) }
+            .map { it.toQueueResponse() }
     }
 
     fun getQueue(

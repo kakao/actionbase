@@ -1,9 +1,7 @@
 package com.kakao.actionbase.server.api.queue.v1
 
 import com.kakao.actionbase.server.test.E2ETestBase
-import com.kakao.actionbase.v2.engine.Graph
 
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 
 /**
@@ -12,9 +10,6 @@ import org.springframework.http.MediaType
  * are system fields.
  */
 abstract class QueueE2ESupport : E2ETestBase() {
-    @Autowired
-    protected lateinit var graph: Graph
-
     protected fun createNamespace(ns: String) {
         client
             .post()
@@ -38,9 +33,6 @@ abstract class QueueE2ESupport : E2ETestBase() {
             ).exchange()
             .expectStatus()
             .isOk
-        // The runtime reads partition metadata from Graph's in-memory registry; force a reload so the
-        // freshly-created queue is visible without waiting for the periodic metastore refresh.
-        graph.updateLabels().block()
     }
 
     protected fun enqueue(
