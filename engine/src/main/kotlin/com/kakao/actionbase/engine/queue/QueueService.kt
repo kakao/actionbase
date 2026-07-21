@@ -24,15 +24,8 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import reactor.core.publisher.Mono
 
 /**
- * Runtime queue operations over the backing immutable edge table — the engine-level queue feature:
- * - enqueue is an append (INSERT with no lock, since an append has no read-modify-write conflict).
- *   The `id` (edge target) is a server-assigned ULID; `seq` orders the partition; `value` is stored
- *   as an opaque JSON blob.
- * - poll is a single-partition range scan over the `seq` index, resuming forward from `offset`, with
- *   an optional `until` upper bound for refresh / delay queues.
- *
- * Queue DDL (create / enable / disable / delete) is orchestrated at the server layer over the v3
- * table API; this service only reads the queue's partition count from the backing table's comment.
+ * Engine-level queue runtime over the immutable edge table: enqueue appends (lock-free INSERT,
+ * server-assigned ULID id), poll range-scans one partition by `seq`. DDL lives in the server layer.
  */
 class QueueService(
     private val graph: Graph,
@@ -42,10 +35,7 @@ class QueueService(
     private val mapper = jacksonObjectMapper()
     private val random = Random()
 
-    // Partition count per queue. Read from Graph's in-memory label registry and decoded from the
-    // comment marker on a miss, then held for a minute — so the hot path neither re-reads the
-    // metastore nor re-parses JSON. Expire-after-write (not -access) bounds staleness so a
-    // re-partitioned queue is picked up within ~1 minute, since the queue size can change.
+    // Partition count per queue; expire-after-write (not -access) bounds staleness since the size can change.
     private val partitionCountCache: Cache<EntityName, Int> =
         Caffeine
             .newBuilder()
@@ -71,8 +61,8 @@ class QueueService(
                                 target = ULID.random(random),
                                 properties =
                                     mapOf(
-                                        QueueSchema.SEQ_FIELD to message.seq,
-                                        QueueSchema.VALUE_FIELD to mapper.writeValueAsString(message.value),
+                                        QueueSchema.SEQ to message.seq,
+                                        QueueSchema.VALUE to mapper.writeValueAsString(message.value),
                                     ),
                             ),
                     )
@@ -97,7 +87,7 @@ class QueueService(
                 .scan(
                     namespace,
                     queue,
-                    QueueSchema.SEQ_INDEX,
+                    QueueSchema.SEQ,
                     start = partition.toLong(),
                     direction = Direction.OUT,
                     limit = limit,
@@ -106,11 +96,7 @@ class QueueService(
         }
     }
 
-    /**
-     * The queue's partition count. On a cache miss it reads Graph's in-memory label registry
-     * (refreshed by the metastore reload) and decodes the comment marker; the result is cached for a
-     * minute (see [partitionCountCache]). A queue a reload has not picked up yet is not visible here.
-     */
+    /** Partition count; a cache miss reads Graph's in-memory registry and decodes the comment marker. */
     fun partitions(
         namespace: String,
         queue: String,
@@ -127,13 +113,12 @@ class QueueService(
         }
     }
 
-    // offset is an exclusive lower bound; until an inclusive upper bound. Two predicates on the same
-    // index field collapse in the scan, so a bounded poll uses a single `bt` range.
+    // offset is exclusive, until inclusive; same-field predicates collapse, so a bounded poll uses `bt`.
     private fun rangePredicate(
         offset: Long?,
         until: Long?,
     ): String? {
-        val field = QueueSchema.SEQ_FIELD
+        val field = QueueSchema.SEQ
         return when {
             offset != null && until != null -> "$field:bt:${offset + 1},$until"
             offset != null -> "$field:gt:$offset"
@@ -164,11 +149,11 @@ class QueueService(
                 PolledMessage(
                     partition = partition,
                     id = edge.target.toString(),
-                    seq = (edge.properties[QueueSchema.SEQ_FIELD] as Number).toLong(),
-                    value = decodeValue(edge.properties[QueueSchema.VALUE_FIELD]),
+                    seq = (edge.properties[QueueSchema.SEQ] as Number).toLong(),
+                    value = decodeValue(edge.properties[QueueSchema.VALUE]),
                 )
             }
-        // Carry the cursor forward: the max seq seen, or the prior offset when the partition drains.
+        // max seq seen, or the prior offset when the partition drains
         val nextOffset = messages.maxOfOrNull { it.seq } ?: offset
         return PollResponse(messages = messages, offset = nextOffset, hasNext = hasNext)
     }
@@ -179,10 +164,7 @@ class QueueService(
     }
 
     private companion object {
-        // Per-partition fetch bound.
         const val MAX_POLL_LIMIT = 1000
-
-        // Upper bound on distinct queues held in the partition-count cache.
         const val PARTITION_CACHE_SIZE = 100_000L
     }
 }

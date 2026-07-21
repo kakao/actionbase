@@ -2,10 +2,7 @@ package com.kakao.actionbase.engine.queue
 
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
 
-/**
- * Maps a routing key to a partition in `[0, partitions)` via `floorMod(xxHash32(key), partitions)`.
- * `floorMod` (not `%`) keeps the result non-negative for hashes that overflow into negatives.
- */
+/** Routes a key to a partition via `floorMod(xxHash32(key), partitions)` (floorMod stays non-negative). */
 object PartitionHasher {
     fun partition(
         key: String,

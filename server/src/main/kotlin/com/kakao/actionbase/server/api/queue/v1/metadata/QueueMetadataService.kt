@@ -23,12 +23,7 @@ import org.springframework.web.server.ResponseStatusException
 
 import reactor.core.publisher.Mono
 
-/**
- * Queue DDL over the v3 table API via [V3CompatService]. A queue is an `ImmutableEdge` table with a
- * fixed shape: LONG partition source, STRING id (ULID) target, a LONG `seq` property indexed
- * ascending for per-partition poll order, and a STRING `value` JSON blob. The runtime (enqueue /
- * poll) lives in the engine ([com.kakao.actionbase.engine.queue.QueueService]).
- */
+/** Queue DDL over the v3 table API: builds the backing `ImmutableEdge` table; runtime lives in the engine. */
 @Service
 class QueueMetadataService(
     private val compat: V3CompatService,
@@ -44,11 +39,11 @@ class QueueMetadataService(
                 target = Field(type = PrimitiveType.STRING, comment = "message id (ULID)"),
                 properties =
                     listOf(
-                        StructField(QueueSchema.SEQ_FIELD, PrimitiveType.LONG, "order / due time", false),
-                        StructField(QueueSchema.VALUE_FIELD, PrimitiveType.STRING, "opaque value (json)", true),
+                        StructField(QueueSchema.SEQ, PrimitiveType.LONG, "order / due time", false),
+                        StructField(QueueSchema.VALUE, PrimitiveType.STRING, "opaque value (json)", true),
                     ),
                 direction = DirectionType.OUT,
-                indexes = listOf(Index(QueueSchema.SEQ_INDEX, listOf(IndexField(QueueSchema.SEQ_FIELD, Order.ASC)))),
+                indexes = listOf(Index(QueueSchema.SEQ, listOf(IndexField(QueueSchema.SEQ, Order.ASC)))),
             )
         val tableRequest =
             TableCreateRequest(
