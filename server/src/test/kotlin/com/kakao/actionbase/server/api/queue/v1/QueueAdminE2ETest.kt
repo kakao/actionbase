@@ -8,46 +8,32 @@ import org.springframework.http.MediaType
 
 /**
  * Queue admin lifecycle: create builds an immutable edge table stamped with queue metadata, get
- * reads it back, delete removes it, and a reserved `orderBy` name is rejected with 400.
+ * reads it back, disable/enable toggle the active flag, and delete is guarded — it succeeds only
+ * once the queue is disabled (409 otherwise).
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QueueAdminE2ETest : E2ETestBase() {
-    private val db = "queue_admin_db"
+    private val ns = "queue_admin_ns"
 
-    private fun createDb() {
+    private fun createNamespace() {
         client
             .post()
             .uri("/graph/v3/databases")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"database": "$db", "comment": "queue admin e2e"}""")
+            .bodyValue("""{"database": "$ns", "comment": "queue admin e2e"}""")
             .exchange()
     }
 
-    private fun createQueueBody(
-        queue: String,
-        orderBy: String = "seq",
-    ) = """
-        {
-          "queue": "$queue",
-          "storage": "datastore://queue_admin_ns/$queue",
-          "partitionCount": 12,
-          "orderBy": "$orderBy",
-          "properties": [
-            {"name": "seq", "type": "long", "nullable": false, "comment": "order"},
-            {"name": "payload", "type": "string", "nullable": true, "comment": "payload"}
-          ],
-          "comment": "admin lifecycle"
-        }
-        """.trimIndent()
+    private fun createQueueBody(queue: String) = """{"queue": "$queue", "storage": "datastore://queue_admin_ns/$queue", "partitions": 12}"""
 
     @Test
-    fun `create then get then delete a queue`() {
-        createDb()
+    fun `create then get then disable then delete a queue`() {
+        createNamespace()
         val queue = "orders"
 
         client
             .post()
-            .uri("/queue/v1/databases/$db/queues")
+            .uri("/queue/v1/namespaces/$ns/queues")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(createQueueBody(queue))
             .exchange()
@@ -56,62 +42,70 @@ class QueueAdminE2ETest : E2ETestBase() {
             .expectBody()
             .jsonPath("$.queue")
             .isEqualTo(queue)
-            .jsonPath("$.partitionCount")
+            .jsonPath("$.partitions")
             .isEqualTo(12)
-            .jsonPath("$.orderBy")
-            .isEqualTo("seq")
+            .jsonPath("$.namespace")
+            .isEqualTo(ns)
 
         client
             .get()
-            .uri("/queue/v1/databases/$db/queues/$queue")
+            .uri("/queue/v1/namespaces/$ns/queues/$queue")
             .exchange()
             .expectStatus()
             .isOk
             .expectBody()
-            .jsonPath("$.partitionCount")
+            .jsonPath("$.partitions")
             .isEqualTo(12)
+
+        // Delete is refused while the queue is still active.
+        client
+            .delete()
+            .uri("/queue/v1/namespaces/$ns/queues/$queue")
+            .exchange()
+            .expectStatus()
+            .isEqualTo(409)
+
+        // Disable, then delete succeeds.
+        client
+            .put()
+            .uri("/queue/v1/namespaces/$ns/queues/$queue/disable")
+            .exchange()
+            .expectStatus()
+            .isOk
 
         client
             .delete()
-            .uri("/queue/v1/databases/$db/queues/$queue")
+            .uri("/queue/v1/namespaces/$ns/queues/$queue")
             .exchange()
             .expectStatus()
             .isNoContent
     }
 
     @Test
-    fun `orderBy referencing an undeclared property is rejected`() {
-        createDb()
+    fun `disable then enable toggles the active flag`() {
+        createNamespace()
+        val queue = "toggle"
         client
             .post()
-            .uri("/queue/v1/databases/$db/queues")
+            .uri("/queue/v1/namespaces/$ns/queues")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(createQueueBody("bad_queue", orderBy = "missing"))
+            .bodyValue(createQueueBody(queue))
             .exchange()
             .expectStatus()
-            .isBadRequest
-    }
+            .isOk
 
-    @Test
-    fun `non-LONG orderBy property is rejected`() {
-        createDb()
         client
-            .post()
-            .uri("/queue/v1/databases/$db/queues")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                """
-                {
-                  "queue": "bad_type_queue",
-                  "storage": "datastore://queue_admin_ns/bad_type_queue",
-                  "partitionCount": 12,
-                  "orderBy": "payload",
-                  "properties": [{"name": "payload", "type": "string", "nullable": true, "comment": "payload"}],
-                  "comment": "admin lifecycle"
-                }
-                """.trimIndent(),
-            ).exchange()
+            .put()
+            .uri("/queue/v1/namespaces/$ns/queues/$queue/disable")
+            .exchange()
             .expectStatus()
-            .isBadRequest
+            .isOk
+
+        client
+            .put()
+            .uri("/queue/v1/namespaces/$ns/queues/$queue/enable")
+            .exchange()
+            .expectStatus()
+            .isOk
     }
 }

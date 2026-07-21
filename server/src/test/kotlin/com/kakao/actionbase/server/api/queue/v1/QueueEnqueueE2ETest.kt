@@ -5,30 +5,30 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.http.MediaType
 
 /**
- * Enqueue E2E: appending messages returns per-message routing (partition, id) and a CREATED status,
- * and a message whose non-nullable `orderBy` maps correctly is accepted.
+ * Enqueue E2E: appending `{ key, seq, value }` messages routes each to a partition, assigns a ULID
+ * `id`, and reports a CREATED status.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QueueEnqueueE2ETest : QueueE2ESupport() {
-    private val db = "queue_enqueue_db"
+    private val ns = "queue_enqueue_ns"
     private val queue = "events"
 
     @Test
-    fun `enqueue appends messages and reports routing`() {
-        createDatabase(db)
-        createQueue(db, queue, partitionCount = 8)
+    fun `enqueue appends messages and assigns a ULID id`() {
+        createNamespace(ns)
+        createQueue(ns, queue, partitions = 8)
 
         client
             .post()
-            .uri("/queue/v1/databases/$db/queues/$queue/messages")
+            .uri("/queue/v1/namespaces/$ns/queues/$queue/messages")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
                 {
                   "messages": [
-                    {"key": "user-1", "id": "m1", "payload": {"seq": 1000, "payload": "a"}},
-                    {"key": "user-1", "id": "m2", "payload": {"seq": 1001, "payload": "b"}},
-                    {"key": "user-2", "id": "m3", "payload": {"seq": 1002, "payload": "c"}}
+                    {"key": "user-1", "seq": 1000, "value": {"body": "a"}},
+                    {"key": "user-1", "seq": 1001, "value": "b"},
+                    {"key": "user-2", "seq": 1002, "value": [1, 2, 3]}
                   ]
                 }
                 """.trimIndent(),
@@ -40,7 +40,10 @@ class QueueEnqueueE2ETest : QueueE2ESupport() {
             .isEqualTo(3)
             .jsonPath("$.results.length()")
             .isEqualTo(3)
-            .jsonPath("$.results[?(@.id == 'm1')].status")
+            .jsonPath("$.results[0].status")
             .isEqualTo("CREATED")
+            // The id is a server-assigned ULID, not a client value.
+            .jsonPath("$.results[0].id")
+            .exists()
     }
 }

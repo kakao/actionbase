@@ -1,6 +1,7 @@
 package com.kakao.actionbase.server.configuration
 
 import com.kakao.actionbase.core.metadata.features.FeatureFlags
+import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.client.kafka.SpringKafkaClientFactory
@@ -143,4 +144,11 @@ class GraphConfiguration {
         engine: V2BackedEngine,
         graph: Graph,
     ): MutationService = MutationService(engine, graph.featureFlags)
+
+    @Bean
+    fun provideQueueService(
+        graph: Graph,
+        mutationService: MutationService,
+        queryService: QueryService,
+    ): QueueService = QueueService(graph, mutationService, queryService)
 }

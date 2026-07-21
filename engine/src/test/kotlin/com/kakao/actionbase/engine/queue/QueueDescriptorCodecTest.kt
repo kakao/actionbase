@@ -1,4 +1,4 @@
-package com.kakao.actionbase.server.api.queue.v1
+package com.kakao.actionbase.engine.queue
 
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 class QueueDescriptorCodecTest {
     @Test
     fun `round-trips queue metadata`() {
-        val meta = QueueMeta(partitionCount = 30, orderBy = "seq")
+        val meta = QueueMeta(partitions = 30)
         val comment = QueueDescriptorCodec.encode(meta)
         assertTrue(comment.startsWith("queue/v1 "), "must carry the marker, was: $comment")
         assertEquals(meta, QueueDescriptorCodec.decode(comment))

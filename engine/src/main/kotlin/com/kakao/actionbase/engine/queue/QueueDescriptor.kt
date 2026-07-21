@@ -1,16 +1,14 @@
-package com.kakao.actionbase.server.api.queue.v1
+package com.kakao.actionbase.engine.queue
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
 /**
- * Queue metadata carried inside the backing immutable edge table's comment. Immutable edge
- * tables have no queue-specific descriptor field, so queue/v1 stamps its config into the comment
- * behind a `queue/v1 ` marker and reads it back — a non-queue table's comment simply fails to match.
+ * Queue metadata carried inside the backing immutable edge table's comment, behind a `queue/v1 `
+ * marker. A non-queue table's comment simply fails to match.
  */
 data class QueueMeta(
-    val partitionCount: Int,
-    val orderBy: String,
+    val partitions: Int,
 )
 
 object QueueDescriptorCodec {

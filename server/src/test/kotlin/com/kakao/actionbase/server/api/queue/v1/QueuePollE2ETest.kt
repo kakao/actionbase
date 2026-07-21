@@ -1,5 +1,8 @@
 package com.kakao.actionbase.server.api.queue.v1
 
+import com.kakao.actionbase.engine.queue.PartitionHasher
+import com.kakao.actionbase.engine.queue.PollResponse
+
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -7,96 +10,117 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 
 /**
- * Poll E2E: append then poll returns messages ordered by `orderBy`, a small limit paginates via the
- * forward cursor, and splitting a queue across shards covers every message exactly once.
+ * Poll E2E: a single-partition poll returns messages ordered by `seq`, a small limit paginates via
+ * the forward `offset`, and `until` bounds a refresh-style poll to due messages.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QueuePollE2ETest : QueueE2ESupport() {
-    private val db = "queue_poll_db"
+    private val ns = "queue_poll_ns"
+    private val partitions = 4
 
     @Test
-    fun `poll returns messages ordered by orderBy and then drains`() {
+    fun `poll returns messages ordered by seq and then drains`() {
         val queue = "ordered"
-        createDatabase(db)
-        createQueue(db, queue, partitionCount = 4)
+        createNamespace(ns)
+        createQueue(ns, queue, partitions)
         enqueue(
-            db,
+            ns,
             queue,
             """
             [
-              {"key": "u", "id": "m1", "payload": {"seq": 1000, "payload": "a"}},
-              {"key": "u", "id": "m2", "payload": {"seq": 1001, "payload": "b"}},
-              {"key": "u", "id": "m3", "payload": {"seq": 1002, "payload": "c"}}
+              {"key": "u", "seq": 1000, "value": {"body": "a"}},
+              {"key": "u", "seq": 1001, "value": {"body": "b"}},
+              {"key": "u", "seq": 1002, "value": {"body": "c"}}
             ]
             """.trimIndent(),
         )
+        val p = PartitionHasher.partition("u", partitions)
 
-        val page = poll(queue, shard = "0/1", limit = 10)
-        assertEquals(listOf("m1", "m2", "m3"), page.messages.map { it.id })
-        assertEquals(listOf("a", "b", "c"), page.messages.map { it.payload["payload"] })
+        val page = poll(queue, p, limit = 10)
+        assertEquals(listOf(1000L, 1001L, 1002L), page.messages.map { it.seq })
+        assertEquals(listOf("a", "b", "c"), page.messages.map { (it.value as Map<*, *>)["body"] })
         assertTrue(!page.hasNext, "a fully-read page must not report more")
+        assertEquals(1002L, page.offset)
 
-        // Re-polling from the drained cursor must not re-read anything (forward-only).
-        val drained = poll(queue, shard = "0/1", limit = 10, cursor = page.cursor)
+        // Re-polling from the drained offset must not re-read anything (forward-only).
+        val drained = poll(queue, p, limit = 10, offset = page.offset)
         assertTrue(drained.messages.isEmpty(), "drained partitions must not be re-read")
         assertTrue(!drained.hasNext)
     }
 
     @Test
-    fun `small limit paginates through the forward cursor`() {
+    fun `small limit paginates through the forward offset`() {
         val queue = "paged"
-        createDatabase(db)
-        createQueue(db, queue, partitionCount = 4)
+        createNamespace(ns)
+        createQueue(ns, queue, partitions)
         enqueue(
-            db,
+            ns,
             queue,
             """
             [
-              {"key": "u", "id": "m1", "payload": {"seq": 1, "payload": "a"}},
-              {"key": "u", "id": "m2", "payload": {"seq": 2, "payload": "b"}},
-              {"key": "u", "id": "m3", "payload": {"seq": 3, "payload": "c"}},
-              {"key": "u", "id": "m4", "payload": {"seq": 4, "payload": "d"}}
+              {"key": "u", "seq": 1, "value": "a"},
+              {"key": "u", "seq": 2, "value": "b"},
+              {"key": "u", "seq": 3, "value": "c"},
+              {"key": "u", "seq": 4, "value": "d"}
             ]
             """.trimIndent(),
         )
+        val p = PartitionHasher.partition("u", partitions)
 
-        val first = poll(queue, shard = "0/1", limit = 2)
-        assertEquals(listOf("m1", "m2"), first.messages.map { it.id })
+        val first = poll(queue, p, limit = 2)
+        assertEquals(listOf(1L, 2L), first.messages.map { it.seq })
         assertTrue(first.hasNext, "there are more messages")
 
-        val second = poll(queue, shard = "0/1", limit = 2, cursor = first.cursor)
-        assertEquals(listOf("m3", "m4"), second.messages.map { it.id })
+        val second = poll(queue, p, limit = 2, offset = first.offset)
+        assertEquals(listOf(3L, 4L), second.messages.map { it.seq })
     }
 
     @Test
-    fun `shards partition the queue with no overlap`() {
-        val queue = "sharded"
-        createDatabase(db)
-        createQueue(db, queue, partitionCount = 4)
-        val ids = (0 until 12).map { "m$it" }
+    fun `until bounds a refresh poll to due messages`() {
+        val queue = "due"
+        createNamespace(ns)
+        createQueue(ns, queue, partitions)
         enqueue(
-            db,
+            ns,
             queue,
-            ids.joinToString(prefix = "[", postfix = "]") { id ->
-                """{"key": "$id", "id": "$id", "payload": {"seq": ${id.drop(1)}, "payload": "$id"}}"""
-            },
+            """
+            [
+              {"key": "u", "seq": 100, "value": "a"},
+              {"key": "u", "seq": 200, "value": "b"},
+              {"key": "u", "seq": 300, "value": "c"}
+            ]
+            """.trimIndent(),
         )
+        val p = PartitionHasher.partition("u", partitions)
 
-        val shard0 = poll(queue, shard = "0/2", limit = 100).messages.map { it.id }
-        val shard1 = poll(queue, shard = "1/2", limit = 100).messages.map { it.id }
-        assertTrue(shard0.intersect(shard1.toSet()).isEmpty(), "shards must not overlap")
-        assertEquals(ids.toSet(), (shard0 + shard1).toSet())
+        // until = 200 -> only messages due by 200; the seq=300 message is not yet due.
+        val due = poll(queue, p, limit = 100, until = 200)
+        assertEquals(listOf(100L, 200L), due.messages.map { it.seq })
     }
 
     @Test
     fun `poll rejects an out-of-range limit`() {
         val queue = "limited"
-        createDatabase(db)
-        createQueue(db, queue, partitionCount = 4)
+        createNamespace(ns)
+        createQueue(ns, queue, partitions)
 
         client
             .get()
-            .uri("/queue/v1/databases/$db/queues/$queue/poll?shard=0/1&limit=0")
+            .uri("/queue/v1/namespaces/$ns/queues/$queue/partitions/0/poll?limit=0")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
+    fun `poll rejects an out-of-range partition`() {
+        val queue = "outofrange"
+        createNamespace(ns)
+        createQueue(ns, queue, partitions)
+
+        client
+            .get()
+            .uri("/queue/v1/namespaces/$ns/queues/$queue/partitions/$partitions/poll?limit=10")
             .exchange()
             .expectStatus()
             .isBadRequest
@@ -104,19 +128,21 @@ class QueuePollE2ETest : QueueE2ESupport() {
 
     private fun poll(
         queue: String,
-        shard: String,
+        partition: Int,
         limit: Int,
-        cursor: String? = null,
+        offset: Long? = null,
+        until: Long? = null,
     ): PollResponse =
         client
             .get()
             .uri { builder ->
                 builder
-                    .path("/queue/v1/databases/$db/queues/$queue/poll")
-                    .queryParam("shard", shard)
+                    .path("/queue/v1/namespaces/$ns/queues/$queue/partitions/$partition/poll")
                     .queryParam("limit", limit)
-                    .apply { cursor?.let { queryParam("cursor", it) } }
-                    .build()
+                    .apply {
+                        offset?.let { queryParam("offset", it) }
+                        until?.let { queryParam("until", it) }
+                    }.build()
             }.exchange()
             .expectStatus()
             .isOk
