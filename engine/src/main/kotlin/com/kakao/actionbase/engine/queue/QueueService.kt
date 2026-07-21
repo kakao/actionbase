@@ -14,9 +14,12 @@ import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 
+import java.time.Duration
 import java.util.Random
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 
 import reactor.core.publisher.Mono
 
@@ -29,8 +32,7 @@ import reactor.core.publisher.Mono
  *   an optional `until` upper bound for refresh / delay queues.
  *
  * Queue DDL (create / enable / disable / delete) is orchestrated at the server layer over the v3
- * table API; this service only reads the queue metadata it needs (partition count) from the backing
- * table's comment.
+ * table API; this service only reads the queue's partition count from the backing table's comment.
  */
 class QueueService(
     private val graph: Graph,
@@ -40,15 +42,26 @@ class QueueService(
     private val mapper = jacksonObjectMapper()
     private val random = Random()
 
+    // Partition count per queue. Read from Graph's in-memory label registry and decoded from the
+    // comment marker on a miss, then held for a minute — so the hot path neither re-reads the
+    // metastore nor re-parses JSON. Expire-after-write (not -access) bounds staleness so a
+    // re-partitioned queue is picked up within ~1 minute, since the queue size can change.
+    private val partitionCountCache: Cache<EntityName, Int> =
+        Caffeine
+            .newBuilder()
+            .maximumSize(PARTITION_CACHE_SIZE)
+            .expireAfterWrite(Duration.ofMinutes(1))
+            .build()
+
     fun enqueue(
         namespace: String,
         queue: String,
         request: EnqueueRequest,
     ): Mono<EnqueueResponse> =
-        queueMeta(namespace, queue).flatMap { meta ->
+        partitions(namespace, queue).flatMap { partitions ->
             val items =
                 request.messages.map { message ->
-                    val partition = PartitionHasher.partition(message.key, meta.partitions)
+                    val partition = PartitionHasher.partition(message.key, partitions)
                     EdgeBulkMutationRequest.MutationItem(
                         type = EventType.INSERT,
                         edge =
@@ -78,10 +91,8 @@ class QueueService(
         until: Long?,
     ): Mono<PollResponse> {
         require(limit in 1..MAX_POLL_LIMIT) { "limit must be in 1..$MAX_POLL_LIMIT, got $limit" }
-        return queueMeta(namespace, queue).flatMap { meta ->
-            require(partition in 0 until meta.partitions) {
-                "partition must be in 0..${meta.partitions - 1}, got $partition"
-            }
+        return partitions(namespace, queue).flatMap { partitions ->
+            require(partition in 0 until partitions) { "partition must be in 0..${partitions - 1}, got $partition" }
             queryService
                 .scan(
                     namespace,
@@ -95,11 +106,26 @@ class QueueService(
         }
     }
 
-    /** The queue's partition count (read via [queueMeta] — Graph's in-memory registry on the hot path). */
+    /**
+     * The queue's partition count. On a cache miss it reads Graph's in-memory label registry
+     * (refreshed by the metastore reload) and decodes the comment marker; the result is cached for a
+     * minute (see [partitionCountCache]). A queue a reload has not picked up yet is not visible here.
+     */
     fun partitions(
         namespace: String,
         queue: String,
-    ): Mono<Int> = queueMeta(namespace, queue).map { it.partitions }
+    ): Mono<Int> {
+        val name = EntityName(namespace, queue)
+        return Mono.fromCallable {
+            partitionCountCache.get(name) {
+                val comment = graph.getLabel(it).entity.desc
+                (
+                    QueueDescriptorCodec.decode(comment)
+                        ?: throw IllegalArgumentException("`$namespace.$queue` is not a queue/v1 table")
+                ).partitions
+            }
+        }
+    }
 
     // offset is an exclusive lower bound; until an inclusive upper bound. Two predicates on the same
     // index field collapse in the scan, so a bounded poll uses a single `bt` range.
@@ -114,24 +140,6 @@ class QueueService(
             until != null -> "$field:lte:$until"
             else -> null
         }
-    }
-
-    /**
-     * Reads the queue's partition metadata from Graph's in-memory label registry, which the
-     * metastore reload refreshes on its interval — no per-request metastore read and no extra
-     * caching. A queue that a reload has not picked up yet is not visible here.
-     */
-    private fun queueMeta(
-        namespace: String,
-        queue: String,
-    ): Mono<QueueMeta> {
-        val name = EntityName(namespace, queue)
-        return Mono
-            .fromCallable { graph.getLabel(name).entity.desc }
-            .map { desc ->
-                QueueDescriptorCodec.decode(desc)
-                    ?: throw IllegalArgumentException("`$namespace.$queue` is not a queue/v1 table")
-            }
     }
 
     private fun List<MutationResult>.toEnqueueResponse(): EnqueueResponse {
@@ -173,5 +181,8 @@ class QueueService(
     private companion object {
         // Per-partition fetch bound.
         const val MAX_POLL_LIMIT = 1000
+
+        // Upper bound on distinct queues held in the partition-count cache.
+        const val PARTITION_CACHE_SIZE = 100_000L
     }
 }
