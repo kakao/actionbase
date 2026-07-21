@@ -22,14 +22,14 @@ abstract class QueueE2ESupport : E2ETestBase() {
     protected fun createQueue(
         ns: String,
         queue: String,
-        partitions: Int,
+        numPartitions: Int,
     ) {
         client
             .post()
             .uri("/queue/v1/namespaces/$ns/queues")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
-                """{"queue": "$queue", "storage": "datastore://${ns}_ns/$queue", "partitions": $partitions}""",
+                """{"queue": "$queue", "storage": "datastore://${ns}_ns/$queue", "partitions": $numPartitions}""",
             ).exchange()
             .expectStatus()
             .isOk

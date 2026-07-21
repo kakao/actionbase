@@ -28,7 +28,7 @@ class QueueExpireTableE2ETest : E2ETestBase() {
     private lateinit var queueService: QueueService
 
     private val ns = "topk_expire_ns"
-    private val partitions = 30
+    private val numPartitions = 30
 
     @BeforeAll
     fun setup() {
@@ -47,7 +47,7 @@ class QueueExpireTableE2ETest : E2ETestBase() {
             .post()
             .uri("/queue/v1/namespaces/$ns/queues")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"queue": "$queue", "storage": "datastore://topk_expire_ns/$queue", "partitions": $partitions}""")
+            .bodyValue("""{"queue": "$queue", "storage": "datastore://topk_expire_ns/$queue", "partitions": $numPartitions}""")
             .exchange()
             .expectStatus()
             .isOk
@@ -55,7 +55,7 @@ class QueueExpireTableE2ETest : E2ETestBase() {
 
     // All entries share one entity → same partition → deterministic per-partition order by seq.
     private val entity = "likes|top_actors|movie1"
-    private val partition = PartitionHasher.partition(entity, partitions)
+    private val partition = PartitionHasher.partition(entity, numPartitions)
 
     private fun expireEntry(expiredAt: Long) = """{"key": "$entity", "seq": $expiredAt, "value": {"table": "likes", "topk": "top_actors", "entity": "movie1"}}"""
 

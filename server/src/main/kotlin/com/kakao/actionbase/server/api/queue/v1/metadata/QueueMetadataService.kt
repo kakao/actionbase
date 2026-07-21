@@ -98,7 +98,7 @@ class QueueMetadataService(
         return QueueDescriptorResponse(
             namespace = database,
             queue = table,
-            partitions = meta.partitions,
+            partitions = meta.numPartitions,
             storage = storage,
         )
     }

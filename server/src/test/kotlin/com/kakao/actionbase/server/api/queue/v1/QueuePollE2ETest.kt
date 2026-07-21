@@ -16,13 +16,13 @@ import org.junit.jupiter.api.TestInstance
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QueuePollE2ETest : QueueE2ESupport() {
     private val ns = "queue_poll_ns"
-    private val partitions = 4
+    private val numPartitions = 4
 
     @Test
     fun `poll returns messages ordered by seq and then drains`() {
         val queue = "ordered"
         createNamespace(ns)
-        createQueue(ns, queue, partitions)
+        createQueue(ns, queue, numPartitions)
         enqueue(
             ns,
             queue,
@@ -34,7 +34,7 @@ class QueuePollE2ETest : QueueE2ESupport() {
             ]
             """.trimIndent(),
         )
-        val p = PartitionHasher.partition("u", partitions)
+        val p = PartitionHasher.partition("u", numPartitions)
 
         val page = poll(queue, p, limit = 10)
         assertEquals(listOf(1000L, 1001L, 1002L), page.messages.map { it.seq })
@@ -52,7 +52,7 @@ class QueuePollE2ETest : QueueE2ESupport() {
     fun `small limit paginates through the forward offset`() {
         val queue = "paged"
         createNamespace(ns)
-        createQueue(ns, queue, partitions)
+        createQueue(ns, queue, numPartitions)
         enqueue(
             ns,
             queue,
@@ -65,7 +65,7 @@ class QueuePollE2ETest : QueueE2ESupport() {
             ]
             """.trimIndent(),
         )
-        val p = PartitionHasher.partition("u", partitions)
+        val p = PartitionHasher.partition("u", numPartitions)
 
         val first = poll(queue, p, limit = 2)
         assertEquals(listOf(1L, 2L), first.messages.map { it.seq })
@@ -79,7 +79,7 @@ class QueuePollE2ETest : QueueE2ESupport() {
     fun `until bounds a refresh poll to due messages`() {
         val queue = "due"
         createNamespace(ns)
-        createQueue(ns, queue, partitions)
+        createQueue(ns, queue, numPartitions)
         enqueue(
             ns,
             queue,
@@ -91,7 +91,7 @@ class QueuePollE2ETest : QueueE2ESupport() {
             ]
             """.trimIndent(),
         )
-        val p = PartitionHasher.partition("u", partitions)
+        val p = PartitionHasher.partition("u", numPartitions)
 
         // until = 200 -> only messages due by 200; the seq=300 message is not yet due.
         val due = poll(queue, p, limit = 100, until = 200)
@@ -102,7 +102,7 @@ class QueuePollE2ETest : QueueE2ESupport() {
     fun `poll rejects an out-of-range limit`() {
         val queue = "limited"
         createNamespace(ns)
-        createQueue(ns, queue, partitions)
+        createQueue(ns, queue, numPartitions)
 
         client
             .get()
@@ -116,11 +116,11 @@ class QueuePollE2ETest : QueueE2ESupport() {
     fun `poll rejects an out-of-range partition`() {
         val queue = "outofrange"
         createNamespace(ns)
-        createQueue(ns, queue, partitions)
+        createQueue(ns, queue, numPartitions)
 
         client
             .get()
-            .uri("/queue/v1/namespaces/$ns/queues/$queue/partitions/$partitions/poll?limit=10")
+            .uri("/queue/v1/namespaces/$ns/queues/$queue/partitions/$numPartitions/poll?limit=10")
             .exchange()
             .expectStatus()
             .isBadRequest
@@ -130,7 +130,7 @@ class QueuePollE2ETest : QueueE2ESupport() {
     fun `partitions endpoint returns the queue partition count`() {
         val queue = "meta"
         createNamespace(ns)
-        createQueue(ns, queue, partitions)
+        createQueue(ns, queue, numPartitions)
 
         client
             .get()
@@ -140,7 +140,7 @@ class QueuePollE2ETest : QueueE2ESupport() {
             .isOk
             .expectBody()
             .jsonPath("$.partitions")
-            .isEqualTo(partitions)
+            .isEqualTo(numPartitions)
             .jsonPath("$.namespace")
             .isEqualTo(ns)
             .jsonPath("$.queue")

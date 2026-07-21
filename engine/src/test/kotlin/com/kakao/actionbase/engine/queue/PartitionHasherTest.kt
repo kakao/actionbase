@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test
 class PartitionHasherTest {
     @Test
     fun `partition is always within bounds`() {
-        val partitions = 30
+        val numPartitions = 30
         repeat(10_000) { i ->
-            val p = PartitionHasher.partition("key-$i", partitions)
-            assertTrue(p in 0 until partitions, "partition $p out of bounds for key-$i")
+            val p = PartitionHasher.partition("key-$i", numPartitions)
+            assertTrue(p in 0 until numPartitions, "partition $p out of bounds for key-$i")
         }
     }
 
@@ -25,7 +25,7 @@ class PartitionHasherTest {
     }
 
     @Test
-    fun `partitions must be positive`() {
+    fun `numPartitions must be positive`() {
         assertFailsWith<IllegalArgumentException> { PartitionHasher.partition("k", 0) }
         assertFailsWith<IllegalArgumentException> { PartitionHasher.partition("k", -1) }
     }

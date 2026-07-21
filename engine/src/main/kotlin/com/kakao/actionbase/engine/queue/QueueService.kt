@@ -35,11 +35,11 @@ class QueueService(
     private val mapper = jacksonObjectMapper()
     private val random = Random()
 
-    // Partition count per queue; expire-after-write (not -access) bounds staleness since the size can change.
-    private val partitionCountCache: Cache<EntityName, Int> =
+    // Expire-after-write (not -access) so a queue resize is picked up within a minute.
+    private val numPartitionsCache: Cache<EntityName, Int> =
         Caffeine
             .newBuilder()
-            .maximumSize(PARTITION_CACHE_SIZE)
+            .maximumSize(NUM_PARTITIONS_CACHE_SIZE)
             .expireAfterWrite(Duration.ofMinutes(1))
             .build()
 
@@ -48,10 +48,10 @@ class QueueService(
         queue: String,
         request: EnqueueRequest,
     ): Mono<EnqueueResponse> =
-        partitions(namespace, queue).flatMap { partitions ->
+        getNumPartitions(namespace, queue).flatMap { numPartitions ->
             val items =
                 request.messages.map { message ->
-                    val partition = PartitionHasher.partition(message.key, partitions)
+                    val partition = PartitionHasher.partition(message.key, numPartitions)
                     EdgeBulkMutationRequest.MutationItem(
                         type = EventType.INSERT,
                         edge =
@@ -81,8 +81,8 @@ class QueueService(
         until: Long?,
     ): Mono<PollResponse> {
         require(limit in 1..MAX_POLL_LIMIT) { "limit must be in 1..$MAX_POLL_LIMIT, got $limit" }
-        return partitions(namespace, queue).flatMap { partitions ->
-            require(partition in 0 until partitions) { "partition must be in 0..${partitions - 1}, got $partition" }
+        return getNumPartitions(namespace, queue).flatMap { numPartitions ->
+            require(partition in 0 until numPartitions) { "partition must be in 0..${numPartitions - 1}, got $partition" }
             queryService
                 .scan(
                     namespace,
@@ -97,18 +97,18 @@ class QueueService(
     }
 
     /** Partition count; a cache miss reads Graph's in-memory registry and decodes the comment marker. */
-    fun partitions(
+    fun getNumPartitions(
         namespace: String,
         queue: String,
     ): Mono<Int> {
         val name = EntityName(namespace, queue)
         return Mono.fromCallable {
-            partitionCountCache.get(name) {
+            numPartitionsCache.get(name) {
                 val comment = graph.getLabel(it).entity.desc
                 (
                     QueueDescriptorCodec.decode(comment)
                         ?: throw IllegalArgumentException("`$namespace.$queue` is not a queue/v1 table")
-                ).partitions
+                ).numPartitions
             }
         }
     }
@@ -149,11 +149,12 @@ class QueueService(
                 PolledMessage(
                     partition = partition,
                     id = edge.target.toString(),
-                    seq = (edge.properties[QueueSchema.SEQ] as Number).toLong(),
+                    seq =
+                        (edge.properties[QueueSchema.SEQ] as? Number)?.toLong()
+                            ?: error("queue edge `${edge.target}` has no numeric `${QueueSchema.SEQ}`"),
                     value = decodeValue(edge.properties[QueueSchema.VALUE]),
                 )
             }
-        // max seq seen, or the prior offset when the partition drains
         val nextOffset = messages.maxOfOrNull { it.seq } ?: offset
         return PollResponse(messages = messages, offset = nextOffset, hasNext = hasNext)
     }
@@ -165,6 +166,6 @@ class QueueService(
 
     private companion object {
         const val MAX_POLL_LIMIT = 1000
-        const val PARTITION_CACHE_SIZE = 100_000L
+        const val NUM_PARTITIONS_CACHE_SIZE = 100_000L
     }
 }

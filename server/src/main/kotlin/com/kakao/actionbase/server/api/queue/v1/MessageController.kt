@@ -28,7 +28,7 @@ class MessageController(
         @PathVariable queue: String,
     ): Mono<ResponseEntity<QueuePartitionsResponse>> =
         queueService
-            .partitions(namespace, queue)
+            .getNumPartitions(namespace, queue)
             .map { QueuePartitionsResponse(namespace, queue, it) }
             .mapToResponseEntity()
 

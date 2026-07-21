@@ -4,7 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
 data class QueueMeta(
-    val partitions: Int,
+    val numPartitions: Int,
 )
 
 /** Queue config stored in the backing table's comment behind a `queue/v1 ` marker. */

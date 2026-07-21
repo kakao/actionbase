@@ -16,7 +16,7 @@ class QueueEnqueueE2ETest : QueueE2ESupport() {
     @Test
     fun `enqueue appends messages and assigns a ULID id`() {
         createNamespace(ns)
-        createQueue(ns, queue, partitions = 8)
+        createQueue(ns, queue, numPartitions = 8)
 
         client
             .post()
