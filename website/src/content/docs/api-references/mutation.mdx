@@ -316,6 +316,62 @@ curl -X POST \
 }
 ```
 
+## 5. Scan-Delete (Immutable Edge Tables)
+
+Scan an index range on an [immutable edge table](/design/schema/#immutable-edge-tables-type-immutable_indexed-v3-immutable_edge) and delete the matched rows, returning the count deleted. Used for eviction / retention: an immutable edge persists only index rows, so deleting the scanned rows is a complete delete.
+
+Rejected with `400` on non-immutable tables. `limit` is required and capped at 1000 — one call deletes at most one page; loop until the returned count is below `limit` to drain a larger range.
+
+### Endpoint
+
+```
+DELETE /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
+```
+
+### Parameters
+
+| Location | Parameter     | Required | Description                                            |
+| -------- | ------------- | -------- | ------------------------------------------------------ |
+| Header   | Authorization | Optional | Authentication key (reserved for future use)           |
+| Path     | database      | Required | Target database name                                   |
+| Path     | table         | Required | Target table name (must be an immutable edge table)    |
+| Path     | index         | Required | Index to scan                                          |
+| Query    | start         | Required | Source node to scan from                               |
+| Query    | direction     | Required | Scan direction (OUT, IN)                               |
+| Query    | limit         | Required | Max rows to delete in this call (maximum 1000)         |
+| Query    | ranges        | Optional | Index range predicate (e.g., `seq:lte:1001`)           |
+
+### Response Type
+
+[EdgeScanDeleteResponse](#edgescandeleteresponse) - The count deleted
+
+### Request Example
+
+| Parameter     | Value         |
+| ------------- | ------------- |
+| Authorization | YOUR_API_KEY  |
+| database      | your_database |
+| table         | your_table    |
+| index         | seq_asc       |
+
+```bash
+# DELETE /graph/v3/databases/your_database/tables/your_table/edges/scan/seq_asc
+curl -X DELETE \
+    "http://ab.example.com/graph/v3/databases/your_database/tables/your_table/edges/scan/seq_asc?start=1&direction=OUT&limit=100&ranges=seq:lte:1001" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "database": "your_database",
+  "table": "your_table",
+  "index": "seq_asc",
+  "deleted": 2
+}
+```
+
 ## Event Types
 
 The `type` field in mutation items specifies the operation to perform:
@@ -325,6 +381,8 @@ The `type` field in mutation items specifies the operation to perform:
 | `INSERT` | Create a new edge or update an existing edge with a new version |
 | `UPDATE` | Update properties of an existing edge                           |
 | `DELETE` | Delete an edge (marks it as deleted)                            |
+
+Immutable edge tables accept `INSERT` only — `UPDATE` and `DELETE` are rejected with `400`. Rows are removed via [scan-delete](#5-scan-delete-immutable-edge-tables) instead.
 
 ## Lock Parameter
 
@@ -424,5 +482,18 @@ data class MultiEdge(
   val source: Any? = null,           // Source node ID (optional)
   val target: Any? = null,           // Target node ID (optional)
   val properties: Map<String, Any?>,  // Edge properties
+)
+```
+
+### EdgeScanDeleteResponse
+
+Scan-delete response payload.
+
+```kotlin
+data class EdgeScanDeleteResponse(
+  val database: String,  // Target database name
+  val table: String,     // Target table name
+  val index: String,     // Index that was scanned
+  val deleted: Int,      // Rows deleted by this call (at most `limit`)
 )
 ```
