@@ -129,11 +129,11 @@ class EdgeSchemaSerializationTest {
                     "topk": [
                       {
                         "topk": "top_purchased_1y",
-                        "scope": "LOCAL",
+                        "entity": "source",
                         "ranges": "time:bt:now-365d,now",
-                        "dimensionValue": "banana",
+                        "topkDimension": "target",
                         "refreshAfterMillis": 31536000000,
-                        "score": "commerce.order_product__topk"
+                        "rank": "commerce.order_product__topk"
                       }
                     ]
                   }
@@ -160,11 +160,11 @@ class EdgeSchemaSerializationTest {
                     "topk": [
                       {
                         "topk": "top_purchased_1y",
-                        "scope": "LOCAL",
+                        "entity": "source",
                         "ranges": "time:bt:now-365d,now",
-                        "dimensionValue": "banana",
+                        "topkDimension": "target",
                         "refreshAfterMillis": 31536000000,
-                        "score": "commerce.order_product__topk"
+                        "rank": "commerce.order_product__topk"
                       }
                     ]
                   }
@@ -185,7 +185,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased", "scope": "GLOBAL", "dimensionValue": "banana", "score": "commerce.order_product__topk"}]
+                    "topk": [{"topk": "top_purchased", "entity": "__GLOBAL__", "topkDimension": "target", "rank": "commerce.order_product__topk"}]
                   }
                 }
               ]
@@ -202,7 +202,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased", "scope": "GLOBAL", "dimensionValue": "banana", "score": "commerce.order_product__topk"}]
+                    "topk": [{"topk": "top_purchased", "entity": "__GLOBAL__", "topkDimension": "target", "rank": "commerce.order_product__topk"}]
                   }
                 }
               ]

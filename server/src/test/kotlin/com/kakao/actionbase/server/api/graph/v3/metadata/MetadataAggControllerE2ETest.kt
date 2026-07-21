@@ -57,8 +57,10 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                       "aggregations": {
                         "topk": [{
                           "topk": "top_purchased",
+                          "entity": "source",
                           "ranges": "_target:eq:{_target}",
-                          "table": {"score": "$scoreFqn"}
+                          "topkDimension": "target",
+                          "rank": "$scoreFqn"
                         }]
                       }
                     }],

@@ -45,11 +45,11 @@ data class Aggregations(
 
 data class Topk(
     val topk: String,
-    val scope: TopkScope,
+    val entity: String,
     val ranges: String = "",
-    val dimensionValue: String,
+    val topkDimension: String,
     val refreshAfterMillis: Long = -1,
-    val score: String,
+    val rank: String,
 )
 
 enum class AggregationType {
@@ -58,8 +58,4 @@ enum class AggregationType {
     }, ;
 
     abstract fun has(aggregations: Aggregations): Boolean
-}
-
-enum class TopkScope {
-    GLOBAL, LOCAL, ;
 }
