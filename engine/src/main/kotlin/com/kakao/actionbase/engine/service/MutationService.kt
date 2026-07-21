@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.edge.MutationEvent
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.UnresolvedEvent
 import com.kakao.actionbase.core.edge.payload.MutationResult
+import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.features.FeatureFlags
 import com.kakao.actionbase.core.metadata.features.MutationFeature
 import com.kakao.actionbase.core.state.EventType
@@ -69,7 +70,10 @@ class MutationService(
                                 val sorted = group.sortedBy { it.event.version }
                                 readModifyWrite(tb, key, sorted, acquireLock, requestContext.newCollector(), insertMerge)
                                     .doOnNext { result ->
-                                        engine.writeCdc(ctx, sorted, result.status, result.before, result.after, result.acc)
+                                        // Immutable edge tables are append-only logs consumed by scan, not a CDC stream.
+                                        if (tb.schema !is ModelSchema.ImmutableEdge) {
+                                            engine.writeCdc(ctx, sorted, result.status, result.before, result.after, result.acc)
+                                        }
                                     }.onErrorResume { error ->
                                         tb.handleMutationError(error)
                                         // Permanent (bad input) vs transient (retryable).
