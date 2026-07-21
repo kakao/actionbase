@@ -42,3 +42,10 @@ data class QueuePartitionsResponse(
     val queue: String,
     val partitions: Int,
 )
+
+data class QueueCommitResponse(
+    val namespace: String,
+    val queue: String,
+    val partition: Int,
+    val committed: Int,
+)

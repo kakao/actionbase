@@ -239,6 +239,7 @@ class ReadOnlyRequestFilterTest {
                 "PUT /queue/v1/namespaces/{namespace}/queues/{queue}/enable",
                 "PUT /queue/v1/namespaces/{namespace}/queues/{queue}/disable",
                 "DELETE /queue/v1/namespaces/{namespace}/queues/{queue}",
+                "DELETE /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/messages",
             )
 
         val NON_GRAPH_ENDPOINTS =

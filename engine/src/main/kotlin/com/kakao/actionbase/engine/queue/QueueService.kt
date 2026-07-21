@@ -96,6 +96,34 @@ class QueueService(
         }
     }
 
+    fun commit(
+        namespace: String,
+        queue: String,
+        partition: Int,
+        offset: Long,
+    ): Mono<Int> =
+        getNumPartitions(namespace, queue).flatMap { numPartitions ->
+            require(partition in 0 until numPartitions) { "partition must be in 0..${numPartitions - 1}, got $partition" }
+            commitPage(namespace, queue, partition, offset, 0)
+        }
+
+    private fun commitPage(
+        namespace: String,
+        queue: String,
+        partition: Int,
+        offset: Long,
+        deletedSoFar: Int,
+    ): Mono<Int> =
+        mutationService
+            .scanDelete(namespace, queue, QueueSchema.SEQ, partition.toLong(), Direction.OUT, COMMIT_BATCH, "${QueueSchema.SEQ}:lte:$offset")
+            .flatMap { deleted ->
+                if (deleted < COMMIT_BATCH) {
+                    Mono.just(deletedSoFar + deleted)
+                } else {
+                    commitPage(namespace, queue, partition, offset, deletedSoFar + deleted)
+                }
+            }
+
     /** Partition count; a cache miss reads Graph's in-memory registry and decodes the comment marker. */
     fun getNumPartitions(
         namespace: String,
@@ -166,6 +194,7 @@ class QueueService(
 
     private companion object {
         const val MAX_POLL_LIMIT = 1000
+        const val COMMIT_BATCH = 1000
         const val NUM_PARTITIONS_CACHE_SIZE = 100_000L
     }
 }
