@@ -106,6 +106,40 @@ class ImmutableEdgeE2ETest : E2ETestBase() {
     }
 
     @Test
+    fun `creating an immutable table with two indexes is rejected with 400`() {
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "two_index_log",
+                  "schema": {
+                    "type": "IMMUTABLE_EDGE",
+                    "source": {"type": "long", "comment": "partition"},
+                    "target": {"type": "string", "comment": "message id"},
+                    "properties": [
+                      {"name": "seq", "type": "long", "comment": "sequence", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [
+                      {"index": "seq_asc", "fields": [{"field": "seq", "order": "ASC"}]},
+                      {"index": "seq_desc", "fields": [{"field": "seq", "order": "DESC"}]}
+                    ],
+                    "groups": []
+                  },
+                  "storage": "datastore://immutable_ns/two_index_log",
+                  "mode": "SYNC",
+                  "comment": "two indexes should be rejected"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
+    @Test
     fun `point get is rejected with 400`() {
         append()
 

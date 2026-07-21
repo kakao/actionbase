@@ -46,7 +46,17 @@ sealed class ModelSchema : AbstractSchema {
         val indexes: List<Index> = emptyList(),
         val groups: List<Group> = emptyList(),
     ) : ModelSchema(),
-        AbstractSchema by Schema(properties.associate { it.name to it.nullable })
+        AbstractSchema by Schema(properties.associate { it.name to it.nullable }) {
+        init {
+            // An append writes one index row per index, and those rows are the whole record (no State
+            // row). Eviction scans a single index and deletes only its rows, so a second index's rows
+            // would be orphaned — unreachable to trim, yet still returned by scans on that index.
+            // Restricting to one index keeps "the index rows are the record" true by construction.
+            require(indexes.size <= 1) {
+                "an immutable edge table supports at most one index, but got ${indexes.size}: ${indexes.map { it.index }}"
+            }
+        }
+    }
 
     @JsonTypeName("multiEdge")
     data class MultiEdge(
