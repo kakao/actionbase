@@ -7,7 +7,6 @@ import com.kakao.actionbase.core.metadata.common.Aggregations
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.Topk
-import com.kakao.actionbase.core.metadata.common.TopkScope
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.DataType
@@ -77,8 +76,8 @@ class LabelEntityFunctionsSpec :
     companion object {
         private fun topk(
             name: String,
-            score: String = "${name}__topk",
-        ): Topk = Topk(topk = name, scope = TopkScope.GLOBAL, dimensionValue = "banana", score = score)
+            rank: String = "${name}__topk",
+        ): Topk = Topk(topk = name, entity = "__GLOBAL__", topkDimension = "target", rank = rank)
 
         private fun groupWithTopks(
             name: String,
