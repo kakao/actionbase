@@ -3,11 +3,13 @@ package com.kakao.actionbase.server.api.queue.v1
 import com.kakao.actionbase.engine.queue.EnqueueRequest
 import com.kakao.actionbase.engine.queue.EnqueueResponse
 import com.kakao.actionbase.engine.queue.PollResponse
+import com.kakao.actionbase.engine.queue.QueueCommitResponse
 import com.kakao.actionbase.engine.queue.QueuePartitionsResponse
 import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.server.util.mapToResponseEntity
 
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -48,4 +50,16 @@ class MessageController(
         @RequestParam(required = false) offset: Long? = null,
         @RequestParam(required = false) until: Long? = null,
     ): Mono<ResponseEntity<PollResponse>> = queueService.poll(namespace, queue, partition, limit, offset, until).mapToResponseEntity()
+
+    @DeleteMapping("/queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/messages")
+    fun commit(
+        @PathVariable namespace: String,
+        @PathVariable queue: String,
+        @PathVariable partition: Int,
+        @RequestParam offset: Long,
+    ): Mono<ResponseEntity<QueueCommitResponse>> =
+        queueService
+            .commit(namespace, queue, partition, offset)
+            .map { QueueCommitResponse(namespace, queue, partition, it) }
+            .mapToResponseEntity()
 }

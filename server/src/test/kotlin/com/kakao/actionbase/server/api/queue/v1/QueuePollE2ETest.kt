@@ -2,6 +2,7 @@ package com.kakao.actionbase.server.api.queue.v1
 
 import com.kakao.actionbase.engine.queue.PartitionHasher
 import com.kakao.actionbase.engine.queue.PollResponse
+import com.kakao.actionbase.engine.queue.QueueCommitResponse
 
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -146,6 +147,54 @@ class QueuePollE2ETest : QueueE2ESupport() {
             .jsonPath("$.queue")
             .isEqualTo(queue)
     }
+
+    @Test
+    fun `poll then commit deletes the processed prefix and a re-poll reflects it`() {
+        val queue = "committed"
+        createNamespace(ns)
+        createQueue(ns, queue, numPartitions)
+        enqueue(
+            ns,
+            queue,
+            """
+            [
+              {"key": "u", "seq": 1, "value": "a"},
+              {"key": "u", "seq": 2, "value": "b"},
+              {"key": "u", "seq": 3, "value": "c"},
+              {"key": "u", "seq": 4, "value": "d"},
+              {"key": "u", "seq": 5, "value": "e"}
+            ]
+            """.trimIndent(),
+        )
+        val p = PartitionHasher.partition("u", numPartitions)
+
+        val batch = poll(queue, p, limit = 3)
+        assertEquals(listOf(1L, 2L, 3L), batch.messages.map { it.seq })
+        assertEquals(3L, batch.offset)
+        assertEquals(3, commit(queue, p, offset = batch.offset!!))
+
+        val afterCommit = poll(queue, p, limit = 10)
+        assertEquals(listOf(4L, 5L), afterCommit.messages.map { it.seq })
+
+        assertEquals(2, commit(queue, p, offset = afterCommit.offset!!))
+        assertTrue(poll(queue, p, limit = 10).messages.isEmpty(), "a fully committed partition is empty")
+    }
+
+    private fun commit(
+        queue: String,
+        partition: Int,
+        offset: Long,
+    ): Int =
+        client
+            .delete()
+            .uri("/queue/v1/namespaces/$ns/queues/$queue/partitions/$partition/messages?offset=$offset")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody(QueueCommitResponse::class.java)
+            .returnResult()
+            .responseBody!!
+            .committed
 
     private fun poll(
         queue: String,
