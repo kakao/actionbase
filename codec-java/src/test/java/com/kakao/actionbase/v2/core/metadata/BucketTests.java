@@ -2,6 +2,11 @@ package com.kakao.actionbase.v2.core.metadata;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,5 +71,26 @@ public class BucketTests {
     assertTrue(bucket instanceof Bucket.Date);
     assertEquals("created_at_day", bucket.getName());
     assertEquals("2026-06-11", bucket.apply(EPOCH_MILLIS));
+  }
+
+  @Test
+  void shouldRemainUsableAfterJavaSerialization() throws Exception {
+    Bucket.Date bucket =
+        new Bucket.Date("created_at_hour", Bucket.ValueUnit.NANOSECOND, "+09:00", "yyyyMMdd'T'HH");
+
+    byte[] serialized;
+    try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        ObjectOutputStream output = new ObjectOutputStream(bytes)) {
+      output.writeObject(bucket);
+      serialized = bytes.toByteArray();
+    }
+
+    Bucket.Date restored;
+    try (ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(serialized))) {
+      restored = (Bucket.Date) input.readObject();
+    }
+
+    assertEquals(bucket, restored);
+    assertEquals("20260611T00", restored.apply(EPOCH_NANOS));
   }
 }

@@ -41,8 +41,8 @@ public abstract class Bucket implements Serializable {
     @JsonProperty("format")
     private final String format;
 
-    @JsonIgnore private final ZoneId zoneId;
-    @JsonIgnore private final DateTimeFormatter formatter;
+    @JsonIgnore private final transient ZoneId zoneId;
+    @JsonIgnore private final transient DateTimeFormatter formatter;
 
     @JsonCreator
     public Date(
@@ -56,6 +56,10 @@ public abstract class Bucket implements Serializable {
       this.format = format;
       this.zoneId = ZoneId.of(timezone);
       this.formatter = DateTimeFormatter.ofPattern(format);
+    }
+
+    private Object readResolve() {
+      return new Date(name, unit, timezone, format);
     }
 
     @Override
