@@ -46,7 +46,16 @@ sealed class ModelSchema : AbstractSchema {
         val indexes: List<Index> = emptyList(),
         val groups: List<Group> = emptyList(),
     ) : ModelSchema(),
-        AbstractSchema by Schema(properties.associate { it.name to it.nullable })
+        AbstractSchema by Schema(properties.associate { it.name to it.nullable }) {
+        init {
+            require(indexes.size <= 1) {
+                "immutable edge allows at most one index (scan-and-delete evicts by scanning one), got ${indexes.map { it.index }}"
+            }
+            require(direction != DirectionType.BOTH) {
+                "immutable edge must be single-direction OUT or IN (scan-and-delete evicts one direction), got BOTH"
+            }
+        }
+    }
 
     @JsonTypeName("multiEdge")
     data class MultiEdge(
