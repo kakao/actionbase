@@ -19,6 +19,8 @@ Actionbase stores edge data using multiple row types in the storage backend. Eac
 | Edge Index | -4        | Index entries      | Scan       |
 | Edge Count | -2        | Edge counts        | Count      |
 
+Immutable edge tables (`IMMUTABLE_INDEXED`) persist Edge Index rows only — no Edge State and no Edge Count. The index rows are the whole record, which is why point gets and counts are not supported on them and why deleting a scanned index range is a complete delete.
+
 ## Edge State (Type Code: -3)
 
 Stores the current state of edges for Get queries.
