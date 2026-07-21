@@ -57,6 +57,18 @@ interface TableBinding {
         features: List<String>,
     ): Mono<DataFrame>
 
+    /**
+     * Scans one page of `index`/`ranges` and deletes the matched rows, returning the count deleted.
+     * Immutable edge tables only — their index rows are the whole record. Bounded by `limit`.
+     */
+    fun scanDelete(
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        ranges: String?,
+    ): Mono<Int>
+
     fun seek(
         cache: String,
         start: List<Any>,

@@ -21,6 +21,7 @@ import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.engine.util.component1
 import com.kakao.actionbase.engine.util.component2
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
+import com.kakao.actionbase.v2.core.metadata.Direction
 
 import java.time.Duration
 
@@ -31,6 +32,24 @@ class MutationService(
     private val engine: MutationEngine,
     private val featureFlags: FeatureFlags = FeatureFlags(emptyList()),
 ) {
+    /**
+     * Scans one page of `index`/`ranges` on an immutable edge table and deletes the matched rows,
+     * returning the count deleted (bounded by `limit`). Used for retention / eviction; callers loop
+     * to trim a larger range.
+     */
+    fun scanDelete(
+        database: String,
+        alias: String,
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        ranges: String?,
+    ): Mono<Int> =
+        Mono
+            .fromCallable { engine.getTableBinding(database, alias) }
+            .flatMap { it.scanDelete(index, start, direction, limit, ranges) }
+
     fun mutate(
         database: String,
         alias: String,

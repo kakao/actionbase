@@ -275,6 +275,26 @@ interface IndexedLabelMixin<T> {
                 it.flatten()
             }
 
+    /**
+     * Scans one page of the given range and deletes the matched index rows, returning the count.
+     * Correct only for immutable edges, whose sole persisted records are these index rows, so
+     * deleting the scanned keys is a complete delete (no State row or count to reconcile). Bounded by
+     * `scanFilter.limit`; callers loop to trim a larger range.
+     */
+    fun scanAndDeleteIndexedEdges(scanFilter: ScanFilter): Mono<Int> =
+        Flux
+            .fromIterable(makeIndexedEdgeScanKeys(scanFilter))
+            .flatMap { rangeKey ->
+                self.scanStorage(rangeKey.prefix, scanFilter.limit, rangeKey.start, rangeKey.stop)
+            }.flatMap { group ->
+                if (group.isEmpty()) {
+                    Mono.just(0)
+                } else {
+                    deleteIndexedEdges(group.map { EncodedKey(it.key) })
+                        .flatMap { deferred -> self.handleDeferredRequests(deferred, null).thenReturn(group.size) }
+                }
+            }.reduce(0) { acc, deleted -> acc + deleted }
+
     fun insertIndexedEdges(keyFieldValues: List<KeyFieldValue<T>>): Mono<List<Any>> =
         Flux
             .fromIterable(keyFieldValues)

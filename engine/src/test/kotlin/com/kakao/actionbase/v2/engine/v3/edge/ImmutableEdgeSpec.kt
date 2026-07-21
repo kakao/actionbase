@@ -108,6 +108,28 @@ class ImmutableEdgeSpec :
                 }.verifyComplete()
         }
 
+        "scanDelete removes the matched edges and leaves the rest" {
+            val request = mapper.readValue<EdgeBulkMutationRequest>(appendRequest)
+            mutationService
+                .mutate(database, table, request.mutations, syncMode = EngineMutationMode.SYNC)
+                .block()
+
+            // delete seq <= 1001 (m1, m2)
+            mutationService
+                .scanDelete(database, table, "seq_asc", 1L, Direction.OUT, limit = 10, ranges = "seq:lte:1001")
+                .test()
+                .assertNext { deleted -> deleted shouldBe 2 }
+                .verifyComplete()
+
+            // only m3 (seq 1002) remains
+            queryService
+                .scan(database, table, "seq_asc", 1L, Direction.OUT, limit = 10)
+                .test()
+                .assertNext { result ->
+                    result.edges.map { it.target } shouldBe listOf("m3")
+                }.verifyComplete()
+        }
+
         "point get is rejected on immutable edge tables" {
             val request = mapper.readValue<EdgeBulkMutationRequest>(appendRequest)
             mutationService

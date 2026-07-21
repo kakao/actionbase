@@ -233,6 +233,43 @@ class V2BackedTableBinding(
             }.switchIfEmpty(EMPTY_DATAFRAME)
     }
 
+    override fun scanDelete(
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        ranges: String?,
+    ): Mono<Int> {
+        require(isImmutable) { "`scanDelete` is only supported on immutable edge tables." }
+
+        val indexFieldNames =
+            label.entity.indices
+                .find { it.name == index }
+                ?.let { it.fields.map { field -> field.name } }
+        requireNotNull(indexFieldNames) { "index `$index` is not found in label `${label.entity.name}`." }
+
+        val indexPredicates = ranges?.let { WherePredicate.parse(it) }?.toSet() ?: emptySet()
+        val indexPredicateKeys = indexPredicates.map { it.key }
+        val lazyIndexMismatchErrorMessage: () -> String = {
+            "valid `ranges` order for the index `$index` is $indexFieldNames. input was: $indexPredicateKeys."
+        }
+        require(indexPredicateKeys.size <= indexFieldNames.size, lazyIndexMismatchErrorMessage)
+        indexPredicateKeys.zip(indexFieldNames).forEach { (predicateFieldName, indexFieldName) ->
+            require(predicateFieldName == indexFieldName, lazyIndexMismatchErrorMessage)
+        }
+
+        val scanFilter =
+            ScanFilter(
+                name = EntityName(descriptor.database, descriptor.table),
+                srcSet = setOf(start),
+                dir = direction,
+                limit = limit,
+                indexName = index,
+                otherPredicates = indexPredicates,
+            )
+        return label.scanAndDeleteIndexedEdges(scanFilter)
+    }
+
     override fun seek(
         cache: String,
         start: List<Any>,
