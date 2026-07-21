@@ -15,14 +15,14 @@ See the [Queue API Reference](/api-references/queue/) for endpoints.
 
 A queue is an immutable edge table with a fixed schema. Each queue concept maps directly onto an edge concept:
 
-| Queue concept | Edge concept                                  |
-| ------------- | --------------------------------------------- |
-| namespace     | Service (v3: database)                        |
-| queue         | Label (v3: table), type IMMUTABLE_INDEXED     |
-| partition     | src (LONG)                                    |
-| message id    | tgt (STRING) — a server-assigned ULID         |
-| seq           | field (LONG) — ordering key, also the index   |
-| value         | field (STRING) — opaque JSON payload          |
+| Queue concept | Edge concept                                    |
+| ------------- | ----------------------------------------------- |
+| namespace     | database                                        |
+| queue         | table, type IMMUTABLE_EDGE                       |
+| partition     | source (LONG)                                   |
+| message id    | target (STRING) — a server-assigned ULID        |
+| seq           | property (LONG) — ordering key, also the index  |
+| value         | property (STRING) — opaque JSON payload         |
 
 Because the backing table is append-only and index-only, an enqueue is a single index-row write and a poll is a single bounded index scan. There is no per-message state — no ack flags, no consumer registry.
 
