@@ -8,6 +8,7 @@ import com.kakao.actionbase.v2.core.code.hbase.Order
 import com.kakao.actionbase.v2.core.metadata.Active
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
+import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.StructType
 import com.kakao.actionbase.v2.engine.cdc.CdcContext
 import com.kakao.actionbase.v2.engine.edge.HashEdge
@@ -274,6 +275,25 @@ interface IndexedLabelMixin<T> {
             .map {
                 it.flatten()
             }
+
+    fun scanAndDeleteIndexedEdges(scanFilter: ScanFilter): Mono<Int> {
+        require(self.entity.type == LabelType.IMMUTABLE_INDEXED) {
+            "scanAndDeleteIndexedEdges is only valid on immutable edge tables; on a mutable table it " +
+                "would delete index rows while leaving the State row and count records dangling"
+        }
+        return Flux
+            .fromIterable(makeIndexedEdgeScanKeys(scanFilter))
+            .flatMap { rangeKey ->
+                self.scanStorage(rangeKey.prefix, scanFilter.limit, rangeKey.start, rangeKey.stop)
+            }.flatMap { group ->
+                if (group.isEmpty()) {
+                    Mono.just(0)
+                } else {
+                    deleteIndexedEdges(group.map { EncodedKey(it.key) })
+                        .flatMap { deferred -> self.handleDeferredRequests(deferred, null).thenReturn(group.size) }
+                }
+            }.reduce(0) { acc, deleted -> acc + deleted }
+    }
 
     fun insertIndexedEdges(keyFieldValues: List<KeyFieldValue<T>>): Mono<List<Any>> =
         Flux

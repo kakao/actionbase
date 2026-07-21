@@ -21,6 +21,7 @@ import com.kakao.actionbase.engine.storage.StorageOpCollector
 import com.kakao.actionbase.engine.util.component1
 import com.kakao.actionbase.engine.util.component2
 import com.kakao.actionbase.engine.util.runEvenIfCancelled
+import com.kakao.actionbase.v2.core.metadata.Direction
 
 import java.time.Duration
 
@@ -31,6 +32,23 @@ class MutationService(
     private val engine: MutationEngine,
     private val featureFlags: FeatureFlags = FeatureFlags(emptyList()),
 ) {
+    fun scanDelete(
+        database: String,
+        alias: String,
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        ranges: String?,
+    ): Mono<Int> {
+        require(limit in 1..MAX_SCAN_DELETE_LIMIT) {
+            "`limit` must be in 1..$MAX_SCAN_DELETE_LIMIT for scanDelete, but was $limit."
+        }
+        return Mono
+            .fromCallable { engine.getTableBinding(database, alias) }
+            .flatMap { it.scanDelete(index, start, direction, limit, ranges) }
+    }
+
     fun mutate(
         database: String,
         alias: String,
@@ -131,10 +149,12 @@ class MutationService(
         return if (acquireLock) tb.withLock(key, rwm) else rwm()
     }
 
-    private companion object {
-        const val QUEUED = "QUEUED"
-        const val ERROR = "ERROR"
-        const val INVALID = "INVALID"
+    companion object {
+        const val MAX_SCAN_DELETE_LIMIT = 1_000
+
+        private const val QUEUED = "QUEUED"
+        private const val ERROR = "ERROR"
+        private const val INVALID = "INVALID"
 
         private fun Throwable.isInvalidMutation(): Boolean = generateSequence(this) { it.cause }.any { it is InvalidMutationException }
     }
