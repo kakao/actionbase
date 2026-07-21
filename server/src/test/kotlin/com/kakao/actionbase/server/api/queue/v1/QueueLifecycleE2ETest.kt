@@ -7,24 +7,24 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.http.MediaType
 
 /**
- * Queue admin lifecycle: create builds an immutable edge table stamped with queue metadata, get
- * reads it back, disable/enable toggle the active flag, and delete is guarded — it succeeds only
- * once the queue is disabled (409 otherwise).
+ * Queue lifecycle: create builds an immutable edge table stamped with queue metadata, get reads it
+ * back, disable/enable toggle the active flag, and delete is guarded — it succeeds only once the
+ * queue is disabled (409 otherwise).
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class QueueAdminE2ETest : E2ETestBase() {
-    private val ns = "queue_admin_ns"
+class QueueLifecycleE2ETest : E2ETestBase() {
+    private val ns = "queue_lifecycle_ns"
 
     private fun createNamespace() {
         client
             .post()
             .uri("/graph/v3/databases")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"database": "$ns", "comment": "queue admin e2e"}""")
+            .bodyValue("""{"database": "$ns", "comment": "queue lifecycle e2e"}""")
             .exchange()
     }
 
-    private fun createQueueBody(queue: String) = """{"queue": "$queue", "storage": "datastore://queue_admin_ns/$queue", "partitions": 12}"""
+    private fun createQueueBody(queue: String) = """{"queue": "$queue", "storage": "datastore://queue_lifecycle_ns/$queue", "partitions": 12}"""
 
     @Test
     fun `create then get then disable then delete a queue`() {
