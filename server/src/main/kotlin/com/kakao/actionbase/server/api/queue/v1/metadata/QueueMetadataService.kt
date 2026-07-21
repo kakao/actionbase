@@ -10,8 +10,8 @@ import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.MutationMode
 import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.types.PrimitiveType
-import com.kakao.actionbase.engine.queue.QueueDescriptorCodec
-import com.kakao.actionbase.engine.queue.QueueMeta
+import com.kakao.actionbase.engine.queue.QueueMetadata
+import com.kakao.actionbase.engine.queue.QueueMetadataCodec
 import com.kakao.actionbase.engine.queue.QueueSchema
 import com.kakao.actionbase.server.api.graph.v3.metadata.TableCreateRequest
 import com.kakao.actionbase.server.api.graph.v3.metadata.TableUpdateRequest
@@ -52,7 +52,7 @@ class QueueMetadataService(
                 schema = schema,
                 storage = request.storage,
                 mode = MutationMode.SYNC,
-                comment = QueueDescriptorCodec.encode(QueueMeta(request.partitions)),
+                comment = QueueMetadataCodec.encode(QueueMetadata(request.partitions)),
             )
         return compat
             .createTable(namespace, request.queue, tableRequest)
@@ -93,7 +93,7 @@ class QueueMetadataService(
 
     private fun TableDescriptor<*>.toQueueResponse(): QueueDescriptorResponse {
         val meta =
-            QueueDescriptorCodec.decode(comment)
+            QueueMetadataCodec.decode(comment)
                 ?: throw IllegalArgumentException("`$database.$table` is not a queue/v1 table")
         return QueueDescriptorResponse(
             namespace = database,

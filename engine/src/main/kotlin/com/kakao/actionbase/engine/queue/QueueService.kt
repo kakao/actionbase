@@ -106,7 +106,7 @@ class QueueService(
             numPartitionsCache.get(name) {
                 val comment = graph.getLabel(it).entity.desc
                 (
-                    QueueDescriptorCodec.decode(comment)
+                    QueueMetadataCodec.decode(comment)
                         ?: throw IllegalArgumentException("`$namespace.$queue` is not a queue/v1 table")
                 ).numPartitions
             }
