@@ -276,16 +276,6 @@ interface IndexedLabelMixin<T> {
                 it.flatten()
             }
 
-    /**
-     * Scans one page of the given range and deletes the matched index rows, returning the count.
-     * Immutable edge tables only — their sole persisted records are these index rows, so deleting the
-     * scanned keys is a complete delete (no State row or count to reconcile).
-     *
-     * This is eviction (retention), not a logical un-append: group aggregates count appends and are
-     * intentionally not decremented — on an append-only log an append is a permanent fact, so a group
-     * is a lifetime append count, not a live count. Bounded by `scanFilter.limit`; callers loop to
-     * trim a larger range.
-     */
     fun scanAndDeleteIndexedEdges(scanFilter: ScanFilter): Mono<Int> {
         require(self.entity.type == LabelType.IMMUTABLE_INDEXED) {
             "scanAndDeleteIndexedEdges is only valid on immutable edge tables; on a mutable table it " +

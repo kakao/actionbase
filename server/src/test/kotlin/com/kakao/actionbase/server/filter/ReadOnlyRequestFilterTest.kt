@@ -220,6 +220,7 @@ class ReadOnlyRequestFilterTest {
                 "DELETE /graph/v3/databases/{database}",
                 "DELETE /graph/v3/databases/{database}/aliases/{alias}",
                 "DELETE /graph/v3/databases/{database}/tables/{table}",
+                "DELETE /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
                 "POST /graph/v3/databases",
                 "POST /graph/v3/databases/{database}/aliases",
                 "POST /graph/v3/databases/{database}/tables",

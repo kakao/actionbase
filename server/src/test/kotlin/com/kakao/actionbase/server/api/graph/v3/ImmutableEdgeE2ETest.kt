@@ -105,6 +105,63 @@ class ImmutableEdgeE2ETest : E2ETestBase() {
             .isEqualTo("m3")
     }
 
+    private fun appendPartition2() {
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables/$table/edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 2000, "source": 2, "target": "d1", "properties": {"seq": 2000, "payload": "x"}}},
+                    {"type": "INSERT", "edge": {"version": 2001, "source": 2, "target": "d2", "properties": {"seq": 2001, "payload": "y"}}},
+                    {"type": "INSERT", "edge": {"version": 2002, "source": 2, "target": "d3", "properties": {"seq": 2002, "payload": "z"}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+    }
+
+    @Test
+    fun `scanDelete evicts matching rows and leaves the rest`() {
+        appendPartition2()
+
+        client
+            .delete()
+            .uri("/graph/v3/databases/$db/tables/$table/edges/scan/seq_asc?start=2&direction=OUT&limit=100&ranges=seq:lte:2001")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.deleted")
+            .isEqualTo(2)
+
+        client
+            .get()
+            .uri("/graph/v3/databases/$db/tables/$table/edges/scan/seq_asc?start=2&direction=OUT&limit=10")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.edges.length()")
+            .isEqualTo(1)
+            .jsonPath("$.edges[0].target")
+            .isEqualTo("d3")
+    }
+
+    @Test
+    fun `scanDelete over the max limit is rejected with 400`() {
+        client
+            .delete()
+            .uri("/graph/v3/databases/$db/tables/$table/edges/scan/seq_asc?start=2&direction=OUT&limit=1001")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
+
     @Test
     fun `creating an immutable table with two indexes is rejected with 400`() {
         client

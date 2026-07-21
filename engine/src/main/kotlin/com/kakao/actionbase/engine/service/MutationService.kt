@@ -32,12 +32,6 @@ class MutationService(
     private val engine: MutationEngine,
     private val featureFlags: FeatureFlags = FeatureFlags(emptyList()),
 ) {
-    /**
-     * Scans one page of `index`/`ranges` on an immutable edge table and deletes the matched rows,
-     * returning the count deleted (bounded by `limit`). Used for retention / eviction; callers loop
-     * to trim a larger range. Group aggregates count appends and are not decremented (an append is
-     * permanent).
-     */
     fun scanDelete(
         database: String,
         alias: String,
@@ -46,10 +40,14 @@ class MutationService(
         direction: Direction,
         limit: Int,
         ranges: String?,
-    ): Mono<Int> =
-        Mono
+    ): Mono<Int> {
+        require(limit in 1..MAX_SCAN_DELETE_LIMIT) {
+            "`limit` must be in 1..$MAX_SCAN_DELETE_LIMIT for scanDelete, but was $limit."
+        }
+        return Mono
             .fromCallable { engine.getTableBinding(database, alias) }
             .flatMap { it.scanDelete(index, start, direction, limit, ranges) }
+    }
 
     fun mutate(
         database: String,
@@ -151,10 +149,12 @@ class MutationService(
         return if (acquireLock) tb.withLock(key, rwm) else rwm()
     }
 
-    private companion object {
-        const val QUEUED = "QUEUED"
-        const val ERROR = "ERROR"
-        const val INVALID = "INVALID"
+    companion object {
+        const val MAX_SCAN_DELETE_LIMIT = 1_000
+
+        private const val QUEUED = "QUEUED"
+        private const val ERROR = "ERROR"
+        private const val INVALID = "INVALID"
 
         private fun Throwable.isInvalidMutation(): Boolean = generateSequence(this) { it.cause }.any { it is InvalidMutationException }
     }
