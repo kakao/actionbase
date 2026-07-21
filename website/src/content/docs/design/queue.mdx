@@ -1,0 +1,68 @@
+---
+title: Queue
+description: A partitioned message queue built on immutable edge tables
+sidebar:
+  order: 5
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+queue/v1 is a partitioned message queue built on an [immutable edge table](/design/schema/#immutable-edge-tables-type-immutable_indexed-v3-immutable_edge). It provides ordered, partition-parallel delivery with an explicit consumer lifecycle: **poll → process → commit**.
+
+See the [Queue API Reference](/api-references/queue/) for endpoints.
+
+## Architecture
+
+A queue is an immutable edge table with a fixed schema. Each queue concept maps directly onto an edge concept:
+
+| Queue concept | Edge concept                                  |
+| ------------- | --------------------------------------------- |
+| namespace     | Service (v3: database)                        |
+| queue         | Label (v3: table), type IMMUTABLE_INDEXED     |
+| partition     | src (LONG)                                    |
+| message id    | tgt (STRING) — a server-assigned ULID         |
+| seq           | field (LONG) — ordering key, also the index   |
+| value         | field (STRING) — opaque JSON payload          |
+
+Because the backing table is append-only and index-only, an enqueue is a single index-row write and a poll is a single bounded index scan. There is no per-message state — no ack flags, no consumer registry.
+
+## Partitioning
+
+A message is routed by its `key`:
+
+```
+partition = xxhash32(key) mod partitions
+```
+
+- Messages with the same key land in the same partition and are read back in `seq` order.
+- `partitions` is fixed at queue creation (default 30 = 2·3·5, whose divisors allow many balanced consumer-shard splits).
+- Consumers fan out by polling partitions `0 .. partitions-1` independently.
+
+## Consumer Lifecycle
+
+```
+poll(partition, offset) → process the batch → commit(partition, offset = batch offset)
+```
+
+1. **Poll** scans one partition forward by `seq`. `offset` is exclusive (`seq > offset`); the response returns the batch and its next `offset` (the highest `seq` seen). An optional `until` bound (inclusive) restricts a poll to due messages when `seq` encodes a due time.
+2. **Process** the batch.
+3. **Commit** up to the batch's offset: every message with `seq <= offset` is **deleted**. There is no separate ack state — the delete *is* the committed position, and the same operation serves retention.
+
+<Aside type="caution">
+  Commit deletes a prefix of the partition, so it assumes **one logical consumer per partition**
+  (Kafka-style). Independent consumers sharing a partition would delete each other's unprocessed
+  messages.
+</Aside>
+
+## Delivery Semantics
+
+- **At-least-once**: commit only after processing. If a consumer crashes between poll and commit, the next poll re-reads the uncommitted messages.
+- **Ordered within a partition**: polls return messages in `seq` order; there is no ordering across partitions.
+- **Commit is a real delete**: after a commit, re-polling from the start of the partition does not return the committed prefix.
+- **No CDC**: immutable edge tables do not emit CDC — the queue itself is the log.
+
+## Next Steps
+
+- [Queue API Reference](/api-references/queue/): Endpoints
+- [Schema](/design/schema/): Immutable edge tables
+- [Mutation API Reference](/api-references/mutation/): The underlying scan-delete primitive
