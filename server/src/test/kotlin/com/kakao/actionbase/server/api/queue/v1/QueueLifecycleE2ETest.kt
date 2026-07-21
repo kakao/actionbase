@@ -108,4 +108,27 @@ class QueueLifecycleE2ETest : E2ETestBase() {
             .expectStatus()
             .isOk
     }
+
+    @Test
+    fun `create rejects invalid input`() {
+        createNamespace()
+
+        // partitions must be >= 1
+        postCreateExpectingBadRequest("""{"queue": "bad_zero", "storage": "datastore://queue_lifecycle_ns/bad_zero", "partitions": 0}""")
+        // queue name must match the name pattern
+        postCreateExpectingBadRequest("""{"queue": "Bad-Name", "storage": "datastore://queue_lifecycle_ns/x", "partitions": 4}""")
+        // storage must match the datastore URI pattern
+        postCreateExpectingBadRequest("""{"queue": "ok_name", "storage": "not-a-uri", "partitions": 4}""")
+    }
+
+    private fun postCreateExpectingBadRequest(body: String) {
+        client
+            .post()
+            .uri("/queue/v1/namespaces/$ns/queues")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+    }
 }

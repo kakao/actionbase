@@ -32,7 +32,6 @@ class QueueMetadataService(
         namespace: String,
         request: QueueCreateRequest,
     ): Mono<QueueDescriptorResponse> {
-        require(request.partitions > 0) { "partitions must be positive, got ${request.partitions}" }
         val schema =
             ModelSchema.ImmutableEdge(
                 source = Field(type = PrimitiveType.LONG, comment = "partition"),

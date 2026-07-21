@@ -22,6 +22,16 @@ import reactor.core.publisher.Mono
 class MessageController(
     private val queueService: QueueService,
 ) {
+    @GetMapping("/queue/v1/namespaces/{namespace}/queues/{queue}/partitions")
+    fun partitions(
+        @PathVariable namespace: String,
+        @PathVariable queue: String,
+    ): Mono<ResponseEntity<QueuePartitionsResponse>> =
+        queueService
+            .partitions(namespace, queue)
+            .map { QueuePartitionsResponse(namespace, queue, it) }
+            .mapToResponseEntity()
+
     @PostMapping("/queue/v1/namespaces/{namespace}/queues/{queue}/messages")
     fun enqueue(
         @PathVariable namespace: String,
@@ -38,14 +48,4 @@ class MessageController(
         @RequestParam(required = false) offset: Long? = null,
         @RequestParam(required = false) until: Long? = null,
     ): Mono<ResponseEntity<PollResponse>> = queueService.poll(namespace, queue, partition, limit, offset, until).mapToResponseEntity()
-
-    @GetMapping("/queue/v1/namespaces/{namespace}/queues/{queue}/partitions")
-    fun partitions(
-        @PathVariable namespace: String,
-        @PathVariable queue: String,
-    ): Mono<ResponseEntity<QueuePartitionsResponse>> =
-        queueService
-            .partitions(namespace, queue)
-            .map { QueuePartitionsResponse(namespace, queue, it) }
-            .mapToResponseEntity()
 }
