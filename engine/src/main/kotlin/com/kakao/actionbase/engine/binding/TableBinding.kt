@@ -59,7 +59,8 @@ interface TableBinding {
 
     /**
      * Scans one page of `index`/`ranges` and deletes the matched rows, returning the count deleted.
-     * Immutable edge tables only — their index rows are the whole record. Bounded by `limit`.
+     * Immutable edge tables only — their index rows are the whole record. This is eviction: group
+     * aggregates count appends and are not decremented (an append is permanent). Bounded by `limit`.
      */
     fun scanDelete(
         index: String,

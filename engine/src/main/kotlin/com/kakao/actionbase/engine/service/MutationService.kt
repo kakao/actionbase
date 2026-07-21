@@ -35,7 +35,8 @@ class MutationService(
     /**
      * Scans one page of `index`/`ranges` on an immutable edge table and deletes the matched rows,
      * returning the count deleted (bounded by `limit`). Used for retention / eviction; callers loop
-     * to trim a larger range.
+     * to trim a larger range. Group aggregates count appends and are not decremented (an append is
+     * permanent).
      */
     fun scanDelete(
         database: String,
