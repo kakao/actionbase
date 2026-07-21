@@ -130,9 +130,17 @@ class AggregationService(
                 status = "SKIPPED",
                 error = null,
             )
-        val (scoreDatabase, scoreTable) = parseFqn(topk.table.score)
+        val (rankDatabase, rankTable) = parseFqn(topk.rank)
 
-        val (directedSource, directedTarget) = getSourceTargetPair(source, direction, target, group, properties)
+        // The entity whose edges are aggregated: IN ranks by target, OUT by source.
+        val directedSource = if (direction == Direction.IN) target else source
+        // Per-entity stores that entity; global collapses every entity into a single sentinel row.
+        val entity = if (topk.entity == AggregationConstants.GLOBAL_ENTITY) AggregationConstants.GLOBAL_ENTITY else directedSource
+        val topkDimensionValue = resolveField(topk.topkDimension, source, target, properties)
+        val dimensionValues =
+            group.fields
+                .filter { it.bucket == null && !matchesTopkDimension(it.name, topk.topkDimension) }
+                .map { resolveField(it.name, source, target, properties) }
 
         return queryService
             .agg(
@@ -143,13 +151,13 @@ class AggregationService(
                 direction = V2Direction.valueOf(direction.name),
                 ranges = ranges,
             ).flatMap { response ->
-                val score = response.groups.firstOrNull()?.value ?: 0L
+                val metric = response.groups.firstOrNull()?.value ?: 0L
 
                 val version = System.currentTimeMillis()
                 mutationService
                     .mutate(
-                        database = scoreDatabase,
-                        alias = scoreTable,
+                        database = rankDatabase,
+                        alias = rankTable,
                         unresolvedEvents =
                             listOf(
                                 MutationItem(
@@ -157,16 +165,16 @@ class AggregationService(
                                     edge =
                                         Edge(
                                             version = version,
-                                            source = AggregationConstants.scoreSource(entity = directedSource, topk.topk),
-                                            target = directedTarget,
-                                            properties = mapOf("score" to score),
+                                            source = AggregationConstants.rankSource(topk = topk.topk, entity = entity, dimensionValues = dimensionValues),
+                                            target = topkDimensionValue,
+                                            properties = mapOf("metric" to metric),
                                         ),
                                 ),
                             ),
-                    ).flatMap { scoreResults ->
-                        val scoreStatus = if (scoreResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS"
-                        if (scoreStatus == "ERROR" || topk.refreshAfterMillis <= 0) {
-                            return@flatMap Mono.just(base.copy(status = scoreStatus))
+                    ).flatMap { rankResults ->
+                        val rankStatus = if (rankResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS"
+                        if (rankStatus == "ERROR" || topk.refreshAfterMillis <= 0) {
+                            return@flatMap Mono.just(base.copy(status = rankStatus))
                         }
 
                         val refreshAt = version + topk.refreshAfterMillis
@@ -182,17 +190,29 @@ class AggregationService(
                                             edge =
                                                 Edge(
                                                     version = System.currentTimeMillis(),
-                                                    source = AggregationConstants.refreshSource(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget),
-                                                    target = AggregationConstants.refreshTarget(table = "$database.$table", topk = topk.topk, entity = directedSource, target = directedTarget, refreshAt = refreshAt),
+                                                    source =
+                                                        AggregationConstants.refreshSource(
+                                                            database = database,
+                                                            table = table,
+                                                            topk = topk.topk,
+                                                            entity = entity,
+                                                            topkDimensionValue = topkDimensionValue,
+                                                            dimensionValues = dimensionValues,
+                                                        ),
+                                                    target = refreshAt.toString(),
                                                     properties =
                                                         mapOf(
                                                             "refreshAt" to refreshAt,
-                                                            "table" to "$database.$table",
+                                                            "database" to database,
+                                                            "table" to table,
                                                             "topk" to topk.topk,
-                                                            "directedSource" to directedSource,
-                                                            "directedTarget" to directedTarget,
+                                                            "source" to source,
+                                                            "target" to target,
                                                             "direction" to direction.name,
                                                             "ranges" to ranges,
+                                                            "entity" to entity,
+                                                            "topkDimensionValue" to topkDimensionValue,
+                                                            "dimensionValues" to dimensionValues.joinToString("|"),
                                                         ),
                                                 ),
                                         ),
@@ -208,25 +228,27 @@ class AggregationService(
             }
     }
 
-    private fun getSourceTargetPair(
+    /**
+     * Resolves a dimension field name against the current edge.
+     *   - `source` / `_source` and `target` / `_target` resolve to the edge endpoints.
+     *   - any other name reads from `properties`.
+     */
+    private fun resolveField(
+        name: String,
         source: String,
-        direction: Direction,
         target: String,
-        group: Group,
         properties: Map<String, Any?>,
-    ): Pair<String, String> {
-        val directedSource = if (direction == Direction.IN) target else source
-        val directedTarget =
-            scoreTargetOf(
-                group = group,
-                source = source,
-                target = target,
-                properties = properties,
-                fallback = if (direction == Direction.IN) source else target,
-            )
+    ): String =
+        when (name) {
+            "source", "_source" -> source
+            "target", "_target" -> target
+            else -> properties[name]?.toString().orEmpty()
+        }
 
-        return directedSource to directedTarget
-    }
+    private fun matchesTopkDimension(
+        fieldName: String,
+        topkDimension: String,
+    ): Boolean = fieldName.removePrefix("_") == topkDimension.removePrefix("_")
 
     /**
      * Replaces `{name}` placeholders in a ranges template.
@@ -249,34 +271,10 @@ class AggregationService(
             value?.let { Regex.escapeReplacement(it) } ?: Regex.escapeReplacement(match.value)
         }
 
-    /**
-     * Segments the score row's `target` by joining the group's non-bucket fields with `|`.
-     * Bucket fields are consumed by `ranges`. `_source` / `_target` resolve to the edge
-     * endpoints; other names read from `properties`. Falls back to [fallback] when the group
-     * has no non-bucket field.
-     */
-    private fun scoreTargetOf(
-        group: Group,
-        source: String,
-        target: String,
-        properties: Map<String, Any?>,
-        fallback: String,
-    ): String {
-        val bucketless = group.fields.filter { it.bucket == null }
-        if (bucketless.isEmpty()) return fallback
-        return bucketless.joinToString("|") { field ->
-            when (field.name) {
-                "_source" -> source
-                "_target" -> target
-                else -> properties[field.name]?.toString().orEmpty()
-            }
-        }
-    }
-
     private fun parseFqn(fqn: String): Pair<String, String> {
         val dot = fqn.indexOf('.')
         require(dot > 0 && dot < fqn.lastIndex) {
-            "score table must be a fully-qualified `database.table`, got: $fqn"
+            "rank table must be a fully-qualified `database.table`, got: $fqn"
         }
         return fqn.substring(0, dot) to fqn.substring(dot + 1)
     }

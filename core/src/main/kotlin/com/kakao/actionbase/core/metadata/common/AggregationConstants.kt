@@ -8,28 +8,27 @@ object AggregationConstants {
 
     const val TOPK_REFRESH_PARTITIONS = 2310
 
-    // score table src key: entity|topk_name — supports multiple topk in one table
-    fun scoreSource(
-        entity: String,
-        topk: String,
-    ): String = "$entity|$topk"
+    // entity sentinel for global (non per-entity) rankings
+    const val GLOBAL_ENTITY = "__GLOBAL__"
 
+    // rank table src key: topk | entity | dimensionValue1 | dimensionValue2 | ...
+    fun rankSource(
+        topk: String,
+        entity: String,
+        dimensionValues: List<String>,
+    ): String = (listOf(topk, entity) + dimensionValues).joinToString("|")
+
+    // refresh table src key: partition of hash(database | table | topk | entity | topkDimensionValue | dimensionValue1 | ...)
     fun refreshSource(
+        database: String,
         table: String,
         topk: String,
         entity: String,
-        target: String,
+        topkDimensionValue: String,
+        dimensionValues: List<String>,
     ): String =
         XXHash32Wrapper.default
-            .stringHash("$table|$topk|$entity|$target")
+            .stringHash((listOf(database, table, topk, entity, topkDimensionValue) + dimensionValues).joinToString("|"))
             .mod(TOPK_REFRESH_PARTITIONS)
             .toString()
-
-    fun refreshTarget(
-        table: String,
-        topk: String,
-        entity: String,
-        target: String,
-        refreshAt: Long,
-    ): String = "$table|$topk|$entity|$target|$refreshAt"
 }

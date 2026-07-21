@@ -20,7 +20,7 @@ import org.springframework.test.web.reactive.server.expectBody
 class MetadataAggControllerE2ETest : E2ETestBase() {
     private val db = "commerce"
     private val table = "purchases"
-    private val scoreFqn = "$db.${table}__topk"
+    private val rankFqn = "$db.${table}__topk"
 
     @BeforeAll
     fun setup() {
@@ -60,7 +60,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                           "entity": "source",
                           "ranges": "_target:eq:{_target}",
                           "topkDimension": "target",
-                          "rank": "$scoreFqn"
+                          "rank": "$rankFqn"
                         }]
                       }
                     }],
@@ -94,16 +94,20 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                   "table": "$TOPK_REFRESH_TABLE",
                   "schema": {
                     "type": "EDGE",
-                    "source": {"type": "long", "comment": "partition = hash(table,topk,entity,target) % 2310"},
-                    "target": {"type": "string", "comment": "table|topk|entity|target|refresh_at"},
+                    "source": {"type": "long", "comment": "partition = hash(database,table,topk,entity,topkDimensionValue,dimensionValues) % 2310"},
+                    "target": {"type": "string", "comment": "refresh_at"},
                     "properties": [
                       {"name": "refreshAt", "type": "long", "comment": "next refresh time ms", "nullable": false},
+                      {"name": "database", "type": "string", "comment": "source database", "nullable": false},
                       {"name": "table", "type": "string", "comment": "source table", "nullable": false},
                       {"name": "topk", "type": "string", "comment": "topk name", "nullable": false},
-                      {"name": "directedSource", "type": "string", "comment": "directed source (already swapped)", "nullable": false},
-                      {"name": "directedTarget", "type": "string", "comment": "directed target = score row segment", "nullable": false},
+                      {"name": "source", "type": "string", "comment": "original edge source", "nullable": false},
+                      {"name": "target", "type": "string", "comment": "original edge target", "nullable": false},
                       {"name": "direction", "type": "string", "comment": "direction", "nullable": false},
-                      {"name": "ranges", "type": "string", "comment": "interpolated ranges", "nullable": false}
+                      {"name": "ranges", "type": "string", "comment": "interpolated ranges", "nullable": false},
+                      {"name": "entity", "type": "string", "comment": "entity", "nullable": false},
+                      {"name": "topkDimensionValue", "type": "string", "comment": "topk dimension value", "nullable": false},
+                      {"name": "dimensionValues", "type": "string", "comment": "|joined dimension values", "nullable": false}
                     ],
                     "direction": "OUT",
                     "indexes": [
@@ -126,8 +130,8 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     fun `aggregate joins non-bucket group fields into the score row target and skips bucket fields`() {
         val bucketedDb = "commerce_bucket"
         val bucketedTable = "orders"
-        val bucketedScore = "orders__topk"
-        val bucketedScoreFqn = "$bucketedDb.$bucketedScore"
+        val bucketedRank = "orders__topk"
+        val bucketedRankFqn = "$bucketedDb.$bucketedRank"
         val topkName = "top_purchased_1y"
 
         client
@@ -144,22 +148,22 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .bodyValue(
                 """
                 {
-                  "table": "$bucketedScore",
+                  "table": "$bucketedRank",
                   "schema": {
                     "type": "EDGE",
-                    "source": {"type": "string", "comment": "entity|topk"},
-                    "target": {"type": "string", "comment": "ranked target"},
+                    "source": {"type": "string", "comment": "topk|entity|dimensionValues"},
+                    "target": {"type": "string", "comment": "topkDimensionValue"},
                     "properties": [
-                      {"name": "score", "type": "long", "comment": "score", "nullable": false}
+                      {"name": "metric", "type": "long", "comment": "metric", "nullable": false}
                     ],
                     "direction": "OUT",
                     "indexes": [
-                      {"index": "score_desc", "fields": [{"field": "score", "order": "DESC"}]}
+                      {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
                     ],
                     "groups": [],
                     "caches": []
                   },
-                  "storage": "datastore://test_namespace/$bucketedScore",
+                  "storage": "datastore://test_namespace/$bucketedRank",
                   "mode": "SYNC",
                   "comment": "topk score"
                 }
@@ -199,8 +203,10 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                       "aggregations": {
                         "topk": [{
                           "topk": "$topkName",
+                          "entity": "source",
                           "ranges": "_target:eq:{_target};category:eq:{category};day:bt:1700000000000,1731536000000",
-                          "table": {"score": "$bucketedScoreFqn"}
+                          "topkDimension": "target",
+                          "rank": "$bucketedRankFqn"
                         }]
                       }
                     }],
@@ -256,8 +262,8 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         client
             .get()
             .uri(
-                "/graph/v3/databases/$bucketedDb/tables/$bucketedScore/edges/scan/score_desc" +
-                    "?start=user1|$topkName&direction=OUT",
+                "/graph/v3/databases/$bucketedDb/tables/$bucketedRank/edges/scan/metric_desc" +
+                    "?start=$topkName|user1|fruit&direction=OUT",
             ).exchange()
             .expectStatus()
             .isOk
@@ -267,7 +273,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .let { payload ->
                 assertEquals(1, payload.count)
                 assertEquals(
-                    "item1|fruit",
+                    "item1",
                     payload.edges
                         .single()
                         .target
@@ -280,8 +286,8 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     fun `aggregate builds the score row target from a properties-backed segment field when the group has no endpoint field`() {
         val segmentDb = "commerce_segment"
         val segmentTable = "orders_segment"
-        val segmentScore = "orders_segment__topk"
-        val segmentScoreFqn = "$segmentDb.$segmentScore"
+        val segmentRank = "orders_segment__topk"
+        val segmentRankFqn = "$segmentDb.$segmentRank"
         val topkName = "top_purchased_by_category"
 
         client
@@ -298,22 +304,22 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .bodyValue(
                 """
                 {
-                  "table": "$segmentScore",
+                  "table": "$segmentRank",
                   "schema": {
                     "type": "EDGE",
-                    "source": {"type": "string", "comment": "entity|topk"},
-                    "target": {"type": "string", "comment": "ranked segment"},
+                    "source": {"type": "string", "comment": "topk|entity|dimensionValues"},
+                    "target": {"type": "string", "comment": "topkDimensionValue"},
                     "properties": [
-                      {"name": "score", "type": "long", "comment": "score", "nullable": false}
+                      {"name": "metric", "type": "long", "comment": "metric", "nullable": false}
                     ],
                     "direction": "OUT",
                     "indexes": [
-                      {"index": "score_desc", "fields": [{"field": "score", "order": "DESC"}]}
+                      {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
                     ],
                     "groups": [],
                     "caches": []
                   },
-                  "storage": "datastore://test_namespace/$segmentScore",
+                  "storage": "datastore://test_namespace/$segmentRank",
                   "mode": "SYNC",
                   "comment": "topk score"
                 }
@@ -352,8 +358,10 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                       "aggregations": {
                         "topk": [{
                           "topk": "$topkName",
+                          "entity": "source",
                           "ranges": "category:eq:{category};day:bt:1700000000000,1731536000000",
-                          "table": {"score": "$segmentScoreFqn"}
+                          "topkDimension": "category",
+                          "rank": "$segmentRankFqn"
                         }]
                       }
                     }],
@@ -409,8 +417,8 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         client
             .get()
             .uri(
-                "/graph/v3/databases/$segmentDb/tables/$segmentScore/edges/scan/score_desc" +
-                    "?start=user1|$topkName&direction=OUT",
+                "/graph/v3/databases/$segmentDb/tables/$segmentRank/edges/scan/metric_desc" +
+                    "?start=$topkName|user1&direction=OUT",
             ).exchange()
             .expectStatus()
             .isOk

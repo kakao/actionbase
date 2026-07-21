@@ -17,7 +17,6 @@ import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.Topk
-import com.kakao.actionbase.core.metadata.common.TopkTable
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.binding.TableBinding
@@ -71,7 +70,7 @@ class AggregationServiceSpec :
             // --- aggregate ---
 
             "aggregate returns SUCCESS when mutate succeeds" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
+                val topk = topkConfig(name = "t1", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -98,7 +97,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate returns ERROR when mutate reports ERROR status" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
+                val topk = topkConfig(name = "t1", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -124,8 +123,8 @@ class AggregationServiceSpec :
                     }.verifyComplete()
             }
 
-            "aggregate for OUT direction uses source as entity and keeps target as ranked value" {
-                val topk = topkConfig(name = "top_purchased", table = TopkTable(score = "db.score_tbl"))
+            "aggregate for OUT direction uses source as entity and the topkDimension value as rank target" {
+                val topk = topkConfig(name = "top_purchased", entity = "source", topkDimension = "target", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_out",
@@ -151,12 +150,12 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "user1|top_purchased"
+                edge.source shouldBe "top_purchased|user1"
                 edge.target shouldBe "item1"
             }
 
-            "aggregate for IN direction swaps source and target so the ranking is per target entity" {
-                val topk = topkConfig(name = "top_purchased_by", table = TopkTable(score = "db.score_tbl"))
+            "aggregate for IN direction ranks per target entity" {
+                val topk = topkConfig(name = "top_purchased_by", entity = "target", topkDimension = "source", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_in",
@@ -182,12 +181,12 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "item1|top_purchased_by"
+                edge.source shouldBe "top_purchased_by|item1"
                 edge.target shouldBe "user1"
             }
 
             "aggregate for BOTH direction fans out into one OUT and one IN mutation" {
-                val topk = topkConfig(name = "top_both", table = TopkTable(score = "db.score_tbl"))
+                val topk = topkConfig(name = "top_both", entity = "source", topkDimension = "target", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_both",
@@ -214,13 +213,13 @@ class AggregationServiceSpec :
                 val edges = mutations.map { it.single().edge }
                 edges.map { it.source to it.target } shouldContainExactlyInAnyOrder
                     listOf(
-                        "user1|top_both" to "item1",
-                        "item1|top_both" to "user1",
+                        "top_both|user1" to "item1",
+                        "top_both|item1" to "item1",
                     )
             }
 
-            "aggregate uses non-bucket group fields for the score row target, skipping bucket fields" {
-                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl"))
+            "aggregate keeps bucket fields out of the rank source dimensionValues" {
+                val topk = topkConfig(name = "top_purchased_1y", entity = "source", topkDimension = "target", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_bucketed",
@@ -228,7 +227,7 @@ class AggregationServiceSpec :
                         directionType = DirectionType.OUT,
                         fields =
                             listOf(
-                                Group.Field(name = "_target"),
+                                Group.Field(name = "category"),
                                 Group.Field(
                                     name = "purchasedAt",
                                     bucket = Bucket.Date(name = "day", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"),
@@ -250,7 +249,7 @@ class AggregationServiceSpec :
                     .create(
                         service.aggregate(
                             AggregationType.TOPK,
-                            listOf(item("db", "src", source = "user1", target = "item1", properties = mapOf("purchasedAt" to 1_700_000_000_000L))),
+                            listOf(item("db", "src", source = "user1", target = "item1", properties = mapOf("category" to "fruit", "purchasedAt" to 1_700_000_000_000L))),
                         ),
                     ).assertNext { results ->
                         results shouldHaveSize 1
@@ -258,12 +257,13 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "user1|top_purchased_1y"
+                // category joins the source; the bucketed field is consumed by ranges, not dimensionValues
+                edge.source shouldBe "top_purchased_1y|user1|fruit"
                 edge.target shouldBe "item1"
             }
 
-            "aggregate builds the score row target from a properties-backed field when the group has no endpoint field" {
-                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl"))
+            "aggregate resolves a property-backed topkDimension as the rank target" {
+                val topk = topkConfig(name = "top_category", entity = "source", topkDimension = "category", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_props_only",
@@ -309,12 +309,13 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "user1|top_purchased_1y"
+                // topkDimension = category, so its value becomes the rank target and drops out of dimensionValues
+                edge.source shouldBe "top_category|user1"
                 edge.target shouldBe "fruit"
             }
 
-            "aggregate joins multiple non-bucket group fields for the score row target" {
-                val topk = topkConfig(name = "top_purchased_1y", table = TopkTable(score = "db.score_tbl"))
+            "aggregate joins multiple non-bucket dimension values into the rank source" {
+                val topk = topkConfig(name = "top_purchased_1y", entity = "source", topkDimension = "target", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_multi",
@@ -324,6 +325,7 @@ class AggregationServiceSpec :
                             listOf(
                                 Group.Field(name = "_target"),
                                 Group.Field(name = "category"),
+                                Group.Field(name = "region"),
                                 Group.Field(
                                     name = "purchasedAt",
                                     bucket = Bucket.Date(name = "day", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"),
@@ -351,7 +353,7 @@ class AggregationServiceSpec :
                                     "src",
                                     source = "user1",
                                     target = "item1",
-                                    properties = mapOf("category" to "fruit", "purchasedAt" to 1_700_000_000_000L),
+                                    properties = mapOf("category" to "fruit", "region" to "seoul", "purchasedAt" to 1_700_000_000_000L),
                                 ),
                             ),
                         ),
@@ -361,19 +363,22 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "user1|top_purchased_1y"
-                edge.target shouldBe "item1|fruit"
+                // _target is the topkDimension (rank target); category + region join the source
+                edge.source shouldBe "top_purchased_1y|user1|fruit|seoul"
+                edge.target shouldBe "item1"
             }
 
             // --- aggregate (refresh write) ---
 
-            "aggregate writes a refresh row after the score row when refreshAfterMillis is positive" {
+            "aggregate writes a refresh row after the rank row when refreshAfterMillis is positive" {
                 val refreshAfter = 60_000L
                 val topk =
                     Topk(
                         topk = "top_purchased",
+                        entity = "source",
+                        topkDimension = "target",
                         refreshAfterMillis = refreshAfter,
-                        table = TopkTable(score = "commerce.score_tbl"),
+                        rank = "commerce.rank_tbl",
                     )
                 val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
@@ -382,9 +387,9 @@ class AggregationServiceSpec :
                     queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
                 } returns Mono.just(aggPayload(count = 4))
 
-                val scoreMutations = slot<List<MutationItem>>()
+                val rankMutations = slot<List<MutationItem>>()
                 every {
-                    mutationService.mutate("commerce", "score_tbl", capture(scoreMutations), any(), any(), any(), any())
+                    mutationService.mutate("commerce", "rank_tbl", capture(rankMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 val refreshMutations = slot<List<MutationItem>>()
@@ -409,42 +414,41 @@ class AggregationServiceSpec :
                     }.verifyComplete()
                 val after = System.currentTimeMillis()
 
-                scoreMutations.captured
+                rankMutations.captured
                     .single()
-                    .edge.source shouldBe "user1|top_purchased"
-                scoreMutations.captured
+                    .edge.source shouldBe "top_purchased|user1"
+                rankMutations.captured
                     .single()
                     .edge.target shouldBe "item1"
 
                 val refreshEdge = refreshMutations.captured.single().edge
                 refreshEdge.source shouldBe
                     AggregationConstants.refreshSource(
-                        table = "commerce.purchases",
+                        database = "commerce",
+                        table = "purchases",
                         topk = "top_purchased",
                         entity = "user1",
-                        target = "item1",
+                        topkDimensionValue = "item1",
+                        dimensionValues = emptyList(),
                     )
                 val refreshAt = refreshEdge.properties["refreshAt"] as Long
                 refreshAt shouldBeGreaterThanOrEqual (before + refreshAfter)
                 refreshAt shouldBeLessThanOrEqual (after + refreshAfter)
-                refreshEdge.target shouldBe
-                    AggregationConstants.refreshTarget(
-                        table = "commerce.purchases",
-                        topk = "top_purchased",
-                        entity = "user1",
-                        target = "item1",
-                        refreshAt = refreshAt,
-                    )
-                refreshEdge.properties["table"] shouldBe "commerce.purchases"
+                refreshEdge.target shouldBe refreshAt.toString()
+                refreshEdge.properties["database"] shouldBe "commerce"
+                refreshEdge.properties["table"] shouldBe "purchases"
                 refreshEdge.properties["topk"] shouldBe "top_purchased"
-                refreshEdge.properties["directedSource"] shouldBe "user1"
-                refreshEdge.properties["directedTarget"] shouldBe "item1"
+                refreshEdge.properties["source"] shouldBe "user1"
+                refreshEdge.properties["target"] shouldBe "item1"
                 refreshEdge.properties["direction"] shouldBe "OUT"
+                refreshEdge.properties["entity"] shouldBe "user1"
+                refreshEdge.properties["topkDimensionValue"] shouldBe "item1"
+                refreshEdge.properties["dimensionValues"] shouldBe ""
             }
 
             "aggregate skips the refresh write when refreshAfterMillis is not positive" {
                 clearMocks(mutationService)
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
+                val topk = topkConfig(name = "t1", rank = "db.rank_tbl")
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
 
@@ -453,7 +457,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(aggPayload(count = 1))
 
                 every {
-                    mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
+                    mutationService.mutate("db", "rank_tbl", any(), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 StepVerifier
@@ -474,13 +478,15 @@ class AggregationServiceSpec :
                 }
             }
 
-            "aggregate skips the refresh write when the score mutate reports ERROR" {
+            "aggregate skips the refresh write when the rank mutate reports ERROR" {
                 clearMocks(mutationService)
                 val topk =
                     Topk(
                         topk = "t1",
+                        entity = "source",
+                        topkDimension = "target",
                         refreshAfterMillis = 60_000L,
-                        table = TopkTable(score = "db.score_tbl"),
+                        rank = "db.rank_tbl",
                     )
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -490,7 +496,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(aggPayload(count = 1))
 
                 every {
-                    mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
+                    mutationService.mutate("db", "rank_tbl", any(), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "ERROR")))
 
                 StepVerifier
@@ -515,8 +521,10 @@ class AggregationServiceSpec :
                 val topk =
                     Topk(
                         topk = "t1",
+                        entity = "source",
+                        topkDimension = "target",
                         refreshAfterMillis = 60_000L,
-                        table = TopkTable(score = "db.score_tbl"),
+                        rank = "db.rank_tbl",
                     )
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -526,7 +534,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(aggPayload(count = 1))
 
                 every {
-                    mutationService.mutate("db", "score_tbl", any(), any(), any(), any(), any())
+                    mutationService.mutate("db", "rank_tbl", any(), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 every {
@@ -548,7 +556,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate maps thrown errors into ERROR status with the error message" {
-                val topk = topkConfig(name = "t1", table = TopkTable(score = "db.score_tbl"))
+                val topk = topkConfig(name = "t1", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g1",
@@ -576,8 +584,10 @@ class AggregationServiceSpec :
 
 private fun topkConfig(
     name: String,
-    table: TopkTable = TopkTable(score = "${name}__score"),
-): Topk = Topk(topk = name, table = table)
+    entity: String = "source",
+    topkDimension: String = "target",
+    rank: String = "${name}__rank",
+): Topk = Topk(topk = name, entity = entity, topkDimension = topkDimension, rank = rank)
 
 private fun groupWithTopks(
     name: String,
@@ -636,5 +646,3 @@ private fun item(
 private fun aggPayload(count: Int): DataFrameEdgeAggPayload = DataFrameEdgeAggPayload(groups = emptyList(), count = count, context = emptyMap())
 
 private fun mutationResult(status: String): MutationResult = MutationResult.of(key = MutationKey.SourceTarget("s", "t"), count = 1, status = status)
-
-// endregion
