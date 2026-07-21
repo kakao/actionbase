@@ -43,3 +43,10 @@ data class PolledMessage(
     val seq: Long,
     val value: Any?,
 )
+
+/** The queue's partition count, for consumers that fan a poll loop across `0 .. partitions-1`. */
+data class QueuePartitionsResponse(
+    val namespace: String,
+    val queue: String,
+    val partitions: Int,
+)

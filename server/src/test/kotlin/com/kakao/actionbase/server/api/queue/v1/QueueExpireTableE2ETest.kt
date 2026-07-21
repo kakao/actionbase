@@ -5,6 +5,7 @@ import com.kakao.actionbase.engine.queue.EnqueueRequest
 import com.kakao.actionbase.engine.queue.PartitionHasher
 import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.server.test.E2ETestBase
+import com.kakao.actionbase.v2.engine.Graph
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -26,6 +27,9 @@ import org.springframework.http.MediaType
 class QueueExpireTableE2ETest : E2ETestBase() {
     @Autowired
     private lateinit var queueService: QueueService
+
+    @Autowired
+    private lateinit var graph: Graph
 
     private val ns = "topk_expire_ns"
     private val partitions = 30
@@ -51,6 +55,8 @@ class QueueExpireTableE2ETest : E2ETestBase() {
             .exchange()
             .expectStatus()
             .isOk
+        // Make the freshly-created queue visible in Graph's in-memory registry (the runtime reads it there).
+        graph.updateLabels().block()
     }
 
     // All entries share one entity → same partition → deterministic per-partition order by seq.

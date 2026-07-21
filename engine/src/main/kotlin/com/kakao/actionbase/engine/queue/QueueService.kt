@@ -95,6 +95,12 @@ class QueueService(
         }
     }
 
+    /** The queue's partition count (read via [queueMeta] — Graph's in-memory registry on the hot path). */
+    fun partitions(
+        namespace: String,
+        queue: String,
+    ): Mono<Int> = queueMeta(namespace, queue).map { it.partitions }
+
     // offset is an exclusive lower bound; until an inclusive upper bound. Two predicates on the same
     // index field collapse in the scan, so a bounded poll uses a single `bt` range.
     private fun rangePredicate(
@@ -110,16 +116,23 @@ class QueueService(
         }
     }
 
+    /**
+     * Reads the queue's partition metadata from Graph's in-memory label registry, which the
+     * metastore reload refreshes on its interval — no per-request metastore read and no extra
+     * caching. A queue that a reload has not picked up yet is not visible here.
+     */
     private fun queueMeta(
         namespace: String,
         queue: String,
-    ): Mono<QueueMeta> =
-        graph.labelDdl
-            .getSingle(EntityName(namespace, queue))
-            .map { label ->
-                QueueDescriptorCodec.decode(label.desc)
+    ): Mono<QueueMeta> {
+        val name = EntityName(namespace, queue)
+        return Mono
+            .fromCallable { graph.getLabel(name).entity.desc }
+            .map { desc ->
+                QueueDescriptorCodec.decode(desc)
                     ?: throw IllegalArgumentException("`$namespace.$queue` is not a queue/v1 table")
             }
+    }
 
     private fun List<MutationResult>.toEnqueueResponse(): EnqueueResponse {
         val results =

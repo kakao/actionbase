@@ -3,6 +3,7 @@ package com.kakao.actionbase.server.api.queue.v1
 import com.kakao.actionbase.engine.queue.EnqueueRequest
 import com.kakao.actionbase.engine.queue.EnqueueResponse
 import com.kakao.actionbase.engine.queue.PollResponse
+import com.kakao.actionbase.engine.queue.QueuePartitionsResponse
 import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.server.util.mapToResponseEntity
 
@@ -37,4 +38,14 @@ class MessageController(
         @RequestParam(required = false) offset: Long? = null,
         @RequestParam(required = false) until: Long? = null,
     ): Mono<ResponseEntity<PollResponse>> = queueService.poll(namespace, queue, partition, limit, offset, until).mapToResponseEntity()
+
+    @GetMapping("/queue/v1/namespaces/{namespace}/queues/{queue}/partitions")
+    fun partitions(
+        @PathVariable namespace: String,
+        @PathVariable queue: String,
+    ): Mono<ResponseEntity<QueuePartitionsResponse>> =
+        queueService
+            .partitions(namespace, queue)
+            .map { QueuePartitionsResponse(namespace, queue, it) }
+            .mapToResponseEntity()
 }

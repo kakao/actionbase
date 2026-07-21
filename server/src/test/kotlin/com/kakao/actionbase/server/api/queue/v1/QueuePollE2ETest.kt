@@ -126,6 +126,27 @@ class QueuePollE2ETest : QueueE2ESupport() {
             .isBadRequest
     }
 
+    @Test
+    fun `partitions endpoint returns the queue partition count`() {
+        val queue = "meta"
+        createNamespace(ns)
+        createQueue(ns, queue, partitions)
+
+        client
+            .get()
+            .uri("/queue/v1/namespaces/$ns/queues/$queue/partitions")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.partitions")
+            .isEqualTo(partitions)
+            .jsonPath("$.namespace")
+            .isEqualTo(ns)
+            .jsonPath("$.queue")
+            .isEqualTo(queue)
+    }
+
     private fun poll(
         queue: String,
         partition: Int,
