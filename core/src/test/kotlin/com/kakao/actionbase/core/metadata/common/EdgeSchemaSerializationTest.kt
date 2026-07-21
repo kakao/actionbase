@@ -39,6 +39,21 @@ class EdgeSchemaSerializationTest {
     }
 
     @Test
+    fun `immutable edge rejects BOTH direction`() {
+        val e =
+            assertFailsWith<IllegalArgumentException> {
+                ModelSchema.ImmutableEdge(
+                    source = Field(type = com.kakao.actionbase.core.types.PrimitiveType.INT, comment = "partition"),
+                    target = Field(type = com.kakao.actionbase.core.types.PrimitiveType.STRING, comment = "message id"),
+                    properties = listOf(StructField(name = "ts", type = com.kakao.actionbase.core.types.PrimitiveType.LONG, comment = "ts", nullable = false)),
+                    direction = DirectionType.BOTH,
+                    indexes = listOf(Index(index = "by_ts", fields = listOf(IndexField(field = "ts", order = Order.ASC)))),
+                )
+            }
+        assertTrue(e.message!!.contains("single-direction"), "message should explain the single-direction rule, was: ${e.message}")
+    }
+
+    @Test
     fun `immutable edge schema round-trips under the immutableEdge discriminator`() {
         val schema =
             ModelSchema.ImmutableEdge(

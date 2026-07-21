@@ -48,12 +48,11 @@ sealed class ModelSchema : AbstractSchema {
     ) : ModelSchema(),
         AbstractSchema by Schema(properties.associate { it.name to it.nullable }) {
         init {
-            // An append writes one index row per index, and those rows are the whole record (no State
-            // row). Eviction scans a single index and deletes only its rows, so a second index's rows
-            // would be orphaned — unreachable to trim, yet still returned by scans on that index.
-            // Restricting to one index keeps "the index rows are the record" true by construction.
             require(indexes.size <= 1) {
-                "an immutable edge table supports at most one index, but got ${indexes.size}: ${indexes.map { it.index }}"
+                "immutable edge allows at most one index (scan-and-delete evicts by scanning one), got ${indexes.map { it.index }}"
+            }
+            require(direction != DirectionType.BOTH) {
+                "immutable edge must be single-direction OUT or IN (scan-and-delete evicts one direction), got BOTH"
             }
         }
     }
