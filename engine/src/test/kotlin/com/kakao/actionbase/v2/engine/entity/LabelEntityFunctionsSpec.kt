@@ -77,7 +77,7 @@ class LabelEntityFunctionsSpec :
         private fun topk(
             name: String,
             rank: String = "${name}__topk",
-        ): Topk = Topk(topk = name, entity = "__GLOBAL__", topkDimension = "target", rank = rank)
+        ): Topk = Topk(topk = name, entity = "__GLOBAL__", dimension = "target", rank = rank)
 
         private fun groupWithTopks(
             name: String,

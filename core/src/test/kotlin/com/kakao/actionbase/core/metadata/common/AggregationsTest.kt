@@ -27,6 +27,6 @@ class AggregationsTest {
 
     companion object {
         private val topk =
-            Topk(topk = "topk", entity = "__GLOBAL__", topkDimension = "target", rank = "db.table__topk")
+            Topk(topk = "topk", entity = "__GLOBAL__", dimension = "target", rank = "db.table__topk")
     }
 }

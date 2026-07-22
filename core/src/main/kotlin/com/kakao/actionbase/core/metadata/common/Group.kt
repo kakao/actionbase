@@ -47,7 +47,7 @@ data class Topk(
     val topk: String,
     val entity: String,
     val ranges: String = "",
-    val topkDimension: String,
+    val dimension: String,
     val refreshAfterMillis: Long = -1,
     val rank: String,
 )

@@ -59,7 +59,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                           "topk": "top_purchased",
                           "entity": "source",
                           "ranges": "_target:eq:{_target}",
-                          "topkDimension": "target",
+                          "dimension": "target",
                           "rank": "$rankFqn"
                         }]
                       }
