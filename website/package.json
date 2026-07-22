@@ -12,20 +12,17 @@
     "typecheck": "tsc --noEmit",
     "linkcheck": "CHECK_LINKS=true pnpm build",
     "astro": "astro",
-    "lunaria:build": "lunaria build",
     "grammars": "node grammars/generate.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
-    "translate": "tsx i18n/scripts/translation-memory.ts"
+    "lint:fix": "eslint --fix ."
   },
   "dependencies": {
     "@astro-community/astro-embed-youtube": "^0.5.6",
     "@astrojs/starlight": "^0.36.3",
     "@lorenzo_lewis/starlight-utils": "^0.3.2",
     "@lucide/astro": "^0.562.0",
-    "@lunariajs/core": "^0.1.1",
     "@types/culori": "^2.1.1",
     "astro": "^5.6.1",
     "js-yaml": "^4.1.0",
@@ -45,7 +42,6 @@
     "globals": "^15.14.0",
     "@types/js-yaml": "^4.0.9",
     "prettier": "^3.4.2",
-    "tsx": "^4.19.0",
     "sitemapper": "^3.2.12",
     "starlight-links-validator": "^0.14.0",
     "typescript-eslint": "^8.19.1"
