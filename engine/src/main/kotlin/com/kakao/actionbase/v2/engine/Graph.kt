@@ -12,7 +12,6 @@ import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
 import com.kakao.actionbase.core.metadata.QualifiedAggregations
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.features.FeatureFlags
-import com.kakao.actionbase.engine.datastore.impl.ByteArrayStore
 import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
 import com.kakao.actionbase.engine.storage.StorageOpCollector
