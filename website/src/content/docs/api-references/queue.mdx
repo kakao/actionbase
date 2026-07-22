@@ -27,13 +27,13 @@ POST /queue/v1/namespaces/{namespace}/queues
 
 ### Parameters
 
-| Location | Parameter  | Required               | Description                                            |
-| -------- | ---------- | ---------------------- | ------------------------------------------------------ |
-| Header   | Authorization | Optional            | Authentication key (reserved for future use)           |
-| Path     | namespace  | Required               | Target namespace                                       |
-| Body     | queue      | Required               | Queue name                                             |
-| Body     | storage    | Required               | Storage URI (e.g., `datastore://<namespace>/<table>`)  |
-| Body     | partitions | Optional (default: 30) | Partition count, fixed at creation (minimum 1)         |
+| Location | Parameter     | Required               | Description                                           |
+| -------- | ------------- | ---------------------- | ----------------------------------------------------- |
+| Header   | Authorization | Optional               | Authentication key (reserved for future use)          |
+| Path     | namespace     | Required               | Target namespace                                      |
+| Body     | queue         | Required               | Queue name                                            |
+| Body     | storage       | Required               | Storage URI (e.g., `datastore://<namespace>/<table>`) |
+| Body     | partitions    | Optional (default: 30) | Partition count, fixed at creation (minimum 1)        |
 
 ### Response Type
 
@@ -226,12 +226,12 @@ POST /queue/v1/namespaces/{namespace}/queues/{queue}/messages
 
 ### Parameters
 
-| Location | Parameter     | Required | Description                                            |
-| -------- | ------------- | -------- | ------------------------------------------------------ |
-| Header   | Authorization | Optional | Authentication key (reserved for future use)           |
-| Path     | namespace     | Required | Target namespace                                       |
-| Path     | queue         | Required | Target queue name                                      |
-| Body     | messages      | Required | List of messages, each with `key`, `seq`, and `value`  |
+| Location | Parameter     | Required | Description                                           |
+| -------- | ------------- | -------- | ----------------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use)          |
+| Path     | namespace     | Required | Target namespace                                      |
+| Path     | queue         | Required | Target queue name                                     |
+| Body     | messages      | Required | List of messages, each with `key`, `seq`, and `value` |
 
 ### Request Body
 
@@ -263,8 +263,8 @@ curl -X POST \
 {
   "accepted": 2,
   "results": [
-    {"partition": 7, "id": "01JT7Q0Z8B3N5Y6W9XKQRVMH2D", "status": "CREATED"},
-    {"partition": 7, "id": "01JT7Q0Z8CM4A1E8ZPXW3G5T7F", "status": "CREATED"}
+    { "partition": 7, "id": "01JT7Q0Z8B3N5Y6W9XKQRVMH2D", "status": "CREATED" },
+    { "partition": 7, "id": "01JT7Q0Z8CM4A1E8ZPXW3G5T7F", "status": "CREATED" }
   ]
 }
 ```
@@ -281,15 +281,15 @@ GET /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/poll
 
 ### Parameters
 
-| Location | Parameter     | Required                | Description                                       |
-| -------- | ------------- | ----------------------- | ------------------------------------------------- |
-| Header   | Authorization | Optional                | Authentication key (reserved for future use)      |
-| Path     | namespace     | Required                | Target namespace                                  |
-| Path     | queue         | Required                | Target queue name                                 |
-| Path     | partition     | Required                | Partition to read (`0 .. partitions-1`)           |
-| Query    | limit         | Optional (default: 100) | Max messages per page (maximum 1000)              |
-| Query    | offset        | Optional                | Read messages with `seq > offset` (exclusive)     |
-| Query    | until         | Optional                | Read messages with `seq <= until` (inclusive)     |
+| Location | Parameter     | Required                | Description                                   |
+| -------- | ------------- | ----------------------- | --------------------------------------------- |
+| Header   | Authorization | Optional                | Authentication key (reserved for future use)  |
+| Path     | namespace     | Required                | Target namespace                              |
+| Path     | queue         | Required                | Target queue name                             |
+| Path     | partition     | Required                | Partition to read (`0 .. partitions-1`)       |
+| Query    | limit         | Optional (default: 100) | Max messages per page (maximum 1000)          |
+| Query    | offset        | Optional                | Read messages with `seq > offset` (exclusive) |
+| Query    | until         | Optional                | Read messages with `seq <= until` (inclusive) |
 
 ### Response Type
 
@@ -308,7 +308,12 @@ curl "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue
 ```json
 {
   "messages": [
-    {"partition": 7, "id": "01JT7Q0Z8CM4A1E8ZPXW3G5T7F", "seq": 1001, "value": {"body": "world"}}
+    {
+      "partition": 7,
+      "id": "01JT7Q0Z8CM4A1E8ZPXW3G5T7F",
+      "seq": 1001,
+      "value": { "body": "world" }
+    }
   ],
   "offset": 1001,
   "hasNext": false
@@ -327,13 +332,13 @@ DELETE /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/me
 
 ### Parameters
 
-| Location | Parameter     | Required | Description                                       |
-| -------- | ------------- | -------- | ------------------------------------------------- |
-| Header   | Authorization | Optional | Authentication key (reserved for future use)      |
-| Path     | namespace     | Required | Target namespace                                  |
-| Path     | queue         | Required | Target queue name                                 |
-| Path     | partition     | Required | Partition to commit (`0 .. partitions-1`)         |
-| Query    | offset        | Required | Delete every message with `seq <= offset`         |
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | namespace     | Required | Target namespace                             |
+| Path     | queue         | Required | Target queue name                            |
+| Path     | partition     | Required | Partition to commit (`0 .. partitions-1`)    |
+| Query    | offset        | Required | Delete every message with `seq <= offset`    |
 
 ### Response Type
 

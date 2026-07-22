@@ -330,16 +330,16 @@ DELETE /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}
 
 ### Parameters
 
-| Location | Parameter     | Required | Description                                            |
-| -------- | ------------- | -------- | ------------------------------------------------------ |
-| Header   | Authorization | Optional | Authentication key (reserved for future use)           |
-| Path     | database      | Required | Target database name                                   |
-| Path     | table         | Required | Target table name (must be an immutable edge table)    |
-| Path     | index         | Required | Index to scan                                          |
-| Query    | start         | Required | Source node to scan from                               |
-| Query    | direction     | Required | Scan direction (OUT, IN)                               |
-| Query    | limit         | Required | Max rows to delete in this call (maximum 1000)         |
-| Query    | ranges        | Optional | Index range predicate (e.g., `seq:lte:1001`)           |
+| Location | Parameter     | Required | Description                                         |
+| -------- | ------------- | -------- | --------------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use)        |
+| Path     | database      | Required | Target database name                                |
+| Path     | table         | Required | Target table name (must be an immutable edge table) |
+| Path     | index         | Required | Index to scan                                       |
+| Query    | start         | Required | Source node to scan from                            |
+| Query    | direction     | Required | Scan direction (OUT, IN)                            |
+| Query    | limit         | Required | Max rows to delete in this call (maximum 1000)      |
+| Query    | ranges        | Optional | Index range predicate (e.g., `seq:lte:1001`)        |
 
 ### Response Type
 

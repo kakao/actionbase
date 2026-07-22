@@ -15,17 +15,17 @@ See the [Queue API Reference](/api-references/queue/) for endpoints.
 
 A queue is an immutable edge table with a fixed schema and a fixed access pattern. Define a queue, and each part is exactly one thing on the underlying [immutable edge table](/design/schema/#immutable-edge-tables-type-immutable_indexed-v3-immutable_edge):
 
-| queue/v1                                   | Immutable edge table                          |
-| ------------------------------------------ | --------------------------------------------- |
-| namespace                                  | database                                      |
-| queue                                      | table, type IMMUTABLE_EDGE                     |
-| partition = `xxhash32(key) mod partitions` | source (LONG)                                 |
-| message id                                 | target (STRING) — a server-assigned ULID      |
-| seq (order / due time)                     | property (LONG) — the single `seq ASC` index  |
-| value                                      | property (STRING) — opaque JSON payload       |
-| enqueue                                    | INSERT one index row (append, lock-free)      |
-| poll (`seq > offset`, optional `until`)    | bounded scan of the `seq ASC` index (OUT)     |
-| commit (`seq <= offset`)                   | scan-delete over that index range             |
+| queue/v1                                   | Immutable edge table                         |
+| ------------------------------------------ | -------------------------------------------- |
+| namespace                                  | database                                     |
+| queue                                      | table, type IMMUTABLE_EDGE                   |
+| partition = `xxhash32(key) mod partitions` | source (LONG)                                |
+| message id                                 | target (STRING) — a server-assigned ULID     |
+| seq (order / due time)                     | property (LONG) — the single `seq ASC` index |
+| value                                      | property (STRING) — opaque JSON payload      |
+| enqueue                                    | INSERT one index row (append, lock-free)     |
+| poll (`seq > offset`, optional `until`)    | bounded scan of the `seq ASC` index (OUT)    |
+| commit (`seq <= offset`)                   | scan-delete over that index range            |
 
 The backing table is append-only and index-only: an enqueue is a single index-row write, and a poll is a single bounded index scan. There is no per-message state, no ack flags, and no consumer registry.
 
@@ -69,11 +69,11 @@ poll(partition, offset) → process the batch → commit(partition, offset = bat
 
 A durable, partitioned, append-only log with a due-time filter — a log primitive, not a full message broker.
 
-| Use case                  | Fit     | Notes                                                            |
-| ------------------------- | ------- | ---------------------------------------------------------------- |
-| Refresh / delay scheduler | Good    | `until` withholds not-yet-due messages; commit clears fired ones |
+| Use case                  | Fit     | Notes                                                                                     |
+| ------------------------- | ------- | ----------------------------------------------------------------------------------------- |
+| Refresh / delay scheduler | Good    | `until` withholds not-yet-due messages; commit clears fired ones                          |
 | Durable per-partition log | Partial | Replay by `offset`; retention is manual via commit (a delete), one consumer per partition |
-| Ack-based work queue      | No      | No per-message ack, visibility timeout, redelivery, or dead-letter |
+| Ack-based work queue      | No      | No per-message ack, visibility timeout, redelivery, or dead-letter                        |
 
 Not provided: message ack / redelivery, deduplication, independent consumer groups on one partition, and server-side long-poll or streaming.
 
