@@ -36,6 +36,14 @@ data class TableUpdateRequest(
                             V2Field(prop.name, prop.type.toV2DataType(), prop.nullable, prop.comment)
                         },
                     )
+                is ModelSchema.ImmutableEdge ->
+                    EdgeSchema(
+                        VertexField(it.source.type.toV2VertexType(), it.source.comment),
+                        VertexField(it.target.type.toV2VertexType(), it.target.comment),
+                        it.properties.map { prop ->
+                            V2Field(prop.name, prop.type.toV2DataType(), prop.nullable, prop.comment)
+                        },
+                    )
                 is ModelSchema.MultiEdge -> {
                     val idField = V2Field("_id", it.id.type.toV2DataType(), false, it.id.comment)
                     EdgeSchema(
@@ -55,9 +63,9 @@ data class TableUpdateRequest(
         schema?.let {
             when (it) {
                 is ModelSchema.Edge -> it.indexes.map { idx -> idx.toV2Index() }
+                is ModelSchema.ImmutableEdge -> it.indexes.map { idx -> idx.toV2Index() }
                 is ModelSchema.MultiEdge -> it.indexes.map { idx -> idx.toV2Index() }
-                // Vertex has no indices; return null so LabelUpdateRequest treats it as no-op
-                // instead of overwriting any existing serialized list with `[]`.
+                // Vertex has no indices; null keeps the update a no-op instead of overwriting with `[]`.
                 is ModelSchema.Vertex -> null
             }
         }
@@ -66,6 +74,7 @@ data class TableUpdateRequest(
         schema?.let {
             when (it) {
                 is ModelSchema.Edge -> it.groups
+                is ModelSchema.ImmutableEdge -> it.groups
                 is ModelSchema.MultiEdge -> it.groups
                 is ModelSchema.Vertex -> null
             }
@@ -75,6 +84,8 @@ data class TableUpdateRequest(
         schema?.let {
             when (it) {
                 is ModelSchema.Edge -> it.caches
+                // Immutable edges have no caches; null keeps the update a no-op for this field.
+                is ModelSchema.ImmutableEdge -> null
                 is ModelSchema.MultiEdge -> it.caches
                 is ModelSchema.Vertex -> null
             }

@@ -60,6 +60,19 @@ class EdgeBulkMutationRequestTest {
     }
 
     @Test
+    fun `INSERT missing non-nullable field succeeds with insertMerge (completeness enforced at activation)`() {
+        val event = item(EventType.INSERT, mapOf("optional" to "value")).createEvent(schema, insertMerge = true)
+        assertTrue(event.event.properties.containsKey("optional"))
+    }
+
+    @Test
+    fun `INSERT with explicit null for non-nullable field throws even with insertMerge`() {
+        assertFailsWith<IllegalArgumentException> {
+            item(EventType.INSERT, mapOf("required" to null)).createEvent(schema, insertMerge = true)
+        }
+    }
+
+    @Test
     fun `UPDATE missing non-nullable field succeeds (keeps existing value)`() {
         val event = item(EventType.UPDATE, mapOf("optional" to "value")).createEvent(schema)
         assertTrue(event.event.properties.containsKey("optional"))

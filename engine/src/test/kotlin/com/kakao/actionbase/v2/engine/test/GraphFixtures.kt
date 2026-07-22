@@ -408,11 +408,14 @@ class GraphTestFixtures(
 
     fun getLocalMetadata(): Flux<DecodedEdge> =
         graph.localStore
-            .prefixScan(ByteArray(0))
-            .mapNotNull { record ->
-                runCatching { DecodedEdge.from(KeyFieldValue(record.key, record.value), emptyMap()) }.getOrNull()
-            }.filter { it.type == EncodedEdgeType.HASH_EDGE_TYPE }
-            .toFlux()
+            .scan(ByteArray(0), Int.MAX_VALUE, null, null)
+            .flatMapMany { records ->
+                records
+                    .mapNotNull { record ->
+                        runCatching { DecodedEdge.from(KeyFieldValue(record.key, record.value), emptyMap()) }.getOrNull()
+                    }.filter { it.type == EncodedEdgeType.HASH_EDGE_TYPE }
+                    .toFlux()
+            }
 }
 
 infix fun Graph.shouldContainServicesExactly(names: List<EntityName>) {

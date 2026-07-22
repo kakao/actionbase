@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName
 )
 @JsonSubTypes(
     JsonSubTypes.Type(value = ModelSchema.Edge::class, name = "EDGE"),
+    JsonSubTypes.Type(value = ModelSchema.ImmutableEdge::class, name = "IMMUTABLE_EDGE"),
     JsonSubTypes.Type(value = ModelSchema.MultiEdge::class, name = "MULTI_EDGE"),
     JsonSubTypes.Type(value = ModelSchema.Vertex::class, name = "VERTEX"),
 )
@@ -35,6 +36,26 @@ sealed class ModelSchema : AbstractSchema {
         val caches: List<Cache> = emptyList(),
     ) : ModelSchema(),
         AbstractSchema by Schema(properties.associate { it.name to it.nullable })
+
+    @JsonTypeName("immutableEdge")
+    data class ImmutableEdge(
+        val source: Field,
+        val target: Field,
+        override val properties: List<StructField> = emptyList(),
+        val direction: DirectionType,
+        val indexes: List<Index> = emptyList(),
+        val groups: List<Group> = emptyList(),
+    ) : ModelSchema(),
+        AbstractSchema by Schema(properties.associate { it.name to it.nullable }) {
+        init {
+            require(indexes.size <= 1) {
+                "immutable edge allows at most one index (scan-and-delete evicts by scanning one), got ${indexes.map { it.index }}"
+            }
+            require(direction != DirectionType.BOTH) {
+                "immutable edge must be single-direction OUT or IN (scan-and-delete evicts one direction), got BOTH"
+            }
+        }
+    }
 
     @JsonTypeName("multiEdge")
     data class MultiEdge(

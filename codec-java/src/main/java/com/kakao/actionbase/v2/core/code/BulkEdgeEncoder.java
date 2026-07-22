@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
  *  v2                | v3         | Description
  * -------------------|------------|----------------------------
  *  HASH              | N/A        | Stores only EdgeState, EdgeCount
- *  INDEXED           | EDGE       | Stores EdgeState, EdgeIndex, EdgeCount
- *  IMMUTABLE_INDEXED | N/A        | (As of 2025/08/10) Currently not used anywhere
- *  N/A               | MULTI_EDGE | Stores multiple edges for the same source, target pair based on id
+ *  INDEXED           | EDGE           | Stores EdgeState, EdgeIndex, EdgeCount
+ *  IMMUTABLE_INDEXED | IMMUTABLE_EDGE | Stores EdgeIndex only (no EdgeState, no EdgeCount)
+ *  N/A               | MULTI_EDGE     | Stores multiple edges for the same source, target pair based on id
  * </pre>
  */
 public class BulkEdgeEncoder {
@@ -202,8 +202,9 @@ public class BulkEdgeEncoder {
         }
       }
 
-      // EdgeCount: Vertex stores State only, no count records
-      if (labelType == LabelType.VERTEX) {
+      // EdgeCount: Vertex stores State only and ImmutableEdge stores EdgeIndex only —
+      // neither produces count records.
+      if (labelType == LabelType.VERTEX || labelType == LabelType.IMMUTABLE_INDEXED) {
         return edges;
       }
       if (label.getDirType() == DirectionType.BOTH) {

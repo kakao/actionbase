@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine
 
+import com.kakao.actionbase.core.metadata.features.FeatureFlags
 import com.kakao.actionbase.v2.core.metadata.MutationMode
 import com.kakao.actionbase.v2.engine.entity.DefaultStorageEntity
 import com.kakao.actionbase.v2.engine.service.ddl.DdlService
@@ -36,6 +37,8 @@ data class GraphConfig(
     val metadataFetchLimit: Int = DdlService.DEFAULT_METADATA_LIMIT,
     val systemMutationMode: MutationMode? = null,
     val readOnly: Boolean = false,
+    val useJdbcMetastore: Boolean = true,
+    val featureFlags: List<FeatureFlags.Item> = emptyList(),
 ) {
     companion object {
         val builder: Builder
@@ -66,6 +69,8 @@ data class GraphConfig(
         private var metadataFetchLimit: Int = DdlService.DEFAULT_METADATA_LIMIT
         private var systemMutationMode: MutationMode? = null
         private var readOnly: Boolean = false
+        private var useJdbcMetastore: Boolean = true
+        private var featureFlags: List<FeatureFlags.Item> = emptyList()
 
         // Aligned with nginx.conf proxy_read_timeout 300
         private var mutationRequestTimeout: Long = 300_000
@@ -128,6 +133,10 @@ data class GraphConfig(
 
         fun withReadOnly(readOnly: Boolean) = apply { this.readOnly = readOnly }
 
+        fun withUseJdbcMetastore(enabled: Boolean) = apply { this.useJdbcMetastore = enabled }
+
+        fun withFeatureFlags(featureFlags: List<FeatureFlags.Item>) = apply { this.featureFlags = featureFlags }
+
         fun build(): GraphConfig =
             GraphConfig(
                 phase = phase,
@@ -154,6 +163,8 @@ data class GraphConfig(
                 metadataFetchLimit = metadataFetchLimit,
                 systemMutationMode = systemMutationMode,
                 readOnly = readOnly,
+                useJdbcMetastore = useJdbcMetastore,
+                featureFlags = featureFlags,
             )
     }
 }

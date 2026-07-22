@@ -5,8 +5,12 @@ import com.kakao.actionbase.core.edge.payload.EdgeMutationResponse
 import com.kakao.actionbase.engine.context.RequestContext
 import com.kakao.actionbase.engine.metadata.MutationMode
 import com.kakao.actionbase.engine.service.MutationService
+import com.kakao.actionbase.server.payload.EdgeScanDeleteResponse
+import com.kakao.actionbase.server.util.mapToResponseEntity
+import com.kakao.actionbase.v2.core.metadata.Direction
 
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -43,4 +47,19 @@ class EdgeMutationController(
         mutationService
             .mutate(database, table, request.mutations, lock, syncMode = MutationMode.SYNC, forceSyncMode = force, requestContext = requestContext)
             .map { ResponseEntity.ok(EdgeMutationResponse.from(it)) }
+
+    @DeleteMapping("/graph/v3/databases/{database}/tables/{table}/edges/scan/{index}")
+    fun scanDelete(
+        @PathVariable database: String,
+        @PathVariable table: String,
+        @PathVariable index: String,
+        @RequestParam start: String,
+        @RequestParam direction: Direction,
+        @RequestParam limit: Int,
+        @RequestParam ranges: String? = null,
+    ): Mono<ResponseEntity<EdgeScanDeleteResponse>> =
+        mutationService
+            .scanDelete(database, table, index, start, direction, limit, ranges)
+            .map { EdgeScanDeleteResponse(database, table, index, it) }
+            .mapToResponseEntity()
 }

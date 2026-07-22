@@ -17,11 +17,14 @@ data class VertexBulkMutationRequest(
         val type: EventType,
         val vertex: Vertex,
     ) : UnresolvedEvent {
-        override fun createEvent(schema: ModelSchema): MutationEvent {
+        override fun createEvent(
+            schema: ModelSchema,
+            insertMerge: Boolean,
+        ): MutationEvent {
             require(schema is ModelSchema.Vertex) { "Expected ModelSchema.Vertex, but got ${schema::class.simpleName}" }
             val id = schema.id.type.cast(vertex.id)
             require(id.toString() != VERTEX_MARKER) { "Vertex id cannot be '$VERTEX_MARKER' (reserved marker)" }
-            checkNonNullableFields(type, schema.properties, vertex.properties)
+            checkNonNullableFields(type, schema.properties, vertex.properties, insertMerge)
             val event =
                 Event.create(
                     type = type,

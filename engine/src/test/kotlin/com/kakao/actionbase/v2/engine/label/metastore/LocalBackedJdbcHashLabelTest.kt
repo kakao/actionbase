@@ -71,7 +71,7 @@ class LocalBackedJdbcHashLabelTest {
     }
 
     @Test
-    fun `count returns only the local frame without the global sentinel`() {
+    fun `count never merges in the global sentinel`() {
         val label = localLabel()
 
         label
@@ -82,8 +82,8 @@ class LocalBackedJdbcHashLabelTest {
             .collectList()
             .test()
             .assertNext { counts ->
-                // Local frame only: the global JdbcHashLabel's -1 sentinel row must not be merged in.
-                assertEquals(1, counts.size)
+                // count merges the local + HBase overlay frames only; the global JdbcHashLabel
+                // cannot count and would otherwise contribute a -1 sentinel row.
                 assertTrue(-1L !in counts)
             }.verifyComplete()
     }

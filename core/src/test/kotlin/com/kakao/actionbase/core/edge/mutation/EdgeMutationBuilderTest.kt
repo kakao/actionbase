@@ -794,4 +794,70 @@ class EdgeMutationBuilderTest {
             assertEquals(after, result.stateRecord)
         }
     }
+
+    @Nested
+    inner class ImmutableEdgeStrategy {
+        private val countGroup = Group(group = "count_group", type = GroupType.COUNT, fields = listOf(Group.Field("version")))
+
+        @Test
+        fun `CREATED produces index and group records but never count`() {
+            val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
+            val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
+            val result =
+                EdgeMutationBuilder.buildForImmutableEdge(before, after, DirectionType.BOTH, listOf(versionIndex), listOf(countGroup))
+
+            assertEquals("CREATED", result.status)
+            assertEquals(1L, result.acc)
+            assertEquals(2, result.createIndexRecords.size)
+            assertEquals(2, result.groupRecords.size)
+            assertTrue(result.groupRecords.all { it.value == 1L })
+            // Immutable edges never emit count records or cache records.
+            assertTrue(result.countRecords.isEmpty())
+            assertTrue(result.createCacheRecords.isEmpty())
+            assertTrue(result.deleteCacheRecordQualifiers.isEmpty())
+        }
+
+        @Test
+        fun `DELETED produces index delete keys and group decrements but never count`() {
+            val before = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
+            val after = edgeRecord(source = "userA", target = "postX", active = false, version = 2)
+            val result =
+                EdgeMutationBuilder.buildForImmutableEdge(before, after, DirectionType.BOTH, listOf(versionIndex), listOf(countGroup))
+
+            assertEquals("DELETED", result.status)
+            assertEquals(-1L, result.acc)
+            assertEquals(2, result.deleteIndexRecordKeys.size)
+            assertEquals(2, result.groupRecords.size)
+            assertTrue(result.groupRecords.all { it.value == -1L })
+            assertTrue(result.countRecords.isEmpty())
+        }
+
+        @Test
+        fun `CREATED index directedSource and directedTarget follow key source-target swap`() {
+            val before = edgeRecord(source = "userA", target = "postX", active = false, version = 0)
+            val after = edgeRecord(source = "userA", target = "postX", active = true, version = 1)
+            val result =
+                EdgeMutationBuilder.buildForImmutableEdge(before, after, DirectionType.BOTH, listOf(versionIndex), emptyList())
+
+            val outIndex = result.createIndexRecords.first { it.key.prefix.direction == Direction.OUT }
+            assertEquals("userA", outIndex.key.prefix.directedSource)
+            assertEquals("postX", outIndex.key.suffix.directedTarget)
+
+            val inIndex = result.createIndexRecords.first { it.key.prefix.direction == Direction.IN }
+            assertEquals("postX", inIndex.key.prefix.directedSource)
+            assertEquals("userA", inIndex.key.suffix.directedTarget)
+        }
+
+        @Test
+        fun `IDLE when before equals after`() {
+            val record = edgeRecord(source = "userA", target = "postX", active = true)
+            val result =
+                EdgeMutationBuilder.buildForImmutableEdge(record, record, DirectionType.BOTH, listOf(versionIndex), listOf(countGroup))
+
+            assertEquals("IDLE", result.status)
+            assertTrue(result.createIndexRecords.isEmpty())
+            assertTrue(result.groupRecords.isEmpty())
+            assertTrue(result.countRecords.isEmpty())
+        }
+    }
 }
