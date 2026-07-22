@@ -205,7 +205,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                           "topk": "$topkName",
                           "entity": "source",
                           "ranges": "_target:eq:{_target};category:eq:{category};day:bt:1700000000000,1731536000000",
-                          "topkDimension": "target",
+                          "dimension": "target",
                           "rank": "$bucketedRankFqn"
                         }]
                       }
@@ -360,7 +360,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                           "topk": "$topkName",
                           "entity": "source",
                           "ranges": "category:eq:{category};day:bt:1700000000000,1731536000000",
-                          "topkDimension": "category",
+                          "dimension": "category",
                           "rank": "$segmentRankFqn"
                         }]
                       }

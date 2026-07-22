@@ -136,10 +136,10 @@ class AggregationService(
         val directedSource = if (direction == Direction.IN) target else source
         // Per-entity stores that entity; global collapses every entity into a single sentinel row.
         val entity = if (topk.entity == AggregationConstants.GLOBAL_ENTITY) AggregationConstants.GLOBAL_ENTITY else directedSource
-        val topkDimensionValue = resolveField(topk.topkDimension, source, target, properties)
+        val topkDimensionValue = resolveField(topk.dimension, source, target, properties)
         val dimensionValues =
             group.fields
-                .filter { it.bucket == null && !matchesTopkDimension(it.name, topk.topkDimension) }
+                .filter { it.bucket == null && !matchesDimension(it.name, topk.dimension) }
                 .map { resolveField(it.name, source, target, properties) }
 
         return queryService
@@ -245,10 +245,10 @@ class AggregationService(
             else -> properties[name]?.toString().orEmpty()
         }
 
-    private fun matchesTopkDimension(
+    private fun matchesDimension(
         fieldName: String,
-        topkDimension: String,
-    ): Boolean = fieldName.removePrefix("_") == topkDimension.removePrefix("_")
+        dimension: String,
+    ): Boolean = fieldName.removePrefix("_") == dimension.removePrefix("_")
 
     /**
      * Replaces `{name}` placeholders in a ranges template.

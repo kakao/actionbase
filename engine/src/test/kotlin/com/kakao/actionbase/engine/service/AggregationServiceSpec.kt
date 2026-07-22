@@ -123,8 +123,8 @@ class AggregationServiceSpec :
                     }.verifyComplete()
             }
 
-            "aggregate for OUT direction uses source as entity and the topkDimension value as rank target" {
-                val topk = topkConfig(name = "top_purchased", entity = "source", topkDimension = "target", rank = "db.rank_tbl")
+            "aggregate for OUT direction uses source as entity and the dimension value as rank target" {
+                val topk = topkConfig(name = "top_purchased", entity = "source", dimension = "target", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_out",
@@ -155,7 +155,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate for IN direction ranks per target entity" {
-                val topk = topkConfig(name = "top_purchased_by", entity = "target", topkDimension = "source", rank = "db.rank_tbl")
+                val topk = topkConfig(name = "top_purchased_by", entity = "target", dimension = "source", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_in",
@@ -186,7 +186,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate for BOTH direction fans out into one OUT and one IN mutation" {
-                val topk = topkConfig(name = "top_both", entity = "source", topkDimension = "target", rank = "db.rank_tbl")
+                val topk = topkConfig(name = "top_both", entity = "source", dimension = "target", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_both",
@@ -219,7 +219,7 @@ class AggregationServiceSpec :
             }
 
             "aggregate keeps bucket fields out of the rank source dimensionValues" {
-                val topk = topkConfig(name = "top_purchased_1y", entity = "source", topkDimension = "target", rank = "db.rank_tbl")
+                val topk = topkConfig(name = "top_purchased_1y", entity = "source", dimension = "target", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_bucketed",
@@ -262,8 +262,8 @@ class AggregationServiceSpec :
                 edge.target shouldBe "item1"
             }
 
-            "aggregate resolves a property-backed topkDimension as the rank target" {
-                val topk = topkConfig(name = "top_category", entity = "source", topkDimension = "category", rank = "db.rank_tbl")
+            "aggregate resolves a property-backed dimension as the rank target" {
+                val topk = topkConfig(name = "top_category", entity = "source", dimension = "category", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_props_only",
@@ -309,13 +309,13 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                // topkDimension = category, so its value becomes the rank target and drops out of dimensionValues
+                // dimension = category, so its value becomes the rank target and drops out of dimensionValues
                 edge.source shouldBe "top_category|user1"
                 edge.target shouldBe "fruit"
             }
 
             "aggregate joins multiple non-bucket dimension values into the rank source" {
-                val topk = topkConfig(name = "top_purchased_1y", entity = "source", topkDimension = "target", rank = "db.rank_tbl")
+                val topk = topkConfig(name = "top_purchased_1y", entity = "source", dimension = "target", rank = "db.rank_tbl")
                 val group =
                     groupWithTopks(
                         name = "g_multi",
@@ -363,7 +363,7 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                // _target is the topkDimension (rank target); category + region join the source
+                // _target is the dimension (rank target); category + region join the source
                 edge.source shouldBe "top_purchased_1y|user1|fruit|seoul"
                 edge.target shouldBe "item1"
             }
@@ -376,7 +376,7 @@ class AggregationServiceSpec :
                     Topk(
                         topk = "top_purchased",
                         entity = "source",
-                        topkDimension = "target",
+                        dimension = "target",
                         refreshAfterMillis = refreshAfter,
                         rank = "commerce.rank_tbl",
                     )
@@ -484,7 +484,7 @@ class AggregationServiceSpec :
                     Topk(
                         topk = "t1",
                         entity = "source",
-                        topkDimension = "target",
+                        dimension = "target",
                         refreshAfterMillis = 60_000L,
                         rank = "db.rank_tbl",
                     )
@@ -522,7 +522,7 @@ class AggregationServiceSpec :
                     Topk(
                         topk = "t1",
                         entity = "source",
-                        topkDimension = "target",
+                        dimension = "target",
                         refreshAfterMillis = 60_000L,
                         rank = "db.rank_tbl",
                     )
@@ -585,9 +585,9 @@ class AggregationServiceSpec :
 private fun topkConfig(
     name: String,
     entity: String = "source",
-    topkDimension: String = "target",
+    dimension: String = "target",
     rank: String = "${name}__rank",
-): Topk = Topk(topk = name, entity = entity, topkDimension = topkDimension, rank = rank)
+): Topk = Topk(topk = name, entity = entity, dimension = dimension, rank = rank)
 
 private fun groupWithTopks(
     name: String,
