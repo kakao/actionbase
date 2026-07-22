@@ -1,39 +1,154 @@
+/*
+ * Docs theme — Iris accent + Cloud backgrounds, matched to the marketing
+ * landing (src/pages/index.astro, which ships its own styles). This file only
+ * reskins the Starlight-powered docs by overriding its CSS custom properties,
+ * plus a few targeted component rules. Page structure is left to Starlight.
+ */
+
+/* ---------- Palette + type tokens ---------- */
+
 :root {
-  --purple-hsl: 255, 60%, 60%;
-  --overlay-blurple: hsla(var(--purple-hsl), 0.2);
+  /* dark (default) */
+  --sl-color-white: #ecedf6;
+  --sl-color-gray-1: #d7d9e6;
+  --sl-color-gray-2: #b4b7cc; /* body text */
+  --sl-color-gray-3: #8a8da6; /* muted */
+  --sl-color-gray-4: #6a6d84;
+  --sl-color-gray-5: #3a3c4d;
+  --sl-color-gray-6: #23252f;
+  --sl-color-gray-7: #1a1b24;
+  --sl-color-black: #0e0f17;
+
+  --sl-color-accent-low: rgba(93, 95, 239, 0.24);
+  --sl-color-accent: #5d5fef;
+  --sl-color-accent-high: #a9aaf5;
+  --sl-color-text-accent: #a9aaf5;
+
+  --sl-color-hairline: rgba(255, 255, 255, 0.1);
+  --sl-color-hairline-light: rgba(255, 255, 255, 0.16);
+  --sl-color-hairline-shade: rgba(255, 255, 255, 0.06);
+  --sl-color-bg-inline-code: rgba(255, 255, 255, 0.08);
+  --sl-color-bg-nav: rgba(18, 19, 28, 0.82);
+  --sl-color-bg-sidebar: transparent;
+
+  --ab-page-bg: linear-gradient(180deg, #141520 0%, #0e0f17 100%);
+  --ab-accent-fill: rgba(93, 95, 239, 0.18);
+
+  --sl-font: 'Manrope', system-ui, -apple-system, sans-serif;
+  --sl-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ab-font-head: 'Space Grotesk', var(--sl-font);
 }
 
 :root[data-theme='light'] {
-  --purple-hsl: 255, 85%, 65%;
+  --sl-color-white: #20223a; /* headings */
+  --sl-color-black: #ffffff; /* light surface (search button, overlays) */
+  --sl-color-gray-1: #2c2f45;
+  --sl-color-gray-2: #4e5168; /* body */
+  --sl-color-gray-3: #82859b; /* muted */
+  --sl-color-gray-4: #9aa0b3;
+  --sl-color-gray-5: #d6dae1;
+  --sl-color-gray-6: #e9ecf1;
+  --sl-color-gray-7: #f3f5f8;
+
+  --sl-color-accent-low: rgba(93, 95, 239, 0.12);
+  --sl-color-accent: #5d5fef;
+  --sl-color-accent-high: #4749d0;
+  --sl-color-text-accent: #5d5fef;
+
+  --sl-color-hairline: rgba(32, 34, 58, 0.12);
+  --sl-color-hairline-light: rgba(32, 34, 58, 0.16);
+  --sl-color-hairline-shade: rgba(32, 34, 58, 0.08);
+  --sl-color-bg-inline-code: rgba(32, 34, 58, 0.07);
+  --sl-color-bg-nav: rgba(255, 255, 255, 0.82);
+  --sl-color-bg-sidebar: transparent;
+
+  --ab-page-bg: linear-gradient(180deg, #f3f5f8 0%, #e9ecf1 100%);
+  --ab-accent-fill: rgba(93, 95, 239, 0.12);
 }
 
-[data-has-hero] .page {
-  background:
-    linear-gradient(215deg, var(--overlay-blurple), transparent 40%),
-    radial-gradient(var(--overlay-blurple), transparent 40%) no-repeat -60vw -40vh / 105vw 200vh,
-    radial-gradient(var(--overlay-blurple), transparent 65%) no-repeat 50% calc(100% + 20rem) /
-      60rem 30rem;
+/* ---------- Base ---------- */
+
+body {
+  background: var(--ab-page-bg);
+  background-attachment: fixed;
 }
 
-[data-has-hero] header {
-  border-bottom: 1px solid transparent;
-  background-color: transparent;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+:is(h1, h2, h3, h4, h5, h6),
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--ab-font-head);
+  letter-spacing: -0.02em;
 }
 
-[data-has-hero] .hero > img {
-  filter: drop-shadow(0 0 3rem var(--overlay-blurple));
+/* ---------- Header (sticky, translucent, blurred) ---------- */
+
+.header {
+  background: var(--sl-color-bg-nav);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--sl-color-hairline);
 }
 
-/* Smaller hero image on mobile */
-@media (max-width: 768px) {
-  [data-has-hero] .hero > img {
-    max-width: 150px;
-  }
+/* ---------- Sidebar ---------- */
+
+.sidebar-content .group-label .large {
+  font-family: var(--sl-font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
 }
 
-/* Icon row component */
+.sidebar-content a {
+  border-radius: 7px;
+}
+
+.sidebar-content a[aria-current='page'] {
+  color: var(--sl-color-text-accent);
+  background: var(--ab-accent-fill);
+  font-weight: 700;
+  box-shadow: inset 2px 0 0 var(--sl-color-accent);
+}
+
+/* ---------- Right rail (on this page) ---------- */
+
+.right-sidebar a[aria-current='true'] {
+  color: var(--sl-color-text-accent);
+  font-weight: 700;
+}
+
+/* ---------- Callouts (minimal: mono label + bottom hairline) ---------- */
+
+.starlight-aside {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--sl-color-hairline);
+  border-radius: 0;
+  padding: 0.25rem 0 1rem;
+}
+
+.starlight-aside__title {
+  font-family: var(--sl-font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.starlight-aside__icon {
+  display: none;
+}
+
+/* ---------- Prev / next cards ---------- */
+
+.pagination-links a {
+  border-radius: 10px;
+  border: 1px solid var(--sl-color-hairline);
+  background: var(--sl-color-bg-nav);
+}
+
+/* ---------- Retained utilities ---------- */
+
+/* Icon row component (quick-start guide) */
 .icon-row {
   display: inline-flex;
   align-items: center;
@@ -64,20 +179,21 @@
   display: none;
 }
 
-/* Align nav links vertically when shields.io badge is present */
+/* Align nav links vertically when the shields.io badge is present */
 ul:has(.nav-external) {
   align-items: center;
 }
 
-.gh-badge {
-  height: 1.35rem;
-  display: block;
-  position: relative;
-  top: 1px;
+.nav-external {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-:root[data-theme='light'] .gh-badge {
-  filter: invert(0.88);
+.gh-stars {
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+  color: var(--sl-color-gray-3);
 }
 
 /* WIP items in sidebar */

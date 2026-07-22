@@ -88,6 +88,21 @@ export default defineConfig({
       social: [],
       head: [
         {
+          tag: 'link',
+          attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        },
+        {
+          tag: 'link',
+          attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: true },
+        },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'stylesheet',
+            href: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap',
+          },
+        },
+        {
           tag: 'script',
           attrs: { async: true, src: `https://www.googletagmanager.com/gtag/js?id=${GA_ID}` },
         },
@@ -115,7 +130,6 @@ export default defineConfig({
         {
           label: 'Nav',
           items: [
-            { label: 'Docs', slug: 'introduction' },
             {
               label: 'GitHub',
               link: 'https://github.com/kakao/actionbase',
@@ -175,8 +189,27 @@ export default defineConfig({
       components: {
         Head: './src/components/Head.astro',
         PageSidebar: './src/components/PageSidebar.astro',
+        ThemeSelect: './src/components/ThemeSelect.astro',
+        Footer: './src/components/Footer.astro',
       },
-      expressiveCode: { shiki: { langs: [markdocGrammar] } },
+      expressiveCode: {
+        // A single dark theme keeps code blocks on the terminal surface in both
+        // light and dark site themes, matching the design mocks.
+        themes: ['github-dark'],
+        styleOverrides: {
+          borderRadius: '10px',
+          borderColor: 'transparent',
+          codeBackground: '#1b1c2b',
+          frames: {
+            editorBackground: '#1b1c2b',
+            terminalBackground: '#1b1c2b',
+            editorActiveTabBackground: '#1b1c2b',
+            terminalTitlebarBackground: '#1b1c2b',
+            shadowColor: 'transparent',
+          },
+        },
+        shiki: { langs: [markdocGrammar] },
+      },
       plugins: [
         starlightUtils({
           multiSidebar: {

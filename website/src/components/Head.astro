@@ -28,18 +28,29 @@ import StarlightHead from '@astrojs/starlight/components/Head.astro';
 </script>
 
 <script>
-  const BADGE_URL = 'https://img.shields.io/github/stars/kakao/actionbase?style=flat&logo=github&label=&color=rgba(0%2C0%2C0%2C0)&labelColor=rgba(0%2C0%2C0%2C0)';
-
-  function render() {
-    document.querySelectorAll('.nav-external').forEach((el) => {
-      if (el.querySelector('.gh-badge')) return;
-      const img = document.createElement('img');
-      img.src = BADGE_URL;
-      img.alt = 'GitHub stars';
-      img.className = 'gh-badge';
-      img.loading = 'lazy';
-      el.textContent = '';
-      el.appendChild(img);
+  // Match the landing: plain "GitHub" + a live star count, degrading to just
+  // "GitHub" if the API is unreachable.
+  async function render() {
+    const els = document.querySelectorAll('.nav-external');
+    if (!els.length) return;
+    let stars = '';
+    try {
+      const res = await fetch('https://api.github.com/repos/kakao/actionbase');
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.stargazers_count === 'number') stars = String(data.stargazers_count);
+      }
+    } catch {
+      /* leave count off */
+    }
+    els.forEach((el) => {
+      el.textContent = 'GitHub';
+      if (stars) {
+        const badge = document.createElement('span');
+        badge.className = 'gh-stars';
+        badge.textContent = '★ ' + stars;
+        el.appendChild(badge);
+      }
     });
   }
 

@@ -1,0 +1,51 @@
+---
+// Round light/dark toggle, replacing Starlight's dropdown so the docs header
+// matches the landing. Reads/writes the shared `starlight-theme` key and the
+// `<html data-theme>` attribute, so the choice carries across both surfaces.
+---
+
+<button type="button" class="theme-toggle" aria-label="Toggle color theme" data-theme-toggle>
+  <span data-theme-icon aria-hidden="true">☾</span>
+</button>
+
+<style>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 1px solid var(--sl-color-hairline-light);
+    background: var(--sl-color-bg-nav);
+    color: var(--sl-color-gray-2);
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .theme-toggle:hover {
+    border-color: var(--sl-color-gray-4);
+  }
+</style>
+
+<script>
+  const root = document.documentElement;
+  const syncIcons = () => {
+    const dark = root.dataset.theme === 'dark';
+    document.querySelectorAll('[data-theme-icon]').forEach((el) => {
+      el.textContent = dark ? '☀' : '☾';
+    });
+  };
+  document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem('starlight-theme', next);
+      } catch {
+        /* ignore */
+      }
+      syncIcons();
+    });
+  });
+  syncIcons();
+</script>
