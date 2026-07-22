@@ -7,10 +7,6 @@ import {
 } from 'axe-playwright';
 import Sitemapper from 'sitemapper';
 
-// We use the Lunaria config to get the list of languages rather than the Astro config as importing
-// the latter does not play well with Playwright.
-import lunariaConfig from '../lunaria.config.json' assert { type: 'json' };
-
 export { expect, type Locator } from '@playwright/test';
 
 const config: Config = {
@@ -62,7 +58,8 @@ const config: Config = {
 process.env.ASTRO_TELEMETRY_DISABLED = 'true';
 process.env.ASTRO_DISABLE_UPDATE_CHECK = 'true';
 
-const locales = lunariaConfig.locales.map((locale) => locale.lang);
+// English is the only locale; there are no locale-prefixed slugs.
+const locales: string[] = [];
 
 export const test = baseTest.extend<{
   docsSite: DocsSite;

@@ -16,8 +16,6 @@ export const collections = {
         featured: z.boolean().optional(),
         // Custom: hide Overview from TOC
         hideOverview: z.boolean().optional(),
-        // Custom: mark document as translated by Kanana-2
-        'translated-by-kanana-2': z.boolean().optional(),
         // Custom: category for grouping stories
         category: z.string().optional(),
       }),

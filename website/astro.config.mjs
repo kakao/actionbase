@@ -11,7 +11,6 @@ import starlightUtils from '@lorenzo_lewis/starlight-utils';
 
 export const locales = {
   root: { label: 'English', lang: 'en' },
-  ko: { label: '한국어', lang: 'ko' },
 };
 
 /* https://docs.netlify.com/configure-builds/environment-variables/#read-only-variables */
@@ -50,15 +49,6 @@ export default defineConfig({
     '/stories/migration-verification/': '/stories/how-we-survived/migration-verification/',
     '/stories/hbase-consistency/': '/stories/how-we-survived/hbase-consistency/',
     '/stories/unified-graph/': '/stories/vision/unified-graph/',
-    '/ko/stories/kakaotalk-gift-wish/': '/ko/stories/use-cases/kakaotalk-gift-wish/',
-    '/ko/stories/kakaotalk-gift-recent-views/':
-      '/ko/stories/use-cases/kakaotalk-gift-recent-views/',
-    '/ko/stories/kakaotalk-friends/': '/ko/stories/use-cases/kakaotalk-friends/',
-    '/ko/stories/pipeline/': '/ko/stories/engineering/pipeline/',
-    '/ko/stories/shadow-testing/': '/ko/stories/how-we-survived/shadow-testing/',
-    '/ko/stories/migration-verification/': '/ko/stories/how-we-survived/migration-verification/',
-    '/ko/stories/hbase-consistency/': '/ko/stories/how-we-survived/hbase-consistency/',
-    '/ko/stories/unified-graph/': '/ko/stories/vision/unified-graph/',
   },
   markdown: {
     remarkPlugins: [remarkHeadingId],
@@ -137,7 +127,6 @@ export default defineConfig({
         },
         {
           label: 'Main',
-          translations: { ko: '메인' },
           items: [
             {
               label: 'Getting Started',
@@ -176,7 +165,6 @@ export default defineConfig({
         },
         {
           label: 'Stories',
-          translations: { ko: '스토리' },
           items: [
             'stories',
             { label: 'Use Cases', autogenerate: { directory: 'stories/use-cases' } },
@@ -189,7 +177,6 @@ export default defineConfig({
       components: {
         Head: './src/components/Head.astro',
         PageSidebar: './src/components/PageSidebar.astro',
-        Footer: './src/components/Footer.astro',
       },
       expressiveCode: { shiki: { langs: [markdocGrammar] } },
       plugins: [
@@ -220,7 +207,6 @@ export default defineConfig({
         }),
         starlightLinksValidator({
           errorOnFallbackPages: false,
-          errorOnInconsistentLocale: true,
         }),
         starlightLlmsTxt({
           exclude: ['404', 'api-references/**'],
