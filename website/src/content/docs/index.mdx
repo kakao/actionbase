@@ -9,7 +9,7 @@ editUrl: false
 lastUpdated: false
 hero:
   title: Actionbase
-  tagline: One database for likes, views, and follows — pre-computed, served in real-time
+  tagline: One database for user–user, user–item, and item–item interactions — precomputed at write time, served as simple lookups
   image:
     file: ~/assets/hero.webp
   actions:
@@ -31,8 +31,8 @@ import { CardGrid, Card } from '@astrojs/starlight/components';
   <Card title="Pre-computed Reads" icon="star">
     Writes do the work. Reads return what's already computed.
   </Card>
-  <Card title="Likes · Views · Follows" icon="heart">
-    One model for common user interactions.
+  <Card title="U2U · U2I · I2I" icon="heart">
+    One model for user–user, user–item, and item–item interactions.
   </Card>
   <Card title="REST API" icon="forward-slash">
     Simple writes, fast reads — all via HTTP.
