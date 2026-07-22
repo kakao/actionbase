@@ -146,7 +146,7 @@ const Layout: React.FC<SplitLayoutProps> = ({ children }) => {
                 Docs
               </a>
               <a
-                href="https://github.com/kakao/actionbase/discussions/94"
+                href="https://github.com/kakao/actionbase/issues"
                 target="_blank"
                 className="header-action"
                 title="Feedback"
@@ -326,7 +326,7 @@ const Layout: React.FC<SplitLayoutProps> = ({ children }) => {
               <div className="browser-help-notice">
                 <span>Stuck? Try restarting the server</span>
                 <a
-                  href="https://github.com/kakao/actionbase/discussions/94"
+                  href="https://github.com/kakao/actionbase/issues"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
