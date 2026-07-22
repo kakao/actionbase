@@ -105,11 +105,10 @@ _Inspired by [SlateDB's contribution policy](https://github.com/slatedb/slatedb/
 
 We collaborate through [GitHub](https://github.com/kakao/actionbase):
 
-- **[Discussions](https://github.com/kakao/actionbase/discussions)**: Questions, ideas, and open-ended conversations
 - **[Issues](https://github.com/kakao/actionbase/issues)**: Bug reports, feature requests, and concrete improvements
 - **[Pull Requests](https://github.com/kakao/actionbase/pulls)**: Code and documentation changes
 
-For questions, ideas, or feedback, join us on [Discussions](https://github.com/kakao/actionbase/discussions).
+For questions, ideas, or feedback, open an [issue](https://github.com/kakao/actionbase/issues).
 
 Pull requests are reviewed collaboratively and merged by Maintainers.
 
