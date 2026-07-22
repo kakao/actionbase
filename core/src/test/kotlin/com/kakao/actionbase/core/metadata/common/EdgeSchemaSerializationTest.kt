@@ -131,7 +131,7 @@ class EdgeSchemaSerializationTest {
                         "topk": "top_purchased_1y",
                         "entity": "source",
                         "ranges": "time:bt:now-365d,now",
-                        "topkDimension": "target",
+                        "dimension": "target",
                         "refreshAfterMillis": 31536000000,
                         "rank": "commerce.order_product__topk"
                       }
@@ -162,7 +162,7 @@ class EdgeSchemaSerializationTest {
                         "topk": "top_purchased_1y",
                         "entity": "source",
                         "ranges": "time:bt:now-365d,now",
-                        "topkDimension": "target",
+                        "dimension": "target",
                         "refreshAfterMillis": 31536000000,
                         "rank": "commerce.order_product__topk"
                       }
@@ -185,7 +185,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased", "entity": "__GLOBAL__", "topkDimension": "target", "rank": "commerce.order_product__topk"}]
+                    "topk": [{"topk": "top_purchased", "entity": "__GLOBAL__", "dimension": "target", "rank": "commerce.order_product__topk"}]
                   }
                 }
               ]
@@ -202,7 +202,7 @@ class EdgeSchemaSerializationTest {
                   "type": "COUNT",
                   "fields": [{"name": "_target"}],
                   "aggregations": {
-                    "topk": [{"topk": "top_purchased", "entity": "__GLOBAL__", "topkDimension": "target", "rank": "commerce.order_product__topk"}]
+                    "topk": [{"topk": "top_purchased", "entity": "__GLOBAL__", "dimension": "target", "rank": "commerce.order_product__topk"}]
                   }
                 }
               ]
