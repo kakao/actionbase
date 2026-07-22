@@ -16,6 +16,7 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class LabelDTOTests {
@@ -125,6 +126,28 @@ public class LabelDTOTests {
     Group.Field field = label.getGroups().get(0).getFields().get(0);
     assertTrue(field.getBucket() instanceof Bucket.Date);
     assertEquals("20260611T00", field.applyBucket(1_781_103_600_000_000_000L));
+  }
+
+  @Test
+  void shouldDeserializeOptionalGroupFieldBucketsWithStrictNullChecks()
+      throws JsonProcessingException {
+    ObjectMapper strictObjectMapper =
+        new ObjectMapper().enable(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES);
+    String jsonString =
+        "{\"group\":\"created_at_hour\",\"type\":\"COUNT\","
+            + "\"fields\":[{\"name\":\"eventType\"},{\"name\":\"gender\",\"bucket\":null},"
+            + "{\"name\":\"created_at\",\"bucket\":{\"type\":\"date\","
+            + "\"name\":\"created_at_hour\",\"unit\":\"NANOSECOND\","
+            + "\"timezone\":\"+09:00\",\"format\":\"yyyyMMdd'T'HH\"}}],"
+            + "\"valueField\":\"-\",\"comment\":\"\",\"directionType\":\"OUT\",\"ttl\":-1}";
+
+    Group group = strictObjectMapper.readValue(jsonString, Group.class);
+
+    assertNull(group.getFields().get(0).getBucket());
+    assertNull(group.getFields().get(1).getBucket());
+    Group.Field bucketedField = group.getFields().get(2);
+    assertTrue(bucketedField.getBucket() instanceof Bucket.Date);
+    assertEquals("20260611T00", bucketedField.applyBucket(1_781_103_600_000_000_000L));
   }
 
   @Test

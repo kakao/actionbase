@@ -95,13 +95,13 @@ public class Group implements Serializable {
     final Bucket bucket;
 
     @JsonCreator
-    public Field(@JsonProperty("name") String name, @JsonProperty("bucket") Bucket bucket) {
-      this.name = name;
-      this.bucket = bucket;
+    public Field(@JsonProperty("name") String name) {
+      this(name, null);
     }
 
-    public Field(String name) {
-      this(name, null);
+    public Field(String name, Bucket bucket) {
+      this.name = name;
+      this.bucket = bucket;
     }
 
     public String getName() {
