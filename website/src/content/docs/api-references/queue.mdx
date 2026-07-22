@@ -17,7 +17,7 @@ queue/v1 API. See [Queue](/design/queue/) for conceptual background.
 
 ## 1. Create Queue
 
-Create a queue. This provisions the backing immutable edge table with the fixed queue schema (`seq`, `value`, and the server-assigned ULID message id).
+Create a queue, provisioning the backing immutable edge table with the fixed queue schema (`seq`, `value`, and a server-assigned ULID message id).
 
 ### Endpoint
 
@@ -145,7 +145,7 @@ curl -X PUT \
 
 ## 4. Delete Queue
 
-Delete a queue. Guarded: the queue must be disabled first — deleting an active queue returns `409 Conflict`.
+Delete a queue. The queue must be disabled first; deleting an active queue returns `409 Conflict`.
 
 ### Endpoint
 
@@ -216,7 +216,7 @@ curl "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue
 
 ## 6. Enqueue
 
-Append messages to the queue. Each message is routed to a partition by `xxhash32(key) mod partitions`; the server assigns a ULID message id. `seq` orders messages within a partition and may encode a due time for delayed consumption.
+Append messages to the queue. Each message is routed to a partition by its `key`; the server assigns a ULID id, and `seq` orders it within the partition.
 
 ### Endpoint
 
@@ -271,7 +271,7 @@ curl -X POST \
 
 ## 7. Poll
 
-Read one partition forward in `seq` order. `offset` is exclusive (`seq > offset`); `until` is inclusive (`seq <= until`) and bounds a poll to due messages when `seq` encodes a due time. The response's `offset` is the cursor to pass back to the next poll — and the value to [commit](#8-commit) once the batch is processed.
+Read one partition forward in `seq` order. The response's `offset` is the cursor for the next poll, and the value to [commit](#8-commit) once the batch is processed.
 
 ### Endpoint
 
@@ -317,7 +317,7 @@ curl "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue
 
 ## 8. Commit
 
-Commit a partition up to an offset: the consumer has processed every message with `seq <= offset`, so they are **deleted**. This completes the poll → process → commit lifecycle and doubles as retention. Assumes one logical consumer per partition — see [Queue](/design/queue/#consumer-lifecycle).
+Commit a partition up to an offset: every message with `seq <= offset` is deleted. Assumes one logical consumer per partition; see [Queue](/design/queue/#consumer-lifecycle).
 
 ### Endpoint
 

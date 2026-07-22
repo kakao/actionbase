@@ -101,7 +101,7 @@ Indices are pre-computed at write time. See [Query](/design/query/).
 
 ### Immutable Edge Tables (type: IMMUTABLE_INDEXED, v3: IMMUTABLE_EDGE)
 
-An append-only variant of the indexed label. A regular edge tracks mutable state (a like can be un-liked); an immutable edge records facts that never change (an event log, a message queue). Only index rows are persisted — there is no state row, no count records, and no caches. The index rows *are* the record.
+An append-only variant of the indexed label. A regular edge tracks mutable state (a like can be un-liked); an immutable edge records facts that never change, such as an event log or a message queue. Only index rows are persisted: there is no state row, no count records, and no caches. The index rows are the record.
 
 | Property  | Constraint                                                          |
 | --------- | ------------------------------------------------------------------- |
@@ -109,15 +109,15 @@ An append-only variant of the indexed label. A regular edge tracks mutable state
 | dirType   | Single direction (OUT or IN) — BOTH is rejected                     |
 | mutations | INSERT only — UPDATE and DELETE are rejected                        |
 
-The constraints exist so that every persisted row is reachable by a single index scan: deleting the scanned rows is then a complete delete, which is what makes eviction (scan-delete) safe.
+These constraints ensure every persisted row is reachable by a single index scan, so deleting the scanned rows is a complete delete. That is what makes eviction (scan-delete) safe.
 
 Behavioral differences from a regular indexed label:
 
 | Operation           | Behavior                                                                 |
 | ------------------- | ------------------------------------------------------------------------ |
-| Point get           | Rejected — read with an index scan                                       |
-| Count / `total`     | Not supported — no count records are written                             |
-| CDC                 | Not emitted — the log itself is the change history                       |
+| Point get           | Rejected; read with an index scan                                        |
+| Count / `total`     | Not supported; no count records are written                              |
+| CDC                 | Not emitted; the log itself is the change history                        |
 | Eviction            | [Scan-delete](/api-references/mutation/#5-scan-delete-immutable-edge-tables) removes a scanned index range |
 
 **Example: Event Log**

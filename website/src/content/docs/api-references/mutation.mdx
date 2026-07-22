@@ -318,9 +318,9 @@ curl -X POST \
 
 ## 5. Scan-Delete (Immutable Edge Tables)
 
-Scan an index range on an [immutable edge table](/design/schema/#immutable-edge-tables-type-immutable_indexed-v3-immutable_edge) and delete the matched rows, returning the count deleted. Used for eviction / retention: an immutable edge persists only index rows, so deleting the scanned rows is a complete delete.
+Scan an index range on an [immutable edge table](/design/schema/#immutable-edge-tables-type-immutable_indexed-v3-immutable_edge) and delete the matched rows, returning the count deleted. Used for eviction and retention.
 
-Rejected with `400` on non-immutable tables. `limit` is required and capped at 1000 — one call deletes at most one page; loop until the returned count is below `limit` to drain a larger range.
+Rejected with `400` on non-immutable tables. `limit` is required and capped at 1000; one call deletes at most one page, so loop until the returned count is below `limit` to drain a larger range.
 
 ### Endpoint
 
@@ -382,7 +382,7 @@ The `type` field in mutation items specifies the operation to perform:
 | `UPDATE` | Update properties of an existing edge                           |
 | `DELETE` | Delete an edge (marks it as deleted)                            |
 
-Immutable edge tables accept `INSERT` only — `UPDATE` and `DELETE` are rejected with `400`. Rows are removed via [scan-delete](#5-scan-delete-immutable-edge-tables) instead.
+Immutable edge tables accept `INSERT` only; `UPDATE` and `DELETE` are rejected with `400`. Rows are removed via [scan-delete](#5-scan-delete-immutable-edge-tables) instead.
 
 ## Lock Parameter
 
