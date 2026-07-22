@@ -7,13 +7,6 @@ export const collections = {
     loader: docsLoader(),
     schema: docsSchema({
       extend: z.object({
-        // Blog fields for starlight-blog plugin
-        date: z.coerce.date().optional(),
-        authors: z.union([z.string(), z.array(z.string())]).optional(),
-        tags: z.array(z.string()).optional(),
-        draft: z.boolean().optional(),
-        excerpt: z.string().optional(),
-        featured: z.boolean().optional(),
         // Custom: hide Overview from TOC
         hideOverview: z.boolean().optional(),
         // Custom: category for grouping stories
