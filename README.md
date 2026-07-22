@@ -5,7 +5,7 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/kakao/actionbase/continuous-integration.yml?label=ci&style=flat-square)](https://github.com/kakao/actionbase/actions/workflows/continuous-integration.yml) [![Release](https://img.shields.io/github/v/release/kakao/actionbase?label=release&style=flat-square)](https://github.com/kakao/actionbase/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://opensource.org/licenses/Apache-2.0) [![Docs](https://img.shields.io/badge/docs-actionbase.io-green?style=flat-square)](https://actionbase.io)
 
-[Documentation](https://actionbase.io) · [Open-sourced](https://actionbase.io/blog/open-source-announcement/) · [Why we built this](https://github.com/kakao/actionbase/issues/358) · [Production stories](https://actionbase.io/stories/kakaotalk-gift-wish/)
+[Documentation](https://actionbase.io) · [Path to open source](https://actionbase.io/project/path-to-open-source/) · [Why we built this](https://github.com/kakao/actionbase/issues/358) · [Production stories](https://actionbase.io/stories/kakaotalk-gift-wish/)
 
 ## Why Actionbase
 
