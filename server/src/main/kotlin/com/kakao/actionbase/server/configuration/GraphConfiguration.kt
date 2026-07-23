@@ -159,8 +159,9 @@ class GraphConfiguration {
     fun provideTopkAggregationHandler(
         queryService: QueryService,
         mutationService: MutationService,
+        queueService: QueueService,
         engine: V2BackedEngine,
-    ): AggregationHandler = TopkAggregationHandler(queryService, mutationService, engine)
+    ): AggregationHandler = TopkAggregationHandler(queryService, mutationService, queueService, engine)
 
     @Bean
     fun provideAggregationService(

@@ -2,16 +2,31 @@ package com.kakao.actionbase.core.edge.payload
 
 import com.kakao.actionbase.core.metadata.common.AggregationType
 
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+
 data class AggregationSweepRequest(
-    val items: List<AggregationSweepItem>,
+    val items: List<SweepItem>,
 )
 
-data class AggregationSweepItem(
+data class SweepItem(
     val type: AggregationType,
-    val item: AggregationSweepTarget,
+    // `item`'s concrete type is chosen by the sibling `type` field, so a new AggregationType
+    // adds a payload + one @JsonSubTypes line without changing the {type, item} shape.
+    @JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.EXTERNAL_PROPERTY,
+        property = "type",
+    )
+    @JsonSubTypes(
+        JsonSubTypes.Type(value = TopkSweepItem::class, name = "TOPK"),
+    )
+    val item: SweepItemPayload,
 )
 
-data class AggregationSweepTarget(
+sealed interface SweepItemPayload
+
+data class TopkSweepItem(
     val database: String,
     val table: String,
     val topk: String,
@@ -23,4 +38,4 @@ data class AggregationSweepTarget(
     val topkDimensionValue: String,
     val dimensionValues: String = "",
     val refreshAt: Long = -1,
-)
+) : SweepItemPayload

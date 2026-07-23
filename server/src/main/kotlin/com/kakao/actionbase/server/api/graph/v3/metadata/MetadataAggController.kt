@@ -33,17 +33,17 @@ class MetadataAggController(
 
     @PostMapping("/graph/v3/aggregations")
     fun aggregations(
-        @RequestBody aggregationItemRequest: AggregationItemRequest,
+        @RequestBody request: AggregationItemRequest,
     ): Mono<ResponseEntity<AggregationsItemResponse>> =
         aggregationService
-            .aggregate(type = aggregationItemRequest.type, items = aggregationItemRequest.items)
+            .aggregate(type = request.type, items = request.items)
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 
     @PutMapping("/graph/v3/aggregations/sweep")
     fun sweep(
-        @RequestBody aggregationSweepRequest: AggregationSweepRequest,
+        @RequestBody request: AggregationSweepRequest,
     ): Mono<ResponseEntity<AggregationsSweepResponse>> =
         aggregationService
-            .sweep(items = aggregationSweepRequest.items)
+            .sweep(items = request.items)
             .map { results -> ResponseEntity.ok(AggregationsSweepResponse.from(results)) }
 }
