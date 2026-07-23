@@ -224,6 +224,8 @@ html {
   border-radius: 999px;
   border: 1px solid var(--sl-color-hairline-light);
   color: var(--sl-color-gray-2);
+  /* Starlight underlines header links; the star count must not inherit it. */
+  text-decoration: none;
 }
 .social-icons a.has-count {
   padding: 0 15px;
