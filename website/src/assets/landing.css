@@ -82,10 +82,8 @@ body {
 /* ---------- Header (sticky, translucent, blurred) ---------- */
 
 .header {
-  background: var(--sl-color-bg-nav);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--sl-color-hairline);
+  /* match the page background so the header and body read as one surface */
+  background: var(--sl-color-bg);
 }
 
 /* ---------- Sidebar ---------- */
@@ -105,9 +103,15 @@ body {
 
 .sidebar-content a[aria-current='page'] {
   color: var(--sl-color-text-accent);
-  background: var(--ab-accent-fill);
+  background: transparent;
   font-weight: 700;
-  box-shadow: inset 2px 0 0 var(--sl-color-accent);
+  border-radius: 0;
+  box-shadow: inset 3px 0 0 var(--sl-color-accent);
+}
+
+/* Sidebar switcher (Main / Stories): flat accent underline, no rounded pill */
+li.tab {
+  border-radius: 0 !important;
 }
 
 /* ---------- Right rail (on this page) ---------- */
@@ -179,26 +183,41 @@ body {
   display: none;
 }
 
-/* Align nav links vertically when the shields.io badge is present */
-ul:has(.nav-external) {
-  align-items: center;
+/* GitHub social icon as a round bordered button, matching the theme toggle
+   (and the landing nav) so the header controls read as one set. */
+/* no divider bar before the theme toggle */
+.social-icons::after {
+  display: none !important;
 }
-
-.nav-external {
-  display: inline-flex;
+.social-icons a {
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--sl-color-hairline-light);
+  color: var(--sl-color-gray-2);
 }
-
-.gh-stars {
-  font-family: var(--sl-font-mono);
-  font-size: 0.75rem;
-  color: var(--sl-color-gray-3);
+.social-icons a:hover {
+  border-color: var(--sl-color-gray-4);
+  color: var(--sl-color-gray-2);
+}
+.social-icons a svg {
+  width: 18px !important;
+  height: 18px !important;
 }
 
 /* WIP items in sidebar */
 .sidebar-wip {
   opacity: 0.5;
+}
+
+/* Drop the vertical divider between content and the on-this-page rail (keep
+   the menu↔content one) so the footer band reads across both. */
+.right-sidebar {
+  border-inline-start: 0 !important;
 }
 
 /* Docs header logo: the shared wordmark SVG is wide/short, and Starlight renders

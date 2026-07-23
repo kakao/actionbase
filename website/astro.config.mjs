@@ -85,7 +85,7 @@ export default defineConfig({
       editLink: {
         baseUrl: 'https://github.com/kakao/actionbase/edit/main/website/',
       },
-      social: [],
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kakao/actionbase' }],
       head: [
         {
           tag: 'link',
@@ -127,16 +127,6 @@ export default defineConfig({
       customCss: ['./src/assets/landing.css'],
       locales,
       sidebar: [
-        {
-          label: 'Nav',
-          items: [
-            {
-              label: 'GitHub',
-              link: 'https://github.com/kakao/actionbase',
-              attrs: { class: 'nav-external', target: '_blank', rel: 'noopener' },
-            },
-          ],
-        },
         {
           label: 'Main',
           items: [
@@ -214,11 +204,6 @@ export default defineConfig({
         starlightUtils({
           multiSidebar: {
             switcherStyle: 'horizontalList',
-          },
-          navLinks: {
-            leading: {
-              useSidebarLabelled: 'Nav',
-            },
           },
         }),
         starlightLinksValidator({

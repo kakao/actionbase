@@ -13,13 +13,19 @@ import StarlightFooter from '@astrojs/starlight/components/Footer.astro';
 
 <style>
   .ab-footer {
+    /* Keep the left edge at the content (never cover the nav menu) but extend
+       rightward under the on-this-page rail, so the bar spans content + right
+       sidebar as one band. */
+    margin-right: calc(50% - 50vw);
+    box-sizing: border-box;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
-    margin-top: 2rem;
-    padding-top: 1.25rem;
+    margin-top: 2.5rem;
+    padding: 1.25rem 0;
+    padding-right: clamp(1.5rem, 4vw, 4rem);
     border-top: 1px solid var(--sl-color-hairline);
     font-family: var(--sl-font-mono);
     font-size: 0.75rem;

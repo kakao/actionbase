@@ -160,7 +160,11 @@ const soon = [
           <img class="brand-logo brand-logo-dark" src={logoDark} alt="Actionbase" width="171" height="26" />
         </a>
         <div class="nav-links">
-          <a href={repo} class="gh-link">GitHub <span class="gh-stars" hidden>★ <span data-gh-count></span></span></a>
+          <a href={repo} class="gh-link" aria-label="GitHub">
+            <svg class="gh-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+          </a>
           <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme">
             <span data-theme-icon>☾</span>
           </button>
@@ -205,8 +209,9 @@ const soon = [
         </div>
         <div class="features">
           {
-            features.map((f) => (
+            features.map((f, i) => (
               <div class="card">
+                <span class="card-num">{String(i + 1).padStart(2, '0')}</span>
                 <h3>{f.title}</h3>
                 <p>{f.desc}</p>
               </div>
@@ -219,6 +224,7 @@ const soon = [
       <section class="demo">
         <div class="demo-head">
           <h2>Interactive demo</h2>
+          <button type="button" class="demo-reset" data-reset>↺ Reset</button>
         </div>
         <div class="demo-panels">
           <figure class="console term-fill">
@@ -234,12 +240,12 @@ const soon = [
                     <div class="line"><span class="l l-sys">actionbase standalone · server :8080 · CLI ready</span></div>
                     <div class="line"><span class="l l-sys">preset 'likes' loaded — 3 edges</span></div>
                     <div class="line"><span class="l l-sys">Alice → Phone    Bob → Laptop    Bob → Phone</span></div>
-                    <div class="line"><span class="l l-dim">run a step → watch the graph</span></div>
+                    <div class="line"><span class="l l-dim">click a command below to run it ↓</span></div>
                   </div>
                   <div class="input-row">
-                    <span class="prompt">actionbase&gt;</span>
+                    <span class="prompt">actionbase(likes:likes)&gt;</span>
                     <span class="term-cursor" aria-hidden="true"></span>
-                    <span class="term-hint">run a step →</span>
+                    <span class="term-hint">click a command below ↓</span>
                   </div>
                 </div>
               </div>
@@ -249,21 +255,16 @@ const soon = [
           <figure class="graph panel">
             <figcaption class="graph-cap">Graph</figcaption>
             <svg class="graph-svg" viewBox="0 0 340 250" role="img" aria-label="Edge state graph" data-graph>
-              <defs>
-                <marker id="ab-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
-                  <path d="M3.5,2.5 L8,5 L3.5,7.5" fill="none" stroke="context-stroke" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-                </marker>
-              </defs>
               <g class="gedge" data-edge="alice-phone" data-src="alice" data-dst="phone">
-                <line x1="118" y1="72" x2="222" y2="66" marker-end="url(#ab-arrow)" />
+                <line x1="118" y1="72" x2="222" y2="66" />
                 <text class="gedge-label" x="168" y="61">likes</text>
               </g>
               <g class="gedge" data-edge="bob-phone" data-src="bob" data-dst="phone">
-                <line x1="118" y1="176" x2="222" y2="72" marker-end="url(#ab-arrow)" />
+                <line x1="118" y1="176" x2="222" y2="72" />
                 <text class="gedge-label" x="150" y="120">likes</text>
               </g>
               <g class="gedge" data-edge="bob-laptop" data-src="bob" data-dst="laptop">
-                <line x1="118" y1="180" x2="222" y2="184" marker-end="url(#ab-arrow)" />
+                <line x1="118" y1="180" x2="222" y2="184" />
                 <text class="gedge-label" x="168" y="176">likes</text>
               </g>
               <g class="gnode gnode-user" data-node="alice">
@@ -331,40 +332,43 @@ const soon = [
           <span class="kicker">Client → Actionbase → storage &amp; stream</span>
         </div>
         <div class="arch-panel">
-          <div class="node">Client</div>
-          <div class="connector"></div>
-          <div class="arch-label">REST API · HTTP</div>
-          <div class="connector"></div>
-          <div class="node node-accent">Actionbase</div>
-          <div class="connector"></div>
-          <div class="arch-paths">
-            <div class="arch-col arch-col--write">
-              <div class="path-kicker">Write path · writes do the work</div>
-              <div class="path-stack">
-                <div class="connector"></div>
-                <div class="node node-wide">
-                  <span class="node-title">{writeNode.name}</span>
-                  <span class="node-sub">{writeNode.sub}</span>
-                </div>
-                <div class="connector"></div>
-              </div>
-            </div>
-            <div class="arch-col arch-col--read">
-              <div class="path-kicker">Read path · simple lookups</div>
-              <div class="path-stack">
-                <div class="connector"></div>
-                <div class="node node-wide">
-                  <span class="node-title">{readNode.name}</span>
-                  <span class="node-sub">{readNode.sub}</span>
-                </div>
-                <div class="connector"></div>
-              </div>
-            </div>
-          </div>
-          <div class="node node-shared arch-storage">
-            <span class="node-title">{storageNode.name}</span>
-            <span class="node-sub">{storageNode.sub}</span>
-          </div>
+          <svg
+            class="arch-svg"
+            viewBox="0 0 620 448"
+            role="img"
+            aria-label="Client to Actionbase; write path through Kafka and read path through GET/COUNT/SCAN converge on one storage backend, which streams back out through Kafka."
+          >
+            <!-- connectors (broken around labels so lines never cross text) -->
+            <path
+              class="arch-line"
+              d="M310 52 V80 M310 124 V152 M155 152 H465 M155 152 V180 M465 152 V196 M465 228 V286 M155 226 V286 M155 334 V390"
+            />
+            <!-- flow labels -->
+            <text class="arch-lbl" x="320" y="69" text-anchor="start">REST · HTTP</text>
+            <text class="arch-lbl" x="155" y="145">WRITE PATH</text>
+            <text class="arch-lbl" x="465" y="145">READ PATH</text>
+            <!-- read requests: an operation on the path, not a component -->
+            <text class="arch-req" x="465" y="207">GET · COUNT · SCAN</text>
+            <text class="arch-sub" x="465" y="220">direct read</text>
+            <!-- nodes -->
+            <rect class="arch-box" x="255" y="12" width="110" height="40" rx="6" />
+            <text class="arch-t" x="310" y="37">Client</text>
+
+            <rect class="arch-box arch-box-accent" x="240" y="80" width="140" height="44" rx="6" />
+            <text class="arch-t arch-t-accent" x="310" y="107">Actionbase</text>
+
+            <rect class="arch-box" x="88" y="180" width="134" height="46" rx="6" />
+            <text class="arch-t" x="155" y="201">Kafka</text>
+            <text class="arch-sub" x="155" y="216">write WAL</text>
+
+            <rect class="arch-box" x="85" y="286" width="450" height="48" rx="6" />
+            <text class="arch-t" x="310" y="307">{storageNode.name}</text>
+            <text class="arch-sub" x="310" y="322">{storageNode.sub}</text>
+
+            <rect class="arch-box" x="88" y="390" width="134" height="44" rx="6" />
+            <text class="arch-t" x="155" y="411">Kafka</text>
+            <text class="arch-sub" x="155" y="426">write CDC</text>
+          </svg>
         </div>
       </section>
 
@@ -415,7 +419,11 @@ const soon = [
         <div class="footer-inner">
           <span>© 2026 Kakao Corp. · Apache-2.0</span>
           <div class="footer-links">
-            <a href={repo}>GitHub</a>
+            <a href={repo} aria-label="GitHub">
+              <svg class="gh-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+            </a>
           </div>
         </div>
       </footer>
@@ -544,7 +552,7 @@ const soon = [
       .nav-links {
         display: flex;
         align-items: center;
-        gap: 28px;
+        gap: 10px;
         font-size: 14px;
         font-weight: 600;
         color: var(--body);
@@ -558,12 +566,21 @@ const soon = [
       .gh-link {
         display: flex;
         align-items: center;
-        gap: 6px;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        border: 1px solid var(--line-mid);
+        color: var(--body);
       }
-      .gh-stars {
-        font-family: var(--font-mono);
-        font-size: 12px;
-        color: var(--muted);
+      .gh-link:hover {
+        border-color: var(--ink);
+        color: var(--ink);
+      }
+      .gh-icon {
+        display: block;
+        width: 18px;
+        height: 18px;
       }
       .theme-toggle {
         display: flex;
@@ -612,9 +629,22 @@ const soon = [
         letter-spacing: -0.02em;
         margin: 0;
       }
+      .demo-reset {
+        background: none;
+        border: 1px solid var(--line-mid);
+        padding: 6px 12px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        color: var(--accent);
+        cursor: pointer;
+      }
+      .demo-reset:hover {
+        border-color: var(--accent);
+      }
       .demo-panels {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1.5fr 1fr;
         gap: 24px;
         align-items: stretch;
         margin-bottom: 20px;
@@ -697,11 +727,13 @@ const soon = [
         color: var(--ink);
         border-color: var(--ink);
       }
-      /* edge state graph */
+      /* edge-state graph — dotted board, card nodes, animated active edges */
       .graph {
         margin: 0;
         display: flex;
         flex-direction: column;
+        background-image: radial-gradient(var(--grid-line) 1.3px, transparent 1.3px);
+        background-size: 22px 22px;
       }
       .graph-cap {
         font-family: var(--font-mono);
@@ -716,18 +748,16 @@ const soon = [
         height: auto;
         margin: auto 0;
         max-height: 320px;
+        overflow: visible;
       }
       .gnode rect {
         fill: var(--surf-card);
         stroke: var(--line-mid);
         stroke-width: 1.2;
         transition:
-          fill 0.25s,
-          stroke 0.25s,
-          opacity 0.25s;
-      }
-      .gnode-user rect {
-        stroke: var(--line-24);
+          stroke 0.3s,
+          opacity 0.3s,
+          filter 0.3s;
       }
       .gn-name {
         fill: var(--ink);
@@ -735,7 +765,7 @@ const soon = [
         font-weight: 700;
         font-size: 14px;
         text-anchor: middle;
-        transition: fill 0.25s;
+        transition: fill 0.3s;
       }
       .gn-type {
         fill: var(--muted);
@@ -747,12 +777,12 @@ const soon = [
       }
       .gedge line {
         stroke: var(--line-mid);
-        stroke-width: 1.25;
+        stroke-width: 1.6;
         stroke-linecap: round;
         transition:
-          stroke 0.25s,
-          stroke-width 0.25s,
-          opacity 0.25s;
+          stroke 0.3s,
+          stroke-width 0.3s,
+          opacity 0.3s;
       }
       .gedge-label {
         fill: var(--muted);
@@ -760,7 +790,7 @@ const soon = [
         font-size: 7px;
         letter-spacing: 0.04em;
         text-anchor: middle;
-        transition: fill 0.25s;
+        transition: fill 0.3s;
       }
       .gedge.on .gedge-label {
         fill: var(--accent);
@@ -774,16 +804,23 @@ const soon = [
       /* reactive states, toggled from the console */
       .gnode.dim,
       .gedge.dim {
-        opacity: 0.26;
+        opacity: 0.28;
       }
       .gedge.on line {
         stroke: var(--accent);
-        stroke-width: 2;
+        stroke-width: 2.2;
+        stroke-dasharray: 7 5;
+        animation: dashmove 0.55s linear infinite;
+      }
+      @keyframes dashmove {
+        to {
+          stroke-dashoffset: -12;
+        }
       }
       .gnode.on rect {
         stroke: var(--accent);
-        stroke-width: 2;
-        fill: var(--accent-fill);
+        stroke-width: 1.6;
+        filter: drop-shadow(0 6px 16px rgba(93, 95, 239, 0.34));
       }
       .gnode.on .gn-name {
         fill: var(--accent);
@@ -835,7 +872,8 @@ const soon = [
         user-select: none;
         font-family: var(--font-mono);
         font-size: 12.5px;
-        line-height: 1.65;
+        /* terminal-tight leading so table borders (| ---) connect like the real CLI */
+        line-height: 1.35;
         color: var(--term-text);
       }
       .banner {
@@ -845,7 +883,9 @@ const soon = [
         color: var(--term-text);
         font-family: var(--font-mono);
         font-size: 6.5px;
-        line-height: 1.28;
+        /* 2:1 cell aspect (7.8px over 3.9px) matches a real terminal, so the
+           otter strokes and box borders connect the way the art was drawn */
+        line-height: 1.2;
         white-space: pre;
         overflow: hidden;
       }
@@ -1040,6 +1080,14 @@ const soon = [
         min-height: 148px;
         box-shadow: 0 16px 34px -26px rgba(35, 37, 75, 0.4);
       }
+      .card-num {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        color: var(--accent);
+        margin-bottom: 12px;
+      }
       .card h3 {
         margin: 0 0 8px;
         font-size: 16px;
@@ -1067,95 +1115,55 @@ const soon = [
         flex-direction: column;
         align-items: center;
       }
-      .node {
-        border: 1px solid var(--line-strong);
-        background: var(--surf-card);
-        padding: 12px 26px;
-        font-family: var(--font-mono);
-        font-size: 13px;
-      }
-      .node-accent {
-        border: 2px solid var(--accent);
-        padding: 16px 42px;
-        font-size: 15px;
-        font-weight: 700;
-        color: var(--accent);
-        box-shadow: 0 14px 30px -18px rgba(93, 95, 239, 0.45);
-      }
-      .arch-label {
-        font-family: var(--font-mono);
-        font-size: 10.5px;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 6px;
-      }
-      .connector {
-        width: 1px;
-        height: 22px;
-        background: var(--line-strong);
-      }
-      .node-wide {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        min-width: 260px;
-      }
-      .node-title {
-        font-family: var(--font-mono);
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--ink);
-      }
-      .node-sub {
-        font-size: 12px;
-        color: var(--muted);
-      }
-      .arch-paths {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 44px;
+      .arch-svg {
         width: 100%;
-        max-width: 760px;
-        align-items: start;
+        max-width: 620px;
+        height: auto;
+        display: block;
       }
-      .arch-col {
-        display: flex;
-        flex-direction: column;
+      .arch-box {
+        fill: var(--surf-card);
+        stroke: var(--line-mid);
+        stroke-width: 1;
       }
-      .arch-col--write {
-        align-items: flex-start;
+      .arch-box-accent {
+        stroke: var(--accent);
+        stroke-width: 2;
       }
-      .arch-col--read {
-        align-items: flex-end;
-      }
-      .path-stack {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-      .path-kicker {
+      .arch-t {
+        fill: var(--ink);
         font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: 13px;
+        text-anchor: middle;
+      }
+      .arch-t-accent {
+        fill: var(--accent);
+      }
+      .arch-req {
+        fill: var(--accent);
+        font-family: var(--font-mono);
+        font-weight: 700;
         font-size: 11px;
+        text-anchor: middle;
+      }
+      .arch-sub {
+        fill: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        text-anchor: middle;
+      }
+      .arch-line {
+        fill: none;
+        stroke: var(--line-strong);
+        stroke-width: 1.5;
+      }
+      .arch-lbl {
+        fill: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 9px;
         letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
-      .arch-col--read .path-kicker {
-        text-align: right;
-      }
-      .arch-storage {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        width: 100%;
-        max-width: 760px;
-      }
-      .node-shared {
-        border-color: var(--line-strong);
-        background: var(--surf-card);
+        text-anchor: middle;
       }
 
       /* quick start */
@@ -1301,12 +1309,16 @@ const soon = [
       }
 
       /* responsive */
+      /* Stack the console/graph earlier than the global breakpoint so the wide
+         result tables never get squeezed while side-by-side. */
+      @media (max-width: 1080px) {
+        .demo-panels {
+          grid-template-columns: 1fr;
+        }
+      }
       @media (max-width: 900px) {
         .title {
           font-size: 44px;
-        }
-        .demo-panels {
-          grid-template-columns: 1fr;
         }
         /* No tabs on mobile: show supported buttons as-is, then list the
            upcoming queries as plain descriptions (no buttons). */
@@ -1340,10 +1352,6 @@ const soon = [
         .features,
         .steps {
           grid-template-columns: 1fr;
-        }
-        .arch-paths {
-          grid-template-columns: 1fr;
-          gap: 8px;
         }
       }
       @media (max-width: 560px) {
@@ -1402,25 +1410,17 @@ const soon = [
       const consoleEl = document.querySelector('[data-console]');
       if (consoleEl) {
         const linesEl = consoleEl.querySelector('[data-lines]');
+        const initialLinesHTML = linesEl.innerHTML;
         const bodyEl = consoleEl.querySelector('.term-body');
         // Keep the newest output (and the banner scrolling off the top) in view.
         const scrollToEnd = () => {
           if (bodyEl) bodyEl.scrollTop = bodyEl.scrollHeight;
         };
-        const preset = [
-          { source: 'Alice', target: 'Phone', ts: 5 },
-          { source: 'Bob', target: 'Laptop', ts: 4 },
-          { source: 'Bob', target: 'Phone', ts: 2 },
-        ];
-        let edges = preset.slice();
-
         // Edge-state graph — the console drives it so a command's meaning is
         // visible: get highlights one edge, scan/count highlight a fan of them.
         const graphEl = document.querySelector('[data-graph]');
-        const NAME = { Alice: 'alice', Bob: 'bob', Phone: 'phone', Laptop: 'laptop' };
         const gEdges = graphEl ? [...graphEl.querySelectorAll('.gedge')] : [];
         const gNodes = graphEl ? [...graphEl.querySelectorAll('.gnode')] : [];
-        const edgeId = (e) => NAME[e.source] + '-' + NAME[e.target];
 
         // every edge label reads "likes" until count numbers the matched ones 1, 2, …
         const resetLabels = () => {
@@ -1431,11 +1431,6 @@ const soon = [
               t.classList.remove('num');
             }
           });
-        };
-        const clearGraph = () => {
-          gEdges.forEach((e) => e.classList.remove('on', 'dim'));
-          gNodes.forEach((n) => n.classList.remove('on', 'dim'));
-          resetLabels();
         };
         const focusGraph = (edgeIds, nodeIds) => {
           const es = new Set(edgeIds);
@@ -1470,7 +1465,7 @@ const soon = [
           if (withPrompt) {
             const p = document.createElement('span');
             p.className = 'prompt';
-            p.textContent = 'actionbase>';
+            p.textContent = 'actionbase(likes:likes)>';
             row.appendChild(p);
           }
           const span = document.createElement('span');
@@ -1481,77 +1476,67 @@ const soon = [
           scrollToEnd();
         };
 
-        const parseFlags = (tokens) => {
-          const f = {};
-          for (let i = 1; i < tokens.length; i++) {
-            const t = tokens[i];
-            if (t.slice(0, 2) === '--') {
-              const next = tokens[i + 1];
-              f[t.slice(2)] = next && next.slice(0, 2) !== '--' ? next : true;
-            }
-          }
-          return f;
+        // Output mirrors the real CLI for the three preset commands (fixed
+        // dataset), down to the request line, result table and timing.
+        const OUT = {
+          get: [
+            '  │ → GET /graph/v3/databases/likes/tables/likes/edges/get?source=Alice&target=Phone',
+            '  │ ← 200 OK {"edges":[{"version":1784793660730,"source":"Alice","targ...',
+            '  │',
+            '  │ The edge is found: [Alice -> Phone]',
+            '  │ |---------------|--------|--------|---------------------------|',
+            '  │ | VERSION       | SOURCE | TARGET | PROPERTIES                |',
+            '  │ |---------------|--------|--------|---------------------------|',
+            '  │ | 1784793660730 | Alice  | Phone  | created_at: 1784793660730 |',
+            '  │ |---------------|--------|--------|---------------------------|',
+            '  │ (Took 0.0824 seconds)',
+            '  │',
+          ],
+          scan: [
+            '  │ → GET /graph/v3/databases/likes/tables/likes/edges/scan/recent?direction=OUT&limit=25&start=Bob',
+            '  │ ← 200 OK {"edges":[{"version":1784793660730,"source":"Bob","target...',
+            '  │ The 2 edges found (offset: -, hasNext: false)',
+            '  │ |---|---------------|--------|--------|---------------------------|',
+            '  │ | # | VERSION       | SOURCE | TARGET | PROPERTIES                |',
+            '  │ |---|---------------|--------|--------|---------------------------|',
+            '  │ | 1 | 1784793660730 | Bob    | Laptop | created_at: 1784793660730 |',
+            '  │ | 2 | 1784793660730 | Bob    | Phone  | created_at: 1784793660730 |',
+            '  │ |---|---------------|--------|--------|---------------------------|',
+            '  │ (Took 0.0531 seconds)',
+            '  │',
+          ],
+          count: [
+            '  │ → GET /graph/v3/databases/likes/tables/likes/edges/counts?start=Phone&direction=IN',
+            '  │ ← 200 OK {"counts":[{"start":"Phone","direction":"IN","count":2,"c...',
+            '  │',
+            '  │ The count of 1 edges found',
+            '  │ |---|-------|-----------|-------|',
+            '  │ | # | START | DIRECTION | COUNT |',
+            '  │ |---|-------|-----------|-------|',
+            '  │ | 1 | Phone | IN        | 2     |',
+            '  │ |---|-------|-----------|-------|',
+            '  │ (Took 0.0477 seconds)',
+            '  │',
+          ],
         };
 
         const run = (raw) => {
-          raw = (raw || '').trim();
-          if (!raw) return;
-          const tokens = raw.split(/\s+/);
-          const cmd = tokens[0].toLowerCase();
-
-          if (cmd === 'clear') {
-            linesEl.replaceChildren();
-            return;
-          }
-
+          const cmd = (raw || '').trim().split(/\s+/)[0].toLowerCase();
+          if (!OUT[cmd]) return;
           addLine('cmd', raw, true);
-          const f = parseFlags(tokens);
-
+          OUT[cmd].forEach((t) => addLine('dim', t));
           if (cmd === 'get') {
-            const hit = edges.find((e) => e.source === f.source && e.target === f.target);
-            if (hit) {
-              addLine('ok', '→ 1 edge');
-              addLine('out', '  ' + hit.source + ' --likes--> ' + hit.target + '   (exists)');
-              focusGraph([edgeId(hit)], [NAME[f.source], NAME[f.target]]);
-            } else {
-              addLine('dim', '→ 0 edges · not found');
-              focusGraph([], []);
-            }
-          } else if (cmd === 'count') {
-            const dir = String(f.direction || 'OUT').toUpperCase();
-            const m = edges.filter((e) => (dir === 'IN' ? e.target === f.start : e.source === f.start));
-            addLine('ok', '→ ' + m.length);
-            const startId = NAME[f.start];
-            const ids = m.map(edgeId);
-            focusGraph(ids, [startId, ...m.map((e) => (dir === 'IN' ? NAME[e.source] : NAME[e.target]))]);
-            numberEdges(ids);
+            focusGraph(['alice-phone'], ['alice', 'phone']);
           } else if (cmd === 'scan') {
-            const dir = String(f.direction || 'OUT').toUpperCase();
-            const m = edges
-              .filter((e) => (dir === 'IN' ? e.target === f.start : e.source === f.start))
-              .sort((a, b) => b.ts - a.ts);
-            addLine('ok', '→ ' + m.length + ' edge' + (m.length === 1 ? '' : 's') + ' · index recent');
-            m.forEach((e) => addLine('out', '  ' + e.source + ' --likes--> ' + e.target));
-            if (!m.length) addLine('dim', '  (none)');
-            focusGraph(
-              m.map(edgeId),
-              [NAME[f.start], ...m.map((e) => (dir === 'IN' ? NAME[e.source] : NAME[e.target]))],
-            );
-          } else if (cmd === 'load') {
-            edges = preset.slice();
-            addLine('ok', "→ preset 'likes' loaded · 3 edges");
-            clearGraph();
-          } else if (cmd === 'help') {
-            addLine('dim', 'get   --source <n> --target <n>');
-            addLine('dim', 'scan  --index recent --start <n> --direction OUT|IN');
-            addLine('dim', 'count --start <n> --direction OUT|IN');
-          } else {
-            addLine('err', '? unknown command — try: get | scan | count | help');
+            focusGraph(['bob-phone', 'bob-laptop'], ['bob', 'phone', 'laptop']);
+          } else if (cmd === 'count') {
+            focusGraph(['alice-phone', 'bob-phone'], ['alice', 'bob', 'phone']);
+            numberEdges(['alice-phone', 'bob-phone']);
           }
         };
 
-        // Any step runs on click — no forced order, no reset. The clicked
-        // button takes an active state; TBD teasers stay disabled via markup.
+        // Any step runs on click — no forced order. The clicked button takes an
+        // active state; TBD teasers stay disabled via markup.
         const stepButtons = [...document.querySelectorAll('[data-step]')];
         stepButtons.forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -1559,6 +1544,17 @@ const soon = [
             btn.classList.add('active');
             run(btn.getAttribute('data-cmd'));
           });
+        });
+
+        // Reset: restore the opening console output and clear the graph state.
+        const resetButton = document.querySelector('[data-reset]');
+        resetButton?.addEventListener('click', () => {
+          linesEl.innerHTML = initialLinesHTML;
+          gEdges.forEach((e) => e.classList.remove('on', 'dim'));
+          gNodes.forEach((n) => n.classList.remove('on', 'dim'));
+          resetLabels();
+          stepButtons.forEach((b) => b.classList.remove('active'));
+          scrollToEnd();
         });
         // Pin to the bottom now, on the next frame, and again once the tiny
         // 6.5px banner webfont swaps in (which changes the scroll height).
