@@ -157,6 +157,7 @@ class GraphConfiguration {
     fun provideAggregationService(
         queryService: QueryService,
         mutationService: MutationService,
+        queueService: QueueService,
         engine: V2BackedEngine,
-    ): AggregationService = AggregationService(queryService, mutationService, engine)
+    ): AggregationService = AggregationService(queryService, mutationService, queueService, engine)
 }

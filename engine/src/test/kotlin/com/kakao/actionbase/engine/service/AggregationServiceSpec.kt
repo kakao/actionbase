@@ -20,6 +20,10 @@ import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.engine.queue.EnqueueRequest
+import com.kakao.actionbase.engine.queue.EnqueueResponse
+import com.kakao.actionbase.engine.queue.EnqueueResult
+import com.kakao.actionbase.engine.queue.QueueService
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -42,8 +46,9 @@ class AggregationServiceSpec :
 
             val queryService = mockk<QueryService>()
             val mutationService = mockk<MutationService>()
+            val queueService = mockk<QueueService>()
             val engine = mockk<AggregationEngine>()
-            val service = AggregationService(queryService, mutationService, engine)
+            val service = AggregationService(queryService, mutationService, queueService, engine)
 
             // --- getAggregations ---
 
@@ -392,18 +397,14 @@ class AggregationServiceSpec :
                     mutationService.mutate("commerce", "rank_tbl", capture(rankMutations), any(), any(), any(), any())
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
-                val refreshMutations = slot<List<MutationItem>>()
+                val refreshRequest = slot<EnqueueRequest>()
                 every {
-                    mutationService.mutate(
-                        AggregationConstants.TOPK_DATABASE,
-                        AggregationConstants.TOPK_REFRESH_TABLE,
-                        capture(refreshMutations),
-                        any(),
-                        any(),
-                        any(),
-                        any(),
+                    queueService.enqueue(
+                        AggregationConstants.Topk.DATABASE,
+                        AggregationConstants.Topk.REFRESH_TABLE,
+                        capture(refreshRequest),
                     )
-                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+                } returns Mono.just(enqueueResponse(status = "CREATED"))
 
                 val before = System.currentTimeMillis()
                 StepVerifier
@@ -421,9 +422,9 @@ class AggregationServiceSpec :
                     .single()
                     .edge.target shouldBe "item1"
 
-                val refreshEdge = refreshMutations.captured.single().edge
-                refreshEdge.source shouldBe
-                    AggregationConstants.refreshSource(
+                val message = refreshRequest.captured.messages.single()
+                message.key shouldBe
+                    AggregationConstants.Topk.refreshKey(
                         database = "commerce",
                         table = "purchases",
                         topk = "top_purchased",
@@ -431,23 +432,26 @@ class AggregationServiceSpec :
                         topkDimensionValue = "item1",
                         dimensionValues = emptyList(),
                     )
-                val refreshAt = refreshEdge.properties["refreshAt"] as Long
+                val refreshAt = message.seq
                 refreshAt shouldBeGreaterThanOrEqual (before + refreshAfter)
                 refreshAt shouldBeLessThanOrEqual (after + refreshAfter)
-                refreshEdge.target shouldBe refreshAt.toString()
-                refreshEdge.properties["database"] shouldBe "commerce"
-                refreshEdge.properties["table"] shouldBe "purchases"
-                refreshEdge.properties["topk"] shouldBe "top_purchased"
-                refreshEdge.properties["source"] shouldBe "user1"
-                refreshEdge.properties["target"] shouldBe "item1"
-                refreshEdge.properties["direction"] shouldBe "OUT"
-                refreshEdge.properties["entity"] shouldBe "user1"
-                refreshEdge.properties["topkDimensionValue"] shouldBe "item1"
-                refreshEdge.properties["dimensionValues"] shouldBe ""
+
+                val refresh = message.value as TopkRefreshMessage
+                refresh.type shouldBe AggregationType.TOPK
+                refresh.item.database shouldBe "commerce"
+                refresh.item.table shouldBe "purchases"
+                refresh.item.topk shouldBe "top_purchased"
+                refresh.item.source shouldBe "user1"
+                refresh.item.target shouldBe "item1"
+                refresh.item.direction shouldBe "OUT"
+                refresh.item.entity shouldBe "user1"
+                refresh.item.topkDimensionValue shouldBe "item1"
+                refresh.item.dimensionValues shouldBe ""
+                refresh.item.refreshAt shouldBe refreshAt
             }
 
             "aggregate skips the refresh write when refreshAfterMillis is not positive" {
-                clearMocks(mutationService)
+                clearMocks(mutationService, queueService)
                 val topk = topkConfig(name = "t1", rank = "db.rank_tbl")
                 val group = groupWithTopks(name = "g1", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
@@ -466,20 +470,16 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 verify(exactly = 0) {
-                    mutationService.mutate(
-                        AggregationConstants.TOPK_DATABASE,
-                        AggregationConstants.TOPK_REFRESH_TABLE,
-                        any(),
-                        any(),
-                        any(),
-                        any(),
+                    queueService.enqueue(
+                        AggregationConstants.Topk.DATABASE,
+                        AggregationConstants.Topk.REFRESH_TABLE,
                         any(),
                     )
                 }
             }
 
             "aggregate skips the refresh write when the rank mutate reports ERROR" {
-                clearMocks(mutationService)
+                clearMocks(mutationService, queueService)
                 val topk =
                     Topk(
                         topk = "t1",
@@ -505,19 +505,15 @@ class AggregationServiceSpec :
                     .verifyComplete()
 
                 verify(exactly = 0) {
-                    mutationService.mutate(
-                        AggregationConstants.TOPK_DATABASE,
-                        AggregationConstants.TOPK_REFRESH_TABLE,
-                        any(),
-                        any(),
-                        any(),
-                        any(),
+                    queueService.enqueue(
+                        AggregationConstants.Topk.DATABASE,
+                        AggregationConstants.Topk.REFRESH_TABLE,
                         any(),
                     )
                 }
             }
 
-            "aggregate reports ERROR when the refresh mutate reports ERROR" {
+            "aggregate reports ERROR when the refresh enqueue reports ERROR" {
                 val topk =
                     Topk(
                         topk = "t1",
@@ -538,16 +534,12 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 every {
-                    mutationService.mutate(
-                        AggregationConstants.TOPK_DATABASE,
-                        AggregationConstants.TOPK_REFRESH_TABLE,
-                        any(),
-                        any(),
-                        any(),
-                        any(),
+                    queueService.enqueue(
+                        AggregationConstants.Topk.DATABASE,
+                        AggregationConstants.Topk.REFRESH_TABLE,
                         any(),
                     )
-                } returns Mono.just(listOf(mutationResult(status = "ERROR")))
+                } returns Mono.just(enqueueResponse(status = "ERROR"))
 
                 StepVerifier
                     .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
@@ -646,3 +638,9 @@ private fun item(
 private fun aggPayload(count: Int): DataFrameEdgeAggPayload = DataFrameEdgeAggPayload(groups = emptyList(), count = count, context = emptyMap())
 
 private fun mutationResult(status: String): MutationResult = MutationResult.of(key = MutationKey.SourceTarget("s", "t"), count = 1, status = status)
+
+private fun enqueueResponse(status: String): EnqueueResponse =
+    EnqueueResponse(
+        accepted = if (status == "CREATED") 1 else 0,
+        results = listOf(EnqueueResult(partition = 0, id = "01", status = status)),
+    )

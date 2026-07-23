@@ -17,6 +17,9 @@ import com.kakao.actionbase.core.metadata.common.ModelSchema
 import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.state.EventType
 import com.kakao.actionbase.engine.AggregationEngine
+import com.kakao.actionbase.engine.queue.EnqueueMessage
+import com.kakao.actionbase.engine.queue.EnqueueRequest
+import com.kakao.actionbase.engine.queue.QueueService
 
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -24,6 +27,7 @@ import reactor.core.publisher.Mono
 class AggregationService(
     private val queryService: QueryService,
     private val mutationService: MutationService,
+    private val queueService: QueueService,
     private val engine: AggregationEngine,
 ) {
     fun getAggregations(type: AggregationType? = null): List<QualifiedAggregations> = engine.getListWithAggregations(type)
@@ -135,7 +139,7 @@ class AggregationService(
         // The entity whose edges are aggregated: IN ranks by target, OUT by source.
         val directedSource = if (direction == Direction.IN) target else source
         // Per-entity stores that entity; global collapses every entity into a single sentinel row.
-        val entity = if (topk.entity == AggregationConstants.GLOBAL_ENTITY) AggregationConstants.GLOBAL_ENTITY else directedSource
+        val entity = if (topk.entity == AggregationConstants.Topk.GLOBAL_ENTITY) AggregationConstants.Topk.GLOBAL_ENTITY else directedSource
         val topkDimensionValue = resolveField(topk.dimension, source, target, properties)
         val dimensionValues =
             group.fields
@@ -165,7 +169,7 @@ class AggregationService(
                                     edge =
                                         Edge(
                                             version = version,
-                                            source = AggregationConstants.rankSource(topk = topk.topk, entity = entity, dimensionValues = dimensionValues),
+                                            source = AggregationConstants.Topk.rankSource(topk = topk.topk, entity = entity, dimensionValues = dimensionValues),
                                             target = topkDimensionValue,
                                             properties = mapOf("metric" to metric),
                                         ),
@@ -179,47 +183,43 @@ class AggregationService(
 
                         val refreshAt = version + topk.refreshAfterMillis
 
-                        mutationService
-                            .mutate(
-                                database = AggregationConstants.TOPK_DATABASE,
-                                alias = AggregationConstants.TOPK_REFRESH_TABLE,
-                                unresolvedEvents =
-                                    listOf(
-                                        MutationItem(
-                                            type = EventType.INSERT,
-                                            edge =
-                                                Edge(
-                                                    version = System.currentTimeMillis(),
-                                                    source =
-                                                        AggregationConstants.refreshSource(
-                                                            database = database,
-                                                            table = table,
-                                                            topk = topk.topk,
-                                                            entity = entity,
-                                                            topkDimensionValue = topkDimensionValue,
-                                                            dimensionValues = dimensionValues,
-                                                        ),
-                                                    target = refreshAt.toString(),
-                                                    properties =
-                                                        mapOf(
-                                                            "refreshAt" to refreshAt,
-                                                            "database" to database,
-                                                            "table" to table,
-                                                            "topk" to topk.topk,
-                                                            "source" to source,
-                                                            "target" to target,
-                                                            "direction" to direction.name,
-                                                            "ranges" to ranges,
-                                                            "entity" to entity,
-                                                            "topkDimensionValue" to topkDimensionValue,
-                                                            "dimensionValues" to dimensionValues.joinToString("|"),
-                                                        ),
-                                                ),
-                                        ),
+                        val message =
+                            EnqueueMessage(
+                                key =
+                                    AggregationConstants.Topk.refreshKey(
+                                        database = database,
+                                        table = table,
+                                        topk = topk.topk,
+                                        entity = entity,
+                                        topkDimensionValue = topkDimensionValue,
+                                        dimensionValues = dimensionValues,
                                     ),
+                                seq = refreshAt,
+                                value =
+                                    TopkRefreshMessage.of(
+                                        type = AggregationType.TOPK,
+                                        database = database,
+                                        table = table,
+                                        topk = topk.topk,
+                                        source = source,
+                                        target = target,
+                                        direction = direction.name,
+                                        ranges = ranges ?: "",
+                                        entity = entity,
+                                        topkDimensionValue = topkDimensionValue,
+                                        dimensionValues = dimensionValues.joinToString("|"),
+                                        refreshAt = refreshAt,
+                                    ),
+                            )
+
+                        queueService
+                            .enqueue(
+                                namespace = AggregationConstants.Topk.DATABASE,
+                                queue = AggregationConstants.Topk.REFRESH_TABLE,
+                                request = EnqueueRequest(messages = listOf(message)),
                             ).map { refreshResults ->
                                 base.copy(
-                                    status = if (refreshResults.any { it.status == "ERROR" }) "ERROR" else "SUCCESS",
+                                    status = if (refreshResults.results.any { it.status == "ERROR" }) "ERROR" else "SUCCESS",
                                 )
                             }
                     }
@@ -313,6 +313,59 @@ data class EdgeAggregationEvent(
                 direction = group.directionType,
                 group = group,
                 aggregations = group.aggregations,
+            )
+    }
+}
+
+data class TopkRefreshMessage(
+    val type: AggregationType,
+    val item: RefreshItem,
+) {
+    data class RefreshItem(
+        val database: String,
+        val table: String,
+        val topk: String,
+        val source: String,
+        val target: String,
+        val direction: String,
+        val ranges: String,
+        val entity: String,
+        val topkDimensionValue: String,
+        val dimensionValues: String,
+        val refreshAt: Long,
+    )
+
+    companion object {
+        fun of(
+            type: AggregationType,
+            database: String,
+            table: String,
+            topk: String,
+            source: String,
+            target: String,
+            direction: String,
+            ranges: String,
+            entity: String,
+            topkDimensionValue: String,
+            dimensionValues: String,
+            refreshAt: Long,
+        ): TopkRefreshMessage =
+            TopkRefreshMessage(
+                type,
+                item =
+                    RefreshItem(
+                        database = database,
+                        table = table,
+                        topk = topk,
+                        source = source,
+                        target = target,
+                        direction = direction,
+                        ranges = ranges,
+                        entity = entity,
+                        topkDimensionValue = topkDimensionValue,
+                        dimensionValues = dimensionValues,
+                        refreshAt = refreshAt,
+                    ),
             )
     }
 }
