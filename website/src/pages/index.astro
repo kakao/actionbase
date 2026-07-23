@@ -146,8 +146,8 @@ const presets = [
       <!-- nav -->
       <nav class="nav">
         <a class="brand" href="/">
-          <img class="brand-logo brand-logo-light" src={logoLight} alt="Actionbase" width="109" height="26" />
-          <img class="brand-logo brand-logo-dark" src={logoDark} alt="Actionbase" width="109" height="26" />
+          <img class="brand-logo brand-logo-light" src={logoLight} alt="Actionbase" width="171" height="26" />
+          <img class="brand-logo brand-logo-dark" src={logoDark} alt="Actionbase" width="171" height="26" />
         </a>
         <div class="nav-links">
           <a href={repo} class="gh-link">GitHub <span class="gh-stars" hidden>★ <span data-gh-count></span></span></a>
@@ -157,53 +157,118 @@ const presets = [
         </div>
       </nav>
 
-      <!-- hero -->
+      <!-- hero: copy | console  /  graph | run buttons -->
       <header class="hero">
-        <div class="hero-copy">
-          <h1 class="title">One database for follows, likes, <span class="accent">and related items</span></h1>
-          <p class="lede">
-            Pre-computed at write time, served in real-time. Reads become simple lookups — no read-time
-            aggregation.
-          </p>
-          <div class="cta-row">
-            <a class="btn btn-primary" href="/introduction/">Get started</a>
-            <a class="btn btn-outline" href={repo}>View on GitHub</a>
+        <div class="hero-grid">
+          <div class="hero-copy cell-copy">
+            <h1 class="title">
+              Precomputed at write time, served as <span class="accent">simple lookups</span>
+            </h1>
+            <p class="lede">
+              One database for user–user (follows), user–item (likes), and item–item (related
+              items) interactions.
+            </p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="/introduction/">Get started</a>
+              <a class="btn btn-outline" href={repo}>View on GitHub</a>
+            </div>
           </div>
-        </div>
 
-        <!-- live console -->
-        <figure class="console">
-          <div class="glass" data-console>
-            <div class="term">
-              <div class="term-bar">
-                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-                <span class="term-title">actionbase cli</span>
-              </div>
-              <div class="term-body">
-                <pre class="banner" set:html={banner}></pre>
-                <div data-lines>
-                  <div class="line"><span class="l l-sys">actionbase standalone · server :8080 · CLI ready</span></div>
-                  <div class="line"><span class="l l-sys">preset 'likes' loaded — 3 edges</span></div>
-                  <div class="line"><span class="l l-sys">Alice → Phone    Bob → Laptop    Bob → Phone</span></div>
-                  <div class="line"><span class="l l-dim">run the steps below, in order ↓</span></div>
+          <!-- live console -->
+          <figure class="console cell-term">
+            <div class="panel" data-console>
+              <div class="term">
+                <div class="term-bar">
+                  <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                  <span class="term-title">actionbase cli</span>
                 </div>
-                <div class="input-row">
-                  <span class="prompt">actionbase&gt;</span>
-                  <span class="term-cursor" aria-hidden="true"></span>
-                  <span class="term-hint">run a step below ↓</span>
+                <div class="term-body">
+                  <pre class="banner" set:html={banner}></pre>
+                  <div data-lines>
+                    <div class="line"><span class="l l-sys">actionbase standalone · server :8080 · CLI ready</span></div>
+                    <div class="line"><span class="l l-sys">preset 'likes' loaded — 3 edges</span></div>
+                    <div class="line"><span class="l l-sys">Alice → Phone    Bob → Laptop    Bob → Phone</span></div>
+                    <div class="line"><span class="l l-dim">run a step → watch the graph</span></div>
+                  </div>
+                  <div class="input-row">
+                    <span class="prompt">actionbase&gt;</span>
+                    <span class="term-cursor" aria-hidden="true"></span>
+                    <span class="term-hint">run a step →</span>
+                  </div>
                 </div>
               </div>
             </div>
+          </figure>
+
+          <!-- edge state graph (reacts to the console) -->
+          <figure class="graph cell-graph panel">
+            <figcaption class="graph-cap">Edge state · arrows denote <span class="accent">likes</span></figcaption>
+            <svg class="graph-svg" viewBox="0 0 340 250" role="img" aria-label="Edge state graph" data-graph>
+              <defs>
+                <marker
+                  id="ab-arrow"
+                  viewBox="0 0 10 10"
+                  refX="8.5"
+                  refY="5"
+                  markerWidth="7"
+                  markerHeight="7"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M0,0 L10,5 L0,10 z" fill="context-stroke" />
+                </marker>
+              </defs>
+              <!-- edges -->
+              <g class="gedge" data-edge="alice-phone" data-src="alice" data-dst="phone">
+                <line x1="118" y1="72" x2="222" y2="66" marker-end="url(#ab-arrow)" />
+              </g>
+              <g class="gedge" data-edge="bob-phone" data-src="bob" data-dst="phone">
+                <line x1="118" y1="176" x2="222" y2="72" marker-end="url(#ab-arrow)" />
+              </g>
+              <g class="gedge" data-edge="bob-laptop" data-src="bob" data-dst="laptop">
+                <line x1="118" y1="180" x2="222" y2="184" marker-end="url(#ab-arrow)" />
+              </g>
+              <!-- nodes -->
+              <g class="gnode gnode-user" data-node="alice">
+                <rect x="24" y="52" width="94" height="40" rx="9" />
+                <text class="gn-name" x="71" y="70">Alice</text>
+                <text class="gn-type" x="71" y="83">user</text>
+              </g>
+              <g class="gnode gnode-user" data-node="bob">
+                <rect x="24" y="156" width="94" height="40" rx="9" />
+                <text class="gn-name" x="71" y="174">Bob</text>
+                <text class="gn-type" x="71" y="187">user</text>
+              </g>
+              <g class="gnode gnode-item" data-node="phone">
+                <rect x="222" y="46" width="94" height="40" rx="9" />
+                <text class="gn-name" x="269" y="64">Phone</text>
+                <text class="gn-type" x="269" y="77">item</text>
+              </g>
+              <g class="gnode gnode-item" data-node="laptop">
+                <rect x="222" y="164" width="94" height="40" rx="9" />
+                <text class="gn-name" x="269" y="182">Laptop</text>
+                <text class="gn-type" x="269" y="195">item</text>
+              </g>
+              <!-- count badge (shown while count runs) -->
+              <g class="gbadge" data-badge hidden>
+                <circle r="13" data-badge-c />
+                <text data-badge-t>0</text>
+              </g>
+            </svg>
+          </figure>
+
+          <!-- run buttons: the console's step controls -->
+          <div class="cell-btns panel">
+            <span class="run-label">Run a step — watch the edges</span>
+            <div class="presets">
+              {presets.map((c, i) => (
+                <button type="button" class="preset" data-step={i} data-cmd={c}>
+                  {c}
+                </button>
+              ))}
+              <button type="button" class="preset preset-reset" data-reset hidden>↺ Reset</button>
+            </div>
           </div>
-          <div class="presets">
-            {presets.map((c, i) => (
-              <button type="button" class="preset" data-step={i} data-cmd={c}>
-                {c}
-              </button>
-            ))}
-            <button type="button" class="preset preset-reset" data-reset hidden>↺ Reset</button>
-          </div>
-        </figure>
+        </div>
       </header>
 
       <!-- trust band -->
@@ -220,11 +285,10 @@ const presets = [
         </div>
       </section>
 
-      <!-- under the hood -->
+      <!-- features -->
       <section class="section">
         <div class="section-head">
-          <h2>Under the hood</h2>
-          <span class="kicker">Writes do the work</span>
+          <h2>Features</h2>
         </div>
         <div class="features">
           {
@@ -349,7 +413,6 @@ const presets = [
         --term-prompt: #a9aaf5;
         --term-banner: #d9a94e;
         --term-dot: #33354a;
-        --glass: linear-gradient(155deg, #7c7ee8, #3e40a8);
         --out-ok: #7fd1b0;
         --out-dim: #9092ab;
         --out-err: #e0a06a;
@@ -500,11 +563,42 @@ const presets = [
       .hero {
         max-width: var(--maxw);
         margin: 0 auto;
-        padding: 56px var(--gutter) 30px;
+        padding: 48px var(--gutter) 40px;
+      }
+      /* 2×2 hero: copy | console  /  graph | run buttons */
+      .hero-grid {
         display: grid;
         grid-template-columns: 1.05fr 1fr;
-        gap: 60px;
-        align-items: center;
+        grid-template-areas:
+          'copy term'
+          'graph btns';
+        column-gap: 44px;
+        row-gap: 26px;
+        align-items: start;
+      }
+      .cell-copy {
+        grid-area: copy;
+        align-self: center;
+      }
+      .cell-term {
+        grid-area: term;
+      }
+      .cell-graph {
+        grid-area: graph;
+      }
+      .cell-btns {
+        grid-area: btns;
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .run-label {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
       }
       .title {
         font-family: var(--font-head);
@@ -552,25 +646,103 @@ const presets = [
         color: var(--ink);
         border-color: var(--ink);
       }
+      /* edge state graph */
+      .graph {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .graph-cap {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+      .graph-svg {
+        width: 100%;
+        height: auto;
+        margin: auto 0;
+        max-height: 320px;
+      }
+      .gnode rect {
+        fill: var(--surf-card);
+        stroke: var(--line-mid);
+        stroke-width: 1.2;
+        transition:
+          fill 0.25s,
+          stroke 0.25s,
+          opacity 0.25s;
+      }
+      .gnode-user rect {
+        stroke: var(--line-24);
+      }
+      .gn-name {
+        fill: var(--ink);
+        font-family: var(--font-head);
+        font-weight: 700;
+        font-size: 14px;
+        text-anchor: middle;
+        transition: fill 0.25s;
+      }
+      .gn-type {
+        fill: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 7.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        text-anchor: middle;
+      }
+      .gedge line {
+        stroke: var(--line-strong);
+        stroke-width: 1.6;
+        transition:
+          stroke 0.25s,
+          stroke-width 0.25s,
+          opacity 0.25s;
+      }
+      /* reactive states, toggled from the console */
+      .gnode.dim,
+      .gedge.dim {
+        opacity: 0.26;
+      }
+      .gedge.on line {
+        stroke: var(--accent);
+        stroke-width: 2.6;
+      }
+      .gnode.on rect {
+        stroke: var(--accent);
+        stroke-width: 2;
+        fill: var(--accent-fill);
+      }
+      .gnode.on .gn-name {
+        fill: var(--accent);
+      }
+      .gbadge[hidden] {
+        display: none;
+      }
+      .gbadge circle {
+        fill: var(--accent);
+      }
+      .gbadge text {
+        fill: #fff;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 700;
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
       /* console */
       .console {
         margin: 0;
       }
-      .glass {
-        /* Thinner, muted frame so it frames the terminal without shouting:
-           slimmer padding, a desaturated indigo wash, fainter grid + shadow. */
-        padding: 6px;
-        background:
-          linear-gradient(155deg, #4c4e86, #2e3068),
-          linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-        background-size:
-          100% 100%,
-          26px 26px,
-          26px 26px;
-        box-shadow:
-          0 22px 46px -32px rgba(35, 37, 75, 0.4),
-          inset 0 1px 2px rgba(255, 255, 255, 0.22);
+      /* Shared frame for the three demo cells (console, graph, controls) so
+         they read as one set; the dark console just sits inside its panel. */
+      .panel {
+        padding: 20px;
+        background: var(--surf-soft);
+        border: 1px solid var(--line-soft);
       }
       .term {
         background: var(--term-bg);
@@ -678,15 +850,15 @@ const presets = [
       }
       .presets {
         display: flex;
-        flex-wrap: wrap;
-        gap: 7px;
-        margin-top: 14px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
       }
       .preset {
         text-align: left;
-        background: var(--surf-soft);
+        background: var(--surf-card);
         border: 1px solid var(--line-mid);
-        padding: 6px 10px;
+        padding: 8px 11px;
         font-family: var(--font-mono);
         font-size: 11px;
         color: var(--body);
@@ -1017,12 +1189,13 @@ const presets = [
 
       /* responsive */
       @media (max-width: 900px) {
-        .hero {
-          grid-template-columns: 1fr;
-          gap: 40px;
-        }
         .title {
           font-size: 44px;
+        }
+        .hero-grid {
+          grid-template-columns: 1fr;
+          grid-template-areas: 'copy' 'term' 'graph' 'btns';
+          row-gap: 22px;
         }
         .features,
         .steps {
@@ -1101,6 +1274,49 @@ const presets = [
         ];
         let edges = preset.slice();
 
+        // Edge-state graph — the console drives it so a command's meaning is
+        // visible: get highlights one edge, scan/count highlight a fan of them.
+        const graphEl = document.querySelector('[data-graph]');
+        const NAME = { Alice: 'alice', Bob: 'bob', Phone: 'phone', Laptop: 'laptop' };
+        const NODE_CORNER = { alice: [118, 52], bob: [118, 156], phone: [316, 46], laptop: [316, 164] };
+        const gEdges = graphEl ? [...graphEl.querySelectorAll('.gedge')] : [];
+        const gNodes = graphEl ? [...graphEl.querySelectorAll('.gnode')] : [];
+        const gBadge = graphEl ? graphEl.querySelector('[data-badge]') : null;
+        const gBadgeC = graphEl ? graphEl.querySelector('[data-badge-c]') : null;
+        const gBadgeT = graphEl ? graphEl.querySelector('[data-badge-t]') : null;
+        const edgeId = (e) => NAME[e.source] + '-' + NAME[e.target];
+
+        const clearGraph = () => {
+          gEdges.forEach((e) => e.classList.remove('on', 'dim'));
+          gNodes.forEach((n) => n.classList.remove('on', 'dim'));
+          if (gBadge) gBadge.setAttribute('hidden', '');
+        };
+        const focusGraph = (edgeIds, nodeIds) => {
+          const es = new Set(edgeIds);
+          const ns = new Set(nodeIds);
+          gEdges.forEach((e) => {
+            const on = es.has(e.dataset.edge);
+            e.classList.toggle('on', on);
+            e.classList.toggle('dim', !on);
+          });
+          gNodes.forEach((n) => {
+            const on = ns.has(n.dataset.node);
+            n.classList.toggle('on', on);
+            n.classList.toggle('dim', !on);
+          });
+          if (gBadge) gBadge.setAttribute('hidden', '');
+        };
+        const showBadge = (nodeId, n) => {
+          if (!gBadge || !NODE_CORNER[nodeId]) return;
+          const [x, y] = NODE_CORNER[nodeId];
+          gBadgeC.setAttribute('cx', x);
+          gBadgeC.setAttribute('cy', y);
+          gBadgeT.setAttribute('x', x);
+          gBadgeT.setAttribute('y', y);
+          gBadgeT.textContent = String(n);
+          gBadge.removeAttribute('hidden');
+        };
+
         const addLine = (kind, text, withPrompt) => {
           const row = document.createElement('div');
           row.className = 'line';
@@ -1149,13 +1365,21 @@ const presets = [
             if (hit) {
               addLine('ok', '→ 1 edge');
               addLine('out', '  ' + hit.source + ' --likes--> ' + hit.target + '   (exists)');
+              focusGraph([edgeId(hit)], [NAME[f.source], NAME[f.target]]);
             } else {
               addLine('dim', '→ 0 edges · not found');
+              focusGraph([], []);
             }
           } else if (cmd === 'count') {
             const dir = String(f.direction || 'OUT').toUpperCase();
             const m = edges.filter((e) => (dir === 'IN' ? e.target === f.start : e.source === f.start));
             addLine('ok', '→ ' + m.length);
+            const startId = NAME[f.start];
+            focusGraph(
+              m.map(edgeId),
+              [startId, ...m.map((e) => (dir === 'IN' ? NAME[e.source] : NAME[e.target]))],
+            );
+            showBadge(startId, m.length);
           } else if (cmd === 'scan') {
             const dir = String(f.direction || 'OUT').toUpperCase();
             const m = edges
@@ -1164,9 +1388,14 @@ const presets = [
             addLine('ok', '→ ' + m.length + ' edge' + (m.length === 1 ? '' : 's') + ' · index recent');
             m.forEach((e) => addLine('out', '  ' + e.source + ' --likes--> ' + e.target));
             if (!m.length) addLine('dim', '  (none)');
+            focusGraph(
+              m.map(edgeId),
+              [NAME[f.start], ...m.map((e) => (dir === 'IN' ? NAME[e.source] : NAME[e.target]))],
+            );
           } else if (cmd === 'load') {
             edges = preset.slice();
             addLine('ok', "→ preset 'likes' loaded · 3 edges");
+            clearGraph();
           } else if (cmd === 'help') {
             addLine('dim', 'get   --source <n> --target <n>');
             addLine('dim', 'scan  --index recent --start <n> --direction OUT|IN');
@@ -1178,13 +1407,13 @@ const presets = [
 
         // Guided tour: the three presets unlock one at a time, in order; a reset
         // appears once the tour has started and returns the console to step one.
-        const stepButtons = [...consoleEl.parentElement.querySelectorAll('[data-step]')];
-        const resetButton = consoleEl.parentElement.querySelector('[data-reset]');
+        const stepButtons = [...document.querySelectorAll('[data-step]')];
+        const resetButton = document.querySelector('[data-reset]');
         const initialLines = [
           ['sys', 'actionbase standalone · server :8080 · CLI ready'],
           ['sys', "preset 'likes' loaded — 3 edges"],
           ['sys', 'Alice → Phone    Bob → Laptop    Bob → Phone'],
-          ['dim', 'run the steps below, in order ↓'],
+          ['dim', 'run a step → watch the graph'],
         ];
         let step = 0;
 
@@ -1208,6 +1437,7 @@ const presets = [
           edges = preset.slice();
           linesEl.replaceChildren();
           initialLines.forEach(([k, t]) => addLine(k, t, false));
+          clearGraph();
           step = 0;
           syncButtons();
         });

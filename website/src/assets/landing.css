@@ -200,3 +200,10 @@ ul:has(.nav-external) {
 .sidebar-wip {
   opacity: 0.5;
 }
+
+/* Docs header logo: the shared wordmark SVG is wide/short, and Starlight renders
+   it at 40px by default — size it down to match the landing nav (26px). */
+.site-title img {
+  height: 26px !important;
+  width: auto !important;
+}
