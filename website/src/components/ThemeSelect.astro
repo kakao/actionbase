@@ -2,13 +2,18 @@
 // Round light/dark toggle, replacing Starlight's dropdown so the docs header
 // matches the landing. Reads/writes the shared `starlight-theme` key and the
 // `<html data-theme>` attribute, so the choice carries across both surfaces.
+// SVG icons (not ☾/☀ glyphs) so no font fallback can turn them into emoji;
+// they swap via CSS on html[data-theme].
+import { Moon, Sun } from '@lucide/astro';
 ---
 
 <button type="button" class="theme-toggle" aria-label="Toggle color theme" data-theme-toggle>
-  <span data-theme-icon aria-hidden="true">☾</span>
+  <Moon class="theme-icon-moon" size={16} aria-hidden="true" />
+  <Sun class="theme-icon-sun" size={16} aria-hidden="true" />
 </button>
 
 <style>
+  /* Match the landing nav toggle exactly: transparent fill, hairline ring. */
   .theme-toggle {
     display: inline-flex;
     align-items: center;
@@ -17,24 +22,21 @@
     height: 44px;
     border-radius: 999px;
     border: 1px solid var(--sl-color-hairline-light);
-    background: var(--sl-color-bg-nav);
+    background: transparent;
     color: var(--sl-color-gray-2);
     cursor: pointer;
-    font-size: 13px;
   }
   .theme-toggle:hover {
     border-color: var(--sl-color-gray-4);
+  }
+  :global(:root[data-theme='dark']) .theme-toggle :global(.theme-icon-moon),
+  :global(:root[data-theme='light']) .theme-toggle :global(.theme-icon-sun) {
+    display: none;
   }
 </style>
 
 <script>
   const root = document.documentElement;
-  const syncIcons = () => {
-    const dark = root.dataset.theme === 'dark';
-    document.querySelectorAll('[data-theme-icon]').forEach((el) => {
-      el.textContent = dark ? '☀' : '☾';
-    });
-  };
   document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -45,8 +47,6 @@
         /* ignore */
       }
       window.dispatchEvent(new Event('theme-change'));
-      syncIcons();
     });
   });
-  syncIcons();
 </script>

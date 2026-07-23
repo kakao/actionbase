@@ -1,7 +1,7 @@
 ---
 import logoLight from '../assets/logo-light.svg?url';
 import logoDark from '../assets/logo-dark.svg?url';
-import { Check, Copy, RotateCcw } from '@lucide/astro';
+import { Check, Copy, Moon, RotateCcw, Sun } from '@lucide/astro';
 
 // Standalone marketing landing. Kept outside Starlight's content collection so
 // the bespoke chrome (marginalia, hero console, architecture flow) has full
@@ -174,8 +174,8 @@ const soon = [
       <!-- nav -->
       <nav class="nav">
         <a class="brand" href="/">
-          <img class="brand-logo brand-logo-light" src={logoLight} alt="Actionbase" width="171" height="26" />
-          <img class="brand-logo brand-logo-dark" src={logoDark} alt="Actionbase" width="171" height="26" />
+          <img class="brand-logo brand-logo-light" src={logoLight} alt="Actionbase" width="170" height="26" />
+          <img class="brand-logo brand-logo-dark" src={logoDark} alt="Actionbase" width="170" height="26" />
         </a>
         <div class="nav-links">
           <a class="nav-text-link" href="/introduction/">Docs</a>
@@ -186,7 +186,8 @@ const soon = [
             </svg>
           </a>
           <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme">
-            <span data-theme-icon>☾</span>
+            <Moon class="theme-icon-moon" size={16} aria-hidden="true" />
+            <Sun class="theme-icon-sun" size={16} aria-hidden="true" />
           </button>
         </div>
       </nav>
@@ -699,6 +700,10 @@ const soon = [
       }
       .theme-toggle:hover {
         border-color: var(--line-strong);
+      }
+      :root[data-theme='dark'] .theme-icon-moon,
+      :root[data-theme='light'] .theme-icon-sun {
+        display: none;
       }
 
       /* hero */
@@ -1649,13 +1654,9 @@ const soon = [
     </style>
 
     <script>
-      // Theme toggle — writes Starlight's key so the preference carries into docs.
+      // Theme toggle — writes Starlight's key so the preference carries into
+      // docs. The moon/sun icons swap via CSS on html[data-theme].
       const root = document.documentElement;
-      const icon = document.querySelector('[data-theme-icon]');
-      const syncIcon = () => {
-        if (icon) icon.textContent = root.dataset.theme === 'dark' ? '☀' : '☾';
-      };
-      syncIcon();
       document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
         const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
         root.dataset.theme = next;
@@ -1664,7 +1665,6 @@ const soon = [
         } catch {
           /* ignore */
         }
-        syncIcon();
         window.dispatchEvent(new Event('theme-change'));
       });
 
