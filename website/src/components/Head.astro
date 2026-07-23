@@ -8,21 +8,17 @@ import StarlightHead from '@astrojs/starlight/components/Head.astro';
 
 <link rel="icon" class="js-site-favicon" href="/favicon.svg" type="image/svg+xml">
 
+<!-- Keep the favicon in sync with the effective theme (html[data-theme]),
+     which Starlight sets before paint and both theme toggles update. -->
 <script is:inline>
-  (function() {
+  (function () {
     const updateFavicon = () => {
-      const isDark =
-          localStorage.theme === 'dark' ||
-          (!localStorage.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
+      const isDark = document.documentElement.dataset.theme === 'dark';
       const favicon = document.querySelector('.js-site-favicon');
-      if (favicon) {
-        favicon.href = isDark ? '/favicon-dark.svg' : '/favicon.svg';
-      }
+      if (favicon) favicon.href = isDark ? '/favicon-dark.svg' : '/favicon.svg';
     };
-
     updateFavicon();
-
+    window.addEventListener('theme-change', updateFavicon);
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateFavicon);
   })();
 </script>

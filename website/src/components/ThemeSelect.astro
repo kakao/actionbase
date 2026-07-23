@@ -44,6 +44,7 @@
       } catch {
         /* ignore */
       }
+      window.dispatchEvent(new Event('theme-change'));
       syncIcons();
     });
   });
