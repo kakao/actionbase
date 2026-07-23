@@ -170,6 +170,7 @@ const soon = [
 
   <body>
     <div class="page">
+      <a class="skip-link" href="#main">Skip to content</a>
       <!-- nav -->
       <nav class="nav">
         <a class="brand" href="/">
@@ -190,6 +191,7 @@ const soon = [
         </div>
       </nav>
 
+      <main id="main">
       <!-- hero -->
       <header class="hero">
         <div class="hero-copy">
@@ -240,7 +242,7 @@ const soon = [
                 </div>
                 <div class="term-body">
                   <pre class="banner" set:html={banner}></pre>
-                  <div data-lines>
+                  <div data-lines role="log" aria-live="polite">
                     <div class="line"><span class="l l-sys">actionbase standalone · server :8080 · CLI ready</span></div>
                     <div class="line"><span class="l l-sys">preset 'likes' loaded — 3 edges</span></div>
                     <div class="line"><span class="l l-sys">Alice → Phone    Bob → Laptop    Bob → Phone</span></div>
@@ -296,11 +298,14 @@ const soon = [
         </div>
 
         <div class="demo-controls">
-          <div class="tabs" role="tablist" data-tabs>
-            <button type="button" class="tab active" role="tab" data-tab="supported" aria-selected="true">
+          <!-- Toggle buttons, not ARIA tabs: the full tabs pattern needs
+               tabpanel wiring + arrow-key navigation, which two buttons
+               don't earn. aria-pressed conveys the state instead. -->
+          <div class="tabs" data-tabs>
+            <button type="button" class="tab active" data-tab="supported" aria-pressed="true">
               Supported
             </button>
-            <button type="button" class="tab" role="tab" data-tab="soon" aria-selected="false">
+            <button type="button" class="tab" data-tab="soon" aria-pressed="false">
               Coming soon
             </button>
           </div>
@@ -465,6 +470,7 @@ const soon = [
           </div>
         </div>
       </section>
+      </main>
 
       <!-- footer -->
       <footer class="footer">
@@ -584,6 +590,26 @@ const soon = [
       }
       a:hover {
         color: var(--accent-text-hover);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent-text);
+        outline-offset: 2px;
+      }
+
+      .skip-link {
+        position: absolute;
+        top: -100px;
+        left: var(--gutter);
+        z-index: 10;
+        padding: 10px 16px;
+        background: var(--accent);
+        color: var(--btn-text);
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .skip-link:focus {
+        top: 8px;
+        color: var(--btn-text);
       }
       ::selection {
         background: var(--accent);
@@ -1018,6 +1044,12 @@ const soon = [
       @keyframes term-blink {
         50% {
           opacity: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .term-cursor,
+        .gedge.on line {
+          animation: none;
         }
       }
       .term-hint {
@@ -1804,7 +1836,7 @@ const soon = [
             tabs.forEach((t) => {
               const on = t === tab;
               t.classList.toggle('active', on);
-              t.setAttribute('aria-selected', String(on));
+              t.setAttribute('aria-pressed', String(on));
             });
             panels.forEach((p) => {
               p.hidden = p.dataset.panel !== name;
@@ -1814,6 +1846,7 @@ const soon = [
       }
 
       document.querySelectorAll('[data-copy-code]').forEach((button) => {
+        const idleLabel = button.getAttribute('aria-label') || 'Copy command';
         button.addEventListener('click', async () => {
           const code = button.getAttribute('data-copy-code') || '';
           try {
@@ -1822,7 +1855,7 @@ const soon = [
             button.setAttribute('aria-label', 'Copied');
             window.setTimeout(() => {
               button.classList.remove('copied');
-              button.setAttribute('aria-label', 'Copy command');
+              button.setAttribute('aria-label', idleLabel);
             }, 1600);
           } catch {
             button.setAttribute('aria-label', 'Copy failed');
