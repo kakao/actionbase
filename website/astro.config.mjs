@@ -6,7 +6,6 @@ import markdocGrammar from './grammars/markdoc.tmLanguage.json';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import mermaid from 'astro-mermaid';
 import { remarkHeadingId } from 'remark-custom-heading-id';
-import starlightUtils from '@lorenzo_lewis/starlight-utils';
 
 export const locales = {
   root: { label: 'English', lang: 'en' },
@@ -128,51 +127,27 @@ export default defineConfig({
       locales,
       sidebar: [
         {
-          label: 'Main',
-          items: [
-            {
-              label: 'Getting Started',
-              items: ['introduction', 'quick-start', 'faq', 'for-rdb-users', 'llms-txt'],
-            },
-            {
-              label: 'Design',
-              autogenerate: { directory: 'design' },
-            },
-            {
-              label: 'Guides',
-              autogenerate: { directory: 'guides' },
-            },
-            {
-              label: 'Provisioning',
-              autogenerate: { directory: 'provisioning' },
-            },
-            {
-              label: 'Operations',
-              autogenerate: { directory: 'operations' },
-            },
-            {
-              label: 'Internals',
-              autogenerate: { directory: 'internals' },
-            },
-            {
-              label: 'API References',
-              autogenerate: { directory: 'api-references' },
-            },
-            {
-              label: 'Project',
-              autogenerate: { directory: 'project' },
-            },
-            'community',
-          ],
+          label: 'Getting Started',
+          collapsed: true,
+          items: ['introduction', 'quick-start', 'faq', 'for-rdb-users', 'llms-txt'],
         },
+        { label: 'Design', collapsed: true, autogenerate: { directory: 'design' } },
+        { label: 'Guides', collapsed: true, autogenerate: { directory: 'guides' } },
+        { label: 'Provisioning', collapsed: true, autogenerate: { directory: 'provisioning' } },
+        { label: 'Operations', collapsed: true, autogenerate: { directory: 'operations' } },
+        { label: 'Internals', collapsed: true, autogenerate: { directory: 'internals' } },
+        { label: 'API References', collapsed: true, autogenerate: { directory: 'api-references' } },
+        { label: 'Project', collapsed: true, autogenerate: { directory: 'project' } },
+        'community',
         {
           label: 'Stories',
+          collapsed: true,
           items: [
             'stories',
-            { label: 'Use Cases', autogenerate: { directory: 'stories/use-cases' } },
-            { label: 'Engineering', autogenerate: { directory: 'stories/engineering' } },
-            { label: 'How We Survived', autogenerate: { directory: 'stories/how-we-survived' } },
-            { label: 'Vision', autogenerate: { directory: 'stories/vision' } },
+            { label: 'Use Cases', collapsed: true, autogenerate: { directory: 'stories/use-cases' } },
+            { label: 'Engineering', collapsed: true, autogenerate: { directory: 'stories/engineering' } },
+            { label: 'How We Survived', collapsed: true, autogenerate: { directory: 'stories/how-we-survived' } },
+            { label: 'Vision', collapsed: true, autogenerate: { directory: 'stories/vision' } },
           ],
         },
       ],
@@ -201,11 +176,6 @@ export default defineConfig({
         shiki: { langs: [markdocGrammar] },
       },
       plugins: [
-        starlightUtils({
-          multiSidebar: {
-            switcherStyle: 'horizontalList',
-          },
-        }),
         starlightLinksValidator({
           errorOnFallbackPages: false,
         }),

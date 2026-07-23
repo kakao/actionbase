@@ -32,6 +32,7 @@
   --sl-color-bg-sidebar: transparent;
 
   --ab-page-bg: linear-gradient(180deg, #141520 0%, #0e0f17 100%);
+  --ab-page-bg-solid: #141520;
   --ab-accent-fill: rgba(93, 95, 239, 0.18);
 
   --sl-font: 'Manrope', system-ui, -apple-system, sans-serif;
@@ -63,14 +64,27 @@
   --sl-color-bg-sidebar: transparent;
 
   --ab-page-bg: linear-gradient(180deg, #f3f5f8 0%, #e9ecf1 100%);
+  --ab-page-bg-solid: #f3f5f8;
   --ab-accent-fill: rgba(93, 95, 239, 0.12);
 }
 
 /* ---------- Base ---------- */
 
+/* Put the page gradient on <html> too so over-scroll (rubber-banding) never
+   flashes the white root background behind the fixed body background. */
+html,
 body {
   background: var(--ab-page-bg);
   background-attachment: fixed;
+  /* Kill the rubber-band bounce so dragging past the top/bottom never exposes
+     the white root canvas behind the content. */
+  overscroll-behavior: none;
+}
+
+/* Belt-and-braces: if any bounce still shows, it paints the root's solid
+   background-color (never the fixed gradient image), so keep it non-white. */
+html {
+  background-color: var(--ab-page-bg-solid);
 }
 
 :is(h1, h2, h3, h4, h5, h6),
@@ -82,13 +96,16 @@ body {
 /* ---------- Header (sticky, translucent, blurred) ---------- */
 
 .header {
-  /* match the page background so the header and body read as one surface */
-  background: var(--sl-color-bg);
+  /* Share the page's fixed background gradient so the header and body read as
+     one continuous surface (the body uses --ab-page-bg, not a flat colour). */
+  background: var(--ab-page-bg);
+  background-attachment: fixed;
 }
 
 /* ---------- Sidebar ---------- */
 
-.sidebar-content .group-label .large {
+.sidebar-content .group-label .large,
+.sidebar-content ul.top-level > li > a.large {
   font-family: var(--sl-font-mono);
   font-size: 0.6875rem;
   font-weight: 700;
@@ -102,23 +119,14 @@ body {
 .sidebar-content a {
   border-radius: 0;
 }
+/* Slightly smaller item links (top-level labels keep their own .large size). */
+.sidebar-content a:not(.large) {
+  font-size: 0.8125rem;
+}
 .sidebar-content a[aria-current='page'] {
-  color: var(--sl-color-white);
-  background: var(--sl-color-gray-5);
+  color: var(--sl-color-accent);
+  background: rgba(93, 95, 239, 0.14);
   font-weight: 700;
-}
-
-/* Main / Stories switcher: no fill, just a strong (dark) underline — same
-   colour family, only darker, not the accent purple. */
-li.tab,
-li.tab a[role='tab'] {
-  border-radius: 0 !important;
-}
-li.tab a[aria-selected='true'] {
-  background: transparent !important;
-  color: var(--sl-color-white) !important;
-  font-weight: 700 !important;
-  border-bottom-color: var(--sl-color-white) !important;
 }
 
 /* ---------- Right rail (on this page) ---------- */
@@ -154,7 +162,13 @@ li.tab a[aria-selected='true'] {
 .pagination-links a {
   border-radius: 10px;
   border: 1px solid var(--sl-color-hairline);
-  background: var(--sl-color-bg-nav);
+  /* Transparent so the cards sit on the page gradient instead of flashing a
+     near-white nav surface; a subtle tint only on hover. */
+  background: transparent;
+}
+.pagination-links a:hover {
+  border-color: var(--sl-color-accent);
+  background: var(--ab-accent-fill);
 }
 
 /* ---------- Retained utilities ---------- */
@@ -214,6 +228,11 @@ li.tab a[aria-selected='true'] {
 .social-icons a svg {
   width: 18px !important;
   height: 18px !important;
+}
+
+/* Drop the rule between the page title and the body (the line under each h1) */
+.content-panel + .content-panel {
+  border-top: 0 !important;
 }
 
 /* WIP items in sidebar */

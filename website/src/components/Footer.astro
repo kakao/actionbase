@@ -13,9 +13,11 @@ import StarlightFooter from '@astrojs/starlight/components/Footer.astro';
 
 <style>
   .ab-footer {
-    /* Keep the left edge at the content (never cover the nav menu) but extend
-       rightward under the on-this-page rail, so the bar spans content + right
-       sidebar as one band. */
+    /* Span from the nav-menu divider (left) to the viewport edge (right) so the
+       bar's top rule meets the vertical divider with no gap, and never covers
+       the menu itself. (+scrollbar correction so the left edge lands on the
+       divider.) */
+    margin-left: calc(50% - 50vw + var(--sl-sidebar-width) + 31px);
     margin-right: calc(50% - 50vw);
     box-sizing: border-box;
     display: flex;
@@ -24,8 +26,7 @@ import StarlightFooter from '@astrojs/starlight/components/Footer.astro';
     flex-wrap: wrap;
     gap: 1rem;
     margin-top: 2.5rem;
-    padding: 1.25rem 0;
-    padding-right: clamp(1.5rem, 4vw, 4rem);
+    padding: 1.25rem clamp(1.5rem, 4vw, 4rem);
     border-top: 1px solid var(--sl-color-hairline);
     font-family: var(--sl-font-mono);
     font-size: 0.75rem;
