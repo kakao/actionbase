@@ -2,6 +2,8 @@ package com.kakao.actionbase.engine.service
 
 import com.kakao.actionbase.core.edge.MutationKey
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
+import com.kakao.actionbase.core.edge.payload.AggregationSweepItem
+import com.kakao.actionbase.core.edge.payload.AggregationSweepTarget
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
@@ -20,6 +22,7 @@ import com.kakao.actionbase.core.metadata.common.Topk
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.AggregationEngine
 import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.engine.service.aggregation.TopkAggregationHandler
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -43,7 +46,7 @@ class AggregationServiceSpec :
             val queryService = mockk<QueryService>()
             val mutationService = mockk<MutationService>()
             val engine = mockk<AggregationEngine>()
-            val service = AggregationService(queryService, mutationService, engine)
+            val service = AggregationService(engine, listOf(TopkAggregationHandler(queryService, mutationService, engine)))
 
             // --- getAggregations ---
 
@@ -577,6 +580,80 @@ class AggregationServiceSpec :
                         results[0].error shouldBe "agg boom"
                     }.verifyComplete()
             }
+
+            // --- sweep ---
+
+            "sweep recomputes the ranking from the target and re-writes the rank row" {
+                val topk = topkConfig(name = "top_purchased", entity = "source", dimension = "target", rank = "db.rank_tbl")
+                val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 9))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate("db", "rank_tbl", capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(service.sweep(listOf(sweepItem(sweepTarget(topk = "top_purchased")))))
+                    .assertNext { results ->
+                        results shouldHaveSize 1
+                        results[0].status shouldBe "SUCCESS"
+                        results[0].topk shouldBe "top_purchased"
+                        results[0].entity shouldBe "user1"
+                    }.verifyComplete()
+
+                val edge = mutations.captured.single().edge
+                edge.source shouldBe "top_purchased|user1"
+                edge.target shouldBe "item1"
+            }
+
+            "sweep is SKIPPED when the target topk is not defined on the table" {
+                clearMocks(mutationService)
+                val topk = topkConfig(name = "top_purchased", rank = "db.rank_tbl")
+                val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                StepVerifier
+                    .create(service.sweep(listOf(sweepItem(sweepTarget(topk = "unknown_topk")))))
+                    .assertNext { it.single().status shouldBe "SKIPPED" }
+                    .verifyComplete()
+
+                verify(exactly = 0) { mutationService.mutate(any(), any(), any(), any(), any(), any(), any()) }
+            }
+
+            "sweep for IN direction aggregates from the target endpoint" {
+                val topk = topkConfig(name = "top_purchased_by", entity = "target", dimension = "source", rank = "db.rank_tbl")
+                val group = groupWithTopks(name = "g_in", topks = listOf(topk), directionType = DirectionType.IN)
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                val starts = slot<List<Any>>()
+                every {
+                    queryService.agg(any(), any(), any(), capture(starts), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 4))
+
+                every {
+                    mutationService.mutate("db", "rank_tbl", any(), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(
+                        service.sweep(
+                            listOf(
+                                sweepItem(
+                                    sweepTarget(topk = "top_purchased_by", direction = "IN", entity = "item1", topkDimensionValue = "user1"),
+                                ),
+                            ),
+                        ),
+                    ).assertNext { it.single().status shouldBe "SUCCESS" }
+                    .verifyComplete()
+
+                // IN ranks per target entity, so the aggregation starts from the target endpoint.
+                starts.captured shouldBe listOf("item1")
+            }
         },
     )
 
@@ -601,6 +678,34 @@ private fun groupWithTopks(
         fields = fields,
         directionType = directionType,
         aggregations = Aggregations(topk = topks),
+    )
+
+private fun sweepItem(target: AggregationSweepTarget): AggregationSweepItem = AggregationSweepItem(type = AggregationType.TOPK, item = target)
+
+private fun sweepTarget(
+    topk: String,
+    database: String = "db",
+    table: String = "src",
+    source: String = "user1",
+    target: String = "item1",
+    direction: String = "OUT",
+    ranges: String = "_target:eq:item1",
+    entity: String = "user1",
+    topkDimensionValue: String = "item1",
+    dimensionValues: String = "",
+): AggregationSweepTarget =
+    AggregationSweepTarget(
+        database = database,
+        table = table,
+        topk = topk,
+        source = source,
+        target = target,
+        direction = direction,
+        ranges = ranges,
+        entity = entity,
+        topkDimensionValue = topkDimensionValue,
+        dimensionValues = dimensionValues,
+        refreshAt = 123L,
     )
 
 private fun stringField(): Field = Field(type = PrimitiveType.STRING, comment = "")
@@ -646,3 +751,5 @@ private fun item(
 private fun aggPayload(count: Int): DataFrameEdgeAggPayload = DataFrameEdgeAggPayload(groups = emptyList(), count = count, context = emptyMap())
 
 private fun mutationResult(status: String): MutationResult = MutationResult.of(key = MutationKey.SourceTarget("s", "t"), count = 1, status = status)
+
+// endregion

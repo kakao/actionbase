@@ -5,6 +5,7 @@ import com.kakao.actionbase.core.codec.XXHash32Wrapper
 object AggregationConstants {
     const val TOPK_DATABASE = "topk"
     const val TOPK_REFRESH_TABLE = "refresh"
+    const val TOPK_REFRESH_TABLE_INDEX = "refresh_at_asc"
 
     const val TOPK_REFRESH_PARTITIONS = 2310
 

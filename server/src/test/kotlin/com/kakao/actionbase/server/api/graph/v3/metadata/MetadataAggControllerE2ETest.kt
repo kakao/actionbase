@@ -1,6 +1,7 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
+import com.kakao.actionbase.core.edge.payload.AggregationsSweepResponse
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_DATABASE
 import com.kakao.actionbase.core.metadata.common.AggregationConstants.TOPK_REFRESH_TABLE
@@ -457,5 +458,164 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         assertEquals(AggregationType.TOPK, source?.type)
         assertEquals(db, source?.database)
         assertEquals(table, source?.table)
+    }
+
+    @Test
+    fun `PUT sweep recomputes the ranking and writes the rank row`() {
+        val sweepDb = "commerce_sweep"
+        val sweepTable = "orders"
+        val sweepRank = "orders__topk"
+        val sweepRankFqn = "$sweepDb.$sweepRank"
+        val topkName = "top_purchased"
+
+        client
+            .post()
+            .uri("/graph/v3/databases")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"database": "$sweepDb", "comment": "test"}""")
+            .exchange()
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$sweepDb/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$sweepRank",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "topk|entity|dimensionValues"},
+                    "target": {"type": "string", "comment": "topkDimensionValue"},
+                    "properties": [
+                      {"name": "metric", "type": "long", "comment": "metric", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [
+                      {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
+                    ],
+                    "groups": [],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$sweepRank",
+                  "mode": "SYNC",
+                  "comment": "topk rank"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$sweepDb/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$sweepTable",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "order id"},
+                    "source": {"type": "string", "comment": "user"},
+                    "target": {"type": "string", "comment": "item"},
+                    "properties": [],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": [{
+                      "group": "purchased_count",
+                      "type": "COUNT",
+                      "fields": [{"name": "_target"}],
+                      "directionType": "OUT",
+                      "aggregations": {
+                        "topk": [{
+                          "topk": "$topkName",
+                          "entity": "source",
+                          "ranges": "_target:eq:{_target}",
+                          "dimension": "target",
+                          "rank": "$sweepRankFqn"
+                        }]
+                      }
+                    }],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$sweepTable",
+                  "mode": "SYNC",
+                  "comment": "orders"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$sweepDb/tables/$sweepTable/multi-edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1", "properties": {}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        val response =
+            client
+                .put()
+                .uri("/graph/v3/aggregations/sweep")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    """
+                    {
+                      "items": [
+                        {
+                          "type": "TOPK",
+                          "item": {"database": "$sweepDb", "table": "$sweepTable", "topk": "$topkName",
+                                   "source": "user1", "target": "item1", "direction": "OUT", "ranges": "_target:eq:item1",
+                                   "entity": "user1", "topkDimensionValue": "item1", "dimensionValues": "", "refreshAt": 123}
+                        }
+                      ]
+                    }
+                    """.trimIndent(),
+                ).exchange()
+                .expectStatus()
+                .isOk
+                .expectBody<AggregationsSweepResponse>()
+                .returnResult()
+                .responseBody!!
+
+        assertEquals(1, response.items.size)
+        assertEquals(sweepDb, response.items[0].database)
+        assertEquals(sweepTable, response.items[0].table)
+        assertEquals(topkName, response.items[0].topk)
+        assertEquals("user1", response.items[0].entity)
+        assertEquals("SUCCESS", response.items[0].status)
+
+        client
+            .get()
+            .uri(
+                "/graph/v3/databases/$sweepDb/tables/$sweepRank/edges/scan/metric_desc" +
+                    "?start=$topkName|user1&direction=OUT",
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<DataFrameEdgePayload>()
+            .returnResult()
+            .responseBody!!
+            .let { payload ->
+                assertEquals(1, payload.count)
+                assertEquals(
+                    "item1",
+                    payload.edges
+                        .single()
+                        .target
+                        .toString(),
+                )
+            }
     }
 }

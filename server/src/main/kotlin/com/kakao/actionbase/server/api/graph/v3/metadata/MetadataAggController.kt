@@ -1,7 +1,9 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
 import com.kakao.actionbase.core.edge.payload.AggregationItemRequest
+import com.kakao.actionbase.core.edge.payload.AggregationSweepRequest
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
+import com.kakao.actionbase.core.edge.payload.AggregationsSweepResponse
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
 import com.kakao.actionbase.engine.service.AggregationService
@@ -9,6 +11,7 @@ import com.kakao.actionbase.engine.service.AggregationService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -35,4 +38,12 @@ class MetadataAggController(
         aggregationService
             .aggregate(type = aggregationItemRequest.type, items = aggregationItemRequest.items)
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
+
+    @PutMapping("/graph/v3/aggregations/sweep")
+    fun sweep(
+        @RequestBody aggregationSweepRequest: AggregationSweepRequest,
+    ): Mono<ResponseEntity<AggregationsSweepResponse>> =
+        aggregationService
+            .sweep(items = aggregationSweepRequest.items)
+            .map { results -> ResponseEntity.ok(AggregationsSweepResponse.from(results)) }
 }
