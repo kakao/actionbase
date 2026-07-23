@@ -42,13 +42,6 @@ class AggregationService(
             .flatMap { event -> processAggregations(event, type) }
             .collectList()
 
-    private fun ModelSchema.groupsOrNull(): List<Group>? =
-        when (this) {
-            is ModelSchema.Edge -> groups
-            is ModelSchema.MultiEdge -> groups
-            else -> null
-        }
-
     private fun createEvent(
         type: AggregationType,
         item: AggregationItemPayload,
@@ -67,9 +60,7 @@ class AggregationService(
             "Aggregation is only supported for Edge and MultiEdge tables."
         }
 
-        val groups = tb.schema.groupsOrNull().orEmpty()
-
-        return groups
+        return tb.schema.groups
             .filter { it.aggregations.topk.isNotEmpty() }
             .map { group ->
                 EdgeAggregationEvent.of(type = AggregationType.TOPK, database = item.database, table = item.table, item, group)

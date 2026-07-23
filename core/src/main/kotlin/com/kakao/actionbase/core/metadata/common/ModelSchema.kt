@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName
 sealed class ModelSchema : AbstractSchema {
     abstract val properties: List<StructField>
 
+    open val groups: List<Group> = emptyList()
+
     @get:JsonIgnore
     val propertiesByName: Map<String, StructField> by lazy { properties.associateBy { it.name } }
 
@@ -32,7 +34,7 @@ sealed class ModelSchema : AbstractSchema {
         override val properties: List<StructField> = emptyList(),
         val direction: DirectionType,
         val indexes: List<Index> = emptyList(),
-        val groups: List<Group> = emptyList(),
+        override val groups: List<Group> = emptyList(),
         val caches: List<Cache> = emptyList(),
     ) : ModelSchema(),
         AbstractSchema by Schema(properties.associate { it.name to it.nullable })
@@ -44,7 +46,7 @@ sealed class ModelSchema : AbstractSchema {
         override val properties: List<StructField> = emptyList(),
         val direction: DirectionType,
         val indexes: List<Index> = emptyList(),
-        val groups: List<Group> = emptyList(),
+        override val groups: List<Group> = emptyList(),
     ) : ModelSchema(),
         AbstractSchema by Schema(properties.associate { it.name to it.nullable }) {
         init {
@@ -65,7 +67,7 @@ sealed class ModelSchema : AbstractSchema {
         override val properties: List<StructField> = emptyList(),
         val direction: DirectionType,
         val indexes: List<Index> = emptyList(),
-        val groups: List<Group> = emptyList(),
+        override val groups: List<Group> = emptyList(),
         val caches: List<Cache> = emptyList(),
     ) : ModelSchema(),
         AbstractSchema by Schema(properties.associate { it.name to it.nullable } + listOf("_source" to false, "_target" to false))
