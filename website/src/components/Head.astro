@@ -26,34 +26,3 @@ import StarlightHead from '@astrojs/starlight/components/Head.astro';
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateFavicon);
   })();
 </script>
-
-<script>
-  // Match the landing: plain "GitHub" + a live star count, degrading to just
-  // "GitHub" if the API is unreachable.
-  async function render() {
-    const els = document.querySelectorAll('.nav-external');
-    if (!els.length) return;
-    let stars = '';
-    try {
-      const res = await fetch('https://api.github.com/repos/kakao/actionbase');
-      if (res.ok) {
-        const data = await res.json();
-        if (typeof data.stargazers_count === 'number') stars = String(data.stargazers_count);
-      }
-    } catch {
-      /* leave count off */
-    }
-    els.forEach((el) => {
-      el.textContent = 'GitHub';
-      if (stars) {
-        const badge = document.createElement('span');
-        badge.className = 'gh-stars';
-        badge.textContent = '★ ' + stars;
-        el.appendChild(badge);
-      }
-    });
-  }
-
-  render();
-  document.addEventListener('astro:after-swap', render);
-</script>
