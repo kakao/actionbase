@@ -1,0 +1,164 @@
+---
+// Live console + edge graph. A self-contained command parser in the page
+// script (index.astro) drives both panels via [data-*] hooks.
+import { RotateCcw } from '@lucide/astro';
+
+// ASCII otter banner, coloured to mirror the real CLI welcome art (ANSI 33):
+// the otter body stays the default terminal foreground; the frame, the heart,
+// the right-hand info labels and the "Actionbase" wordmark are gold. Each line
+// is a list of [text, gold?] segments — concatenated they reproduce the raw
+// art, and gold runs are wrapped in a <span class="g"> at build time.
+const G = true;
+const bannerSegs = [
+  [['                    _____________', false]],
+  [['                 __/      ___    \\        Welcome to Actionbase! v0.2.1', false]],
+  [['               _/\\   ____/   \\____\\_', false]],
+  [['              / \\/ _/      @    \\_', false], ['♥/', G], ['\\     ', false], ['Actionbase  standalone:8080', G]],
+  [['             /   /                | |', false]],
+  [['           _/   /             ___/ \\/     ', false], ['proxy', G], ['  off', false]],
+  [['          /     |           ______/       ', false], ['debug', G], ['  off', false]],
+  [['       __/      |          /', false]],
+  [['   ___/         \\        _/', false]],
+  [['                 |      /\\__', false]],
+  [['                 |     /    \\__', false], ['          _        _   _             _', G]],
+  [['                 |    /______  \\', false], ['        / \\   ___| |_(_) ___  _ __ | |__   __ _ ___  ___', G]],
+  [["              \\   \\_         \\  \\", false], ["      / _ \\ / __| __| |/ _ \\| '_ \\| '_ \\ / _` / __|/ _ \\", G]],
+  [["               \\__  \\__       |_|", false], ["     / ___ \\ (__| |_| | (_) | | | | |_) | (_| \\__ \\  __/", G]],
+  [['                  \\____\\', false], ['             /_/   \\_\\___|\\__|_|\\___/|_| |_|_.__/ \\__,_|___/\\___|', G]],
+];
+const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const goldSpan = (s) => `<span class="g">${escHtml(s)}</span>`;
+// The real CLI draws its frame with box-drawing chars, but the Google Fonts
+// JetBrains Mono subset lacks U+2500-257F, so those glyphs fall back to the
+// system mono whose advance differs — the frame ends up ~2px wider than the
+// art. A CSS border reproduces the gold frame pixel-exactly instead.
+const banner = bannerSegs
+  .map((segs) => segs.map(([t, g]) => (g ? goldSpan(t) : escHtml(t))).join(''))
+  .join('\n');
+
+const presets = [
+  { cmd: 'get --source Alice --target Phone', desc: 'Fetch a single edge' },
+  { cmd: 'scan --index recent --start Bob --direction OUT', desc: 'List edges, newest first' },
+  { cmd: 'count --start Phone --direction IN', desc: 'Count edges on a node' },
+];
+
+// Teaser for query operations that exist internally but aren't shipped yet —
+// shown disabled ("TBD") to hint at what's coming. topk covers issue #369
+// shapes 2 (Target|Window) and 4 (Target|Filter,Window).
+const soon = [
+  { cmd: 'agg --start Phone --direction IN --by hour --last 1d', desc: 'Aggregate edges over time' },
+  { cmd: 'topk --target product --edge purchase --last 1w', desc: 'Trending items this week' },
+  { cmd: 'topk --start Bob --target product --edge purchase --last 1y', desc: "A user's recent purchases" },
+  { cmd: 'multihop --start Alice --path follow,wish', desc: "Friends' wishes, across hops" },
+];
+---
+
+<section class="demo">
+  <div class="demo-head">
+    <h2>Interactive demo</h2>
+    <button type="button" class="demo-reset" data-reset>
+      <RotateCcw size={15} aria-hidden="true" />
+      <span>Reset</span>
+    </button>
+  </div>
+  <div class="demo-panels">
+    <figure class="console term-fill">
+      <div data-console>
+        <div class="term">
+          <div class="term-bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="term-title">actionbase cli</span>
+          </div>
+          <div class="term-body">
+            <pre class="banner" set:html={banner}></pre>
+            <div data-lines role="log" aria-live="polite">
+              <div class="line"><span class="l l-sys">actionbase standalone · server :8080 · CLI ready</span></div>
+              <div class="line"><span class="l l-sys">preset 'likes' loaded — 3 edges</span></div>
+              <div class="line"><span class="l l-sys">Alice → Phone    Bob → Laptop    Bob → Phone</span></div>
+              <div class="line"><span class="l l-dim">click a command below to run it ↓</span></div>
+            </div>
+            <div class="input-row">
+              <span class="prompt">actionbase(likes:likes)&gt;</span>
+              <span class="term-cursor" aria-hidden="true"></span>
+              <span class="term-hint">click a command below ↓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <figure class="graph panel">
+      <svg class="graph-svg" viewBox="0 0 340 250" role="img" aria-label="Edge state graph" data-graph>
+        <g class="gedge" data-edge="alice-phone" data-src="alice" data-dst="phone">
+          <line x1="118" y1="72" x2="222" y2="66" />
+          <text class="gedge-label" x="168" y="61">likes</text>
+        </g>
+        <g class="gedge" data-edge="bob-phone" data-src="bob" data-dst="phone">
+          <line x1="118" y1="176" x2="222" y2="72" />
+          <text class="gedge-label" x="150" y="120">likes</text>
+        </g>
+        <g class="gedge" data-edge="bob-laptop" data-src="bob" data-dst="laptop">
+          <line x1="118" y1="180" x2="222" y2="184" />
+          <text class="gedge-label" x="168" y="176">likes</text>
+        </g>
+        <g class="gnode gnode-user" data-node="alice">
+          <rect x="24" y="52" width="94" height="40" rx="9" />
+          <text class="gn-name" x="71" y="70">Alice</text>
+          <text class="gn-type" x="71" y="83">user</text>
+        </g>
+        <g class="gnode gnode-user" data-node="bob">
+          <rect x="24" y="156" width="94" height="40" rx="9" />
+          <text class="gn-name" x="71" y="174">Bob</text>
+          <text class="gn-type" x="71" y="187">user</text>
+        </g>
+        <g class="gnode gnode-item" data-node="phone">
+          <rect x="222" y="46" width="94" height="40" rx="9" />
+          <text class="gn-name" x="269" y="64">Phone</text>
+          <text class="gn-type" x="269" y="77">item</text>
+        </g>
+        <g class="gnode gnode-item" data-node="laptop">
+          <rect x="222" y="164" width="94" height="40" rx="9" />
+          <text class="gn-name" x="269" y="182">Laptop</text>
+          <text class="gn-type" x="269" y="195">item</text>
+        </g>
+      </svg>
+      <figcaption class="fig-cap">Fig. 02 — live edge state</figcaption>
+    </figure>
+  </div>
+
+  <div class="demo-controls">
+    <!-- Toggle buttons, not ARIA tabs: the full tabs pattern needs
+         tabpanel wiring + arrow-key navigation, which two buttons
+         don't earn. aria-pressed conveys the state instead. -->
+    <div class="tabs" data-tabs>
+      <button type="button" class="tab active" data-tab="supported" aria-pressed="true">
+        Supported
+      </button>
+      <button type="button" class="tab" data-tab="soon" aria-pressed="false">
+        Coming soon
+      </button>
+    </div>
+    <div class="tab-panel" data-panel="supported">
+      <div class="presets">
+        {presets.map((p, i) => (
+          <button type="button" class="preset" data-step={i} data-cmd={p.cmd}>
+            <span class="preset-cmd">{p.cmd}</span>
+            <span class="preset-desc">{p.desc}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+    <div class="tab-panel" data-panel="soon" hidden>
+      <span class="soon-heading">Coming soon</span>
+      <div class="presets">
+        {soon.map((p) => (
+          <button type="button" class="preset preset-soon" disabled>
+            <span class="preset-cmd">{p.cmd}</span>
+            <span class="preset-desc">{p.desc}</span>
+            <span class="tbd">TBD</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

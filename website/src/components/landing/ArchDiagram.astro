@@ -1,0 +1,46 @@
+---
+// Both paths converge on one wide Storage Backend. Kafka sits on the write
+// side only (WAL in, CDC out); the read path (Query doc) is a direct lookup.
+const storageNode = { name: 'Storage Backend', sub: 'state · index · count — HBase / SlateDB' };
+---
+
+<div class="arch-panel">
+  <svg
+    class="arch-svg"
+    viewBox="0 0 620 448"
+    role="img"
+    aria-label="Client to Actionbase; write path through Kafka and read path through GET/COUNT/SCAN converge on one storage backend, which streams back out through Kafka."
+  >
+    <!-- connectors (broken around labels so lines never cross text) -->
+    <path
+      class="arch-line"
+      d="M310 52 V80 M310 124 V152 M155 152 H465 M155 152 V180 M465 152 V196 M465 228 V286 M155 226 V286 M155 334 V390"
+    />
+    <!-- flow labels -->
+    <text class="arch-lbl arch-lbl-rest" x="328" y="69">REST · HTTP</text>
+    <text class="arch-lbl" x="155" y="145">WRITE PATH</text>
+    <text class="arch-lbl" x="465" y="145">READ PATH</text>
+    <!-- read requests: an operation on the path, not a component -->
+    <text class="arch-req" x="465" y="207">GET · COUNT · SCAN</text>
+    <text class="arch-sub" x="465" y="220">direct read</text>
+    <!-- nodes -->
+    <rect class="arch-box" x="255" y="12" width="110" height="40" rx="6" />
+    <text class="arch-t" x="310" y="37">Client</text>
+
+    <rect class="arch-box arch-box-accent" x="240" y="80" width="140" height="44" rx="6" />
+    <text class="arch-t arch-t-accent" x="310" y="107">Actionbase</text>
+
+    <rect class="arch-box" x="88" y="180" width="134" height="46" rx="6" />
+    <text class="arch-t" x="155" y="201">Kafka</text>
+    <text class="arch-sub" x="155" y="216">write WAL</text>
+
+    <rect class="arch-box" x="85" y="286" width="450" height="48" rx="6" />
+    <text class="arch-t" x="310" y="307">{storageNode.name}</text>
+    <text class="arch-sub" x="310" y="322">{storageNode.sub}</text>
+
+    <rect class="arch-box" x="88" y="390" width="134" height="44" rx="6" />
+    <text class="arch-t" x="155" y="411">Kafka</text>
+    <text class="arch-sub" x="155" y="426">write CDC</text>
+  </svg>
+  <div class="fig-cap">Fig. 03 — write / read paths</div>
+</div>

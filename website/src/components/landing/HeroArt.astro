@@ -1,0 +1,99 @@
+---
+// Signature motif: the interaction graph drawn in the site's drafting
+// language — sparse editorial field, blueprint-style annotations.
+// Styles live in src/assets/landing-page.css (.ha-* rules).
+---
+
+<figure class="hero-art" aria-hidden="true">
+  <svg viewBox="0 0 560 440" role="presentation">
+    <defs>
+      <radialGradient id="ha-glow" cx="0.62" cy="0.4" r="0.55">
+        <stop offset="0" class="ha-glow-in" />
+        <stop offset="1" class="ha-glow-out" />
+      </radialGradient>
+    </defs>
+    <rect x="0" y="0" width="560" height="440" fill="url(#ha-glow)" />
+
+    <!-- drawing-frame corner ticks -->
+    <g class="ha-corners">
+      <path d="M14 26 V14 H26" /><path d="M534 14 H546 V26" />
+      <path d="M14 414 V426 H26" /><path d="M546 414 V426 H534" />
+    </g>
+
+    <!-- registration marks -->
+    <g class="ha-marks">
+      <path d="M84 214 h10 M89 209 v10" /><path d="M494 60 h10 M499 55 v10" />
+      <path d="M228 46 h10 M233 41 v10" /><path d="M508 392 h10 M513 387 v10" />
+      <path d="M64 386 h10 M69 381 v10" />
+    </g>
+
+    <!-- edges -->
+    <g class="ha-edges">
+      <path d="M158 132 C 240 130 300 138 384 158" class="is-accent" />
+      <path d="M142 296 C 230 268 300 210 380 172" />
+      <path d="M142 300 C 250 300 350 300 442 306" />
+      <path d="M316 374 C 360 352 410 326 446 316" />
+      <path d="M398 170 C 430 210 442 250 448 296" class="faint" />
+      <path d="M384 158 L375.5 159.2 L377.0 153.0 Z" class="ha-arrow is-accent-fill" />
+      <path d="M380 172 L374.2 178.3 L371.4 172.5 Z" class="ha-arrow" />
+      <path d="M442 306 L433.8 308.7 L434.2 302.3 Z" class="ha-arrow" />
+      <path d="M446 316 L439.2 321.2 L437.4 315.0 Z" class="ha-arrow" />
+    </g>
+
+    <!-- edge label chip + microlabel -->
+    <g class="ha-chip">
+      <rect x="244" y="118" width="52" height="20" rx="10" />
+      <text x="270" y="132" text-anchor="middle">likes</text>
+    </g>
+    <text x="284" y="246" class="ha-microlabel" transform="rotate(-24 284 246)">follows</text>
+
+    <!-- leader note off the accent edge (drafting annotation) -->
+    <g class="ha-note">
+      <circle cx="328" cy="147" r="2" />
+      <path d="M328 147 L352 96 H460" />
+      <text x="354" y="78">version 1784793660730</text>
+      <text x="354" y="90">props {'{'} createdAt: t₀ {'}'}</text>
+    </g>
+
+    <!-- construction ring around the hot item -->
+    <g class="ha-construction">
+      <circle cx="394" cy="164" r="30" />
+      <path d="M394 126 v8 M394 194 v8 M356 164 h8 M424 164 h8" />
+    </g>
+
+    <!-- user nodes -->
+    <g class="ha-node">
+      <circle cx="148" cy="130" r="7" class="ha-dot" />
+      <circle cx="148" cy="130" r="13" class="ha-ring" />
+      <text x="128" y="106" class="ha-name">Alice</text>
+      <text x="129" y="152" class="ha-type">USER</text>
+    </g>
+    <g class="ha-node">
+      <circle cx="132" cy="298" r="7" class="ha-dot" />
+      <circle cx="132" cy="298" r="13" class="ha-ring" />
+      <text x="112" y="274" class="ha-name">Bob</text>
+      <text x="113" y="320" class="ha-type">USER</text>
+    </g>
+    <g class="ha-node">
+      <circle cx="306" cy="378" r="6" class="ha-dot" />
+      <circle cx="306" cy="378" r="11" class="ha-ring" />
+      <text x="286" y="414" class="ha-name sm">Mina</text>
+      <text x="330" y="382" class="ha-type">USER</text>
+    </g>
+
+    <!-- item nodes -->
+    <g class="ha-node">
+      <circle cx="394" cy="164" r="9" class="ha-dot is-accent" />
+      <circle cx="394" cy="164" r="17" class="ha-ring is-accent" />
+      <text x="428" y="156" class="ha-name">Phone</text>
+      <text x="429" y="174" class="ha-type">ITEM · 1.2M EDGES IN</text>
+    </g>
+    <g class="ha-node">
+      <circle cx="452" cy="308" r="7" class="ha-dot" />
+      <circle cx="452" cy="308" r="13" class="ha-ring" />
+      <text x="472" y="304" class="ha-name sm">Laptop</text>
+      <text x="473" y="322" class="ha-type">ITEM</text>
+    </g>
+  </svg>
+  <figcaption class="fig-cap">Fig. 01 — who → what → target</figcaption>
+</figure>
