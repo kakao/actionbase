@@ -38,4 +38,12 @@ import StarlightFooter from '@astrojs/starlight/components/Footer.astro';
   .ab-footer a:hover {
     color: var(--sl-color-text-accent);
   }
+  @media (max-width: 50rem) {
+    .ab-footer {
+      width: 100%;
+      margin-left: 0;
+      margin-right: 0;
+      padding: 1.25rem 0;
+    }
+  }
 </style>

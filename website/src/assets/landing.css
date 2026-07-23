@@ -12,7 +12,7 @@
   --sl-color-white: #ecedf6;
   --sl-color-gray-1: #d7d9e6;
   --sl-color-gray-2: #b4b7cc; /* body text */
-  --sl-color-gray-3: #8a8da6; /* muted */
+  --sl-color-gray-3: #9da0b7; /* muted */
   --sl-color-gray-4: #6a6d84;
   --sl-color-gray-5: #3a3c4d;
   --sl-color-gray-6: #23252f;
@@ -45,7 +45,7 @@
   --sl-color-black: #ffffff; /* light surface (search button, overlays) */
   --sl-color-gray-1: #2c2f45;
   --sl-color-gray-2: #4e5168; /* body */
-  --sl-color-gray-3: #82859b; /* muted */
+  --sl-color-gray-3: #6f7389; /* muted */
   --sl-color-gray-4: #9aa0b3;
   --sl-color-gray-5: #d6dae1;
   --sl-color-gray-6: #e9ecf1;
@@ -114,8 +114,7 @@ html {
   color: var(--sl-color-gray-3);
 }
 
-/* Active sidebar item: flat neutral highlight — a subtle grey fill and strong
-   (dark) text, no rounded pill, no left bar, no accent colour. */
+/* Active sidebar item: flat accent highlight, no rounded pill or left bar. */
 .sidebar-content a {
   border-radius: 0;
 }
@@ -134,6 +133,9 @@ html {
 .right-sidebar a[aria-current='true'] {
   color: var(--sl-color-text-accent);
   font-weight: 700;
+}
+.right-sidebar a:not([aria-current='true']) {
+  color: var(--sl-color-gray-2);
 }
 
 /* ---------- Callouts (minimal: mono label + bottom hairline) ---------- */
@@ -215,8 +217,8 @@ html {
   align-items: center;
   justify-content: center;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   border: 1px solid var(--sl-color-hairline-light);
   color: var(--sl-color-gray-2);

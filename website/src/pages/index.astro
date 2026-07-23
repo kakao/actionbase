@@ -1,6 +1,7 @@
 ---
 import logoLight from '../assets/logo-light.svg?url';
 import logoDark from '../assets/logo-dark.svg?url';
+import { Check, Copy, RotateCcw } from '@lucide/astro';
 
 // Standalone marketing landing. Kept outside Starlight's content collection so
 // the bespoke chrome (marginalia, hero console, architecture flow) has full
@@ -54,13 +55,16 @@ const banner = [
   goldSpan('╰' + '─'.repeat(BANNER_WIDTH) + '╯'),
 ].join('\n');
 
-const features = [
+const primaryFeatures = [
   { title: 'Pre-computed Reads', desc: 'Writes do the work. Reads return what’s already computed.' },
   { title: 'U2U · U2I · I2I', desc: 'One model for user–user, user–item, and item–item interactions.' },
+  { title: 'Battle-tested', desc: 'Over a million requests per minute in stable production at Kakao.' },
+];
+
+const platformFeatures = [
   { title: 'REST API', desc: 'Simple writes, fast reads — all via HTTP.' },
   { title: 'CDC Built-in', desc: 'Stream changes for downstream pipelines.' },
   { title: 'Pluggable Storage', desc: 'A minimal storage abstraction — HBase today, SlateDB planned.' },
-  { title: 'Battle-tested', desc: 'Over a million requests per minute at Kakao.' },
 ];
 
 // Both paths converge on one wide Storage Backend. Kafka sits on the write side
@@ -160,6 +164,8 @@ const soon = [
           <img class="brand-logo brand-logo-dark" src={logoDark} alt="Actionbase" width="171" height="26" />
         </a>
         <div class="nav-links">
+          <a class="nav-text-link" href="/introduction/">Docs</a>
+          <a class="nav-text-link nav-stories" href="/stories/">Stories</a>
           <a href={repo} class="gh-link" aria-label="GitHub">
             <svg class="gh-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
@@ -182,8 +188,8 @@ const soon = [
             items) interactions.
           </p>
           <div class="cta-row">
-            <a class="btn btn-primary" href="/introduction/">Get started</a>
-            <a class="btn btn-outline" href={repo}>View on GitHub</a>
+            <a class="btn btn-primary" href="/quick-start/">Quick Start</a>
+            <a class="btn btn-outline" href="/introduction/">Explore docs</a>
           </div>
         </div>
       </header>
@@ -202,29 +208,14 @@ const soon = [
         </div>
       </section>
 
-      <!-- features -->
-      <section class="section">
-        <div class="section-head">
-          <h2>Features</h2>
-        </div>
-        <div class="features">
-          {
-            features.map((f, i) => (
-              <div class="card">
-                <span class="card-num">{String(i + 1).padStart(2, '0')}</span>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-              </div>
-            ))
-          }
-        </div>
-      </section>
-
       <!-- try it: live console + edge graph -->
       <section class="demo">
         <div class="demo-head">
           <h2>Interactive demo</h2>
-          <button type="button" class="demo-reset" data-reset>↺ Reset</button>
+          <button type="button" class="demo-reset" data-reset>
+            <RotateCcw size={15} aria-hidden="true" />
+            <span>Reset</span>
+          </button>
         </div>
         <div class="demo-panels">
           <figure class="console term-fill">
@@ -325,6 +316,42 @@ const soon = [
         </div>
       </section>
 
+      <!-- features -->
+      <section class="section feature-section">
+        <div class="section-head">
+          <h2>Why Actionbase</h2>
+          <span class="kicker">Built for interaction data</span>
+        </div>
+        <div class="feature-group">
+          <span class="feature-group-label">Core advantages</span>
+          <div class="features features-primary">
+            {
+              primaryFeatures.map((f, i) => (
+                <article class="card card-primary">
+                  <span class="card-num">{String(i + 1).padStart(2, '0')}</span>
+                  <h3>{f.title}</h3>
+                  <p>{f.desc}</p>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+        <div class="feature-group">
+          <span class="feature-group-label">Platform capabilities</span>
+          <div class="features features-secondary">
+            {
+              platformFeatures.map((f, i) => (
+                <article class="card card-secondary">
+                  <span class="card-num">{String(i + 4).padStart(2, '0')}</span>
+                  <h3>{f.title}</h3>
+                  <p>{f.desc}</p>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
       <!-- architecture -->
       <section class="section arch">
         <div class="section-head">
@@ -344,7 +371,7 @@ const soon = [
               d="M310 52 V80 M310 124 V152 M155 152 H465 M155 152 V180 M465 152 V196 M465 228 V286 M155 226 V286 M155 334 V390"
             />
             <!-- flow labels -->
-            <text class="arch-lbl" x="320" y="69" text-anchor="start">REST · HTTP</text>
+            <text class="arch-lbl arch-lbl-rest" x="328" y="69">REST · HTTP</text>
             <text class="arch-lbl" x="155" y="145">WRITE PATH</text>
             <text class="arch-lbl" x="465" y="145">READ PATH</text>
             <!-- read requests: an operation on the path, not a component -->
@@ -386,8 +413,20 @@ const soon = [
                   <div class="step-head">
                     <span class="step-num">{s.n}</span>
                     <span class="step-label">{s.label}</span>
+                    <button
+                      type="button"
+                      class="copy-code"
+                      data-copy-code={s.code}
+                      aria-label={`Copy ${s.label} command`}
+                      title={`Copy ${s.label} command`}
+                    >
+                      <Copy class="copy-icon" size={16} aria-hidden="true" />
+                      <Check class="check-icon" size={16} aria-hidden="true" />
+                    </button>
                   </div>
-                  <pre class="code">{s.code}</pre>
+                  <div class="code-wrap">
+                    <pre class="code">{s.code}</pre>
+                  </div>
                 </div>
               ))
             }
@@ -408,8 +447,8 @@ const soon = [
             million reads per minute.
           </p>
           <div class="cta-row cta-center">
-            <a class="btn btn-primary" href="/introduction/">Read the docs</a>
-            <a class="btn btn-outline" href={repo}>View on GitHub</a>
+            <a class="btn btn-primary" href="/quick-start/">Quick Start</a>
+            <a class="btn btn-outline" href="/introduction/">Explore docs</a>
           </div>
         </div>
       </section>
@@ -419,6 +458,8 @@ const soon = [
         <div class="footer-inner">
           <span>© 2026 Kakao Corp. · Apache-2.0</span>
           <div class="footer-links">
+            <a href="/introduction/">Docs</a>
+            <a href="/stories/">Stories</a>
             <a href={repo} aria-label="GitHub">
               <svg class="gh-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
@@ -459,7 +500,7 @@ const soon = [
       :root[data-theme='light'] {
         --ink: #20223a;
         --body: #4e5168;
-        --muted: #82859b;
+        --muted: #6f7389;
         --line-soft: rgba(32, 34, 58, 0.12);
         --line-mid: rgba(32, 34, 58, 0.16);
         --line-24: rgba(32, 34, 58, 0.24);
@@ -470,12 +511,13 @@ const soon = [
         --surf-foot: rgba(230, 232, 240, 0.7);
         --grid-line: rgba(32, 34, 58, 0.05);
         --page-bg: linear-gradient(180deg, #f3f5f8 0%, #e9ecf1 100%);
+        --page-bg-solid: #f3f5f8;
       }
 
       :root[data-theme='dark'] {
         --ink: #ecedf6;
         --body: #b4b7cc;
-        --muted: #8a8da6;
+        --muted: #9da0b7;
         --line-soft: rgba(255, 255, 255, 0.1);
         --line-mid: rgba(255, 255, 255, 0.16);
         --line-24: rgba(255, 255, 255, 0.22);
@@ -486,6 +528,7 @@ const soon = [
         --surf-foot: rgba(0, 0, 0, 0.28);
         --grid-line: rgba(255, 255, 255, 0.05);
         --page-bg: linear-gradient(180deg, #141520 0%, #0e0f17 100%);
+        --page-bg-solid: #141520;
       }
 
       * {
@@ -495,6 +538,14 @@ const soon = [
       body {
         margin: 0;
         padding: 0;
+        /* Carry the page gradient up to the root so over-scroll (rubber-band)
+           never flashes the white canvas, and disable the bounce as well. */
+        background: var(--page-bg);
+        background-attachment: fixed;
+        overscroll-behavior: none;
+      }
+      html {
+        background-color: var(--page-bg-solid);
       }
       body {
         -webkit-font-smoothing: antialiased;
@@ -563,12 +614,18 @@ const soon = [
       .nav-links a:hover {
         color: var(--ink);
       }
+      .nav-text-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 0 6px;
+      }
       .gh-link {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 34px;
-        height: 34px;
+        width: 44px;
+        height: 44px;
         border-radius: 999px;
         border: 1px solid var(--line-mid);
         color: var(--body);
@@ -586,8 +643,8 @@ const soon = [
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 34px;
-        height: 34px;
+        width: 44px;
+        height: 44px;
         border-radius: 999px;
         border: 1px solid var(--line-mid);
         background: transparent;
@@ -608,7 +665,6 @@ const soon = [
       .hero-copy {
         max-width: 1000px;
       }
-
       /* "Try it" section: [console | graph] over a horizontal control bar */
       .demo {
         max-width: var(--maxw);
@@ -630,9 +686,14 @@ const soon = [
         margin: 0;
       }
       .demo-reset {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 44px;
         background: none;
         border: 1px solid var(--line-mid);
-        padding: 6px 12px;
+        padding: 8px 13px;
         font-family: var(--font-mono);
         font-size: 11px;
         letter-spacing: 0.06em;
@@ -761,7 +822,7 @@ const soon = [
       }
       .gn-name {
         fill: var(--ink);
-        font-family: var(--font-head);
+        font-family: var(--font-body);
         font-weight: 700;
         font-size: 14px;
         text-anchor: middle;
@@ -1065,6 +1126,22 @@ const soon = [
       }
 
       /* feature cards */
+      .feature-section {
+        padding-top: 72px;
+      }
+      .feature-group + .feature-group {
+        margin-top: 34px;
+      }
+      .feature-group-label {
+        display: block;
+        margin-bottom: 12px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
       .features {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -1079,6 +1156,14 @@ const soon = [
         padding: 24px 22px;
         min-height: 148px;
         box-shadow: 0 16px 34px -26px rgba(35, 37, 75, 0.4);
+      }
+      .card-primary {
+        border-top: 2px solid var(--accent);
+      }
+      .card-secondary {
+        min-height: 132px;
+        background-image: none;
+        box-shadow: none;
       }
       .card-num {
         display: block;
@@ -1110,14 +1195,14 @@ const soon = [
       .arch-panel {
         border: 1px solid var(--line-mid);
         background: var(--surf-soft);
-        padding: 46px 32px;
+        padding: 32px;
         display: flex;
         flex-direction: column;
         align-items: center;
       }
       .arch-svg {
         width: 100%;
-        max-width: 620px;
+        max-width: 720px;
         height: auto;
         display: block;
       }
@@ -1165,6 +1250,9 @@ const soon = [
         letter-spacing: 0.1em;
         text-anchor: middle;
       }
+      .arch-lbl-rest {
+        text-anchor: start;
+      }
 
       /* quick start */
       .quickstart {
@@ -1178,41 +1266,80 @@ const soon = [
       }
       .steps {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 20px;
       }
       .step {
         display: flex;
         flex-direction: column;
+        min-width: 0;
       }
       .step-head {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         gap: 10px;
         margin-bottom: 12px;
+        min-height: 36px;
       }
       .step-num {
-        font-family: var(--font-head);
+        font-family: var(--font-mono);
         font-weight: 700;
-        font-size: 20px;
+        font-size: 15px;
         color: var(--accent);
       }
       .step-label {
         font-size: 14px;
         font-weight: 700;
       }
+      .code-wrap {
+        display: flex;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        border-radius: 10px;
+        background: var(--term-bg);
+      }
       .code {
         margin: 0;
         flex: 1;
-        background: var(--term-bg);
+        min-width: 0;
+        background: transparent;
         color: var(--term-text);
         padding: 14px;
-        border-radius: 10px;
         font-family: var(--font-mono);
         font-size: 12px;
         line-height: 1.6;
-        white-space: pre-wrap;
+        white-space: pre;
         overflow-x: auto;
+      }
+      .copy-code {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--line-mid);
+        border-radius: 6px;
+        background: var(--surf-soft);
+        color: var(--body);
+        cursor: pointer;
+      }
+      .copy-code:hover {
+        color: var(--ink);
+        border-color: var(--line-strong);
+      }
+      .copy-code .check-icon {
+        display: none;
+      }
+      .copy-code.copied {
+        color: var(--out-ok);
+      }
+      .copy-code.copied .copy-icon {
+        display: none;
+      }
+      .copy-code.copied .check-icon {
+        display: block;
       }
       .quickstart-more {
         margin: 24px 0 0;
@@ -1268,7 +1395,14 @@ const soon = [
       }
       .footer-links {
         display: flex;
+        align-items: center;
         gap: 22px;
+      }
+      .footer-links a {
+        color: var(--muted);
+      }
+      .footer-links a:hover {
+        color: var(--ink);
       }
 
       /* On desktop the console fills its panel row to match the graph height.
@@ -1317,53 +1451,143 @@ const soon = [
         }
       }
       @media (max-width: 900px) {
+        :root {
+          --gutter: 24px;
+        }
         .title {
           font-size: 44px;
         }
-        /* No tabs on mobile: show supported buttons as-is, then list the
-           upcoming queries as plain descriptions (no buttons). */
+        .demo {
+          display: flex;
+          flex-direction: column;
+        }
+        .demo-head {
+          order: 0;
+        }
+        .demo-controls {
+          order: 1;
+          margin-bottom: 24px;
+        }
+        .demo-panels {
+          order: 2;
+          min-width: 0;
+          margin-bottom: 0;
+        }
+        .demo-panels > *,
+        .console,
+        .term-fill,
+        .term-fill [data-console],
+        .term {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+        }
+        .graph {
+          order: 1;
+        }
+        .console {
+          order: 2;
+          overflow: hidden;
+        }
+        /* Keep runnable commands directly before the visualization. */
         .tabs {
           display: none;
         }
-        .tab-panel[hidden] {
-          display: block;
-        }
         .tab-panel[data-panel='soon'] {
-          margin-top: 22px;
-        }
-        .soon-heading {
-          display: block;
-          font-family: var(--font-mono);
-          font-size: 11px;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--muted);
-          margin-bottom: 10px;
-        }
-        .tab-panel[data-panel='soon'] .preset-soon {
-          border: none;
-          background: none;
-          padding: 3px 0;
-          opacity: 0.85;
-        }
-        .tab-panel[data-panel='soon'] .tbd {
-          display: none;
+          display: none !important;
         }
         .features,
         .steps {
-          grid-template-columns: 1fr;
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      @media (max-width: 700px) {
+        .band-inner {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .tags {
+          flex-wrap: wrap;
+        }
+        .arch-panel {
+          padding: 14px;
         }
       }
       @media (max-width: 560px) {
-        .marginalia {
-          font-size: 9px;
-          gap: 8px;
+        :root {
+          --gutter: 20px;
+        }
+        .nav {
+          padding-block: 18px;
+        }
+        .brand-logo {
+          height: 22px;
+        }
+        .nav-links {
+          gap: 4px;
+          font-size: 13px;
+        }
+        .gh-link {
+          display: none;
+        }
+        .hero {
+          padding-top: 38px;
         }
         .title {
           font-size: 36px;
         }
+        .lede {
+          font-size: 17px;
+        }
+        .demo {
+          padding-top: 52px;
+        }
+        .demo-head {
+          align-items: center;
+        }
+        .demo-head h2 {
+          font-size: 31px;
+        }
+        .term-body {
+          height: 240px;
+          padding: 14px;
+          font-size: 11px;
+        }
+        .banner {
+          display: none;
+        }
+        .input-row {
+          flex-wrap: wrap;
+        }
+        .preset {
+          min-height: 52px;
+        }
+        .section-head {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .feature-group + .feature-group {
+          margin-top: 26px;
+        }
+        .card {
+          min-height: 0;
+        }
+        .code {
+          font-size: 11px;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }
         .cta-inner h2 {
           font-size: 34px;
+        }
+        .footer-inner {
+          padding-block: 24px;
+        }
+      }
+      @media (max-width: 360px) {
+        .nav-stories {
+          display: none;
         }
       }
     </style>
@@ -1387,24 +1611,6 @@ const soon = [
         syncIcon();
         window.dispatchEvent(new Event('theme-change'));
       });
-
-      // Live GitHub star count — degrades to plain "GitHub" if the API is unreachable.
-      (async () => {
-        const wrap = document.querySelector('.gh-stars');
-        const count = document.querySelector('[data-gh-count]');
-        if (!wrap || !count) return;
-        try {
-          const res = await fetch('https://api.github.com/repos/kakao/actionbase');
-          if (!res.ok) return;
-          const data = await res.json();
-          if (typeof data.stargazers_count === 'number') {
-            count.textContent = String(data.stargazers_count);
-            wrap.hidden = false;
-          }
-        } catch {
-          /* leave hidden */
-        }
-      })();
 
       // Console — a self-contained command parser over an in-memory edge set.
       const consoleEl = document.querySelector('[data-console]');
@@ -1582,6 +1788,23 @@ const soon = [
           });
         });
       }
+
+      document.querySelectorAll('[data-copy-code]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const code = button.getAttribute('data-copy-code') || '';
+          try {
+            await navigator.clipboard.writeText(code);
+            button.classList.add('copied');
+            button.setAttribute('aria-label', 'Copied');
+            window.setTimeout(() => {
+              button.classList.remove('copied');
+              button.setAttribute('aria-label', 'Copy command');
+            }, 1600);
+          } catch {
+            button.setAttribute('aria-label', 'Copy failed');
+          }
+        });
+      });
     </script>
   </body>
 </html>
