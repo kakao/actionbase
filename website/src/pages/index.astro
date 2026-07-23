@@ -598,20 +598,18 @@ const presets = [
       .term-body {
         padding: 16px;
         height: 294px;
-        /* Real-terminal scroll: a plain block scroll container so content keeps
-           its natural height and overflows (a flex column would instead shrink
-           the banner to fit). JS pins the view to the bottom so the prompt stays
-           visible and the banner scrolls up as commands accumulate; scrollbar
-           hidden to keep the chrome clean. */
-        overflow-y: auto;
-        scrollbar-width: none;
+        /* Block scroll container so content keeps its natural height and
+           overflows (a flex column would instead shrink the banner to fit).
+           overflow:hidden means the user can't scroll or drag it — only the JS
+           below moves it, pinning the view to the bottom after each command so
+           the prompt stays put and the banner scrolls off. user-select:none
+           stops drag-selection inside the console. */
+        overflow: hidden;
+        user-select: none;
         font-family: var(--font-mono);
         font-size: 12.5px;
         line-height: 1.65;
         color: var(--term-text);
-      }
-      .term-body::-webkit-scrollbar {
-        display: none;
       }
       .banner {
         margin: 0 0 10px;
