@@ -45,7 +45,7 @@
   --sl-color-black: #ffffff; /* light surface (search button, overlays) */
   --sl-color-gray-1: #2c2f45;
   --sl-color-gray-2: #4e5168; /* body */
-  --sl-color-gray-3: #6f7389; /* muted */
+  --sl-color-gray-3: #61657c; /* muted — 4.28:1 at #6f7389 failed AA on the page bg */
   --sl-color-gray-4: #9aa0b3;
   --sl-color-gray-5: #d6dae1;
   --sl-color-gray-6: #e9ecf1;
