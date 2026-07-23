@@ -14,40 +14,53 @@ const ogImageAlt =
   'Actionbase is a production-proven OLTP database serving tens of millions of users across Kakao.';
 const repo = 'https://github.com/kakao/actionbase';
 
-// ASCII otter banner, boxed at build time (from the Actionbase CLI welcome art).
+// ASCII otter banner, coloured to mirror the real CLI welcome art (ANSI 33):
+// the otter body stays the default terminal foreground; the frame, the heart,
+// the right-hand info labels and the "Actionbase" wordmark are gold. Each line
+// is a list of [text, gold?] segments — concatenated they reproduce the raw
+// art, and gold runs are wrapped in a <span class="g"> at build time.
 const BANNER_WIDTH = 98;
-const bannerArt = [
-  '',
-  '                    _____________',
-  '                 __/      ___    \\        Welcome to Actionbase! v0.2.1',
-  '               _/\\   ____/   \\____\\_',
-  '              / \\/ _/      @    \\_♥/\\     Actionbase  standalone:8080',
-  '             /   /                | |',
-  '           _/   /             ___/ \\/     proxy  off',
-  '          /     |           ______/       debug  off',
-  '       __/      |          /',
-  '   ___/         \\        _/',
-  '                 |      /\\__',
-  "                 |     /    \\__          _        _   _             _",
-  "                 |    /______  \\        / \\   ___| |_(_) ___  _ __ | |__   __ _ ___  ___",
-  "              \\   \\_         \\  \\      / _ \\ / __| __| |/ _ \\| '_ \\| '_ \\ / _` / __|/ _ \\",
-  "               \\__  \\__       |_|     / ___ \\ (__| |_| | (_) | | | | |_) | (_| \\__ \\  __/",
-  "                  \\____\\              /_/   \\_\\___|\\__|_|\\___/|_| |_|_.__/ \\__,_|___/\\___|",
-  '',
+const G = true;
+const bannerSegs = [
+  [['', false]],
+  [['                    _____________', false]],
+  [['                 __/      ___    \\        Welcome to Actionbase! v0.2.1', false]],
+  [['               _/\\   ____/   \\____\\_', false]],
+  [['              / \\/ _/      @    \\_', false], ['♥/', G], ['\\     ', false], ['Actionbase  standalone:8080', G]],
+  [['             /   /                | |', false]],
+  [['           _/   /             ___/ \\/     ', false], ['proxy', G], ['  off', false]],
+  [['          /     |           ______/       ', false], ['debug', G], ['  off', false]],
+  [['       __/      |          /', false]],
+  [['   ___/         \\        _/', false]],
+  [['                 |      /\\__', false]],
+  [['                 |     /    \\__', false], ['          _        _   _             _', G]],
+  [['                 |    /______  \\', false], ['        / \\   ___| |_(_) ___  _ __ | |__   __ _ ___  ___', G]],
+  [["              \\   \\_         \\  \\", false], ["      / _ \\ / __| __| |/ _ \\| '_ \\| '_ \\ / _` / __|/ _ \\", G]],
+  [["               \\__  \\__       |_|", false], ["     / ___ \\ (__| |_| | (_) | | | | |_) | (_| \\__ \\  __/", G]],
+  [['                  \\____\\', false], ['              /_/   \\_\\___|\\__|_|\\___/|_| |_|_.__/ \\__,_|___/\\___|', G]],
+  [['', false]],
 ];
+const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const goldSpan = (s) => `<span class="g">${escHtml(s)}</span>`;
+const bannerLine = (segs) => {
+  const raw = segs.map(([t]) => t).join('');
+  const pad = ' '.repeat(Math.max(0, BANNER_WIDTH - raw.length));
+  const inner = segs.map(([t, g]) => (g ? goldSpan(t) : escHtml(t))).join('') + pad;
+  return goldSpan('│') + inner + goldSpan('│');
+};
 const banner = [
-  '╭' + '─'.repeat(BANNER_WIDTH) + '╮',
-  ...bannerArt.map((l) => '│' + (l + ' '.repeat(BANNER_WIDTH)).slice(0, BANNER_WIDTH) + '│'),
-  '╰' + '─'.repeat(BANNER_WIDTH) + '╯',
+  goldSpan('╭' + '─'.repeat(BANNER_WIDTH) + '╮'),
+  ...bannerSegs.map(bannerLine),
+  goldSpan('╰' + '─'.repeat(BANNER_WIDTH) + '╯'),
 ].join('\n');
 
 const features = [
-  { n: 'I', title: 'Pre-computed Reads', desc: 'Writes do the work. Reads return what’s already computed.' },
-  { n: 'II', title: 'U2U · U2I · I2I', desc: 'One model for user–user, user–item, and item–item interactions.' },
-  { n: 'III', title: 'REST API', desc: 'Simple writes, fast reads — all via HTTP.' },
-  { n: 'IV', title: 'CDC Built-in', desc: 'Stream changes for downstream pipelines.' },
-  { n: 'V', title: 'Pluggable Storage', desc: 'A minimal storage abstraction — HBase today, SlateDB planned.' },
-  { n: 'VI', title: 'Battle-tested', desc: 'Over a million requests per minute at Kakao.' },
+  { title: 'Pre-computed Reads', desc: 'Writes do the work. Reads return what’s already computed.' },
+  { title: 'U2U · U2I · I2I', desc: 'One model for user–user, user–item, and item–item interactions.' },
+  { title: 'REST API', desc: 'Simple writes, fast reads — all via HTTP.' },
+  { title: 'CDC Built-in', desc: 'Stream changes for downstream pipelines.' },
+  { title: 'Pluggable Storage', desc: 'A minimal storage abstraction — HBase today, SlateDB planned.' },
+  { title: 'Battle-tested', desc: 'Over a million requests per minute at Kakao.' },
 ];
 
 // Both paths converge on one wide Storage Backend. Kafka sits on the write side
@@ -164,10 +177,10 @@ const presets = [
             <div class="term">
               <div class="term-bar">
                 <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-                <span class="term-title">actionbase — standalone</span>
+                <span class="term-title">actionbase cli</span>
               </div>
               <div class="term-body">
-                <pre class="banner">{banner}</pre>
+                <pre class="banner" set:html={banner}></pre>
                 <div data-lines>
                   <div class="line"><span class="l l-sys">actionbase standalone · server :8080 · CLI ready</span></div>
                   <div class="line"><span class="l l-sys">preset 'likes' loaded — 3 edges</span></div>
@@ -207,17 +220,16 @@ const presets = [
         </div>
       </section>
 
-      <!-- the engine -->
+      <!-- under the hood -->
       <section class="section">
         <div class="section-head">
-          <h2>The engine</h2>
+          <h2>Under the hood</h2>
           <span class="kicker">Writes do the work</span>
         </div>
         <div class="features">
           {
             features.map((f) => (
               <div class="card">
-                <div class="card-num">{f.n}</div>
                 <h3>{f.title}</h3>
                 <p>{f.desc}</p>
               </div>
@@ -362,6 +374,7 @@ const presets = [
         --surf-soft: rgba(255, 255, 255, 0.62);
         --surf-panel: rgba(255, 255, 255, 0.5);
         --surf-foot: rgba(230, 232, 240, 0.7);
+        --grid-line: rgba(32, 34, 58, 0.05);
         --page-bg: linear-gradient(180deg, #f3f5f8 0%, #e9ecf1 100%);
       }
 
@@ -377,6 +390,7 @@ const presets = [
         --surf-soft: rgba(255, 255, 255, 0.04);
         --surf-panel: rgba(255, 255, 255, 0.03);
         --surf-foot: rgba(0, 0, 0, 0.28);
+        --grid-line: rgba(255, 255, 255, 0.05);
         --page-bg: linear-gradient(180deg, #141520 0%, #0e0f17 100%);
       }
 
@@ -543,18 +557,20 @@ const presets = [
         margin: 0;
       }
       .glass {
-        padding: 11px;
+        /* Thinner, muted frame so it frames the terminal without shouting:
+           slimmer padding, a desaturated indigo wash, fainter grid + shadow. */
+        padding: 6px;
         background:
-          linear-gradient(155deg, #7c7ee8, #3e40a8),
-          linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.22) 1px, transparent 1px);
+          linear-gradient(155deg, #4c4e86, #2e3068),
+          linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
         background-size:
           100% 100%,
           26px 26px,
           26px 26px;
         box-shadow:
-          0 30px 60px -30px rgba(35, 37, 75, 0.5),
-          inset 0 1px 2px rgba(255, 255, 255, 0.4);
+          0 22px 46px -32px rgba(35, 37, 75, 0.4),
+          inset 0 1px 2px rgba(255, 255, 255, 0.22);
       }
       .term {
         background: var(--term-bg);
@@ -582,24 +598,34 @@ const presets = [
       .term-body {
         padding: 16px;
         height: 294px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
+        /* Real-terminal scroll: a plain block scroll container so content keeps
+           its natural height and overflows (a flex column would instead shrink
+           the banner to fit). JS pins the view to the bottom so the prompt stays
+           visible and the banner scrolls up as commands accumulate; scrollbar
+           hidden to keep the chrome clean. */
+        overflow-y: auto;
+        scrollbar-width: none;
         font-family: var(--font-mono);
         font-size: 12.5px;
         line-height: 1.65;
         color: var(--term-text);
       }
+      .term-body::-webkit-scrollbar {
+        display: none;
+      }
       .banner {
         margin: 0 0 10px;
         padding: 0;
-        color: var(--term-banner);
+        /* Otter body = default terminal foreground; gold runs opt in via .g. */
+        color: var(--term-text);
         font-family: var(--font-mono);
         font-size: 6.5px;
         line-height: 1.28;
         white-space: pre;
         overflow: hidden;
+      }
+      .banner .g {
+        color: var(--term-banner);
       }
       .line {
         display: flex;
@@ -748,18 +774,14 @@ const presets = [
         gap: 20px;
       }
       .card {
-        background: var(--surf-soft);
+        /* Vertical stripes only — no grid crosslines, no gradient wash. */
+        background-color: var(--surf-soft);
+        background-image: linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+        background-size: 28px 100%;
         border: 1px solid var(--line-soft);
         padding: 24px 22px;
         min-height: 148px;
-      }
-      .card-num {
-        font-family: var(--font-head);
-        font-weight: 700;
-        font-size: 15px;
-        color: var(--accent);
-        margin-bottom: 14px;
-        letter-spacing: 0.04em;
+        box-shadow: 0 16px 34px -26px rgba(35, 37, 75, 0.4);
       }
       .card h3 {
         margin: 0 0 8px;
@@ -1069,6 +1091,11 @@ const presets = [
       const consoleEl = document.querySelector('[data-console]');
       if (consoleEl) {
         const linesEl = consoleEl.querySelector('[data-lines]');
+        const bodyEl = consoleEl.querySelector('.term-body');
+        // Keep the newest output (and the banner scrolling off the top) in view.
+        const scrollToEnd = () => {
+          if (bodyEl) bodyEl.scrollTop = bodyEl.scrollHeight;
+        };
         const preset = [
           { source: 'Alice', target: 'Phone', ts: 5 },
           { source: 'Bob', target: 'Laptop', ts: 4 },
@@ -1090,6 +1117,7 @@ const presets = [
           span.textContent = text;
           row.appendChild(span);
           linesEl.appendChild(row);
+          scrollToEnd();
         };
 
         const parseFlags = (tokens) => {
@@ -1187,6 +1215,11 @@ const presets = [
         });
 
         syncButtons();
+        // Pin to the bottom now, on the next frame, and again once the tiny
+        // 6.5px banner webfont swaps in (which changes the scroll height).
+        scrollToEnd();
+        requestAnimationFrame(scrollToEnd);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(scrollToEnd);
       }
     </script>
   </body>
