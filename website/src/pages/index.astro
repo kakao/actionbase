@@ -43,7 +43,7 @@ const bannerSegs = [
   [['                 |    /______  \\', false], ['        / \\   ___| |_(_) ___  _ __ | |__   __ _ ___  ___', G]],
   [["              \\   \\_         \\  \\", false], ["      / _ \\ / __| __| |/ _ \\| '_ \\| '_ \\ / _` / __|/ _ \\", G]],
   [["               \\__  \\__       |_|", false], ["     / ___ \\ (__| |_| | (_) | | | | |_) | (_| \\__ \\  __/", G]],
-  [['                  \\____\\', false], ['              /_/   \\_\\___|\\__|_|\\___/|_| |_|_.__/ \\__,_|___/\\___|', G]],
+  [['                  \\____\\', false], ['             /_/   \\_\\___|\\__|_|\\___/|_| |_|_.__/ \\__,_|___/\\___|', G]],
   [['', false]],
 ];
 const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -181,6 +181,7 @@ const soon = [
           <a class="nav-text-link" href="/introduction/">Docs</a>
           <a class="nav-text-link nav-stories" href="/stories/">Stories</a>
           <a href={repo} class="gh-link" aria-label="GitHub">
+            <span class="gh-count" data-star-count hidden></span>
             <svg class="gh-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
             </svg>
@@ -312,10 +313,10 @@ const soon = [
           <p class="band-statement">
             Serving over <span class="accent">a million requests per minute</span>, in production at Kakao.
           </p>
-          <div class="tags">
-            <span class="tag">#real-time</span>
-            <span class="tag">#low-latency</span>
-            <span class="tag">#high-throughput</span>
+          <div class="band-facts">
+            <span class="fact">Apache-2.0</span>
+            <span class="fact">REST · CDC</span>
+            <span class="fact">HBase / SlateDB</span>
           </div>
         </div>
       </section>
@@ -767,11 +768,21 @@ const soon = [
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 44px;
+        gap: 8px;
+        min-width: 44px;
         height: 44px;
         border-radius: 999px;
         border: 1px solid var(--line-mid);
         color: var(--body);
+      }
+      .gh-link.has-count {
+        padding: 0 15px;
+      }
+      .gh-count {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
       }
       .gh-link:hover {
         border-color: var(--ink);
@@ -1243,10 +1254,11 @@ const soon = [
         /* Otter body = default terminal foreground; gold runs opt in via .g. */
         color: var(--term-text);
         font-family: var(--font-mono);
-        font-size: 6.5px;
-        /* 2:1 cell aspect (7.8px over 3.9px) matches a real terminal, so the
-           otter strokes and box borders connect the way the art was drawn */
-        line-height: 1.2;
+        font-size: 9px;
+        /* Verified against renders: 1.1 keeps the box frame's verticals
+           connected and the figlet rows cohesive; ≥1.2 opens gaps between
+           rows and ≥1.35 visibly dashes the frame. */
+        line-height: 1.1;
         white-space: pre;
         overflow: hidden;
       }
@@ -1393,15 +1405,20 @@ const soon = [
         line-height: 1.3;
         color: var(--ink);
       }
-      .tags {
+      .band-facts {
         display: flex;
-        gap: 12px;
       }
-      .tag {
+      .fact {
         font-family: var(--font-mono);
-        font-size: 11px;
-        letter-spacing: 0.08em;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
         color: var(--muted);
+        padding: 2px 16px;
+        border-left: 1px solid var(--line-mid);
+      }
+      .fact:first-child {
+        border-left: 0;
       }
 
       /* sections */
@@ -1817,8 +1834,13 @@ const soon = [
           align-items: flex-start;
           flex-direction: column;
         }
-        .tags {
+        .band-facts {
           flex-wrap: wrap;
+        }
+        .fact {
+          padding-left: 0;
+          padding-right: 16px;
+          border-left: 0;
         }
         .arch-panel {
           padding: 14px;
@@ -1917,6 +1939,20 @@ const soon = [
         }
         window.dispatchEvent(new Event('theme-change'));
       });
+
+      // Live GitHub star count in the nav pill; fails silently (rate limits,
+      // offline) leaving the plain icon button.
+      fetch('https://api.github.com/repos/kakao/actionbase')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((repo) => {
+          const count = repo?.stargazers_count;
+          const el = document.querySelector('[data-star-count]');
+          if (typeof count !== 'number' || !(el instanceof HTMLElement)) return;
+          el.textContent = count >= 1000 ? `★ ${(count / 1000).toFixed(1).replace(/\.0$/, '')}k` : `★ ${count}`;
+          el.hidden = false;
+          el.closest('.gh-link')?.classList.add('has-count');
+        })
+        .catch(() => {});
 
       // Console — a self-contained command parser over an in-memory edge set.
       const consoleEl = document.querySelector('[data-console]');

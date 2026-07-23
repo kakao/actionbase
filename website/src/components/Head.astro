@@ -22,3 +22,24 @@ import StarlightHead from '@astrojs/starlight/components/Head.astro';
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateFavicon);
   })();
 </script>
+
+<!-- Live GitHub star count in the header's GitHub pill, matching the landing
+     nav. Fails silently (rate limits, offline), leaving the plain icon. -->
+<script is:inline>
+  window.addEventListener('DOMContentLoaded', () => {
+    const link = document.querySelector('.social-icons a[href*="github.com"]');
+    if (!link) return;
+    fetch('https://api.github.com/repos/kakao/actionbase')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((repo) => {
+        const count = repo && repo.stargazers_count;
+        if (typeof count !== 'number') return;
+        const el = document.createElement('span');
+        el.className = 'gh-count';
+        el.textContent = count >= 1000 ? `★ ${(count / 1000).toFixed(1).replace(/\.0$/, '')}k` : `★ ${count}`;
+        link.prepend(el);
+        link.classList.add('has-count');
+      })
+      .catch(() => {});
+  });
+</script>

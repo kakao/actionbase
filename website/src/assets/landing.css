@@ -216,15 +216,26 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   padding: 0;
-  width: 44px;
+  min-width: 44px;
+  width: auto;
   height: 44px;
   border-radius: 999px;
   border: 1px solid var(--sl-color-hairline-light);
   color: var(--sl-color-gray-2);
 }
+.social-icons a.has-count {
+  padding: 0 15px;
+}
+.social-icons a .gh-count {
+  font-family: var(--sl-font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
 .social-icons a:hover {
-  border-color: var(--sl-color-gray-4);
+  border-color: var(--sl-color-white);
   color: var(--sl-color-gray-2);
 }
 .social-icons a svg {
