@@ -25,10 +25,8 @@ const repo = 'https://github.com/kakao/actionbase';
 // the right-hand info labels and the "Actionbase" wordmark are gold. Each line
 // is a list of [text, gold?] segments — concatenated they reproduce the raw
 // art, and gold runs are wrapped in a <span class="g"> at build time.
-const BANNER_WIDTH = 98;
 const G = true;
 const bannerSegs = [
-  [['', false]],
   [['                    _____________', false]],
   [['                 __/      ___    \\        Welcome to Actionbase! v0.2.1', false]],
   [['               _/\\   ____/   \\____\\_', false]],
@@ -44,21 +42,16 @@ const bannerSegs = [
   [["              \\   \\_         \\  \\", false], ["      / _ \\ / __| __| |/ _ \\| '_ \\| '_ \\ / _` / __|/ _ \\", G]],
   [["               \\__  \\__       |_|", false], ["     / ___ \\ (__| |_| | (_) | | | | |_) | (_| \\__ \\  __/", G]],
   [['                  \\____\\', false], ['             /_/   \\_\\___|\\__|_|\\___/|_| |_|_.__/ \\__,_|___/\\___|', G]],
-  [['', false]],
 ];
 const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const goldSpan = (s) => `<span class="g">${escHtml(s)}</span>`;
-const bannerLine = (segs) => {
-  const raw = segs.map(([t]) => t).join('');
-  const pad = ' '.repeat(Math.max(0, BANNER_WIDTH - raw.length));
-  const inner = segs.map(([t, g]) => (g ? goldSpan(t) : escHtml(t))).join('') + pad;
-  return goldSpan('│') + inner + goldSpan('│');
-};
-const banner = [
-  goldSpan('╭' + '─'.repeat(BANNER_WIDTH) + '╮'),
-  ...bannerSegs.map(bannerLine),
-  goldSpan('╰' + '─'.repeat(BANNER_WIDTH) + '╯'),
-].join('\n');
+// The real CLI draws its frame with box-drawing chars, but the Google Fonts
+// JetBrains Mono subset lacks U+2500-257F, so those glyphs fall back to the
+// system mono whose advance differs — the frame ends up ~2px wider than the
+// art. A CSS border reproduces the gold frame pixel-exactly instead.
+const banner = bannerSegs
+  .map((segs) => segs.map(([t, g]) => (g ? goldSpan(t) : escHtml(t))).join(''))
+  .join('\n');
 
 const primaryFeatures = [
   { title: 'Pre-computed Reads', desc: 'Writes do the work. Reads return what’s already computed.' },
@@ -1249,15 +1242,18 @@ const soon = [
         color: var(--term-text);
       }
       .banner {
+        display: inline-block;
         margin: 0 0 10px;
-        padding: 0;
+        padding: 8px 14px 10px;
+        /* CSS stand-in for the CLI's ╭─╮ box-drawing frame (see frontmatter). */
+        border: 1px solid var(--term-banner);
+        border-radius: 8px;
         /* Otter body = default terminal foreground; gold runs opt in via .g. */
         color: var(--term-text);
         font-family: var(--font-mono);
         font-size: 9px;
-        /* Verified against renders: 1.1 keeps the box frame's verticals
-           connected and the figlet rows cohesive; ≥1.2 opens gaps between
-           rows and ≥1.35 visibly dashes the frame. */
+        /* Verified against renders: 1.1 keeps the figlet rows cohesive;
+           ≥1.2 opens gaps between rows. */
         line-height: 1.1;
         white-space: pre;
         overflow: hidden;
