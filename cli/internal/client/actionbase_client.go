@@ -111,6 +111,12 @@ func (a *ActionbaseClient) Mutate(
 	)
 }
 
+// PostRaw POSTs an arbitrary body to a path and returns the HTTP status code.
+// Used by migrate apply to replay a plan without knowing each entry's type.
+func (a *ActionbaseClient) PostRaw(path string, body any) int {
+	return PostForStatus(a.client, path, body)
+}
+
 func (a *ActionbaseClient) GetHost() string {
 	return a.client.baseUrl
 }

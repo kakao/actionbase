@@ -91,6 +91,42 @@ func Post[T any, R any](c *HTTPClient, uri string, requestBody T) *Response[R] {
 	return call[R](c, request, requestBodyJson)
 }
 
+// PostForStatus POSTs a JSON body and returns only the HTTP status code,
+// without parsing the response body. Returns -1 on transport failure. Used by
+// replay-style flows (e.g. migrate apply) that key solely on status.
+func PostForStatus(c *HTTPClient, uri string, requestBody any) int {
+	url := fmt.Sprintf("%s%s", c.baseUrl, uri)
+	requestBodyJson, err := json.Marshal(requestBody)
+	if err != nil {
+		return -1
+	}
+
+	request, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBodyJson))
+	if err != nil {
+		return -1
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+	if c.authKey != nil {
+		request.Header.Set("Authorization", *c.authKey)
+	}
+
+	if c.context.IsDebugEnabled {
+		slog.Debug(fmt.Sprintf("→ %s %s %s", request.Method, request.URL.RequestURI(), util.Truncate(string(requestBodyJson), 60)))
+	}
+
+	response, err := c.client.Do(request)
+	if err != nil {
+		return -1
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	if c.context.IsDebugEnabled {
+		slog.Debug(fmt.Sprintf("← %s", response.Status))
+	}
+	return response.StatusCode
+}
+
 func call[T any](c *HTTPClient, request *http.Request, requestBody []byte) *Response[T] {
 	if c.context.IsDebugEnabled {
 		if requestBody == nil {
