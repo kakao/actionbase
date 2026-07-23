@@ -34,6 +34,7 @@ type TableEntity struct {
 	Storage  string  `json:"storage"`
 	Indices  []Index `json:"indices"`
 	Groups   []Group `json:"groups"`
+	Caches   []any   `json:"caches"`
 	Event    bool    `json:"event"`
 	ReadOnly bool    `json:"readOnly"`
 	Mode     string  `json:"mode"`

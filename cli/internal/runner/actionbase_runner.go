@@ -73,6 +73,7 @@ func NewActionbaseCommandLineRunner(version, host string, authKey *string, curre
 	runner.RegisterCommand(command.TypeDebug.GetName(), command.NewDebug(runner))
 	runner.RegisterCommand(command.TypeGuide.GetName(), command.NewGuide(runner, actionbaseClient))
 	runner.RegisterCommand(command.TypeDoctor.GetName(), command.NewDoctor(actionbaseClient))
+	runner.RegisterCommand(command.TypeMigrate.GetName(), command.NewMigrate(actionbaseClient))
 
 	return runner
 }

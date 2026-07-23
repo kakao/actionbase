@@ -80,6 +80,11 @@ var (
 		name:    "doctor",
 		command: "doctor <names>",
 	}
+
+	TypeMigrate = Type{
+		name:    "migrate",
+		command: "migrate <plan [-o <file>]|apply [-i <file>]>",
+	}
 )
 
 func (t Type) GetName() string {
