@@ -104,7 +104,7 @@ body {
 }
 .sidebar-content a[aria-current='page'] {
   color: var(--sl-color-white);
-  background: var(--sl-color-gray-6);
+  background: var(--sl-color-gray-5);
   font-weight: 700;
 }
 
