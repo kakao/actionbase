@@ -1,4 +1,4 @@
+# GitHub Pages ignores this file (Netlify/Cloudflare convention); kept correct
+# in case the site ever moves to a host that honors it.
 /_astro/*
-  Cache-Control: public
-  Cache-Control: max-age=0
-  Cache-Control: immutable
+  Cache-Control: public, max-age=31536000, immutable
