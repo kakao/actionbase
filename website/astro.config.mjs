@@ -2,7 +2,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
-import markdocGrammar from './grammars/markdoc.tmLanguage.json';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import mermaid from 'astro-mermaid';
 import { remarkHeadingId } from 'remark-custom-heading-id';
@@ -173,7 +172,6 @@ export default defineConfig({
             shadowColor: 'transparent',
           },
         },
-        shiki: { langs: [markdocGrammar] },
       },
       plugins: [
         starlightLinksValidator({
