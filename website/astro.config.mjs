@@ -138,7 +138,6 @@ export default defineConfig({
         { label: 'Internals', collapsed: true, autogenerate: { directory: 'internals' } },
         { label: 'API References', collapsed: true, autogenerate: { directory: 'api-references' } },
         { label: 'Project', collapsed: true, autogenerate: { directory: 'project' } },
-        'community',
         {
           label: 'Stories',
           collapsed: true,
@@ -150,6 +149,7 @@ export default defineConfig({
             { label: 'Vision', collapsed: true, autogenerate: { directory: 'stories/vision' } },
           ],
         },
+        'community',
       ],
       components: {
         Head: './src/components/Head.astro',
