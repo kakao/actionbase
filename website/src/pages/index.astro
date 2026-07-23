@@ -80,9 +80,19 @@ const steps = [
 ];
 
 const presets = [
-  'get --source Alice --target Phone',
-  'scan --index recent --start Bob --direction OUT',
-  'count --start Phone --direction IN',
+  { cmd: 'get --source Alice --target Phone', desc: 'Fetch a single edge' },
+  { cmd: 'scan --index recent --start Bob --direction OUT', desc: 'List edges, newest first' },
+  { cmd: 'count --start Phone --direction IN', desc: 'Count edges on a node' },
+];
+
+// Teaser for query operations that exist internally but aren't shipped yet —
+// shown disabled ("TBD") to hint at what's coming. topk covers issue #369
+// shapes 2 (Target|Window) and 4 (Target|Filter,Window).
+const soon = [
+  { cmd: 'agg --start Phone --direction IN --by hour --last 1d', desc: 'Aggregate edges over time' },
+  { cmd: 'topk --target product --edge purchase --last 1w', desc: 'Trending items this week' },
+  { cmd: 'topk --start Bob --target product --edge purchase --last 1y', desc: "A user's recent purchases" },
+  { cmd: 'multihop --start Alice --path follow,wish', desc: "Friends' wishes, across hops" },
 ];
 ---
 
@@ -157,116 +167,19 @@ const presets = [
         </div>
       </nav>
 
-      <!-- hero: copy | console  /  graph | run buttons -->
+      <!-- hero -->
       <header class="hero">
-        <div class="hero-grid">
-          <div class="hero-copy cell-copy">
-            <h1 class="title">
-              Precomputed at write time, served as <span class="accent">simple lookups</span>
-            </h1>
-            <p class="lede">
-              One database for user–user (follows), user–item (likes), and item–item (related
-              items) interactions.
-            </p>
-            <div class="cta-row">
-              <a class="btn btn-primary" href="/introduction/">Get started</a>
-              <a class="btn btn-outline" href={repo}>View on GitHub</a>
-            </div>
-          </div>
-
-          <!-- live console -->
-          <figure class="console cell-term">
-            <div class="panel" data-console>
-              <div class="term">
-                <div class="term-bar">
-                  <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-                  <span class="term-title">actionbase cli</span>
-                </div>
-                <div class="term-body">
-                  <pre class="banner" set:html={banner}></pre>
-                  <div data-lines>
-                    <div class="line"><span class="l l-sys">actionbase standalone · server :8080 · CLI ready</span></div>
-                    <div class="line"><span class="l l-sys">preset 'likes' loaded — 3 edges</span></div>
-                    <div class="line"><span class="l l-sys">Alice → Phone    Bob → Laptop    Bob → Phone</span></div>
-                    <div class="line"><span class="l l-dim">run a step → watch the graph</span></div>
-                  </div>
-                  <div class="input-row">
-                    <span class="prompt">actionbase&gt;</span>
-                    <span class="term-cursor" aria-hidden="true"></span>
-                    <span class="term-hint">run a step →</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </figure>
-
-          <!-- edge state graph (reacts to the console) -->
-          <figure class="graph cell-graph panel">
-            <figcaption class="graph-cap">Edge state · arrows denote <span class="accent">likes</span></figcaption>
-            <svg class="graph-svg" viewBox="0 0 340 250" role="img" aria-label="Edge state graph" data-graph>
-              <defs>
-                <marker
-                  id="ab-arrow"
-                  viewBox="0 0 10 10"
-                  refX="8.5"
-                  refY="5"
-                  markerWidth="7"
-                  markerHeight="7"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M0,0 L10,5 L0,10 z" fill="context-stroke" />
-                </marker>
-              </defs>
-              <!-- edges -->
-              <g class="gedge" data-edge="alice-phone" data-src="alice" data-dst="phone">
-                <line x1="118" y1="72" x2="222" y2="66" marker-end="url(#ab-arrow)" />
-              </g>
-              <g class="gedge" data-edge="bob-phone" data-src="bob" data-dst="phone">
-                <line x1="118" y1="176" x2="222" y2="72" marker-end="url(#ab-arrow)" />
-              </g>
-              <g class="gedge" data-edge="bob-laptop" data-src="bob" data-dst="laptop">
-                <line x1="118" y1="180" x2="222" y2="184" marker-end="url(#ab-arrow)" />
-              </g>
-              <!-- nodes -->
-              <g class="gnode gnode-user" data-node="alice">
-                <rect x="24" y="52" width="94" height="40" rx="9" />
-                <text class="gn-name" x="71" y="70">Alice</text>
-                <text class="gn-type" x="71" y="83">user</text>
-              </g>
-              <g class="gnode gnode-user" data-node="bob">
-                <rect x="24" y="156" width="94" height="40" rx="9" />
-                <text class="gn-name" x="71" y="174">Bob</text>
-                <text class="gn-type" x="71" y="187">user</text>
-              </g>
-              <g class="gnode gnode-item" data-node="phone">
-                <rect x="222" y="46" width="94" height="40" rx="9" />
-                <text class="gn-name" x="269" y="64">Phone</text>
-                <text class="gn-type" x="269" y="77">item</text>
-              </g>
-              <g class="gnode gnode-item" data-node="laptop">
-                <rect x="222" y="164" width="94" height="40" rx="9" />
-                <text class="gn-name" x="269" y="182">Laptop</text>
-                <text class="gn-type" x="269" y="195">item</text>
-              </g>
-              <!-- count badge (shown while count runs) -->
-              <g class="gbadge" data-badge hidden>
-                <circle r="13" data-badge-c />
-                <text data-badge-t>0</text>
-              </g>
-            </svg>
-          </figure>
-
-          <!-- run buttons: the console's step controls -->
-          <div class="cell-btns panel">
-            <span class="run-label">Run a step — watch the edges</span>
-            <div class="presets">
-              {presets.map((c, i) => (
-                <button type="button" class="preset" data-step={i} data-cmd={c}>
-                  {c}
-                </button>
-              ))}
-              <button type="button" class="preset preset-reset" data-reset hidden>↺ Reset</button>
-            </div>
+        <div class="hero-copy">
+          <h1 class="title">
+            Precomputed at write time, served as <span class="accent">simple lookups</span>
+          </h1>
+          <p class="lede">
+            One database for user–user (follows), user–item (likes), and item–item (related
+            items) interactions.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="/introduction/">Get started</a>
+            <a class="btn btn-outline" href={repo}>View on GitHub</a>
           </div>
         </div>
       </header>
@@ -302,10 +215,120 @@ const presets = [
         </div>
       </section>
 
+      <!-- try it: live console + edge graph -->
+      <section class="demo">
+        <div class="demo-head">
+          <h2>Interactive demo</h2>
+        </div>
+        <div class="demo-panels">
+          <figure class="console term-fill">
+            <div data-console>
+              <div class="term">
+                <div class="term-bar">
+                  <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                  <span class="term-title">actionbase cli</span>
+                </div>
+                <div class="term-body">
+                  <pre class="banner" set:html={banner}></pre>
+                  <div data-lines>
+                    <div class="line"><span class="l l-sys">actionbase standalone · server :8080 · CLI ready</span></div>
+                    <div class="line"><span class="l l-sys">preset 'likes' loaded — 3 edges</span></div>
+                    <div class="line"><span class="l l-sys">Alice → Phone    Bob → Laptop    Bob → Phone</span></div>
+                    <div class="line"><span class="l l-dim">run a step → watch the graph</span></div>
+                  </div>
+                  <div class="input-row">
+                    <span class="prompt">actionbase&gt;</span>
+                    <span class="term-cursor" aria-hidden="true"></span>
+                    <span class="term-hint">run a step →</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </figure>
+
+          <figure class="graph panel">
+            <figcaption class="graph-cap">Graph</figcaption>
+            <svg class="graph-svg" viewBox="0 0 340 250" role="img" aria-label="Edge state graph" data-graph>
+              <defs>
+                <marker id="ab-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+                  <path d="M3.5,2.5 L8,5 L3.5,7.5" fill="none" stroke="context-stroke" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                </marker>
+              </defs>
+              <g class="gedge" data-edge="alice-phone" data-src="alice" data-dst="phone">
+                <line x1="118" y1="72" x2="222" y2="66" marker-end="url(#ab-arrow)" />
+                <text class="gedge-label" x="168" y="61">likes</text>
+              </g>
+              <g class="gedge" data-edge="bob-phone" data-src="bob" data-dst="phone">
+                <line x1="118" y1="176" x2="222" y2="72" marker-end="url(#ab-arrow)" />
+                <text class="gedge-label" x="150" y="120">likes</text>
+              </g>
+              <g class="gedge" data-edge="bob-laptop" data-src="bob" data-dst="laptop">
+                <line x1="118" y1="180" x2="222" y2="184" marker-end="url(#ab-arrow)" />
+                <text class="gedge-label" x="168" y="176">likes</text>
+              </g>
+              <g class="gnode gnode-user" data-node="alice">
+                <rect x="24" y="52" width="94" height="40" rx="9" />
+                <text class="gn-name" x="71" y="70">Alice</text>
+                <text class="gn-type" x="71" y="83">user</text>
+              </g>
+              <g class="gnode gnode-user" data-node="bob">
+                <rect x="24" y="156" width="94" height="40" rx="9" />
+                <text class="gn-name" x="71" y="174">Bob</text>
+                <text class="gn-type" x="71" y="187">user</text>
+              </g>
+              <g class="gnode gnode-item" data-node="phone">
+                <rect x="222" y="46" width="94" height="40" rx="9" />
+                <text class="gn-name" x="269" y="64">Phone</text>
+                <text class="gn-type" x="269" y="77">item</text>
+              </g>
+              <g class="gnode gnode-item" data-node="laptop">
+                <rect x="222" y="164" width="94" height="40" rx="9" />
+                <text class="gn-name" x="269" y="182">Laptop</text>
+                <text class="gn-type" x="269" y="195">item</text>
+              </g>
+            </svg>
+          </figure>
+        </div>
+
+        <div class="demo-controls">
+          <div class="tabs" role="tablist" data-tabs>
+            <button type="button" class="tab active" role="tab" data-tab="supported" aria-selected="true">
+              Supported
+            </button>
+            <button type="button" class="tab" role="tab" data-tab="soon" aria-selected="false">
+              Coming soon
+            </button>
+          </div>
+          <div class="tab-panel" data-panel="supported">
+            <div class="presets">
+              {presets.map((p, i) => (
+                <button type="button" class="preset" data-step={i} data-cmd={p.cmd}>
+                  <span class="preset-cmd">{p.cmd}</span>
+                  <span class="preset-desc">{p.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div class="tab-panel" data-panel="soon" hidden>
+            <span class="soon-heading">Coming soon</span>
+            <div class="presets">
+              {soon.map((p) => (
+                <button type="button" class="preset preset-soon" disabled>
+                  <span class="preset-cmd">{p.cmd}</span>
+                  <span class="preset-desc">{p.desc}</span>
+                  <span class="tbd">TBD</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- architecture -->
       <section class="section arch">
-        <div class="arch-kicker">
-          <span>Architecture</span><span>Client → Actionbase → storage &amp; stream</span>
+        <div class="section-head">
+          <h2>Architecture</h2>
+          <span class="kicker">Client → Actionbase → storage &amp; stream</span>
         </div>
         <div class="arch-panel">
           <div class="node">Client</div>
@@ -375,7 +398,7 @@ const presets = [
       <!-- CTA -->
       <section class="cta">
         <div class="cta-inner">
-          <h2>Ready to build?</h2>
+          <h2>Start building</h2>
           <p>
             The reference covers concepts, architecture, and hands-on guides — from a single write to a
             million reads per minute.
@@ -565,40 +588,69 @@ const presets = [
         margin: 0 auto;
         padding: 48px var(--gutter) 40px;
       }
-      /* 2×2 hero: copy | console  /  graph | run buttons */
-      .hero-grid {
+      .hero-copy {
+        max-width: 1000px;
+      }
+
+      /* "Try it" section: [console | graph] over a horizontal control bar */
+      .demo {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 60px var(--gutter) 20px;
+      }
+      .demo-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+      .demo-head h2 {
+        font-family: var(--font-head);
+        font-weight: 700;
+        font-size: 34px;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      .demo-panels {
         display: grid;
-        grid-template-columns: 1.05fr 1fr;
-        grid-template-areas:
-          'copy term'
-          'graph btns';
-        column-gap: 44px;
-        row-gap: 26px;
-        align-items: start;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: stretch;
+        margin-bottom: 20px;
       }
-      .cell-copy {
-        grid-area: copy;
-        align-self: center;
-      }
-      .cell-term {
-        grid-area: term;
-      }
-      .cell-graph {
-        grid-area: graph;
-      }
-      .cell-btns {
-        grid-area: btns;
-        align-self: stretch;
+      .demo-controls {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 14px;
       }
-      .run-label {
+      .tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .tab {
+        margin-bottom: -1px;
+        padding: 8px 14px;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
         font-family: var(--font-mono);
-        font-size: 11px;
-        letter-spacing: 0.12em;
+        font-size: 12px;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--muted);
+        cursor: pointer;
+      }
+      .tab.active {
+        color: var(--ink);
+        border-bottom-color: var(--accent);
+      }
+      .tab-panel[hidden] {
+        display: none;
+      }
+      .soon-heading {
+        display: none;
       }
       .title {
         font-family: var(--font-head);
@@ -613,7 +665,6 @@ const presets = [
         font-size: 19px;
         line-height: 1.58;
         color: var(--body);
-        max-width: 36ch;
         margin: 0 0 34px;
         text-wrap: pretty;
       }
@@ -695,12 +746,30 @@ const presets = [
         text-anchor: middle;
       }
       .gedge line {
-        stroke: var(--line-strong);
-        stroke-width: 1.6;
+        stroke: var(--line-mid);
+        stroke-width: 1.25;
+        stroke-linecap: round;
         transition:
           stroke 0.25s,
           stroke-width 0.25s,
           opacity 0.25s;
+      }
+      .gedge-label {
+        fill: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 7px;
+        letter-spacing: 0.04em;
+        text-anchor: middle;
+        transition: fill 0.25s;
+      }
+      .gedge.on .gedge-label {
+        fill: var(--accent);
+      }
+      /* count numbering: the label becomes the ordinal (1, 2, …) on each edge */
+      .gedge-label.num {
+        fill: var(--accent);
+        font-size: 10px;
+        font-weight: 700;
       }
       /* reactive states, toggled from the console */
       .gnode.dim,
@@ -709,7 +778,7 @@ const presets = [
       }
       .gedge.on line {
         stroke: var(--accent);
-        stroke-width: 2.6;
+        stroke-width: 2;
       }
       .gnode.on rect {
         stroke: var(--accent);
@@ -718,20 +787,6 @@ const presets = [
       }
       .gnode.on .gn-name {
         fill: var(--accent);
-      }
-      .gbadge[hidden] {
-        display: none;
-      }
-      .gbadge circle {
-        fill: var(--accent);
-      }
-      .gbadge text {
-        fill: #fff;
-        font-family: var(--font-mono);
-        font-size: 12px;
-        font-weight: 700;
-        text-anchor: middle;
-        dominant-baseline: central;
       }
       /* console */
       .console {
@@ -851,18 +906,28 @@ const presets = [
       .presets {
         display: flex;
         flex-direction: column;
-        align-items: stretch;
         gap: 8px;
       }
       .preset {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
         text-align: left;
         background: var(--surf-card);
         border: 1px solid var(--line-mid);
-        padding: 8px 11px;
+        padding: 9px 11px;
+        cursor: pointer;
+      }
+      .preset-cmd {
         font-family: var(--font-mono);
         font-size: 11px;
         color: var(--body);
-        cursor: pointer;
+      }
+      .preset-desc {
+        font-family: var(--font-body);
+        font-size: 11px;
+        color: var(--muted);
       }
       .preset:hover:not(:disabled) {
         border-color: var(--line-strong);
@@ -871,8 +936,30 @@ const presets = [
         opacity: 0.4;
         cursor: not-allowed;
       }
-      .preset-reset {
+      .preset.active {
+        border-color: var(--accent);
+        background: var(--accent-fill);
+      }
+      .preset.active .preset-cmd {
         color: var(--accent);
+      }
+      /* teaser: query ops that aren't shipped yet, shown disabled with a TBD tag */
+      .preset-soon {
+        padding-right: 46px;
+      }
+      .preset-soon:disabled {
+        opacity: 0.6;
+      }
+      .tbd {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border: 1px solid var(--line-mid);
+        padding: 1px 5px;
       }
 
       /* trust band */
@@ -971,17 +1058,6 @@ const presets = [
       .arch {
         padding-top: 26px;
         padding-bottom: 74px;
-      }
-      .arch-kicker {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        margin-bottom: 28px;
-        font-family: var(--font-mono);
-        font-size: 11px;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--muted);
       }
       .arch-panel {
         border: 1px solid var(--line-mid);
@@ -1187,15 +1263,79 @@ const presets = [
         gap: 22px;
       }
 
+      /* On desktop the console fills its panel row to match the graph height.
+         Its content is taken out of flow (absolute) so running commands never
+         grows the cell — the body just clips (overflow:hidden) and auto-scrolls.
+         Mobile keeps the fixed body height. */
+      @media (min-width: 901px) {
+        .term-fill {
+          position: relative;
+        }
+        .term-fill [data-console] {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+        }
+        .term-fill .term {
+          flex: 1 1 0;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+        }
+        .term-fill .term-body {
+          flex: 1 1 0;
+          min-height: 0;
+          height: auto;
+        }
+        /* full-width rows: command on the left, dimmed description on the right */
+        .preset {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+        }
+        .preset-desc {
+          text-align: right;
+        }
+      }
+
       /* responsive */
       @media (max-width: 900px) {
         .title {
           font-size: 44px;
         }
-        .hero-grid {
+        .demo-panels {
           grid-template-columns: 1fr;
-          grid-template-areas: 'copy' 'term' 'graph' 'btns';
-          row-gap: 22px;
+        }
+        /* No tabs on mobile: show supported buttons as-is, then list the
+           upcoming queries as plain descriptions (no buttons). */
+        .tabs {
+          display: none;
+        }
+        .tab-panel[hidden] {
+          display: block;
+        }
+        .tab-panel[data-panel='soon'] {
+          margin-top: 22px;
+        }
+        .soon-heading {
+          display: block;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: var(--muted);
+          margin-bottom: 10px;
+        }
+        .tab-panel[data-panel='soon'] .preset-soon {
+          border: none;
+          background: none;
+          padding: 3px 0;
+          opacity: 0.85;
+        }
+        .tab-panel[data-panel='soon'] .tbd {
+          display: none;
         }
         .features,
         .steps {
@@ -1278,18 +1418,24 @@ const presets = [
         // visible: get highlights one edge, scan/count highlight a fan of them.
         const graphEl = document.querySelector('[data-graph]');
         const NAME = { Alice: 'alice', Bob: 'bob', Phone: 'phone', Laptop: 'laptop' };
-        const NODE_CORNER = { alice: [118, 52], bob: [118, 156], phone: [316, 46], laptop: [316, 164] };
         const gEdges = graphEl ? [...graphEl.querySelectorAll('.gedge')] : [];
         const gNodes = graphEl ? [...graphEl.querySelectorAll('.gnode')] : [];
-        const gBadge = graphEl ? graphEl.querySelector('[data-badge]') : null;
-        const gBadgeC = graphEl ? graphEl.querySelector('[data-badge-c]') : null;
-        const gBadgeT = graphEl ? graphEl.querySelector('[data-badge-t]') : null;
         const edgeId = (e) => NAME[e.source] + '-' + NAME[e.target];
 
+        // every edge label reads "likes" until count numbers the matched ones 1, 2, …
+        const resetLabels = () => {
+          gEdges.forEach((e) => {
+            const t = e.querySelector('.gedge-label');
+            if (t) {
+              t.textContent = 'likes';
+              t.classList.remove('num');
+            }
+          });
+        };
         const clearGraph = () => {
           gEdges.forEach((e) => e.classList.remove('on', 'dim'));
           gNodes.forEach((n) => n.classList.remove('on', 'dim'));
-          if (gBadge) gBadge.setAttribute('hidden', '');
+          resetLabels();
         };
         const focusGraph = (edgeIds, nodeIds) => {
           const es = new Set(edgeIds);
@@ -1304,17 +1450,18 @@ const presets = [
             n.classList.toggle('on', on);
             n.classList.toggle('dim', !on);
           });
-          if (gBadge) gBadge.setAttribute('hidden', '');
+          resetLabels();
         };
-        const showBadge = (nodeId, n) => {
-          if (!gBadge || !NODE_CORNER[nodeId]) return;
-          const [x, y] = NODE_CORNER[nodeId];
-          gBadgeC.setAttribute('cx', x);
-          gBadgeC.setAttribute('cy', y);
-          gBadgeT.setAttribute('x', x);
-          gBadgeT.setAttribute('y', y);
-          gBadgeT.textContent = String(n);
-          gBadge.removeAttribute('hidden');
+        // count: label the matched edges 1, 2, … so the total reads off the graph
+        const numberEdges = (edgeIds) => {
+          edgeIds.forEach((id, i) => {
+            const el = gEdges.find((e) => e.dataset.edge === id);
+            const t = el && el.querySelector('.gedge-label');
+            if (t) {
+              t.textContent = String(i + 1);
+              t.classList.add('num');
+            }
+          });
         };
 
         const addLine = (kind, text, withPrompt) => {
@@ -1375,11 +1522,9 @@ const presets = [
             const m = edges.filter((e) => (dir === 'IN' ? e.target === f.start : e.source === f.start));
             addLine('ok', '→ ' + m.length);
             const startId = NAME[f.start];
-            focusGraph(
-              m.map(edgeId),
-              [startId, ...m.map((e) => (dir === 'IN' ? NAME[e.source] : NAME[e.target]))],
-            );
-            showBadge(startId, m.length);
+            const ids = m.map(edgeId);
+            focusGraph(ids, [startId, ...m.map((e) => (dir === 'IN' ? NAME[e.source] : NAME[e.target]))]);
+            numberEdges(ids);
           } else if (cmd === 'scan') {
             const dir = String(f.direction || 'OUT').toUpperCase();
             const m = edges
@@ -1405,49 +1550,41 @@ const presets = [
           }
         };
 
-        // Guided tour: the three presets unlock one at a time, in order; a reset
-        // appears once the tour has started and returns the console to step one.
+        // Any step runs on click — no forced order, no reset. The clicked
+        // button takes an active state; TBD teasers stay disabled via markup.
         const stepButtons = [...document.querySelectorAll('[data-step]')];
-        const resetButton = document.querySelector('[data-reset]');
-        const initialLines = [
-          ['sys', 'actionbase standalone · server :8080 · CLI ready'],
-          ['sys', "preset 'likes' loaded — 3 edges"],
-          ['sys', 'Alice → Phone    Bob → Laptop    Bob → Phone'],
-          ['dim', 'run a step → watch the graph'],
-        ];
-        let step = 0;
-
-        const syncButtons = () => {
-          stepButtons.forEach((b, i) => {
-            b.disabled = i !== step;
-          });
-          if (resetButton) resetButton.hidden = step === 0;
-        };
-
-        stepButtons.forEach((btn, i) => {
+        stepButtons.forEach((btn) => {
           btn.addEventListener('click', () => {
-            if (i !== step) return;
+            stepButtons.forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
             run(btn.getAttribute('data-cmd'));
-            step = Math.min(step + 1, stepButtons.length);
-            syncButtons();
           });
         });
-
-        resetButton?.addEventListener('click', () => {
-          edges = preset.slice();
-          linesEl.replaceChildren();
-          initialLines.forEach(([k, t]) => addLine(k, t, false));
-          clearGraph();
-          step = 0;
-          syncButtons();
-        });
-
-        syncButtons();
         // Pin to the bottom now, on the next frame, and again once the tiny
         // 6.5px banner webfont swaps in (which changes the scroll height).
         scrollToEnd();
         requestAnimationFrame(scrollToEnd);
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(scrollToEnd);
+      }
+
+      // Try-it tabs: switch between the supported and coming-soon panels.
+      const tabList = document.querySelector('[data-tabs]');
+      if (tabList) {
+        const tabs = [...tabList.querySelectorAll('.tab')];
+        const panels = [...document.querySelectorAll('.tab-panel')];
+        tabs.forEach((tab) => {
+          tab.addEventListener('click', () => {
+            const name = tab.dataset.tab;
+            tabs.forEach((t) => {
+              const on = t === tab;
+              t.classList.toggle('active', on);
+              t.setAttribute('aria-selected', String(on));
+            });
+            panels.forEach((p) => {
+              p.hidden = p.dataset.panel !== name;
+            });
+          });
+        });
       }
     </script>
   </body>
