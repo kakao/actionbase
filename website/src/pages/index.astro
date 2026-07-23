@@ -1331,13 +1331,28 @@ const soon = [
         text-align: left;
         background: var(--surf-card);
         border: 1px solid var(--line-mid);
+        border-radius: 8px;
         padding: 9px 11px;
         cursor: pointer;
+        transition:
+          border-color 0.15s ease,
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
       }
       .preset-cmd {
         font-family: var(--font-mono);
         font-size: 11px;
         color: var(--body);
+      }
+      /* run affordance: make the rows read as executable buttons */
+      .preset-cmd::before {
+        content: '▸';
+        margin-right: 9px;
+        color: var(--accent-text);
+        opacity: 0.55;
+      }
+      .preset:disabled .preset-cmd::before {
+        opacity: 0.25;
       }
       .preset-desc {
         font-family: var(--font-body);
@@ -1345,7 +1360,12 @@ const soon = [
         color: var(--muted);
       }
       .preset:hover:not(:disabled) {
-        border-color: var(--line-strong);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+      }
+      .preset:hover:not(:disabled) .preset-cmd::before {
+        opacity: 1;
       }
       .preset:disabled {
         opacity: 0.4;
@@ -1840,6 +1860,13 @@ const soon = [
         }
         .arch-panel {
           padding: 14px;
+          /* Don't scale the drawing below legibility — keep its text size and
+             let the panel scroll sideways instead. */
+          overflow-x: auto;
+          align-items: flex-start;
+        }
+        .arch-svg {
+          min-width: 620px;
         }
       }
       @media (max-width: 560px) {
