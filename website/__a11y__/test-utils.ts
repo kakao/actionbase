@@ -21,35 +21,18 @@ const config: Config = {
   i18n: {
     // A list of slugs to exclude from the sitemap for the default locale.
     // By default, all slugs for the default locale are included.
-    exclude: [
-      'components/using-components',
-      'getting-started',
-      'guides/customization',
-      'guides/i18n',
-      'guides/overriding-components',
-      'guides/pages',
-      'guides/project-structure',
-      'guides/route-data',
-      'guides/site-search',
-      'manual-setup',
-      'reference/frontmatter',
-      'reference/overrides',
-      'reference/plugins',
-      'reference/route-data',
-    ],
+    exclude: [],
     // Locale-specific included slugs (non-default locale slugs are excluded by default).
-    locales: {
-      // N.B. If adding more locales here, also update the changed files filters in
-      // `.github/workflows/ci.yml` to ensure tests run when files for those locales change.
-      ja: ['guides/route-data', 'reference/frontmatter'],
-    },
+    locales: {},
   },
   // A list of violation to ignore.
   ignore: [{ id: 'landmark-unique', nodeMatcher: landmarkUniqueNodeMatcher }],
   sitemap: {
     url: 'http://localhost:4321/sitemap-index.xml',
     replace: {
-      query: 'https://starlight.astro.build',
+      // The sitemap lists production URLs (astro.config.mjs `site`); rewrite
+      // them onto the local preview server under test.
+      query: 'https://actionbase.io',
       value: 'http://localhost:4321',
     },
   },

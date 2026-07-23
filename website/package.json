@@ -10,7 +10,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "tsc --noEmit",
-    "linkcheck": "CHECK_LINKS=true pnpm build",
+    "linkcheck": "npm run build",
     "astro": "astro",
     "grammars": "node grammars/generate.mjs",
     "format": "prettier --write .",

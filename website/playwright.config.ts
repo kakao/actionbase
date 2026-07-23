@@ -16,7 +16,7 @@ export default defineConfig({
   timeout: 180 * 1_000,
   webServer: [
     {
-      command: 'pnpm run build && pnpm run preview',
+      command: 'npm run build && npm run preview',
       reuseExistingServer: !process.env['CI'],
       stdout: 'pipe',
       // The timeout of the single build step ran before the accessibility tests.
