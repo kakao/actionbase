@@ -36,7 +36,7 @@
 
   --sl-font: 'Manrope', system-ui, -apple-system, sans-serif;
   --sl-font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --ab-font-head: 'Space Grotesk', var(--sl-font);
+  --ab-font-head: 'Cormorant', Georgia, serif;
 }
 
 :root[data-theme='light'] {
@@ -97,21 +97,28 @@ body {
   color: var(--sl-color-gray-3);
 }
 
+/* Active sidebar item: flat neutral highlight — a subtle grey fill and strong
+   (dark) text, no rounded pill, no left bar, no accent colour. */
 .sidebar-content a {
-  border-radius: 7px;
-}
-
-.sidebar-content a[aria-current='page'] {
-  color: var(--sl-color-text-accent);
-  background: transparent;
-  font-weight: 700;
   border-radius: 0;
-  box-shadow: inset 3px 0 0 var(--sl-color-accent);
+}
+.sidebar-content a[aria-current='page'] {
+  color: var(--sl-color-white);
+  background: var(--sl-color-gray-6);
+  font-weight: 700;
 }
 
-/* Sidebar switcher (Main / Stories): flat accent underline, no rounded pill */
-li.tab {
+/* Main / Stories switcher: no fill, just a strong (dark) underline — same
+   colour family, only darker, not the accent purple. */
+li.tab,
+li.tab a[role='tab'] {
   border-radius: 0 !important;
+}
+li.tab a[aria-selected='true'] {
+  background: transparent !important;
+  color: var(--sl-color-white) !important;
+  font-weight: 700 !important;
+  border-bottom-color: var(--sl-color-white) !important;
 }
 
 /* ---------- Right rail (on this page) ---------- */
