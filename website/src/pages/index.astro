@@ -10,6 +10,11 @@ import { Check, Copy, RotateCcw } from '@lucide/astro';
 
 const GA_ID = 'G-2PY5JXRJ5J';
 const site = 'https://actionbase.io/';
+const pageTitle = 'Actionbase — A database for user interactions at scale';
+const description =
+  'Actionbase serves follows, likes, and views as precomputed lookups — one model for ' +
+  'user–user, user–item, and item–item interactions, in production at Kakao at over a ' +
+  'million requests per minute.';
 const ogUrl = new URL('og.png?v=1', site).href;
 const ogImageAlt =
   'Actionbase is a production-proven OLTP database serving tens of millions of users across Kakao.';
@@ -105,11 +110,19 @@ const soon = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Actionbase</title>
-    <meta name="description" content="A database for serving user interactions at scale." />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={site} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="icon" class="js-site-favicon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={site} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Actionbase" />
     <meta property="og:image" content={ogUrl} />
     <meta property="og:image:alt" content={ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
