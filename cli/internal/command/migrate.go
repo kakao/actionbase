@@ -15,8 +15,6 @@ import (
 const (
 	defaultPlanFile    = "migration-run.json"
 	datastoreURIPrefix = "datastore://"
-	jdbcNamespace      = "__jdbc__"
-	localNamespace     = "__local__"
 )
 
 // migrationEntry is one POST the apply phase will replay. It mirrors the JSON
@@ -70,11 +68,18 @@ func (m *Migrate) plan(outputPath string) *model.Response {
 	}
 
 	// Read storages first: label storage references are stored as storage names,
-	// and we need each storage's conf to resolve the datastore:// URI.
+	// and we need each storage's conf to resolve the datastore:// URI. Storages
+	// without a datastore:// equivalent keep their error so the plan can fail
+	// with the reason if a label actually references one.
 	storageURIByName := map[string]string{}
+	storageErrByName := map[string]error{}
 	if resp := m.client.GetStorages(); !resp.IsError() {
 		for _, s := range resp.Body.Content {
-			storageURIByName[s.Name] = storageToDatastoreURI(s)
+			if uri, err := storageToDatastoreURI(s); err != nil {
+				storageErrByName[s.Name] = err
+			} else {
+				storageURIByName[s.Name] = uri
+			}
 		}
 	}
 
@@ -103,9 +108,13 @@ func (m *Migrate) plan(outputPath string) *model.Response {
 				if detail.IsError() {
 					return model.Fail(fmt.Sprintf("Failed to fetch table %s.%s", db.Name, short))
 				}
+				body, err := tableBody(*detail.Body, storageURIByName, storageErrByName)
+				if err != nil {
+					return model.Fail(fmt.Sprintf("Cannot plan label %s.%s: %v", db.Name, short, err))
+				}
 				tables++
 				add(fmt.Sprintf("/graph/v2/service/%s/label/%s", db.Name, short),
-					tableBody(*detail.Body, storageURIByName),
+					body,
 					fmt.Sprintf("label/%s/%s", db.Name, short))
 			}
 		}
@@ -151,16 +160,16 @@ func (m *Migrate) apply(inputPath string) *model.Response {
 
 	ok, skip, fail := 0, 0, 0
 	for _, e := range plan {
-		status := m.client.PostRaw(e.Path, e.Body)
+		status, body := m.client.PostRaw(e.Path, e.Body)
 		switch {
-		case status == 409:
+		case isAlreadyExists(status, body):
 			util.Print("[SKIP] %s (already exists)\n", e.Label)
 			skip++
 		case status >= 200 && status < 300:
 			util.Print("[OK]   %s\n", e.Label)
 			ok++
 		default:
-			util.Print("[FAIL] %s (HTTP %d)\n", e.Label, status)
+			util.Print("[FAIL] %s (HTTP %d: %s)\n", e.Label, status, util.Truncate(body, 120))
 			fail++
 		}
 	}
@@ -172,12 +181,33 @@ func (m *Migrate) apply(inputPath string) *model.Response {
 	return model.SuccessWithResult(summary)
 }
 
-// tableBody builds the label create body, rewriting the storage reference to a
-// datastore:// URI resolved from the storage-name→URI map.
-func tableBody(t clientModel.TableEntity, storageURIByName map[string]string) map[string]any {
+// isAlreadyExists reports a duplicate-create rejection. The v2 DDL path never
+// returns 409: `failOnExist` duplicates surface as 400 with an "already
+// exists" message, so apply matches on the message to stay idempotent.
+func isAlreadyExists(status int, body string) bool {
+	return status == 409 || (status == 400 && strings.Contains(body, "already exists"))
+}
+
+// tableBody builds the label create body, rewriting a legacy storage-name
+// reference to its datastore:// URI. A reference that cannot be resolved to a
+// URI fails the plan: replaying it would create a label the server cannot
+// route once the legacy Storage entities are gone.
+func tableBody(t clientModel.TableEntity, uriByName map[string]string, errByName map[string]error) (map[string]any, error) {
 	storage := t.Storage
-	if resolved, ok := storageURIByName[storage]; ok {
-		storage = resolved
+	switch {
+	case strings.HasPrefix(storage, datastoreURIPrefix):
+		// already a URI; keep as is
+	case uriByName[storage] != "":
+		storage = uriByName[storage]
+	case errByName[storage] != nil:
+		return nil, fmt.Errorf("storage %q: %w", t.Storage, errByName[storage])
+	default:
+		return nil, fmt.Errorf("storage %q not found; cannot resolve a datastore:// URI", t.Storage)
+	}
+
+	caches := t.Caches
+	if caches == nil {
+		caches = []any{}
 	}
 	return map[string]any{
 		"desc":     t.Desc,
@@ -187,24 +217,27 @@ func tableBody(t clientModel.TableEntity, storageURIByName map[string]string) ma
 		"storage":  storage,
 		"indices":  t.Indices,
 		"groups":   t.Groups,
+		"caches":   caches,
 		"event":    t.Event,
 		"readOnly": t.ReadOnly,
 		"mode":     t.Mode,
-	}
+	}, nil
 }
 
-// storageToDatastoreURI maps a legacy storage entity to its datastore:// URI.
-func storageToDatastoreURI(s clientModel.StorageEntity) string {
-	switch s.Type {
-	case "HBASE":
-		return fmt.Sprintf("%s%s/%s", datastoreURIPrefix, confString(s.Conf, "namespace"), confString(s.Conf, "tableName"))
-	case "JDBC":
-		return fmt.Sprintf("%s%s/%s", datastoreURIPrefix, jdbcNamespace, s.Name)
-	case "LOCAL":
-		return fmt.Sprintf("%s%s/%s", datastoreURIPrefix, localNamespace, s.Name)
-	default:
-		return s.Name
+// storageToDatastoreURI maps a legacy HBASE storage entity to its datastore://
+// URI. The engine resolves every datastore:// URI except the reserved
+// __sys__ metastore as an HBase namespace/table, so non-HBASE storages have
+// no URI to mint — they return an error instead.
+func storageToDatastoreURI(s clientModel.StorageEntity) (string, error) {
+	if s.Type != "HBASE" {
+		return "", fmt.Errorf("storage type %s has no datastore:// equivalent", s.Type)
 	}
+	namespace := confString(s.Conf, "namespace")
+	tableName := confString(s.Conf, "tableName")
+	if namespace == "" || tableName == "" {
+		return "", fmt.Errorf("HBASE storage %q conf is missing namespace/tableName", s.Name)
+	}
+	return fmt.Sprintf("%s%s/%s", datastoreURIPrefix, namespace, tableName), nil
 }
 
 func confString(conf map[string]any, key string) string {
