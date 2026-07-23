@@ -12,22 +12,22 @@ Actionbase is a database for serving user interactions—not a general-purpose g
 - **Write-Time Optimization** — Pre-compute read structures at write time. Reads become simple lookups.
 - **Leverage Proven Storage** — Build on HBase for durability and scale. Don't reinvent storage.
 
-## User Interactions
+## Interaction Axes
 
-Actionbase handles:
+Every interaction is expressed in the same model — **who** did **what** to which **target** (_source → action → target_). The combination of source and target yields three axes:
 
-- Recent views (products, content)
-- Likes and reactions
-- Follows
+- **User–User (U2U)** — follow/unfollow, follower/following counts, timeline scans
+- **User–Item (U2I)** — likes/bookmarks, view history, bidirectional counters
+- **Item–Item (I2I)** — related products, similar-content graphs, and other precomputed item-to-item relations
 
-These share common characteristics: **who** did **what** to which **target**, real-time access, predictable query patterns.
+They look different on the surface, but share the same structure: real-time access with predictable query patterns.
 
 ## Property Graph Model
 
 Actionbase models interactions as edges:
 
-- **Source**: who (e.g., user_id)
-- **Target**: what (e.g., product_id, content_id, user_id)
+- **Source**: who or what acts (e.g., user_id, product_id)
+- **Target**: what is acted on (e.g., product_id, content_id, user_id)
 - **Properties**: schema-defined attributes (e.g., `created_at`, `reaction_type`)
 
 ```
@@ -44,6 +44,13 @@ User --[follows]--> User (edge)
   ├─ target: "user789"
   └─ properties: {
       created_at: 1234567891
+    }
+
+Product --[related]--> Product (edge)
+  ├─ source: "product456"
+  ├─ target: "product789"
+  └─ properties: {
+      score: 0.87
     }
 ```
 

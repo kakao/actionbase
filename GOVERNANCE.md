@@ -11,8 +11,8 @@ For practical guidance on how to contribute — see [Contributing](CONTRIBUTING.
   Maintainers have final decision-making authority.
   Under the current governance model, Maintainers are Kakao employees.
 
-- **Contributor**: Participates through code, documentation, issue reporting,
-  or discussions. Welcome from anywhere, regardless of affiliation.
+- **Contributor**: Participates through code, documentation, or issue
+  reporting. Welcome from anywhere, regardless of affiliation.
 
 ## Role Progression and Evolution
 

@@ -179,6 +179,10 @@ class ReadOnlyRequestFilterTest {
                 "POST /graph/v3/query",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
+                // queue/v1 GET
+                "GET /queue/v1/namespaces/{namespace}/queues/{queue}",
+                "GET /queue/v1/namespaces/{namespace}/queues/{queue}/partitions",
+                "GET /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/poll",
             )
 
         val WRITE_ENDPOINTS =
@@ -217,6 +221,7 @@ class ReadOnlyRequestFilterTest {
                 "DELETE /graph/v3/databases/{database}",
                 "DELETE /graph/v3/databases/{database}/aliases/{alias}",
                 "DELETE /graph/v3/databases/{database}/tables/{table}",
+                "DELETE /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
                 "POST /graph/v3/aggregations",
                 "POST /graph/v3/databases",
                 "POST /graph/v3/databases/{database}/aliases",
@@ -230,6 +235,13 @@ class ReadOnlyRequestFilterTest {
                 "PUT /graph/v3/databases/{database}",
                 "PUT /graph/v3/databases/{database}/aliases/{alias}",
                 "PUT /graph/v3/databases/{database}/tables/{table}",
+                // queue/v1 mutation
+                "POST /queue/v1/namespaces/{namespace}/queues",
+                "POST /queue/v1/namespaces/{namespace}/queues/{queue}/messages",
+                "PUT /queue/v1/namespaces/{namespace}/queues/{queue}/enable",
+                "PUT /queue/v1/namespaces/{namespace}/queues/{queue}/disable",
+                "DELETE /queue/v1/namespaces/{namespace}/queues/{queue}",
+                "DELETE /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/messages",
             )
 
         val NON_GRAPH_ENDPOINTS =
@@ -279,7 +291,10 @@ class ReadOnlyRequestFilterTest {
                 "index" to "idx",
                 "label" to "l",
                 "name" to "n",
+                "namespace" to "n",
+                "partition" to "0",
                 "query" to "q",
+                "queue" to "q",
                 "service" to "s",
                 "storage" to "st",
                 "table" to "t",

@@ -1,5 +1,7 @@
 package com.kakao.actionbase.server.configuration
 
+import com.kakao.actionbase.core.metadata.features.FeatureFlags
+import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.engine.service.AggregationService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
@@ -84,6 +86,12 @@ class GraphConfiguration {
                 properties.metadataFetchLimit?.let { withMetadataFetchLimit(it) }
                 properties.systemMutationMode?.let { withSystemMutationMode(it) }
                 withReadOnly(serverProperties.readOnly)
+                withUseJdbcMetastore(properties.useJdbcMetastore)
+                withFeatureFlags(
+                    serverProperties.featureFlags.map {
+                        FeatureFlags.Item(it.feature, it.scope.databases)
+                    },
+                )
             }
         return builder.build()
     }
@@ -133,7 +141,17 @@ class GraphConfiguration {
     fun provideQueryService(engine: V2BackedEngine): QueryService = QueryService(engine)
 
     @Bean
-    fun provideMutationService(engine: V2BackedEngine): MutationService = MutationService(engine)
+    fun provideMutationService(
+        engine: V2BackedEngine,
+        graph: Graph,
+    ): MutationService = MutationService(engine, graph.featureFlags)
+
+    @Bean
+    fun provideQueueService(
+        graph: Graph,
+        mutationService: MutationService,
+        queryService: QueryService,
+    ): QueueService = QueueService(graph, mutationService, queryService)
 
     @Bean
     fun provideAggregationService(

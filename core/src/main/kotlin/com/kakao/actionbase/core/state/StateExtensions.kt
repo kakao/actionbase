@@ -6,8 +6,9 @@ import com.kakao.actionbase.core.state.SpecialStateValue
 fun State.transit(
     event: Event,
     fields: AbstractSchema,
+    insertMerge: Boolean = false,
 ): State {
-    val nextProperties = transitProperties(properties, event, fields)
+    val nextProperties = transitProperties(properties, event, fields, insertMerge)
 
     val shouldOverride = event.version == version
     val nextVersion = maxOf(event.version, version)
@@ -49,7 +50,7 @@ fun State.transit(
             nextProperties,
         )
 
-    nextState.checkValid(fields)
+    nextState.checkValid(fields, insertMerge)
 
     return nextState
 }
@@ -62,9 +63,16 @@ private fun transitProperties(
     currentProperties: Map<String, StateValue>,
     event: Event,
     fields: AbstractSchema,
+    insertMerge: Boolean,
 ): Map<String, StateValue> =
     when (event.type) {
-        EventType.INSERT -> processInsertOperation(currentProperties, event, fields)
+        // INSERT_MERGE: INSERT merges like UPDATE (omitted kept, null clears); default snapshots (omitted -> UNSET).
+        EventType.INSERT ->
+            if (insertMerge) {
+                processUpdateOperation(currentProperties, event, fields)
+            } else {
+                processInsertOperation(currentProperties, event, fields)
+            }
         EventType.UPDATE -> processUpdateOperation(currentProperties, event, fields)
         EventType.DELETE -> processDeleteOperation(currentProperties, event, fields)
     }
@@ -182,7 +190,10 @@ private fun processDeleteOperation(
         }
     }
 
-private fun State.checkValid(fields: AbstractSchema) {
+private fun State.checkValid(
+    fields: AbstractSchema,
+    insertMerge: Boolean = false,
+) {
     val createdAt = createdAt
     val deletedAt = deletedAt
 
@@ -210,7 +221,10 @@ private fun State.checkValid(fields: AbstractSchema) {
                 }
 
             if (isInvalid && !fields.isNullable(fieldName)) {
-                throw IllegalArgumentException("$fieldName must be provided")
+                val message = "$fieldName must be provided"
+                // Under INSERT_MERGE an activating merge can leave a non-nullable field unset —
+                // permanent, so surfaced as INVALID. The default path keeps its original exception.
+                throw if (insertMerge) InvalidMutationException(message) else IllegalArgumentException(message)
             }
         }
 

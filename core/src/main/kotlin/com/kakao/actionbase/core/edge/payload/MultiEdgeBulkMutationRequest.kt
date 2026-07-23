@@ -14,10 +14,13 @@ data class MultiEdgeBulkMutationRequest(
         val type: EventType,
         val edge: MultiEdge,
     ) : UnresolvedEvent {
-        override fun createEvent(schema: ModelSchema): MultiEdgeEvent {
+        override fun createEvent(
+            schema: ModelSchema,
+            insertMerge: Boolean,
+        ): MultiEdgeEvent {
             require(schema is ModelSchema.MultiEdge) { "Expected ModelSchema.MultiEdge, but got ${schema::class.simpleName}" }
             val id = schema.id.type.cast(edge.id)
-            checkNonNullableFields(type, schema.properties, edge.properties)
+            checkNonNullableFields(type, schema.properties, edge.properties, insertMerge)
             val additionalProperties =
                 listOfNotNull(
                     edge.source?.let { "_source" to schema.source.type.cast(it) },

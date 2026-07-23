@@ -59,6 +59,9 @@ class V2BackedTableBinding(
     private val groupRecordMapper = mapper.group
     private val cacheRecordMapper = mapper.cache
 
+    /** Immutable edge tables persist index rows only — no `State`, no point get. */
+    private val isImmutable: Boolean = descriptor.schema is ModelSchema.ImmutableEdge
+
     // -- mutation
 
     override fun <T> withLock(
@@ -81,6 +84,8 @@ class V2BackedTableBinding(
     }
 
     override fun read(key: MutationKey): Mono<State> {
+        // Immutable edges have no State row: read the initial state so every mutation is a pure append.
+        if (isImmutable) return Mono.just(State.initial)
         val (source, target) = key.toSourceTarget()
         with(label) {
             val compatibleEdge = Edge(0L, source, target)
@@ -132,6 +137,11 @@ class V2BackedTableBinding(
         keys: List<Pair<Any, Any>>,
         filters: String?,
     ): Mono<DataFrame> {
+        if (isImmutable) {
+            return Mono.error(
+                UnsupportedOperationException("point get is not supported on immutable edge tables; use scan"),
+            )
+        }
         val postPredicates = filters?.let { WherePredicate.parse(it, label.entity.schema) }?.toSet() ?: emptySet()
 
         val hbaseGets =
@@ -179,6 +189,8 @@ class V2BackedTableBinding(
         val postPredicates = filters?.let { WherePredicate.parse(it, label.entity.schema) }?.toSet() ?: emptySet()
 
         if (FEATURE_TOTAL in features) {
+            // Immutable edges keep no count records, so `total` would always report 0.
+            require(!isImmutable) { "`total` feature is not supported on immutable edge tables." }
             require(indexPredicates.isEmpty() && postPredicates.isEmpty()) {
                 "total count does not support with `ranges` or `filters`."
             }
@@ -219,6 +231,43 @@ class V2BackedTableBinding(
                 val total = tuple.t2
                 df.applyPredicates(postPredicates).toV3(total)
             }.switchIfEmpty(EMPTY_DATAFRAME)
+    }
+
+    override fun scanDelete(
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        ranges: String?,
+    ): Mono<Int> {
+        require(isImmutable) { "`scanDelete` is only supported on immutable edge tables." }
+
+        val indexFieldNames =
+            label.entity.indices
+                .find { it.name == index }
+                ?.let { it.fields.map { field -> field.name } }
+        requireNotNull(indexFieldNames) { "index `$index` is not found in label `${label.entity.name}`." }
+
+        val indexPredicates = ranges?.let { WherePredicate.parse(it) }?.toSet() ?: emptySet()
+        val indexPredicateKeys = indexPredicates.map { it.key }
+        val lazyIndexMismatchErrorMessage: () -> String = {
+            "valid `ranges` order for the index `$index` is $indexFieldNames. input was: $indexPredicateKeys."
+        }
+        require(indexPredicateKeys.size <= indexFieldNames.size, lazyIndexMismatchErrorMessage)
+        indexPredicateKeys.zip(indexFieldNames).forEach { (predicateFieldName, indexFieldName) ->
+            require(predicateFieldName == indexFieldName, lazyIndexMismatchErrorMessage)
+        }
+
+        val scanFilter =
+            ScanFilter(
+                name = EntityName(descriptor.database, descriptor.table),
+                srcSet = setOf(start),
+                dir = direction,
+                limit = limit,
+                indexName = index,
+                otherPredicates = indexPredicates,
+            )
+        return label.scanAndDeleteIndexedEdges(scanFilter)
     }
 
     override fun seek(
@@ -382,6 +431,8 @@ class V2BackedTableBinding(
         return when (schema) {
             is ModelSchema.Edge ->
                 EdgeMutationBuilder.buildForUniqueEdge(before, after, schema.direction, schema.indexes, schema.groups, schema.caches)
+            is ModelSchema.ImmutableEdge ->
+                EdgeMutationBuilder.buildForImmutableEdge(before, after, schema.direction, schema.indexes, schema.groups)
             is ModelSchema.MultiEdge ->
                 EdgeMutationBuilder.buildForMultiEdge(before, after, schema.direction, schema.indexes, schema.groups, schema.caches)
             is ModelSchema.Vertex ->
@@ -406,10 +457,13 @@ class V2BackedTableBinding(
 
     private fun buildHBaseMutations(mutationRecords: EdgeMutationRecords): List<Mutation> {
         val mutations = mutableListOf<Mutation>()
-        val record = mapper.state.encoder.encode(mutationRecords.stateRecord)
-        mutations +=
-            Put(record.key)
-                .addColumn(HBaseConstants.DEFAULT_COLUMN_FAMILY, HBaseConstants.DEFAULT_QUALIFIER, record.value)
+        // Immutable edges persist no State row — index (+group) records only.
+        if (!isImmutable) {
+            val record = mapper.state.encoder.encode(mutationRecords.stateRecord)
+            mutations +=
+                Put(record.key)
+                    .addColumn(HBaseConstants.DEFAULT_COLUMN_FAMILY, HBaseConstants.DEFAULT_QUALIFIER, record.value)
+        }
         mutations +=
             mutationRecords.createIndexRecords.map {
                 val record = mapper.index.encoder.encode(it)

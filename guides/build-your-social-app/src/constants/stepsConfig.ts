@@ -597,7 +597,7 @@ This is the core pattern behind most social apps.`,
 
 We built this guide to help you get to know Actionbase. We did our best, but it may fall short in places. We appreciate your understanding — and your feedback means a lot.
 
-<a href="https://github.com/kakao/actionbase/discussions/94" target="_blank">Share your thoughts</a>`,
+<a href="https://github.com/kakao/actionbase/issues" target="_blank">Share your thoughts</a>`,
     popover: { side: 'over', align: 'center' },
   },
 ];

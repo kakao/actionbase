@@ -7,7 +7,7 @@ For users familiar with relational databases who want to understand how Actionba
 
 ## Why Consider Actionbase?
 
-As services grow, tables storing user interactions—likes, recent views, follows—often hit scaling walls:
+As services grow, tables storing user interactions—likes, recent views, follows, related items—often hit scaling walls:
 
 - Shard key management and hot entities
 - Cross-shard queries
@@ -22,11 +22,12 @@ In an RDB, interaction data often lives in tables like:
 - `user_follows` (user–user)
 - `user_likes` (user–item)
 - `user_views` (user–item)
+- `product_related` (item–item)
 
 In Actionbase, these become edges:
 
-- **Source**: who (e.g., user_id)
-- **Target**: what (e.g., product_id, user_id)
+- **Source**: who or what acts (e.g., user_id, product_id)
+- **Target**: what is acted on (e.g., product_id, user_id)
 - **Properties**: schema-defined (e.g., `created_at`)
 
 Read-optimized structures (indexes, counts) are pre-computed at write time.

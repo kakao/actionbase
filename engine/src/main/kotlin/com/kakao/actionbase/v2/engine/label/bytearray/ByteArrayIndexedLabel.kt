@@ -1,6 +1,8 @@
 package com.kakao.actionbase.v2.engine.label.bytearray
 
 import com.kakao.actionbase.engine.datastore.impl.ByteArrayStore
+import com.kakao.actionbase.engine.storage.StorageTable
+import com.kakao.actionbase.engine.storage.memory.MemoryStorageTable
 import com.kakao.actionbase.v2.core.code.EdgeEncoder
 import com.kakao.actionbase.v2.core.code.Index
 import com.kakao.actionbase.v2.engine.cdc.CdcContext
@@ -18,8 +20,8 @@ open class ByteArrayIndexedLabel(
     coder: EdgeEncoder<ByteArray>,
     override val indices: List<Index>,
     override val indexNameToIndex: Map<String, Index>,
-    store: ByteArrayStore,
-) : ByteArrayHashLabel(entity, coder, store),
+    table: StorageTable,
+) : ByteArrayHashLabel(entity, coder, table),
     IndexedLabelMixin<ByteArray> {
     override val self: AbstractLabel<ByteArray> = this
 
@@ -35,13 +37,19 @@ open class ByteArrayIndexedLabel(
             entity: LabelEntity,
             coder: EdgeEncoder<ByteArray>,
             store: ByteArrayStore,
+        ): ByteArrayIndexedLabel = create(entity, coder, MemoryStorageTable(store))
+
+        fun create(
+            entity: LabelEntity,
+            coder: EdgeEncoder<ByteArray>,
+            table: StorageTable,
         ): ByteArrayIndexedLabel =
             ByteArrayIndexedLabel(
                 entity = entity,
                 coder = coder,
                 indices = entity.indices,
                 indexNameToIndex = entity.indices.associateBy { it.name },
-                store = store,
+                table = table,
             )
     }
 }

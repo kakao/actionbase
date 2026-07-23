@@ -29,6 +29,12 @@ sealed class V3TableDescriptor {
         override val schema: ModelSchema.Edge,
     ) : V3TableDescriptor()
 
+    data class ImmutableEdge(
+        override val database: String,
+        override val table: String,
+        override val schema: ModelSchema.ImmutableEdge,
+    ) : V3TableDescriptor()
+
     data class MultiEdge(
         override val database: String,
         override val table: String,
@@ -48,6 +54,23 @@ sealed class V3TableDescriptor {
 
             val isVertexTable = entity.type == LabelType.VERTEX
             val isMultiEdgeTable = entity.type == LabelType.MULTI_EDGE
+            val isImmutableEdgeTable = entity.type == LabelType.IMMUTABLE_INDEXED
+            if (isImmutableEdgeTable) {
+                val schema =
+                    ModelSchema.ImmutableEdge(
+                        source = entity.schema.src.toV3(),
+                        target = entity.schema.tgt.toV3(),
+                        properties = entity.schema.fields.map { it.toV3() },
+                        direction = entity.dirType.toV3(),
+                        indexes = entity.indices.map { it.toV3() },
+                        groups = entity.groups.map { it.toV3() },
+                    )
+                return ImmutableEdge(
+                    database = database,
+                    table = table,
+                    schema = schema,
+                )
+            }
             if (isVertexTable) {
                 val schema =
                     ModelSchema.Vertex(

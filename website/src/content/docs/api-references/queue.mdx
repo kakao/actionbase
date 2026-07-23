@@ -1,0 +1,455 @@
+---
+title: Queue API Reference
+description: queue/v1 API reference
+sidebar:
+  order: 4
+tableOfContents:
+  maxHeadingLevel: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="caution">
+  Authentication is not enforced. See [API References](/api-references/#authentication).
+</Aside>
+
+queue/v1 API. See [Queue](/design/queue/) for conceptual background.
+
+## 1. Create Queue
+
+Create a queue, provisioning the backing immutable edge table with the fixed queue schema (`seq`, `value`, and a server-assigned ULID message id).
+
+### Endpoint
+
+```
+POST /queue/v1/namespaces/{namespace}/queues
+```
+
+### Parameters
+
+| Location | Parameter     | Required               | Description                                           |
+| -------- | ------------- | ---------------------- | ----------------------------------------------------- |
+| Header   | Authorization | Optional               | Authentication key (reserved for future use)          |
+| Path     | namespace     | Required               | Target namespace                                      |
+| Body     | queue         | Required               | Queue name                                            |
+| Body     | storage       | Required               | Storage URI (e.g., `datastore://<namespace>/<table>`) |
+| Body     | partitions    | Optional (default: 30) | Partition count, fixed at creation (minimum 1)        |
+
+### Response Type
+
+[QueueDescriptorResponse](#queuedescriptorresponse) - Queue metadata
+
+### Request Example
+
+| Parameter     | Value          |
+| ------------- | -------------- |
+| Authorization | YOUR_API_KEY   |
+| namespace     | your_namespace |
+
+```bash
+# POST /queue/v1/namespaces/your_namespace/queues
+curl -X POST \
+    "http://ab.example.com/queue/v1/namespaces/your_namespace/queues" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "queue": "your_queue",
+      "storage": "datastore://your_namespace/your_queue",
+      "partitions": 30
+    }'
+```
+
+### Response Example
+
+```json
+{
+  "namespace": "your_namespace",
+  "queue": "your_queue",
+  "partitions": 30,
+  "storage": "datastore://your_namespace/your_queue"
+}
+```
+
+## 2. Get Queue
+
+Get a queue's metadata.
+
+### Endpoint
+
+```
+GET /queue/v1/namespaces/{namespace}/queues/{queue}
+```
+
+### Parameters
+
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | namespace     | Required | Target namespace                             |
+| Path     | queue         | Required | Target queue name                            |
+
+### Response Type
+
+[QueueDescriptorResponse](#queuedescriptorresponse) - Queue metadata
+
+### Request Example
+
+```bash
+# GET /queue/v1/namespaces/your_namespace/queues/your_queue
+curl "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "namespace": "your_namespace",
+  "queue": "your_queue",
+  "partitions": 30,
+  "storage": "datastore://your_namespace/your_queue"
+}
+```
+
+## 3. Enable / Disable Queue
+
+Activate or deactivate a queue. A queue must be disabled before it can be deleted.
+
+### Endpoint
+
+```
+PUT /queue/v1/namespaces/{namespace}/queues/{queue}/enable
+PUT /queue/v1/namespaces/{namespace}/queues/{queue}/disable
+```
+
+### Parameters
+
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | namespace     | Required | Target namespace                             |
+| Path     | queue         | Required | Target queue name                            |
+
+### Response Type
+
+[QueueDescriptorResponse](#queuedescriptorresponse) - Queue metadata
+
+### Request Example
+
+```bash
+# PUT /queue/v1/namespaces/your_namespace/queues/your_queue/disable
+curl -X PUT \
+    "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue/disable" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+## 4. Delete Queue
+
+Delete a queue. The queue must be disabled first; deleting an active queue returns `409 Conflict`.
+
+### Endpoint
+
+```
+DELETE /queue/v1/namespaces/{namespace}/queues/{queue}
+```
+
+### Parameters
+
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | namespace     | Required | Target namespace                             |
+| Path     | queue         | Required | Target queue name                            |
+
+### Request Example
+
+```bash
+# DELETE /queue/v1/namespaces/your_namespace/queues/your_queue
+curl -X DELETE \
+    "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+`204 No Content` on success; `409 Conflict` if the queue is still enabled.
+
+## 5. Get Partitions
+
+Get a queue's partition count, for consumers that fan a poll loop across `0 .. partitions-1`.
+
+### Endpoint
+
+```
+GET /queue/v1/namespaces/{namespace}/queues/{queue}/partitions
+```
+
+### Parameters
+
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | namespace     | Required | Target namespace                             |
+| Path     | queue         | Required | Target queue name                            |
+
+### Response Type
+
+[QueuePartitionsResponse](#queuepartitionsresponse) - The partition count
+
+### Request Example
+
+```bash
+# GET /queue/v1/namespaces/your_namespace/queues/your_queue/partitions
+curl "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue/partitions" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "namespace": "your_namespace",
+  "queue": "your_queue",
+  "partitions": 30
+}
+```
+
+## 6. Enqueue
+
+Append messages to the queue. Each message is routed to a partition by its `key`; the server assigns a ULID id, and `seq` orders it within the partition.
+
+### Endpoint
+
+```
+POST /queue/v1/namespaces/{namespace}/queues/{queue}/messages
+```
+
+### Parameters
+
+| Location | Parameter     | Required | Description                                           |
+| -------- | ------------- | -------- | ----------------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use)          |
+| Path     | namespace     | Required | Target namespace                                      |
+| Path     | queue         | Required | Target queue name                                     |
+| Body     | messages      | Required | List of messages, each with `key`, `seq`, and `value` |
+
+### Request Body
+
+[EnqueueRequest](#enqueuerequest) - Payload containing messages
+
+### Response Type
+
+[EnqueueResponse](#enqueueresponse) - Per-message results
+
+### Request Example
+
+```bash
+# POST /queue/v1/namespaces/your_namespace/queues/your_queue/messages
+curl -X POST \
+    "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue/messages" \
+    -H "Authorization: YOUR_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "messages": [
+        {"key": "user1", "seq": 1000, "value": {"body": "hello"}},
+        {"key": "user1", "seq": 1001, "value": {"body": "world"}}
+      ]
+    }'
+```
+
+### Response Example
+
+```json
+{
+  "accepted": 2,
+  "results": [
+    { "partition": 7, "id": "01JT7Q0Z8B3N5Y6W9XKQRVMH2D", "status": "CREATED" },
+    { "partition": 7, "id": "01JT7Q0Z8CM4A1E8ZPXW3G5T7F", "status": "CREATED" }
+  ]
+}
+```
+
+## 7. Poll
+
+Read one partition forward in `seq` order. The response's `offset` is the cursor for the next poll, and the value to [commit](#8-commit) once the batch is processed.
+
+### Endpoint
+
+```
+GET /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/poll
+```
+
+### Parameters
+
+| Location | Parameter     | Required                | Description                                   |
+| -------- | ------------- | ----------------------- | --------------------------------------------- |
+| Header   | Authorization | Optional                | Authentication key (reserved for future use)  |
+| Path     | namespace     | Required                | Target namespace                              |
+| Path     | queue         | Required                | Target queue name                             |
+| Path     | partition     | Required                | Partition to read (`0 .. partitions-1`)       |
+| Query    | limit         | Optional (default: 100) | Max messages per page (maximum 1000)          |
+| Query    | offset        | Optional                | Read messages with `seq > offset` (exclusive) |
+| Query    | until         | Optional                | Read messages with `seq <= until` (inclusive) |
+
+### Response Type
+
+[PollResponse](#pollresponse) - One partition's page
+
+### Request Example
+
+```bash
+# GET /queue/v1/namespaces/your_namespace/queues/your_queue/partitions/7/poll
+curl "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue/partitions/7/poll?limit=100&offset=1000" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "messages": [
+    {
+      "partition": 7,
+      "id": "01JT7Q0Z8CM4A1E8ZPXW3G5T7F",
+      "seq": 1001,
+      "value": { "body": "world" }
+    }
+  ],
+  "offset": 1001,
+  "hasNext": false
+}
+```
+
+## 8. Commit
+
+Commit a partition up to an offset: every message with `seq <= offset` is deleted. Assumes one logical consumer per partition; see [Queue](/design/queue/#consumer-lifecycle).
+
+### Endpoint
+
+```
+DELETE /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/messages
+```
+
+### Parameters
+
+| Location | Parameter     | Required | Description                                  |
+| -------- | ------------- | -------- | -------------------------------------------- |
+| Header   | Authorization | Optional | Authentication key (reserved for future use) |
+| Path     | namespace     | Required | Target namespace                             |
+| Path     | queue         | Required | Target queue name                            |
+| Path     | partition     | Required | Partition to commit (`0 .. partitions-1`)    |
+| Query    | offset        | Required | Delete every message with `seq <= offset`    |
+
+### Response Type
+
+[QueueCommitResponse](#queuecommitresponse) - How many messages were deleted
+
+### Request Example
+
+```bash
+# DELETE /queue/v1/namespaces/your_namespace/queues/your_queue/partitions/7/messages
+curl -X DELETE \
+    "http://ab.example.com/queue/v1/namespaces/your_namespace/queues/your_queue/partitions/7/messages?offset=1001" \
+    -H "Authorization: YOUR_API_KEY"
+```
+
+### Response Example
+
+```json
+{
+  "namespace": "your_namespace",
+  "queue": "your_queue",
+  "partition": 7,
+  "committed": 2
+}
+```
+
+## Data Model
+
+### QueueCreateRequest
+
+```kotlin
+data class QueueCreateRequest(
+    val queue: String,        // Queue name
+    val storage: String,      // Storage URI
+    val partitions: Int = 30, // Partition count, fixed at creation (minimum 1)
+)
+```
+
+### QueueDescriptorResponse
+
+```kotlin
+data class QueueDescriptorResponse(
+    val namespace: String,
+    val queue: String,
+    val partitions: Int,
+    val storage: String,
+)
+```
+
+### QueuePartitionsResponse
+
+```kotlin
+data class QueuePartitionsResponse(
+    val namespace: String,
+    val queue: String,
+    val partitions: Int,
+)
+```
+
+### EnqueueRequest
+
+```kotlin
+data class EnqueueRequest(
+    val messages: List<EnqueueMessage>,
+)
+
+data class EnqueueMessage(
+    val key: String,       // Routes to a partition
+    val seq: Long,         // Orders within the partition; may encode a due time
+    val value: Any? = null // Opaque payload (JSON)
+)
+```
+
+### EnqueueResponse
+
+```kotlin
+data class EnqueueResponse(
+    val accepted: Int,                 // Count of messages with status CREATED
+    val results: List<EnqueueResult>,
+)
+
+data class EnqueueResult(
+    val partition: Int,   // Partition the message was routed to
+    val id: String,       // Server-assigned ULID
+    val status: String,   // CREATED on success
+)
+```
+
+### PollResponse
+
+```kotlin
+data class PollResponse(
+    val messages: List<PolledMessage>, // In seq order
+    val offset: Long?,                 // Cursor for the next poll (highest seq seen)
+    val hasNext: Boolean,              // Whether more messages remain in the range
+)
+
+data class PolledMessage(
+    val partition: Int,
+    val id: String,       // ULID message id
+    val seq: Long,
+    val value: Any?,
+)
+```
+
+### QueueCommitResponse
+
+```kotlin
+data class QueueCommitResponse(
+    val namespace: String,
+    val queue: String,
+    val partition: Int,
+    val committed: Int,   // Messages deleted by this commit
+)
+```

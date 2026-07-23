@@ -57,6 +57,14 @@ class NilTableBinding(
         features: List<String>,
     ): Mono<DataFrame> = V2BackedTableBinding.EMPTY_DATAFRAME
 
+    override fun scanDelete(
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        ranges: String?,
+    ): Mono<Int> = Mono.just(0)
+
     override fun seek(
         cache: String,
         start: List<Any>,

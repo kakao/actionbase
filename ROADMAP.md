@@ -41,4 +41,4 @@ No timeline commitments. Items may shift based on community feedback.
 
 ## Feedback
 
-Have feedback on the roadmap? Join the discussion on [GitHub Discussions](https://github.com/kakao/actionbase/discussions).
+Have feedback on the roadmap? [Open an issue](https://github.com/kakao/actionbase/issues).
