@@ -10,9 +10,9 @@ import org.springframework.http.MediaType
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EdgeMutationStorageOpsSpec : E2ETestBase() {
-    private val db = "storage-ops-db"
-    private val edgeTable = "storage-ops-edge"
-    private val multiEdgeTable = "storage-ops-multi"
+    private val db = "storage_ops_db"
+    private val edgeTable = "storage_ops_edge"
+    private val multiEdgeTable = "storage_ops_multi"
 
     @BeforeAll
     fun setup() {
@@ -87,7 +87,7 @@ class EdgeMutationStorageOpsSpec : E2ETestBase() {
     @ObjectSource(
         cases = """
         - name: edge without header omits storage_ops
-          table: storage-ops-edge
+          table: storage_ops_edge
           path: edges
           header: null
           body: |
@@ -95,15 +95,15 @@ class EdgeMutationStorageOpsSpec : E2ETestBase() {
           storageOpsExists: false
 
         - name: edge with header exposes storage_ops
-          table: storage-ops-edge
+          table: storage_ops_edge
           path: edges
           header: "true"
           body: |
             {"mutations": [{"type": "INSERT", "edge": {"version": 1, "source": "x", "target": "y", "properties": {"score": 2}}}]}
           storageOpsExists: true
 
-        - name: multi-edge with header exposes storage_ops
-          table: storage-ops-multi
+        - name: multi_edge with header exposes storage_ops
+          table: storage_ops_multi
           path: multi-edges
           header: "true"
           body: |

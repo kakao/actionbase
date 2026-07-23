@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName
 )
 @JsonSubTypes(
     JsonSubTypes.Type(value = TableDescriptor.Edge::class, name = "edge"),
+    JsonSubTypes.Type(value = TableDescriptor.ImmutableEdge::class, name = "immutableEdge"),
     JsonSubTypes.Type(value = TableDescriptor.MultiEdge::class, name = "multiEdge"),
     JsonSubTypes.Type(value = TableDescriptor.Vertex::class, name = "vertex"),
 )
@@ -46,6 +47,26 @@ sealed class TableDescriptor<T : ModelSchema> : V3Descriptor<TableId> {
         override val updatedAt: Long = Constants.DEFAULT_UPDATED_AT,
         override val updatedBy: String = Constants.DEFAULT_UPDATED_BY,
     ) : TableDescriptor<ModelSchema.Edge>() {
+        @JsonIgnore
+        override val id: TableId = TableId(tenant, database, table)
+    }
+
+    @JsonTypeName("immutableEdge")
+    data class ImmutableEdge(
+        override val tenant: String,
+        override val database: String,
+        override val table: String,
+        override val schema: ModelSchema.ImmutableEdge,
+        override val mode: MutationMode,
+        override val storage: String,
+        override val active: Boolean = true,
+        override val comment: String = Constants.DEFAULT_COMMENT,
+        override val revision: Long = Constants.DEFAULT_REVISION,
+        override val createdAt: Long = Constants.DEFAULT_CREATED_AT,
+        override val createdBy: String = Constants.DEFAULT_CREATED_BY,
+        override val updatedAt: Long = Constants.DEFAULT_UPDATED_AT,
+        override val updatedBy: String = Constants.DEFAULT_UPDATED_BY,
+    ) : TableDescriptor<ModelSchema.ImmutableEdge>() {
         @JsonIgnore
         override val id: TableId = TableId(tenant, database, table)
     }

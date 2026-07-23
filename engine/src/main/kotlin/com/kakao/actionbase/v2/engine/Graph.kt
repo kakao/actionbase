@@ -9,8 +9,12 @@ import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
+import com.kakao.actionbase.core.metadata.features.FeatureFlags
 import com.kakao.actionbase.engine.query.LabelProvider
+import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
 import com.kakao.actionbase.engine.storage.StorageOpCollector
+import com.kakao.actionbase.engine.storage.StorageTable
+import com.kakao.actionbase.engine.storage.memory.MemoryStorageBackend
 import com.kakao.actionbase.v2.core.code.EdgeEncoderFactory
 import com.kakao.actionbase.v2.core.edge.Edge
 import com.kakao.actionbase.v2.core.edge.TraceEdge
@@ -48,7 +52,6 @@ import com.kakao.actionbase.v2.engine.metadata.StorageType
 import com.kakao.actionbase.v2.engine.metadata.sync.MetadataSyncEntity
 import com.kakao.actionbase.v2.engine.metadata.sync.MetadataSyncStatus
 import com.kakao.actionbase.v2.engine.metadata.sync.MetadataType
-import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.migration.Migration
 import com.kakao.actionbase.v2.engine.service.ddl.AliasDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.LabelDdlService
@@ -71,9 +74,7 @@ import com.kakao.actionbase.v2.engine.wal.Wal
 import com.kakao.actionbase.v2.engine.wal.WalFactory
 import com.kakao.actionbase.v2.engine.wal.WalLog
 
-import java.lang.AutoCloseable
 import java.time.Duration
-import java.util.UUID
 
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -87,14 +88,16 @@ import reactor.core.Disposable
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
+import reactor.util.Loggers
 
 @Suppress("LargeClass")
 class Graph(
     val wal: Wal,
     val cdc: Cdc,
-    override val localMetastore: Database,
+    override val localStore: StorageTable,
     override val metastore: Database,
     override val metadataTable: MetadataTable,
+    override val consolidatedStore: StorageTable,
     override val edgeEncoderFactory: EdgeEncoderFactory,
     override val edgeRecordMapper: EdgeRecordMapper,
     override val datastore: DefaultHBaseCluster,
@@ -114,6 +117,8 @@ class Graph(
     internal val mutationRequestTimeout = config.mutationRequestTimeout
     internal val readOnly = config.readOnly
 
+    val featureFlags = FeatureFlags(config.featureFlags)
+
     private var metadataInitialized = false
 
     private val phase: String = config.phase
@@ -123,6 +128,8 @@ class Graph(
     private val artifactInfo: String = config.artifactInfo ?: "no artifact info"
 
     override val lockTimeout: Long = config.lockTimeout
+
+    override val useJdbcMetastore: Boolean = config.useJdbcMetastore
 
     private val warmUpConfig = config.warmUp
 
@@ -162,8 +169,6 @@ class Graph(
     val aliasDdl = AliasDdlService(this, aliasLabel, AliasEntity)
 
     fun isReady(): Boolean = metadataInitialized
-
-    val metastoreInspector = MetastoreInspector(this.metastore, this.metadataTable)
 
     val encoderPoolSize = config.encoderPoolSize
 
@@ -949,7 +954,7 @@ class Graph(
     companion object {
         internal val log = getLogger()
 
-        val reactorLogger = reactor.util.Loggers.getLogger(Graph::class.java)
+        val reactorLogger = Loggers.getLogger(Graph::class.java)
 
         @Suppress("LongMethod")
         fun create(
@@ -960,6 +965,7 @@ class Graph(
             webClientFactory: WebClientFactory,
         ): Graph {
             DefaultHBaseCluster.initialize(config.hbase)
+            DefaultStorageBackendFactory.initialize(config.hbase)
             log.info("phase: {}", config.phase)
             log.info("tenant: {}", config.tenant)
             log.info("graph config: {}", config)
@@ -998,8 +1004,7 @@ class Graph(
                 }
 
             val metadataTable = config.metastoreTable?.let { MetadataTable.get(it) } ?: MetadataTable.legacy
-            val localMetastore: Database = createDatabase(config, "local", metadataTable)
-            val metastore: Database = createDatabase(config, "global", metadataTable)
+            val metastore: Database = createDatabase(config, metadataTable)
             log.info("metadataTable: {}", metadataTable.tableName)
             val defaultHBaseStorageEntity =
                 config.defaultStorageEntity?.let { entity ->
@@ -1016,18 +1021,22 @@ class Graph(
                 }
 
             val storageEntities =
-                listOfNotNull(
-                    Metadata.localOnlyStorageEntity,
-                    Metadata.localBackedMetastoreEntity,
-                    Metadata.metastoreStorageEntity,
-                    defaultHBaseStorageEntity,
-                ).associateBy { it.name }
+                listOfNotNull(defaultHBaseStorageEntity).associateBy { it.name }
+
+            // System metastore stores are in-memory and acquired through the StorageBackend seam by
+            // distinct URIs (seed vs overlay); routing the operational overlay through the configured
+            // backend is a later, migration-gated step.
+            val systemStorageBackend = MemoryStorageBackend()
+            val localStore = systemStorageBackend.getStorageTable("datastore://metastore/seed").block()!!
+            val consolidatedStore = systemStorageBackend.getStorageTable("datastore://metastore/overlay").block()!!
 
             val defaults =
                 AbstractGraphDefaults(
-                    localMetastore,
+                    localStore,
                     metastore,
                     metadataTable,
+                    consolidatedStore,
+                    config.useJdbcMetastore,
                     edgeEncoderFactory,
                     edgeRecordMapper,
                     config.lockTimeout,
@@ -1042,16 +1051,9 @@ class Graph(
 
             val storageLabel =
                 Metadata.storageLabelEntity.materialize(defaults) {
-                    mutate(Metadata.localOnlyStorageEntity.toEdge(), EdgeOperation.INSERT)
-                        .then(mutate(Metadata.localBackedMetastoreEntity.toEdge(), EdgeOperation.INSERT))
-                        .then(mutate(Metadata.metastoreStorageEntity.toEdge(), EdgeOperation.INSERT))
-                        .let { chain ->
-                            if (defaultHBaseStorageEntity != null) {
-                                chain.then(mutate(defaultHBaseStorageEntity.toEdge(), EdgeOperation.INSERT))
-                            } else {
-                                chain
-                            }
-                        }.block()
+                    defaultHBaseStorageEntity?.let {
+                        mutate(it.toEdge(), EdgeOperation.INSERT).block()
+                    }
                 }
 
             val infoLabel =
@@ -1090,9 +1092,10 @@ class Graph(
             return Graph(
                 wal,
                 cdc,
-                defaults.localMetastore,
+                defaults.localStore,
                 defaults.metastore,
                 defaults.metadataTable,
+                defaults.consolidatedStore,
                 defaults.edgeEncoderFactory,
                 defaults.edgeRecordMapper,
                 defaults.datastore,
@@ -1111,36 +1114,20 @@ class Graph(
 
         private fun createDatabase(
             config: GraphConfig,
-            type: String,
             metadataTable: MetadataTable,
         ): Database {
-            val database =
-                when (type) {
-                    "local" -> {
-                        Database.connect(
-                            "jdbc:h2:mem:local-${UUID.randomUUID()};DB_CLOSE_DELAY=-1;MODE=MYSQL",
-                            driver = "org.h2.Driver",
-                        )
+            val hikariConfig =
+                HikariConfig().apply {
+                    jdbcUrl = config.metastoreUrl
+                    if (config.metastoreDriver != null) {
+                        driverClassName = config.metastoreDriver
                     }
-                    "global" -> {
-                        val hikariConfig =
-                            HikariConfig().apply {
-                                jdbcUrl = config.metastoreUrl
-                                if (config.metastoreDriver != null) {
-                                    driverClassName = config.metastoreDriver
-                                }
-                                username = config.metastoreUser
-                                password = config.metastorePassword
-                                maximumPoolSize = config.metastoreConnectionPoolSize
-                            }
-                        log.info("hikariConfig: {}", hikariConfig)
-                        val dataSource = HikariDataSource(hikariConfig)
-                        Database.connect(dataSource)
-                    }
-                    else -> {
-                        throw UnsupportedOperationException("Unsupported database type: $type")
-                    }
+                    username = config.metastoreUser
+                    password = config.metastorePassword
+                    maximumPoolSize = config.metastoreConnectionPoolSize
                 }
+            log.info("hikariConfig: {}", hikariConfig)
+            val database = Database.connect(HikariDataSource(hikariConfig))
             transaction(database) {
                 SchemaUtils.create(metadataTable)
             }

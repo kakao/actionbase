@@ -13,8 +13,10 @@ import kotlin.test.assertNull
 import org.apache.hadoop.hbase.client.Get
 import org.apache.hadoop.hbase.client.Table
 import org.apache.hadoop.hbase.util.Bytes
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.extension.ExtendWith
 
+@Disabled("Re-verifies HBase's own tombstone/TTL ordering rather than actionbase logic; see #431")
 @ExtendWith(HBaseTestingClusterExtension::class)
 class PerCellTTLTest(
     private val table: Table,

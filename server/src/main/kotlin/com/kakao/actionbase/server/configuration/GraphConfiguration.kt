@@ -1,5 +1,7 @@
 package com.kakao.actionbase.server.configuration
 
+import com.kakao.actionbase.core.metadata.features.FeatureFlags
+import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.server.client.kafka.SpringKafkaClientFactory
@@ -10,7 +12,6 @@ import com.kakao.actionbase.v2.engine.cdc.CdcFactory
 import com.kakao.actionbase.v2.engine.cdc.DefaultCdcFactory
 import com.kakao.actionbase.v2.engine.client.kafka.KafkaClientFactory
 import com.kakao.actionbase.v2.engine.client.web.WebClientFactory
-import com.kakao.actionbase.v2.engine.metastore.MetastoreInspector
 import com.kakao.actionbase.v2.engine.util.getLogger
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
 import com.kakao.actionbase.v2.engine.wal.DefaultWalFactory
@@ -84,6 +85,12 @@ class GraphConfiguration {
                 properties.metadataFetchLimit?.let { withMetadataFetchLimit(it) }
                 properties.systemMutationMode?.let { withSystemMutationMode(it) }
                 withReadOnly(serverProperties.readOnly)
+                withUseJdbcMetastore(properties.useJdbcMetastore)
+                withFeatureFlags(
+                    serverProperties.featureFlags.map {
+                        FeatureFlags.Item(it.feature, it.scope.databases)
+                    },
+                )
             }
         return builder.build()
     }
@@ -126,12 +133,6 @@ class GraphConfiguration {
         return graph
     }
 
-    @Bean("metastoreInspector")
-    fun provideMetastoreInspector(graph: Graph): MetastoreInspector = MetastoreInspector.createGlobal(graph)
-
-    @Bean("localMetastoreInspector")
-    fun provideLocalMetastoreInspector(graph: Graph): MetastoreInspector = MetastoreInspector.createLocal(graph)
-
     @Bean
     fun provideV2BackedEngine(graph: Graph): V2BackedEngine = V2BackedEngine(graph)
 
@@ -139,5 +140,15 @@ class GraphConfiguration {
     fun provideQueryService(engine: V2BackedEngine): QueryService = QueryService(engine)
 
     @Bean
-    fun provideMutationService(engine: V2BackedEngine): MutationService = MutationService(engine)
+    fun provideMutationService(
+        engine: V2BackedEngine,
+        graph: Graph,
+    ): MutationService = MutationService(engine, graph.featureFlags)
+
+    @Bean
+    fun provideQueueService(
+        graph: Graph,
+        mutationService: MutationService,
+        queryService: QueryService,
+    ): QueueService = QueueService(graph, mutationService, queryService)
 }

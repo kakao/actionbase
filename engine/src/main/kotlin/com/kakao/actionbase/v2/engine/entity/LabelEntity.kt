@@ -19,14 +19,12 @@ import com.kakao.actionbase.v2.engine.label.DatastoreIndexedLabel
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashOnlyIndexedLabel
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
-import com.kakao.actionbase.v2.engine.label.metastore.JdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.metastore.LocalBackedJdbcHashLabel
 import com.kakao.actionbase.v2.engine.label.nil.NilLabel
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.sql.RowWithSchema
 import com.kakao.actionbase.v2.engine.storage.DatastoreStorage
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseStorage
-import com.kakao.actionbase.v2.engine.storage.jdbc.JdbcStorage
 import com.kakao.actionbase.v2.engine.storage.local.LocalStorage
 import com.kakao.actionbase.v2.engine.util.getLogger
 
@@ -89,12 +87,11 @@ data class LabelEntity(
                 LabelType.HASH -> {
                     when (storage) {
                         is LocalStorage -> LocalBackedJdbcHashLabel.create(this, graph, storage, block)
-                        is JdbcStorage -> JdbcHashLabel.create(this, graph, storage, block)
                         is HBaseStorage -> HBaseHashOnlyIndexedLabel.create(this, graph, storage)
                         is DatastoreStorage -> DatastoreHashLabel.create(this, graph, block)
                         else -> {
                             logger.error(
-                                "{} supports only Local, Jdbc, HBase storage types. {} is not supported. Fallback to NilLabel",
+                                "{} supports only Local, HBase, Datastore storage types. {} is not supported. Fallback to NilLabel",
                                 type,
                                 storage,
                             )
@@ -102,8 +99,8 @@ data class LabelEntity(
                         }
                     }
                 }
-                LabelType.INDEXED, LabelType.MULTI_EDGE, LabelType.VERTEX -> {
-                    // MultiEdge and Vertex are both backed by the INDEXED storage path in the v2 engine.
+                LabelType.INDEXED, LabelType.MULTI_EDGE, LabelType.VERTEX, LabelType.IMMUTABLE_INDEXED -> {
+                    // MultiEdge, Vertex, and ImmutableEdge all share the INDEXED storage path; their behavior is differentiated in the v3 binding.
                     if (type == LabelType.MULTI_EDGE && !readOnly) {
                         logger.error("MULTI_EDGE type should be read-only in the v2 engine. Fallback to NilLabel")
                         return NilLabel(this.copy(type = LabelType.NIL))
@@ -121,10 +118,6 @@ data class LabelEntity(
                             NilLabel(this.copy(type = LabelType.NIL))
                         }
                     }
-                }
-                LabelType.IMMUTABLE_INDEXED -> {
-                    logger.error("{} supports only ... types. {} fallback to NilLabel", type, storage)
-                    NilLabel(this.copy(type = LabelType.NIL))
                 }
                 LabelType.NIL -> NilLabel(this)
             }

@@ -33,4 +33,5 @@ data class GraphProperties(
     val hbase: Map<String, String> = emptyMap(),
     val metadataFetchLimit: Int?,
     val systemMutationMode: MutationMode? = null,
+    val useJdbcMetastore: Boolean = true,
 )

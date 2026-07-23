@@ -7,9 +7,9 @@ description: Frequently asked questions about Actionbase
 
 ### What is Actionbase?
 
-Actionbase is a database for serving user interactions—likes, recent views, follows, reactions.
+Actionbase is a database for serving user interactions at scale, spanning three axes — user–user (U2U), user–item (U2I), and item–item (I2I).
 
-It models interactions as **who** did **what** to which **target**, and materializes read-optimized structures at write time. Reads use bounded access patterns (GET, SCAN, COUNT).
+It models every interaction the same way — **who** did **what** to which **target** — and materializes read-optimized structures at write time. Reads use bounded access patterns (GET, SCAN, COUNT).
 
 Actionbase is not a general-purpose graph database. It focuses on serving user interactions with predictable read patterns.
 
@@ -25,9 +25,9 @@ Internally, interactions are represented as edges in a graph. The terms "interac
 
 ### What problems does Actionbase solve?
 
-- Storing and querying recent views
-- Managing likes, reactions, and their counts
-- Handling follow relationships
+- **U2U** — follow relationships, follower/following counts, timelines
+- **U2I** — likes, reactions, view history, and their counts
+- **I2I** — related products and similar-content relations
 
 Instead of reimplementing indexing, ordering, and counting logic per service, Actionbase pre-computes these at write time.
 
@@ -191,7 +191,8 @@ For most teams, a well-tuned RDBMS handles this fine. Actionbase exists for case
 
 - Like buttons and reaction counts
 - "Recently viewed" lists
-- Follow/following feeds
+- Follow/following feeds and follower counts
+- Related products and similar-content lists
 - Per-user interaction histories
 
 When these outgrow your RDBMS—sharding gets painful, caches drift—Actionbase can take over.

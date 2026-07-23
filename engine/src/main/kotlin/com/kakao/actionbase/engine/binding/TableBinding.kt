@@ -57,6 +57,14 @@ interface TableBinding {
         features: List<String>,
     ): Mono<DataFrame>
 
+    fun scanDelete(
+        index: String,
+        start: Any,
+        direction: Direction,
+        limit: Int,
+        ranges: String?,
+    ): Mono<Int>
+
     fun seek(
         cache: String,
         start: List<Any>,

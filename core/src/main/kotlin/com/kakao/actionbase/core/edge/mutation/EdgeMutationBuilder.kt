@@ -37,6 +37,14 @@ object EdgeMutationBuilder {
         caches: List<Cache>,
     ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.Edge, before, after, directionType, indexes, groups, caches)
 
+    fun buildForImmutableEdge(
+        before: EdgeStateRecord,
+        after: EdgeStateRecord,
+        directionType: DirectionType,
+        indexes: List<Index>,
+        groups: List<Group>,
+    ): EdgeMutationRecords = buildWith(EdgeMutationStrategy.ImmutableEdge, before, after, directionType, indexes, groups, emptyList())
+
     fun buildForMultiEdge(
         before: EdgeStateRecord,
         after: EdgeStateRecord,

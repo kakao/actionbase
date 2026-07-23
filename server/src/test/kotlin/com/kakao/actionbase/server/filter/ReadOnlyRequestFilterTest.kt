@@ -145,8 +145,6 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v2/admin/metadata/service/{service}/query",
                 "GET /graph/v2/admin/metadata/storage",
                 "GET /graph/v2/admin//migration/{name}",
-                "GET /graph/v2/metastore/global",
-                "GET /graph/v2/metastore/local",
                 "GET /graph/v2/service",
                 "GET /graph/v2/service/{service}",
                 "GET /graph/v2/service/{service}/alias",
@@ -180,6 +178,10 @@ class ReadOnlyRequestFilterTest {
                 "POST /graph/v3/query",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
+                // queue/v1 GET
+                "GET /queue/v1/namespaces/{namespace}/queues/{queue}",
+                "GET /queue/v1/namespaces/{namespace}/queues/{queue}/partitions",
+                "GET /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/poll",
             )
 
         val WRITE_ENDPOINTS =
@@ -199,15 +201,12 @@ class ReadOnlyRequestFilterTest {
                 "POST /graph/v2/edge",
                 "POST /graph/v2/service/{service}",
                 "POST /graph/v2/service/{service}/alias/{alias}",
-                "POST /graph/v2/service/{service}/alias/{alias}/new-label",
                 "POST /graph/v2/service/{service}/label/{label}",
-                "POST /graph/v2/service/{service}/label/{label}/copy",
                 "POST /graph/v2/service/{service}/label/{label}/edge",
                 "POST /graph/v2/service/{service}/label/{label}/edge/delete",
                 "POST /graph/v2/service/{service}/label/{label}/edge/purge",
                 "POST /graph/v2/service/{service}/label/{label}/edge/sync",
                 "POST /graph/v2/service/{service}/query/{query}",
-                "POST /graph/v2/storage/{storage}",
                 "PUT /graph/v2/admin/hbase/cluster/{cluster}/table/{tableFullName}",
                 "PUT /graph/v2/edge",
                 "PUT /graph/v2/service/{service}",
@@ -221,6 +220,7 @@ class ReadOnlyRequestFilterTest {
                 "DELETE /graph/v3/databases/{database}",
                 "DELETE /graph/v3/databases/{database}/aliases/{alias}",
                 "DELETE /graph/v3/databases/{database}/tables/{table}",
+                "DELETE /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
                 "POST /graph/v3/databases",
                 "POST /graph/v3/databases/{database}/aliases",
                 "POST /graph/v3/databases/{database}/tables",
@@ -233,6 +233,13 @@ class ReadOnlyRequestFilterTest {
                 "PUT /graph/v3/databases/{database}",
                 "PUT /graph/v3/databases/{database}/aliases/{alias}",
                 "PUT /graph/v3/databases/{database}/tables/{table}",
+                // queue/v1 mutation
+                "POST /queue/v1/namespaces/{namespace}/queues",
+                "POST /queue/v1/namespaces/{namespace}/queues/{queue}/messages",
+                "PUT /queue/v1/namespaces/{namespace}/queues/{queue}/enable",
+                "PUT /queue/v1/namespaces/{namespace}/queues/{queue}/disable",
+                "DELETE /queue/v1/namespaces/{namespace}/queues/{queue}",
+                "DELETE /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/messages",
             )
 
         val NON_GRAPH_ENDPOINTS =
@@ -282,7 +289,10 @@ class ReadOnlyRequestFilterTest {
                 "index" to "idx",
                 "label" to "l",
                 "name" to "n",
+                "namespace" to "n",
+                "partition" to "0",
                 "query" to "q",
+                "queue" to "q",
                 "service" to "s",
                 "storage" to "st",
                 "table" to "t",

@@ -105,7 +105,6 @@ To participate:
 
 - Test RC versions in non-production environments
 - Report issues on [GitHub Issues](https://github.com/kakao/actionbase/issues)
-- Share feedback on [GitHub Discussions](https://github.com/kakao/actionbase/discussions)
 
 ## Support policy
 

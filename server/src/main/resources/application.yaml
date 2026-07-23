@@ -28,3 +28,6 @@ kc:
       enabled: false
 
     allow-mirror: false
+
+    # Defaults to true (HBase + MySQL mirrored). Set explicitly to false to disable the MySQL metastore (HBase-only mode).
+    # use-jdbc-metastore: false

@@ -3,6 +3,7 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 import com.kakao.actionbase.v2.core.code.Index as V2Index
 import com.kakao.actionbase.v2.core.types.Field as V2Field
 
+import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.ModelSchema
@@ -21,13 +22,21 @@ data class TableUpdateRequest(
     @field:Valid
     val schema: ModelSchema? = null,
     val mode: MutationMode? = null,
-    @field:Size(max = 1000, message = "comment must be at most 1000 characters")
+    @field:Size(max = Constants.Name.COMMENT_MAX_LENGTH, message = Constants.Name.COMMENT_SIZE_MESSAGE)
     val comment: String? = null,
 ) {
     fun toV2EdgeSchema(): EdgeSchema? =
         schema?.let {
             when (it) {
                 is ModelSchema.Edge ->
+                    EdgeSchema(
+                        VertexField(it.source.type.toV2VertexType(), it.source.comment),
+                        VertexField(it.target.type.toV2VertexType(), it.target.comment),
+                        it.properties.map { prop ->
+                            V2Field(prop.name, prop.type.toV2DataType(), prop.nullable, prop.comment)
+                        },
+                    )
+                is ModelSchema.ImmutableEdge ->
                     EdgeSchema(
                         VertexField(it.source.type.toV2VertexType(), it.source.comment),
                         VertexField(it.target.type.toV2VertexType(), it.target.comment),
@@ -54,9 +63,9 @@ data class TableUpdateRequest(
         schema?.let {
             when (it) {
                 is ModelSchema.Edge -> it.indexes.map { idx -> idx.toV2Index() }
+                is ModelSchema.ImmutableEdge -> it.indexes.map { idx -> idx.toV2Index() }
                 is ModelSchema.MultiEdge -> it.indexes.map { idx -> idx.toV2Index() }
-                // Vertex has no indices; return null so LabelUpdateRequest treats it as no-op
-                // instead of overwriting any existing serialized list with `[]`.
+                // Vertex has no indices; null keeps the update a no-op instead of overwriting with `[]`.
                 is ModelSchema.Vertex -> null
             }
         }
@@ -65,6 +74,7 @@ data class TableUpdateRequest(
         schema?.let {
             when (it) {
                 is ModelSchema.Edge -> it.groups
+                is ModelSchema.ImmutableEdge -> it.groups
                 is ModelSchema.MultiEdge -> it.groups
                 is ModelSchema.Vertex -> null
             }
@@ -74,6 +84,8 @@ data class TableUpdateRequest(
         schema?.let {
             when (it) {
                 is ModelSchema.Edge -> it.caches
+                // Immutable edges have no caches; null keeps the update a no-op for this field.
+                is ModelSchema.ImmutableEdge -> null
                 is ModelSchema.MultiEdge -> it.caches
                 is ModelSchema.Vertex -> null
             }

@@ -20,5 +20,8 @@ sealed interface MutationEvent {
 }
 
 interface UnresolvedEvent {
-    fun createEvent(schema: ModelSchema): MutationEvent
+    fun createEvent(
+        schema: ModelSchema,
+        insertMerge: Boolean = false,
+    ): MutationEvent
 }

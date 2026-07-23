@@ -15,12 +15,9 @@ class V3NameValidatorTest {
         @ObjectSource(
             """
             - name: mydb
-            - name: MyDB
-            - name: my-db
             - name: my_db
             - name: db123
             - name: a
-            - name: A
             # 64 chars (max valid length)
             - name: abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
             """,
@@ -44,7 +41,7 @@ class V3NameValidatorTest {
         fun `name starting with non-letter should fail`(name: String) {
             assertThatThrownBy { V3NameValidator.validateDatabase(name) }
                 .isInstanceOf(ResponseStatusException::class.java)
-                .hasMessageContaining("must start with a letter")
+                .hasMessageContaining("must start with a lowercase letter")
         }
 
         @ObjectSourceParameterizedTest
@@ -56,6 +53,9 @@ class V3NameValidatorTest {
             - name: 'db\name'
             - name: "db name"
             - name: mydb.othertable
+            - name: my-db
+            - name: MyDB
+            - name: A
             """,
         )
         fun `name with invalid characters should fail`(name: String) {

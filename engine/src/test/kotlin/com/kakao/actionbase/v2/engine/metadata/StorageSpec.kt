@@ -41,13 +41,6 @@ class StorageSpec :
             graph.testFixtures.createStorage(EntityName.fromOrigin("test"))
 
             graph.storageDdl
-                .getSingle(EntityName.fromOrigin(Metadata.metastoreName))
-                .test()
-                .assertNext { storageDTO ->
-                    storageDTO.name shouldBe EntityName.fromOrigin(Metadata.metastoreName)
-                }.verifyComplete()
-
-            graph.storageDdl
                 .getSingle(EntityName.fromOrigin("test"))
                 .test()
                 .assertNext { storageDTO ->
@@ -103,23 +96,6 @@ class StorageSpec :
                 }.verifyComplete()
         }
 
-        "update should not allow mutation on LocalBackedJdbcHashLabel" {
-            val updateRequest =
-                StorageUpdateRequest(
-                    active = null,
-                    desc = "updated desc",
-                    type = null,
-                    conf = null,
-                )
-
-            graph.storageDdl
-                .update(EntityName.fromOrigin(Metadata.metastoreName), updateRequest)
-                .test()
-                .assertNext { ddlResult ->
-                    ddlResult.status shouldBe DdlStatus.Status.IDLE
-                }.verifyComplete()
-        }
-
         "delete" {
             graph.testFixtures.createStorage(EntityName.fromOrigin("test"))
 
@@ -140,12 +116,5 @@ class StorageSpec :
                 .assertNext { ddlResult ->
                     ddlResult.status shouldBe DdlStatus.Status.IDLE
                 }.verifyComplete()
-        }
-
-        "delete should not allow mutation on LocalBackedJdbcHashLabel" {
-            graph.storageDdl
-                .delete(EntityName.fromOrigin(Metadata.metastoreName), StorageDeleteRequest())
-                .test()
-                .verifyError(IllegalArgumentException::class.java)
         }
     })
