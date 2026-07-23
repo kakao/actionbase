@@ -65,8 +65,7 @@ class TopkAggregationHandler(
             engine
                 .getTableBinding(database = item.database, alias = item.table)
                 .schema
-                .groupsOrNull()
-                .orEmpty()
+                .groups
                 .firstOrNull { g -> g.aggregations.topk.any { it.topk == item.topk } }
                 ?: return Mono.just(result(SKIPPED))
 
@@ -100,13 +99,6 @@ class TopkAggregationHandler(
         }
     }
 
-    private fun ModelSchema.groupsOrNull(): List<Group>? =
-        when (this) {
-            is ModelSchema.Edge -> groups
-            is ModelSchema.MultiEdge -> groups
-            else -> null
-        }
-
     private fun createTopkEvent(item: AggregationItemPayload): List<EdgeAggregationEvent> {
         val tb = engine.getTableBinding(database = item.database, alias = item.table)
 
@@ -114,9 +106,7 @@ class TopkAggregationHandler(
             "Aggregation is only supported for Edge and MultiEdge tables."
         }
 
-        return tb.schema
-            .groupsOrNull()
-            .orEmpty()
+        return tb.schema.groups
             .filter { it.aggregations.topk.isNotEmpty() }
             .map { group ->
                 EdgeAggregationEvent.of(type = AggregationType.TOPK, database = item.database, table = item.table, item, group)
