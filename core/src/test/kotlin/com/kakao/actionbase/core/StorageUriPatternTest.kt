@@ -21,6 +21,9 @@ class StorageUriPatternTest {
             # namespace omitted, resolved to the configured default
             - uri: datastore:///my_table
             - uri: datastore:///t
+            # a single leading underscore is allowed
+            - uri: datastore://_ns/t
+            - uri: datastore:///_expire
             """,
         )
         fun `valid storage URIs`(uri: String) {
@@ -36,9 +39,10 @@ class StorageUriPatternTest {
             # table segment is always required
             - uri: datastore://ns/
             - uri: datastore:///
-            # namespace, when present, must start with a lowercase letter
-            - uri: datastore://1ns/t
-            - uri: datastore://_ns/t
+            # a `__` prefix is reserved for system names
+            - uri: datastore://__sys__/metastore
+            - uri: datastore://ns/__count__
+            - uri: datastore:///__reserved
             # single segment (no ///) is not the omitted form
             - uri: datastore://t
             # uppercase and hyphen are not allowed
