@@ -3,8 +3,6 @@ package com.kakao.actionbase.core.metadata.common
 import com.kakao.actionbase.core.Constants
 import com.kakao.actionbase.core.codec.XXHash32Wrapper
 
-import java.time.Clock
-
 import com.fasterxml.jackson.annotation.JsonIgnore
 
 data class Group(
@@ -27,8 +25,7 @@ data class Group(
         fun bucketOrGet(
             value: Any,
             ceil: Boolean,
-            clock: Clock = Clock.systemUTC(),
-        ): Any = bucket?.handleQueryValue(value, ceil, clock)?.toString() ?: value
+        ): Any = bucket?.handleQueryValue(value, ceil)?.toString() ?: value
     }
 }
 

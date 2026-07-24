@@ -8,8 +8,6 @@ import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseIndexedLabel
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
 
-import java.time.Clock
-
 import reactor.core.publisher.Mono
 
 class DatastoreIndexedLabel(
@@ -20,8 +18,7 @@ class DatastoreIndexedLabel(
     tables: Mono<HBaseTables>,
     edgeRecordMapper: EdgeRecordMapper,
     lockTimeout: Long,
-    clock: Clock = Clock.systemUTC(),
-) : HBaseIndexedLabel(entity, coder, indices, indexNameToIndex, tables, edgeRecordMapper, lockTimeout, clock) {
+) : HBaseIndexedLabel(entity, coder, indices, indexNameToIndex, tables, edgeRecordMapper, lockTimeout) {
     companion object {
         fun create(
             entity: LabelEntity,
@@ -39,7 +36,6 @@ class DatastoreIndexedLabel(
                 tables = tables,
                 edgeRecordMapper = graph.edgeRecordMapper,
                 lockTimeout = graph.lockTimeout,
-                clock = graph.clock,
             ).apply(initialize)
         }
     }

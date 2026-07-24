@@ -112,17 +112,12 @@ class GraphConfiguration {
     fun provideCdcFactory(): CdcFactory = DefaultCdcFactory
 
     @Bean
-    @org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean(java.time.Clock::class)
-    fun provideClock(): java.time.Clock = java.time.Clock.systemUTC()
-
-    @Bean
     fun provideGraph(
         config: GraphConfig,
         walFactory: WalFactory,
         cdcFactory: CdcFactory,
         kafkaClientFactory: KafkaClientFactory,
         webClientFactory: WebClientFactory,
-        clock: java.time.Clock,
     ): Graph {
         val graph =
             Graph.create(
@@ -131,7 +126,6 @@ class GraphConfiguration {
                 cdcFactory,
                 kafkaClientFactory,
                 webClientFactory,
-                clock,
             )
 
         //  Is blocking OK?
