@@ -90,6 +90,7 @@ class TopkAggregationHandler(
                     entity = item.entity,
                     topkDimensionValue = item.topkDimensionValue,
                     dimensionValues = dimensionValues,
+                    properties = item.properties,
                 ),
         ).map { results ->
             result(status = if (results.any { it.status == ERROR }) ERROR else SUCCESS)
@@ -146,6 +147,8 @@ class TopkAggregationHandler(
                     event.group.fields
                         .filter { it.bucket == null && !matchesDimension(it.name, topk.dimension) }
                         .map { resolveField(it.name, event.source, event.target, event.properties) }
+                val properties =
+                    topk.properties.associateWith { resolveField(it, event.source, event.target, event.properties) }
                 val (rankDatabase, rankTable) = parseFqn(topk.rank)
                 val ranking =
                     Ranking(
@@ -155,6 +158,7 @@ class TopkAggregationHandler(
                         entity = entity,
                         topkDimensionValue = topkDimensionValue,
                         dimensionValues = dimensionValues,
+                        properties = properties,
                     )
 
                 writeRank(
@@ -218,7 +222,11 @@ class TopkAggregationHandler(
                                             version = System.currentTimeMillis(),
                                             source = AggregationConstants.Topk.rankSource(topk = ranking.topk, entity = ranking.entity, dimensionValues = ranking.dimensionValues),
                                             target = ranking.topkDimensionValue,
-                                            properties = mapOf("metric" to metric),
+                                            properties =
+                                                buildMap {
+                                                    put("metric", metric)
+                                                    putAll(ranking.properties)
+                                                },
                                         ),
                                 ),
                             ),
@@ -258,6 +266,7 @@ class TopkAggregationHandler(
                         entity = ranking.entity,
                         topkDimensionValue = ranking.topkDimensionValue,
                         dimensionValues = ranking.dimensionValues.joinToString("|"),
+                        properties = ranking.properties,
                         refreshAt = refreshAt,
                     ),
             )
@@ -336,6 +345,7 @@ private data class Ranking(
     val entity: String,
     val topkDimensionValue: String,
     val dimensionValues: List<String>,
+    val properties: Map<String, String> = emptyMap(),
 )
 
 data class EdgeAggregationEvent(
@@ -387,6 +397,7 @@ data class TopkRefreshMessage(
         val entity: String,
         val topkDimensionValue: String,
         val dimensionValues: String,
+        val properties: Map<String, String>,
         val refreshAt: Long,
     )
 
@@ -403,6 +414,7 @@ data class TopkRefreshMessage(
             entity: String,
             topkDimensionValue: String,
             dimensionValues: String,
+            properties: Map<String, String>,
             refreshAt: Long,
         ): TopkRefreshMessage =
             TopkRefreshMessage(
@@ -419,6 +431,7 @@ data class TopkRefreshMessage(
                         entity = entity,
                         topkDimensionValue = topkDimensionValue,
                         dimensionValues = dimensionValues,
+                        properties = properties,
                         refreshAt = refreshAt,
                     ),
             )

@@ -379,6 +379,37 @@ class AggregationServiceSpec :
 
             // --- aggregate (refresh write) ---
 
+            "aggregate carries the declared properties onto the rank row" {
+                val topk =
+                    topkConfig(name = "top_purchased", rank = "commerce.rank_tbl", properties = listOf("category", "target"))
+                val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 4))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate("commerce", "rank_tbl", capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(
+                        service.aggregate(
+                            AggregationType.TOPK,
+                            listOf(item("commerce", "purchases", source = "user1", target = "item1", properties = mapOf("category" to "fruit"))),
+                        ),
+                    ).assertNext { it.single().status shouldBe "SUCCESS" }
+                    .verifyComplete()
+
+                // `properties` resolves like any field: an edge property (`category`) and an endpoint (`target`).
+                val edge = mutations.captured.single().edge
+                edge.properties["category"] shouldBe "fruit"
+                edge.properties["target"] shouldBe "item1"
+                edge.properties.containsKey("metric") shouldBe true
+            }
+
             "aggregate writes a refresh row after the rank row when refreshAfterMillis is positive" {
                 val refreshAfter = 60_000L
                 val topk =
@@ -452,6 +483,48 @@ class AggregationServiceSpec :
                 refresh.item.topkDimensionValue shouldBe "item1"
                 refresh.item.dimensionValues shouldBe ""
                 refresh.item.refreshAt shouldBe refreshAt
+            }
+
+            "aggregate carries the declared properties into the refresh message" {
+                val topk =
+                    Topk(
+                        topk = "top_purchased",
+                        entity = "source",
+                        dimension = "target",
+                        refreshAfterMillis = 60_000L,
+                        rank = "commerce.rank_tbl",
+                        properties = listOf("category"),
+                    )
+                val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 4))
+                every {
+                    mutationService.mutate("commerce", "rank_tbl", any(), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                val refreshRequest = slot<EnqueueRequest>()
+                every {
+                    queueService.enqueue(
+                        AggregationConstants.Topk.DATABASE,
+                        AggregationConstants.Topk.REFRESH_TABLE,
+                        capture(refreshRequest),
+                    )
+                } returns Mono.just(enqueueResponse(status = "CREATED"))
+
+                StepVerifier
+                    .create(
+                        service.aggregate(
+                            AggregationType.TOPK,
+                            listOf(item("commerce", "purchases", source = "user1", target = "item1", properties = mapOf("category" to "fruit"))),
+                        ),
+                    ).assertNext { it.single().status shouldBe "SUCCESS" }
+                    .verifyComplete()
+
+                val refresh = refreshRequest.captured.messages.single().value as TopkRefreshMessage
+                refresh.item.properties shouldBe mapOf("category" to "fruit")
             }
 
             "aggregate skips the refresh write when refreshAfterMillis is not positive" {
@@ -604,6 +677,34 @@ class AggregationServiceSpec :
                 edge.target shouldBe "item1"
             }
 
+            "sweep re-writes the carried properties onto the rank row" {
+                val topk = topkConfig(name = "top_purchased", rank = "db.rank_tbl")
+                val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
+                stubBindingWith(engine, database = "db", table = "src", groups = listOf(group))
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 9))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate("db", "rank_tbl", capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(
+                        service.sweep(
+                            listOf(sweepItem(sweepTarget(topk = "top_purchased", properties = mapOf("category" to "fruit")))),
+                        ),
+                    ).assertNext { it.single().status shouldBe "SUCCESS" }
+                    .verifyComplete()
+
+                // sweep has no source edge, so the property values ride in on the sweep item and are re-written.
+                val edge = mutations.captured.single().edge
+                edge.properties["category"] shouldBe "fruit"
+                edge.properties.containsKey("metric") shouldBe true
+            }
+
             "sweep is SKIPPED when the target topk is not defined on the table" {
                 clearMocks(mutationService)
                 val topk = topkConfig(name = "top_purchased", rank = "db.rank_tbl")
@@ -657,7 +758,8 @@ private fun topkConfig(
     entity: String = "source",
     dimension: String = "target",
     rank: String = "${name}__rank",
-): Topk = Topk(topk = name, entity = entity, dimension = dimension, rank = rank)
+    properties: List<String> = emptyList(),
+): Topk = Topk(topk = name, entity = entity, dimension = dimension, rank = rank, properties = properties)
 
 private fun groupWithTopks(
     name: String,
@@ -686,6 +788,7 @@ private fun sweepTarget(
     entity: String = "user1",
     topkDimensionValue: String = "item1",
     dimensionValues: String = "",
+    properties: Map<String, String> = emptyMap(),
 ): TopkSweepItem =
     TopkSweepItem(
         database = database,
@@ -698,6 +801,7 @@ private fun sweepTarget(
         entity = entity,
         topkDimensionValue = topkDimensionValue,
         dimensionValues = dimensionValues,
+        properties = properties,
         refreshAt = 123L,
     )
 

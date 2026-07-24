@@ -11,14 +11,13 @@ data class AggregationSweepRequest(
 
 data class SweepItem(
     val type: AggregationType,
-    // `item`'s concrete type is chosen by the sibling `type` field, so a new AggregationType
-    // adds a payload + one @JsonSubTypes line without changing the {type, item} shape.
-    @JsonTypeInfo(
+
+    @field:JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.EXTERNAL_PROPERTY,
         property = "type",
     )
-    @JsonSubTypes(
+    @field:JsonSubTypes(
         JsonSubTypes.Type(value = TopkSweepItem::class, name = "TOPK"),
     )
     val item: SweepItemPayload,
@@ -37,5 +36,6 @@ data class TopkSweepItem(
     val entity: String,
     val topkDimensionValue: String,
     val dimensionValues: String = "",
+    val properties: Map<String, String> = emptyMap(),
     val refreshAt: Long = -1,
 ) : SweepItemPayload
