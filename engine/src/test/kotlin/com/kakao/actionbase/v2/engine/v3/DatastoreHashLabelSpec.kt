@@ -94,7 +94,7 @@ class DatastoreHashLabelSpec :
                 }.verifyComplete()
 
             label
-                .get(100, 1000, Direction.OUT, emptySet())
+                .get(src = 100, tgt = 1000, dir = Direction.OUT, stats = emptySet())
                 .test()
                 .assertNext { it.rows.size shouldBe 1 }
                 .verifyComplete()

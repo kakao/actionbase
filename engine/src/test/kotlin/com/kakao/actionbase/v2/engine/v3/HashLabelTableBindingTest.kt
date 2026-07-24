@@ -144,7 +144,7 @@ class HashLabelTableBindingTest {
             .verifyComplete()
 
         label
-            .get(200L, 2000L, Direction.OUT, emptySet())
+            .get(src = 200L, tgt = 2000L, dir = Direction.OUT, stats = emptySet())
             .test()
             .assertNext { it.rows.size shouldBe 1 }
             .verifyComplete()
