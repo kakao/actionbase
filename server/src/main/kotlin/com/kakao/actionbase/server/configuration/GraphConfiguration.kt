@@ -2,6 +2,7 @@ package com.kakao.actionbase.server.configuration
 
 import com.kakao.actionbase.core.metadata.features.FeatureFlags
 import com.kakao.actionbase.engine.queue.QueueService
+import com.kakao.actionbase.engine.service.AggregationQueryService
 import com.kakao.actionbase.engine.service.AggregationService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
@@ -111,12 +112,17 @@ class GraphConfiguration {
     fun provideCdcFactory(): CdcFactory = DefaultCdcFactory
 
     @Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean(java.time.Clock::class)
+    fun provideClock(): java.time.Clock = java.time.Clock.systemUTC()
+
+    @Bean
     fun provideGraph(
         config: GraphConfig,
         walFactory: WalFactory,
         cdcFactory: CdcFactory,
         kafkaClientFactory: KafkaClientFactory,
         webClientFactory: WebClientFactory,
+        clock: java.time.Clock,
     ): Graph {
         val graph =
             Graph.create(
@@ -125,6 +131,7 @@ class GraphConfiguration {
                 cdcFactory,
                 kafkaClientFactory,
                 webClientFactory,
+                clock,
             )
 
         //  Is blocking OK?
@@ -168,4 +175,10 @@ class GraphConfiguration {
         engine: V2BackedEngine,
         handlers: List<AggregationHandler>,
     ): AggregationService = AggregationService(engine, handlers)
+
+    @Bean
+    fun provideAggregationQueryService(
+        queryService: QueryService,
+        engine: V2BackedEngine,
+    ): AggregationQueryService = AggregationQueryService(queryService, engine)
 }

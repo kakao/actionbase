@@ -27,6 +27,13 @@ sealed class ModelSchema : AbstractSchema {
     @get:JsonIgnore
     val propertiesByName: Map<String, StructField> by lazy { properties.associateBy { it.name } }
 
+    @get:JsonIgnore
+    val topkByName: Map<String, Topk> by lazy {
+        groups
+            .flatMap { it.aggregations.topk }
+            .associateBy { it.topk }
+    }
+
     @JsonTypeName("edge")
     data class Edge(
         val source: Field,

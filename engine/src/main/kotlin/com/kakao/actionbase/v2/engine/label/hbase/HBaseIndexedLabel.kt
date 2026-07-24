@@ -33,6 +33,8 @@ import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding
 import com.kakao.actionbase.v2.engine.v3.V2BackedTableBinding.Companion.toV3
 import com.kakao.actionbase.v2.engine.v3.V3TableDescriptor
 
+import java.time.Clock
+
 import reactor.core.publisher.Mono
 
 /**
@@ -46,6 +48,7 @@ open class HBaseIndexedLabel(
     tables: Mono<HBaseTables>,
     private val edgeRecordMapper: EdgeRecordMapper,
     lockTimeout: Long,
+    clock: Clock = Clock.systemUTC(),
 ) : HBaseHashLabel(
         entity = entity,
         coder = coder,
@@ -58,6 +61,7 @@ open class HBaseIndexedLabel(
             label = this,
             mapper = edgeRecordMapper,
             lockTimeout = lockTimeout,
+            clock = clock,
         )
 
     override val self: AbstractLabel<ByteArray> = this
@@ -289,6 +293,7 @@ open class HBaseIndexedLabel(
                 tables = tables,
                 edgeRecordMapper = graph.edgeRecordMapper,
                 lockTimeout = graph.lockTimeout,
+                clock = graph.clock,
             )
         }
     }
