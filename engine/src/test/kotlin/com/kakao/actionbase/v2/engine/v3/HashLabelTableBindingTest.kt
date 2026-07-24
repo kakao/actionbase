@@ -8,6 +8,7 @@ import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 import com.kakao.actionbase.v2.core.edge.Edge
+import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.core.metadata.DirectionType
 import com.kakao.actionbase.v2.core.metadata.EdgeOperation
 import com.kakao.actionbase.v2.core.metadata.LabelType
@@ -38,12 +39,13 @@ import reactor.kotlin.test.test
  * Storage metadata removal in favor of `datastore://` URIs (#410), and HashLabel
  * removal in favor of IndexedLabel (#296 for HBase, #459 for datastore).
  *
- * | step                   | what it proves                                                |
- * |------------------------|---------------------------------------------------------------|
- * | create                 | bare-name resolves via storages map; `datastore://` needs no Storage metadata |
- * | instanceof check       | materializes as the IndexedLabel, not old HashLabel           |
- * | V3 mutate + gets       | V3 API resolves the table binding and round-trips             |
- * | legacy write → V3 read | rows written by the removed DatastoreHashLabel stay readable  |
+ * | step                | what it proves                                                |
+ * |---------------------|---------------------------------------------------------------|
+ * | create              | bare-name resolves via storages map; `datastore://` needs no Storage metadata |
+ * | instanceof check    | materializes as the IndexedLabel, not old HashLabel           |
+ * | V3 write / V3 read  | V3 API resolves the table binding and round-trips             |
+ * | V2 write / V2 read  | V2 engine path still round-trips on the same label            |
+ * | legacy rows → read  | rows written by the removed DatastoreHashLabel stay readable  |
  */
 @DisplayName("V2BackedEngine — HASH label table binding")
 class HashLabelTableBindingTest {
@@ -114,13 +116,15 @@ class HashLabelTableBindingTest {
         - storage: datastore_uri
         """,
     )
-    fun `HASH label mutates and queries through the V3 API`(storage: String) {
+    fun `HASH label round-trips on both the V3 and the V2 path`(storage: String) {
         val storageUri = if (storage == "storage_metadata") GraphFixtures.hbaseStorage else GraphFixtures.datastoreStorage
         val labelName = EntityName(database, "matrix_hash_$storage")
         createHashLabel(labelName, storageUri)
 
-        graph.getLabel(labelName).shouldBeInstanceOf<HBaseIndexedLabel>()
+        val label = graph.getLabel(labelName)
+        label.shouldBeInstanceOf<HBaseIndexedLabel>()
 
+        // V3 write / V3 read
         mutateV3(labelName.nameNotNull)
 
         queryService
@@ -130,6 +134,20 @@ class HashLabelTableBindingTest {
                 result.count shouldBe 2
                 result.edges.map { it.target } shouldBe listOf(1000L, 1001L)
             }.verifyComplete()
+
+        // V2 write / V2 read, on separate keys
+        val v2Edge = Edge(20L, 200L, 2000L, mapOf("createdAt" to 20L, "permission" to "me"))
+        graph
+            .mutate(labelName, label, listOf(v2Edge.toTraceEdge()), EdgeOperation.INSERT)
+            .test()
+            .assertNext { it.result.single().status shouldBe EdgeOperationStatus.CREATED }
+            .verifyComplete()
+
+        label
+            .get(200L, 2000L, Direction.OUT, emptySet())
+            .test()
+            .assertNext { it.rows.size shouldBe 1 }
+            .verifyComplete()
     }
 
     @Test
