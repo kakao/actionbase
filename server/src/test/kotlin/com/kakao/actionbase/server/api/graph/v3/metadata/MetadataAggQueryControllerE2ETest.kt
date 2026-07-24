@@ -1,7 +1,7 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
 import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
-import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
+import com.kakao.actionbase.core.edge.payload.AggregationsTopkResponse
 import com.kakao.actionbase.server.test.E2ETestBase
 
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -182,19 +182,170 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
 
         client
             .get()
-            .uri("/graph/v3/databases/$db/tables/$table/aggregations/topk/$topkName?entity=user1")
+            .uri("/graph/v3/databases/$db/tables/$table/aggregations/topks/$topkName?entity=user1")
             .exchange()
             .expectStatus()
             .isOk
-            .expectBody<DataFrameEdgePayload>()
+            .expectBody<AggregationsTopkResponse>()
             .returnResult()
             .responseBody!!
-            .let { payload ->
-                assertEquals(2, payload.count)
-                assertEquals(
-                    listOf("item1", "item2"),
-                    payload.edges.map { it.target.toString() },
-                )
+            .let { response ->
+                assertEquals(2, response.count)
+                assertEquals(listOf("item1", "item2"), response.topks.map { it.value })
+                assertEquals(listOf(2L, 1L), response.topks.map { it.metric })
+            }
+    }
+
+    /**
+     * A top-K may declare extra `properties` (edge fields, incl. `source`/`target`) to carry onto each
+     * rank row alongside `metric`, so the query can return them.
+     *
+     * 1. Record one edge carrying `productGroupId = grocery`.
+     * 2. Aggregate. The rank row stores the resolved property next to the metric:
+     *
+     *    commerce_query.orders_props__topk (rank)
+     *    |       row key (source)      | target | metric | productGroupId |
+     *    |-----------------------------|--------|--------|----------------|
+     *    | top_purchased_props | user1 | item1  |      1 | grocery        |
+     *
+     * 3. Query the top-K -> the returned row carries `productGroupId`.
+     */
+    @Test
+    fun `querying a topk returns the declared extra properties on each rank row`() {
+        val propsTable = "orders_props"
+        val propsRank = "orders_props__topk"
+        val propsTopk = "top_purchased_props"
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$propsRank",
+                  "schema": {
+                    "type": "EDGE",
+                    "source": {"type": "string", "comment": "topk|entity|dimensionValues"},
+                    "target": {"type": "string", "comment": "topkDimensionValue"},
+                    "properties": [
+                      {"name": "metric", "type": "long", "comment": "aggregated metric", "nullable": false},
+                      {"name": "productGroupId", "type": "string", "comment": "carried property", "nullable": true}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [
+                      {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
+                    ],
+                    "groups": [],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$propsRank",
+                  "mode": "SYNC",
+                  "comment": "topk rank rows with a carried property"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "table": "$propsTable",
+                  "schema": {
+                    "type": "MULTI_EDGE",
+                    "id": {"type": "long", "comment": "order id"},
+                    "source": {"type": "string", "comment": "user"},
+                    "target": {"type": "string", "comment": "item"},
+                    "properties": [
+                      {"name": "productGroupId", "type": "string", "comment": "product group", "nullable": false}
+                    ],
+                    "direction": "OUT",
+                    "indexes": [],
+                    "groups": [{
+                      "group": "purchased_count",
+                      "type": "COUNT",
+                      "fields": [{"name": "_target"}],
+                      "directionType": "OUT",
+                      "aggregations": {
+                        "topk": [{
+                          "topk": "$propsTopk",
+                          "entity": "source",
+                          "ranges": "_target:eq:{_target}",
+                          "dimension": "target",
+                          "rank": "$db.$propsRank",
+                          "properties": ["productGroupId"]
+                        }]
+                      }
+                    }],
+                    "caches": []
+                  },
+                  "storage": "datastore://test_namespace/$propsTable",
+                  "mode": "SYNC",
+                  "comment": "purchases carrying a product group"
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables/$propsTable/multi-edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1",
+                      "properties": {"productGroupId": "grocery"}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/graph/v3/aggregations")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "type": "TOPK",
+                  "items": [
+                    {"database": "$db", "table": "$propsTable",
+                     "edge": {"version": 1, "source": "user1", "target": "item1",
+                              "properties": {"productGroupId": "grocery"}, "context": {}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<AggregationsItemResponse>()
+            .returnResult()
+
+        client
+            .get()
+            .uri("/graph/v3/databases/$db/tables/$propsTable/aggregations/topks/$propsTopk?entity=user1")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<AggregationsTopkResponse>()
+            .returnResult()
+            .responseBody!!
+            .let { response ->
+                assertEquals(1, response.count)
+                val rank = response.topks.single()
+                assertEquals("item1", rank.value)
+                assertEquals(1L, rank.metric)
+                assertEquals("grocery", rank.properties["productGroupId"])
             }
     }
 }
