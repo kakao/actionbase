@@ -14,7 +14,7 @@ import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.engine.GraphDefaults
 import com.kakao.actionbase.v2.engine.edge.HashEdge
 import com.kakao.actionbase.v2.engine.entity.deprecated.DeprecatedEdgeSchema
-import com.kakao.actionbase.v2.engine.label.DatastoreHashLabel
+import com.kakao.actionbase.v2.engine.label.DatastoreHashOnlyIndexedLabel
 import com.kakao.actionbase.v2.engine.label.DatastoreIndexedLabel
 import com.kakao.actionbase.v2.engine.label.Label
 import com.kakao.actionbase.v2.engine.label.hbase.HBaseHashOnlyIndexedLabel
@@ -80,7 +80,7 @@ data class LabelEntity(
                         is LocalStorage -> LocalBackedJdbcHashLabel.create(this, graph, storage, block)
                         is JdbcStorage -> JdbcHashLabel.create(this, graph, storage, block)
                         is HBaseStorage -> HBaseHashOnlyIndexedLabel.create(this, graph, storage)
-                        is DatastoreStorage -> DatastoreHashLabel.create(this, graph, block)
+                        is DatastoreStorage -> DatastoreHashOnlyIndexedLabel.create(this, graph, block)
                         else -> {
                             logger.error(
                                 "{} supports only Local, Jdbc, HBase storage types. {} is not supported. Fallback to NilLabel",
