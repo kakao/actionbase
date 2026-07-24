@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
@@ -73,15 +74,20 @@ func (m *Migrate) plan(outputPath string) *model.Response {
 	// with the reason if a label actually references one.
 	storageURIByName := map[string]string{}
 	storageErrByName := map[string]error{}
+	droppedNamespaces := map[string]struct{}{}
 	if resp := m.client.GetStorages(); !resp.IsError() {
 		for _, s := range resp.Body.Content {
 			if uri, err := storageToDatastoreURI(s); err != nil {
 				storageErrByName[s.Name] = err
 			} else {
 				storageURIByName[s.Name] = uri
+				if ns := confString(s.Conf, "namespace"); ns != "" {
+					droppedNamespaces[ns] = struct{}{}
+				}
 			}
 		}
 	}
+	reportDroppedNamespaces(droppedNamespaces)
 
 	var plan []migrationEntry
 	add := func(path string, body map[string]any, label string) {
@@ -241,6 +247,27 @@ func storageToDatastoreURI(s clientModel.StorageEntity) (string, error) {
 		return "", fmt.Errorf("HBASE storage %q conf is missing tableName", s.Name)
 	}
 	return fmt.Sprintf("%s/%s", datastoreURIPrefix, tableName), nil
+}
+
+// reportDroppedNamespaces surfaces the source namespaces the rewrite drops.
+// The rewritten refs omit the namespace, so the server resolves them to the
+// target deployment's configured namespace. If more than one source namespace
+// appears, tables that were not in the target's default namespace would be
+// silently repointed — the operator must verify before applying.
+func reportDroppedNamespaces(namespaces map[string]struct{}) {
+	if len(namespaces) == 0 {
+		return
+	}
+	names := make([]string, 0, len(namespaces))
+	for ns := range namespaces {
+		names = append(names, ns)
+	}
+	sort.Strings(names)
+	util.Print("Note: rewritten refs omit the source namespace and resolve to the target deployment's configured namespace.\n")
+	util.Print("      Source namespaces seen: %s\n", strings.Join(names, ", "))
+	if len(names) > 1 {
+		util.Print("      WARNING: multiple source namespaces — tables not in the target's default namespace will be repointed. Verify before apply.\n")
+	}
 }
 
 func confString(conf map[string]any, key string) string {
