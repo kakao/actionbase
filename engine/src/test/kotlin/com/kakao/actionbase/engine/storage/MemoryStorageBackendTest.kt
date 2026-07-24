@@ -52,11 +52,24 @@ class MemoryStorageBackendTest {
             """
             - uri: datastore://test_ns/test_table
             - uri: datastore://ns1/table1
+            - uri: datastore:///table1
             """,
         )
         fun `returns StorageTable with uri`(uri: String) {
             val table = backend.getStorageTable(uri).block()!!
             assertNotNull(table)
+        }
+
+        @Test
+        fun `omitted namespace resolves to the default namespace`() {
+            val omitted = backend.getStorageTable("datastore:///table").block()!!
+            val explicit = backend.getStorageTable(backend.defaultNamespace, "table").block()!!
+
+            omitted.put("key".toByteArray(), "value".toByteArray()).block()
+
+            assert(String(explicit.get("key".toByteArray()).block()!!) == "value") {
+                "datastore:///table should resolve to the '${backend.defaultNamespace}' namespace store"
+            }
         }
 
         @Test

@@ -228,16 +228,19 @@ func tableBody(t clientModel.TableEntity, uriByName map[string]string, errByName
 // URI. The engine resolves every datastore:// URI except the reserved
 // __sys__ metastore as an HBase namespace/table, so non-HBASE storages have
 // no URI to mint — they return an error instead.
+//
+// The namespace is omitted (datastore:///<table>) so the rewritten reference
+// stays portable across environments; the server resolves it to the namespace
+// configured for the target deployment.
 func storageToDatastoreURI(s clientModel.StorageEntity) (string, error) {
 	if s.Type != "HBASE" {
 		return "", fmt.Errorf("storage type %s has no datastore:// equivalent", s.Type)
 	}
-	namespace := confString(s.Conf, "namespace")
 	tableName := confString(s.Conf, "tableName")
-	if namespace == "" || tableName == "" {
-		return "", fmt.Errorf("HBASE storage %q conf is missing namespace/tableName", s.Name)
+	if tableName == "" {
+		return "", fmt.Errorf("HBASE storage %q conf is missing tableName", s.Name)
 	}
-	return fmt.Sprintf("%s%s/%s", datastoreURIPrefix, namespace, tableName), nil
+	return fmt.Sprintf("%s/%s", datastoreURIPrefix, tableName), nil
 }
 
 func confString(conf map[string]any, key string) string {

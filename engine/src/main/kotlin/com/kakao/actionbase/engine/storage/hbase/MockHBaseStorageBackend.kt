@@ -18,6 +18,8 @@ import reactor.core.publisher.Mono
  * Each namespace + name combination gets its own isolated table.
  */
 class MockHBaseStorageBackend : StorageBackend {
+    override val defaultNamespace: String = "default"
+
     override fun getStorageTable(
         namespace: String,
         name: String,

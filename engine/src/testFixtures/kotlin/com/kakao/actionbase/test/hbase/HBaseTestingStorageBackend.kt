@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono
  */
 class HBaseTestingStorageBackend(
     private val connectionMono: Mono<AsyncConnection>,
-    private val defaultNamespace: String,
+    override val defaultNamespace: String,
 ) : StorageBackend {
     override fun getStorageTable(
         namespace: String,

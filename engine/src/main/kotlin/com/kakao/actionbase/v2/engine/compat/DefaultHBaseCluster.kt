@@ -49,7 +49,8 @@ class DefaultHBaseCluster private constructor(
             }
         }
 
-    // URI format: datastore://{namespace}/{tableName}
+    // URI format: datastore://{namespace}/{tableName}; an omitted namespace
+    // (datastore:///{tableName}) resolves to this cluster's configured namespace.
     fun getTable(uri: String): Mono<HBaseTables> {
         val (namespace, tableName) = parseDatastoreUri(uri)
         return getTable(namespace, tableName)
@@ -58,7 +59,8 @@ class DefaultHBaseCluster private constructor(
     private fun parseDatastoreUri(uri: String): Pair<String, String> {
         val parts = uri.removePrefix("datastore://").split("/")
         require(parts.size == 2) { "Invalid datastore URI: $uri. Expected format: datastore://{namespace}/{tableName}" }
-        return parts[0] to parts[1]
+        val (ns, tableName) = parts[0] to parts[1]
+        return ns.ifEmpty { namespace } to tableName
     }
 
     override fun close() {

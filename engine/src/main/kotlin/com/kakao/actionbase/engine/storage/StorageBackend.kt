@@ -3,6 +3,9 @@ package com.kakao.actionbase.engine.storage
 import reactor.core.publisher.Mono
 
 interface StorageBackend : AutoCloseable {
+    /** Namespace substituted when a datastore:// URI omits it (`datastore:///<table>`). */
+    val defaultNamespace: String
+
     fun getStorageTable(
         namespace: String,
         name: String,
@@ -10,6 +13,6 @@ interface StorageBackend : AutoCloseable {
 
     fun getStorageTable(uri: String): Mono<StorageTable> {
         val (ns, name) = DatastoreUri.parse(uri)
-        return getStorageTable(ns, name)
+        return getStorageTable(ns.ifEmpty { defaultNamespace }, name)
     }
 }
