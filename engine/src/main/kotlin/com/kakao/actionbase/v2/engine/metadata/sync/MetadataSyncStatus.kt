@@ -122,7 +122,6 @@ enum class MetadataType {
     STORAGE,
     LABEL,
     ALIAS,
-    QUERY,
     ;
 
     companion object {

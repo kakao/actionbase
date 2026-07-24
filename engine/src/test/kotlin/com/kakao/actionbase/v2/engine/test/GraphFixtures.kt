@@ -266,7 +266,6 @@ object GraphFixtures {
             Metadata.storageLabelEntity.name,
             Metadata.labelLabelEntity.name,
             Metadata.infoLabelEntity.name,
-            Metadata.queryLabelEntity.name,
             Metadata.aliasLabelEntity.name,
             Metadata.onlineMetadataLabelV2Entity.name,
             Metadata.sysNilLabelEntity.name,
@@ -294,11 +293,6 @@ object GraphFixtures {
             ),
             listOf(
                 EntityName.withPhase(Metadata.sysServiceName, Metadata.sysInfoLabelName),
-                Metadata.labelLabelEntity.id,
-                null,
-            ),
-            listOf(
-                EntityName.withPhase(Metadata.sysServiceName, Metadata.sysQueryLabelName),
                 Metadata.labelLabelEntity.id,
                 null,
             ),

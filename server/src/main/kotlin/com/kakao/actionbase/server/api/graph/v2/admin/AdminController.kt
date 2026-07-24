@@ -105,9 +105,4 @@ class AdminController(
     fun getAliasSyncStatus(
         @PathVariable service: String,
     ): Mono<MetadataSyncStatus> = graph.getMetadataSyncStatus(MetadataType.ALIAS, service)
-
-    @GetMapping("/graph/v2/admin/metadata/service/{service}/query")
-    fun getQuerySyncStatus(
-        @PathVariable service: String,
-    ): Mono<MetadataSyncStatus> = graph.getMetadataSyncStatus(MetadataType.QUERY, service)
 }

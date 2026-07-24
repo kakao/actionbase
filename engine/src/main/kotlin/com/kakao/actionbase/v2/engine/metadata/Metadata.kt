@@ -34,8 +34,6 @@ object Metadata {
 
     const val sysInfoLabelName = "info"
 
-    const val sysQueryLabelName = "query"
-
     const val sysAliasLabelName = "alias"
 
     const val heartBeatLabelName = "heartbeat"
@@ -139,27 +137,6 @@ object Metadata {
                 ),
             dirType = DirectionType.OUT,
             storage = "",
-        )
-
-    val queryLabelEntity =
-        LabelEntity(
-            active = true,
-            name = EntityName(sysServiceName, sysQueryLabelName),
-            desc = "System prepared query label",
-            type = LabelType.HASH,
-            schema =
-                EdgeSchema(
-                    VertexField(VertexType.STRING, "{{service}}"),
-                    VertexField(VertexType.STRING, "{{query_name}}"),
-                    listOf(
-                        Field("props_active", DataType.BOOLEAN, true),
-                        Field("desc", DataType.STRING, false),
-                        Field("query", DataType.STRING, false),
-                        Field("stats", DataType.STRING, false),
-                    ),
-                ),
-            dirType = DirectionType.OUT,
-            storage = EngineConstants.METASTORE_URI,
         )
 
     val aliasLabelEntity =

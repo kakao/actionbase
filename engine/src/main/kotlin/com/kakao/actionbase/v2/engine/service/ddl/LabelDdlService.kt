@@ -65,17 +65,10 @@ class LabelDdlService(
         )
     }
 
-    override fun canDeactivate(name: EntityName): Mono<Boolean> {
-        val checkAlias =
-            graph.aliasDdl
-                .getAll(name)
-                .map { it.content.none { alias -> alias.active && (alias.target == name) } }
-        val checkQuery =
-            graph.queryDdl
-                .getAll(name)
-                .map { it.content.none { query -> query.active && (name.fullQualifiedName in query.query) } }
-        return checkAlias.zipWith(checkQuery).map { a -> a.t1 && a.t2 }
-    }
+    override fun canDeactivate(name: EntityName): Mono<Boolean> =
+        graph.aliasDdl
+            .getAll(name)
+            .map { it.content.none { alias -> alias.active && (alias.target == name) } }
 
     override fun toEntity(edge: HashEdge): LabelEntity = LabelEntity.toEntity(edge)
 
