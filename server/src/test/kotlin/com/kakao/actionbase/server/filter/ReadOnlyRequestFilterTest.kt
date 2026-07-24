@@ -159,7 +159,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v2/storage/{storage}",
                 // v3 GET
                 "GET /graph/v3",
-                "GET /graph/v3/aggregations",
+                "GET /aggregations/v1/metadata",
                 "GET /graph/v3/databases",
                 "GET /graph/v3/databases/{database}",
                 "GET /graph/v3/databases/{database}/aliases",
@@ -174,7 +174,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
                 "GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
                 "GET /graph/v3/databases/{database}/tables/{table}/vertices/get",
-                "GET /graph/v3/databases/{database}/tables/{table}/aggregations/topks/{topk}",
+                "GET /aggregations/v1/databases/{database}/tables/{table}/topks/{topk}",
                 "GET /graph/v3/datastore",
                 // read-only POST
                 "POST /graph/v3/query",
@@ -223,8 +223,8 @@ class ReadOnlyRequestFilterTest {
                 "DELETE /graph/v3/databases/{database}/aliases/{alias}",
                 "DELETE /graph/v3/databases/{database}/tables/{table}",
                 "DELETE /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
-                "POST /graph/v3/aggregations",
-                "PUT /graph/v3/aggregations/sweep",
+                "POST /aggregations/v1/aggregate",
+                "PUT /aggregations/v1/sweep",
                 "POST /graph/v3/databases",
                 "POST /graph/v3/databases/{database}/aliases",
                 "POST /graph/v3/databases/{database}/tables",

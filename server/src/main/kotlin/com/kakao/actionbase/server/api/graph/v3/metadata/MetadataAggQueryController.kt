@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono
 class MetadataAggQueryController(
     private val aggregationQueryService: AggregationQueryService,
 ) {
-    @GetMapping("/graph/v3/databases/{database}/tables/{table}/aggregations/topks/{topk}")
+    @GetMapping("/aggregations/v1/databases/{database}/tables/{table}/topks/{topk}")
     fun topk(
         @PathVariable database: String,
         @PathVariable table: String,
@@ -36,5 +36,6 @@ class MetadataAggQueryController(
                 dimensionValues = dimensionValues?.split("|")?.filter { it.isNotEmpty() } ?: emptyList(),
                 limit = limit,
                 offset = offset,
-            ).mapToResponseEntity()
+            ).map(AggregationsTopkResponse::from)
+            .mapToResponseEntity()
 }

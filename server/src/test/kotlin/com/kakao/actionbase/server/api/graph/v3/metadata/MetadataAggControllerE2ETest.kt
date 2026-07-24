@@ -22,7 +22,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.expectBody
 
 /**
- * E2E for `POST /graph/v3/aggregations`, which materializes per-entity top-K rankings from an edge
+ * E2E for `POST /aggregations/v1/aggregate`, which materializes per-entity top-K rankings from an edge
  * event into two tables.
  *
  * Rank table `<db>.<table>__topk` — a plain edge table read as a sorted index via `metric_desc`:
@@ -224,7 +224,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
         client
             .post()
-            .uri("/graph/v3/aggregations")
+            .uri("/aggregations/v1/aggregate")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
@@ -363,7 +363,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
         client
             .post()
-            .uri("/graph/v3/aggregations")
+            .uri("/aggregations/v1/aggregate")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
@@ -414,7 +414,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         val response =
             client
                 .get()
-                .uri("/graph/v3/aggregations")
+                .uri("/aggregations/v1/metadata")
                 .exchange()
                 .expectStatus()
                 .isOk
@@ -432,7 +432,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     }
 
     /**
-     * `PUT /graph/v3/aggregations/sweep` recomputes a ranking on demand from an already-resolved
+     * `PUT /aggregations/v1/sweep` recomputes a ranking on demand from an already-resolved
      * refresh target and re-writes its rank row.
      *
      * 1. Create a rank table and a source table under `commerce_sweep`.
@@ -553,7 +553,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         val response =
             client
                 .put()
-                .uri("/graph/v3/aggregations/sweep")
+                .uri("/aggregations/v1/sweep")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(
                     """
@@ -641,7 +641,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         val before = System.currentTimeMillis()
         client
             .post()
-            .uri("/graph/v3/aggregations")
+            .uri("/aggregations/v1/aggregate")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """

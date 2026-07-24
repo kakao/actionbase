@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono
 class MetadataAggController(
     private val aggregationService: AggregationService,
 ) {
-    @GetMapping("/graph/v3/aggregations")
+    @GetMapping("/aggregations/v1/metadata")
     fun getAggregations(
         @RequestParam(required = false) type: AggregationType?,
     ): ResponseEntity<AggregationsListResponse> {
@@ -31,15 +31,15 @@ class MetadataAggController(
         return ResponseEntity.ok(AggregationsListResponse.of(aggregations))
     }
 
-    @PostMapping("/graph/v3/aggregations")
-    fun aggregations(
+    @PostMapping("/aggregations/v1/aggregate")
+    fun aggregate(
         @RequestBody request: AggregationItemRequest,
     ): Mono<ResponseEntity<AggregationsItemResponse>> =
         aggregationService
             .aggregate(type = request.type, items = request.items)
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 
-    @PutMapping("/graph/v3/aggregations/sweep")
+    @PutMapping("/aggregations/v1/sweep")
     fun sweep(
         @RequestBody request: AggregationSweepRequest,
     ): Mono<ResponseEntity<AggregationsSweepResponse>> =

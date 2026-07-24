@@ -12,7 +12,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.expectBody
 
 /**
- * E2E for `GET /graph/v3/databases/{db}/tables/{table}/aggregations/topk/{topk}`, which reads back a
+ * E2E for `GET /aggregations/v1/databases/{db}/tables/{table}/topks/{topk}`, which reads back a
  * materialized top-K ranking.
  *
  * The endpoint resolves the rank table from the top-K config and scans its `metric_desc` index from
@@ -160,7 +160,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
 
         client
             .post()
-            .uri("/graph/v3/aggregations")
+            .uri("/aggregations/v1/aggregate")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
@@ -182,7 +182,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
 
         client
             .get()
-            .uri("/graph/v3/databases/$db/tables/$table/aggregations/topks/$topkName?entity=user1")
+            .uri("/aggregations/v1/databases/$db/tables/$table/topks/$topkName?entity=user1")
             .exchange()
             .expectStatus()
             .isOk
@@ -312,7 +312,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
 
         client
             .post()
-            .uri("/graph/v3/aggregations")
+            .uri("/aggregations/v1/aggregate")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
                 """
@@ -333,7 +333,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
 
         client
             .get()
-            .uri("/graph/v3/databases/$db/tables/$propsTable/aggregations/topks/$propsTopk?entity=user1")
+            .uri("/aggregations/v1/databases/$db/tables/$propsTable/topks/$propsTopk?entity=user1")
             .exchange()
             .expectStatus()
             .isOk
