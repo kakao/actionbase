@@ -114,21 +114,6 @@ class DdlServiceSpec :
                 .verifyError(IllegalArgumentException::class.java)
         }
 
-        "query cannot be created if service does not exist" {
-            val name = EntityName("no_exists", "wrong_query")
-            val request =
-                QueryCreateRequest(
-                    desc = "test",
-                    query = "select * from no_exists.wrong_label",
-                    stats = emptyList(),
-                )
-
-            graph.queryDdl
-                .create(name, request)
-                .test()
-                .verifyError(IllegalArgumentException::class.java)
-        }
-
         "label can be deactivate if alias for other label exists" {
             val aliasRequest =
                 AliasCreateRequest(
@@ -168,88 +153,6 @@ class DdlServiceSpec :
                 .assertNext {
                     it.status shouldBe DdlStatus.Status.UPDATED
                 }.verifyComplete()
-        }
-
-        "label can be deactivate if query for other label exists" {
-            val queryRequest =
-                QueryCreateRequest(
-                    desc = "test",
-                    query = "select * from test.hbase_hash",
-                    stats = emptyList(),
-                )
-
-            graph.queryDdl
-                .create(EntityName(GraphFixtures.serviceName, GraphFixtures.hbaseHash), queryRequest)
-                .test()
-                .assertNext { ddlResult ->
-                    ddlResult.status shouldBe DdlStatus.Status.CREATED
-                }.verifyComplete()
-
-            val labelName =
-                EntityName(
-                    GraphFixtures.serviceName,
-                    GraphFixtures.jdbcHash,
-                )
-
-            val labelRequest =
-                LabelUpdateRequest(
-                    active = false,
-                    desc = null,
-                    type = null,
-                    readOnly = null,
-                    mode = null,
-                    schema = null,
-                    groups = null,
-                    indices = null,
-                    caches = null,
-                )
-
-            graph.labelDdl
-                .update(labelName, labelRequest)
-                .test()
-                .assertNext {
-                    it.status shouldBe DdlStatus.Status.UPDATED
-                }.verifyComplete()
-        }
-
-        "label cannot be deactivate if active query exists" {
-            val labelName =
-                EntityName(
-                    GraphFixtures.serviceName,
-                    GraphFixtures.jdbcHash,
-                )
-
-            val queryRequest =
-                QueryCreateRequest(
-                    desc = "test",
-                    query = "select * from ${labelName.fullQualifiedName}",
-                    stats = emptyList(),
-                )
-
-            graph.queryDdl
-                .create(labelName, queryRequest)
-                .test()
-                .assertNext { ddlResult ->
-                    ddlResult.status shouldBe DdlStatus.Status.CREATED
-                }.verifyComplete()
-
-            val labelRequest =
-                LabelUpdateRequest(
-                    active = false,
-                    desc = null,
-                    type = null,
-                    readOnly = null,
-                    mode = null,
-                    schema = null,
-                    groups = null,
-                    indices = null,
-                    caches = null,
-                )
-
-            graph.labelDdl
-                .update(labelName, labelRequest)
-                .test()
-                .verifyError(IllegalArgumentException::class.java)
         }
 
         "label cannot be deactivate if active alias exists" {
@@ -395,49 +298,6 @@ class DdlServiceSpec :
                 ).test()
                 .expectNextMatches {
                     it is UnsupportedOperationException
-                }.verifyComplete()
-        }
-
-        "deactivate query cannot be read" {
-            val labelName =
-                EntityName(
-                    GraphFixtures.serviceName,
-                    GraphFixtures.jdbcHash,
-                )
-
-            val queryName =
-                EntityName(
-                    GraphFixtures.serviceName,
-                    "test_query",
-                )
-
-            val queryCreateRequest =
-                QueryCreateRequest(
-                    desc = "test",
-                    query = "select * from ${labelName.fullQualifiedName}",
-                    stats = emptyList(),
-                )
-
-            val queryUpdateRequest =
-                QueryUpdateRequest(
-                    active = false,
-                    desc = null,
-                    query = null,
-                    stats = null,
-                )
-
-            graph.queryDdl
-                .create(queryName, queryCreateRequest)
-                .test()
-                .assertNext { ddlResult ->
-                    ddlResult.status shouldBe DdlStatus.Status.CREATED
-                }.verifyComplete()
-
-            graph.queryDdl
-                .update(queryName, queryUpdateRequest)
-                .test()
-                .assertNext {
-                    it.status shouldBe DdlStatus.Status.UPDATED
                 }.verifyComplete()
         }
 

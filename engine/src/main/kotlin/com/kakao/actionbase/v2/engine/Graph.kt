@@ -36,7 +36,6 @@ import com.kakao.actionbase.v2.engine.entity.AliasEntity
 import com.kakao.actionbase.v2.engine.entity.EdgeEntity
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
-import com.kakao.actionbase.v2.engine.entity.QueryEntity
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
 import com.kakao.actionbase.v2.engine.exception.MutationError
@@ -55,7 +54,6 @@ import com.kakao.actionbase.v2.engine.metadata.sync.MetadataType
 import com.kakao.actionbase.v2.engine.migration.Migration
 import com.kakao.actionbase.v2.engine.service.ddl.AliasDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.LabelDdlService
-import com.kakao.actionbase.v2.engine.service.ddl.QueryDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.StorageDdlService
 import com.kakao.actionbase.v2.engine.sql.DataFrame
@@ -107,7 +105,6 @@ class Graph(
     storageLabel: Label,
     labelLabel: Label,
     infoLabel: Label,
-    queryLabel: Label,
     aliasLabel: Label,
     onlineMetadataLabel: Label,
     private val nilLabel: Label,
@@ -141,7 +138,6 @@ class Graph(
             storageLabel.name to storageLabel,
             labelLabel.name to labelLabel,
             infoLabel.name to infoLabel,
-            queryLabel.name to queryLabel,
             aliasLabel.name to aliasLabel,
             onlineMetadataLabel.name to onlineMetadataLabel,
             nilLabel.name to nilLabel,
@@ -155,7 +151,6 @@ class Graph(
     private var labels: Map<EntityName, Label> = systemLabels + predefinedLabels
     private var aliases: Map<EntityName, EntityName> = emptyMap()
     private var aliasEntities: Map<EntityName, AliasEntity> = emptyMap()
-    private var queries: Map<EntityName, QueryEntity> = emptyMap()
     private var intervalDisposable: Disposable? = null
 
     val serviceDdl = ServiceDdlService(this, serviceLabel, ServiceEntity)
@@ -163,8 +158,6 @@ class Graph(
     val storageDdl = StorageDdlService(this, storageLabel, StorageEntity)
 
     val labelDdl = LabelDdlService(this, labelLabel, LabelEntity)
-
-    val queryDdl = QueryDdlService(this, queryLabel, QueryEntity)
 
     val aliasDdl = AliasDdlService(this, aliasLabel, AliasEntity)
 
@@ -581,26 +574,6 @@ class Graph(
 
     // -- system
 
-    fun updateQueries(): Mono<Void> =
-        Flux
-            .fromIterable(services.keys)
-            .flatMap { serviceEntityName ->
-                queryDdl
-                    .getAll(serviceEntityName.shiftNameToService())
-                    .flatMapMany { labels -> Flux.fromIterable(labels.content) }
-                    .filter(QueryEntity::active)
-                    .onErrorResume { error ->
-                        log.error("Error fetching queries for item: {}", serviceEntityName, error)
-                        Flux.empty()
-                    }
-            }.collectList()
-            .map { fetchedPreparedQueries ->
-                queries = fetchedPreparedQueries.associateBy { it.name }
-            }.onErrorResume { error ->
-                log.error("Error updating queries: {}", error.message, error)
-                Mono.empty()
-            }.then()
-
     fun updateAliases(): Mono<Void> =
         Flux
             .fromIterable(services.keys)
@@ -825,7 +798,6 @@ class Graph(
             .then(updateStorages())
             .then(Mono.defer { updateLabels() })
             .then(Mono.defer { updateAliases() })
-            .then(Mono.defer { updateQueries() })
             .doFinally {
                 metadataInitialized = true
             }
@@ -855,9 +827,7 @@ class Graph(
 
         val aliasEdges = aliasEntities.map { (_, entity) -> makeEdge(MetadataType.ALIAS, entity) }
 
-        val queryEdges = queries.map { (_, entity) -> makeEdge(MetadataType.QUERY, entity) }
-
-        val edges = storageEdges + serviceEdges + labelEdges + aliasEdges + queryEdges
+        val edges = storageEdges + serviceEdges + labelEdges + aliasEdges
 
         return onlineMetadataLabel.mutate(edges, EdgeOperation.INSERT, bulk = true).then()
     }
@@ -910,12 +880,6 @@ class Graph(
                     val metadataOnHosts = getOnlineMetadata(MetadataType.ALIAS)
                     metadataOnMetastore to metadataOnHosts
                 }
-                MetadataType.QUERY -> {
-                    requireNotNull(service) { "service should not be null for QUERY" }
-                    val metadataOnMetastore = queryDdl.getAll(EntityName(service))
-                    val metadataOnHosts = getOnlineMetadata(MetadataType.QUERY)
-                    metadataOnMetastore to metadataOnHosts
-                }
             }
         return onMetastore.zipWith(onHosts).map {
             MetadataSyncStatus.getMetadataSyncStatus(it.t1, it.t2)
@@ -945,9 +909,6 @@ class Graph(
                 it.toString()
             } + listOf("aliases") +
             aliases.map {
-                it.toString()
-            } + listOf("queries") +
-            queries.map {
                 it.toString()
             }
 
@@ -1065,8 +1026,6 @@ class Graph(
                     ).block()
                 }
 
-            val queryLabel = Metadata.queryLabelEntity.materialize(defaults)
-
             val aliasLabel = Metadata.aliasLabelEntity.materialize(defaults)
 
             val onlineMetadataLabel = onlineMetadataLabelEntity.materialize(defaults)
@@ -1082,7 +1041,6 @@ class Graph(
                         .then(mutate(Metadata.storageLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .then(mutate(Metadata.labelLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .then(mutate(Metadata.infoLabelEntity.toEdge(), EdgeOperation.INSERT))
-                        .then(mutate(Metadata.queryLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .then(mutate(Metadata.aliasLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .then(mutate(onlineMetadataLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .then(mutate(Metadata.sysNilLabelEntity.toEdge(), EdgeOperation.INSERT))
@@ -1105,7 +1063,6 @@ class Graph(
                 storageLabel,
                 labelLabel,
                 infoLabel,
-                queryLabel,
                 aliasLabel,
                 onlineMetadataLabel,
                 nilLabel,
