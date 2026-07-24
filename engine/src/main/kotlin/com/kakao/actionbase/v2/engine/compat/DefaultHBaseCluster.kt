@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.compat
 
+import com.kakao.actionbase.engine.storage.DatastoreUri
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
@@ -57,9 +58,7 @@ class DefaultHBaseCluster private constructor(
     }
 
     private fun parseDatastoreUri(uri: String): Pair<String, String> {
-        val parts = uri.removePrefix("datastore://").split("/")
-        require(parts.size == 2) { "Invalid datastore URI: $uri. Expected format: datastore://{namespace}/{tableName}" }
-        val (ns, tableName) = parts[0] to parts[1]
+        val (ns, tableName) = DatastoreUri.parse(uri)
         return ns.ifEmpty { namespace } to tableName
     }
 
