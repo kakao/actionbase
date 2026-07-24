@@ -51,12 +51,12 @@ class HashLabelTableBindingTest {
     @ObjectSourceParameterizedTest
     @ObjectSource(
         """
-        - storage: hbase
-        - storage: datastore
+        - storage: storage_metadata
+        - storage: datastore_uri
         """,
     )
     fun `HASH label on storage resolves a V3 table binding`(storage: String) {
-        val storageUri = if (storage == "hbase") GraphFixtures.hbaseStorage else GraphFixtures.datastoreStorage
+        val storageUri = if (storage == "storage_metadata") GraphFixtures.hbaseStorage else GraphFixtures.datastoreStorage
         val labelName = EntityName(GraphFixtures.serviceName, "matrix_hash_$storage")
         val request =
             LabelCreateRequest(
