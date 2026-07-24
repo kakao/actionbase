@@ -34,7 +34,8 @@ class V2BackedEngine(
         }
         if (label !is HBaseIndexedLabel) {
             throw UnsupportedOperationException(
-                "This Label (${label.entity.fullName}, ${label.javaClass}) is not indexed or not supported for edge mutation",
+                "This Label (${label.entity.fullName}, ${label.javaClass}) is not backed by an indexed label," +
+                    " so it cannot be bound on the V3 path (both query and edge mutation)",
             )
         }
         return label.tableBinding
