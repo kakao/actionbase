@@ -23,10 +23,18 @@ class MetadataAggQueryController(
         @PathVariable table: String,
         @PathVariable topk: String,
         @RequestParam entity: String,
+        @RequestParam(required = false) dimensionValues: String? = null,
         @RequestParam limit: Int = ScanFilter.defaultLimit,
         @RequestParam offset: String? = null,
     ): Mono<ResponseEntity<DataFrameEdgePayload>> =
         aggregationQueryService
-            .topk(database, table, topk, entity, limit, offset)
-            .mapToResponseEntity()
+            .topk(
+                database = database,
+                table = table,
+                topk = topk,
+                entity = entity,
+                dimensionValues = dimensionValues?.split("|")?.filter { it.isNotEmpty() } ?: emptyList(),
+                limit = limit,
+                offset = offset,
+            ).mapToResponseEntity()
 }

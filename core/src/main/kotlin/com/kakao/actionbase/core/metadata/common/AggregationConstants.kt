@@ -8,6 +8,9 @@ object AggregationConstants {
         // entity sentinel for global (non per-entity) rankings
         const val GLOBAL_ENTITY = "__GLOBAL__"
 
+        // rank table index: rows sorted by `metric` descending, i.e. top-K read order
+        const val RANK_INDEX = "metric_desc"
+
         // rank table src key: topk | entity | dimensionValue1 | dimensionValue2 | ...
         fun rankSource(
             topk: String,
