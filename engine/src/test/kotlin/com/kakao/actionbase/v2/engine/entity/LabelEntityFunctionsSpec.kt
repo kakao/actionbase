@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.metadata.common.DirectionType as GroupDirection
 
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
+import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.Topk
@@ -72,23 +73,75 @@ class LabelEntityFunctionsSpec :
             result shouldHaveSize 1
             result.single().type shouldBe AggregationType.TOPK
         }
+
+        "toQualifiedAggregations emits a dedupe per topk: directed endpoint then non-bucket fields" {
+            val label =
+                labelAt(
+                    database = "db",
+                    table = "orders",
+                    groups =
+                        listOf(
+                            // per-entity, OUT -> keys on the source endpoint plus its fields
+                            group("g1", GroupDirectionType.OUT, listOf(field("target"), field("category")), listOf(topk("t1", entity = "source"))),
+                            groupWithTopks("g2", emptyList()),
+                            // global, IN, no group fields -> the target endpoint is still keyed on
+                            group("g3", GroupDirectionType.IN, emptyList(), listOf(topk("t3"))),
+                        ),
+                )
+
+            val dedupes = label.toQualifiedAggregations().single().dedupes
+
+            dedupes.map { it.name } shouldBe listOf("t1", "t3")
+            dedupes[0].fields shouldBe listOf("source", "target", "category")
+            dedupes[1].fields shouldBe listOf("target")
+        }
+
+        "toQualifiedAggregations drops bucket fields from the dedupe key" {
+            val label =
+                labelAt(
+                    database = "db",
+                    table = "orders",
+                    groups =
+                        listOf(
+                            group("g", GroupDirectionType.OUT, listOf(field("target"), bucketField("day")), listOf(topk("t", entity = "source"))),
+                        ),
+                )
+
+            label.toQualifiedAggregations().single().dedupes.single().fields shouldBe listOf("source", "target")
+        }
     }) {
     companion object {
         private fun topk(
             name: String,
+            entity: String = "__GLOBAL__",
             rank: String = "${name}__topk",
-        ): Topk = Topk(topk = name, entity = "__GLOBAL__", dimension = "target", rank = rank)
+        ): Topk = Topk(topk = name, entity = entity, dimension = "target", rank = rank)
 
         private fun groupWithTopks(
             name: String,
+            topks: List<Topk>,
+        ): Group = group(name, GroupDirectionType.BOTH, emptyList(), topks)
+
+        private fun group(
+            name: String,
+            direction: GroupDirectionType,
+            fields: List<Group.Field>,
             topks: List<Topk>,
         ): Group =
             Group(
                 group = name,
                 type = GroupType.SUM,
-                fields = emptyList(),
-                directionType = GroupDirectionType.BOTH,
+                fields = fields,
+                directionType = direction,
                 aggregations = Aggregations(topk = topks),
+            )
+
+        private fun field(name: String): Group.Field = Group.Field(name)
+
+        private fun bucketField(name: String): Group.Field =
+            Group.Field(
+                name,
+                bucket = Bucket.Date(name = name, unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"),
             )
 
         private fun labelAt(
