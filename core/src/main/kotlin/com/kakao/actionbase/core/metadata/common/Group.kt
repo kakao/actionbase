@@ -50,7 +50,7 @@ data class Topk(
     val dimension: String,
     val refreshAfterMillis: Long = -1,
     val rank: String,
-    val properties: List<String> = emptyList(),
+    val additionalProperties: List<String> = emptyList(),
 )
 
 enum class AggregationType {

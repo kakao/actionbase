@@ -278,7 +278,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                           "ranges": "_target:eq:{_target}",
                           "dimension": "target",
                           "rank": "$db.$propsRank",
-                          "properties": ["productGroupId"]
+                          "additionalProperties": ["productGroupId"]
                         }]
                       }
                     }],

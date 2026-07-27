@@ -381,7 +381,7 @@ class AggregationServiceSpec :
 
             "aggregate carries the declared properties onto the rank row" {
                 val topk =
-                    topkConfig(name = "top_purchased", rank = "commerce.rank_tbl", properties = listOf("category", "target"))
+                    topkConfig(name = "top_purchased", rank = "commerce.rank_tbl", additionalProperties = listOf("category", "target"))
                 val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
 
@@ -493,7 +493,7 @@ class AggregationServiceSpec :
                         dimension = "target",
                         refreshAfterMillis = 60_000L,
                         rank = "commerce.rank_tbl",
-                        properties = listOf("category"),
+                        additionalProperties = listOf("category"),
                     )
                 val group = groupWithTopks(name = "g_out", topks = listOf(topk), directionType = DirectionType.OUT)
                 stubBindingWith(engine, database = "commerce", table = "purchases", groups = listOf(group))
@@ -758,8 +758,8 @@ private fun topkConfig(
     entity: String = "source",
     dimension: String = "target",
     rank: String = "${name}__rank",
-    properties: List<String> = emptyList(),
-): Topk = Topk(topk = name, entity = entity, dimension = dimension, rank = rank, properties = properties)
+    additionalProperties: List<String> = emptyList(),
+): Topk = Topk(topk = name, entity = entity, dimension = dimension, rank = rank, additionalProperties = additionalProperties)
 
 private fun groupWithTopks(
     name: String,

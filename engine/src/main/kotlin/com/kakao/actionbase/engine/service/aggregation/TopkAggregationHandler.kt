@@ -148,7 +148,7 @@ class TopkAggregationHandler(
                         .filter { it.bucket == null && !matchesDimension(it.name, topk.dimension) }
                         .map { resolveField(it.name, event.source, event.target, event.properties) }
                 val properties =
-                    topk.properties.associateWith { resolveField(it, event.source, event.target, event.properties) }
+                    topk.additionalProperties.associateWith { resolveField(it, event.source, event.target, event.properties) }
                 val (rankDatabase, rankTable) = parseFqn(topk.rank)
                 val ranking =
                     Ranking(
