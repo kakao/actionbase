@@ -19,6 +19,7 @@ When backed by HBase, Actionbase inherits durability and horizontal scalability.
 
 | Focuses on                                    | Explicitly avoids                    |
 | --------------------------------------------- | ------------------------------------ |
+| Real-time aggregation(AGG) for computing stats| Batch processing for analytics       |
 | Real-time interactions across U2U / U2I / I2I | General-purpose graph queries        |
 | Bounded access patterns (GET, COUNT, SCAN)    | Unbounded traversal or analytics     |
 | Continuous writes, immediate reads            | Batch ingestion or deferred indexing |
