@@ -16,15 +16,13 @@ fun LabelEntity.hasAggregation(type: AggregationType? = null): Boolean =
 
 fun LabelEntity.toQualifiedAggregations(type: AggregationType? = null): List<QualifiedAggregations> {
     val candidateTypes = if (type != null) listOf(type) else AggregationType.entries
-    val database = name.service
-    val table = name.nameNotNull
     return candidateTypes
         .filter { t -> groups.any { g -> t.has(g.aggregations) } }
         .map { t ->
             QualifiedAggregations(
                 type = t,
-                database = database,
-                table = table,
+                database = name.service,
+                table = name.nameNotNull,
                 dedupeFields = groups.filter { g -> t.has(g.aggregations) }.flatMap { it.dedupeFields() }.distinct(),
             )
         }
