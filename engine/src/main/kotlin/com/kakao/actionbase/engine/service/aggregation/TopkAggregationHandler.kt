@@ -41,10 +41,17 @@ class TopkAggregationHandler(
 
     override val type: AggregationType = AggregationType.TOPK
 
+    // Flatten every (event, direction, topk) into one fan-out. Per-item cardinality is schema-bounded
+    // (a handful of topks × directions), so concurrency is capped once at the service, not here.
     override fun aggregate(item: AggregationItemPayload): Flux<AggregationResult> =
         Flux
-            .fromIterable(createTopkEvent(item))
-            .flatMap { event -> processTopk(event, topks = event.aggregations.topk) }
+            .fromIterable(
+                createTopkEvent(item).flatMap { event ->
+                    event.aggregations.topk.flatMap { topk ->
+                        event.direction.directions().map { direction -> Triple(event, direction, topk) }
+                    }
+                },
+            ).flatMap { (event, direction, topk) -> processTopk(event, direction, topk) }
 
     override fun sweep(item: SweepItemPayload): Mono<AggregationSweepResult> {
         require(item is TopkSweepItem) { "TopkAggregationHandler handles TopkSweepItem, got ${item::class.simpleName}" }
@@ -116,72 +123,67 @@ class TopkAggregationHandler(
 
     private fun processTopk(
         event: EdgeAggregationEvent,
-        topks: List<Topk>,
-    ): Flux<AggregationResult> {
-        val directionTopkPairs = topks.flatMap { topk -> event.direction.directions().map { it to topk } }
+        direction: Direction,
+        topk: Topk,
+    ): Mono<AggregationResult> {
+        fun result(
+            status: String,
+            error: String? = null,
+        ) = AggregationResult(
+            database = event.database,
+            table = event.table,
+            source = event.source,
+            target = event.target,
+            status = status,
+            error = error,
+        )
 
-        return Flux
-            .fromIterable(directionTopkPairs)
-            .flatMap { (direction, topk) ->
-                fun result(
-                    status: String,
-                    error: String? = null,
-                ) = AggregationResult(
-                    database = event.database,
-                    table = event.table,
-                    source = event.source,
-                    target = event.target,
-                    status = status,
-                    error = error,
-                )
-
-                val ranges =
-                    topk.ranges.takeIf { it.isNotEmpty() }?.let {
-                        interpolate(template = it, source = event.source, target = event.target, properties = event.properties)
-                    }
-
-                val directedSource = if (direction == Direction.IN) event.target else event.source
-                val entity = if (topk.entity == AggregationConstants.Topk.GLOBAL_ENTITY) AggregationConstants.Topk.GLOBAL_ENTITY else directedSource
-                val topkDimensionValue = resolveField(topk.dimension, event.source, event.target, event.properties)
-                val dimensionValues =
-                    event.group.fields
-                        .filter { it.bucket == null && !matchesDimension(it.name, topk.dimension) }
-                        .map { resolveField(it.name, event.source, event.target, event.properties) }
-                val properties =
-                    topk.additionalProperties.associateWith { resolveField(it, event.source, event.target, event.properties) }
-                val (rankDatabase, rankTable) = parseFqn(topk.rank)
-                val ranking =
-                    Ranking(
-                        database = rankDatabase,
-                        table = rankTable,
-                        topk = topk.topk,
-                        entity = entity,
-                        topkDimensionValue = topkDimensionValue,
-                        dimensionValues = dimensionValues,
-                        properties = properties,
-                    )
-
-                writeRank(
-                    sourceDatabase = event.database,
-                    sourceTable = event.table,
-                    group = event.group.group,
-                    start = directedSource,
-                    direction = direction,
-                    ranges = ranges,
-                    ranking = ranking,
-                ).flatMap { results ->
-                    val status = if (results.any { it.status == ERROR }) ERROR else SUCCESS
-                    if (status == ERROR || topk.refreshAfterMillis <= 0) {
-                        return@flatMap Mono.just(result(status = status))
-                    }
-
-                    writeRefresh(event, ranking, direction, ranges, refreshAfterMillis = topk.refreshAfterMillis)
-                        .map { result(status = if (it.results.any { r -> r.status == ERROR }) ERROR else SUCCESS) }
-                }.onErrorResume { err ->
-                    logger.error("topk aggregate failed for {}.{} topk={}", event.database, event.table, topk.topk, err)
-                    Mono.just(result(ERROR, err.message))
-                }
+        val ranges =
+            topk.ranges.takeIf { it.isNotEmpty() }?.let {
+                interpolate(template = it, source = event.source, target = event.target, properties = event.properties)
             }
+
+        val directedSource = if (direction == Direction.IN) event.target else event.source
+        val entity = if (topk.entity == AggregationConstants.Topk.GLOBAL_ENTITY) AggregationConstants.Topk.GLOBAL_ENTITY else directedSource
+        val topkDimensionValue = resolveField(topk.dimension, event.source, event.target, event.properties)
+        val dimensionValues =
+            event.group.fields
+                .filter { it.bucket == null && !matchesDimension(it.name, topk.dimension) }
+                .map { resolveField(it.name, event.source, event.target, event.properties) }
+        val properties =
+            topk.additionalProperties.associateWith { resolveField(it, event.source, event.target, event.properties) }
+        val (rankDatabase, rankTable) = parseFqn(topk.rank)
+        val ranking =
+            Ranking(
+                database = rankDatabase,
+                table = rankTable,
+                topk = topk.topk,
+                entity = entity,
+                topkDimensionValue = topkDimensionValue,
+                dimensionValues = dimensionValues,
+                properties = properties,
+            )
+
+        return writeRank(
+            sourceDatabase = event.database,
+            sourceTable = event.table,
+            group = event.group.group,
+            start = directedSource,
+            direction = direction,
+            ranges = ranges,
+            ranking = ranking,
+        ).flatMap { results ->
+            val status = if (results.any { it.status == ERROR }) ERROR else SUCCESS
+            if (status == ERROR || topk.refreshAfterMillis <= 0) {
+                return@flatMap Mono.just(result(status = status))
+            }
+
+            writeRefresh(event, ranking, direction, ranges, refreshAfterMillis = topk.refreshAfterMillis)
+                .map { result(status = if (it.results.any { r -> r.status == ERROR }) ERROR else SUCCESS) }
+        }.onErrorResume { err ->
+            logger.error("topk aggregate failed for {}.{} topk={}", event.database, event.table, topk.topk, err)
+            Mono.just(result(ERROR, err.message))
+        }
     }
 
     /**
