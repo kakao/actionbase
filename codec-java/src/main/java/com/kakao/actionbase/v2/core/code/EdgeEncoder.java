@@ -3,6 +3,7 @@ package com.kakao.actionbase.v2.core.code;
 import com.kakao.actionbase.v2.core.edge.Edge;
 import com.kakao.actionbase.v2.core.metadata.Direction;
 import com.kakao.actionbase.v2.core.metadata.DirectionType;
+import com.kakao.actionbase.v2.core.metadata.Group;
 
 import java.util.List;
 import java.util.Map;
@@ -75,6 +76,49 @@ public interface EdgeEncoder<T> {
       Edge edge, DirectionType dirType, int labelId, List<Index> indices) {
     return encodeAllIndexedEdges(
         edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), dirType, labelId, indices);
+  }
+
+  KeyFieldValue<T> encodeGroupEdge(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      Group group);
+
+  /**
+   * Encodes every (group, direction) pair for {@code groups}, iterating each group's own {@link
+   * Group#getDirectionType()} rather than the label's {@code dirType} — matching V3's {@code
+   * EdgeMutationBuilder.buildGroupRecords}.
+   */
+  List<KeyFieldValue<T>> encodeAllGroupEdges(
+      long ts, Object src, Object tgt, Map<String, Object> props, int labelId, List<Group> groups);
+
+  default List<KeyFieldValue<T>> encodeAllGroupEdges(Edge edge, int labelId, List<Group> groups) {
+    return encodeAllGroupEdges(
+        edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), labelId, groups);
+  }
+
+  /**
+   * Encodes only the groups whose {@link Group#getDirectionType()} includes {@code dir}, given
+   * {@code src}/{@code tgt} already positioned correctly for {@code dir} — the same per-direction
+   * dispatch convention {@link #encodeAllCacheEdges} relies on for MULTI_EDGE's outEdge/inEdge
+   * calls, since a MULTI_EDGE label has no single edge object valid for every direction at once.
+   */
+  List<KeyFieldValue<T>> encodeGroupEdgesForDirection(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      List<Group> groups);
+
+  default List<KeyFieldValue<T>> encodeGroupEdgesForDirection(
+      Edge edge, Direction dir, int labelId, List<Group> groups) {
+    return encodeGroupEdgesForDirection(
+        edge.getTs(), edge.getSrc(), edge.getTgt(), edge.getProps(), dir, labelId, groups);
   }
 
   KeyFieldValue<T> encodeCacheEdge(

@@ -6,6 +6,7 @@ import com.kakao.actionbase.v2.core.code.hbase.ValueUtils;
 import com.kakao.actionbase.v2.core.edge.Edge;
 import com.kakao.actionbase.v2.core.metadata.Direction;
 import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
+import com.kakao.actionbase.v2.core.metadata.Group;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -118,6 +119,41 @@ public class BytesKeyValueEdgeEncoder extends AbstractEdgeEncoder<byte[]> {
             });
     byte[] value = useAsByteArray(buffer -> encodeIndexedEdgeValueToBuffer(ts, props, buffer));
     return new KeyFieldValue<>(key, value);
+  }
+
+  @Override
+  public KeyFieldValue<byte[]> encodeGroupEdge(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      Group group) {
+    Object directedSrc;
+    Object directedTgt;
+    if (dir == Direction.OUT) {
+      directedSrc = src;
+      directedTgt = tgt;
+    } else {
+      directedSrc = tgt;
+      directedTgt = src;
+    }
+
+    byte[] key =
+        useAsByteArray(
+            buffer ->
+                encodeGroupEdgeKeyToBuffer(directedSrc, dir, labelId, group.getCode(), buffer));
+    byte[] field =
+        useAsByteArray(
+            buffer ->
+                encodeGroupEdgeQualifierToBuffer(
+                    group, ts, directedSrc, directedTgt, props, buffer));
+    byte[] value =
+        useAsByteArray(
+            buffer ->
+                encodeGroupEdgeValueToBuffer(group, ts, directedSrc, directedTgt, props, buffer));
+    return new KeyFieldValue<>(key, field, value);
   }
 
   @Override

@@ -15,6 +15,7 @@ dependencies {
     implementation(Dependencies.Jackson.JACKSON_KOTLIN)
 
     testImplementation(project(":core-java"))
+    testImplementation(project(":codec-java"))
     testImplementation(Dependencies.Jackson.JACKSON_CBOR)
     testImplementation(Dependencies.Jackson.JACKSON_SMILE)
     testImplementation(kotlin("test"))
