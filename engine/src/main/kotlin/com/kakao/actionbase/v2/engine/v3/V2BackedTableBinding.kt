@@ -44,6 +44,7 @@ import org.apache.hadoop.hbase.client.Put
 import org.slf4j.LoggerFactory
 
 import reactor.core.publisher.Mono
+import reactor.core.publisher.SignalType
 import reactor.core.scheduler.Schedulers
 
 class V2BackedTableBinding(
@@ -73,13 +74,29 @@ class V2BackedTableBinding(
         with(label) {
             val compatibleEdge = Edge(0L, source, target)
             val lockEdge = coder.encodeLockEdge(compatibleEdge, entity.id)
+            // Release before emitting: doFinally runs after the result propagates, leaving the lock held.
             return acquireLock(traceId, lockEdge, false)
                 .flatMap { action() }
-                .doFinally {
+                .delayUntil {
                     releaseLock(traceId, lockEdge, false)
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .subscribe({}, { log.error("Lock release failed for {}", key, it) })
+                        .onErrorResume {
+                            log.warn("Lock release failed for {} (stale sweep will clear): {}", key, it.message)
+                            Mono.just(false)
+                        }
+                }.onErrorResume { error ->
+                    releaseLock(traceId, lockEdge, false)
+                        .onErrorResume {
+                            log.warn("Lock release failed for {} (stale sweep will clear): {}", key, it.message)
+                            Mono.just(false)
+                        }.then(Mono.error(error))
                 }.subscribeOn(Schedulers.boundedElastic())
+                .doFinally { signal ->
+                    if (signal == SignalType.CANCEL) {
+                        releaseLock(traceId, lockEdge, false)
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe({}, { log.error("Lock release on cancel failed for {}", key, it) })
+                    }
+                }
         }
     }
 
