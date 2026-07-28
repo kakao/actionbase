@@ -1,9 +1,6 @@
 package com.kakao.actionbase.core.edge.payload
 
-import com.kakao.actionbase.core.metadata.common.AggregationType
-
 data class AggregationItemRequest(
-    val type: AggregationType,
     val items: List<AggregationItemPayload>,
 )
 

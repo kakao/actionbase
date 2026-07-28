@@ -20,13 +20,10 @@ class AggregationService(
 
     fun getAggregations(type: AggregationType? = null): List<QualifiedAggregations> = engine.getListWithAggregations(type)
 
-    fun aggregate(
-        type: AggregationType,
-        items: List<AggregationItemPayload>,
-    ): Mono<List<AggregationResult>> =
+    fun aggregate(items: List<AggregationItemPayload>): Mono<List<AggregationResult>> =
         Flux
             .fromIterable(items)
-            .flatMap { item -> handler(type).aggregate(item) }
+            .flatMap { item -> Flux.merge(handlersByType.values.map { it.aggregate(item) }) }
             .collectList()
 
     fun sweep(items: List<SweepItem>): Mono<List<AggregationSweepResult>> =

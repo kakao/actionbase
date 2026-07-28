@@ -97,7 +97,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src", source = "s1", target = "t1"))))
+                    .create(service.aggregate(listOf(item("db", "src", source = "s1", target = "t1"))))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
@@ -124,7 +124,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "ERROR")))
 
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
+                    .create(service.aggregate(listOf(item("db", "src"))))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "ERROR"
@@ -152,7 +152,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src", source = "user1", target = "item1"))))
+                    .create(service.aggregate(listOf(item("db", "src", source = "user1", target = "item1"))))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
@@ -183,7 +183,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src", source = "user1", target = "item1"))))
+                    .create(service.aggregate(listOf(item("db", "src", source = "user1", target = "item1"))))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
@@ -214,7 +214,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src", source = "user1", target = "item1"))))
+                    .create(service.aggregate(listOf(item("db", "src", source = "user1", target = "item1"))))
                     .assertNext { results ->
                         results shouldHaveSize 2
                     }.verifyComplete()
@@ -257,7 +257,6 @@ class AggregationServiceSpec :
                 StepVerifier
                     .create(
                         service.aggregate(
-                            AggregationType.TOPK,
                             listOf(item("db", "src", source = "user1", target = "item1", properties = mapOf("category" to "fruit", "purchasedAt" to 1_700_000_000_000L))),
                         ),
                     ).assertNext { results ->
@@ -301,7 +300,6 @@ class AggregationServiceSpec :
                 StepVerifier
                     .create(
                         service.aggregate(
-                            AggregationType.TOPK,
                             listOf(
                                 item(
                                     "db",
@@ -355,7 +353,6 @@ class AggregationServiceSpec :
                 StepVerifier
                     .create(
                         service.aggregate(
-                            AggregationType.TOPK,
                             listOf(
                                 item(
                                     "db",
@@ -397,7 +394,6 @@ class AggregationServiceSpec :
                 StepVerifier
                     .create(
                         service.aggregate(
-                            AggregationType.TOPK,
                             listOf(item("commerce", "purchases", source = "user1", target = "item1", properties = mapOf("category" to "fruit"))),
                         ),
                     ).assertNext { it.single().status shouldBe "SUCCESS" }
@@ -443,7 +439,7 @@ class AggregationServiceSpec :
 
                 val before = System.currentTimeMillis()
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("commerce", "purchases", source = "user1", target = "item1"))))
+                    .create(service.aggregate(listOf(item("commerce", "purchases", source = "user1", target = "item1"))))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "SUCCESS"
@@ -517,13 +513,15 @@ class AggregationServiceSpec :
                 StepVerifier
                     .create(
                         service.aggregate(
-                            AggregationType.TOPK,
                             listOf(item("commerce", "purchases", source = "user1", target = "item1", properties = mapOf("category" to "fruit"))),
                         ),
                     ).assertNext { it.single().status shouldBe "SUCCESS" }
                     .verifyComplete()
 
-                val refresh = refreshRequest.captured.messages.single().value as TopkRefreshMessage
+                val refresh =
+                    refreshRequest.captured.messages
+                        .single()
+                        .value as TopkRefreshMessage
                 refresh.item.properties shouldBe mapOf("category" to "fruit")
             }
 
@@ -542,7 +540,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "CREATED")))
 
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
+                    .create(service.aggregate(listOf(item("db", "src"))))
                     .assertNext { it.single().status shouldBe "SUCCESS" }
                     .verifyComplete()
 
@@ -577,7 +575,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(listOf(mutationResult(status = "ERROR")))
 
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
+                    .create(service.aggregate(listOf(item("db", "src"))))
                     .assertNext { it.single().status shouldBe "ERROR" }
                     .verifyComplete()
 
@@ -619,7 +617,7 @@ class AggregationServiceSpec :
                 } returns Mono.just(enqueueResponse(status = "ERROR"))
 
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
+                    .create(service.aggregate(listOf(item("db", "src"))))
                     .assertNext { it.single().status shouldBe "ERROR" }
                     .verifyComplete()
             }
@@ -639,7 +637,7 @@ class AggregationServiceSpec :
                 } returns Mono.error(RuntimeException("agg boom"))
 
                 StepVerifier
-                    .create(service.aggregate(AggregationType.TOPK, listOf(item("db", "src"))))
+                    .create(service.aggregate(listOf(item("db", "src"))))
                     .assertNext { results ->
                         results shouldHaveSize 1
                         results[0].status shouldBe "ERROR"

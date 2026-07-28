@@ -36,7 +36,7 @@ class MetadataAggController(
         @RequestBody request: AggregationItemRequest,
     ): Mono<ResponseEntity<AggregationsItemResponse>> =
         aggregationService
-            .aggregate(type = request.type, items = request.items)
+            .aggregate(items = request.items)
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 
     @PutMapping("/aggregations/v1/sweep")

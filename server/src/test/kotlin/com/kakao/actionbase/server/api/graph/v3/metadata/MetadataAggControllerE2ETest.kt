@@ -229,7 +229,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .bodyValue(
                 """
                 {
-                  "type": "TOPK",
                   "items": [
                     {"database": "$db", "table": "$ordersTable",
                      "edge": {"version": 1, "source": "user1", "target": "item1",
@@ -368,7 +367,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .bodyValue(
                 """
                 {
-                  "type": "TOPK",
                   "items": [
                     {"database": "$db", "table": "$segmentTable",
                      "edge": {"version": 1, "source": "user1", "target": "item1",
@@ -650,7 +648,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .bodyValue(
                 """
                 {
-                  "type": "TOPK",
                   "items": [
                     {"database": "$db", "table": "$table",
                      "edge": {"version": 1, "source": "user1", "target": "item1", "properties": {}, "context": {}}}
