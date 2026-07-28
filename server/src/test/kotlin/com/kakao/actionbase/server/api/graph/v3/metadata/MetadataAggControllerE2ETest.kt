@@ -246,7 +246,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .get()
             .uri(
                 "/graph/v3/databases/$db/tables/$ordersRank/edges/scan/metric_desc" +
-                    "?start=$topkName|user1|fruit&direction=OUT",
+                    "?start=$db|$ordersTable|$topkName|user1|fruit&direction=OUT",
             ).exchange()
             .expectStatus()
             .isOk
@@ -384,7 +384,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .get()
             .uri(
                 "/graph/v3/databases/$db/tables/$segmentRank/edges/scan/metric_desc" +
-                    "?start=$topkName|user1&direction=OUT",
+                    "?start=$db|$segmentTable|$topkName|user1&direction=OUT",
             ).exchange()
             .expectStatus()
             .isOk
@@ -588,7 +588,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .get()
             .uri(
                 "/graph/v3/databases/$sweepDb/tables/$sweepRank/edges/scan/metric_desc" +
-                    "?start=$topkName|user1&direction=OUT",
+                    "?start=$sweepDb|$sweepTable|$topkName|user1&direction=OUT",
             ).exchange()
             .expectStatus()
             .isOk

@@ -222,7 +222,14 @@ class TopkAggregationHandler(
                                     edge =
                                         Edge(
                                             version = System.currentTimeMillis(),
-                                            source = AggregationConstants.Topk.rankSource(topk = ranking.topk, entity = ranking.entity, dimensionValues = ranking.dimensionValues),
+                                            source =
+                                                AggregationConstants.Topk.rankSource(
+                                                    database = sourceDatabase,
+                                                    table = sourceTable,
+                                                    topk = ranking.topk,
+                                                    entity = ranking.entity,
+                                                    dimensionValues = ranking.dimensionValues,
+                                                ),
                                             target = ranking.topkDimensionValue,
                                             properties =
                                                 buildMap {

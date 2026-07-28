@@ -159,7 +159,7 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "top_purchased|user1"
+                edge.source shouldBe "db|src|top_purchased|user1"
                 edge.target shouldBe "item1"
             }
 
@@ -190,7 +190,7 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "top_purchased_by|item1"
+                edge.source shouldBe "db|src|top_purchased_by|item1"
                 edge.target shouldBe "user1"
             }
 
@@ -222,8 +222,8 @@ class AggregationServiceSpec :
                 val edges = mutations.map { it.single().edge }
                 edges.map { it.source to it.target } shouldContainExactlyInAnyOrder
                     listOf(
-                        "top_both|user1" to "item1",
-                        "top_both|item1" to "item1",
+                        "db|src|top_both|user1" to "item1",
+                        "db|src|top_both|item1" to "item1",
                     )
             }
 
@@ -266,7 +266,7 @@ class AggregationServiceSpec :
 
                 val edge = mutations.captured.single().edge
                 // category joins the source; the bucketed field is consumed by ranges, not dimensionValues
-                edge.source shouldBe "top_purchased_1y|user1|fruit"
+                edge.source shouldBe "db|src|top_purchased_1y|user1|fruit"
                 edge.target shouldBe "item1"
             }
 
@@ -317,7 +317,7 @@ class AggregationServiceSpec :
 
                 val edge = mutations.captured.single().edge
                 // dimension = category, so its value becomes the rank target and drops out of dimensionValues
-                edge.source shouldBe "top_category|user1"
+                edge.source shouldBe "db|src|top_category|user1"
                 edge.target shouldBe "fruit"
             }
 
@@ -370,7 +370,7 @@ class AggregationServiceSpec :
 
                 val edge = mutations.captured.single().edge
                 // _target is the dimension (rank target); category + region join the source
-                edge.source shouldBe "top_purchased_1y|user1|fruit|seoul"
+                edge.source shouldBe "db|src|top_purchased_1y|user1|fruit|seoul"
                 edge.target shouldBe "item1"
             }
 
@@ -448,7 +448,7 @@ class AggregationServiceSpec :
 
                 rankMutations.captured
                     .single()
-                    .edge.source shouldBe "top_purchased|user1"
+                    .edge.source shouldBe "commerce|purchases|top_purchased|user1"
                 rankMutations.captured
                     .single()
                     .edge.target shouldBe "item1"
@@ -671,7 +671,7 @@ class AggregationServiceSpec :
                     }.verifyComplete()
 
                 val edge = mutations.captured.single().edge
-                edge.source shouldBe "top_purchased|user1"
+                edge.source shouldBe "db|src|top_purchased|user1"
                 edge.target shouldBe "item1"
             }
 
