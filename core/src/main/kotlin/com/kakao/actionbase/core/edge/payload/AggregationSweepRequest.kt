@@ -11,7 +11,6 @@ data class AggregationSweepRequest(
 
 data class SweepItem(
     val type: AggregationType,
-
     @field:JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.EXTERNAL_PROPERTY,

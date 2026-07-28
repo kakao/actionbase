@@ -434,7 +434,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
     }
 
     /**
-     * `PUT /aggregations/v1/sweep` recomputes a ranking on demand from an already-resolved
+     * `POST /aggregations/v1/sweep` recomputes a ranking on demand from an already-resolved
      * refresh target and re-writes its rank row.
      *
      * 1. Create a rank table and a source table under `commerce_sweep`.
@@ -554,7 +554,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
         val response =
             client
-                .put()
+                .post()
                 .uri("/aggregations/v1/sweep")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(

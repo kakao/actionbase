@@ -11,7 +11,6 @@ import com.kakao.actionbase.engine.service.AggregationService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -39,7 +38,7 @@ class MetadataAggController(
             .aggregate(items = request.items)
             .map { results -> ResponseEntity.ok(AggregationsItemResponse.from(results)) }
 
-    @PutMapping("/aggregations/v1/sweep")
+    @PostMapping("/aggregations/v1/sweep")
     fun sweep(
         @RequestBody request: AggregationSweepRequest,
     ): Mono<ResponseEntity<AggregationsSweepResponse>> =
