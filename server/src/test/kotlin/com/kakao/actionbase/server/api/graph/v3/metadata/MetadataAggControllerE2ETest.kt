@@ -430,11 +430,9 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         assertEquals(db, source?.database)
         assertEquals(table, source?.table)
 
-        // The dedupe strategy: per-entity `top_purchased` keys on its entity endpoint plus the
-        // group's non-bucket fields.
-        val dedupe = source?.dedupes?.single()
-        assertEquals("top_purchased", dedupe?.name)
-        assertEquals(listOf("source", "_target"), dedupe?.fields)
+        // The dedupe key: the entity endpoint (source, for the OUT ranking) plus the group's
+        // non-bucket fields, unioned across the table's rankings.
+        assertEquals(listOf("source", "_target"), source?.dedupeFields)
     }
 
     /**

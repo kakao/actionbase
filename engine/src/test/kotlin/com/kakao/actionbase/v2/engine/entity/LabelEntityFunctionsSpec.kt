@@ -74,26 +74,25 @@ class LabelEntityFunctionsSpec :
             result.single().type shouldBe AggregationType.TOPK
         }
 
-        "toQualifiedAggregations emits a dedupe per topk: directed endpoint then non-bucket fields" {
+        "toQualifiedAggregations unions every ranking's dedupe fields into one key" {
             val label =
                 labelAt(
                     database = "db",
                     table = "orders",
                     groups =
                         listOf(
-                            // per-entity, OUT -> keys on the source endpoint plus its fields
-                            group("g1", GroupDirectionType.OUT, listOf(field("target"), field("category")), listOf(topk("t1", entity = "source"))),
+                            group("g1", GroupDirectionType.OUT, listOf(field("productGroupId")), listOf(topk("t1", entity = "source"))),
                             groupWithTopks("g2", emptyList()),
-                            // global, IN, no group fields -> the target endpoint is still keyed on
-                            group("g3", GroupDirectionType.IN, emptyList(), listOf(topk("t3"))),
+                            group("g3", GroupDirectionType.OUT, emptyList(), listOf(topk("t3", entity = "source"))),
+                            group("g4", GroupDirectionType.OUT, listOf(field("field2")), listOf(topk("t4", entity = "source"))),
+                            // IN ranking contributes the target endpoint
+                            group("g5", GroupDirectionType.IN, emptyList(), listOf(topk("t5"))),
                         ),
                 )
 
-            val dedupes = label.toQualifiedAggregations().single().dedupes
-
-            dedupes.map { it.name } shouldBe listOf("t1", "t3")
-            dedupes[0].fields shouldBe listOf("source", "target", "category")
-            dedupes[1].fields shouldBe listOf("target")
+            // [source, productGroupId] ∪ [source] ∪ [source, field2] ∪ [target], deduped
+            label.toQualifiedAggregations().single().dedupeFields shouldBe
+                listOf("source", "productGroupId", "field2", "target")
         }
 
         "toQualifiedAggregations drops bucket fields from the dedupe key" {
@@ -107,7 +106,7 @@ class LabelEntityFunctionsSpec :
                         ),
                 )
 
-            label.toQualifiedAggregations().single().dedupes.single().fields shouldBe listOf("source", "target")
+            label.toQualifiedAggregations().single().dedupeFields shouldBe listOf("source", "target")
         }
     }) {
     companion object {
