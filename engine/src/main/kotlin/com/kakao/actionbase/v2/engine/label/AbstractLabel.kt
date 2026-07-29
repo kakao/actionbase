@@ -42,6 +42,7 @@ import com.github.benmanes.caffeine.cache.RemovalListener
 import reactor.core.Exceptions
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.core.publisher.SignalType
 import reactor.core.scheduler.Schedulers
 import reactor.kotlin.core.publisher.switchIfEmpty
 import reactor.util.retry.Retry
@@ -166,12 +167,27 @@ abstract class AbstractLabel<T>(
                     storageOps = collector?.snapshot(),
                     storageOpsTruncated = collector?.isTruncated() ?: false,
                 )
-            }.subscribeOn(Schedulers.boundedElastic())
-            .doFinally {
+            }
+            // Release before emitting: doFinally runs after the result propagates, leaving the lock held.
+            .delayUntil {
                 releaseLock(edge.traceId, encodedLockEdge, bulk)
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .subscribe()
-                log.debug("7. lock released: {}", encodedLockEdge)
+                    .onErrorResume { e ->
+                        log.warn("Lock release failed for {} (stale sweep will clear): {}", encodedLockEdge, e.message)
+                        Mono.just(false)
+                    }.doOnNext { log.debug("7. lock released: {}", encodedLockEdge) }
+            }.onErrorResume { error ->
+                releaseLock(edge.traceId, encodedLockEdge, bulk)
+                    .onErrorResume { e ->
+                        log.warn("Lock release failed for {} (stale sweep will clear): {}", encodedLockEdge, e.message)
+                        Mono.just(false)
+                    }.then(Mono.error(error))
+            }.subscribeOn(Schedulers.boundedElastic())
+            .doFinally { signal ->
+                if (signal == SignalType.CANCEL) {
+                    releaseLock(edge.traceId, encodedLockEdge, bulk)
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .subscribe({}, { log.error("Lock release on cancel failed for {}", encodedLockEdge, it) })
+                }
             }
     }
 
