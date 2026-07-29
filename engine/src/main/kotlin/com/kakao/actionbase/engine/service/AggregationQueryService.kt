@@ -13,12 +13,6 @@ class AggregationQueryService(
     private val queryService: QueryService,
     private val engine: AggregationEngine,
 ) {
-    /**
-     * Reads back a materialized top-K ranking. Rank rows live in `topk.rank` keyed by
-     * `database | table | topk | entity | dimensionValues...` with the ranked value as the target and
-     * `metric` as a property; scanning the `metric_desc` index from that composite prefix yields the
-     * ranking in descending metric order.
-     */
     fun topk(
         database: String,
         table: String,
@@ -39,7 +33,7 @@ class AggregationQueryService(
             database = rankDatabase,
             table = rankTable,
             index = AggregationConstants.Topk.RANK_INDEX,
-            start = AggregationConstants.Topk.rankSource(database = database, table = table, topk = topk, entity = entity, dimensionValues = dimensionValues),
+            start = AggregationConstants.Topk.rankSource(database = database, table = tb.table, topk = topk, entity = entity, dimensionValues = dimensionValues),
             direction = V2Direction.OUT,
             limit = limit,
             offset = offset,

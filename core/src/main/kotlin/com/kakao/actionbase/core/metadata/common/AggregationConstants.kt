@@ -11,6 +11,10 @@ object AggregationConstants {
         // rank table index: rows sorted by `metric` descending, i.e. top-K read order
         const val RANK_INDEX = "metric_desc"
 
+        // rank row properties: the aggregated metric, plus the carried properties as one JSON string
+        const val METRIC = "metric"
+        const val ADDITIONAL_PROPERTIES = "additionalProperties"
+
         // rank table src key: database | table | topk | entity | dimensionValue1 | dimensionValue2 | ...
         fun rankSource(
             database: String,

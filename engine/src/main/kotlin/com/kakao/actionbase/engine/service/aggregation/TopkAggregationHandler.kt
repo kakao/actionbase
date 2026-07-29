@@ -28,6 +28,8 @@ import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.v2.engine.util.getLogger
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
@@ -68,11 +70,9 @@ class TopkAggregationHandler(
             error = error,
         )
 
+        val tb = engine.getTableBinding(database = item.database, alias = item.table)
         val group =
-            engine
-                .getTableBinding(database = item.database, alias = item.table)
-                .schema
-                .groups
+            tb.schema.groups
                 .firstOrNull { g -> g.aggregations.topk.any { it.topk == item.topk } }
                 ?: return Mono.just(result(SKIPPED))
 
@@ -84,7 +84,7 @@ class TopkAggregationHandler(
 
         return writeRank(
             sourceDatabase = item.database,
-            sourceTable = item.table,
+            sourceTable = tb.table,
             group = group.group,
             start = directedSource,
             direction = direction,
@@ -117,7 +117,7 @@ class TopkAggregationHandler(
         return tb.schema.groups
             .filter { it.aggregations.topk.isNotEmpty() }
             .map { group ->
-                EdgeAggregationEvent.of(type = AggregationType.TOPK, database = item.database, table = item.table, item, group)
+                EdgeAggregationEvent.of(type = AggregationType.TOPK, database = item.database, table = tb.table, item, group)
             }
     }
 
@@ -233,8 +233,13 @@ class TopkAggregationHandler(
                                             target = ranking.topkDimensionValue,
                                             properties =
                                                 buildMap {
-                                                    put("metric", metric)
-                                                    putAll(ranking.properties)
+                                                    put(AggregationConstants.Topk.METRIC, metric)
+                                                    if (ranking.properties.isNotEmpty()) {
+                                                        put(
+                                                            AggregationConstants.Topk.ADDITIONAL_PROPERTIES,
+                                                            MAPPER.writeValueAsString(ranking.properties),
+                                                        )
+                                                    }
                                                 },
                                         ),
                                 ),
@@ -340,6 +345,7 @@ class TopkAggregationHandler(
 
     private companion object {
         private val PLACEHOLDER = Regex("""\{([a-zA-Z_][a-zA-Z0-9_]*)}""")
+        private val MAPPER = jacksonObjectMapper()
 
         const val SUCCESS = "SUCCESS"
         const val ERROR = "ERROR"

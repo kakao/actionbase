@@ -105,6 +105,31 @@ class AggregationServiceSpec :
                     }.verifyComplete()
             }
 
+            "aggregate keys the rank row by the canonical table name, not the requested alias" {
+                val topk = topkConfig(name = "top_alias", rank = "db.rank_tbl")
+                val group = groupWithTopks(name = "g", topks = listOf(topk), directionType = DirectionType.OUT)
+                // Requested via alias `orders_alias`; the binding resolves to canonical `orders_actual`.
+                stubBindingWith(engine, database = "db", table = "orders_actual", groups = listOf(group), alias = "orders_alias")
+
+                every {
+                    queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+                } returns Mono.just(aggPayload(count = 1))
+
+                val mutations = slot<List<MutationItem>>()
+                every {
+                    mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
+                } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+                StepVerifier
+                    .create(service.aggregate(listOf(item("db", "orders_alias", source = "user1", target = "item1"))))
+                    .assertNext { results -> results shouldHaveSize 1 }
+                    .verifyComplete()
+
+                mutations.captured
+                    .single()
+                    .edge.source shouldBe "db|orders_actual|top_alias|user1"
+            }
+
             "aggregate returns ERROR when mutate reports ERROR status" {
                 val topk = topkConfig(name = "t1", rank = "db.rank_tbl")
                 val group =
@@ -399,11 +424,11 @@ class AggregationServiceSpec :
                     ).assertNext { it.single().status shouldBe "SUCCESS" }
                     .verifyComplete()
 
-                // `properties` resolves like any field: an edge property (`category`) and an endpoint (`target`).
+                // `properties` resolves like any field: an edge property (`category`) and an endpoint
+                // (`target`), carried onto the rank row as one JSON string under `additionalProperties`.
                 val edge = mutations.captured.single().edge
-                edge.properties["category"] shouldBe "fruit"
-                edge.properties["target"] shouldBe "item1"
                 edge.properties.containsKey("metric") shouldBe true
+                edge.properties["additionalProperties"] shouldBe """{"category":"fruit","target":"item1"}"""
             }
 
             "aggregate writes a refresh row after the rank row when refreshAfterMillis is positive" {
@@ -697,10 +722,11 @@ class AggregationServiceSpec :
                     ).assertNext { it.single().status shouldBe "SUCCESS" }
                     .verifyComplete()
 
-                // sweep has no source edge, so the property values ride in on the sweep item and are re-written.
+                // sweep has no source edge, so the property values ride in on the sweep item and are
+                // re-written as one JSON string under `additionalProperties`.
                 val edge = mutations.captured.single().edge
-                edge.properties["category"] shouldBe "fruit"
                 edge.properties.containsKey("metric") shouldBe true
+                edge.properties["additionalProperties"] shouldBe """{"category":"fruit"}"""
             }
 
             "sweep is SKIPPED when the target topk is not defined on the table" {
@@ -810,6 +836,7 @@ private fun stubBindingWith(
     database: String,
     table: String,
     groups: List<Group>,
+    alias: String = table,
 ) {
     val schema =
         ModelSchema.Edge(
@@ -820,7 +847,8 @@ private fun stubBindingWith(
         )
     val binding = mockk<TableBinding>()
     every { binding.schema } returns schema
-    every { engine.getTableBinding(database = database, alias = table) } returns binding
+    every { binding.table } returns table
+    every { engine.getTableBinding(database = database, alias = alias) } returns binding
 }
 
 private fun item(
