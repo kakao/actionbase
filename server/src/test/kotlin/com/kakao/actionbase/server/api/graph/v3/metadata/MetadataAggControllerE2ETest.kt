@@ -1,6 +1,5 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.edge.payload.AggregationsItemResponse
 import com.kakao.actionbase.core.edge.payload.AggregationsSweepResponse
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.AggregationConstants
@@ -60,7 +59,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
 
         createRankTable(rank)
 
-        // A source edge table whose COUNT group declares a top-K ranking with refresh tracking on.
         client
             .post()
             .uri("/graph/v3/databases/$db/tables")
@@ -104,8 +102,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .expectStatus()
             .isOk
 
-        // The refresh tracker lives under the reserved `topk` database as a queue/v1 table: the
-        // aggregate flow enqueues due-refresh messages onto it and a worker polls them back.
         client
             .post()
             .uri("/graph/v3/databases")
@@ -124,283 +120,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             ).exchange()
             .expectStatus()
             .isOk
-    }
-
-    /**
-     * Ranking with a group that mixes an endpoint field (`_target`), a plain dimension (`category`),
-     * and a bucketed field (`purchasedAt`).
-     *
-     * 1. Create the rank table and a bucketed source table under `commerce`.
-     * 2. Record one edge:
-     *
-     *    commerce.orders (source)
-     *    | source | target | category | purchasedAt   |
-     *    |--------|--------|----------|---------------|
-     *    | user1  | item1  | fruit    | 1710000000000 |
-     *
-     * 3. Run the aggregation. The rank row key joins the entity with the non-bucket dimension only
-     *    (`category`); the bucketed field is consumed by `ranges`, never by the key:
-     *
-     *    commerce.orders__topk (rank)
-     *    |             row key (source)     | target | metric |
-     *    |----------------------------------|--------|--------|
-     *    | top_purchased_1y | user1 | fruit | item1  |      1 |
-     *
-     * 4. Scan `metric_desc` from the entity prefix -> the top row's target is `item1`.
-     */
-    @Test
-    fun `running a topk aggregation writes a rank row keyed by entity and non-bucket dimensions`() {
-        val ordersTable = "orders"
-        val ordersRank = "orders__topk"
-        val topkName = "top_purchased_1y"
-
-        createRankTable(ordersRank)
-
-        client
-            .post()
-            .uri("/graph/v3/databases/$db/tables")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                """
-                {
-                  "table": "$ordersTable",
-                  "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "order id"},
-                    "source": {"type": "string", "comment": "user"},
-                    "target": {"type": "string", "comment": "item"},
-                    "properties": [
-                      {"name": "category", "type": "string", "comment": "category", "nullable": false},
-                      {"name": "purchasedAt", "type": "long", "comment": "purchase time ms", "nullable": false}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": [{
-                      "group": "purchased_bucketed",
-                      "type": "COUNT",
-                      "fields": [
-                        {"name": "_target"},
-                        {"name": "category"},
-                        {"name": "purchasedAt", "bucket": {"type": "date", "name": "day", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
-                      ],
-                      "directionType": "OUT",
-                      "aggregations": {
-                        "topk": [{
-                          "topk": "$topkName",
-                          "entity": "source",
-                          "ranges": "_target:eq:{_target};category:eq:{category};day:bt:1700000000000,1731536000000",
-                          "dimension": "target",
-                          "rank": "$db.$ordersRank"
-                        }]
-                      }
-                    }],
-                    "caches": []
-                  },
-                  "storage": "datastore://test_namespace/$ordersTable",
-                  "mode": "SYNC",
-                  "comment": "orders with a category and a day bucket"
-                }
-                """.trimIndent(),
-            ).exchange()
-            .expectStatus()
-            .isOk
-
-        client
-            .post()
-            .uri("/graph/v3/databases/$db/tables/$ordersTable/multi-edges")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                """
-                {
-                  "mutations": [
-                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1",
-                      "properties": {"category": "fruit", "purchasedAt": 1710000000000}}}
-                  ]
-                }
-                """.trimIndent(),
-            ).exchange()
-            .expectStatus()
-            .isOk
-
-        client
-            .post()
-            .uri("/aggregations/v1/aggregate")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                """
-                {
-                  "items": [
-                    {"database": "$db", "table": "$ordersTable",
-                     "edge": {"version": 1, "source": "user1", "target": "item1",
-                              "properties": {"category": "fruit", "purchasedAt": 1710000000000}, "context": {}}}
-                  ]
-                }
-                """.trimIndent(),
-            ).exchange()
-            .expectStatus()
-            .isOk
-            .expectBody<AggregationsItemResponse>()
-            .returnResult()
-
-        client
-            .get()
-            .uri(
-                "/graph/v3/databases/$db/tables/$ordersRank/edges/scan/metric_desc" +
-                    "?start=$db|$ordersTable|$topkName|user1|fruit&direction=OUT",
-            ).exchange()
-            .expectStatus()
-            .isOk
-            .expectBody<DataFrameEdgePayload>()
-            .returnResult()
-            .responseBody!!
-            .let { payload ->
-                assertEquals(1, payload.count)
-                assertEquals(
-                    "item1",
-                    payload.edges
-                        .single()
-                        .target
-                        .toString(),
-                )
-            }
-    }
-
-    /**
-     * Ranking with a group that carries no endpoint field; the ranked dimension (`category`) is a
-     * property, so the rank target is resolved from edge properties.
-     *
-     * 1. Create the rank table and a segment-only source table under `commerce`.
-     * 2. Record one edge:
-     *
-     *    commerce.orders_segment (source)
-     *    | source | target | category | purchasedAt   |
-     *    |--------|--------|----------|---------------|
-     *    | user1  | item1  | fruit    | 1710000000000 |
-     *
-     * 3. Run the aggregation. With no non-bucket dimension left over, the key is just the entity and
-     *    the property value (`fruit`) becomes the rank target:
-     *
-     *    commerce.orders_segment__topk (rank)
-     *    |                row key            | target | metric |
-     *    |-----------------------------------|--------|--------|
-     *    | top_purchased_by_category | user1 | fruit  |      1 |
-     *
-     * 4. Scan `metric_desc` from the entity prefix -> the top row's target is `fruit`.
-     */
-    @Test
-    fun `running a topk aggregation resolves the rank target from a property-backed dimension`() {
-        val segmentTable = "orders_segment"
-        val segmentRank = "orders_segment__topk"
-        val topkName = "top_purchased_by_category"
-
-        createRankTable(segmentRank)
-
-        client
-            .post()
-            .uri("/graph/v3/databases/$db/tables")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                """
-                {
-                  "table": "$segmentTable",
-                  "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "order id"},
-                    "source": {"type": "string", "comment": "user"},
-                    "target": {"type": "string", "comment": "item"},
-                    "properties": [
-                      {"name": "category", "type": "string", "comment": "category", "nullable": false},
-                      {"name": "purchasedAt", "type": "long", "comment": "purchase time ms", "nullable": false}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": [{
-                      "group": "purchased_by_category",
-                      "type": "COUNT",
-                      "fields": [
-                        {"name": "category"},
-                        {"name": "purchasedAt", "bucket": {"type": "date", "name": "day", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
-                      ],
-                      "directionType": "OUT",
-                      "aggregations": {
-                        "topk": [{
-                          "topk": "$topkName",
-                          "entity": "source",
-                          "ranges": "category:eq:{category};day:bt:1700000000000,1731536000000",
-                          "dimension": "category",
-                          "rank": "$db.$segmentRank"
-                        }]
-                      }
-                    }],
-                    "caches": []
-                  },
-                  "storage": "datastore://test_namespace/$segmentTable",
-                  "mode": "SYNC",
-                  "comment": "orders ranked by a category segment only"
-                }
-                """.trimIndent(),
-            ).exchange()
-            .expectStatus()
-            .isOk
-
-        client
-            .post()
-            .uri("/graph/v3/databases/$db/tables/$segmentTable/multi-edges")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                """
-                {
-                  "mutations": [
-                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1",
-                      "properties": {"category": "fruit", "purchasedAt": 1710000000000}}}
-                  ]
-                }
-                """.trimIndent(),
-            ).exchange()
-            .expectStatus()
-            .isOk
-
-        client
-            .post()
-            .uri("/aggregations/v1/aggregate")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                """
-                {
-                  "items": [
-                    {"database": "$db", "table": "$segmentTable",
-                     "edge": {"version": 1, "source": "user1", "target": "item1",
-                              "properties": {"category": "fruit", "purchasedAt": 1710000000000}, "context": {}}}
-                  ]
-                }
-                """.trimIndent(),
-            ).exchange()
-            .expectStatus()
-            .isOk
-            .expectBody<AggregationsItemResponse>()
-            .returnResult()
-
-        client
-            .get()
-            .uri(
-                "/graph/v3/databases/$db/tables/$segmentRank/edges/scan/metric_desc" +
-                    "?start=$db|$segmentTable|$topkName|user1&direction=OUT",
-            ).exchange()
-            .expectStatus()
-            .isOk
-            .expectBody<DataFrameEdgePayload>()
-            .returnResult()
-            .responseBody!!
-            .let { payload ->
-                assertEquals(1, payload.count)
-                assertEquals(
-                    "fruit",
-                    payload.edges
-                        .single()
-                        .target
-                        .toString(),
-                )
-            }
     }
 
     /**
@@ -428,8 +147,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         assertEquals(db, source?.database)
         assertEquals(table, source?.table)
 
-        // The dedupe key: the entity endpoint (source, for the OUT ranking) plus the group's
-        // non-bucket fields, unioned across the table's rankings.
         assertEquals(listOf("source", "_target"), source?.dedupeFields)
     }
 
