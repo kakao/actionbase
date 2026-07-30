@@ -53,7 +53,7 @@ class TopkAggregationHandlerTest {
     inner class Aggregate {
         @Test
         fun `returns SUCCESS when mutate succeeds`() {
-            stubTopkBinding(engine, topkConfig(name = "topk"))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk"))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -74,7 +74,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `returns ERROR when the mutate fails`() {
-            stubTopkBinding(engine, topkConfig(name = "topk"))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk"))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -95,7 +95,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `OUT ranks the source entity by the dimension value`() {
-            stubTopkBinding(engine, topkConfig(name = "top_purchased"))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased"))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -121,8 +121,8 @@ class TopkAggregationHandlerTest {
         @Test
         fun `IN ranks per target entity`() {
             stubTopkBinding(
-                engine,
-                topkConfig(name = "top_purchased_by", entity = "target", dimension = "source"),
+                engine = engine,
+                topk = topkConfig(name = "top_purchased_by", entity = "target", dimension = "source"),
                 directionType = DirectionType.IN,
             )
 
@@ -149,7 +149,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `BOTH fans out into an OUT and an IN mutation`() {
-            stubTopkBinding(engine, topkConfig(name = "top_both"), directionType = DirectionType.BOTH)
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_both"), directionType = DirectionType.BOTH)
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -177,8 +177,8 @@ class TopkAggregationHandlerTest {
         @Test
         fun `keeps bucket fields out of the rank source`() {
             stubTopkBinding(
-                engine,
-                topkConfig(name = "top_purchased_1y"),
+                engine = engine,
+                topk = topkConfig(name = "top_purchased_1y"),
                 fields =
                     listOf(
                         Group.Field(name = "category"),
@@ -216,8 +216,8 @@ class TopkAggregationHandlerTest {
         @Test
         fun `resolves a property-backed dimension as the rank target`() {
             stubTopkBinding(
-                engine,
-                topkConfig(name = "top_category", dimension = "category"),
+                engine = engine,
+                topk = topkConfig(name = "top_category", dimension = "category"),
                 fields =
                     listOf(
                         Group.Field(name = "category"),
@@ -260,8 +260,8 @@ class TopkAggregationHandlerTest {
         @Test
         fun `joins multiple non-bucket dimension values into the rank source`() {
             stubTopkBinding(
-                engine,
-                topkConfig(name = "top_purchased_1y"),
+                engine = engine,
+                topk = topkConfig(name = "top_purchased_1y"),
                 fields =
                     listOf(
                         Group.Field(name = "_target"),
@@ -306,8 +306,8 @@ class TopkAggregationHandlerTest {
         @Test
         fun `carries the declared properties onto the rank row`() {
             stubTopkBinding(
-                engine,
-                topkConfig(name = "top_purchased", additionalProperties = listOf("category", "target")),
+                engine = engine,
+                topk = topkConfig(name = "top_purchased", additionalProperties = listOf("category", "target")),
             )
 
             every {
@@ -335,7 +335,7 @@ class TopkAggregationHandlerTest {
         @Test
         fun `enqueues a refresh after the rank write`() {
             val refreshAfter = 60_000L
-            stubTopkBinding(engine, topkConfig(name = "top_purchased", refreshAfterMillis = refreshAfter))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased", refreshAfterMillis = refreshAfter))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -402,8 +402,8 @@ class TopkAggregationHandlerTest {
         @Test
         fun `carries the declared properties into the refresh message`() {
             stubTopkBinding(
-                engine,
-                topkConfig(name = "top_purchased", refreshAfterMillis = 60_000L, additionalProperties = listOf("category")),
+                engine = engine,
+                topk = topkConfig(name = "top_purchased", refreshAfterMillis = 60_000L, additionalProperties = listOf("category")),
             )
 
             every {
@@ -439,7 +439,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `skips the refresh when refreshAfterMillis is not positive`() {
-            stubTopkBinding(engine, topkConfig(name = "topk"))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk"))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -465,7 +465,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `skips the refresh when the rank write fails`() {
-            stubTopkBinding(engine, topkConfig(name = "topk", refreshAfterMillis = 60_000L))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -491,7 +491,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `reports ERROR when the refresh enqueue fails`() {
-            stubTopkBinding(engine, topkConfig(name = "topk", refreshAfterMillis = 60_000L))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -517,7 +517,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `maps a thrown error to ERROR with its message`() {
-            stubTopkBinding(engine, topkConfig(name = "topk"))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk"))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -537,7 +537,7 @@ class TopkAggregationHandlerTest {
     inner class Sweep {
         @Test
         fun `recomputes the ranking and rewrites the rank row`() {
-            stubTopkBinding(engine, topkConfig(name = "top_purchased"))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased"))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -563,7 +563,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `rewrites the carried properties onto the rank row`() {
-            stubTopkBinding(engine, topkConfig(name = "top_purchased"))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased"))
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -579,8 +579,6 @@ class TopkAggregationHandlerTest {
                 .assertNext { it.status shouldBe "SUCCESS" }
                 .verifyComplete()
 
-            // sweep has no source edge, so the property values ride in on the sweep item and are
-            // re-written as one JSON string under `additionalProperties`.
             val edge = mutations.captured.single().edge
             edge.properties.containsKey("metric") shouldBe true
             edge.properties["additionalProperties"] shouldBe """{"category":"fruit"}"""
@@ -588,7 +586,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `is skipped when the topk is not defined on the table`() {
-            stubTopkBinding(engine, topkConfig(name = "top_purchased"))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased"))
 
             StepVerifier
                 .create(handler.sweep(sweepTarget(topk = "unknown_topk")))
@@ -601,8 +599,8 @@ class TopkAggregationHandlerTest {
         @Test
         fun `IN aggregates from the target endpoint`() {
             stubTopkBinding(
-                engine,
-                topkConfig(name = "top_purchased_by", entity = "target", dimension = "source"),
+                engine = engine,
+                topk = topkConfig(name = "top_purchased_by", entity = "target", dimension = "source"),
                 directionType = DirectionType.IN,
             )
 
@@ -623,7 +621,6 @@ class TopkAggregationHandlerTest {
                 ).assertNext { it.status shouldBe "SUCCESS" }
                 .verifyComplete()
 
-            // IN ranks per target entity, so the aggregation starts from the target endpoint.
             starts.captured shouldBe listOf("item1")
         }
     }
@@ -677,7 +674,6 @@ private fun sweepTarget(
         refreshAt = 123L,
     )
 
-/** Stubs the binding for a single group carrying a single topk — the shape every case here needs. */
 private fun stubTopkBinding(
     engine: AggregationEngine,
     topk: Topk,
