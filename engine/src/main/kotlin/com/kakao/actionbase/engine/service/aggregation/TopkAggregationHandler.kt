@@ -138,39 +138,26 @@ class TopkAggregationHandler(
             error = error,
         )
 
-        val ranges =
-            topk.ranges.takeIf { it.isNotEmpty() }?.let {
-                interpolate(template = it, source = event.source, target = event.target, properties = event.properties)
-            }
-
-        val directedSource = if (direction == Direction.IN) event.target else event.source
-        val entity = if (topk.entity == AggregationConstants.Topk.GLOBAL_ENTITY) AggregationConstants.Topk.GLOBAL_ENTITY else directedSource
-        val topkDimensionValue = resolveField(topk.dimension, event.source, event.target, event.properties)
-        val dimensionValues =
-            event.group.fields
-                .filter { it.bucket == null && !matchesDimension(it.name, topk.dimension) }
-                .map { resolveField(it.name, event.source, event.target, event.properties) }
-        val properties =
-            topk.additionalProperties.associateWith { resolveField(it, event.source, event.target, event.properties) }
+        val inputs = RankingInputs.from(event, direction, topk)
         val (rankDatabase, rankTable) = parseFqn(topk.rank)
         val ranking =
             Ranking(
                 database = rankDatabase,
                 table = rankTable,
                 topk = topk.topk,
-                entity = entity,
-                topkDimensionValue = topkDimensionValue,
-                dimensionValues = dimensionValues,
-                properties = properties,
+                entity = inputs.entity,
+                topkDimensionValue = inputs.topkDimensionValue,
+                dimensionValues = inputs.dimensionValues,
+                properties = inputs.properties,
             )
 
         return writeRank(
             sourceDatabase = event.database,
             sourceTable = event.table,
             group = event.group.group,
-            start = directedSource,
+            start = inputs.directedSource,
             direction = direction,
-            ranges = ranges,
+            ranges = inputs.ranges,
             ranking = ranking,
         ).flatMap { results ->
             val status = if (results.any { it.status == ERROR }) ERROR else SUCCESS
@@ -178,7 +165,7 @@ class TopkAggregationHandler(
                 return@flatMap Mono.just(result(status = status))
             }
 
-            writeRefresh(event, ranking, direction, ranges, refreshAfterMillis = topk.refreshAfterMillis)
+            writeRefresh(event, ranking, direction, inputs.ranges, refreshAfterMillis = topk.refreshAfterMillis)
                 .map { result(status = if (it.results.any { r -> r.status == ERROR }) ERROR else SUCCESS) }
         }.onErrorResume { err ->
             logger.error("topk aggregate failed for {}.{} topk={}", event.database, event.table, topk.topk, err)
@@ -292,49 +279,6 @@ class TopkAggregationHandler(
         )
     }
 
-    /**
-     * Resolves a dimension field name against the current edge.
-     *   - `source` / `_source` and `target` / `_target` resolve to the edge endpoints.
-     *   - any other name reads from `properties`.
-     */
-    private fun resolveField(
-        name: String,
-        source: String,
-        target: String,
-        properties: Map<String, Any?>,
-    ): String =
-        when (name) {
-            "source", "_source" -> source
-            "target", "_target" -> target
-            else -> properties[name]?.toString().orEmpty()
-        }
-
-    private fun matchesDimension(
-        fieldName: String,
-        dimension: String,
-    ): Boolean = fieldName.removePrefix("_") == dimension.removePrefix("_")
-
-    /**
-     * Replaces `{name}` placeholders in a ranges template.
-     *   - `{source}` / `{target}` resolve to the edge endpoints.
-     *   - `{prop}` resolves to `properties[prop]` when present, otherwise the placeholder is kept.
-     */
-    private fun interpolate(
-        template: String,
-        source: String,
-        target: String,
-        properties: Map<String, Any?>,
-    ): String =
-        PLACEHOLDER.replace(template) { match ->
-            val value =
-                when (val key = match.groupValues[1]) {
-                    "source", "_source" -> source
-                    "target", "_target" -> target
-                    else -> properties[key]?.toString()
-                }
-            value?.let { Regex.escapeReplacement(it) } ?: Regex.escapeReplacement(match.value)
-        }
-
     private fun parseFqn(fqn: String): Pair<String, String> {
         val dot = fqn.indexOf('.')
         require(dot > 0 && dot < fqn.lastIndex) {
@@ -344,7 +288,6 @@ class TopkAggregationHandler(
     }
 
     private companion object {
-        private val PLACEHOLDER = Regex("""\{([a-zA-Z_][a-zA-Z0-9_]*)}""")
         private val MAPPER = jacksonObjectMapper()
 
         const val SUCCESS = "SUCCESS"
@@ -362,6 +305,67 @@ private data class Ranking(
     val dimensionValues: List<String>,
     val properties: Map<String, String> = emptyMap(),
 )
+
+internal data class RankingInputs(
+    val directedSource: String,
+    val entity: String,
+    val topkDimensionValue: String,
+    val dimensionValues: List<String>,
+    val properties: Map<String, String>,
+    val ranges: String?,
+) {
+    companion object {
+        private val PLACEHOLDER = Regex("""\{([a-zA-Z_][a-zA-Z0-9_]*)}""")
+
+        fun from(
+            event: EdgeAggregationEvent,
+            direction: Direction,
+            topk: Topk,
+        ): RankingInputs {
+            val directedSource = if (direction == Direction.IN) event.target else event.source
+            return RankingInputs(
+                directedSource = directedSource,
+                entity = if (topk.entity == AggregationConstants.Topk.GLOBAL_ENTITY) AggregationConstants.Topk.GLOBAL_ENTITY else directedSource,
+                topkDimensionValue = fieldValue(topk.dimension, event),
+                dimensionValues =
+                    event.group.fields
+                        .filter { it.bucket == null && !matchesDimension(it.name, topk.dimension) }
+                        .map { fieldValue(it.name, event) },
+                properties = topk.additionalProperties.associateWith { fieldValue(it, event) },
+                ranges = topk.ranges.takeIf { it.isNotEmpty() }?.let { interpolate(it, event) },
+            )
+        }
+
+        private fun fieldValue(
+            name: String,
+            event: EdgeAggregationEvent,
+        ): String =
+            when (name) {
+                "source", "_source" -> event.source
+                "target", "_target" -> event.target
+                else -> event.properties[name]?.toString().orEmpty()
+            }
+
+        private fun matchesDimension(
+            fieldName: String,
+            dimension: String,
+        ): Boolean = fieldName.removePrefix("_") == dimension.removePrefix("_")
+
+        private fun interpolate(
+            template: String,
+            event: EdgeAggregationEvent,
+        ): String =
+            PLACEHOLDER.replace(template) { match ->
+                val value =
+                    when (val key = match.groupValues[1]) {
+                        "source", "_source" -> event.source
+                        "target", "_target" -> event.target
+                        else -> event.properties[key]?.toString()
+                    }
+                value?.let { Regex.escapeReplacement(it) } ?: Regex.escapeReplacement(match.value)
+            }
+    }
+}
 
 data class EdgeAggregationEvent(
     val type: AggregationType,
@@ -396,7 +400,6 @@ data class EdgeAggregationEvent(
     }
 }
 
-/** The refresh queue message body: `{type, item}`, enqueued when a top-K opts into `refreshAfterMillis`. */
 data class TopkRefreshMessage(
     val type: AggregationType,
     val item: RefreshItem,

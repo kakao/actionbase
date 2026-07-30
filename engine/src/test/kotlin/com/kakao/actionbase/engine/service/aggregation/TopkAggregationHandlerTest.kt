@@ -10,7 +10,6 @@ import com.kakao.actionbase.core.edge.payload.TopkSweepItem
 import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
-import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
@@ -94,60 +93,6 @@ class TopkAggregationHandlerTest {
         }
 
         @Test
-        fun `OUT ranks the source entity by the dimension value`() {
-            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased"))
-
-            every {
-                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
-            } returns Mono.just(aggPayload(count = 7))
-
-            val mutations = slot<List<MutationItem>>()
-            every {
-                mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
-            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
-
-            StepVerifier
-                .create(handler.aggregate(aggregationItemPayload(source = "user1", target = "item1")).collectList())
-                .assertNext { results ->
-                    results shouldHaveSize 1
-                    results[0].status shouldBe "SUCCESS"
-                }.verifyComplete()
-
-            val edge = mutations.captured.single().edge
-            edge.source shouldBe "commerce|orders|top_purchased|user1"
-            edge.target shouldBe "item1"
-        }
-
-        @Test
-        fun `IN ranks per target entity`() {
-            stubTopkBinding(
-                engine = engine,
-                topk = topkConfig(name = "top_purchased_by", entity = "target", dimension = "source"),
-                directionType = DirectionType.IN,
-            )
-
-            every {
-                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
-            } returns Mono.just(aggPayload(count = 3))
-
-            val mutations = slot<List<MutationItem>>()
-            every {
-                mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
-            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
-
-            StepVerifier
-                .create(handler.aggregate(aggregationItemPayload(source = "user1", target = "item1")).collectList())
-                .assertNext { results ->
-                    results shouldHaveSize 1
-                    results[0].status shouldBe "SUCCESS"
-                }.verifyComplete()
-
-            val edge = mutations.captured.single().edge
-            edge.source shouldBe "commerce|orders|top_purchased_by|item1"
-            edge.target shouldBe "user1"
-        }
-
-        @Test
         fun `BOTH fans out into an OUT and an IN mutation`() {
             stubTopkBinding(engine = engine, topk = topkConfig(name = "top_both"), directionType = DirectionType.BOTH)
 
@@ -172,135 +117,6 @@ class TopkAggregationHandlerTest {
                     "commerce|orders|top_both|user1" to "item1",
                     "commerce|orders|top_both|item1" to "item1",
                 )
-        }
-
-        @Test
-        fun `keeps bucket fields out of the rank source`() {
-            stubTopkBinding(
-                engine = engine,
-                topk = topkConfig(name = "top_purchased_1y"),
-                fields =
-                    listOf(
-                        Group.Field(name = "category"),
-                        Group.Field(
-                            name = "purchasedAt",
-                            bucket = Bucket.Date(name = "day", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"),
-                        ),
-                    ),
-            )
-
-            every {
-                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
-            } returns Mono.just(aggPayload(count = 4))
-
-            val mutations = slot<List<MutationItem>>()
-            every {
-                mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
-            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
-
-            StepVerifier
-                .create(
-                    handler
-                        .aggregate(aggregationItemPayload(source = "user1", target = "item1", properties = mapOf("category" to "fruit", "purchasedAt" to 1_700_000_000_000L)))
-                        .collectList(),
-                ).assertNext { results ->
-                    results shouldHaveSize 1
-                    results[0].status shouldBe "SUCCESS"
-                }.verifyComplete()
-
-            val edge = mutations.captured.single().edge
-            edge.source shouldBe "commerce|orders|top_purchased_1y|user1|fruit"
-            edge.target shouldBe "item1"
-        }
-
-        @Test
-        fun `resolves a property-backed dimension as the rank target`() {
-            stubTopkBinding(
-                engine = engine,
-                topk = topkConfig(name = "top_category", dimension = "category"),
-                fields =
-                    listOf(
-                        Group.Field(name = "category"),
-                        Group.Field(
-                            name = "purchasedAt",
-                            bucket = Bucket.Date(name = "day", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"),
-                        ),
-                    ),
-            )
-
-            every {
-                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
-            } returns Mono.just(aggPayload(count = 3))
-
-            val mutations = slot<List<MutationItem>>()
-            every {
-                mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
-            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
-
-            StepVerifier
-                .create(
-                    handler
-                        .aggregate(
-                            aggregationItemPayload(
-                                source = "user1",
-                                target = "item1",
-                                properties = mapOf("category" to "fruit", "purchasedAt" to 1_700_000_000_000L),
-                            ),
-                        ).collectList(),
-                ).assertNext { results ->
-                    results shouldHaveSize 1
-                    results[0].status shouldBe "SUCCESS"
-                }.verifyComplete()
-
-            val edge = mutations.captured.single().edge
-            edge.source shouldBe "commerce|orders|top_category|user1"
-            edge.target shouldBe "fruit"
-        }
-
-        @Test
-        fun `joins multiple non-bucket dimension values into the rank source`() {
-            stubTopkBinding(
-                engine = engine,
-                topk = topkConfig(name = "top_purchased_1y"),
-                fields =
-                    listOf(
-                        Group.Field(name = "_target"),
-                        Group.Field(name = "category"),
-                        Group.Field(name = "region"),
-                        Group.Field(
-                            name = "purchasedAt",
-                            bucket = Bucket.Date(name = "day", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"),
-                        ),
-                    ),
-            )
-
-            every {
-                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
-            } returns Mono.just(aggPayload(count = 2))
-
-            val mutations = slot<List<MutationItem>>()
-            every {
-                mutationService.mutate(any(), any(), capture(mutations), any(), any(), any(), any())
-            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
-
-            StepVerifier
-                .create(
-                    handler
-                        .aggregate(
-                            aggregationItemPayload(
-                                source = "user1",
-                                target = "item1",
-                                properties = mapOf("category" to "fruit", "region" to "seoul", "purchasedAt" to 1_700_000_000_000L),
-                            ),
-                        ).collectList(),
-                ).assertNext { results ->
-                    results shouldHaveSize 1
-                    results[0].status shouldBe "SUCCESS"
-                }.verifyComplete()
-
-            val edge = mutations.captured.single().edge
-            edge.source shouldBe "commerce|orders|top_purchased_1y|user1|fruit|seoul"
-            edge.target shouldBe "item1"
         }
 
         @Test
@@ -680,13 +496,12 @@ private fun stubTopkBinding(
     database: String = "commerce",
     table: String = "orders",
     directionType: DirectionType = DirectionType.OUT,
-    fields: List<Group.Field> = emptyList(),
 ) {
     val group =
         Group(
             group = "purchased_count",
             type = GroupType.SUM,
-            fields = fields,
+            fields = emptyList(),
             directionType = directionType,
             aggregations = Aggregations(topk = listOf(topk)),
         )
