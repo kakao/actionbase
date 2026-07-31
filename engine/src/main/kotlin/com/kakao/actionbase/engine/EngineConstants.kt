@@ -5,6 +5,8 @@ object EngineConstants {
     // backend, so the string is self-describing — no Storage entity lookup:
     //   datastore://__sys__/metastore  -> system metastore (RDB-backed) labels
     //   datastore://<namespace>/<table> -> HBase datastore
+    //   datastore:///<table>            -> HBase datastore, namespace resolved
+    //                                      to the backend's configured default
     // A bare string is a legacy reference to a metastore-stored Storage entity,
     // kept until migration retires it.
     const val DATASTORE_URI_PREFIX = "datastore://"

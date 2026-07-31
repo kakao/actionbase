@@ -17,6 +17,7 @@ import reactor.core.scheduler.Schedulers
 
 class HBaseStorageBackend private constructor(
     private val connectionMono: Mono<AsyncConnection>,
+    override val defaultNamespace: String,
 ) : StorageBackend {
     override fun getStorageTable(
         namespace: String,
@@ -65,7 +66,10 @@ class HBaseStorageBackend private constructor(
 
             val isSecure = properties["secure"]?.toBoolean() ?: false
             val version = properties["version"] ?: "2.4"
-            requireNotNull(properties["namespace"]) { "HBase namespace is not set" }
+            // Blank would leave an omitted-namespace ref unresolved, and TableName.valueOf
+            // would silently place it in HBase's own default namespace instead.
+            val namespace = properties["namespace"]
+            require(!namespace.isNullOrBlank()) { "HBase namespace is not set" }
 
             require(version.startsWith("2.4") || version.startsWith("2.5")) {
                 "Unsupported HBase version: $version. Supported versions are 2.4.x and 2.5.x."
@@ -139,7 +143,7 @@ class HBaseStorageBackend private constructor(
                         Mono.fromFuture(ConnectionFactory.createAsyncConnection(config))
                     }.cache()
 
-            return HBaseStorageBackend(connectionMono)
+            return HBaseStorageBackend(connectionMono, namespace)
         }
 
         internal fun resolveKerberosRealm(

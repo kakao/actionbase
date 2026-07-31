@@ -3,7 +3,9 @@ package com.kakao.actionbase.engine.storage
 /**
  * Utility for parsing datastore URIs.
  *
- * Format: datastore://{namespace}/{tableName}
+ * Format: datastore://{namespace}/{tableName}. The namespace may be omitted
+ * (datastore:///{tableName}), leaving it empty for the backend to fill with its
+ * configured default namespace at acquisition time.
  */
 object DatastoreUri {
     private const val PREFIX = "datastore://"

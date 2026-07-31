@@ -15,13 +15,22 @@ func TestStorageToDatastoreURI(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "HBASE uses namespace and tableName from conf",
+			name: "HBASE omits the namespace, keeping only the table",
 			storage: clientModel.StorageEntity{
 				Name: "default_hbase_storage",
 				Type: "HBASE",
 				Conf: map[string]any{"namespace": "kc_graph", "tableName": "edges"},
 			},
-			expected: "datastore://kc_graph/edges",
+			expected: "datastore:///edges",
+		},
+		{
+			name: "HBASE without a namespace still converts",
+			storage: clientModel.StorageEntity{
+				Name: "no_ns",
+				Type: "HBASE",
+				Conf: map[string]any{"tableName": "edges"},
+			},
+			expected: "datastore:///edges",
 		},
 		{
 			name:    "JDBC has no datastore equivalent",
@@ -47,6 +56,24 @@ func TestStorageToDatastoreURI(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "a table name the server would reject fails in the plan",
+			storage: clientModel.StorageEntity{
+				Name: "legacy_mixed_case",
+				Type: "HBASE",
+				Conf: map[string]any{"namespace": "kc_graph", "tableName": "Edges"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "a hyphenated table name fails in the plan",
+			storage: clientModel.StorageEntity{
+				Name: "legacy_hyphen",
+				Type: "HBASE",
+				Conf: map[string]any{"namespace": "kc_graph", "tableName": "edge-cache"},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -69,8 +96,43 @@ func TestStorageToDatastoreURI(t *testing.T) {
 	}
 }
 
+func TestDroppedNamespaces(t *testing.T) {
+	namespaceByStorageName := map[string]string{
+		"referenced":   "kc_graph",
+		"unreferenced": "other_ns",
+		"no_namespace": "",
+	}
+
+	t.Run("only referenced storages contribute a namespace", func(t *testing.T) {
+		got := droppedNamespaces(map[string]struct{}{"referenced": {}}, namespaceByStorageName)
+
+		if len(got) != 1 {
+			t.Fatalf("droppedNamespaces = %v, want exactly kc_graph", got)
+		}
+		if _, ok := got["kc_graph"]; !ok {
+			t.Errorf("droppedNamespaces = %v, want kc_graph", got)
+		}
+	})
+
+	t.Run("a storage without a namespace contributes nothing", func(t *testing.T) {
+		got := droppedNamespaces(map[string]struct{}{"no_namespace": {}}, namespaceByStorageName)
+
+		if len(got) != 0 {
+			t.Errorf("droppedNamespaces = %v, want empty", got)
+		}
+	})
+
+	t.Run("a ref that is already a URI contributes nothing", func(t *testing.T) {
+		got := droppedNamespaces(map[string]struct{}{"datastore:///edges": {}}, namespaceByStorageName)
+
+		if len(got) != 0 {
+			t.Errorf("droppedNamespaces = %v, want empty", got)
+		}
+	})
+}
+
 func TestTableBody(t *testing.T) {
-	uriByName := map[string]string{"default_hbase_storage": "datastore://kc_graph/edges"}
+	uriByName := map[string]string{"default_hbase_storage": "datastore:///edges"}
 	errByName := map[string]error{"metastore": errors.New("storage type JDBC has no datastore:// equivalent")}
 
 	t.Run("legacy storage name is rewritten to its URI", func(t *testing.T) {
@@ -78,8 +140,8 @@ func TestTableBody(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if body["storage"] != "datastore://kc_graph/edges" {
-			t.Errorf("storage = %q, want datastore://kc_graph/edges", body["storage"])
+		if body["storage"] != "datastore:///edges" {
+			t.Errorf("storage = %q, want datastore:///edges", body["storage"])
 		}
 	})
 

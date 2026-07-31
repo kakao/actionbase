@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/kakao/actionbase/internal/client"
@@ -16,6 +18,12 @@ const (
 	defaultPlanFile    = "migration-run.json"
 	datastoreURIPrefix = "datastore://"
 )
+
+// A datastore:// segment starts with a lowercase letter, then lowercase
+// alphanumeric/underscore. Legacy HBASE conf.tableName was never held to that
+// rule, so a name the server would reject has to fail in the plan rather than
+// halfway through apply.
+var datastoreSegment = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 // migrationEntry is one POST the apply phase will replay. It mirrors the JSON
 // shape of the previous dev/migration-run.py plan: a path, a request body, and
@@ -73,15 +81,18 @@ func (m *Migrate) plan(outputPath string) *model.Response {
 	// with the reason if a label actually references one.
 	storageURIByName := map[string]string{}
 	storageErrByName := map[string]error{}
+	namespaceByStorageName := map[string]string{}
 	if resp := m.client.GetStorages(); !resp.IsError() {
 		for _, s := range resp.Body.Content {
 			if uri, err := storageToDatastoreURI(s); err != nil {
 				storageErrByName[s.Name] = err
 			} else {
 				storageURIByName[s.Name] = uri
+				namespaceByStorageName[s.Name] = confString(s.Conf, "namespace")
 			}
 		}
 	}
+	referencedStorages := map[string]struct{}{}
 
 	var plan []migrationEntry
 	add := func(path string, body map[string]any, label string) {
@@ -112,6 +123,7 @@ func (m *Migrate) plan(outputPath string) *model.Response {
 				if err != nil {
 					return model.Fail(fmt.Sprintf("Cannot plan label %s.%s: %v", db.Name, short, err))
 				}
+				referencedStorages[detail.Body.Storage] = struct{}{}
 				tables++
 				add(fmt.Sprintf("/graph/v2/service/%s/label/%s", db.Name, short),
 					body,
@@ -132,6 +144,8 @@ func (m *Migrate) plan(outputPath string) *model.Response {
 			}
 		}
 	}
+
+	reportDroppedNamespaces(droppedNamespaces(referencedStorages, namespaceByStorageName))
 
 	data, err := json.MarshalIndent(plan, "", "  ")
 	if err != nil {
@@ -228,16 +242,58 @@ func tableBody(t clientModel.TableEntity, uriByName map[string]string, errByName
 // URI. The engine resolves every datastore:// URI except the reserved
 // __sys__ metastore as an HBase namespace/table, so non-HBASE storages have
 // no URI to mint — they return an error instead.
+//
+// The namespace is omitted (datastore:///<table>) so the rewritten reference
+// stays portable across environments; the server resolves it to the namespace
+// configured for the target deployment.
 func storageToDatastoreURI(s clientModel.StorageEntity) (string, error) {
 	if s.Type != "HBASE" {
 		return "", fmt.Errorf("storage type %s has no datastore:// equivalent", s.Type)
 	}
-	namespace := confString(s.Conf, "namespace")
 	tableName := confString(s.Conf, "tableName")
-	if namespace == "" || tableName == "" {
-		return "", fmt.Errorf("HBASE storage %q conf is missing namespace/tableName", s.Name)
+	if tableName == "" {
+		return "", fmt.Errorf("HBASE storage %q conf is missing tableName", s.Name)
 	}
-	return fmt.Sprintf("%s%s/%s", datastoreURIPrefix, namespace, tableName), nil
+	if !datastoreSegment.MatchString(tableName) {
+		return "", fmt.Errorf(
+			"HBASE storage %q table name %q is not a legal datastore:// segment (lowercase letter first, then lowercase alphanumeric/underscore)",
+			s.Name, tableName)
+	}
+	return fmt.Sprintf("%s/%s", datastoreURIPrefix, tableName), nil
+}
+
+// droppedNamespaces returns the source namespaces of the storages a label
+// actually references. Unreferenced storages are excluded: counting them would
+// warn about namespaces no rewritten ref ever pointed at.
+func droppedNamespaces(referenced map[string]struct{}, namespaceByStorageName map[string]string) map[string]struct{} {
+	dropped := map[string]struct{}{}
+	for name := range referenced {
+		if ns := namespaceByStorageName[name]; ns != "" {
+			dropped[ns] = struct{}{}
+		}
+	}
+	return dropped
+}
+
+// reportDroppedNamespaces surfaces the source namespaces the rewrite drops.
+// The rewritten refs omit the namespace, so the server resolves them to the
+// target deployment's configured namespace. If more than one source namespace
+// appears, tables that were not in the target's default namespace would be
+// silently repointed — the operator must verify before applying.
+func reportDroppedNamespaces(namespaces map[string]struct{}) {
+	if len(namespaces) == 0 {
+		return
+	}
+	names := make([]string, 0, len(namespaces))
+	for ns := range namespaces {
+		names = append(names, ns)
+	}
+	sort.Strings(names)
+	util.Print("Note: rewritten refs omit the source namespace and resolve to the target deployment's configured namespace.\n")
+	util.Print("      Source namespaces seen: %s\n", strings.Join(names, ", "))
+	if len(names) > 1 {
+		util.Print("      WARNING: multiple source namespaces — tables not in the target's default namespace will be repointed. Verify before apply.\n")
+	}
 }
 
 func confString(conf map[string]any, key string) string {
