@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -17,6 +18,12 @@ const (
 	defaultPlanFile    = "migration-run.json"
 	datastoreURIPrefix = "datastore://"
 )
+
+// A datastore:// segment starts with a lowercase letter, then lowercase
+// alphanumeric/underscore. Legacy HBASE conf.tableName was never held to that
+// rule, so a name the server would reject has to fail in the plan rather than
+// halfway through apply.
+var datastoreSegment = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 // migrationEntry is one POST the apply phase will replay. It mirrors the JSON
 // shape of the previous dev/migration-run.py plan: a path, a request body, and
@@ -74,20 +81,18 @@ func (m *Migrate) plan(outputPath string) *model.Response {
 	// with the reason if a label actually references one.
 	storageURIByName := map[string]string{}
 	storageErrByName := map[string]error{}
-	droppedNamespaces := map[string]struct{}{}
+	namespaceByStorageName := map[string]string{}
 	if resp := m.client.GetStorages(); !resp.IsError() {
 		for _, s := range resp.Body.Content {
 			if uri, err := storageToDatastoreURI(s); err != nil {
 				storageErrByName[s.Name] = err
 			} else {
 				storageURIByName[s.Name] = uri
-				if ns := confString(s.Conf, "namespace"); ns != "" {
-					droppedNamespaces[ns] = struct{}{}
-				}
+				namespaceByStorageName[s.Name] = confString(s.Conf, "namespace")
 			}
 		}
 	}
-	reportDroppedNamespaces(droppedNamespaces)
+	referencedStorages := map[string]struct{}{}
 
 	var plan []migrationEntry
 	add := func(path string, body map[string]any, label string) {
@@ -118,6 +123,7 @@ func (m *Migrate) plan(outputPath string) *model.Response {
 				if err != nil {
 					return model.Fail(fmt.Sprintf("Cannot plan label %s.%s: %v", db.Name, short, err))
 				}
+				referencedStorages[detail.Body.Storage] = struct{}{}
 				tables++
 				add(fmt.Sprintf("/graph/v2/service/%s/label/%s", db.Name, short),
 					body,
@@ -138,6 +144,8 @@ func (m *Migrate) plan(outputPath string) *model.Response {
 			}
 		}
 	}
+
+	reportDroppedNamespaces(droppedNamespaces(referencedStorages, namespaceByStorageName))
 
 	data, err := json.MarshalIndent(plan, "", "  ")
 	if err != nil {
@@ -246,7 +254,25 @@ func storageToDatastoreURI(s clientModel.StorageEntity) (string, error) {
 	if tableName == "" {
 		return "", fmt.Errorf("HBASE storage %q conf is missing tableName", s.Name)
 	}
+	if !datastoreSegment.MatchString(tableName) {
+		return "", fmt.Errorf(
+			"HBASE storage %q table name %q is not a legal datastore:// segment (lowercase letter first, then lowercase alphanumeric/underscore)",
+			s.Name, tableName)
+	}
 	return fmt.Sprintf("%s/%s", datastoreURIPrefix, tableName), nil
+}
+
+// droppedNamespaces returns the source namespaces of the storages a label
+// actually references. Unreferenced storages are excluded: counting them would
+// warn about namespaces no rewritten ref ever pointed at.
+func droppedNamespaces(referenced map[string]struct{}, namespaceByStorageName map[string]string) map[string]struct{} {
+	dropped := map[string]struct{}{}
+	for name := range referenced {
+		if ns := namespaceByStorageName[name]; ns != "" {
+			dropped[ns] = struct{}{}
+		}
+	}
+	return dropped
 }
 
 // reportDroppedNamespaces surfaces the source namespaces the rewrite drops.
