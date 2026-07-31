@@ -4,6 +4,7 @@ import com.kakao.actionbase.engine.storage.memory.MemoryStorageBackend
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 import org.junit.jupiter.api.AfterEach
@@ -67,9 +68,11 @@ class MemoryStorageBackendTest {
 
             omitted.put("key".toByteArray(), "value".toByteArray()).block()
 
-            assert(String(explicit.get("key".toByteArray()).block()!!) == "value") {
-                "datastore:///table should resolve to the '${backend.defaultNamespace}' namespace store"
-            }
+            assertEquals(
+                "value",
+                String(explicit.get("key".toByteArray()).block()!!),
+                "datastore:///table should resolve to the '${backend.defaultNamespace}' namespace store",
+            )
         }
 
         @Test

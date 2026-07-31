@@ -57,7 +57,7 @@ class DefaultHBaseCluster private constructor(
         return getTable(namespace, tableName)
     }
 
-    private fun parseDatastoreUri(uri: String): Pair<String, String> {
+    internal fun parseDatastoreUri(uri: String): Pair<String, String> {
         val (ns, tableName) = DatastoreUri.parse(uri)
         return ns.ifEmpty { namespace } to tableName
     }

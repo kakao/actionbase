@@ -75,4 +75,22 @@ class DefaultHBaseClusterTest {
         DefaultHBaseCluster.initialize(properties)
         assertTrue(DefaultHBaseCluster.INSTANCE.mock)
     }
+
+    @Test
+    fun `omitted namespace resolves to the configured namespace`() {
+        DefaultHBaseCluster.initialize(mapOf("version" to "embedded"))
+        val cluster = DefaultHBaseCluster.INSTANCE
+
+        assertEquals(cluster.namespace to "t", cluster.parseDatastoreUri("datastore:///t"))
+        assertEquals("other_ns" to "t", cluster.parseDatastoreUri("datastore://other_ns/t"))
+    }
+
+    @Test
+    fun `a malformed datastore uri is rejected before it reaches TableName`() {
+        DefaultHBaseCluster.initialize(mapOf("version" to "embedded"))
+        val cluster = DefaultHBaseCluster.INSTANCE
+
+        assertThrows<IllegalArgumentException> { cluster.parseDatastoreUri("datastore://ns/my-table") }
+        assertThrows<IllegalArgumentException> { cluster.parseDatastoreUri("datastore://ns/t/extra") }
+    }
 }

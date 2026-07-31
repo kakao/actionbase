@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 import reactor.core.publisher.Mono
 
 class MemoryStorageBackend : StorageBackend {
-    override val defaultNamespace: String = "default"
+    override val defaultNamespace: String = StorageBackend.DEFAULT_NAMESPACE
 
     private val stores = ConcurrentHashMap<String, ByteArrayStore>()
 

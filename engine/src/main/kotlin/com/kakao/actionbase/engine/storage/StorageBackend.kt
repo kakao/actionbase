@@ -15,4 +15,9 @@ interface StorageBackend : AutoCloseable {
         val (ns, name) = DatastoreUri.parse(uri)
         return getStorageTable(ns.ifEmpty { defaultNamespace }, name)
     }
+
+    companion object {
+        /** Default for backends that serve one unnamed space, matching HBase's own default namespace. */
+        const val DEFAULT_NAMESPACE = "default"
+    }
 }
