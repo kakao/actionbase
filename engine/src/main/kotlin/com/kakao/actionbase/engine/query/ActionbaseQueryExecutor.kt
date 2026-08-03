@@ -5,6 +5,7 @@ import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.metadata.common.StructType
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.QueryEngine
+import com.kakao.actionbase.engine.service.RankScan
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.engine.sql.Row
 
@@ -84,6 +85,7 @@ class ActionbaseQueryExecutor(
             is ActionbaseQuery.Item.Count -> processCount(queryItem, context, actionBaseQuery)
             is ActionbaseQuery.Item.Scan -> processScan(queryItem, context, actionBaseQuery)
             is ActionbaseQuery.Item.Seek -> processSeek(queryItem, context, actionBaseQuery)
+            is ActionbaseQuery.Item.Topk -> processTopk(queryItem, context, actionBaseQuery)
         }
 
     private fun applyPostProcessors(
@@ -189,6 +191,35 @@ class ActionbaseQueryExecutor(
                 .getTableBinding(database = queryItem.database, alias = queryItem.table)
                 .seek(queryItem.cache, source.toList(), queryItem.direction, queryItem.limit, offset = null, ranges = queryItem.ranges, filters = null, features = emptyList())
                 .switchIfEmpty(Mono.just(DataFrame.empty))
+        }
+
+    private fun processTopk(
+        queryItem: ActionbaseQuery.Item.Topk,
+        context: Map<String, DataFrame>,
+        actionBaseQuery: ActionbaseQuery,
+    ): Mono<DataFrame> =
+        resolveVertex(queryItem.entity, context, actionBaseQuery).flatMap { entities ->
+            val binding = engine.getTableBinding(database = queryItem.database, alias = queryItem.table)
+
+            Flux
+                .fromIterable(entities)
+                .flatMap { entity ->
+                    val rank =
+                        RankScan.from(
+                            schema = binding.schema,
+                            database = queryItem.database,
+                            table = binding.table,
+                            topk = queryItem.topk,
+                            entity = entity.toString(),
+                            dimensionValues = queryItem.dimensionValues,
+                        )
+
+                    engine
+                        .getTableBinding(database = rank.database, alias = rank.table)
+                        .scan(rank.index, rank.start, rank.direction, queryItem.limit, queryItem.offset, ranges = null, filters = null, features = emptyList())
+                }.reduce { a, b ->
+                    DataFrame(rows = a.rows + b.rows, schema = a.schema, total = a.total + b.total)
+                }.switchIfEmpty(Mono.just(DataFrame.empty))
         }
 
     // region Aggregators

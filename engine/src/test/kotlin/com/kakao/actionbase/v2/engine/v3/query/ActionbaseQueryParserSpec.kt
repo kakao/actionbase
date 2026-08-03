@@ -80,6 +80,20 @@ class ActionbaseQueryParserSpec :
                       "cache": "recent_wishlist",
                       "limit": 10,
                       "include": true
+                    },
+                    {
+                      "type": "TOPK",
+                      "name": "g",
+                      "database": "{database}",
+                      "table": "{table}",
+                      "topk": "top_product_groups_1y",
+                      "entity": {
+                        "type": "REF",
+                        "ref": "a",
+                        "field": "tgt"
+                      },
+                      "limit": 10,
+                      "include": true
                     }
                   ]
                 }
@@ -87,7 +101,7 @@ class ActionbaseQueryParserSpec :
 
             val actionBaseQuery = ActionbaseQuery.from(json)
 
-            actionBaseQuery.query.size shouldBe 5
+            actionBaseQuery.query.size shouldBe 6
             actionBaseQuery.query[0] shouldBe
                 ActionbaseQuery.Item.Scan(
                     name = "a",
@@ -134,6 +148,16 @@ class ActionbaseQueryParserSpec :
                     source = ActionbaseQuery.Vertex.Ref("a", "tgt"),
                     direction = Direction.OUT,
                     cache = "recent_wishlist",
+                    limit = 10,
+                    include = true,
+                )
+            actionBaseQuery.query[5] shouldBe
+                ActionbaseQuery.Item.Topk(
+                    name = "g",
+                    database = "{database}",
+                    table = "{table}",
+                    topk = "top_product_groups_1y",
+                    entity = ActionbaseQuery.Vertex.Ref("a", "tgt"),
                     limit = 10,
                     include = true,
                 )

@@ -23,6 +23,7 @@ data class ActionbaseQuery(
         JsonSubTypes.Type(value = Item.Count::class, name = "COUNT"),
         JsonSubTypes.Type(value = Item.Scan::class, name = "SCAN"),
         JsonSubTypes.Type(value = Item.Seek::class, name = "CACHE"),
+        JsonSubTypes.Type(value = Item.Topk::class, name = "TOPK"),
     )
     sealed class Item {
         abstract val name: String
@@ -91,6 +92,21 @@ data class ActionbaseQuery(
             val cache: String,
             val limit: Int,
             val ranges: String? = null,
+            override val include: Boolean = false,
+            override val memoize: Boolean = false,
+            override val post: List<PostProcessor> = emptyList(),
+            override val aggregators: List<Aggregator> = emptyList(),
+        ) : Item()
+
+        data class Topk(
+            override val name: String = UUID.randomUUID().toString(),
+            val database: String,
+            val table: String,
+            val topk: String,
+            val entity: Vertex,
+            val dimensionValues: List<String> = emptyList(),
+            val limit: Int = DEFAULT_SCAN_LIMIT,
+            val offset: String? = null,
             override val include: Boolean = false,
             override val memoize: Boolean = false,
             override val post: List<PostProcessor> = emptyList(),
