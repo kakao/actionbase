@@ -18,10 +18,15 @@ data class Group(
     @JsonIgnore
     val code = XXHash32Wrapper.default.stringHash(group)
 
+    @JsonIgnore
+    fun dimensionFields(topk: Topk): List<Field> = fields.filter { it.bucket == null && !it.matchesDimension(topk.dimension) }
+
     data class Field(
         val name: String,
         val bucket: Bucket? = null,
     ) {
+        fun matchesDimension(dimension: String): Boolean = name.removePrefix("_") == dimension.removePrefix("_")
+
         fun bucketOrGet(
             value: Any,
             ceil: Boolean,

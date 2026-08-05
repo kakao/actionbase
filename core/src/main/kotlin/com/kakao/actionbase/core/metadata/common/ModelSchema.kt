@@ -34,6 +34,13 @@ sealed class ModelSchema : AbstractSchema {
             .associateBy { it.topk }
     }
 
+    @get:JsonIgnore
+    val groupByTopkName: Map<String, Group> by lazy {
+        groups
+            .flatMap { group -> group.aggregations.topk.map { it.topk to group } }
+            .toMap()
+    }
+
     @JsonTypeName("edge")
     data class Edge(
         val source: Field,

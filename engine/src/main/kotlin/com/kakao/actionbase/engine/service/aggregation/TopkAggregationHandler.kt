@@ -327,10 +327,7 @@ internal data class RankingInputs(
                 directedSource = directedSource,
                 entity = if (topk.entity == AggregationConstants.Topk.GLOBAL_ENTITY) AggregationConstants.Topk.GLOBAL_ENTITY else directedSource,
                 topkDimensionValue = fieldValue(topk.dimension, event),
-                dimensionValues =
-                    event.group.fields
-                        .filter { it.bucket == null && !matchesDimension(it.name, topk.dimension) }
-                        .map { fieldValue(it.name, event) },
+                dimensionValues = event.group.dimensionFields(topk).map { fieldValue(it.name, event) },
                 properties = topk.additionalProperties.associateWith { fieldValue(it, event) },
                 ranges = topk.ranges.takeIf { it.isNotEmpty() }?.let { interpolate(it, event) },
             )
@@ -345,11 +342,6 @@ internal data class RankingInputs(
                 "target", "_target" -> event.target
                 else -> event.properties[name]?.toString().orEmpty()
             }
-
-        private fun matchesDimension(
-            fieldName: String,
-            dimension: String,
-        ): Boolean = fieldName.removePrefix("_") == dimension.removePrefix("_")
 
         private fun interpolate(
             template: String,
