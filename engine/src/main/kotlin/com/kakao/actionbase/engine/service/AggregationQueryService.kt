@@ -14,8 +14,8 @@ class AggregationQueryService(
         database: String,
         table: String,
         topk: String,
-        entity: String,
-        dimensionValues: List<String> = emptyList(),
+        entity: String? = null,
+        dimensionValues: Map<String, String> = emptyMap(),
         limit: Int = ScanFilter.defaultLimit,
         offset: String? = null,
     ): Mono<DataFrameEdgePayload> {

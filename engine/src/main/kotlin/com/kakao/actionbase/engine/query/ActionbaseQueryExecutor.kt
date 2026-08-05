@@ -198,7 +198,7 @@ class ActionbaseQueryExecutor(
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> =
-        resolveVertex(queryItem.entity, context, actionBaseQuery).flatMap { entities ->
+        resolveEntities(queryItem.entity, context, actionBaseQuery).flatMap { entities ->
             val binding = engine.getTableBinding(database = queryItem.database, alias = queryItem.table)
 
             Flux
@@ -210,7 +210,7 @@ class ActionbaseQueryExecutor(
                             database = queryItem.database,
                             table = binding.table,
                             topk = queryItem.topk,
-                            entity = entity.toString(),
+                            entity = entity,
                             dimensionValues = queryItem.dimensionValues,
                         )
 
@@ -221,6 +221,15 @@ class ActionbaseQueryExecutor(
                     DataFrame(rows = a.rows + b.rows, schema = a.schema, total = a.total + b.total)
                 }.switchIfEmpty(Mono.just(DataFrame.empty))
         }
+
+    private fun resolveEntities(
+        entity: ActionbaseQuery.Vertex?,
+        context: Map<String, DataFrame>,
+        actionBaseQuery: ActionbaseQuery,
+    ): Mono<List<String?>> =
+        entity
+            ?.let { vertex -> resolveVertex(vertex, context, actionBaseQuery).map { values -> values.map(Any::toString) } }
+            ?: Mono.just(listOf(null))
 
     // region Aggregators
 

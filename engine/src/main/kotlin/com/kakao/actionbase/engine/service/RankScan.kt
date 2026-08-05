@@ -17,12 +17,15 @@ internal data class RankScan(
             database: String,
             table: String,
             topk: String,
-            entity: String,
-            dimensionValues: List<String>,
+            entity: String?,
+            dimensionValues: Map<String, String>,
         ): RankScan {
             val config =
                 schema.topkByName[topk]
                     ?: throw IllegalArgumentException("Unknown topk `$topk` for $database.$table.")
+            val group =
+                schema.groupByTopkName[topk]
+                    ?: throw IllegalArgumentException("Topk `$topk` of $database.$table is not declared on any group.")
             val (rankDatabase, rankTable) = parseFqn(config.rank)
 
             return RankScan(
@@ -34,8 +37,8 @@ internal data class RankScan(
                         database = database,
                         table = table,
                         topk = topk,
-                        entity = entity,
-                        dimensionValues = dimensionValues,
+                        entity = if (config.entity == AggregationConstants.Topk.GLOBAL_ENTITY) AggregationConstants.Topk.GLOBAL_ENTITY else entity.orEmpty(),
+                        dimensionValues = group.dimensionFields(config).map { dimensionValues[it.name].orEmpty() },
                     ),
                 direction = Direction.OUT,
             )

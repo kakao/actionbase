@@ -4,6 +4,7 @@ import com.kakao.actionbase.core.metadata.common.DirectionType as V3DirectionTyp
 
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest
 import com.kakao.actionbase.core.metadata.common.Aggregations
+import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.GroupType
 import com.kakao.actionbase.core.metadata.common.Topk
@@ -106,7 +107,7 @@ class TopkQuerySpec :
                                 Group(
                                     group = "purchased_count",
                                     type = GroupType.COUNT,
-                                    fields = listOf(Group.Field("purchasedAt")),
+                                    fields = listOf(Group.Field("purchasedAt", bucket = Bucket.Date(name = "day", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd"))),
                                     directionType = V3DirectionType.OUT,
                                     aggregations =
                                         Aggregations(
