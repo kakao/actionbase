@@ -180,6 +180,7 @@ class ReadOnlyRequestFilterTest {
                 "POST /graph/v3/query",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
+                "POST /aggregations/v1/databases/{database}/tables/{table}/topks/{topk}",
                 // queue/v1 GET
                 "GET /queue/v1/namespaces/{namespace}/queues/{queue}",
                 "GET /queue/v1/namespaces/{namespace}/queues/{queue}/partitions",

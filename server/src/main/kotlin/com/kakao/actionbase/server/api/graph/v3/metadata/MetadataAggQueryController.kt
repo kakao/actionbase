@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.ModelAttribute
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 import reactor.core.publisher.Mono
@@ -18,8 +20,20 @@ import reactor.core.publisher.Mono
 class MetadataAggQueryController(
     private val aggregationQueryService: AggregationQueryService,
 ) {
-    @GetMapping("/aggregations/v1/databases/{database}/tables/{table}/topks/{topk}")
+    @PostMapping("/aggregations/v1/databases/{database}/tables/{table}/topks/{topk}")
     fun topk(
+        @PathVariable database: String,
+        @PathVariable table: String,
+        @PathVariable topk: String,
+        @RequestBody request: AggregationsTopkRequest,
+    ): Mono<ResponseEntity<AggregationsTopkResponse>> =
+        aggregationQueryService
+            .topk(database, table, topk, request.entity, request.dimensionValues, request.limit ?: ScanFilter.defaultLimit, request.offset)
+            .map(AggregationsTopkResponse::from)
+            .mapToResponseEntity()
+
+    @GetMapping("/aggregations/v1/databases/{database}/tables/{table}/topks/{topk}")
+    fun topkByGet(
         @PathVariable database: String,
         @PathVariable table: String,
         @PathVariable topk: String,

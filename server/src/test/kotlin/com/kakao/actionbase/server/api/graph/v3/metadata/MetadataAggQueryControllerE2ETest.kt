@@ -191,6 +191,26 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
             .expectBody<AggregationsItemResponse>()
             .returnResult()
 
+        val ranking: (AggregationsTopkResponse) -> Unit = { response ->
+            assertEquals(2, response.count)
+            assertEquals(listOf("item1", "item2"), response.topks.map { it.value })
+            assertEquals(listOf(2L, 1L), response.topks.map { it.metric })
+            assertEquals(listOf("grocery", "grocery"), response.topks.map { it.properties["productGroupId"] })
+        }
+
+        client
+            .post()
+            .uri("/aggregations/v1/databases/$db/tables/$alias/topks/$topkName")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"entity": "user1"}""")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<AggregationsTopkResponse>()
+            .returnResult()
+            .responseBody!!
+            .let(ranking)
+
         client
             .get()
             .uri("/aggregations/v1/databases/$db/tables/$alias/topks/$topkName?entity=user1")
@@ -200,11 +220,6 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
             .expectBody<AggregationsTopkResponse>()
             .returnResult()
             .responseBody!!
-            .let { response ->
-                assertEquals(2, response.count)
-                assertEquals(listOf("item1", "item2"), response.topks.map { it.value })
-                assertEquals(listOf(2L, 1L), response.topks.map { it.metric })
-                assertEquals(listOf("grocery", "grocery"), response.topks.map { it.properties["productGroupId"] })
-            }
+            .let(ranking)
     }
 }
