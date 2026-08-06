@@ -15,7 +15,8 @@ class TokenAuthenticationFilter(
 ) : WebFilter {
     private val log = LoggerFactory.getLogger(TokenAuthenticationFilter::class.java)
 
-    private val protectedPaths = setOf("/graph/v2", "/graph/v3")
+    // Turning tokens on must cover the operational apis too, not just the data plane they reach.
+    private val protectedPaths = setOf("/graph/v2", "/graph/v3") + PathPrefixes.CONTROL
 
     init {
         log.info("TokenAuthenticationFilter is added. useToken: $useToken, protectedPaths: $protectedPaths")
