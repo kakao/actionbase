@@ -102,7 +102,7 @@ class LabelEntityFunctionsTest {
                 label(
                     groups =
                         listOf(
-                            group(name = "purchased_count", direction = GroupDirectionType.OUT, fields = listOf(Group.Field("productGroupId")), topks = listOf(topk(name = "top_purchased", entity = "source"))),
+                            group(name = "purchased_count", direction = GroupDirectionType.OUT, fields = listOf(Group.Field("category")), topks = listOf(topk(name = "top_purchased", entity = "source"))),
                             group(name = "viewed_count", direction = GroupDirectionType.BOTH, fields = emptyList(), topks = emptyList()),
                             group(name = "liked_count", direction = GroupDirectionType.OUT, fields = emptyList(), topks = listOf(topk(name = "top_liked", entity = "source"))),
                             group(name = "shared_count", direction = GroupDirectionType.OUT, fields = listOf(Group.Field("channel")), topks = listOf(topk(name = "top_shared", entity = "source"))),
@@ -111,7 +111,7 @@ class LabelEntityFunctionsTest {
                 )
 
             label.toQualifiedAggregations().single().dedupeFields shouldBe
-                listOf("source", "productGroupId", "channel", "target")
+                listOf("source", "category", "channel", "target")
         }
 
         @Test

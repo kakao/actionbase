@@ -77,7 +77,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                     "source": {"type": "string", "comment": "user"},
                     "target": {"type": "string", "comment": "item"},
                     "properties": [
-                      {"name": "productGroupId", "type": "string", "comment": "product group", "nullable": false},
+                      {"name": "category", "type": "string", "comment": "item category", "nullable": false},
                       {"name": "purchasedAt", "type": "long", "comment": "purchase time ms", "nullable": false}
                     ],
                     "direction": "OUT",
@@ -87,7 +87,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                       "type": "COUNT",
                       "fields": [
                         {"name": "_target"},
-                        {"name": "productGroupId"},
+                        {"name": "category"},
                         {"name": "purchasedAt", "bucket": {"type": "date", "name": "day", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
                       ],
                       "directionType": "OUT",
@@ -95,10 +95,10 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                         "topk": [{
                           "topk": "$topkName",
                           "entity": "source",
-                          "ranges": "_target:eq:{_target};productGroupId:eq:{productGroupId};day:bt:2023-11-14,2024-11-13",
+                          "ranges": "_target:eq:{_target};category:eq:{category};day:bt:2023-11-14,2024-11-13",
                           "dimension": "target",
                           "rank": "$rankFqn",
-                          "additionalProperties": ["productGroupId"]
+                          "additionalProperties": ["category"]
                         }]
                       }
                     }],
@@ -125,31 +125,31 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
     }
 
     /**
-     * The group declares a bucketed `purchasedAt` (day) alongside `productGroupId`: `ranges` constrains
-     * the metric to a day window and the bucket field stays out of the rank key, while `productGroupId`
+     * The group declares a bucketed `purchasedAt` (day) alongside `category`: `ranges` constrains
+     * the metric to a day window and the bucket field stays out of the rank key, while `category`
      * splits the ranking and so takes a place in it.
      *
-     * 1. Record three edges for `user1`, each carrying `productGroupId = grocery` and a `purchasedAt`
+     * 1. Record three edges for `user1`, each carrying `category = grocery` and a `purchasedAt`
      *    inside the window: two to `item1`, one to `item2`.
      *
      *    commerce.orders_table (source)
-     *    | source | target | productGroupId | purchasedAt   |
-     *    |--------|--------|----------------|---------------|
-     *    | user1  | item1  | grocery        | 1710000000000 |
-     *    | user1  | item1  | grocery        | 1710000000000 |
-     *    | user1  | item2  | grocery        | 1710000000000 |
+     *    | source | target | category | purchasedAt   |
+     *    |--------|--------|----------|---------------|
+     *    | user1  | item1  | grocery  | 1710000000000 |
+     *    | user1  | item1  | grocery  | 1710000000000 |
+     *    | user1  | item2  | grocery  | 1710000000000 |
      *
      * 2. Aggregate both targets by the real table name (as a streaming writer would), materializing
      *    two rank rows (metric = edge count) with the carried property:
      *
      *    commerce.orders_table__topk (rank)
-     *    |                 row key (source)                  | target | metric | productGroupId |
-     *    |---------------------------------------------------|--------|--------|----------------|
-     *    | commerce|orders_table|top_purchased|user1|grocery | item1  |      2 | grocery       |
-     *    | commerce|orders_table|top_purchased|user1|grocery | item2  |      1 | grocery      |
+     *    |                 row key (source)                  | target | metric | category |
+     *    |---------------------------------------------------|--------|--------|----------|
+     *    | commerce|orders_table|top_purchased|user1|grocery | item1  |      2 | grocery  |
+     *    | commerce|orders_table|top_purchased|user1|grocery | item2  |      1 | grocery  |
      *
      * 3. Query the top-K for `user1` *through the alias* -> rows come back ordered by metric
-     *    (`item1` then `item2`), each carrying `productGroupId`.
+     *    (`item1` then `item2`), each carrying `category`.
      */
     @Test
     fun `querying a topk through an alias returns the ranked targets with their carried properties`() {
@@ -161,9 +161,9 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                 """
                 {
                   "mutations": [
-                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}}},
-                    {"type": "INSERT", "edge": {"version": 1, "id": 2, "source": "user1", "target": "item1", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}}},
-                    {"type": "INSERT", "edge": {"version": 1, "id": 3, "source": "user1", "target": "item2", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}}}
+                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1", "properties": {"category": "grocery", "purchasedAt": 1710000000000}}},
+                    {"type": "INSERT", "edge": {"version": 1, "id": 2, "source": "user1", "target": "item1", "properties": {"category": "grocery", "purchasedAt": 1710000000000}}},
+                    {"type": "INSERT", "edge": {"version": 1, "id": 3, "source": "user1", "target": "item2", "properties": {"category": "grocery", "purchasedAt": 1710000000000}}}
                   ]
                 }
                 """.trimIndent(),
@@ -180,9 +180,9 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                 {
                   "items": [
                     {"database": "$db", "table": "$table",
-                     "edge": {"version": 1, "source": "user1", "target": "item1", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}, "context": {}}},
+                     "edge": {"version": 1, "source": "user1", "target": "item1", "properties": {"category": "grocery", "purchasedAt": 1710000000000}, "context": {}}},
                     {"database": "$db", "table": "$table",
-                     "edge": {"version": 1, "source": "user1", "target": "item2", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}, "context": {}}}
+                     "edge": {"version": 1, "source": "user1", "target": "item2", "properties": {"category": "grocery", "purchasedAt": 1710000000000}, "context": {}}}
                   ]
                 }
                 """.trimIndent(),
@@ -196,7 +196,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
             .post()
             .uri("/aggregations/v1/databases/$db/tables/$alias/topks/$topkName")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"entity": "user1", "dimensionValues": {"productGroupId": "grocery"}}""")
+            .bodyValue("""{"entity": "user1", "dimensionValues": {"category": "grocery"}}""")
             .exchange()
             .expectStatus()
             .isOk
@@ -207,12 +207,12 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                 assertEquals(2, response.count)
                 assertEquals(listOf("item1", "item2"), response.topks.map { it.value })
                 assertEquals(listOf(2L, 1L), response.topks.map { it.metric })
-                assertEquals(listOf("grocery", "grocery"), response.topks.map { it.properties["productGroupId"] })
+                assertEquals(listOf("grocery", "grocery"), response.topks.map { it.properties["category"] })
             }
     }
 
     /**
-     * `user2` buys across two product groups, so the split leaves them with one ranking per group rather
+     * `user2` buys across two categories, so the split leaves them with one ranking per category rather
      * than one overall:
      *
      * commerce.orders_table__topk (rank)
@@ -221,7 +221,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
      * | commerce\|orders_table\|top_purchased\|user2\|grocery | itemA  |      2 |
      * | commerce\|orders_table\|top_purchased\|user2\|dairy   | itemB  |      1 |
      *
-     * Naming `productGroupId` is what picks one of them, and where that value lands in the key comes from
+     * Naming `category` is what picks one of them, and where that value lands in the key comes from
      * the group. So asking for `grocery` returns `itemA` alone, and leaving the name out addresses the
      * unsplit key, which no row was ever written to.
      */
@@ -235,9 +235,9 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                 """
                 {
                   "mutations": [
-                    {"type": "INSERT", "edge": {"version": 1, "id": 11, "source": "user2", "target": "itemA", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}}},
-                    {"type": "INSERT", "edge": {"version": 1, "id": 12, "source": "user2", "target": "itemA", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}}},
-                    {"type": "INSERT", "edge": {"version": 1, "id": 13, "source": "user2", "target": "itemB", "properties": {"productGroupId": "dairy", "purchasedAt": 1710000000000}}}
+                    {"type": "INSERT", "edge": {"version": 1, "id": 11, "source": "user2", "target": "itemA", "properties": {"category": "grocery", "purchasedAt": 1710000000000}}},
+                    {"type": "INSERT", "edge": {"version": 1, "id": 12, "source": "user2", "target": "itemA", "properties": {"category": "grocery", "purchasedAt": 1710000000000}}},
+                    {"type": "INSERT", "edge": {"version": 1, "id": 13, "source": "user2", "target": "itemB", "properties": {"category": "dairy", "purchasedAt": 1710000000000}}}
                   ]
                 }
                 """.trimIndent(),
@@ -254,9 +254,9 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                 {
                   "items": [
                     {"database": "$db", "table": "$table",
-                     "edge": {"version": 1, "source": "user2", "target": "itemA", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}, "context": {}}},
+                     "edge": {"version": 1, "source": "user2", "target": "itemA", "properties": {"category": "grocery", "purchasedAt": 1710000000000}, "context": {}}},
                     {"database": "$db", "table": "$table",
-                     "edge": {"version": 1, "source": "user2", "target": "itemB", "properties": {"productGroupId": "dairy", "purchasedAt": 1710000000000}, "context": {}}}
+                     "edge": {"version": 1, "source": "user2", "target": "itemB", "properties": {"category": "dairy", "purchasedAt": 1710000000000}, "context": {}}}
                   ]
                 }
                 """.trimIndent(),
@@ -270,7 +270,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
             .post()
             .uri("/aggregations/v1/databases/$db/tables/$alias/topks/$topkName")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"entity": "user2", "dimensionValues": {"productGroupId": "grocery"}}""")
+            .bodyValue("""{"entity": "user2", "dimensionValues": {"category": "grocery"}}""")
             .exchange()
             .expectStatus()
             .isOk
