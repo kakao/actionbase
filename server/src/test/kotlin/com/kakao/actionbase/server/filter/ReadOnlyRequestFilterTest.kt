@@ -21,13 +21,8 @@ import org.springframework.web.server.WebFilterChain
 
 import reactor.core.publisher.Mono
 
-// Test strategy:
-// 1. Scan all @RestController endpoints via reflection at test time. EndpointScanner satisfies
-//    every @Conditional, so conditionally registered controllers are scanned too rather than
-//    quietly sitting outside the check.
-// 2. Compare scanned set against READ/WRITE/NON_GRAPH constants — any mismatch fails the build.
-// 3. Run each endpoint through the filter: READ → allowed, WRITE → 403, NON_GRAPH → allowed.
-// Adding a new endpoint without classifying it here will break the exhaustiveness check.
+// Adding a new endpoint without classifying it below breaks the exhaustiveness check.
+// ServerRoleRequestFilterTest decides by the same four sets.
 class ReadOnlyRequestFilterTest {
     private lateinit var filter: ReadOnlyRequestFilter
 
@@ -39,7 +34,7 @@ class ReadOnlyRequestFilterTest {
     @Test
     fun `declared endpoints must match scanned controller annotations`() {
         val scanned = EndpointScanner.scan("com.kakao.actionbase.server.api").map { (m, p) -> "$m $p" }.toSet()
-        val declared = READ_ENDPOINTS + WRITE_ENDPOINTS + NON_GRAPH_ENDPOINTS
+        val declared = READ_ENDPOINTS + WRITE_ENDPOINTS + CONTROL_ENDPOINTS + NON_GRAPH_ENDPOINTS
 
         val missing = scanned - declared
         val stale = declared - scanned
@@ -50,7 +45,7 @@ class ReadOnlyRequestFilterTest {
 
     @ParameterizedTest
     @MethodSource("readEndpoints")
-    fun `should allow read requests on graph paths`(
+    fun `should allow read requests on filtered path prefixes`(
         method: String,
         path: String,
     ) {
@@ -75,10 +70,7 @@ class ReadOnlyRequestFilterTest {
         assertAllowed(method, path)
     }
 
-    // The control prefix is guarded by path, not by the endpoints that happen to exist under it
-    // today: every /control endpoint is currently a GET, so nothing else here would notice if the
-    // prefix were dropped from the filter, and the operational writes are what must not slip
-    // through a read-only instance.
+    // No /control write exists yet, so nothing else would notice the prefix leaving the filter.
     @Test
     fun `should block writes on the control prefix`() {
         assertBlocked("POST", "/control/topology")
@@ -189,9 +181,6 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/datastore/hbase/tables/{tableName}",
                 "GET /graph/v3/datastore/hbase/tables/{tableName}/metric",
                 "GET /graph/v3/datastore/hbase/tables/{tableName}/references",
-                // control plane GET
-                "GET /control/topology",
-                "GET /control/topology/{tenant}",
                 // read-only POST
                 "POST /graph/v3/query",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
@@ -266,6 +255,12 @@ class ReadOnlyRequestFilterTest {
                 "DELETE /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/messages",
             )
 
+        val CONTROL_ENDPOINTS =
+            setOf(
+                "GET /control/topology",
+                "GET /control/topology/{tenant}",
+            )
+
         val NON_GRAPH_ENDPOINTS =
             setOf(
                 "GET /",
@@ -284,21 +279,21 @@ class ReadOnlyRequestFilterTest {
             )
 
         @JvmStatic
-        fun readEndpoints(): Stream<Arguments> = READ_ENDPOINTS.sorted().map { it.toTestArgs() }.stream()
+        fun readEndpoints(): Stream<Arguments> = (READ_ENDPOINTS + CONTROL_ENDPOINTS).sorted().map { toTestArgs(it) }.stream()
 
         @JvmStatic
-        fun writeEndpoints(): Stream<Arguments> = WRITE_ENDPOINTS.sorted().map { it.toTestArgs() }.stream()
+        fun writeEndpoints(): Stream<Arguments> = WRITE_ENDPOINTS.sorted().map { toTestArgs(it) }.stream()
 
         @JvmStatic
         fun nonGraphEndpoints(): Stream<Arguments> =
             NON_GRAPH_ENDPOINTS
                 .filter { !it.startsWith("GET ") }
                 .sorted()
-                .map { it.toTestArgs() }
+                .map { toTestArgs(it) }
                 .stream()
 
-        private fun String.toTestArgs(): Arguments {
-            val (method, path) = split(" ", limit = 2)
+        fun toTestArgs(endpoint: String): Arguments {
+            val (method, path) = endpoint.split(" ", limit = 2)
             return Arguments.of(method, resolvePath(path))
         }
 

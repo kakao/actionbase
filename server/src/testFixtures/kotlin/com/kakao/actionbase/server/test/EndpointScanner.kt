@@ -24,14 +24,8 @@ object EndpointScanner {
         )
 
     /**
-     * Every `@Conditional` a controller carries is satisfied here, so the scan reports the whole
-     * endpoint surface rather than the subset one deployment happens to register.
-     *
-     * The scanner evaluates conditions against this environment. Left bare, it resolves no
-     * `actionbase.*` property, so every conditionally registered controller - the HBase datastore
-     * ones, the control-plane ones - silently drops out of the scan, and a caller checking the scan
-     * for exhaustiveness passes by not looking. Deployment-specific keys belong here as they are
-     * introduced.
+     * The scanner evaluates `@Conditional` against this environment: left bare it silently drops
+     * every conditionally registered controller, and an exhaustiveness check passes by not looking.
      */
     private fun allConditionsEnabled(): Environment =
         StandardEnvironment().apply {

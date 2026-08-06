@@ -46,11 +46,7 @@ class Topology(
         side: Side,
     ): String = tenant(tenant).sides[side] ?: throw UnknownSideException(tenant, side)
 
-    /**
-     * Sides a request should reach. Fanout is opt-in and forgiving about the standby: asking for it
-     * on a tenant that has none reaches the active only, because a caller should not have to know
-     * which tenants are paired.
-     */
+    /** Fanout on an unpaired tenant reaches the active only - a caller need not know which are paired. */
     fun sidesFor(
         tenant: String,
         fanout: Boolean,

@@ -57,6 +57,26 @@ class ControlRoleE2ETest : E2ETestBase() {
     }
 
     @Test
+    fun `does not serve the data plane`() {
+        client
+            .get()
+            .uri("/graph/v3/databases")
+            .exchange()
+            .expectStatus()
+            .isNotFound
+    }
+
+    @Test
+    fun `still answers the probes`() {
+        client
+            .get()
+            .uri("/graph/health/liveness")
+            .exchange()
+            .expectStatus()
+            .isOk
+    }
+
+    @Test
     fun `an unknown tenant is a bad request, not a server error`() {
         client
             .get()

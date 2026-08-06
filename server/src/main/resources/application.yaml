@@ -14,7 +14,8 @@ spring:
 
 actionbase:
   tenant: ${AB_TENANT:ab-none}
-  # DATA or CONTROL. The same image serves both; a deployment picks one.
+  # DATA or CONTROL, exclusive surfaces. Do not enable kc.graph.warmup on CONTROL - it calls the
+  # data plane it is refused.
   role: ${AB_ROLE:DATA}
   datastore:
     type: memory

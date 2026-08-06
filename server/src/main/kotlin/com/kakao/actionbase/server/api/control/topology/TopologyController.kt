@@ -13,11 +13,9 @@ import org.springframework.web.bind.annotation.RestController
 import reactor.core.publisher.Mono
 
 /**
- * What a control instance knows about the fleet. A client reads this instead of carrying its own
- * table of tenants and hostnames.
+ * What a control instance knows about the fleet, so a client need not carry its own table.
  *
- * The cluster URLs are deliberately not in the response: a client addresses the control plane, so
- * learning the hostnames behind it would only recreate the table this endpoint exists to retire.
+ * The cluster urls stay out of the response - returning them would recreate that table.
  */
 @RestController
 @ConditionalOnControlRole

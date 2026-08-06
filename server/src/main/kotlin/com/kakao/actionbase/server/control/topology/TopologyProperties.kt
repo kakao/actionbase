@@ -17,13 +17,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  *         standby-url: http://ab-kc-standby.example.net   # omit when there is no standby
  * ```
  *
- * Deployment config, read once at startup. A tenant here is nothing more than the URLs its cluster
- * answers on - the control plane holds no per-request state and opens no datastore of its own.
- *
- * `namespace` is declared, not discovered: it restates what the target cluster has in its own
- * `actionbase.datastore.configuration`, and nothing reconciles the two, so a rename on one side
- * drifts silently. Verifying it against what the cluster reports needs a call to that cluster,
- * which arrives with request routing.
+ * `namespace` is declared, not reconciled with the cluster's own config, so a rename on one side
+ * drifts silently until routing can check it.
  */
 @ConfigurationProperties(prefix = "actionbase.control")
 data class TopologyProperties(
@@ -37,9 +32,6 @@ data class TopologyProperties(
     )
 
     fun toTopology(): Topology {
-        // A control plane with no clusters to reach is a misconfiguration, and one that would only
-        // show up as an empty topology response. Same reasoning as the url checks below: fail the
-        // boot, not the first request.
         require(tenants.isNotEmpty()) { "actionbase.control.tenants is empty, but this instance is deployed as CONTROL" }
         return Topology(
             tenants.map { (id, t) ->
