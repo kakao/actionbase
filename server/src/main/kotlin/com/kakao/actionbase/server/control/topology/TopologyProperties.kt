@@ -1,5 +1,7 @@
 package com.kakao.actionbase.server.control.topology
 
+import java.time.Duration
+
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
@@ -23,6 +25,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(prefix = "actionbase.control")
 data class TopologyProperties(
     val tenants: Map<String, Tenant> = emptyMap(),
+    /** How long one cluster may take before its side is reported as failed. */
+    val requestTimeout: Duration = Duration.ofSeconds(10),
 ) {
     data class Tenant(
         val env: Env,
