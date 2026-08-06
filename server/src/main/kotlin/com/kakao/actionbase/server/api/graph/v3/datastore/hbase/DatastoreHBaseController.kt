@@ -5,6 +5,7 @@ import com.kakao.actionbase.server.auth.ActorRole
 import com.kakao.actionbase.server.configuration.ConditionalOnHBaseDatastore
 import com.kakao.actionbase.server.configuration.GraphProperties
 import com.kakao.actionbase.server.configuration.HttpHeaderConstants
+import com.kakao.actionbase.v2.engine.service.ddl.DatastoreTableReference
 
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 import reactor.core.publisher.Mono
@@ -129,6 +131,32 @@ class DatastoreHBaseController(
             .deleteTable(tableName)
             .then(Mono.just(mapOf("result" to "deleted")))
     }
+
+    /**
+     * Every binding on the cluster, keyed by `namespace:tableName`. Resolving tables one at a time
+     * costs a metadata scan per database per table, so walking a cluster should start here.
+     *
+     * Not under `tables/` - that would collide with `tables/{tableName}`.
+     */
+    @GetMapping("/graph/v3/datastore/hbase/references")
+    fun getAllTableReferences(
+        @RequestParam(required = false) namespace: String?,
+    ): Mono<Map<String, Map<String, List<DatastoreTableReference>>>> =
+        service
+            .getAllTableReferences(namespace)
+            .map { mapOf("references" to it) }
+
+    /**
+     * What still binds to this table. A cleanup client reads this instead of reconstructing the
+     * `alias -> label -> storage -> table` chain from the metadata listings.
+     */
+    @GetMapping("/graph/v3/datastore/hbase/tables/{tableName}/references")
+    fun getTableReferences(
+        @PathVariable tableName: String,
+    ): Mono<Map<String, List<DatastoreTableReference>>> =
+        service
+            .getTableReferences(tableName)
+            .map { mapOf("references" to it) }
 
     @GetMapping("/graph/v3/datastore/hbase/tables/{tableName}/metric")
     fun getTableMetricSummary(

@@ -191,6 +191,33 @@ class DatastoreTableReferencesSpec :
                 }.verifyComplete()
         }
 
+        "groups every binding by the table it points at" {
+            createHbaseStorage("grouped_storage", "ab_test", "storage_bound")
+            createLabel("grouped_label", "datastore://ab_test/label_bound")
+            createLabel("grouped_short", "datastore:///short_bound")
+
+            references
+                .findAllByTable()
+                .test()
+                .assertNext { byTable ->
+                    byTable["ab_test:storage_bound"]?.single()?.kind shouldBe DatastoreTableReference.Kind.STORAGE
+                    byTable["ab_test:label_bound"]?.single()?.kind shouldBe DatastoreTableReference.Kind.LABEL
+                    byTable["$defaultNamespace:short_bound"]?.size shouldBe 1
+                }.verifyComplete()
+        }
+
+        "the namespace filter drops bindings in other namespaces" {
+            createLabel("here_label", "datastore://ab_here/here_bound")
+            createLabel("there_label", "datastore://ab_there/there_bound")
+
+            references
+                .findAllByTable(namespace = "ab_here")
+                .test()
+                .assertNext { byTable ->
+                    byTable.keys shouldBe setOf("ab_here:here_bound")
+                }.verifyComplete()
+        }
+
         "both binding forms on one table are reported together" {
             createHbaseStorage("shared_storage", "ab_test", "shared_bound")
             createLabel("shared_uri_label", "datastore://ab_test/shared_bound")
