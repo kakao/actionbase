@@ -14,6 +14,8 @@ spring:
 
 actionbase:
   tenant: ${AB_TENANT:ab-none}
+  # DATA or CONTROL. The same image serves both; a deployment picks one.
+  role: ${AB_ROLE:DATA}
   datastore:
     type: memory
 

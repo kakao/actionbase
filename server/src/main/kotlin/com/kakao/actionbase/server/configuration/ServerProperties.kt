@@ -15,6 +15,7 @@ data class ServerProperties(
     val datastore: DatastoreProperties,
     val readOnly: Boolean = false,
     val featureFlags: List<FeatureFlag> = emptyList(),
+    val role: ServerRole = ServerRole.DATA,
 ) {
     init {
         val duplicates =
