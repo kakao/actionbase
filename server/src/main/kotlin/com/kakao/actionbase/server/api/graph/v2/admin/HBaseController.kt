@@ -5,8 +5,7 @@ import com.kakao.actionbase.server.service.devtools.HBaseMetric
 import com.kakao.actionbase.server.service.devtools.HBaseTableSchema
 import com.kakao.actionbase.server.service.devtools.models.GraphHBaseTable
 import com.kakao.actionbase.v2.engine.Graph
-import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.metadata.StorageType
+import com.kakao.actionbase.v2.engine.service.ddl.DatastoreTableReferences
 
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -24,6 +23,8 @@ class HBaseController(
     private val graph: Graph,
     private val hBaseAdminService: HBaseAdminService,
 ) {
+    private val references = DatastoreTableReferences(graph, defaultNamespace = null)
+
     @GetMapping("/graph/v2/admin/hbase/cluster")
     fun listClusters(): Mono<Map<String, List<Map<String, String>>>> =
         hBaseAdminService
@@ -60,35 +61,16 @@ class HBaseController(
         @PathVariable cluster: String,
         @PathVariable tableFullName: String,
     ): Mono<Map<String, String>> =
-        graph.storageDdl
-            .getAll(EntityName.origin)
-            .map { page ->
-                page.content
-                    // TODO: Need to actually check deleted metadata, but additional debugging is needed to understand why this is necessary.
-                    .filter { it.active }
-                    .filter { it.type == StorageType.HBASE }
-                    .filter {
-                        val namespace = it.conf.get("namespace").asText()
-                        val tableName = it.conf.get("tableName").asText()
-                        "$namespace:$tableName" == tableFullName
-                    }
-            }.flatMap {
-                if (it.isNotEmpty()) {
-                    val storageNames = it.joinToString(",") { entity -> entity.fullName }
-                    Mono.error(IllegalArgumentException("Table $tableFullName is used by storages ($storageNames)"))
-                } else {
-                    hBaseAdminService
-                        .getTable(cluster, tableFullName)
-                        .map { table ->
-                            require(!table.isEnabled) {
-                                "Table $tableFullName is enabled, delete after disable it."
-                            }
-                        }.flatMap {
-                            hBaseAdminService
-                                .deleteTable(cluster, tableFullName)
-                                .then(Mono.just(mapOf("result" to "deleted")))
-                        }
+        throwErrorIfTableInUse(tableFullName)
+            .then(Mono.defer { hBaseAdminService.getTable(cluster, tableFullName) })
+            .map { table ->
+                require(!table.isEnabled) {
+                    "Table $tableFullName is enabled, delete after disable it."
                 }
+            }.flatMap {
+                hBaseAdminService
+                    .deleteTable(cluster, tableFullName)
+                    .then(Mono.just(mapOf("result" to "deleted")))
             }
 
     @PutMapping("/graph/v2/admin/hbase/cluster/{cluster}/table/{tableFullName}")
@@ -99,25 +81,8 @@ class HBaseController(
     ): Mono<Map<String, String>> {
         val result =
             if (request.enable == false) {
-                graph.storageDdl
-                    .getAll(EntityName.origin)
-                    .map { page ->
-                        page.content
-                            .filter { it.active }
-                            .filter { it.type == StorageType.HBASE }
-                            .filter {
-                                val namespace = it.conf.get("namespace").asText()
-                                val tableName = it.conf.get("tableName").asText()
-                                "$namespace:$tableName" == tableFullName
-                            }
-                    }.flatMap {
-                        if (it.isNotEmpty()) {
-                            val storageNames = it.joinToString(",") { entity -> entity.fullName }
-                            Mono.error(IllegalArgumentException("Table $tableFullName is used by storages ($storageNames)"))
-                        } else {
-                            hBaseAdminService.disableTable(cluster, tableFullName)
-                        }
-                    }
+                throwErrorIfTableInUse(tableFullName)
+                    .then(Mono.defer { hBaseAdminService.disableTable(cluster, tableFullName) })
             } else {
                 hBaseAdminService.enableTable(cluster, tableFullName)
             }
@@ -162,6 +127,30 @@ class HBaseController(
         hBaseAdminService
             .getReplicationPeer(cluster)
             .map { mapOf("replication" to it) }
+
+    // Cluster-blind, as this check has always been: it matches against this server's own metadata
+    // whatever `cluster` names. For a remote cluster that errs toward refusing.
+    //
+    // Callers wrap the admin call in Mono.defer so nothing runs before this answers - building it
+    // eagerly would open a connection, or throw on an unknown cluster, ahead of the guard.
+    private fun throwErrorIfTableInUse(tableFullName: String): Mono<Void> {
+        val parts = tableFullName.trim().split(":")
+        require(parts.size == 2) { "Table name must be in namespace:tableName format, got $tableFullName" }
+        val (namespace, tableName) = parts
+        return references
+            .findActive(namespace, tableName)
+            .flatMap { refs ->
+                if (refs.isEmpty()) {
+                    Mono.empty()
+                } else {
+                    Mono.error(
+                        IllegalArgumentException(
+                            "Table $tableFullName is used by ${refs.joinToString(",") { "${it.kind}:${it.name}" }}",
+                        ),
+                    )
+                }
+            }
+    }
 
     data class GraphHBaseTableUpdateRequest(
         val enable: Boolean?,
