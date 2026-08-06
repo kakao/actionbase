@@ -174,7 +174,6 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
                 "GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
                 "GET /graph/v3/databases/{database}/tables/{table}/vertices/get",
-                "GET /aggregations/v1/databases/{database}/tables/{table}/topks/{topk}",
                 "GET /graph/v3/datastore",
                 // read-only POST
                 "POST /graph/v3/query",

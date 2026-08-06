@@ -87,6 +87,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                       "type": "COUNT",
                       "fields": [
                         {"name": "_target"},
+                        {"name": "productGroupId"},
                         {"name": "purchasedAt", "bucket": {"type": "date", "name": "day", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
                       ],
                       "directionType": "OUT",
@@ -94,7 +95,7 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
                         "topk": [{
                           "topk": "$topkName",
                           "entity": "source",
-                          "ranges": "_target:eq:{_target};day:bt:2023-11-14,2024-11-13",
+                          "ranges": "_target:eq:{_target};productGroupId:eq:{productGroupId};day:bt:2023-11-14,2024-11-13",
                           "dimension": "target",
                           "rank": "$rankFqn",
                           "additionalProperties": ["productGroupId"]
@@ -124,9 +125,9 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
     }
 
     /**
-     * The group also declares a bucketed `purchasedAt` (day) field: `ranges` constrains the metric to
-     * a day window, and the bucket field is excluded from the rank key, so the key stays
-     * `db|table|topk|entity` and the alias query still finds the rows.
+     * The group declares a bucketed `purchasedAt` (day) alongside `productGroupId`: `ranges` constrains
+     * the metric to a day window and the bucket field stays out of the rank key, while `productGroupId`
+     * splits the ranking and so takes a place in it.
      *
      * 1. Record three edges for `user1`, each carrying `productGroupId = grocery` and a `purchasedAt`
      *    inside the window: two to `item1`, one to `item2`.
@@ -142,10 +143,10 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
      *    two rank rows (metric = edge count) with the carried property:
      *
      *    commerce.orders_table__topk (rank)
-     *    |            row key (source)             | target | metric | productGroupId |
-     *    |-----------------------------------------|--------|--------|----------------|
-     *    | commerce|orders_table|top_purchased|user1 | item1  |      2 | grocery      |
-     *    | commerce|orders_table|top_purchased|user1 | item2  |      1 | grocery      |
+     *    |                 row key (source)                  | target | metric | productGroupId |
+     *    |---------------------------------------------------|--------|--------|----------------|
+     *    | commerce|orders_table|top_purchased|user1|grocery | item1  |      2 | grocery       |
+     *    | commerce|orders_table|top_purchased|user1|grocery | item2  |      1 | grocery      |
      *
      * 3. Query the top-K for `user1` *through the alias* -> rows come back ordered by metric
      *    (`item1` then `item2`), each carrying `productGroupId`.
@@ -191,35 +192,109 @@ class MetadataAggQueryControllerE2ETest : E2ETestBase() {
             .expectBody<AggregationsItemResponse>()
             .returnResult()
 
-        val ranking: (AggregationsTopkResponse) -> Unit = { response ->
-            assertEquals(2, response.count)
-            assertEquals(listOf("item1", "item2"), response.topks.map { it.value })
-            assertEquals(listOf(2L, 1L), response.topks.map { it.metric })
-            assertEquals(listOf("grocery", "grocery"), response.topks.map { it.properties["productGroupId"] })
-        }
+        client
+            .post()
+            .uri("/aggregations/v1/databases/$db/tables/$alias/topks/$topkName")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"entity": "user1", "dimensionValues": {"productGroupId": "grocery"}}""")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<AggregationsTopkResponse>()
+            .returnResult()
+            .responseBody!!
+            .let { response ->
+                assertEquals(2, response.count)
+                assertEquals(listOf("item1", "item2"), response.topks.map { it.value })
+                assertEquals(listOf(2L, 1L), response.topks.map { it.metric })
+                assertEquals(listOf("grocery", "grocery"), response.topks.map { it.properties["productGroupId"] })
+            }
+    }
+
+    /**
+     * `user2` buys across two product groups, so the split leaves them with one ranking per group rather
+     * than one overall:
+     *
+     * commerce.orders_table__topk (rank)
+     * |                    row key (source)                   | target | metric |
+     * |-------------------------------------------------------|--------|--------|
+     * | commerce\|orders_table\|top_purchased\|user2\|grocery | itemA  |      2 |
+     * | commerce\|orders_table\|top_purchased\|user2\|dairy   | itemB  |      1 |
+     *
+     * Naming `productGroupId` is what picks one of them, and where that value lands in the key comes from
+     * the group. So asking for `grocery` returns `itemA` alone, and leaving the name out addresses the
+     * unsplit key, which no row was ever written to.
+     */
+    @Test
+    fun `naming a dimension value picks the ranking split on that value`() {
+        client
+            .post()
+            .uri("/graph/v3/databases/$db/tables/$table/multi-edges")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "mutations": [
+                    {"type": "INSERT", "edge": {"version": 1, "id": 11, "source": "user2", "target": "itemA", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}}},
+                    {"type": "INSERT", "edge": {"version": 1, "id": 12, "source": "user2", "target": "itemA", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}}},
+                    {"type": "INSERT", "edge": {"version": 1, "id": 13, "source": "user2", "target": "itemB", "properties": {"productGroupId": "dairy", "purchasedAt": 1710000000000}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+
+        client
+            .post()
+            .uri("/aggregations/v1/aggregate")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                """
+                {
+                  "items": [
+                    {"database": "$db", "table": "$table",
+                     "edge": {"version": 1, "source": "user2", "target": "itemA", "properties": {"productGroupId": "grocery", "purchasedAt": 1710000000000}, "context": {}}},
+                    {"database": "$db", "table": "$table",
+                     "edge": {"version": 1, "source": "user2", "target": "itemB", "properties": {"productGroupId": "dairy", "purchasedAt": 1710000000000}, "context": {}}}
+                  ]
+                }
+                """.trimIndent(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<AggregationsItemResponse>()
+            .returnResult()
 
         client
             .post()
             .uri("/aggregations/v1/databases/$db/tables/$alias/topks/$topkName")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"entity": "user1"}""")
+            .bodyValue("""{"entity": "user2", "dimensionValues": {"productGroupId": "grocery"}}""")
             .exchange()
             .expectStatus()
             .isOk
             .expectBody<AggregationsTopkResponse>()
             .returnResult()
             .responseBody!!
-            .let(ranking)
+            .let { response ->
+                assertEquals(1, response.count)
+                assertEquals(listOf("itemA"), response.topks.map { it.value })
+                assertEquals(listOf(2L), response.topks.map { it.metric })
+            }
 
+        // Naming the value is what picks the ranking: leaving it out reads the unsplit key, which holds nothing.
         client
-            .get()
-            .uri("/aggregations/v1/databases/$db/tables/$alias/topks/$topkName?entity=user1")
+            .post()
+            .uri("/aggregations/v1/databases/$db/tables/$alias/topks/$topkName")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"entity": "user2"}""")
             .exchange()
             .expectStatus()
             .isOk
             .expectBody<AggregationsTopkResponse>()
             .returnResult()
             .responseBody!!
-            .let(ranking)
+            .let { response -> assertEquals(0, response.count) }
     }
 }
