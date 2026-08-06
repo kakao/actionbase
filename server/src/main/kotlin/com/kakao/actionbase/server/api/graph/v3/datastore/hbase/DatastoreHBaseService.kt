@@ -8,6 +8,7 @@ import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.metadata.StorageType
+import com.kakao.actionbase.v2.engine.service.ddl.DatastoreTableReference
 import com.kakao.actionbase.v2.engine.service.ddl.DatastoreTableReferences
 
 import org.apache.hadoop.hbase.NamespaceDescriptor
@@ -43,6 +44,22 @@ class DatastoreHBaseService(
     private val references = DatastoreTableReferences(graph, tenantNamespace)
 
     fun getNamespaces(): List<String> = namespaces
+
+    /**
+     * Everything bound to this table, active or not. Active bindings are what block a disable or
+     * drop; inactive ones are reported so an operator can see a teardown already in progress.
+     */
+    fun getTableReferences(optionalFullQualifierTableName: String): Mono<List<DatastoreTableReference>> =
+        withValidatedTableName(optionalFullQualifierTableName) { tableName ->
+            references.findAll(tableName.namespaceAsString, tableName.qualifierAsString)
+        }
+
+    /**
+     * Every binding on this cluster, keyed by `namespace:tableName`. One scan for the whole cluster
+     * rather than one per table. An unknown [namespace] yields an empty result rather than an
+     * error: a table reached only through a `datastore://` URI need not appear in [namespaces].
+     */
+    fun getAllTableReferences(namespace: String?): Mono<Map<String, List<DatastoreTableReference>>> = references.findAllByTable(namespace)
 
     fun getTables(): Mono<List<HBaseTableInfo>> {
         // Extract namespaces from all storages to create a distinct namespace list
