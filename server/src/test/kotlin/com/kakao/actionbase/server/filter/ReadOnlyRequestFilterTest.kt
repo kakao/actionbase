@@ -22,7 +22,9 @@ import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
 
 // Test strategy:
-// 1. Scan all @RestController endpoints via reflection at test time.
+// 1. Scan all @RestController endpoints via reflection at test time. EndpointScanner satisfies
+//    every @Conditional, so conditionally registered controllers are scanned too rather than
+//    quietly sitting outside the check.
 // 2. Compare scanned set against READ/WRITE/NON_GRAPH constants — any mismatch fails the build.
 // 3. Run each endpoint through the filter: READ → allowed, WRITE → 403, NON_GRAPH → allowed.
 // Adding a new endpoint without classifying it here will break the exhaustiveness check.
@@ -71,6 +73,16 @@ class ReadOnlyRequestFilterTest {
         path: String,
     ) {
         assertAllowed(method, path)
+    }
+
+    // The control prefix is guarded by path, not by the endpoints that happen to exist under it
+    // today: every /control endpoint is currently a GET, so nothing else here would notice if the
+    // prefix were dropped from the filter, and the operational writes are what must not slip
+    // through a read-only instance.
+    @Test
+    fun `should block writes on the control prefix`() {
+        assertBlocked("POST", "/control/topology")
+        assertBlocked("DELETE", "/control/anything")
     }
 
     @Test
@@ -171,6 +183,15 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
                 "GET /graph/v3/databases/{database}/tables/{table}/vertices/get",
                 "GET /graph/v3/datastore",
+                "GET /graph/v3/datastore/hbase/namespaces",
+                "GET /graph/v3/datastore/hbase/references",
+                "GET /graph/v3/datastore/hbase/tables",
+                "GET /graph/v3/datastore/hbase/tables/{tableName}",
+                "GET /graph/v3/datastore/hbase/tables/{tableName}/metric",
+                "GET /graph/v3/datastore/hbase/tables/{tableName}/references",
+                // control plane GET
+                "GET /control/topology",
+                "GET /control/topology/{tenant}",
                 // read-only POST
                 "POST /graph/v3/query",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
@@ -228,6 +249,14 @@ class ReadOnlyRequestFilterTest {
                 "PUT /graph/v3/databases/{database}",
                 "PUT /graph/v3/databases/{database}/aliases/{alias}",
                 "PUT /graph/v3/databases/{database}/tables/{table}",
+                // v3 hbase datastore mutation
+                "DELETE /graph/v3/datastore/hbase/tables/{tableName}",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}/disable",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}/enable",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}/replication/disable",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}/replication/enable",
+                "PUT /graph/v3/datastore/hbase/tables/{tableName}",
                 // queue/v1 mutation
                 "POST /queue/v1/namespaces/{namespace}/queues",
                 "POST /queue/v1/namespaces/{namespace}/queues/{queue}/messages",
@@ -292,6 +321,7 @@ class ReadOnlyRequestFilterTest {
                 "table" to "t",
                 "tableFullName" to "t",
                 "tableName" to "t",
+                "tenant" to "kc",
             )
 
         private fun resolvePath(template: String): String =

@@ -1,4 +1,4 @@
-package com.kakao.actionbase.server.api.control.topology
+package com.kakao.actionbase.server.control.topology
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
@@ -19,6 +19,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  *
  * Deployment config, read once at startup. A tenant here is nothing more than the URLs its cluster
  * answers on - the control plane holds no per-request state and opens no datastore of its own.
+ *
+ * `namespace` is declared, not discovered: it restates what the target cluster has in its own
+ * `actionbase.datastore.configuration`, and nothing reconciles the two, so a rename on one side
+ * drifts silently. Verifying it against what the cluster reports needs a call to that cluster,
+ * which arrives with request routing.
  */
 @ConfigurationProperties(prefix = "actionbase.control")
 data class TopologyProperties(
@@ -31,8 +36,12 @@ data class TopologyProperties(
         val standbyUrl: String? = null,
     )
 
-    fun toTopology(): Topology =
-        Topology(
+    fun toTopology(): Topology {
+        // A control plane with no clusters to reach is a misconfiguration, and one that would only
+        // show up as an empty topology response. Same reasoning as the url checks below: fail the
+        // boot, not the first request.
+        require(tenants.isNotEmpty()) { "actionbase.control.tenants is empty, but this instance is deployed as CONTROL" }
+        return Topology(
             tenants.map { (id, t) ->
                 TenantTopology(
                     tenant = id,
@@ -46,6 +55,7 @@ data class TopologyProperties(
                 )
             },
         )
+    }
 
     private fun String.requireBaseUrl(
         tenant: String,

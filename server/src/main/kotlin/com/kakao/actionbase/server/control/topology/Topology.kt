@@ -1,4 +1,4 @@
-package com.kakao.actionbase.server.api.control.topology
+package com.kakao.actionbase.server.control.topology
 
 enum class Env {
     DEV,

@@ -1,4 +1,4 @@
-package com.kakao.actionbase.server.api.control.topology
+package com.kakao.actionbase.server.control.topology
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -39,6 +39,12 @@ class TopologyTest {
         assertThrows(IllegalArgumentException::class.java) {
             props("kc" to paired().copy(activeUrl = "ab-kc.example.net")).toTopology()
         }
+    }
+
+    @Test
+    fun `a control instance with no tenants fails at startup`() {
+        val thrown = assertThrows(IllegalArgumentException::class.java) { TopologyProperties().toTopology() }
+        assertTrue(thrown.message!!.contains("actionbase.control.tenants"), thrown.message)
     }
 
     @Test

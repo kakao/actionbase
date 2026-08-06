@@ -2,6 +2,7 @@ package com.kakao.actionbase.server.api.control.topology
 
 import com.kakao.actionbase.server.test.E2ETestBase
 
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
@@ -53,5 +54,18 @@ class ControlRoleE2ETest : E2ETestBase() {
             .isEqualTo("ab_talk")
             .jsonPath("$.env")
             .isEqualTo("PROD")
+    }
+
+    @Test
+    fun `an unknown tenant is a bad request, not a server error`() {
+        client
+            .get()
+            .uri("/control/topology/nope")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+            .expectBody()
+            .jsonPath("$.message")
+            .value<String> { assertTrue(it.contains("[kc, talk]"), it) }
     }
 }
