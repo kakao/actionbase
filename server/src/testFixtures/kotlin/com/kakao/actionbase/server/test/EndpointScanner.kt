@@ -1,6 +1,9 @@
 package com.kakao.actionbase.server.test
 
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider
+import org.springframework.core.env.Environment
+import org.springframework.core.env.MapPropertySource
+import org.springframework.core.env.StandardEnvironment
 import org.springframework.core.type.filter.AnnotationTypeFilter
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -20,8 +23,25 @@ object EndpointScanner {
             PatchMapping::class.java to { "PATCH" to (it as PatchMapping).value },
         )
 
+    /**
+     * The scanner evaluates `@Conditional` against this environment: left bare it silently drops
+     * every conditionally registered controller, and an exhaustiveness check passes by not looking.
+     */
+    private fun allConditionsEnabled(): Environment =
+        StandardEnvironment().apply {
+            propertySources.addFirst(
+                MapPropertySource(
+                    "endpoint-scanner",
+                    mapOf(
+                        "actionbase.role" to "CONTROL",
+                        "actionbase.datastore.type" to "HBASE",
+                    ),
+                ),
+            )
+        }
+
     fun scan(basePackage: String): List<Pair<String, String>> {
-        val provider = ClassPathScanningCandidateComponentProvider(false)
+        val provider = ClassPathScanningCandidateComponentProvider(false, allConditionsEnabled())
         provider.addIncludeFilter(AnnotationTypeFilter(RestController::class.java))
 
         return provider

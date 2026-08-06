@@ -21,11 +21,8 @@ import org.springframework.web.server.WebFilterChain
 
 import reactor.core.publisher.Mono
 
-// Test strategy:
-// 1. Scan all @RestController endpoints via reflection at test time.
-// 2. Compare scanned set against READ/WRITE/NON_GRAPH constants — any mismatch fails the build.
-// 3. Run each endpoint through the filter: READ → allowed, WRITE → 403, NON_GRAPH → allowed.
-// Adding a new endpoint without classifying it here will break the exhaustiveness check.
+// Adding a new endpoint without classifying it below breaks the exhaustiveness check.
+// ServerRoleRequestFilterTest decides by the same four sets.
 class ReadOnlyRequestFilterTest {
     private lateinit var filter: ReadOnlyRequestFilter
 
@@ -37,7 +34,7 @@ class ReadOnlyRequestFilterTest {
     @Test
     fun `declared endpoints must match scanned controller annotations`() {
         val scanned = EndpointScanner.scan("com.kakao.actionbase.server.api").map { (m, p) -> "$m $p" }.toSet()
-        val declared = READ_ENDPOINTS + WRITE_ENDPOINTS + NON_GRAPH_ENDPOINTS
+        val declared = READ_ENDPOINTS + WRITE_ENDPOINTS + CONTROL_ENDPOINTS + NON_GRAPH_ENDPOINTS
 
         val missing = scanned - declared
         val stale = declared - scanned
@@ -48,7 +45,7 @@ class ReadOnlyRequestFilterTest {
 
     @ParameterizedTest
     @MethodSource("readEndpoints")
-    fun `should allow read requests on graph paths`(
+    fun `should allow read requests on filtered path prefixes`(
         method: String,
         path: String,
     ) {
@@ -71,6 +68,13 @@ class ReadOnlyRequestFilterTest {
         path: String,
     ) {
         assertAllowed(method, path)
+    }
+
+    // No /control write exists yet, so nothing else would notice the prefix leaving the filter.
+    @Test
+    fun `should block writes on the control prefix`() {
+        assertBlocked("POST", "/control/topology")
+        assertBlocked("DELETE", "/control/anything")
     }
 
     @Test
@@ -171,6 +175,12 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
                 "GET /graph/v3/databases/{database}/tables/{table}/vertices/get",
                 "GET /graph/v3/datastore",
+                "GET /graph/v3/datastore/hbase/namespaces",
+                "GET /graph/v3/datastore/hbase/references",
+                "GET /graph/v3/datastore/hbase/tables",
+                "GET /graph/v3/datastore/hbase/tables/{tableName}",
+                "GET /graph/v3/datastore/hbase/tables/{tableName}/metric",
+                "GET /graph/v3/datastore/hbase/tables/{tableName}/references",
                 // read-only POST
                 "POST /graph/v3/query",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
@@ -228,6 +238,14 @@ class ReadOnlyRequestFilterTest {
                 "PUT /graph/v3/databases/{database}",
                 "PUT /graph/v3/databases/{database}/aliases/{alias}",
                 "PUT /graph/v3/databases/{database}/tables/{table}",
+                // v3 hbase datastore mutation
+                "DELETE /graph/v3/datastore/hbase/tables/{tableName}",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}/disable",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}/enable",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}/replication/disable",
+                "POST /graph/v3/datastore/hbase/tables/{tableName}/replication/enable",
+                "PUT /graph/v3/datastore/hbase/tables/{tableName}",
                 // queue/v1 mutation
                 "POST /queue/v1/namespaces/{namespace}/queues",
                 "POST /queue/v1/namespaces/{namespace}/queues/{queue}/messages",
@@ -235,6 +253,12 @@ class ReadOnlyRequestFilterTest {
                 "PUT /queue/v1/namespaces/{namespace}/queues/{queue}/disable",
                 "DELETE /queue/v1/namespaces/{namespace}/queues/{queue}",
                 "DELETE /queue/v1/namespaces/{namespace}/queues/{queue}/partitions/{partition}/messages",
+            )
+
+        val CONTROL_ENDPOINTS =
+            setOf(
+                "GET /control/topology",
+                "GET /control/topology/{tenant}",
             )
 
         val NON_GRAPH_ENDPOINTS =
@@ -255,21 +279,21 @@ class ReadOnlyRequestFilterTest {
             )
 
         @JvmStatic
-        fun readEndpoints(): Stream<Arguments> = READ_ENDPOINTS.sorted().map { it.toTestArgs() }.stream()
+        fun readEndpoints(): Stream<Arguments> = (READ_ENDPOINTS + CONTROL_ENDPOINTS).sorted().map { toTestArgs(it) }.stream()
 
         @JvmStatic
-        fun writeEndpoints(): Stream<Arguments> = WRITE_ENDPOINTS.sorted().map { it.toTestArgs() }.stream()
+        fun writeEndpoints(): Stream<Arguments> = WRITE_ENDPOINTS.sorted().map { toTestArgs(it) }.stream()
 
         @JvmStatic
         fun nonGraphEndpoints(): Stream<Arguments> =
             NON_GRAPH_ENDPOINTS
                 .filter { !it.startsWith("GET ") }
                 .sorted()
-                .map { it.toTestArgs() }
+                .map { toTestArgs(it) }
                 .stream()
 
-        private fun String.toTestArgs(): Arguments {
-            val (method, path) = split(" ", limit = 2)
+        fun toTestArgs(endpoint: String): Arguments {
+            val (method, path) = endpoint.split(" ", limit = 2)
             return Arguments.of(method, resolvePath(path))
         }
 
@@ -292,6 +316,7 @@ class ReadOnlyRequestFilterTest {
                 "table" to "t",
                 "tableFullName" to "t",
                 "tableName" to "t",
+                "tenant" to "kc",
             )
 
         private fun resolvePath(template: String): String =
