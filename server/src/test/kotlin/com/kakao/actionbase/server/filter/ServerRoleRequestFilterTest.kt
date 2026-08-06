@@ -2,6 +2,7 @@ package com.kakao.actionbase.server.filter
 
 import com.kakao.actionbase.server.configuration.ServerRole
 import com.kakao.actionbase.server.filter.ReadOnlyRequestFilterTest.Companion.CONTROL_ENDPOINTS
+import com.kakao.actionbase.server.filter.ReadOnlyRequestFilterTest.Companion.CONTROL_WRITE_ENDPOINTS
 import com.kakao.actionbase.server.filter.ReadOnlyRequestFilterTest.Companion.NON_GRAPH_ENDPOINTS
 import com.kakao.actionbase.server.filter.ReadOnlyRequestFilterTest.Companion.READ_ENDPOINTS
 import com.kakao.actionbase.server.filter.ReadOnlyRequestFilterTest.Companion.WRITE_ENDPOINTS
@@ -139,7 +140,11 @@ class ServerRoleRequestFilterTest {
         fun dataEndpoints(): Stream<Arguments> = (READ_ENDPOINTS + WRITE_ENDPOINTS).sorted().map { ReadOnlyRequestFilterTest.toTestArgs(it) }.stream()
 
         @JvmStatic
-        fun controlEndpoints(): Stream<Arguments> = CONTROL_ENDPOINTS.sorted().map { ReadOnlyRequestFilterTest.toTestArgs(it) }.stream()
+        fun controlEndpoints(): Stream<Arguments> =
+            (CONTROL_ENDPOINTS + CONTROL_WRITE_ENDPOINTS)
+                .sorted()
+                .map { ReadOnlyRequestFilterTest.toTestArgs(it) }
+                .stream()
 
         @JvmStatic
         fun neutralEndpoints(): Stream<Arguments> = NON_GRAPH_ENDPOINTS.sorted().map { ReadOnlyRequestFilterTest.toTestArgs(it) }.stream()
