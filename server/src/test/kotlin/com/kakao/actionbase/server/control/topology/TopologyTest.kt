@@ -85,6 +85,39 @@ class TopologyTest {
         assertEquals(listOf(Side.ACTIVE), topology.sidesFor("alpha", fanout = false))
     }
 
+    // Sharing is noticed by two tenants resolving to the same cluster, so this is how it is noticed.
+    @Test
+    fun `tenants configured against the same cluster get the same cluster key`() {
+        val topology =
+            props(
+                "alpha" to paired(standby = null),
+                "beta" to paired(standby = null),
+            ).toTopology()
+
+        assertEquals(topology.cluster("alpha", Side.ACTIVE), topology.cluster("beta", Side.ACTIVE))
+    }
+
+    @Test
+    fun `the cluster key keeps the port so two clusters on one host stay apart`() {
+        val topology = props("alpha" to paired()).toTopology()
+
+        assertEquals("ab-alpha.example.net", topology.cluster("alpha", Side.ACTIVE))
+        assertEquals("ab-alpha.example.net:8080", topology.cluster("alpha", Side.STANDBY))
+    }
+
+    @Test
+    fun `env accepts the spelling config uses`() {
+        assertEquals(Env.PROD, Env.of("prod"))
+        assertEquals(Env.PROD, Env.of("PROD"))
+    }
+
+    @Test
+    fun `an unknown env names the ones that exist`() {
+        val thrown = assertThrows(IllegalArgumentException::class.java) { Env.of("staging") }
+
+        assertTrue(thrown.message!!.contains("dev"), thrown.message)
+    }
+
     @Test
     fun `tenants are listed in a stable order`() {
         val topology =

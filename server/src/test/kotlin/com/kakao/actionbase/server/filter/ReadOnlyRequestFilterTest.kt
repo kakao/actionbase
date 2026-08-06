@@ -260,6 +260,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /control/topology",
                 "GET /control/topology/{tenant}",
                 "GET /control/tenants/{tenant}/datastore/tables",
+                "GET /control/htables",
             )
 
         val NON_GRAPH_ENDPOINTS =

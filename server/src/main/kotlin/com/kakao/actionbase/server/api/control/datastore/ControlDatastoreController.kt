@@ -3,6 +3,7 @@ package com.kakao.actionbase.server.api.control.datastore
 import com.kakao.actionbase.engine.datastore.hbase.admin.HBaseTableInfo
 import com.kakao.actionbase.server.configuration.ConditionalOnControlRole
 import com.kakao.actionbase.server.configuration.HttpHeaderConstants
+import com.kakao.actionbase.server.control.cluster.CallerHeaders
 import com.kakao.actionbase.server.control.cluster.ClusterClient
 import com.kakao.actionbase.server.control.cluster.SideResponse
 import com.kakao.actionbase.server.control.topology.Side
@@ -46,18 +47,8 @@ class ControlDatastoreController(
         @RequestHeader(value = HttpHeaderConstants.ACTOR_ROLE, required = false) actorRole: String?,
     ): Mono<TablesView> =
         clusterClient
-            .get(tenant, TABLES_PATH, fanout, TABLES, forwarded(authorization, actorRole))
+            .get(tenant, TABLES_PATH, fanout, TABLES, CallerHeaders.forwarded(authorization, actorRole))
             .map { sides -> TablesView(tenant, sides.map { it.toView() }) }
-
-    /** The caller's identity is the one the cluster should see, so it travels with the request. */
-    private fun forwarded(
-        authorization: String?,
-        actorRole: String?,
-    ): Map<String, String> =
-        buildMap {
-            authorization?.let { put(HttpHeaders.AUTHORIZATION, it) }
-            actorRole?.let { put(HttpHeaderConstants.ACTOR_ROLE, it) }
-        }
 
     private fun SideResponse<Map<String, List<HBaseTableInfo>>>.toView() =
         SideView(

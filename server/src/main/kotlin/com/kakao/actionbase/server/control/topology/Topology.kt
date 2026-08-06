@@ -1,9 +1,22 @@
 package com.kakao.actionbase.server.control.topology
 
+import java.net.URI
+
 enum class Env {
     DEV,
     TEST,
     PROD,
+    ;
+
+    companion object {
+        /**
+         * Config binding accepts `env: prod`, so a query parameter has to as well - a surface that
+         * takes one spelling in yaml and another in a url is a surface people get wrong.
+         */
+        fun of(value: String): Env =
+            entries.firstOrNull { it.name.equals(value, ignoreCase = true) }
+                ?: throw IllegalArgumentException("unknown env '$value', expected one of ${entries.map { it.name.lowercase() }}")
+    }
 }
 
 /** Which cluster of a tenant a request is aimed at. */
@@ -45,6 +58,15 @@ class Topology(
         tenant: String,
         side: Side,
     ): String = tenant(tenant).sides[side] ?: throw UnknownSideException(tenant, side)
+
+    /**
+     * Which cluster a side is, as `host:port`. Two tenants configured against the same cluster get
+     * the same answer, which is how sharing is noticed without asking anyone to declare it.
+     */
+    fun cluster(
+        tenant: String,
+        side: Side,
+    ): String = URI(baseUrl(tenant, side)).authority
 
     /** Fanout on an unpaired tenant reaches the active only - a caller need not know which are paired. */
     fun sidesFor(
