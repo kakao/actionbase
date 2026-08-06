@@ -33,10 +33,16 @@ class TokenAuthenticationFilterTest {
         assertAllowed("/control/topology", token)
     }
 
-    // Unprotected as it always has been, pinned so the omission stays a decision.
     @Test
-    fun `the queue api needs no token`() {
-        assertAllowed("/queue/v1/namespaces/n/queues")
+    fun `the queue api needs a token`() {
+        assertRejected("/queue/v1/namespaces/n/queues")
+        assertRejected("/queue/v1/namespaces/n/queues/q/messages")
+        assertRejected("/queue/v1/namespaces/n/queues/q/partitions/0/poll")
+    }
+
+    @Test
+    fun `a valid token reaches the queue api`() {
+        assertAllowed("/queue/v1/namespaces/n/queues/q/partitions/0/poll", token)
     }
 
     // Probes must answer unauthenticated or every pod fails readiness.

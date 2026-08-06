@@ -15,9 +15,9 @@ class TokenAuthenticationFilter(
 ) : WebFilter {
     private val log = LoggerFactory.getLogger(TokenAuthenticationFilter::class.java)
 
-    // Tokens cover the operational apis too, not just the data plane they reach. QUEUE is left out
-    // as it always has been - adding it would start rejecting clients that send no token.
-    private val protectedPaths = PathPrefixes.GRAPH + PathPrefixes.CONTROL
+    // Every routable prefix. A queue is a v3 edge table, so leaving it open left an unauthenticated
+    // way to the data /graph/v3 protects.
+    private val protectedPaths = PathPrefixes.FILTERED
 
     init {
         log.info("TokenAuthenticationFilter is added. useToken: $useToken, protectedPaths: $protectedPaths")
