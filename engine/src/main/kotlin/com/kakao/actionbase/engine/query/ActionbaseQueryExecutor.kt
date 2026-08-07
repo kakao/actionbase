@@ -5,6 +5,7 @@ import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.metadata.common.StructType
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.QueryEngine
+import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.service.RankScan
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.engine.sql.Row
@@ -197,39 +198,38 @@ class ActionbaseQueryExecutor(
         queryItem: ActionbaseQuery.Item.Topk,
         context: Map<String, DataFrame>,
         actionBaseQuery: ActionbaseQuery,
-    ): Mono<DataFrame> =
-        resolveEntities(queryItem.entity, context, actionBaseQuery).flatMap { entities ->
-            val binding = engine.getTableBinding(database = queryItem.database, alias = queryItem.table)
+    ): Mono<DataFrame> {
+        val binding = engine.getTableBinding(database = queryItem.database, alias = queryItem.table)
+        val entity = queryItem.entity ?: return scanRanking(queryItem, binding, entity = null)
 
+        return resolveVertex(entity, context, actionBaseQuery).flatMap { entities ->
             Flux
                 .fromIterable(entities)
-                .flatMap { entity ->
-                    val rank =
-                        RankScan.from(
-                            schema = binding.schema,
-                            database = queryItem.database,
-                            table = binding.table,
-                            topk = queryItem.topk,
-                            entity = entity,
-                            dimensionValues = queryItem.dimensionValues,
-                        )
-
-                    engine
-                        .getTableBinding(database = rank.database, alias = rank.table)
-                        .scan(rank.index, rank.start, rank.direction, queryItem.limit, queryItem.offset, ranges = null, filters = null, features = emptyList())
-                }.reduce { a, b ->
-                    DataFrame(rows = a.rows + b.rows, schema = a.schema, total = a.total + b.total)
-                }.switchIfEmpty(Mono.just(DataFrame.empty))
+                .flatMap { scanRanking(queryItem, binding, it.toString()) }
+                .reduce { a, b -> DataFrame(rows = a.rows + b.rows, schema = a.schema, total = a.total + b.total) }
+                .switchIfEmpty(Mono.just(DataFrame.empty))
         }
+    }
 
-    private fun resolveEntities(
-        entity: ActionbaseQuery.Vertex?,
-        context: Map<String, DataFrame>,
-        actionBaseQuery: ActionbaseQuery,
-    ): Mono<List<String?>> =
-        entity
-            ?.let { vertex -> resolveVertex(vertex, context, actionBaseQuery).map { values -> values.map(Any::toString) } }
-            ?: Mono.just(listOf(null))
+    private fun scanRanking(
+        queryItem: ActionbaseQuery.Item.Topk,
+        binding: TableBinding,
+        entity: String?,
+    ): Mono<DataFrame> {
+        val rank =
+            RankScan.from(
+                schema = binding.schema,
+                database = queryItem.database,
+                table = binding.table,
+                topk = queryItem.topk,
+                entity = entity,
+                dimensionValues = queryItem.dimensionValues,
+            )
+
+        return engine
+            .getTableBinding(database = rank.database, alias = rank.table)
+            .scan(rank.index, rank.start, rank.direction, queryItem.limit, queryItem.offset, ranges = null, filters = null, features = emptyList())
+    }
 
     // region Aggregators
 

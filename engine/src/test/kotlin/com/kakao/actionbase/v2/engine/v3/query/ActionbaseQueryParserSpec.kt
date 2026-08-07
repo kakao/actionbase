@@ -94,6 +94,16 @@ class ActionbaseQueryParserSpec :
                       },
                       "limit": 10,
                       "include": true
+                    },
+                    {
+                      "type": "TOPK",
+                      "name": "h",
+                      "database": "{database}",
+                      "table": "{table}",
+                      "topk": "top_product_groups_global",
+                      "dimensionValues": {"category": "fruit"},
+                      "limit": 10,
+                      "include": true
                     }
                   ]
                 }
@@ -101,7 +111,7 @@ class ActionbaseQueryParserSpec :
 
             val actionBaseQuery = ActionbaseQuery.from(json)
 
-            actionBaseQuery.query.size shouldBe 6
+            actionBaseQuery.query.size shouldBe 7
             actionBaseQuery.query[0] shouldBe
                 ActionbaseQuery.Item.Scan(
                     name = "a",
@@ -158,6 +168,16 @@ class ActionbaseQueryParserSpec :
                     table = "{table}",
                     topk = "top_product_groups_1y",
                     entity = ActionbaseQuery.Vertex.Ref("a", "tgt"),
+                    limit = 10,
+                    include = true,
+                )
+            actionBaseQuery.query[6] shouldBe
+                ActionbaseQuery.Item.Topk(
+                    name = "h",
+                    database = "{database}",
+                    table = "{table}",
+                    topk = "top_product_groups_global",
+                    dimensionValues = mapOf("category" to "fruit"),
                     limit = 10,
                     include = true,
                 )
