@@ -1,6 +1,7 @@
 package com.kakao.actionbase.server.control.cluster
 
 import com.kakao.actionbase.server.configuration.ConditionalOnControlRole
+import com.kakao.actionbase.server.control.cleanup.CleanupJobService
 import com.kakao.actionbase.server.control.cleanup.CleanupService
 import com.kakao.actionbase.server.control.topology.Topology
 import com.kakao.actionbase.server.control.topology.TopologyProperties
@@ -24,4 +25,7 @@ class ClusterClientConfiguration {
         topology: Topology,
         clusterClient: ClusterClient,
     ): CleanupService = CleanupService(topology, clusterClient)
+
+    @Bean
+    fun cleanupJobService(cleanupService: CleanupService): CleanupJobService = CleanupJobService(cleanupService)
 }

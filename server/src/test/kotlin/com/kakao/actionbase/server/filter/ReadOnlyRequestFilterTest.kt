@@ -34,7 +34,7 @@ class ReadOnlyRequestFilterTest {
     @Test
     fun `declared endpoints must match scanned controller annotations`() {
         val scanned = EndpointScanner.scan("com.kakao.actionbase.server.api").map { (m, p) -> "$m $p" }.toSet()
-        val declared = READ_ENDPOINTS + WRITE_ENDPOINTS + CONTROL_ENDPOINTS + NON_GRAPH_ENDPOINTS
+        val declared = READ_ENDPOINTS + WRITE_ENDPOINTS + CONTROL_ENDPOINTS + CONTROL_WRITE_ENDPOINTS + NON_GRAPH_ENDPOINTS
 
         val missing = scanned - declared
         val stale = declared - scanned
@@ -263,6 +263,13 @@ class ReadOnlyRequestFilterTest {
                 "GET /control/htables",
             )
 
+        // Operational writes: refused by a read-only instance like any other write, but served by a
+        // control instance - which is why they cannot simply join WRITE_ENDPOINTS.
+        val CONTROL_WRITE_ENDPOINTS =
+            setOf(
+                "POST /control/jobs",
+            )
+
         val NON_GRAPH_ENDPOINTS =
             setOf(
                 "GET /",
@@ -284,7 +291,7 @@ class ReadOnlyRequestFilterTest {
         fun readEndpoints(): Stream<Arguments> = (READ_ENDPOINTS + CONTROL_ENDPOINTS).sorted().map { toTestArgs(it) }.stream()
 
         @JvmStatic
-        fun writeEndpoints(): Stream<Arguments> = WRITE_ENDPOINTS.sorted().map { toTestArgs(it) }.stream()
+        fun writeEndpoints(): Stream<Arguments> = (WRITE_ENDPOINTS + CONTROL_WRITE_ENDPOINTS).sorted().map { toTestArgs(it) }.stream()
 
         @JvmStatic
         fun nonGraphEndpoints(): Stream<Arguments> =
