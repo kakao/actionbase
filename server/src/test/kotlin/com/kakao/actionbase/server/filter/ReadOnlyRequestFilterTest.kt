@@ -317,7 +317,7 @@ class ReadOnlyRequestFilterTest {
                 "table" to "t",
                 "tableFullName" to "t",
                 "tableName" to "t",
-                "tenant" to "kc",
+                "tenant" to "alpha",
             )
 
         private fun resolvePath(template: String): String =

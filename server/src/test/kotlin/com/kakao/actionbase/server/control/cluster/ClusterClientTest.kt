@@ -31,7 +31,7 @@ class ClusterClientTest {
     fun `reaches every configured side and keeps their order`() {
         val client = clusterClient { request -> respond("from ${request.url().host}") }
 
-        val sides = client.get("kc", "/graph/v3/datastore/hbase/tables", fanout = true, stringBody).block()!!
+        val sides = client.get("alpha", "/graph/v3/datastore/hbase/tables", fanout = true, stringBody).block()!!
 
         assertEquals(listOf(Side.ACTIVE, Side.STANDBY), sides.map { it.side })
         assertEquals(
@@ -47,7 +47,7 @@ class ClusterClientTest {
     fun `without fanout only the active side is reached`() {
         val client = clusterClient { respond("ok") }
 
-        val sides = client.get("kc", "/tables", fanout = false, stringBody).block()!!
+        val sides = client.get("alpha", "/tables", fanout = false, stringBody).block()!!
 
         assertEquals(listOf(Side.ACTIVE), sides.map { it.side })
         assertEquals(1, recorded.size)
@@ -65,7 +65,7 @@ class ClusterClientTest {
                 }
             }
 
-        val sides = client.get("kc", "/tables", fanout = true, stringBody).block()!!
+        val sides = client.get("alpha", "/tables", fanout = true, stringBody).block()!!
 
         val active = sides.single { it.side == Side.ACTIVE }
         assertTrue(active.ok)
@@ -81,7 +81,7 @@ class ClusterClientTest {
     fun `a non 2xx side reports the status rather than a body`() {
         val client = clusterClient { ClientResponse.create(HttpStatus.INTERNAL_SERVER_ERROR).build().toMono() }
 
-        val sides = client.get("kc", "/tables", fanout = false, stringBody).block()!!
+        val sides = client.get("alpha", "/tables", fanout = false, stringBody).block()!!
 
         assertTrue(!sides.single().ok)
         assertTrue(sides.single().error!!.contains("500"), sides.single().error)
@@ -94,7 +94,7 @@ class ClusterClientTest {
                 respond("too late").delayElement(Duration.ofSeconds(5))
             }
 
-        val sides = client.get("kc", "/tables", fanout = false, stringBody).block()!!
+        val sides = client.get("alpha", "/tables", fanout = false, stringBody).block()!!
 
         assertTrue(!sides.single().ok)
     }
@@ -106,7 +106,7 @@ class ClusterClientTest {
 
         client
             .get(
-                "kc",
+                "alpha",
                 "/tables",
                 fanout = false,
                 stringBody,
@@ -154,10 +154,10 @@ class ClusterClientTest {
     private fun topology(): Topology =
         TopologyProperties(
             mapOf(
-                "kc" to
+                "alpha" to
                     TopologyProperties.Tenant(
                         env = Env.PROD,
-                        namespace = "ab_kc",
+                        namespace = "ab_alpha",
                         activeUrl = "http://active.example.net",
                         standbyUrl = "http://standby.example.net",
                     ),

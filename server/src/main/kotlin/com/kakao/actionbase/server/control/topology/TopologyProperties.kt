@@ -12,11 +12,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  *   role: CONTROL
  *   control:
  *     tenants:
- *       kc:
+ *       alpha:
  *         env: prod
- *         namespace: ab_kc
- *         active-url: http://ab-kc.example.net
- *         standby-url: http://ab-kc-standby.example.net   # omit when there is no standby
+ *         namespace: ab_alpha
+ *         active-url: http://ab-alpha.example.net
+ *         standby-url: http://ab-alpha-standby.example.net   # omit when there is no standby
  * ```
  *
  * `namespace` is declared, not reconciled with the cluster's own config, so a rename on one side

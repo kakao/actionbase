@@ -13,10 +13,10 @@ import org.springframework.boot.test.context.SpringBootTest
     properties = [
         "actionbase.role=CONTROL",
         "actionbase.control.request-timeout=2s",
-        "actionbase.control.tenants.kc.env=prod",
-        "actionbase.control.tenants.kc.namespace=ab_kc",
-        "actionbase.control.tenants.kc.active-url=http://127.0.0.1:1",
-        "actionbase.control.tenants.kc.standby-url=http://127.0.0.1:2",
+        "actionbase.control.tenants.alpha.env=prod",
+        "actionbase.control.tenants.alpha.namespace=ab_alpha",
+        "actionbase.control.tenants.alpha.active-url=http://127.0.0.1:1",
+        "actionbase.control.tenants.alpha.standby-url=http://127.0.0.1:2",
     ],
 )
 class ControlDatastoreE2ETest : E2ETestBase() {
@@ -24,13 +24,13 @@ class ControlDatastoreE2ETest : E2ETestBase() {
     fun `reports an unreachable cluster as that side failing`() {
         client
             .get()
-            .uri("/control/tenants/kc/datastore/tables")
+            .uri("/control/tenants/alpha/datastore/tables")
             .exchange()
             .expectStatus()
             .isOk
             .expectBody()
             .jsonPath("$.tenant")
-            .isEqualTo("kc")
+            .isEqualTo("alpha")
             .jsonPath("$.sides.length()")
             .isEqualTo(1)
             .jsonPath("$.sides[0].side")
@@ -45,7 +45,7 @@ class ControlDatastoreE2ETest : E2ETestBase() {
     fun `fanout reaches both sides of a paired tenant`() {
         client
             .get()
-            .uri("/control/tenants/kc/datastore/tables?fanout=true")
+            .uri("/control/tenants/alpha/datastore/tables?fanout=true")
             .exchange()
             .expectStatus()
             .isOk
