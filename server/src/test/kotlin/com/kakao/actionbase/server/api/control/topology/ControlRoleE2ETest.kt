@@ -10,13 +10,13 @@ import org.springframework.boot.test.context.SpringBootTest
 @SpringBootTest(
     properties = [
         "actionbase.role=CONTROL",
-        "actionbase.control.tenants.kc.env=prod",
-        "actionbase.control.tenants.kc.namespace=ab_kc",
-        "actionbase.control.tenants.kc.active-url=http://ab-kc.example.net",
-        "actionbase.control.tenants.kc.standby-url=http://ab-kc-standby.example.net",
-        "actionbase.control.tenants.talk.env=prod",
-        "actionbase.control.tenants.talk.namespace=ab_talk",
-        "actionbase.control.tenants.talk.active-url=http://ab-talk.example.net",
+        "actionbase.control.tenants.alpha.env=prod",
+        "actionbase.control.tenants.alpha.namespace=ab_alpha",
+        "actionbase.control.tenants.alpha.active-url=http://ab-alpha.example.net",
+        "actionbase.control.tenants.alpha.standby-url=http://ab-alpha-standby.example.net",
+        "actionbase.control.tenants.beta.env=prod",
+        "actionbase.control.tenants.beta.namespace=ab_beta",
+        "actionbase.control.tenants.beta.active-url=http://ab-beta.example.net",
     ],
 )
 class ControlRoleE2ETest : E2ETestBase() {
@@ -32,11 +32,11 @@ class ControlRoleE2ETest : E2ETestBase() {
             .jsonPath("$.tenants.length()")
             .isEqualTo(2)
             .jsonPath("$.tenants[0].tenant")
-            .isEqualTo("kc")
+            .isEqualTo("alpha")
             .jsonPath("$.tenants[0].sides")
             .isEqualTo(listOf("ACTIVE", "STANDBY"))
             .jsonPath("$.tenants[1].tenant")
-            .isEqualTo("talk")
+            .isEqualTo("beta")
             .jsonPath("$.tenants[1].sides")
             .isEqualTo(listOf("ACTIVE"))
     }
@@ -45,13 +45,13 @@ class ControlRoleE2ETest : E2ETestBase() {
     fun `answers for a single tenant`() {
         client
             .get()
-            .uri("/control/topology/talk")
+            .uri("/control/topology/beta")
             .exchange()
             .expectStatus()
             .isOk
             .expectBody()
             .jsonPath("$.namespace")
-            .isEqualTo("ab_talk")
+            .isEqualTo("ab_beta")
             .jsonPath("$.env")
             .isEqualTo("PROD")
     }
@@ -86,6 +86,6 @@ class ControlRoleE2ETest : E2ETestBase() {
             .isBadRequest
             .expectBody()
             .jsonPath("$.message")
-            .value<String> { assertTrue(it.contains("[kc, talk]"), it) }
+            .value<String> { assertTrue(it.contains("[alpha, beta]"), it) }
     }
 }
