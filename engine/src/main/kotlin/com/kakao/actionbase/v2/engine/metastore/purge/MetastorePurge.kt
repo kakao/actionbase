@@ -6,7 +6,10 @@ import java.time.LocalDateTime
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -84,6 +87,65 @@ class MetastorePurge(
             nextCursor = cursorNow.takeUnless { exhausted },
         )
     }
+
+    /**
+     * Deletes exactly the rows it was given, matching on `k` and `v` together.
+     *
+     * Matching the value is what makes this safe to hand a file saved earlier: a tombstone that was
+     * recreated since holds different bytes and is reported as `CHANGED` rather than destroyed, and
+     * a row a previous call already removed is `ABSENT`, so repeating a request that was answered
+     * but never seen changes nothing.
+     *
+     * The two predicates are one expression on purpose. Splitting them into separate statements
+     * inside the lambda would leave only the last as the predicate, and the delete would match on
+     * value alone.
+     */
+    fun delete(rows: List<PurgeRow>): PurgeOutcome =
+        transaction(database) {
+            val unmatched = mutableListOf<String>()
+            var applied = 0
+            rows.forEach { row ->
+                val deleted = table.deleteWhere { (table.k eq row.k) and (table.v eq row.v) }
+                if (deleted > 0) applied++ else unmatched += row.k
+            }
+            PurgeOutcome(requested = rows.size, applied = applied, skipped = classify(unmatched))
+        }
+
+    /** One query tells `CHANGED` from `ABSENT`, and it only runs when something did not match. */
+    private fun classify(unmatched: List<String>): List<SkippedRow> {
+        if (unmatched.isEmpty()) return emptyList()
+        val stillThere = table.select { table.k inList unmatched }.mapTo(mutableSetOf()) { it[table.k] }
+        return unmatched.map { SkippedRow(it, if (it in stillThere) SkipReason.CHANGED else SkipReason.ABSENT) }
+    }
+
+    /**
+     * Writes rows back, and only where the key is free.
+     *
+     * A key that is occupied is left as it is: whatever holds it now was created after the purge,
+     * and restoring an old tombstone over live metadata would be a worse outcome than a restore
+     * that reports it could not finish.
+     */
+    fun restore(rows: List<PurgeRow>): PurgeOutcome =
+        transaction(database) {
+            val occupied = table.select { table.k inList rows.map { it.k } }.mapTo(mutableSetOf()) { it[table.k] }
+            val (present, free) = rows.partition { it.k in occupied }
+            free.forEach { row ->
+                table.insert {
+                    it[k] = row.k
+                    it[v] = row.v
+                    it[createdAt] = row.createdAt
+                    it[createdBy] = row.createdBy
+                    it[modifiedAt] = row.modifiedAt
+                    it[modifiedBy] = row.modifiedBy
+                    it[updateTs] = row.updateTs
+                }
+            }
+            PurgeOutcome(
+                requested = rows.size,
+                applied = free.size,
+                skipped = present.map { SkippedRow(it.k, SkipReason.PRESENT) },
+            )
+        }
 
     private fun page(
         after: Long,

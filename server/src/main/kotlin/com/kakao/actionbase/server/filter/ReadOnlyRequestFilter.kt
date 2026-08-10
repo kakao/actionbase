@@ -22,6 +22,9 @@ class ReadOnlyRequestFilter : WebFilter {
             "/edges/get",
             "/multi-edges/ids",
             "/query",
+            // Listing what a purge would delete touches nothing, so a read-only instance answers
+            // it. `execute` and `restore` sit under the same prefix and are refused like any write.
+            "/metastore/purge/candidates",
         )
 
     init {

@@ -85,6 +85,11 @@ var (
 		name:    "migrate",
 		command: "migrate <plan [-o <file>]|apply [-i <file>]>",
 	}
+
+	TypePurge = Type{
+		name:    "purge",
+		command: "purge <plan --metastore <name> --service <service> [--older-than <days>] [--max <rows>] [--file <file>]|show [--file <file>]|apply [--file <file>] --yes|restore [--file <file>] --yes>",
+	}
 )
 
 func (t Type) GetName() string {

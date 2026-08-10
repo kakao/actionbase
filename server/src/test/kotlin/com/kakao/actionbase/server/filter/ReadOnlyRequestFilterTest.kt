@@ -261,6 +261,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /control/topology/{tenant}",
                 "GET /control/tenants/{tenant}/datastore/tables",
                 "GET /control/htables",
+                "POST /control/metastore/purge/candidates",
             )
 
         // Operational writes: refused by a read-only instance like any other write, but served by a
@@ -268,6 +269,8 @@ class ReadOnlyRequestFilterTest {
         val CONTROL_WRITE_ENDPOINTS =
             setOf(
                 "POST /control/jobs",
+                "POST /control/metastore/purge/execute",
+                "POST /control/metastore/purge/restore",
             )
 
         val NON_GRAPH_ENDPOINTS =

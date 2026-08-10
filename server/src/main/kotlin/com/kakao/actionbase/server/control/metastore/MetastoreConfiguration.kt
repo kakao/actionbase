@@ -12,4 +12,7 @@ import org.springframework.context.annotation.Configuration
 class MetastoreConfiguration {
     @Bean
     fun metastoreRegistry(properties: MetastoreProperties): MetastoreRegistry = properties.toRegistry()
+
+    @Bean
+    fun metastorePurgeService(registry: MetastoreRegistry): MetastorePurgeService = MetastorePurgeService(registry)
 }

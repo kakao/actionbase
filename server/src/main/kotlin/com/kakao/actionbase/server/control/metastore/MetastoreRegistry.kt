@@ -1,5 +1,6 @@
 package com.kakao.actionbase.server.control.metastore
 
+import com.kakao.actionbase.v2.engine.metastore.purge.MetastorePurge
 import com.kakao.actionbase.v2.engine.metastore.purge.MetastoreTarget
 
 import java.sql.Connection
@@ -37,13 +38,18 @@ class MetastoreRegistry(
         byCoordinate[url to table]?.target
             ?: throw IllegalArgumentException("metastore '$url' table '$table' is not configured on this instance")
 
-    /** Hands the purge a way to open connections without handing it the credentials. */
-    fun connections(target: MetastoreTarget): () -> Connection {
-        val entry =
-            byName[target.name]?.takeIf { it.target == target }
-                ?: throw IllegalArgumentException("metastore '${target.name}' is not configured on this instance")
-        return { DriverManager.getConnection(entry.target.url, entry.user, entry.password) }
-    }
+    // One purge per configured metastore, built up front. Credentials are captured in the
+    // connection lambda and go no further, so nothing outside this class can read them back.
+    private val purges: Map<String, MetastorePurge> =
+        entries.associate { entry ->
+            entry.target.name to MetastorePurge(entry.target) { open(entry) }
+        }
+
+    fun purge(target: MetastoreTarget): MetastorePurge =
+        purges[target.name]
+            ?: throw IllegalArgumentException("metastore '${target.name}' is not configured on this instance")
+
+    private fun open(entry: Entry): Connection = DriverManager.getConnection(entry.target.url, entry.user, entry.password)
 
     class Entry(
         val target: MetastoreTarget,
