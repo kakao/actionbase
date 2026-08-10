@@ -14,7 +14,9 @@ import org.jetbrains.exposed.sql.javatime.datetime
 internal class PurgeTable(
     name: String,
 ) : Table(name) {
-    val id = long("id")
+    // Declared as generated because it is: a restore must not supply one, and a batch insert
+    // refuses to run at all unless every column it omits is known to have a value without it.
+    val id = long("id").autoIncrement()
     val k = varchar("k", 512)
     val v = text("v")
     val createdAt = datetime("created_at")

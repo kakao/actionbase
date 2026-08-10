@@ -15,10 +15,27 @@ data class PurgeQuery(
     val maxScan: Int = DEFAULT_MAX_SCAN,
     val cursor: Long = 0,
 ) {
+    /**
+     * Both limits are clamped rather than trusted.
+     *
+     * They exist to bound a response and a walk, and a caller that sets them to something enormous
+     * would undo that - a page of a million rows is held whole in memory before it is serialised.
+     * `/control` has no authorization yet, so the ceiling has to be here rather than in the client.
+     */
+    fun bounded(): PurgeQuery =
+        copy(
+            olderThanDays = olderThanDays.coerceAtLeast(0),
+            maxRows = maxRows.coerceIn(1, MAX_ROWS_CEILING),
+            maxScan = maxScan.coerceIn(1, MAX_SCAN_CEILING).coerceAtLeast(maxRows.coerceIn(1, MAX_ROWS_CEILING)),
+            cursor = cursor.coerceAtLeast(0),
+        )
+
     companion object {
         const val DEFAULT_OLDER_THAN_DAYS = 30L
         const val DEFAULT_MAX_ROWS = 500
         const val DEFAULT_MAX_SCAN = 50_000
+        const val MAX_ROWS_CEILING = 5_000
+        const val MAX_SCAN_CEILING = 1_000_000
     }
 }
 

@@ -31,7 +31,12 @@ data class MetastoreProperties(
         val user: String = "",
         val password: String = "",
         val table: String = DEFAULT_TABLE,
-    )
+    ) {
+        // A generated toString puts the password in whatever logs or reports this object. Actuator
+        // masks it by key name, but nothing masks a data class printed into a log line or an
+        // exception message, and this type is one careless interpolation away from that.
+        override fun toString(): String = "Metastore(url=$url, user=$user, table=$table, password=****)"
+    }
 
     /**
      * Resolves every entry up front. A malformed url or a duplicated coordinate is a deployment

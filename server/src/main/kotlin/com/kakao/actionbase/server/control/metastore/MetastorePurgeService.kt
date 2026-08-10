@@ -24,19 +24,23 @@ class MetastorePurgeService(
 ) {
     fun candidates(query: PurgeQuery): Mono<PurgeSet> =
         blocking {
-            val target = registry.target(query.metastore)
+            val bounded = query.bounded()
+            val target = registry.target(bounded.metastore)
             val scan =
                 registry.purge(target).scan(
-                    service = query.service,
-                    updatedBefore = LocalDateTime.now(clock).minusDays(query.olderThanDays),
-                    maxRows = query.maxRows,
-                    maxScan = query.maxScan,
-                    cursor = query.cursor,
+                    service = bounded.service,
+                    // The cutoff is compared against `update_ts`, which the database writes in its
+                    // own zone. A control instance in a different zone shifts the window by the
+                    // offset, which only matters at the edge of the grace period.
+                    updatedBefore = LocalDateTime.now(clock).minusDays(bounded.olderThanDays),
+                    maxRows = bounded.maxRows,
+                    maxScan = bounded.maxScan,
+                    cursor = bounded.cursor,
                 )
             PurgeSet(
                 metastore = target.url,
                 table = target.table,
-                service = query.service,
+                service = bounded.service,
                 generatedAt = Instant.now(clock),
                 scanned = scan.scanned,
                 nextCursor = scan.nextCursor,
@@ -68,10 +72,9 @@ class MetastorePurgeService(
             )
         }
 
-    private fun resolve(set: PurgeSet): MetastoreTarget {
-        require(set.rows.isNotEmpty()) { "purge set has no rows: nothing to apply" }
-        return registry.target(set.metastore, set.table)
-    }
+    // Which metastore is checked before whether there is anything to do, so a document aimed at a
+    // database this instance does not serve says so rather than reporting an empty one.
+    private fun resolve(set: PurgeSet): MetastoreTarget = registry.target(set.metastore, set.table)
 
     /**
      * JDBC blocks, and this runs on an event loop. The work is a handful of statements per request

@@ -8,8 +8,8 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -99,6 +99,11 @@ class MetastorePurge(
      * The two predicates are one expression on purpose. Splitting them into separate statements
      * inside the lambda would leave only the last as the predicate, and the delete would match on
      * value alone.
+     *
+     * One statement per row rather than a batch, deliberately. Reading the rows first and then
+     * deleting by key would be two round trips instead of many, but it would also open a gap
+     * between the check and the delete - and deleting exactly the bytes that were shown is the
+     * property this endpoint exists to provide. The caller's row cap bounds the cost.
      */
     fun delete(rows: List<PurgeRow>): PurgeOutcome =
         transaction(database) {
@@ -124,21 +129,26 @@ class MetastorePurge(
      * A key that is occupied is left as it is: whatever holds it now was created after the purge,
      * and restoring an old tombstone over live metadata would be a worse outcome than a restore
      * that reports it could not finish.
+     *
+     * Occupancy is read once and the rest is inserted as a batch. A key taken between the two would
+     * violate the unique index and roll the whole restore back, which is the right way to fail:
+     * nothing is half written, and the same file can be posted again.
      */
     fun restore(rows: List<PurgeRow>): PurgeOutcome =
         transaction(database) {
             val occupied = table.select { table.k inList rows.map { it.k } }.mapTo(mutableSetOf()) { it[table.k] }
             val (present, free) = rows.partition { it.k in occupied }
-            free.forEach { row ->
-                table.insert {
-                    it[k] = row.k
-                    it[v] = row.v
-                    it[createdAt] = row.createdAt
-                    it[createdBy] = row.createdBy
-                    it[modifiedAt] = row.modifiedAt
-                    it[modifiedBy] = row.modifiedBy
-                    it[updateTs] = row.updateTs
-                }
+            // `columns` rather than `table`: inside the batch lambda `table` is the statement's own
+            // property, which is a plain Table and has none of these columns.
+            val columns = table
+            columns.batchInsert(free) { row ->
+                this[columns.k] = row.k
+                this[columns.v] = row.v
+                this[columns.createdAt] = row.createdAt
+                this[columns.createdBy] = row.createdBy
+                this[columns.modifiedAt] = row.modifiedAt
+                this[columns.modifiedBy] = row.modifiedBy
+                this[columns.updateTs] = row.updateTs
             }
             PurgeOutcome(
                 requested = rows.size,
