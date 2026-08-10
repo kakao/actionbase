@@ -1,7 +1,6 @@
 package com.kakao.actionbase.server.control.metastore
 
 import com.kakao.actionbase.v2.engine.metastore.purge.MetastorePurge
-import com.kakao.actionbase.v2.engine.metastore.purge.MetastoreTarget
 import com.kakao.actionbase.v2.engine.metastore.purge.PurgeOutcome
 
 import java.time.Clock
@@ -60,7 +59,10 @@ class MetastorePurgeService(
         blocking {
             // Resolved from the document's own coordinates, so a file taken from one metastore
             // cannot be applied to another and a target this instance does not serve is refused.
-            val target = resolve(set)
+            // A document with no rows is not an error - it applies nothing and reports
+            // `requested=0`, which is what lets a misaimed file be refused for naming a database
+            // this instance does not serve rather than answered with an empty result.
+            val target = registry.target(set.metastore, set.table)
             val outcome = action(registry.purge(target))
             PurgeResult(
                 metastore = target.url,
@@ -71,10 +73,6 @@ class MetastorePurgeService(
                 skipped = outcome.skipped,
             )
         }
-
-    // Which metastore is checked before whether there is anything to do, so a document aimed at a
-    // database this instance does not serve says so rather than reporting an empty one.
-    private fun resolve(set: PurgeSet): MetastoreTarget = registry.target(set.metastore, set.table)
 
     /**
      * JDBC blocks, and this runs on an event loop. The work is a handful of statements per request

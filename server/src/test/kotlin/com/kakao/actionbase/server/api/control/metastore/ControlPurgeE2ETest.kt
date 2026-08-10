@@ -217,6 +217,29 @@ class ControlPurgeE2ETest : E2ETestBase() {
     }
 
     @Test
+    fun `a document with no rows applies nothing rather than failing`() {
+        write("live", Active.ACTIVE)
+        val document = candidates()
+
+        post("/control/metastore/purge/execute", document)
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.requested")
+            .isEqualTo(0)
+            .jsonPath("$.applied")
+            .isEqualTo(0)
+        assertEquals(1, rowCount())
+    }
+
+    @Test
+    fun `an empty document still has to name a metastore this instance serves`() {
+        val document = candidates().replace(METASTORE_URL, "jdbc:mysql://somewhere-else.example.net:3306/graph")
+
+        post("/control/metastore/purge/execute", document).expectStatus().isBadRequest
+    }
+
+    @Test
     fun `a document naming a metastore this instance does not serve is refused`() {
         write("gone", Active.INACTIVE)
         val document = candidates().replace(METASTORE_URL, "jdbc:mysql://somewhere-else.example.net:3306/graph")

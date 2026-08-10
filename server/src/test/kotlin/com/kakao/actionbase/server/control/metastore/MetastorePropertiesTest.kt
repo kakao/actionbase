@@ -1,6 +1,7 @@
 package com.kakao.actionbase.server.control.metastore
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -72,6 +73,22 @@ class MetastorePropertiesTest {
                 props("alpha" to metastore(), "alpha-copy" to metastore()).toRegistry()
             }
         assertTrue(thrown.message!!.contains("same url and table"), thrown.message)
+    }
+
+    @Test
+    fun `the password is not printed, since a generated toString would carry it into any log line`() {
+        val printed = metastore().toString()
+
+        assertFalse(printed.contains("secret"), printed)
+        assertTrue(printed.contains("jdbc:mysql://ab-alpha-meta.example.net:3306/graph"), printed)
+        assertTrue(printed.contains("purge"), printed)
+    }
+
+    @Test
+    fun `the enclosing properties object does not print it either, which is the object that gets logged`() {
+        val printed = props("alpha" to metastore()).toString()
+
+        assertFalse(printed.contains("secret"), printed)
     }
 
     @Test
