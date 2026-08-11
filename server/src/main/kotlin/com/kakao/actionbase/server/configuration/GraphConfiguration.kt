@@ -12,6 +12,7 @@ import com.kakao.actionbase.v2.engine.cdc.CdcFactory
 import com.kakao.actionbase.v2.engine.cdc.DefaultCdcFactory
 import com.kakao.actionbase.v2.engine.client.kafka.KafkaClientFactory
 import com.kakao.actionbase.v2.engine.client.web.WebClientFactory
+import com.kakao.actionbase.v2.engine.metastore.JdbcMetastoreInspector
 import com.kakao.actionbase.v2.engine.util.getLogger
 import com.kakao.actionbase.v2.engine.v3.V2BackedEngine
 import com.kakao.actionbase.v2.engine.wal.DefaultWalFactory
@@ -132,6 +133,9 @@ class GraphConfiguration {
 
         return graph
     }
+
+    @Bean
+    fun provideJdbcMetastoreInspector(graph: Graph): JdbcMetastoreInspector = JdbcMetastoreInspector.of(graph)
 
     @Bean
     fun provideV2BackedEngine(graph: Graph): V2BackedEngine = V2BackedEngine(graph)

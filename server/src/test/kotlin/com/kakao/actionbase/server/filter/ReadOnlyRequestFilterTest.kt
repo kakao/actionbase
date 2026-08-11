@@ -148,6 +148,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v2/admin/metadata/service/{service}/label",
                 "GET /graph/v2/admin/metadata/storage",
                 "GET /graph/v2/admin//migration/{name}",
+                "GET /graph/v2/metastore/global",
                 "GET /graph/v2/service",
                 "GET /graph/v2/service/{service}",
                 "GET /graph/v2/service/{service}/alias",
