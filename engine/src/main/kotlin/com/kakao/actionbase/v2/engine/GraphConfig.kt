@@ -41,23 +41,16 @@ data class GraphConfig(
     val featureFlags: List<FeatureFlags.Item> = emptyList(),
 ) {
     /**
-     * Hand-written because the generated rendering leaks the metastore credentials into the startup log. Every other
-     * field stays visible: the log line is the primary record of how an instance was configured. An empty credential
-     * renders as empty rather than masked, so "not configured" stays distinguishable from "configured".
+     * A copy safe to log. The generated [toString] renders every field, so logging this config directly puts the
+     * metastore credentials in the log in plain text. Only the credentials are replaced - every other field stays
+     * visible, because that line is the primary record of how an instance was configured. An empty credential stays
+     * empty rather than masked, so "not configured" remains distinguishable from "configured".
      */
-    override fun toString(): String =
-        "GraphConfig(" +
-            "phase=$phase, tenant=$tenant, " +
-            "metastoreUrl=$metastoreUrl, metastoreUser=${mask(metastoreUser)}, metastorePassword=${mask(metastorePassword)}, " +
-            "metastoreDriver=$metastoreDriver, metastoreTable=$metastoreTable, " +
-            "metastoreReloadInitialDelay=$metastoreReloadInitialDelay, metastoreReloadInterval=$metastoreReloadInterval, " +
-            "metastoreConnectionPoolSize=$metastoreConnectionPoolSize, defaultStorageEntity=$defaultStorageEntity, " +
-            "walProperties=$walProperties, cdcProperties=$cdcProperties, topNProperties=$topNProperties, " +
-            "encoderPoolSize=$encoderPoolSize, lockTimeout=$lockTimeout, hostName=$hostName, warmUp=$warmUp, " +
-            "artifactInfo=$artifactInfo, mutationRequestTimeout=$mutationRequestTimeout, hbase=$hbase, " +
-            "metadataFetchLimit=$metadataFetchLimit, systemMutationMode=$systemMutationMode, readOnly=$readOnly, " +
-            "useJdbcMetastore=$useJdbcMetastore, featureFlags=$featureFlags" +
-            ")"
+    fun redacted(): GraphConfig =
+        copy(
+            metastoreUser = mask(metastoreUser),
+            metastorePassword = mask(metastorePassword),
+        )
 
     companion object {
         private const val MASK = "****"

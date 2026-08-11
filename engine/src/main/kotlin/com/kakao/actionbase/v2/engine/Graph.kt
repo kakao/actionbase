@@ -182,7 +182,7 @@ class Graph(
                     Mono.fromCallable {
                         printLog(config)
 
-                        log.info("graph initialized with config: {}", config)
+                        log.info("graph initialized with config: {}", config.redacted())
                         log.info("DEFAULT_BOUNDED_ELASTIC_SIZE: {}", Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE)
                         log.info("DEFAULT_BOUNDED_ELASTIC_QUEUESIZE: {}", Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE)
 
@@ -215,7 +215,7 @@ class Graph(
             config.tenant,
             config.phase,
         )
-        log.info("graph initialized with config: {}", config)
+        log.info("graph initialized with config: {}", config.redacted())
         log.info("DEFAULT_BOUNDED_ELASTIC_SIZE: {}", Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE)
         log.info("DEFAULT_BOUNDED_ELASTIC_QUEUESIZE: {}", Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE)
     }
@@ -929,7 +929,7 @@ class Graph(
             DefaultStorageBackendFactory.initialize(config.hbase)
             log.info("phase: {}", config.phase)
             log.info("tenant: {}", config.tenant)
-            log.info("graph config: {}", config)
+            log.info("graph config: {}", config.redacted())
             log.info("kafkaClientFactory: {}", kafkaClientFactory)
             log.info("webClientFactory: {}", webClientFactory)
 
