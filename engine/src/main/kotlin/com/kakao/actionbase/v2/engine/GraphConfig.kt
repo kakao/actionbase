@@ -40,9 +40,32 @@ data class GraphConfig(
     val useJdbcMetastore: Boolean = true,
     val featureFlags: List<FeatureFlags.Item> = emptyList(),
 ) {
+    /**
+     * Hand-written because the generated rendering leaks the metastore credentials into the startup log. Every other
+     * field stays visible: the log line is the primary record of how an instance was configured. An empty credential
+     * renders as empty rather than masked, so "not configured" stays distinguishable from "configured".
+     */
+    override fun toString(): String =
+        "GraphConfig(" +
+            "phase=$phase, tenant=$tenant, " +
+            "metastoreUrl=$metastoreUrl, metastoreUser=${mask(metastoreUser)}, metastorePassword=${mask(metastorePassword)}, " +
+            "metastoreDriver=$metastoreDriver, metastoreTable=$metastoreTable, " +
+            "metastoreReloadInitialDelay=$metastoreReloadInitialDelay, metastoreReloadInterval=$metastoreReloadInterval, " +
+            "metastoreConnectionPoolSize=$metastoreConnectionPoolSize, defaultStorageEntity=$defaultStorageEntity, " +
+            "walProperties=$walProperties, cdcProperties=$cdcProperties, topNProperties=$topNProperties, " +
+            "encoderPoolSize=$encoderPoolSize, lockTimeout=$lockTimeout, hostName=$hostName, warmUp=$warmUp, " +
+            "artifactInfo=$artifactInfo, mutationRequestTimeout=$mutationRequestTimeout, hbase=$hbase, " +
+            "metadataFetchLimit=$metadataFetchLimit, systemMutationMode=$systemMutationMode, readOnly=$readOnly, " +
+            "useJdbcMetastore=$useJdbcMetastore, featureFlags=$featureFlags" +
+            ")"
+
     companion object {
+        private const val MASK = "****"
+
         val builder: Builder
             get() = Builder()
+
+        private fun mask(credential: String): String = if (credential.isEmpty()) "" else MASK
     }
 
     class Builder {
