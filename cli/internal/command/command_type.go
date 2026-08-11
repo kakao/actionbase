@@ -80,6 +80,16 @@ var (
 		name:    "doctor",
 		command: "doctor <names>",
 	}
+
+	TypeMigrate = Type{
+		name:    "migrate",
+		command: "migrate <plan [-o <file>]|apply [-i <file>]>",
+	}
+
+	TypeJdbcMetastore = Type{
+		name:    "jdbc-metastore",
+		command: "jdbc-metastore <remaining> --capacity <n> [--page-size <n>] [--max-pages <n>] [--max-rows <n>]",
+	}
 )
 
 func (t Type) GetName() string {

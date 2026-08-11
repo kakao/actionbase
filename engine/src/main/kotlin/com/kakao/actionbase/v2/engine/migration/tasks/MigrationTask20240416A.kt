@@ -4,7 +4,6 @@ import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.AliasEntity
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
-import com.kakao.actionbase.v2.engine.entity.QueryEntity
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
 import com.kakao.actionbase.v2.engine.metadata.Metadata
@@ -19,7 +18,6 @@ object MigrationTask20240416A : MigrationTask {
     private val storageLabelName = EntityName(Metadata.sysServiceName, Metadata.sysStorageLabelName)
     private val labelLabelName = EntityName(Metadata.sysServiceName, Metadata.sysLabelLabelName)
     private val aliasLabelName = EntityName(Metadata.sysServiceName, Metadata.sysAliasLabelName)
-    private val queryLabelName = EntityName(Metadata.sysServiceName, Metadata.sysQueryLabelName)
 
     // {phase}: added to all src
     // ex):
@@ -30,12 +28,11 @@ object MigrationTask20240416A : MigrationTask {
         val t2 = migrateStorages(graph)
         val t3 = migrateLabels(graph)
         val t4 = migrateAliases(graph)
-        val t5 = migrateQueries(graph)
 
         return Mono
-            .zip(t1, t2, t3, t4, t5)
+            .zip(t1, t2, t3, t4)
             .map {
-                it.t1 + it.t2 + it.t3 + it.t4 + it.t5
+                it.t1 + it.t2 + it.t3 + it.t4
             }
     }
 
@@ -166,33 +163,6 @@ object MigrationTask20240416A : MigrationTask {
                     }
             }.map {
                 "alias / ${it.result?.fullName} / ${it.status}"
-            }.collectList()
-    }
-
-    private fun migrateQueries(graph: Graph): Mono<List<String>> = migrateOnService(graph, ::migrateQueriesOfService)
-
-    private fun migrateQueriesOfService(
-        graph: Graph,
-        serviceEntity: ServiceEntity,
-    ): Mono<List<String>> {
-        val oldQueryFilter =
-            ScanFilter(
-                queryLabelName,
-                srcSet = setOf(serviceEntity.name.nameNotNull),
-                limit = 1000,
-            )
-        return graph
-            .singleStepQuery(oldQueryFilter)
-            .map {
-                QueryEntity.fromDataFrame(it)
-            }.flatMapMany {
-                Flux
-                    .fromIterable(it)
-                    .flatMap { queryEntity ->
-                        graph.queryDdl.create(queryEntity.name, queryEntity.toCreateRequest())
-                    }
-            }.map {
-                "query / ${it.result?.fullName} / ${it.status}"
             }.collectList()
     }
 }

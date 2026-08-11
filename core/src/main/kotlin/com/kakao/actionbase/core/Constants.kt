@@ -46,8 +46,12 @@ object Constants {
         const val COMMENT_MAX_LENGTH = 1000
         const val COMMENT_SIZE_MESSAGE = "comment must be at most $COMMENT_MAX_LENGTH characters"
 
-        const val STORAGE_URI_PATTERN = "^datastore://[a-z][a-z0-9_]*/[a-z][a-z0-9_]*$"
-        const val STORAGE_URI_MESSAGE = "storage must be in format datastore://<namespace>/<table> where each segment starts with a lowercase letter and contains only lowercase alphanumeric/underscore (e.g., datastore://my_namespace/my_table)"
+        // Namespace optional (datastore:///<table> resolves to the configured default).
+        // Segments start with a lowercase letter, as every other name does, which leaves
+        // the fully delimited __x__ form to system names (e.g. datastore://__sys__/metastore)
+        // and out of reach of user input.
+        const val STORAGE_URI_PATTERN = "^datastore://([a-z][a-z0-9_]*)?/[a-z][a-z0-9_]*$"
+        const val STORAGE_URI_MESSAGE = "storage must be in format datastore://<namespace>/<table>, with the namespace optional (datastore:///<table> resolves to the configured default). Each segment starts with a lowercase letter and contains only lowercase alphanumeric/underscore, which reserves the __x__ form for system names (e.g., datastore://my_namespace/my_table or datastore:///my_table)"
     }
 
     object Group {

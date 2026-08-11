@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.engine.compat
 
+import com.kakao.actionbase.engine.storage.DatastoreUri
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseConnections
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTable
 import com.kakao.actionbase.v2.engine.storage.hbase.HBaseTables
@@ -49,16 +50,16 @@ class DefaultHBaseCluster private constructor(
             }
         }
 
-    // URI format: datastore://{namespace}/{tableName}
+    // URI format: datastore://{namespace}/{tableName}; an omitted namespace
+    // (datastore:///{tableName}) resolves to this cluster's configured namespace.
     fun getTable(uri: String): Mono<HBaseTables> {
         val (namespace, tableName) = parseDatastoreUri(uri)
         return getTable(namespace, tableName)
     }
 
-    private fun parseDatastoreUri(uri: String): Pair<String, String> {
-        val parts = uri.removePrefix("datastore://").split("/")
-        require(parts.size == 2) { "Invalid datastore URI: $uri. Expected format: datastore://{namespace}/{tableName}" }
-        return parts[0] to parts[1]
+    internal fun parseDatastoreUri(uri: String): Pair<String, String> {
+        val (ns, tableName) = DatastoreUri.parse(uri)
+        return ns.ifEmpty { namespace } to tableName
     }
 
     override fun close() {

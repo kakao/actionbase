@@ -1,5 +1,6 @@
 package com.kakao.actionbase.v2.core.code;
 
+import com.kakao.actionbase.v2.core.code.hbase.Order;
 import com.kakao.actionbase.v2.core.code.hbase.OrderedBytes;
 import com.kakao.actionbase.v2.core.code.hbase.SimplePositionedMutableByteRange;
 import com.kakao.actionbase.v2.core.code.hbase.ValueUtils;
@@ -7,13 +8,19 @@ import com.kakao.actionbase.v2.core.metadata.Active;
 import com.kakao.actionbase.v2.core.metadata.Direction;
 import com.kakao.actionbase.v2.core.metadata.DirectionType;
 import com.kakao.actionbase.v2.core.metadata.EncodedEdgeType;
+import com.kakao.actionbase.v2.core.metadata.Group;
+import com.kakao.actionbase.v2.core.metadata.GroupType;
+import com.kakao.actionbase.v2.core.types.DataType;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
 
@@ -22,6 +29,7 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
   public static final byte COUNTER_EDGE_TYPE = EncodedEdgeType.COUNTER_EDGE_TYPE.getCode();
 
   public static final byte INDEXED_EDGE_TYPE = EncodedEdgeType.INDEXED_EDGE_TYPE.getCode();
+  public static final byte EDGE_GROUP_TYPE = EncodedEdgeType.EDGE_GROUP_TYPE.getCode();
   public static final byte EDGE_CACHE_TYPE = EncodedEdgeType.EDGE_CACHE_TYPE.getCode();
 
   public static final String INSERT_TS_KEY = "__InsertTs__";
@@ -169,6 +177,83 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
     }
   }
 
+  private static Object resolveFieldValue(
+      String name,
+      long ts,
+      Object directedSrc,
+      Object directedTgt,
+      Map<String, Object> properties) {
+    switch (name) {
+      case "version":
+        return ts;
+      case "source":
+        return directedSrc;
+      case "target":
+        return directedTgt;
+      default:
+        return properties.get(name);
+    }
+  }
+
+  // --- EdgeGroup encoding
+  // Row key   : xxhash32 | directedSrc | labelId | EDGE_GROUP | direction | groupCode
+  // Qualifier : groupValues...(DESC-ordered, bucketed fields applied)
+  // Value     : raw 8-byte big-endian long — this edge's single contribution (COUNT=1,
+  // SUM=valueField)
+
+  /**
+   * Reserved group name that delegates to the native EdgeCount query and never persists an
+   * EdgeGroup row. Matches V3's {@code Constants.Group.COUNT_SENTINEL} / {@code
+   * EdgeMutationBuilder.groupNamesExcludedFromMutation}.
+   */
+  public static final String GROUP_COUNT_SENTINEL = "__count__";
+
+  /**
+   * Group names skipped when encoding EdgeGroup records, mirroring V3's {@code
+   * EdgeMutationBuilder.groupNamesExcludedFromMutation}.
+   */
+  public static final Set<String> GROUP_NAMES_EXCLUDED_FROM_ENCODING =
+      Collections.singleton(GROUP_COUNT_SENTINEL);
+
+  public static void encodeGroupEdgeKeyToBuffer(
+      Object directedSrc, Direction direction, int labelId, int groupCode, EdgeBuffer buffer) {
+    buffer.encodeWithHash(directedSrc, labelId, EDGE_GROUP_TYPE);
+    buffer.encodeInt8(direction.getCode());
+    buffer.encodeInt32(groupCode);
+  }
+
+  public static void encodeGroupEdgeQualifierToBuffer(
+      Group group,
+      long ts,
+      Object directedSrc,
+      Object directedTgt,
+      Map<String, Object> properties,
+      EdgeBuffer buffer) {
+    for (Group.Field field : group.getFields()) {
+      Object value = resolveFieldValue(field.getName(), ts, directedSrc, directedTgt, properties);
+      buffer.encodeAny(field.applyBucket(value), Order.DESC);
+    }
+  }
+
+  public static void encodeGroupEdgeValueToBuffer(
+      Group group,
+      long ts,
+      Object directedSrc,
+      Object directedTgt,
+      Map<String, Object> properties,
+      EdgeBuffer buffer) {
+    long value;
+    if (group.getType() == GroupType.COUNT) {
+      value = 1L;
+    } else {
+      Object rawValue =
+          resolveFieldValue(group.getValueField(), ts, directedSrc, directedTgt, properties);
+      Object castValue = DataType.LONG.castNotNull(rawValue);
+      value = (Long) castValue;
+    }
+    buffer.putRawInt64(value);
+  }
+
   // --- EdgeCache encoding
   // Row key   : xxhash32 | directedSrc | labelId | EDGE_CACHE | direction | cacheCode
   // Qualifier : cacheValues...(ordered) | directedTgt
@@ -204,24 +289,6 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
     }
   }
 
-  private static Object resolveFieldValue(
-      String name,
-      long ts,
-      Object directedSrc,
-      Object directedTgt,
-      Map<String, Object> properties) {
-    switch (name) {
-      case "version":
-        return ts;
-      case "source":
-        return directedSrc;
-      case "target":
-        return directedTgt;
-      default:
-        return properties.get(name);
-    }
-  }
-
   @Override
   public List<KeyFieldValue<T>> encodeAllIndexedEdges(
       long ts,
@@ -237,6 +304,41 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
                 dirType.getDirs().stream()
                     .map(dir -> encodeIndexedEdge(ts, src, tgt, props, dir, labelId, index)))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<KeyFieldValue<T>> encodeAllGroupEdges(
+      long ts, Object src, Object tgt, Map<String, Object> props, int labelId, List<Group> groups) {
+    if (groups == null) return Collections.emptyList();
+
+    return persistableGroups(groups)
+        .flatMap(
+            group ->
+                group.getDirectionType().getDirs().stream()
+                    .map(dir -> encodeGroupEdge(ts, src, tgt, props, dir, labelId, group)))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<KeyFieldValue<T>> encodeGroupEdgesForDirection(
+      long ts,
+      Object src,
+      Object tgt,
+      Map<String, Object> props,
+      Direction dir,
+      int labelId,
+      List<Group> groups) {
+    if (groups == null) return Collections.emptyList();
+
+    return persistableGroups(groups)
+        .filter(group -> group.getDirectionType().getDirs().contains(dir))
+        .map(group -> encodeGroupEdge(ts, src, tgt, props, dir, labelId, group))
+        .collect(Collectors.toList());
+  }
+
+  private static Stream<Group> persistableGroups(List<Group> groups) {
+    return groups.stream()
+        .filter(group -> !GROUP_NAMES_EXCLUDED_FROM_ENCODING.contains(group.getGroup()));
   }
 
   @Override

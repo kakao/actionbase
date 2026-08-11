@@ -5,7 +5,6 @@ import starlightLinksValidator from 'starlight-links-validator';
 import markdocGrammar from './grammars/markdoc.tmLanguage.json';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import mermaid from 'astro-mermaid';
-import starlightBlog from 'starlight-blog';
 import { remarkHeadingId } from 'remark-custom-heading-id';
 import starlightUtils from '@lorenzo_lewis/starlight-utils';
 
@@ -117,7 +116,6 @@ export default defineConfig({
           label: 'Nav',
           items: [
             { label: 'Docs', slug: 'introduction' },
-            { label: 'Blog', link: '/blog/' },
             {
               label: 'GitHub',
               link: 'https://github.com/kakao/actionbase',
@@ -180,21 +178,6 @@ export default defineConfig({
       },
       expressiveCode: { shiki: { langs: [markdocGrammar] } },
       plugins: [
-        // IMPORTANT: blog-multi-sidebar-compat must be listed before starlightUtils
-        // because both register 'post'-order middleware and Starlight runs them in
-        // declaration order. The compat middleware wraps blog's flat sidebar entries
-        // into a group before starlight-utils validates the sidebar structure.
-        {
-          name: 'blog-multi-sidebar-compat',
-          hooks: {
-            setup({ addRouteMiddleware }) {
-              addRouteMiddleware({
-                entrypoint: './src/plugins/blog-sidebar-compat.ts',
-                order: 'post',
-              });
-            },
-          },
-        },
         starlightUtils({
           multiSidebar: {
             switcherStyle: 'horizontalList',
@@ -236,27 +219,6 @@ export default defineConfig({
               description: 'API reference documentation',
             },
           ],
-        }),
-        starlightBlog({
-          navigation: 'none',
-          authors: {
-            em3s: {
-              name: 'Minseok Kim',
-              title: 'Maintainer',
-              picture: 'https://avatars.githubusercontent.com/u/1531387?s=200',
-              url: 'https://github.com/em3s',
-            },
-            zipdoki: {
-              name: 'Dokyung Lee',
-              title: 'Maintainer',
-              picture: 'https://avatars.githubusercontent.com/u/112409928?s=200',
-              url: 'https://github.com/zipdoki',
-            },
-          },
-          metrics: {
-            readingTime: true,
-            words: 'total',
-          },
         }),
       ],
     }),

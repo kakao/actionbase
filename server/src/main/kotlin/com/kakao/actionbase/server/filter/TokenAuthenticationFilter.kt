@@ -15,7 +15,9 @@ class TokenAuthenticationFilter(
 ) : WebFilter {
     private val log = LoggerFactory.getLogger(TokenAuthenticationFilter::class.java)
 
-    private val protectedPaths = setOf("/graph/v2", "/graph/v3")
+    // Every routable prefix. A queue is a v3 edge table, so leaving it open left an unauthenticated
+    // way to the data /graph/v3 protects.
+    private val protectedPaths = PathPrefixes.FILTERED
 
     init {
         log.info("TokenAuthenticationFilter is added. useToken: $useToken, protectedPaths: $protectedPaths")

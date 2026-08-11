@@ -59,6 +59,9 @@ dependencies {
 
     // test
     testImplementation(testFixtures(project(":core")))
+    // The datastore controllers depend on HBaseAdmin, a final class, so standing them up in a test
+    // context needs inline mocking.
+    testImplementation(Dependencies.Testing.MOCKK)
 }
 
 gitProperties {

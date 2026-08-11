@@ -69,6 +69,52 @@ func Get[T any](c *HTTPClient, uri string) *Response[T] {
 	return call[T](c, request, nil)
 }
 
+// GetStream is Get with two differences that a paged, version-dependent endpoint needs.
+//
+// It keeps the real status code when the body does not decode. Get replaces it with -1, and an
+// unauthorized response carries no body at all, so a caller cannot otherwise tell "this server does
+// not serve that path" from "this token may not". And it decodes straight off the connection rather
+// than reading the whole body first, so a page is not held twice.
+func GetStream[T any](c *HTTPClient, uri string) *Response[T] {
+	url := fmt.Sprintf("%s%s", c.baseUrl, uri)
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		var empty T
+		return NewResponse[T](-1, &empty, fmt.Errorf("failed to create request: %w", err))
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+	if c.authKey != nil {
+		request.Header.Set("Authorization", *c.authKey)
+	}
+
+	if c.context.IsDebugEnabled {
+		slog.Debug(fmt.Sprintf("→ %s %s", request.Method, request.URL.RequestURI()))
+	}
+
+	response, err := c.client.Do(request)
+	if err != nil {
+		var empty T
+		return NewResponse[T](-1, &empty, fmt.Errorf("failed to execute request: %w", err))
+	}
+	defer func(body io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}(response.Body)
+
+	if c.context.IsDebugEnabled {
+		slog.Debug(fmt.Sprintf("← %s", response.Status))
+	}
+
+	var responseBody T
+	if err := json.NewDecoder(response.Body).Decode(&responseBody); err != nil {
+		var empty T
+		return NewResponse[T](response.StatusCode, &empty, fmt.Errorf("failed to read response Body: %w", err))
+	}
+
+	return NewResponse(response.StatusCode, &responseBody, nil)
+}
+
 func Post[T any, R any](c *HTTPClient, uri string, requestBody T) *Response[R] {
 	url := fmt.Sprintf("%s%s", c.baseUrl, uri)
 	requestBodyJson, err := json.Marshal(requestBody)
@@ -89,6 +135,45 @@ func Post[T any, R any](c *HTTPClient, uri string, requestBody T) *Response[R] {
 	}
 
 	return call[R](c, request, requestBodyJson)
+}
+
+// PostForResult POSTs a JSON body and returns the HTTP status code and the
+// raw response body without parsing it. Returns -1 on transport failure. Used
+// by replay-style flows (e.g. migrate apply) that key on the status plus the
+// server's error message.
+func PostForResult(c *HTTPClient, uri string, requestBody any) (int, string) {
+	url := fmt.Sprintf("%s%s", c.baseUrl, uri)
+	requestBodyJson, err := json.Marshal(requestBody)
+	if err != nil {
+		return -1, ""
+	}
+
+	request, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBodyJson))
+	if err != nil {
+		return -1, ""
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+	if c.authKey != nil {
+		request.Header.Set("Authorization", *c.authKey)
+	}
+
+	if c.context.IsDebugEnabled {
+		slog.Debug(fmt.Sprintf("→ %s %s %s", request.Method, request.URL.RequestURI(), util.Truncate(string(requestBodyJson), 60)))
+	}
+
+	response, err := c.client.Do(request)
+	if err != nil {
+		return -1, ""
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	responseBody, _ := io.ReadAll(response.Body)
+
+	if c.context.IsDebugEnabled {
+		slog.Debug(fmt.Sprintf("← %s %s", response.Status, util.Truncate(string(responseBody), 60)))
+	}
+	return response.StatusCode, string(responseBody)
 }
 
 func call[T any](c *HTTPClient, request *http.Request, requestBody []byte) *Response[T] {

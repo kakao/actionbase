@@ -34,6 +34,7 @@ type TableEntity struct {
 	Storage  string  `json:"storage"`
 	Indices  []Index `json:"indices"`
 	Groups   []Group `json:"groups"`
+	Caches   []any   `json:"caches"`
 	Event    bool    `json:"event"`
 	ReadOnly bool    `json:"readOnly"`
 	Mode     string  `json:"mode"`
@@ -98,6 +99,36 @@ type AliasEntity struct {
 type DdlPage[T any] struct {
 	Count   int64 `json:"count"`
 	Content []T   `json:"content"`
+}
+
+// MetastoreDumpPage is one page of the metastore dump, which the server returns as a Spring Page.
+type MetastoreDumpPage struct {
+	Content          []MetastoreDumpRow `json:"content"`
+	TotalElements    int64              `json:"totalElements"`
+	NumberOfElements int                `json:"numberOfElements"`
+	Last             bool               `json:"last"`
+}
+
+// MetastoreDumpRow deliberately omits the fields the census does not read.
+//
+// The server sends the whole encoded value in "v", plus a decoded property map, a timestamp and a
+// direction. None of them are declared here, so the decoder walks past them instead of allocating a
+// string per row for data that would be thrown away - the whole point is to count a table that is
+// too large to hold.
+type MetastoreDumpRow struct {
+	ID      int64                 `json:"id"`
+	K       string                `json:"k"`
+	Decoded *MetastoreDecodedEdge `json:"decoded"`
+}
+
+// MetastoreDecodedEdge is the server's decode of one row. Src and Tgt are typed as any because the
+// server declares them as Object; metadata schemas make them strings, and anything else is still
+// printable.
+type MetastoreDecodedEdge struct {
+	Active  bool  `json:"active"`
+	Src     any   `json:"src"`
+	Tgt     any   `json:"tgt"`
+	LabelID int64 `json:"labelId"`
 }
 
 type StorageCreateRequest struct {

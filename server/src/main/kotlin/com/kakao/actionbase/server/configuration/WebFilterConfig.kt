@@ -5,6 +5,7 @@ import com.kakao.actionbase.server.filter.MirrorRequestFilter
 import com.kakao.actionbase.server.filter.ReadOnlyRequestFilter
 import com.kakao.actionbase.server.filter.ResponseMetaFactory
 import com.kakao.actionbase.server.filter.ResponseMetaFilter
+import com.kakao.actionbase.server.filter.ServerRoleRequestFilter
 import com.kakao.actionbase.server.filter.TokenAuthenticationFilter
 
 import org.springframework.beans.factory.ObjectProvider
@@ -29,8 +30,13 @@ class WebFilterConfig(
             ResponseMetaFactory(gitProperties, buildProperties),
         )
 
+    // Before the read-only filter: what an instance serves at all comes before what it permits.
     @Bean
     @Order(1)
+    fun serverRoleRequestFilter(): WebFilter = ServerRoleRequestFilter(serverProperties.role)
+
+    @Bean
+    @Order(2)
     fun readOnlyRequestFilter(): WebFilter? =
         if (serverProperties.readOnly) {
             ReadOnlyRequestFilter()
@@ -39,7 +45,7 @@ class WebFilterConfig(
         }
 
     @Bean
-    @Order(2)
+    @Order(3)
     fun mirrorRequestFilter(): WebFilter? =
         if (properties.allowMirror) {
             MirrorRequestFilter()
@@ -48,7 +54,7 @@ class WebFilterConfig(
         }
 
     @Bean("tokenAuthenticationFilter")
-    @Order(3)
+    @Order(4)
     fun tokenAuthenticationFilter(customTokenFilterProvider: ObjectProvider<CustomTokenFilter>): WebFilter {
         val customTokenFilter = customTokenFilterProvider.getIfAvailable()
         return TokenAuthenticationFilter(

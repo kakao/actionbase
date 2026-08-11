@@ -2,6 +2,7 @@ package client
 
 import (
 	"net/url"
+	"strconv"
 
 	"github.com/kakao/actionbase/internal/client/model"
 )
@@ -111,6 +112,32 @@ func (a *ActionbaseClient) Mutate(
 	)
 }
 
+// PostRaw POSTs an arbitrary body to a path and returns the HTTP status code
+// and raw response body. Used by migrate apply to replay a plan without
+// knowing each entry's type.
+func (a *ActionbaseClient) PostRaw(path string, body any) (int, string) {
+	return PostForResult(a.client, path, body)
+}
+
 func (a *ActionbaseClient) GetHost() string {
 	return a.client.baseUrl
+}
+
+// MetastoreDumpPath is served by 0.4.x and was removed on later servers, so a caller has to be
+// ready for a 404 rather than assume it is there.
+const MetastoreDumpPath = "/graph/v2/metastore/global"
+
+// DumpMetastore reads one page of the metastore, ordered by primary key.
+//
+// Ordered by id rather than k: it is the primary key, so the server's OFFSET pagination walks an
+// index it already has. Sorting by k would order by a base64 string for no benefit here.
+func (a *ActionbaseClient) DumpMetastore(page, size int) *Response[model.MetastoreDumpPage] {
+	u := &url.URL{Path: MetastoreDumpPath}
+	q := u.Query()
+	q.Set("page", strconv.Itoa(page))
+	q.Set("size", strconv.Itoa(size))
+	q.Set("sort", "id,asc")
+	u.RawQuery = q.Encode()
+
+	return GetStream[model.MetastoreDumpPage](a.client, u.String())
 }

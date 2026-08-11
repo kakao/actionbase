@@ -4,8 +4,11 @@ import com.kakao.actionbase.engine.storage.hbase.HBaseStorageBackend
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 
+import kotlin.test.assertEquals
+
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class HBaseStorageBackendTest {
@@ -17,6 +20,12 @@ class HBaseStorageBackendTest {
             """
             # namespace missing
             - version: "2.4"
+              quorum: localhost:2181
+              error: IllegalArgumentException
+
+            # namespace blank — an omitted-namespace ref would resolve to nothing
+            - namespace: ""
+              version: "2.4"
               quorum: localhost:2181
               error: IllegalArgumentException
 
@@ -68,6 +77,20 @@ class HBaseStorageBackendTest {
                         HBaseStorageBackend.create(props)
                     }
             }
+        }
+
+        @Test
+        fun `the configured namespace becomes the default for omitted-namespace refs`() {
+            val backend =
+                HBaseStorageBackend.create(
+                    mapOf(
+                        "namespace" to "ab_test",
+                        "version" to "2.4",
+                        "hbase.zookeeper.quorum" to "localhost:2181",
+                    ),
+                )
+
+            assertEquals("ab_test", backend.defaultNamespace)
         }
     }
 }

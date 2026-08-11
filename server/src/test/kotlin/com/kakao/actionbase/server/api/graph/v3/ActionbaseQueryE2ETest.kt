@@ -179,7 +179,7 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                 .bodyValue(
                     """
                     {
-                      "query": [
+                      "fetch": [
                         {
                           "type": "SCAN",
                           "name": "hop1",
@@ -233,7 +233,7 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                 .bodyValue(
                     """
                     {
-                      "query": [
+                      "fetch": [
                         {
                           "type": "SCAN",
                           "name": "hop1",
@@ -283,7 +283,7 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                 .bodyValue(
                     """
                     {
-                      "query": [
+                      "fetch": [
                         {
                           "type": "SCAN",
                           "name": "hop1",
@@ -331,7 +331,7 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                 .bodyValue(
                     """
                     {
-                      "query": [
+                      "fetch": [
                         {
                           "type": "SCAN",
                           "name": "follows_scan",

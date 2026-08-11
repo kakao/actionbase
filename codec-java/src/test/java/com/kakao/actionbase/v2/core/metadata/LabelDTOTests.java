@@ -7,11 +7,16 @@ import com.kakao.actionbase.v2.core.code.Index;
 import com.kakao.actionbase.v2.core.code.hbase.Order;
 import com.kakao.actionbase.v2.core.types.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class LabelDTOTests {
@@ -101,5 +106,95 @@ public class LabelDTOTests {
     assertEquals(1, cache.getFields().size());
     assertEquals("created_at", cache.getFields().get(0).getField());
     assertEquals(Order.DESC, cache.getFields().get(0).getOrder());
+  }
+
+  @Test
+  void testGraphResponseDeserializationWithDateBucket() throws JsonProcessingException {
+    String jsonString =
+        "{\"name\":\"test.events\",\"desc\":\"\",\"type\":\"INDEXED\","
+            + "\"schema\":{\"src\":{\"type\":\"LONG\"},\"tgt\":{\"type\":\"STRING\"},"
+            + "\"fields\":[{\"name\":\"created_at\",\"type\":\"LONG\",\"nullable\":false}]},"
+            + "\"dirType\":\"OUT\",\"storage\":\"test_storage\",\"indices\":[],"
+            + "\"groups\":[{\"group\":\"created_at_hour\",\"type\":\"COUNT\","
+            + "\"fields\":[{\"name\":\"created_at\",\"bucket\":{\"type\":\"date\","
+            + "\"name\":\"created_at_hour\",\"unit\":\"NANOSECOND\",\"timezone\":\"+09:00\","
+            + "\"format\":\"yyyyMMdd'T'HH\"}}],\"directionType\":\"OUT\",\"ttl\":-1}],"
+            + "\"caches\":[],\"event\":false,\"readOnly\":false,\"mode\":\"ASYNC\"}";
+
+    LabelDTO label = objectMapper.readValue(jsonString, LabelDTO.class);
+
+    Group.Field field = label.getGroups().get(0).getFields().get(0);
+    assertTrue(field.getBucket() instanceof Bucket.Date);
+    assertEquals("20260611T00", field.applyBucket(1_781_103_600_000_000_000L));
+  }
+
+  @Test
+  void shouldDeserializeOptionalGroupFieldBucketsWithStrictNullChecks()
+      throws JsonProcessingException {
+    ObjectMapper strictObjectMapper =
+        new ObjectMapper().enable(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES);
+    String jsonString =
+        "{\"group\":\"created_at_hour\",\"type\":\"COUNT\","
+            + "\"fields\":[{\"name\":\"eventType\"},{\"name\":\"gender\",\"bucket\":null},"
+            + "{\"name\":\"created_at\",\"bucket\":{\"type\":\"date\","
+            + "\"name\":\"created_at_hour\",\"unit\":\"NANOSECOND\","
+            + "\"timezone\":\"+09:00\",\"format\":\"yyyyMMdd'T'HH\"}}],"
+            + "\"valueField\":\"-\",\"comment\":\"\",\"directionType\":\"OUT\",\"ttl\":-1}";
+
+    Group group = strictObjectMapper.readValue(jsonString, Group.class);
+
+    assertNull(group.getFields().get(0).getBucket());
+    assertNull(group.getFields().get(1).getBucket());
+    Group.Field bucketedField = group.getFields().get(2);
+    assertTrue(bucketedField.getBucket() instanceof Bucket.Date);
+    assertEquals("20260611T00", bucketedField.applyBucket(1_781_103_600_000_000_000L));
+  }
+
+  @Test
+  void shouldRemainUsableAfterJavaSerializationWithDateBucket() throws Exception {
+    Bucket.Date bucket =
+        new Bucket.Date("created_at_hour", Bucket.ValueUnit.NANOSECOND, "+09:00", "yyyyMMdd'T'HH");
+    Group group =
+        new Group(
+            "created_at_hour",
+            GroupType.COUNT,
+            Collections.singletonList(new Group.Field("created_at", bucket)),
+            "-",
+            "",
+            DirectionType.OUT,
+            null);
+    LabelDTO label =
+        new LabelDTO(
+            "test.test",
+            "desc",
+            LabelType.INDEXED,
+            new EdgeSchema(
+                new VertexField(VertexType.LONG),
+                new VertexField(VertexType.STRING),
+                Collections.singletonList(new Field("created_at", DataType.LONG, false))),
+            DirectionType.OUT,
+            "test_storage",
+            Collections.emptyList(),
+            Collections.singletonList(group),
+            Collections.emptyList(),
+            false,
+            false,
+            MutationMode.ASYNC);
+
+    byte[] serialized;
+    try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        ObjectOutputStream output = new ObjectOutputStream(bytes)) {
+      output.writeObject(label);
+      serialized = bytes.toByteArray();
+    }
+
+    LabelDTO restored;
+    try (ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(serialized))) {
+      restored = (LabelDTO) input.readObject();
+    }
+
+    Group.Field restoredField = restored.getGroups().get(0).getFields().get(0);
+    assertEquals(bucket, restoredField.getBucket());
+    assertEquals("20260611T00", restoredField.applyBucket(1_781_103_600_000_000_000L));
   }
 }

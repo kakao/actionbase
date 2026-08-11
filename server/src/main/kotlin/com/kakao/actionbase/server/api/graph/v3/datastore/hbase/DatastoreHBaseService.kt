@@ -7,8 +7,9 @@ import com.kakao.actionbase.server.configuration.ConditionalOnHBaseDatastore
 import com.kakao.actionbase.server.util.NameValidator
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
-import com.kakao.actionbase.v2.engine.entity.StorageEntity
 import com.kakao.actionbase.v2.engine.metadata.StorageType
+import com.kakao.actionbase.v2.engine.service.ddl.DatastoreTableReference
+import com.kakao.actionbase.v2.engine.service.ddl.DatastoreTableReferences
 
 import org.apache.hadoop.hbase.NamespaceDescriptor
 import org.apache.hadoop.hbase.TableName
@@ -40,7 +41,25 @@ class DatastoreHBaseService(
 
     private val namespaces = legacyNamespaces + tenantNamespace
 
+    private val references = DatastoreTableReferences(graph, tenantNamespace)
+
     fun getNamespaces(): List<String> = namespaces
+
+    /**
+     * Everything bound to this table, active or not. Active bindings are what block a disable or
+     * drop; inactive ones are reported so an operator can see a teardown already in progress.
+     */
+    fun getTableReferences(optionalFullQualifierTableName: String): Mono<List<DatastoreTableReference>> =
+        withValidatedTableName(optionalFullQualifierTableName) { tableName ->
+            references.findAll(tableName.namespaceAsString, tableName.qualifierAsString)
+        }
+
+    /**
+     * Every binding on this cluster, keyed by `namespace:tableName`. One scan for the whole cluster
+     * rather than one per table. An unknown [namespace] yields an empty result rather than an
+     * error: a table reached only through a `datastore://` URI need not appear in [namespaces].
+     */
+    fun getAllTableReferences(namespace: String?): Mono<Map<String, List<DatastoreTableReference>>> = references.findAllByTable(namespace)
 
     fun getTables(): Mono<List<HBaseTableInfo>> {
         // Extract namespaces from all storages to create a distinct namespace list
@@ -72,25 +91,27 @@ class DatastoreHBaseService(
         request: HBaseTableUpdateRequest,
     ): Mono<Void> =
         withValidatedTableName(optionalFullQualifierTableName) { tableName ->
-            val updateStream =
-                if (request.enable == true) {
-                    hBaseAdmin.enableTable(tableName.namespaceAsString, tableName.qualifierAsString)
-                } else {
-                    hBaseAdmin.disableTable(tableName.namespaceAsString, tableName.qualifierAsString)
-                }
-            throwErrorIfStorageInUse(tableName).then(updateStream)
+            throwErrorIfStorageInUse(tableName).then(
+                Mono.defer {
+                    if (request.enable == true) {
+                        hBaseAdmin.enableTable(tableName.namespaceAsString, tableName.qualifierAsString)
+                    } else {
+                        hBaseAdmin.disableTable(tableName.namespaceAsString, tableName.qualifierAsString)
+                    }
+                },
+            )
         }
 
     fun enableTable(optionalFullQualifierTableName: String): Mono<Void> =
         withValidatedTableName(optionalFullQualifierTableName) { tableName ->
             throwErrorIfStorageInUse(tableName)
-                .then(hBaseAdmin.enableTable(tableName.namespaceAsString, tableName.qualifierAsString))
+                .then(Mono.defer { hBaseAdmin.enableTable(tableName.namespaceAsString, tableName.qualifierAsString) })
         }
 
     fun disableTable(optionalFullQualifierTableName: String): Mono<Void> =
         withValidatedTableName(optionalFullQualifierTableName) { tableName ->
             throwErrorIfStorageInUse(tableName)
-                .then(hBaseAdmin.disableTable(tableName.namespaceAsString, tableName.qualifierAsString))
+                .then(Mono.defer { hBaseAdmin.disableTable(tableName.namespaceAsString, tableName.qualifierAsString) })
         }
 
     // Replication toggle is allowed on in-use tables. The operator runbook for safe table cleanup
@@ -109,7 +130,7 @@ class DatastoreHBaseService(
     fun deleteTable(optionalFullQualifierTableName: String): Mono<Void> =
         withValidatedTableName(optionalFullQualifierTableName) { tableName ->
             throwErrorIfStorageInUse(tableName)
-                .then(hBaseAdmin.deleteTable(tableName.namespaceAsString, tableName.qualifierAsString))
+                .then(Mono.defer { hBaseAdmin.deleteTable(tableName.namespaceAsString, tableName.qualifierAsString) })
         }
 
     fun getTableMetricSummary(optionalFullQualifierTableName: String): Mono<Map<String, Any>> =
@@ -118,30 +139,20 @@ class DatastoreHBaseService(
                 .getTableMetricSummary(tableName.namespaceAsString, tableName.qualifierAsString)
         }
 
+    // Callers wrap the admin call in Mono.defer so nothing is built before this answers - an
+    // argument to `then` is evaluated eagerly, which would put admin work ahead of the guard.
     private fun throwErrorIfStorageInUse(tableName: TableName): Mono<Void> =
-        getStorageInUse(tableName.namespaceAsString, tableName.qualifierAsString)
-            .flatMap { storages ->
-                if (storages.isNotEmpty()) {
-                    Mono.error(IllegalArgumentException("Table ${tableName.namespaceAsString}:$tableName is used by storages (${storages.joinToString(",") { it.fullName }})"))
-                } else {
+        references
+            .findActive(tableName.namespaceAsString, tableName.qualifierAsString)
+            .flatMap { refs ->
+                if (refs.isEmpty()) {
                     Mono.empty()
-                }
-            }
-
-    private fun getStorageInUse(
-        namespace: String,
-        tableName: String,
-    ): Mono<List<StorageEntity>> =
-        graph.storageDdl
-            .getAll(EntityName.origin)
-            .map { page ->
-                page.content.filter { storage ->
-                    storage.active &&
-                        storage.type == StorageType.HBASE &&
-                        (
-                            storage.conf.get("namespace").asText() == namespace &&
-                                storage.conf.get("tableName").asText() == tableName
-                        )
+                } else {
+                    Mono.error(
+                        IllegalArgumentException(
+                            "Table $tableName is used by ${refs.joinToString(",") { "${it.kind}:${it.name}" }}",
+                        ),
+                    )
                 }
             }
 

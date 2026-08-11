@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono
 class ReadOnlyRequestFilter : WebFilter {
     private val log = LoggerFactory.getLogger(ReadOnlyRequestFilter::class.java)
 
-    private val paths = setOf("/graph/v2", "/graph/v3", "/queue/v1", "/aggregations/v1")
+    private val paths = PathPrefixes.FILTERED
     private val readMethod = HttpMethod.GET
     private val readSuffixes =
         setOf(

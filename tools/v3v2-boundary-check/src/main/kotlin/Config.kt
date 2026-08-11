@@ -29,7 +29,6 @@ object Config {
         "com.kakao.actionbase.v2.engine.entity.AliasEntity",
         "com.kakao.actionbase.v2.engine.entity.EntityName",
         "com.kakao.actionbase.v2.engine.entity.EdgeEntity",
-        "com.kakao.actionbase.v2.engine.entity.QueryEntity",
 
         // V2 DDL requests
         "com.kakao.actionbase.v2.engine.service.ddl.ServiceCreateRequest",
