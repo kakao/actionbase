@@ -164,7 +164,7 @@ class TopkQuerySpec :
 
                 val query =
                     ActionbaseQuery(
-                        query =
+                        fetch =
                             listOf(
                                 ActionbaseQuery.Item.Topk(
                                     name = "ranked",
@@ -262,7 +262,7 @@ class TopkQuerySpec :
 
                 val query =
                     ActionbaseQuery(
-                        query =
+                        fetch =
                             listOf(
                                 ActionbaseQuery.Item.Scan(
                                     name = "hop1",
@@ -321,7 +321,7 @@ class TopkQuerySpec :
 
                 val query =
                     ActionbaseQuery(
-                        query =
+                        fetch =
                             listOf(
                                 ActionbaseQuery.Item.Topk(
                                     name = "ranked",
@@ -371,7 +371,7 @@ class TopkQuerySpec :
 
                 val query =
                     ActionbaseQuery(
-                        query =
+                        fetch =
                             listOf(
                                 ActionbaseQuery.Item.Topk(
                                     name = "ranked",

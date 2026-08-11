@@ -44,6 +44,9 @@ dependencies {
     // kafka
     implementation(Dependencies.Kafka.CLIENTS)
 
+    // SQL
+    implementation(Dependencies.Calcite.CORE)
+
     // RDB
     implementation(Dependencies.DatabasePool.HIKARICP)
     implementation(Dependencies.Exposed.CORE)
@@ -95,4 +98,6 @@ tasks.withType<Test>().all {
     if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {
         jvmArgs("-XX:+AllowRedefinitionToAddDeleteMethods")
     }
+
+    systemProperty("calcite.bindable.cache.maxSize", System.getProperty("calcite.bindable.cache.maxSize") ?: "1000")
 }
