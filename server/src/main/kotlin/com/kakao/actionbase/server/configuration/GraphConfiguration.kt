@@ -5,6 +5,7 @@ import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.engine.service.AggregationQueryService
 import com.kakao.actionbase.engine.service.AggregationService
 import com.kakao.actionbase.engine.service.MutationService
+import com.kakao.actionbase.engine.service.PreparedQueryService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.engine.service.aggregation.AggregationHandler
 import com.kakao.actionbase.engine.service.aggregation.TopkAggregationHandler
@@ -146,6 +147,12 @@ class GraphConfiguration {
 
     @Bean
     fun provideQueryService(engine: V2BackedEngine): QueryService = QueryService(engine)
+
+    @Bean
+    fun providePreparedQueryService(
+        graph: Graph,
+        queryService: QueryService,
+    ): PreparedQueryService = PreparedQueryService(graph, queryService)
 
     @Bean
     fun provideMutationService(

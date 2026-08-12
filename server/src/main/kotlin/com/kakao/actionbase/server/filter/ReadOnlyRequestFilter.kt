@@ -24,7 +24,8 @@ class ReadOnlyRequestFilter : WebFilter {
             "/multi-edges/ids",
             "/query",
         )
-    private val readSegments = setOf("/topks/")
+
+    private val readSegments = setOf("/topks/", "/query/")
 
     init {
         log.info("ReadOnlyRequestFilter is active. Write operations on {} will be rejected.", paths)
