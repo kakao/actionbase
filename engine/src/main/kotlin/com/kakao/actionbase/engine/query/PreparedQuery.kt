@@ -1,84 +1,182 @@
 package com.kakao.actionbase.engine.query
 
+import com.kakao.actionbase.core.metadata.common.StructField
+import com.kakao.actionbase.core.types.PrimitiveType
+import com.kakao.actionbase.v2.engine.sql.StatKey
+
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.convertValue
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+
 /**
- * A query whose shape is fixed and whose values are not. A `VALUE` vertex may hold `{name}` in place
- * of a value; [bind] swaps those for arguments and returns a query to run, leaving this one intact.
+ * A query whose shape is fixed and whose values are not: anywhere a whole value would go, the body may
+ * hold `{name}` instead.
  *
- * The shape staying constant is what lets a transform's plan be prepared once and reused across
- * requests. Immutable and safe to share.
+ * Binding happens on the JSON, before it is read into an [ActionbaseQuery]: `"limit": "{limit}"` cannot
+ * be the `Int` that slot wants until the value is in, so substitution has to come first.
+ *
+ * A placeholder inside SQL becomes a `?` bound at execution instead, which keeps the SQL text — and so
+ * the compiled plan — the same between calls.
  */
 class PreparedQuery private constructor(
-    private val template: ActionbaseQuery,
-    /** Names this query expects, in the order they first appear. */
+    private val template: ObjectNode,
     val parameters: Set<String>,
+    /** Empty for a query nobody registered: with no declaration, a value goes in as the JSON it came as. */
+    private val types: Map<String, PrimitiveType>,
 ) {
-    fun bind(arguments: Map<String, Any>): ActionbaseQuery {
-        val missing = parameters - arguments.keys
+    fun bind(values: Map<String, Any>): ActionbaseQuery {
+        val missing = parameters - values.keys
         require(missing.isEmpty()) { "This query takes ${parameters.joinToString()}; the call is missing ${missing.joinToString()}." }
 
-        return template.copy(fetch = template.fetch.map { it.bind(arguments) })
+        val unknown = values.keys - parameters
+        require(unknown.isEmpty()) { "This query has no argument named ${unknown.joinToString()}." }
+
+        val cast = parameters.associateWith { name -> cast(name, values.getValue(name)) }
+        return objectMapper.convertValue(template.deepCopy().substitute(cast))
     }
 
-    /** The arguments a transform's `?` placeholders take, in placeholder order. */
+    private fun cast(
+        name: String,
+        value: Any,
+    ): Any = types[name]?.cast(value) ?: value
+
     fun transformArguments(
         transform: ActionbaseQuery.Transform.Sql,
-        arguments: Map<String, Any>,
+        values: Map<String, Any>,
     ): List<Any?> =
         transform.arguments.map { name ->
-            require(name in parameters) { "`${transform.name}` binds `$name`, which this query has no parameter for." }
-            arguments[name]
+            require(name in parameters) { "`${transform.name}` binds `$name`, which this query has no argument for." }
+            cast(name, values.getValue(name))
         }
 
-    private fun ActionbaseQuery.Item.bind(arguments: Map<String, Any>): ActionbaseQuery.Item =
+    private fun JsonNode.substitute(values: Map<String, Any>): JsonNode {
         when (this) {
-            is ActionbaseQuery.Item.Self -> copy(source = source.bind(arguments))
-            is ActionbaseQuery.Item.Get -> copy(source = source.bind(arguments), target = target.bind(arguments))
-            is ActionbaseQuery.Item.Count -> copy(source = source.bind(arguments))
-            is ActionbaseQuery.Item.Scan -> copy(source = source.bind(arguments))
-            is ActionbaseQuery.Item.Seek -> copy(source = source.bind(arguments))
-            is ActionbaseQuery.Item.Topk -> copy(entity = entity?.bind(arguments))
+            is ObjectNode -> fieldNames().asSequence().toList().forEach { field -> replace(field, get(field).substituted(values)) }
+            is ArrayNode -> (0 until size()).forEach { index -> set(index, get(index).substituted(values)) }
+            else -> Unit
         }
+        return this
+    }
 
-    private fun ActionbaseQuery.Vertex.bind(arguments: Map<String, Any>): ActionbaseQuery.Vertex =
-        when (this) {
-            is ActionbaseQuery.Vertex.Value -> copy(value = value.map { it.substitute(arguments) })
-            is ActionbaseQuery.Vertex.Ref -> this
-            is ActionbaseQuery.Vertex.Step -> copy(step = step.bind(arguments))
-        }
-
-    private fun Any.substitute(arguments: Map<String, Any>): Any = parameterOf(this)?.let { arguments.getValue(it) } ?: this
+    private fun JsonNode.substituted(values: Map<String, Any>): JsonNode =
+        parameterOf(this)?.let { name -> objectMapper.valueToTree<JsonNode>(values.getValue(name)) }
+            ?: substitute(values)
 
     companion object {
-        /**
-         * A parameter is a whole value, not a fragment of one: `"{entity}"` is a placeholder and
-         * `"user-{entity}"` is a string that happens to contain braces. Keeping it whole means an
-         * argument can be any type, not just something that survives string concatenation.
-         */
+        private val objectMapper = jacksonObjectMapper()
+
+        private const val SQL_FIELD = "sql"
+
+        private const val ARGUMENTS_FIELD = "arguments"
+
+        /** Whole values only, so that an argument can be a number: `"user-{entity}"` is a string. */
         private val PARAMETER = Regex("^\\{([A-Za-z_][A-Za-z0-9_]*)}$")
 
-        fun of(query: ActionbaseQuery): PreparedQuery = PreparedQuery(query, query.parameters())
+        private val IN_SQL = Regex("\\{([A-Za-z_][A-Za-z0-9_]*)}")
 
-        private fun ActionbaseQuery.parameters(): Set<String> =
-            fetch.flatMap { it.parameters() }.toSet() +
-                transform.flatMap { step -> (step as? ActionbaseQuery.Transform.Sql)?.arguments.orEmpty() }
+        /** A registered query, which has to use exactly the names it declares. */
+        fun of(
+            fetch: JsonNode,
+            transform: JsonNode,
+            stats: Set<StatKey>,
+            arguments: List<StructField>,
+        ): PreparedQuery {
+            val template = template(fetch, transform, stats)
+            val used = template.prepare()
+            val declared = arguments.map { it.name }.toSet()
 
-        private fun ActionbaseQuery.Item.parameters(): List<String> =
-            when (this) {
-                is ActionbaseQuery.Item.Self -> source.parameters()
-                is ActionbaseQuery.Item.Get -> source.parameters() + target.parameters()
-                is ActionbaseQuery.Item.Count -> source.parameters()
-                is ActionbaseQuery.Item.Scan -> source.parameters()
-                is ActionbaseQuery.Item.Seek -> source.parameters()
-                is ActionbaseQuery.Item.Topk -> entity?.parameters().orEmpty()
+            require(used == declared) {
+                "This query uses ${used.joinToString().ifEmpty { "no arguments" }} " +
+                    "but declares ${declared.joinToString().ifEmpty { "none" }}."
             }
 
-        private fun ActionbaseQuery.Vertex.parameters(): List<String> =
-            when (this) {
-                is ActionbaseQuery.Vertex.Value -> value.mapNotNull { parameterOf(it) }
-                is ActionbaseQuery.Vertex.Ref -> emptyList()
-                is ActionbaseQuery.Vertex.Step -> step.parameters()
+            return PreparedQuery(template, declared, arguments.associate { it.name to it.type })
+        }
+
+        fun of(query: ActionbaseQuery): PreparedQuery {
+            // The whole query, not its parts: a step's `type` is written from the property's declared type,
+            // which a bare list of items no longer carries.
+            val template = objectMapper.valueToTree<ObjectNode>(query)
+            return PreparedQuery(template, template.prepare(), emptyMap())
+        }
+
+        /** A query nobody registered: the names are the ones the body uses, and nothing declares a type. */
+        fun adhoc(
+            fetch: JsonNode,
+            transform: JsonNode,
+            stats: Set<StatKey>,
+        ): PreparedQuery {
+            val template = template(fetch, transform, stats)
+            return PreparedQuery(template, template.prepare(), emptyMap())
+        }
+
+        private fun template(
+            fetch: JsonNode,
+            transform: JsonNode,
+            stats: Set<StatKey>,
+        ): ObjectNode =
+            objectMapper.createObjectNode().apply {
+                set<JsonNode>("fetch", fetch.deepCopy())
+                set<JsonNode>("transform", transform.deepCopy())
+                set<JsonNode>("stats", objectMapper.valueToTree(stats))
             }
 
-        private fun parameterOf(value: Any): String? = (value as? String)?.let { PARAMETER.find(it)?.groupValues?.get(1) }
+        /**
+         * Rewrites every SQL body to the `?` form once, and answers with the names the template asks for.
+         * Doing it here rather than per call is what lets a SQL that cannot be prepared be refused at
+         * registration.
+         */
+        private fun JsonNode.prepare(): Set<String> =
+            when (this) {
+                is ObjectNode ->
+                    fieldNames().asSequence().toList().flatMap { field ->
+                        val child = get(field)
+                        if (field == SQL_FIELD && child.isTextual) {
+                            val (sql, bound) = rewrite(child.asText())
+                            put(SQL_FIELD, sql)
+                            set<ArrayNode>(ARGUMENTS_FIELD, objectMapper.valueToTree(bound))
+                            bound
+                        } else {
+                            child.prepare()
+                        }
+                    }.toSet()
+                is ArrayNode -> (0 until size()).flatMap { get(it).prepare() }.toSet()
+                else -> parameterOf(this)?.let { setOf(it) } ?: emptySet()
+            }
+
+        /** Braces inside a string literal are left alone: `WHERE tag = \'{limit}\'` is a literal. */
+        private fun rewrite(sql: String): Pair<String, List<String>> {
+            val rewritten = StringBuilder()
+            val bound = mutableListOf<String>()
+            var index = 0
+            var quoted = false
+
+            while (index < sql.length) {
+                val char = sql[index]
+                if (char == '\'') {
+                    quoted = !quoted
+                    rewritten.append(char)
+                    index++
+                    continue
+                }
+
+                val match = if (!quoted && char == '{') IN_SQL.matchAt(sql, index) else null
+                if (match == null) {
+                    rewritten.append(char)
+                    index++
+                } else {
+                    rewritten.append('?')
+                    bound += match.groupValues[1]
+                    index += match.value.length
+                }
+            }
+
+            return rewritten.toString() to bound
+        }
+
+        private fun parameterOf(node: JsonNode): String? =
+            node.takeIf { it.isTextual }?.asText()?.let { PARAMETER.find(it)?.groupValues?.get(1) }
     }
 }

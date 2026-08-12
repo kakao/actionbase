@@ -90,10 +90,10 @@ class PreparedQueryTest {
                     fetch = listOf(self(name = "hop1", source = value("{entity}"))),
                     transform =
                         listOf(
+                            // The name is written where the value goes; it becomes a `?` on the way out.
                             ActionbaseQuery.Transform.Sql(
                                 name = "result",
-                                sql = "SELECT hop1.target AS productGroupId FROM hop1 WHERE hop1.metric >= ? ORDER BY hop1.metric DESC",
-                                arguments = listOf("floor"),
+                                sql = "SELECT hop1.target AS productGroupId FROM hop1 WHERE hop1.metric >= {floor} ORDER BY hop1.metric DESC",
                             ),
                         ),
                 ),
