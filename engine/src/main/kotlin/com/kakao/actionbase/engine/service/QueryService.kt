@@ -12,6 +12,7 @@ import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.engine.QueryEngine
 import com.kakao.actionbase.engine.query.ActionbaseQuery
 import com.kakao.actionbase.engine.query.ActionbaseQueryExecutor
+import com.kakao.actionbase.engine.query.PreparedQuery
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.v2.core.metadata.Direction
 import com.kakao.actionbase.v2.engine.sql.ScanFilter
@@ -182,6 +183,11 @@ class QueryService(
     }
 
     fun query(request: ActionbaseQuery): Mono<Map<String, DataFrame>> = queryExecutor.query(request)
+
+    fun query(
+        prepared: PreparedQuery,
+        arguments: Map<String, Any>,
+    ): Mono<Map<String, DataFrame>> = queryExecutor.query(prepared, arguments)
 
     private fun DataFrame.toEdgePayload(flip: Boolean = false): DataFrameEdgePayload {
         val edges =

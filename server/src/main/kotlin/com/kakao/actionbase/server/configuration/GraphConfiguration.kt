@@ -5,6 +5,7 @@ import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.engine.service.AggregationQueryService
 import com.kakao.actionbase.engine.service.AggregationService
 import com.kakao.actionbase.engine.service.MutationService
+import com.kakao.actionbase.engine.service.PreparedQueryService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.engine.service.aggregation.AggregationHandler
 import com.kakao.actionbase.engine.service.aggregation.TopkAggregationHandler
@@ -148,6 +149,25 @@ class GraphConfiguration {
     fun provideQueryService(engine: V2BackedEngine): QueryService = QueryService(engine)
 
     @Bean
+    fun providePreparedQueryService(
+        graph: Graph,
+        queryService: QueryService,
+    ): PreparedQueryService = PreparedQueryService(graph, queryService)
+
+    @Bean
+    fun provideMutationService(
+        engine: V2BackedEngine,
+        graph: Graph,
+    ): MutationService = MutationService(engine, graph.featureFlags)
+
+    @Bean
+    fun provideQueueService(
+        graph: Graph,
+        mutationService: MutationService,
+        queryService: QueryService,
+    ): QueueService = QueueService(graph, mutationService, queryService)
+
+    @Bean
     fun provideTopkAggregationHandler(
         queryService: QueryService,
         mutationService: MutationService,
@@ -166,17 +186,4 @@ class GraphConfiguration {
         queryService: QueryService,
         engine: V2BackedEngine,
     ): AggregationQueryService = AggregationQueryService(queryService, engine)
-
-    @Bean
-    fun provideMutationService(
-        engine: V2BackedEngine,
-        graph: Graph,
-    ): MutationService = MutationService(engine, graph.featureFlags)
-
-    @Bean
-    fun provideQueueService(
-        graph: Graph,
-        mutationService: MutationService,
-        queryService: QueryService,
-    ): QueueService = QueueService(graph, mutationService, queryService)
 }
