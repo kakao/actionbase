@@ -30,6 +30,8 @@ import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.util.getLogger
 
+import java.time.Clock
+
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 import reactor.core.publisher.Flux
@@ -40,6 +42,7 @@ class TopkAggregationHandler(
     private val mutationService: MutationService,
     private val queueService: QueueService,
     private val engine: AggregationEngine,
+    private val clock: Clock = Clock.systemUTC(),
 ) : AggregationHandler {
     private val logger = getLogger()
 
@@ -210,7 +213,7 @@ class TopkAggregationHandler(
                                     type = EventType.INSERT,
                                     edge =
                                         Edge(
-                                            version = System.currentTimeMillis(),
+                                            version = clock.millis(),
                                             source =
                                                 AggregationConstants.Topk.rankSource(
                                                     database = sourceDatabase,
@@ -296,7 +299,7 @@ class TopkAggregationHandler(
         val start = bucket?.startOf(event.properties[bucket.name])
 
         return if (start == null) {
-            System.currentTimeMillis() + refreshAfterMillis
+            clock.millis() + refreshAfterMillis
         } else {
             start.toEpochMilli() + refreshAfterMillis + bucket.interval().toMillis()
         }

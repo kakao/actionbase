@@ -36,6 +36,7 @@ import com.kakao.actionbase.v2.engine.test.cdc.InMemoryCdcFactory
 import com.kakao.actionbase.v2.engine.test.wal.InMemoryWalFactory
 import com.kakao.actionbase.v2.engine.util.getLogger
 
+import java.time.Clock
 import java.util.UUID
 
 import kotlin.math.absoluteValue
@@ -226,6 +227,7 @@ object GraphFixtures {
     fun create(
         configBuilder: GraphConfig.Builder = GraphConfig.Builder(),
         withTestData: Boolean = true,
+        clock: Clock = Clock.systemUTC(),
     ): Graph {
         BlockHound
             .builder()
@@ -237,7 +239,7 @@ object GraphFixtures {
                 .withMetastoreUrl("jdbc:h2:mem:${UUID.randomUUID()};DB_CLOSE_DELAY=-1;MODE=MYSQL")
                 .build()
 
-        val graph = Graph.create(config, InMemoryWalFactory, InMemoryCdcFactory, DefaultKafkaClientFactory, DefaultWebClientFactory)
+        val graph = Graph.create(config, InMemoryWalFactory, InMemoryCdcFactory, DefaultKafkaClientFactory, DefaultWebClientFactory, clock)
 
         if (withTestData) {
             createService(graph, serviceName)

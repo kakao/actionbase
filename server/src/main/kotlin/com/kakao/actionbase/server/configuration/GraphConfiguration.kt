@@ -159,7 +159,8 @@ class GraphConfiguration {
         mutationService: MutationService,
         queueService: QueueService,
         engine: V2BackedEngine,
-    ): AggregationHandler = TopkAggregationHandler(queryService, mutationService, queueService, engine)
+        clock: java.time.Clock,
+    ): AggregationHandler = TopkAggregationHandler(queryService, mutationService, queueService, engine, clock)
 
     @Bean
     fun provideAggregationService(

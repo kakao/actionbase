@@ -38,10 +38,10 @@ import com.kakao.actionbase.v2.engine.entity.AliasEntity
 import com.kakao.actionbase.v2.engine.entity.EdgeEntity
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
-import com.kakao.actionbase.v2.engine.entity.hasAggregation
-import com.kakao.actionbase.v2.engine.entity.toQualifiedAggregations
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
+import com.kakao.actionbase.v2.engine.entity.hasAggregation
+import com.kakao.actionbase.v2.engine.entity.toQualifiedAggregations
 import com.kakao.actionbase.v2.engine.exception.MutationError
 import com.kakao.actionbase.v2.engine.fake.fakeEdges
 import com.kakao.actionbase.v2.engine.label.DeleteEdgeRequest

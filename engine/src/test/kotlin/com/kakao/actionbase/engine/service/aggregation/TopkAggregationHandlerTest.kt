@@ -27,7 +27,9 @@ import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
 
+import java.time.Clock
 import java.time.Instant
+import java.time.ZoneOffset
 
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -50,6 +52,8 @@ class TopkAggregationHandlerTest {
     private val queueService = mockk<QueueService>()
     private val engine = mockk<AggregationEngine>()
     private val handler = TopkAggregationHandler(queryService, mutationService, queueService, engine)
+
+    private fun handlerAt(now: Instant) = TopkAggregationHandler(queryService, mutationService, queueService, engine, Clock.fixed(now, ZoneOffset.UTC))
 
     @Nested
     inner class Aggregate {
@@ -344,6 +348,39 @@ class TopkAggregationHandlerTest {
                 .seq shouldBe Instant.parse("2027-01-02T00:00:00Z").toEpochMilli()
         }
 
+        /** With no value to read the bucket from, the due time can only be counted from the clock. */
+        @Test
+        fun `schedules from the clock when the event carries no bucket value`() {
+            val refreshAfter = 60_000L
+
+            stubTopkBinding(
+                engine = engine,
+                topk = topkConfig(name = "top_purchased", refreshAfterMillis = refreshAfter, ranges = SLIDING_WINDOW),
+                bucketed = true,
+            )
+
+            every {
+                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns Mono.just(aggPayload(count = 1))
+            every {
+                mutationService.mutate("commerce", "orders__topk", any(), any(), any(), any(), any())
+            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+            val refreshRequest = slot<EnqueueRequest>()
+            every {
+                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_TABLE, capture(refreshRequest))
+            } returns Mono.just(enqueueResponse(status = "CREATED"))
+
+            StepVerifier
+                .create(handlerAt(FIXED_NOW).aggregate(aggregationItemPayload()).collectList())
+                .assertNext { results -> results.single().status shouldBe "SUCCESS" }
+                .verifyComplete()
+
+            refreshRequest.captured.messages
+                .single()
+                .seq shouldBe FIXED_NOW.toEpochMilli() + refreshAfter
+        }
+
         @Test
         fun `reports ERROR when the refresh enqueue fails`() {
             stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L, ranges = SLIDING_WINDOW), bucketed = true)
@@ -482,6 +519,8 @@ class TopkAggregationHandlerTest {
 }
 
 // region test fixtures
+
+private val FIXED_NOW = Instant.parse("2026-08-13T05:00:00Z")
 
 private const val PURCHASED_AT = "purchasedAt"
 
