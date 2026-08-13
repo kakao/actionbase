@@ -66,14 +66,7 @@ sealed class Bucket {
             }
 
         /** How long one bucket spans, which is the precision the format writes down. */
-        fun interval(): Duration =
-            when {
-                format.contains('S') -> throw IllegalArgumentException("Units below milliseconds are not supported: $format")
-                format.contains("ss") -> throw IllegalArgumentException("Second units are not supported: $format")
-                format.contains("mm") -> Duration.ofMinutes(1)
-                format.contains("HH") || format.contains("H") -> Duration.ofHours(1)
-                else -> Duration.ofDays(1)
-            }
+        fun interval(): Duration = granularity().duration
 
         /** Whether a range bound moves with the clock (`now`, `now-365d`) rather than naming a fixed point. */
         fun isRelative(value: Any): Boolean {
@@ -92,17 +85,26 @@ sealed class Bucket {
             }
         }
 
-        private fun floorToFormatPrecision(instant: Instant): Instant {
-            val zoned = instant.atZone(zoneId)
+        private fun floorToFormatPrecision(instant: Instant): Instant = instant.atZone(zoneId).truncatedTo(granularity()).toInstant()
 
-            return when {
+        /** The unit the format keeps, and so the unit the bucket and every bound built from it move in. */
+        private fun granularity(): ChronoUnit =
+            when {
+                // Includes nanoseconds/microseconds (S, SSS, SSSSSS, SSSSSSSSS, etc.)
                 format.contains('S') -> throw IllegalArgumentException("Units below milliseconds are not supported: $format")
+
+                // Up to seconds only (includes ss, no S)
                 format.contains("ss") -> throw IllegalArgumentException("Second units are not supported: $format")
-                format.contains("mm") -> zoned.truncatedTo(ChronoUnit.MINUTES).toInstant()
-                format.contains("HH") || format.contains("H") -> zoned.truncatedTo(ChronoUnit.HOURS).toInstant()
-                else -> zoned.truncatedTo(ChronoUnit.DAYS).toInstant()
+
+                // Up to minutes only (includes mm, no ss)
+                format.contains("mm") -> ChronoUnit.MINUTES
+
+                // Up to hours only (includes HH, no mm)
+                format.contains("HH") || format.contains("H") -> ChronoUnit.HOURS
+
+                // Day units only (date only)
+                else -> ChronoUnit.DAYS
             }
-        }
 
         override fun handleQueryValue(
             value: Any,
@@ -148,46 +150,9 @@ sealed class Bucket {
 
         private fun ceilToFormatPrecision(instant: Instant): Instant {
             val zoned = instant.atZone(zoneId)
+            val truncated = zoned.truncatedTo(granularity())
 
-            return when {
-                // Includes nanoseconds/microseconds (S, SSS, SSSSSS, SSSSSSSSS, etc.)
-                format.contains('S') ->
-                    throw IllegalArgumentException("Units below milliseconds are not supported: $format")
-
-                // Up to seconds only (includes ss, no S)
-                format.contains("ss") ->
-                    throw IllegalArgumentException("Second units are not supported: $format")
-
-                // Up to minutes only (includes mm, no ss)
-                format.contains("mm") -> {
-                    val truncated = zoned.truncatedTo(java.time.temporal.ChronoUnit.MINUTES)
-                    if (truncated == zoned) {
-                        instant
-                    } else {
-                        truncated.plusMinutes(1).toInstant()
-                    }
-                }
-
-                // Up to hours only (includes HH, no mm)
-                format.contains("HH") || format.contains("H") -> {
-                    val truncated = zoned.truncatedTo(java.time.temporal.ChronoUnit.HOURS)
-                    if (truncated == zoned) {
-                        instant
-                    } else {
-                        truncated.plusHours(1).toInstant()
-                    }
-                }
-
-                // Day units only (date only)
-                else -> {
-                    val truncated = zoned.truncatedTo(java.time.temporal.ChronoUnit.DAYS)
-                    if (truncated == zoned) {
-                        instant
-                    } else {
-                        truncated.plusDays(1).toInstant()
-                    }
-                }
-            }
+            return if (truncated == zoned) instant else truncated.plus(1, granularity()).toInstant()
         }
 
         companion object {
