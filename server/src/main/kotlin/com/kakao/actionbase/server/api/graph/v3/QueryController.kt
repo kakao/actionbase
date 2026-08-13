@@ -1,12 +1,16 @@
 package com.kakao.actionbase.server.api.graph.v3
 
-import com.kakao.actionbase.engine.query.ActionbaseQuery
+import com.kakao.actionbase.engine.query.PreparedQuery
+import com.kakao.actionbase.engine.service.PreparedQueryService
 import com.kakao.actionbase.engine.service.QueryService
 import com.kakao.actionbase.engine.sql.DataFrame
+import com.kakao.actionbase.server.api.graph.v3.query.PreparedQueryExecuteRequest
+import com.kakao.actionbase.server.api.graph.v3.query.QueryExecuteRequest
 import com.kakao.actionbase.server.util.mapToResponseEntity
 import com.kakao.actionbase.v2.engine.sql.QueryResult
 
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
@@ -16,17 +20,28 @@ import reactor.core.publisher.Mono
 @RestController
 class QueryController(
     private val queryService: QueryService,
+    private val preparedQueryService: PreparedQueryService,
 ) {
     @PostMapping("/graph/v3/query")
     fun query(
-        @RequestBody actionBaseQuery: ActionbaseQuery,
+        @RequestBody request: QueryExecuteRequest,
     ): Mono<ResponseEntity<NamedQueryResult>> =
         queryService
-            .query(actionBaseQuery)
+            .query(PreparedQuery.adhoc(request.fetch, request.transform, request.stats), request.arguments)
             .map {
                 val items = it.map { entry -> entry.value.toNamedJsonFormat(entry.key) }
                 NamedQueryResult(items)
             }.mapToResponseEntity()
+
+    @PostMapping("/graph/v3/query/{id}")
+    fun queryById(
+        @PathVariable id: String,
+        @RequestBody request: PreparedQueryExecuteRequest,
+    ): Mono<ResponseEntity<NamedQueryResult>> =
+        preparedQueryService
+            .query(id, request.arguments)
+            .map { NamedQueryResult(it.map { entry -> entry.value.toNamedJsonFormat(entry.key) }) }
+            .mapToResponseEntity()
 
     private fun DataFrame.toNamedJsonFormat(name: String): QueryResult.NamedJsonFormat {
         val meta = schema.fields.map { QueryResult.Meta(it.name, it.type.name) }
