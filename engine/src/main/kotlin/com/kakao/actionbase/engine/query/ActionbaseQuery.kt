@@ -14,6 +14,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 
 data class ActionbaseQuery(
     val fetch: List<Item>,
+    val transform: List<Transform> = emptyList(),
     val stats: Set<StatKey> = emptySet(),
 ) {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
@@ -112,6 +113,20 @@ data class ActionbaseQuery(
             override val post: List<PostProcessor> = emptyList(),
             override val aggregators: List<Aggregator> = emptyList(),
         ) : Item()
+    }
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+    @JsonSubTypes(
+        JsonSubTypes.Type(value = Transform.Sql::class, name = "SQL"),
+    )
+    sealed class Transform {
+        abstract val name: String
+
+        data class Sql(
+            override val name: String,
+            val sql: String,
+            val arguments: List<String> = emptyList(),
+        ) : Transform()
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")

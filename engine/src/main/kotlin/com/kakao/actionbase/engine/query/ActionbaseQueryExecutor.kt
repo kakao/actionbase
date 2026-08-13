@@ -9,6 +9,7 @@ import com.kakao.actionbase.engine.binding.TableBinding
 import com.kakao.actionbase.engine.service.RankScan
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.engine.sql.Row
+import com.kakao.actionbase.engine.sql.calcite.SqlTransform
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ArrayNode
@@ -30,6 +31,7 @@ import reactor.core.publisher.Mono
  */
 class ActionbaseQueryExecutor(
     private val engine: QueryEngine,
+    private val transforms: SqlTransform = SqlTransform(),
 ) {
     private val objectMapper = jacksonObjectMapper()
 
@@ -51,7 +53,12 @@ class ActionbaseQueryExecutor(
                     .map { df -> df.getColumn(vertex.field).filterNotNull().toSet() }
         }
 
-    fun query(actionBaseQuery: ActionbaseQuery): Mono<Map<String, DataFrame>> {
+    fun query(actionBaseQuery: ActionbaseQuery): Mono<Map<String, DataFrame>> = query(actionBaseQuery, emptyList())
+
+    private fun query(
+        actionBaseQuery: ActionbaseQuery,
+        transformArguments: List<List<Any?>>,
+    ): Mono<Map<String, DataFrame>> {
         val computed: Mono<Map<String, DataFrame>> =
             actionBaseQuery.fetch.fold(Mono.just(emptyMap())) { acc, queryItem ->
                 acc.flatMap { context ->
@@ -61,8 +68,36 @@ class ActionbaseQueryExecutor(
             }
         val returnNames = actionBaseQuery.fetch.filter { it.include }.map { it.name }
 
-        return computed.map { context -> returnNames.associateWith { context.getValue(it) } }
+        // Transforms read the whole context, `include = false` steps and all: a step can exist only to
+        // be subtracted from a later one. What the caller gets back is filtered afterwards.
+        return computed
+            .flatMap { context -> applyTransforms(context, actionBaseQuery.transform, transformArguments) }
+            .map { context ->
+                returnNames.associateWith { context.getValue(it) } +
+                    actionBaseQuery.transform.associate { it.name to context.getValue(it.name) }
+            }
     }
+
+    private fun applyTransforms(
+        context: Map<String, DataFrame>,
+        transforms: List<ActionbaseQuery.Transform>,
+        arguments: List<List<Any?>>,
+    ): Mono<Map<String, DataFrame>> =
+        transforms.withIndex().fold(Mono.just(context)) { acc, (index, transform) ->
+            acc.flatMap { carried ->
+                applyTransform(carried, transform, arguments.getOrElse(index) { emptyList() })
+                    .map { carried + (transform.name to it) }
+            }
+        }
+
+    private fun applyTransform(
+        context: Map<String, DataFrame>,
+        transform: ActionbaseQuery.Transform,
+        arguments: List<Any?>,
+    ): Mono<DataFrame> =
+        when (transform) {
+            is ActionbaseQuery.Transform.Sql -> Mono.fromCallable { transforms.run(context, transform.sql, arguments) }
+        }
 
     private fun processQuery(
         queryItem: ActionbaseQuery.Item,

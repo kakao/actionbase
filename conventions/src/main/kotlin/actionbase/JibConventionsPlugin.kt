@@ -1,8 +1,9 @@
 package actionbase
 
-import com.google.cloud.tools.jib.gradle.JibExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+
+import com.google.cloud.tools.jib.gradle.JibExtension
 
 class JibConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -19,10 +20,11 @@ class JibConventionsPlugin : Plugin<Project> {
                 "-Dsun.net.inetaddr.ttl=0",
                 "-Dnetworkaddress.cache.ttl=0",
                 "-Dnetworkaddress.cache.negative.ttl=0",
+                "-Dcalcite.bindable.cache.maxSize=1000",
                 "--add-opens",
                 "java.base/java.nio=ALL-UNNAMED",
                 "--add-exports",
-                "java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+                "java.security.jgss/sun.security.krb5=ALL-UNNAMED",
             )
         project.extensions.extraProperties["jvmArgs"] = jvmArgs
 
@@ -42,4 +44,3 @@ class JibConventionsPlugin : Plugin<Project> {
         }
     }
 }
-
