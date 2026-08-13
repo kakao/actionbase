@@ -5,8 +5,11 @@ import com.kakao.actionbase.v2.core.metadata.Direction as V2Direction
 import com.kakao.actionbase.core.edge.Edge
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationResult
+import com.kakao.actionbase.core.edge.payload.AggregationSweepResult
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.MutationResult
+import com.kakao.actionbase.core.edge.payload.SweepItemPayload
+import com.kakao.actionbase.core.edge.payload.TopkSweepItem
 import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
@@ -53,6 +56,58 @@ class TopkAggregationHandler(
                     }
                 },
             ).flatMap { (event, direction, topk) -> processTopk(event, direction, topk) }
+
+    override fun sweep(item: SweepItemPayload): Mono<AggregationSweepResult> {
+        require(item is TopkSweepItem) { "TopkAggregationHandler handles TopkSweepItem, got ${item::class.simpleName}" }
+
+        fun result(
+            status: String,
+            error: String? = null,
+        ) = AggregationSweepResult(
+            database = item.database,
+            table = item.table,
+            topk = item.topk,
+            entity = item.entity,
+            status = status,
+            error = error,
+        )
+
+        val tb = engine.getTableBinding(database = item.database, alias = item.table)
+        val group =
+            tb.schema.groups
+                .firstOrNull { g -> g.aggregations.topk.any { it.topk == item.topk } }
+                ?: return Mono.just(result(SKIPPED))
+
+        val topk = group.aggregations.topk.first { it.topk == item.topk }
+        val direction = Direction.valueOf(item.direction)
+        val directedSource = if (direction == Direction.IN) item.target else item.source
+        val dimensionValues = AggregationConstants.Topk.splitValues(item.dimensionValues)
+        val (rankDatabase, rankTable) = parseFqn(topk.rank)
+
+        return writeRank(
+            sourceDatabase = item.database,
+            sourceTable = tb.table,
+            group = group.group,
+            start = directedSource,
+            direction = direction,
+            ranges = item.ranges.takeIf { it.isNotEmpty() },
+            ranking =
+                Ranking(
+                    database = rankDatabase,
+                    table = rankTable,
+                    topk = item.topk,
+                    entity = item.entity,
+                    topkDimensionValue = item.topkDimensionValue,
+                    dimensionValues = dimensionValues,
+                    properties = item.properties,
+                ),
+        ).map { results ->
+            result(status = if (results.any { it.status == ERROR }) ERROR else SUCCESS)
+        }.onErrorResume { err ->
+            logger.error("topk sweep failed for {}.{} topk={}", item.database, item.table, item.topk, err)
+            Mono.just(result(status = ERROR, error = err.message))
+        }
+    }
 
     private fun createTopkEvent(item: AggregationItemPayload): List<EdgeAggregationEvent> {
         val tb = engine.getTableBinding(database = item.database, alias = item.table)
@@ -128,7 +183,7 @@ class TopkAggregationHandler(
 
     /**
      * Runs the aggregation query for one ranking and writes its rank row.
-     * Used by the aggregate flow, which then enqueues a refresh message
+     * Shared by the aggregate flow (which then enqueues a refresh message) and the sweep flow
      * (which recomputes from an already-resolved [Ranking]).
      */
     private fun writeRank(
