@@ -185,6 +185,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/datastore/hbase/tables/{tableName}/references",
                 // read-only POST
                 "POST /graph/v3/query",
+                "POST /aggregations/v1/databases/{database}/tables/{table}/topks/{topk}",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
                 // queue/v1 GET
@@ -323,6 +324,7 @@ class ReadOnlyRequestFilterTest {
                 "name" to "n",
                 "namespace" to "n",
                 "partition" to "0",
+                "topk" to "tk",
                 "queue" to "q",
                 "service" to "s",
                 "storage" to "st",
