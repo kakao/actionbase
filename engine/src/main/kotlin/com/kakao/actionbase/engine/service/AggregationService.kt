@@ -2,6 +2,8 @@ package com.kakao.actionbase.engine.service
 
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationResult
+import com.kakao.actionbase.core.edge.payload.AggregationSweepResult
+import com.kakao.actionbase.core.edge.payload.SweepItem
 import com.kakao.actionbase.core.metadata.QualifiedAggregations
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.engine.AggregationEngine
@@ -23,4 +25,12 @@ class AggregationService(
             .fromIterable(items)
             .flatMap { item -> Flux.merge(handlersByType.values.map { it.aggregate(item) }) }
             .collectList()
+
+    fun sweep(items: List<SweepItem>): Mono<List<AggregationSweepResult>> =
+        Flux
+            .fromIterable(items)
+            .flatMap { item -> handler(item.type).sweep(item.item) }
+            .collectList()
+
+    private fun handler(type: AggregationType): AggregationHandler = handlersByType[type] ?: error("No aggregation handler for type $type")
 }

@@ -2,9 +2,12 @@ package com.kakao.actionbase.engine.service.aggregation
 
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationResult
+import com.kakao.actionbase.core.edge.payload.AggregationSweepResult
+import com.kakao.actionbase.core.edge.payload.SweepItemPayload
 import com.kakao.actionbase.core.metadata.common.AggregationType
 
 import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 /**
  * One aggregation kind's write path. [AggregationService] dispatches to the handler
@@ -16,4 +19,7 @@ interface AggregationHandler {
 
     /** Aggregates a single edge event and writes its result rows. */
     fun aggregate(item: AggregationItemPayload): Flux<AggregationResult>
+
+    /** Recomputes a single refreshed event and re-writes its result row. */
+    fun sweep(item: SweepItemPayload): Mono<AggregationSweepResult>
 }
