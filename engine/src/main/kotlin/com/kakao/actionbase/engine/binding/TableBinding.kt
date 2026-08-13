@@ -16,6 +16,15 @@ interface TableBinding {
     val schema: ModelSchema
     val mutationMode: MutationMode
 
+    /**
+     * An empty result that still carries this table's columns.
+     *
+     * A read that found nothing has no rows, but the table it read from still has the columns it always
+     * had. Dropping them turns "no rows" into "no such column" for anything that resolves names against
+     * the frame — a SQL transform planned against a schema-less frame cannot resolve a single one.
+     */
+    val emptyFrame: DataFrame get() = DataFrame.empty
+
     // -- mutation
 
     fun <T> withLock(

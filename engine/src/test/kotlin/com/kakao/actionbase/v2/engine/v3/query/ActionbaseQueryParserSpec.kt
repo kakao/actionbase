@@ -14,7 +14,7 @@ class ActionbaseQueryParserSpec :
             val json =
                 """
                 {
-                  "query": [
+                  "fetch": [
                     {
                       "type": "SCAN",
                       "name": "a",
@@ -80,6 +80,30 @@ class ActionbaseQueryParserSpec :
                       "cache": "recent_wishlist",
                       "limit": 10,
                       "include": true
+                    },
+                    {
+                      "type": "TOPK",
+                      "name": "g",
+                      "database": "{database}",
+                      "table": "{table}",
+                      "topk": "top_product_groups_1y",
+                      "entity": {
+                        "type": "REF",
+                        "ref": "a",
+                        "field": "tgt"
+                      },
+                      "limit": 10,
+                      "include": true
+                    },
+                    {
+                      "type": "TOPK",
+                      "name": "h",
+                      "database": "{database}",
+                      "table": "{table}",
+                      "topk": "top_product_groups_global",
+                      "dimensionValues": {"category": "fruit"},
+                      "limit": 10,
+                      "include": true
                     }
                   ]
                 }
@@ -87,8 +111,8 @@ class ActionbaseQueryParserSpec :
 
             val actionBaseQuery = ActionbaseQuery.from(json)
 
-            actionBaseQuery.query.size shouldBe 5
-            actionBaseQuery.query[0] shouldBe
+            actionBaseQuery.fetch.size shouldBe 7
+            actionBaseQuery.fetch[0] shouldBe
                 ActionbaseQuery.Item.Scan(
                     name = "a",
                     database = "{database}",
@@ -100,7 +124,7 @@ class ActionbaseQueryParserSpec :
                     ranges = "name:eq:Alice",
                     include = false,
                 )
-            actionBaseQuery.query[1] shouldBe
+            actionBaseQuery.fetch[1] shouldBe
                 ActionbaseQuery.Item.Get(
                     name = "b",
                     database = "{database}",
@@ -109,7 +133,7 @@ class ActionbaseQueryParserSpec :
                     target = ActionbaseQuery.Vertex.Value(listOf(1)),
                     include = false,
                 )
-            actionBaseQuery.query[2] shouldBe
+            actionBaseQuery.fetch[2] shouldBe
                 ActionbaseQuery.Item.Count(
                     name = "d",
                     database = "{database}",
@@ -118,7 +142,7 @@ class ActionbaseQueryParserSpec :
                     direction = Direction.OUT,
                     include = true,
                 )
-            actionBaseQuery.query[3] shouldBe
+            actionBaseQuery.fetch[3] shouldBe
                 ActionbaseQuery.Item.Self(
                     name = "e",
                     database = "{database}",
@@ -126,7 +150,7 @@ class ActionbaseQueryParserSpec :
                     source = ActionbaseQuery.Vertex.Value(listOf(1, 2, 3)),
                     include = false,
                 )
-            actionBaseQuery.query[4] shouldBe
+            actionBaseQuery.fetch[4] shouldBe
                 ActionbaseQuery.Item.Seek(
                     name = "f",
                     database = "{database}",
@@ -134,6 +158,26 @@ class ActionbaseQueryParserSpec :
                     source = ActionbaseQuery.Vertex.Ref("a", "tgt"),
                     direction = Direction.OUT,
                     cache = "recent_wishlist",
+                    limit = 10,
+                    include = true,
+                )
+            actionBaseQuery.fetch[5] shouldBe
+                ActionbaseQuery.Item.Topk(
+                    name = "g",
+                    database = "{database}",
+                    table = "{table}",
+                    topk = "top_product_groups_1y",
+                    entity = ActionbaseQuery.Vertex.Ref("a", "tgt"),
+                    limit = 10,
+                    include = true,
+                )
+            actionBaseQuery.fetch[6] shouldBe
+                ActionbaseQuery.Item.Topk(
+                    name = "h",
+                    database = "{database}",
+                    table = "{table}",
+                    topk = "top_product_groups_global",
+                    dimensionValues = mapOf("category" to "fruit"),
                     limit = 10,
                     include = true,
                 )
