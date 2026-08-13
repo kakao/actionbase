@@ -9,9 +9,12 @@ import com.kakao.actionbase.engine.queue.PartitionHasher
 import com.kakao.actionbase.engine.queue.PollResponse
 import com.kakao.actionbase.server.test.E2ETestBase
 
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -70,19 +73,24 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                     "id": {"type": "long", "comment": "purchase id"},
                     "source": {"type": "string", "comment": "user"},
                     "target": {"type": "string", "comment": "item"},
-                    "properties": [],
+                    "properties": [
+                      {"name": "purchasedAt", "type": "long", "comment": "purchase time ms", "nullable": false}
+                    ],
                     "direction": "BOTH",
                     "indexes": [],
                     "groups": [{
                       "group": "purchased_count",
                       "type": "COUNT",
-                      "fields": [{"name": "_target"}],
+                      "fields": [
+                        {"name": "_target"},
+                        {"name": "purchasedAt", "bucket": {"type": "date", "name": "purchasedAt", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
+                      ],
                       "directionType": "OUT",
                       "aggregations": {
                         "topk": [{
                           "topk": "top_purchased",
                           "entity": "source",
-                          "ranges": "_target:eq:{_target}",
+                          "ranges": "_target:eq:{_target};purchasedAt:bt:now-365d,now",
                           "dimension": "target",
                           "refreshAfterMillis": $refreshAfter,
                           "rank": "$rankFqn"
@@ -165,6 +173,8 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
      */
     @Test
     fun `running a topk aggregation enqueues a refresh message when refreshAfterMillis is set`() {
+        val purchasedAt = System.currentTimeMillis()
+
         client
             .post()
             .uri("/graph/v3/databases/$db/tables/$table/multi-edges")
@@ -173,7 +183,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 """
                 {
                   "mutations": [
-                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1", "properties": {}}}
+                    {"type": "INSERT", "edge": {"version": 1, "id": 1, "source": "user1", "target": "item1", "properties": {"purchasedAt": $purchasedAt}}}
                   ]
                 }
                 """.trimIndent(),
@@ -181,7 +191,6 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .expectStatus()
             .isOk
 
-        val before = System.currentTimeMillis()
         client
             .post()
             .uri("/aggregations/v1/aggregate")
@@ -191,14 +200,13 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 {
                   "items": [
                     {"database": "$db", "table": "$table",
-                     "edge": {"version": 1, "source": "user1", "target": "item1", "properties": {}, "context": {}}}
+                     "edge": {"version": 1, "source": "user1", "target": "item1", "properties": {"purchasedAt": $purchasedAt}, "context": {}}}
                   ]
                 }
                 """.trimIndent(),
             ).exchange()
             .expectStatus()
             .isOk
-        val after = System.currentTimeMillis()
 
         val key =
             AggregationConstants.Topk.refreshKey(
@@ -222,9 +230,12 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 .returnResult()
                 .responseBody!!
 
+        // The refresh is due when the purchase leaves the window, not a window's length after the purchase
+        // itself: the window moves in whole days, so the day it landed in stays inside for one more.
+        val bucketStart = Instant.ofEpochMilli(purchasedAt).truncatedTo(ChronoUnit.DAYS).toEpochMilli()
+
         val message = page.messages.single()
-        assertTrue(message.seq >= before + refreshAfter)
-        assertTrue(message.seq <= after + refreshAfter)
+        assertEquals(bucketStart + refreshAfter + Duration.ofDays(1).toMillis(), message.seq)
 
         val value = message.value as Map<*, *>
         assertEquals("TOPK", value["type"])
