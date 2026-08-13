@@ -11,7 +11,8 @@ import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
 
 // Rejects non-GET methods on graph path prefixes with 403.
-// Exceptions: read-only POST endpoints matched by readSuffixes.
+// Exceptions: read-only POST endpoints, matched by readSuffixes, or by readSegments when the path ends in
+// a variable and so has no fixed suffix to match on.
 class ReadOnlyRequestFilter : WebFilter {
     private val log = LoggerFactory.getLogger(ReadOnlyRequestFilter::class.java)
 
@@ -23,6 +24,7 @@ class ReadOnlyRequestFilter : WebFilter {
             "/multi-edges/ids",
             "/query",
         )
+    private val readSegments = setOf("/topks/")
 
     init {
         log.info("ReadOnlyRequestFilter is active. Write operations on {} will be rejected.", paths)
@@ -50,5 +52,5 @@ class ReadOnlyRequestFilter : WebFilter {
         return exchange.response.writeWith(Mono.just(messageBuffer))
     }
 
-    private fun isRead(path: String): Boolean = readSuffixes.any { path.endsWith(it) }
+    private fun isRead(path: String): Boolean = readSuffixes.any { path.endsWith(it) } || readSegments.any { path.contains(it) }
 }
