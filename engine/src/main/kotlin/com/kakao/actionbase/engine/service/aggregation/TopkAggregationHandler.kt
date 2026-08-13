@@ -13,6 +13,7 @@ import com.kakao.actionbase.core.edge.payload.TopkSweepItem
 import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
+import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.Direction
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Group
@@ -26,6 +27,7 @@ import com.kakao.actionbase.engine.queue.EnqueueResponse
 import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
+import com.kakao.actionbase.v2.engine.sql.WherePredicate
 import com.kakao.actionbase.v2.engine.util.getLogger
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -161,7 +163,7 @@ class TopkAggregationHandler(
             ranking = ranking,
         ).flatMap { results ->
             val status = if (results.any { it.status == ERROR }) ERROR else SUCCESS
-            if (status == ERROR || topk.refreshAfterMillis <= 0) {
+            if (status == ERROR || topk.refreshAfterMillis <= 0 || !isSlidingWindow(event, inputs.ranges)) {
                 return@flatMap Mono.just(result(status = status))
             }
 
@@ -241,7 +243,7 @@ class TopkAggregationHandler(
         ranges: String?,
         refreshAfterMillis: Long,
     ): Mono<EnqueueResponse> {
-        val refreshAt = System.currentTimeMillis() + refreshAfterMillis
+        val refreshAt = refreshAt(event, refreshAfterMillis)
         val message =
             EnqueueMessage(
                 key =
@@ -278,6 +280,45 @@ class TopkAggregationHandler(
             request = EnqueueRequest(messages = listOf(message)),
         )
     }
+
+    /**
+     * The instant this event leaves the window. `now + window` misses it: the event is stored under a bucket,
+     * the window's bounds are read at the same precision, so the window only moves at bucket boundaries — a
+     * refresh scheduled off the raw event time fires while the event is still inside, changes nothing, and is
+     * consumed. Counting from the event's bucket drops the same remainder the write dropped, and the extra
+     * bucket accounts for the lower bound being truncated rather than raised.
+     */
+    private fun refreshAt(
+        event: EdgeAggregationEvent,
+        refreshAfterMillis: Long,
+    ): Long {
+        val bucket = event.dateBucket()
+        val start = bucket?.startOf(event.properties[bucket.name])
+
+        return if (start == null) {
+            System.currentTimeMillis() + refreshAfterMillis
+        } else {
+            start.toEpochMilli() + refreshAfterMillis + bucket.interval().toMillis()
+        }
+    }
+
+    private fun isSlidingWindow(
+        event: EdgeAggregationEvent,
+        ranges: String?,
+    ): Boolean {
+        val bucket = event.dateBucket() ?: return false
+        val bound =
+            ranges
+                ?.let { WherePredicate.parse(it) }
+                ?.filterIsInstance<WherePredicate.Between>()
+                ?.firstOrNull { it.key == bucket.name }
+                ?.from
+                ?: return false
+
+        return bucket.isRelative(bound)
+    }
+
+    private fun EdgeAggregationEvent.dateBucket(): Bucket.Date? = group.fields.firstNotNullOfOrNull { it.bucket as? Bucket.Date }
 
     private fun parseFqn(fqn: String): Pair<String, String> {
         val dot = fqn.indexOf('.')

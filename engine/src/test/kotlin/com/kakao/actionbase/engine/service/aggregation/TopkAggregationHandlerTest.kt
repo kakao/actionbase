@@ -10,6 +10,7 @@ import com.kakao.actionbase.core.edge.payload.TopkSweepItem
 import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
+import com.kakao.actionbase.core.metadata.common.Bucket
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.Field
 import com.kakao.actionbase.core.metadata.common.Group
@@ -25,6 +26,8 @@ import com.kakao.actionbase.engine.queue.EnqueueResult
 import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
+
+import java.time.Instant
 
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -151,7 +154,7 @@ class TopkAggregationHandlerTest {
         @Test
         fun `enqueues a refresh after the rank write`() {
             val refreshAfter = 60_000L
-            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased", refreshAfterMillis = refreshAfter))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased", refreshAfterMillis = refreshAfter, ranges = SLIDING_WINDOW), bucketed = true)
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -219,7 +222,8 @@ class TopkAggregationHandlerTest {
         fun `carries the declared properties into the refresh message`() {
             stubTopkBinding(
                 engine = engine,
-                topk = topkConfig(name = "top_purchased", refreshAfterMillis = 60_000L, additionalProperties = listOf("category")),
+                topk = topkConfig(name = "top_purchased", refreshAfterMillis = 60_000L, additionalProperties = listOf("category"), ranges = SLIDING_WINDOW),
+                bucketed = true,
             )
 
             every {
@@ -281,7 +285,7 @@ class TopkAggregationHandlerTest {
 
         @Test
         fun `skips the refresh when the rank write fails`() {
-            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L, ranges = SLIDING_WINDOW), bucketed = true)
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -306,8 +310,43 @@ class TopkAggregationHandlerTest {
         }
 
         @Test
+        fun `schedules the refresh for the instant the event leaves the window`() {
+            val refreshAfter = 365L * 24 * 60 * 60 * 1000
+            // 14:32 on a day bucket is stored as that day, so the remainder must not carry into the due time.
+            val purchasedAt = Instant.parse("2026-01-01T14:32:00Z").toEpochMilli()
+
+            stubTopkBinding(
+                engine = engine,
+                topk = topkConfig(name = "top_purchased", refreshAfterMillis = refreshAfter, ranges = SLIDING_WINDOW),
+                bucketed = true,
+            )
+
+            every {
+                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns Mono.just(aggPayload(count = 1))
+            every {
+                mutationService.mutate("commerce", "orders__topk", any(), any(), any(), any(), any())
+            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+            val refreshRequest = slot<EnqueueRequest>()
+            every {
+                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_TABLE, capture(refreshRequest))
+            } returns Mono.just(enqueueResponse(status = "CREATED"))
+
+            StepVerifier
+                .create(handler.aggregate(aggregationItemPayload(properties = mapOf(PURCHASED_AT to purchasedAt))).collectList())
+                .assertNext { results -> results.single().status shouldBe "SUCCESS" }
+                .verifyComplete()
+
+            // The purchase's day stays inside a `now-365d` window until the day after it turns 365 days old.
+            refreshRequest.captured.messages
+                .single()
+                .seq shouldBe Instant.parse("2027-01-02T00:00:00Z").toEpochMilli()
+        }
+
+        @Test
         fun `reports ERROR when the refresh enqueue fails`() {
-            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L))
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L, ranges = SLIDING_WINDOW), bucketed = true)
 
             every {
                 queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
@@ -444,6 +483,12 @@ class TopkAggregationHandlerTest {
 
 // region test fixtures
 
+private const val PURCHASED_AT = "purchasedAt"
+
+private val DAY_BUCKET = Bucket.Date(name = PURCHASED_AT, unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd")
+
+private const val SLIDING_WINDOW = "$PURCHASED_AT:bt:now-365d,now"
+
 // rank table naming rule: the source table name with the `__topk` suffix
 private fun topkConfig(
     name: String,
@@ -452,6 +497,7 @@ private fun topkConfig(
     rank: String = "commerce.orders__topk",
     refreshAfterMillis: Long = 0,
     additionalProperties: List<String> = emptyList(),
+    ranges: String = "",
 ): Topk =
     Topk(
         topk = name,
@@ -460,6 +506,7 @@ private fun topkConfig(
         rank = rank,
         refreshAfterMillis = refreshAfterMillis,
         additionalProperties = additionalProperties,
+        ranges = ranges,
     )
 
 private fun sweepTarget(
@@ -496,12 +543,13 @@ private fun stubTopkBinding(
     database: String = "commerce",
     table: String = "orders",
     directionType: DirectionType = DirectionType.OUT,
+    bucketed: Boolean = false,
 ) {
     val group =
         Group(
             group = "purchased_count",
             type = GroupType.SUM,
-            fields = emptyList(),
+            fields = if (bucketed) listOf(Group.Field(PURCHASED_AT, bucket = DAY_BUCKET)) else emptyList(),
             directionType = directionType,
             aggregations = Aggregations(topk = listOf(topk)),
         )
