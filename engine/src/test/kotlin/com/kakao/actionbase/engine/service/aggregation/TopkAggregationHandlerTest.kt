@@ -6,6 +6,7 @@ import com.kakao.actionbase.core.edge.payload.DataFrameEdgeAggPayload
 import com.kakao.actionbase.core.edge.payload.EdgeBulkMutationRequest.MutationItem
 import com.kakao.actionbase.core.edge.payload.EdgePayload
 import com.kakao.actionbase.core.edge.payload.MutationResult
+import com.kakao.actionbase.core.edge.payload.TopkSweepItem
 import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.common.Aggregations
@@ -500,6 +501,98 @@ class TopkAggregationHandlerTest {
                 }.verifyComplete()
         }
     }
+
+    @Nested
+    inner class Sweep {
+        @Test
+        fun `recomputes the ranking and rewrites the rank row`() {
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased"))
+
+            every {
+                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns Mono.just(aggPayload(count = 9))
+
+            val mutations = slot<List<MutationItem>>()
+            every {
+                mutationService.mutate("commerce", "orders__topk", capture(mutations), any(), any(), any(), any())
+            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+            StepVerifier
+                .create(handler.sweep(sweepTarget(topk = "top_purchased")))
+                .assertNext { result ->
+                    result.status shouldBe "SUCCESS"
+                    result.topk shouldBe "top_purchased"
+                    result.entity shouldBe "user1"
+                }.verifyComplete()
+
+            val edge = mutations.captured.single().edge
+            edge.source shouldBe "commerce|orders|top_purchased|user1"
+            edge.target shouldBe "item1"
+        }
+
+        @Test
+        fun `rewrites the carried properties onto the rank row`() {
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased"))
+
+            every {
+                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns Mono.just(aggPayload(count = 9))
+
+            val mutations = slot<List<MutationItem>>()
+            every {
+                mutationService.mutate("commerce", "orders__topk", capture(mutations), any(), any(), any(), any())
+            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+            StepVerifier
+                .create(handler.sweep(sweepTarget(topk = "top_purchased", properties = mapOf("category" to "fruit"))))
+                .assertNext { it.status shouldBe "SUCCESS" }
+                .verifyComplete()
+
+            val edge = mutations.captured.single().edge
+            edge.properties.containsKey("metric") shouldBe true
+            edge.properties["additionalProperties"] shouldBe """{"category":"fruit"}"""
+        }
+
+        @Test
+        fun `is skipped when the topk is not defined on the table`() {
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "top_purchased"))
+
+            StepVerifier
+                .create(handler.sweep(sweepTarget(topk = "unknown_topk")))
+                .assertNext { it.status shouldBe "SKIPPED" }
+                .verifyComplete()
+
+            verify(exactly = 0) { mutationService.mutate(any(), any(), any(), any(), any(), any(), any()) }
+        }
+
+        @Test
+        fun `IN aggregates from the target endpoint`() {
+            stubTopkBinding(
+                engine = engine,
+                topk = topkConfig(name = "top_purchased_by", entity = "target", dimension = "source"),
+                directionType = DirectionType.IN,
+            )
+
+            val starts = slot<List<Any>>()
+            every {
+                queryService.agg(any(), any(), any(), capture(starts), any(), any(), any(), any())
+            } returns Mono.just(aggPayload(count = 4))
+
+            every {
+                mutationService.mutate("commerce", "orders__topk", any(), any(), any(), any(), any())
+            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+            StepVerifier
+                .create(
+                    handler.sweep(
+                        sweepTarget(topk = "top_purchased_by", direction = "IN", entity = "item1", topkDimensionValue = "user1"),
+                    ),
+                ).assertNext { it.status shouldBe "SUCCESS" }
+                .verifyComplete()
+
+            starts.captured shouldBe listOf("item1")
+        }
+    }
 }
 
 // region test fixtures
@@ -538,6 +631,34 @@ private fun topkConfig(
         refreshQueue = refreshQueue,
         additionalProperties = additionalProperties,
         ranges = ranges,
+    )
+
+private fun sweepTarget(
+    topk: String,
+    database: String = "commerce",
+    table: String = "orders",
+    source: String = "user1",
+    target: String = "item1",
+    direction: String = "OUT",
+    ranges: String = "_target:eq:item1",
+    entity: String = "user1",
+    topkDimensionValue: String = "item1",
+    dimensionValues: String = "",
+    properties: Map<String, String> = emptyMap(),
+): TopkSweepItem =
+    TopkSweepItem(
+        database = database,
+        table = table,
+        topk = topk,
+        source = source,
+        target = target,
+        direction = direction,
+        ranges = ranges,
+        entity = entity,
+        topkDimensionValue = topkDimensionValue,
+        dimensionValues = dimensionValues,
+        properties = properties,
+        refreshAt = 123L,
     )
 
 private fun stubTopkBinding(

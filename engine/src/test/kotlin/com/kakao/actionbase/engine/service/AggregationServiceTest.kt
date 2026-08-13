@@ -2,7 +2,11 @@ package com.kakao.actionbase.engine.service
 
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationResult
+import com.kakao.actionbase.core.edge.payload.AggregationSweepResult
 import com.kakao.actionbase.core.edge.payload.EdgePayload
+import com.kakao.actionbase.core.edge.payload.SweepItem
+import com.kakao.actionbase.core.edge.payload.SweepItemPayload
+import com.kakao.actionbase.core.edge.payload.TopkSweepItem
 import com.kakao.actionbase.core.metadata.QualifiedAggregations
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.engine.AggregationEngine
@@ -23,7 +27,7 @@ import reactor.test.StepVerifier
 
 /**
  * `AggregationService` is a thin dispatcher: it forwards metadata lookups to the engine and routes
- * each item to the handler registered for its type. Per-type behavior (top-K ranking) lives
+ * each item to the handler registered for its type. Per-type behavior (top-K ranking, refresh) lives
  * in the handlers, and dispatch through a real handler is exercised end-to-end by
  * `MetadataAggQueryControllerE2ETest` — so here we only pin what the dispatcher itself owns.
  */
@@ -108,6 +112,18 @@ class AggregationServiceTest {
                 .verifyComplete()
         }
     }
+
+    @Nested
+    inner class Sweep {
+        @Test
+        fun `errors when no handler is registered for the type`() {
+            val service = AggregationService(engine, emptyList())
+
+            StepVerifier
+                .create(service.sweep(listOf(sweepItem())))
+                .verifyError(IllegalStateException::class.java)
+        }
+    }
 }
 
 // region test fixtures
@@ -123,6 +139,22 @@ private fun item(source: String): AggregationItemPayload =
                 target = "item1",
                 properties = emptyMap(),
                 context = emptyMap(),
+            ),
+    )
+
+private fun sweepItem(): SweepItem =
+    SweepItem(
+        type = AggregationType.TOPK,
+        item =
+            TopkSweepItem(
+                database = "commerce",
+                table = "orders",
+                topk = "top_purchased",
+                source = "user1",
+                target = "item1",
+                direction = "OUT",
+                entity = "user1",
+                topkDimensionValue = "item1",
             ),
     )
 
@@ -154,6 +186,8 @@ private class DelayedHandler(
             ).delayElement(delays[source] ?: Duration.ZERO)
             .flux()
     }
+
+    override fun sweep(item: SweepItemPayload): Mono<AggregationSweepResult> = error("this fake stands in on the aggregate path only")
 }
 
 // endregion
