@@ -213,7 +213,7 @@ class TopkAggregationHandler(
                         ranges = ranges ?: "",
                         entity = ranking.entity,
                         topkDimensionValue = ranking.topkDimensionValue,
-                        dimensionValues = ranking.dimensionValues.joinToString("|"),
+                        dimensionValues = AggregationConstants.Topk.joinValues(ranking.dimensionValues),
                         properties = ranking.properties,
                         refreshAt = refreshAt,
                     ),
