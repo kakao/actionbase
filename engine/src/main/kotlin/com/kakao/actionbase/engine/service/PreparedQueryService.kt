@@ -94,8 +94,7 @@ class PreparedQueryService(
             graph.queryDdl
                 .update(name, QueryUpdateRequest(active = false))
                 .then(graph.queryDdl.delete(name, QueryDeleteRequest()))
-                .doFinally { byId.invalidate(id) }
-                .then()
+                .then(Mono.fromRunnable { byId.invalidate(id) })
         }
 
     fun createAlias(
@@ -155,8 +154,7 @@ class PreparedQueryService(
                 graph.queryAliasDdl
                     .update(name, QueryAliasUpdateRequest(active = false))
                     .then(graph.queryAliasDdl.delete(name, QueryAliasDeleteRequest()))
-            }.doFinally { idOfAlias.invalidate(alias) }
-            .then()
+            }.then(Mono.fromRunnable { idOfAlias.invalidate(alias) })
     }
 
     fun query(
