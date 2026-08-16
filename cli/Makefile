@@ -123,4 +123,5 @@ help:
 	@echo "  build-macos  - Build for macOS (AMD64 and ARM64)"
 	@echo "  build-windows- Build for Windows AMD64"
 	@echo "  build-all    - Build for all platforms"
+	@echo "  package      - Build all platforms and create release archives"
 	@echo "  help         - Show this help message"

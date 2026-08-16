@@ -73,6 +73,10 @@ cd cli
 make package VERSION=1.0.0
 ```
 
+> The two sections below describe filenames for an `install.sh` helper that is not present
+> in this repository. They do not describe what the release workflow publishes; see
+> section 2 above for that.
+
 ### 3. Binary Filename Convention
 
 Binary files uploaded to GitHub Release must follow this naming format:

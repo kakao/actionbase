@@ -123,7 +123,7 @@ jobs:
         run: |
           set -euo pipefail
           ls dist/*.tar.gz dist/*.zip dist/checksums.txt >/dev/null \
-            || { echo "::error::dist/ is empty — build artifacts may have expired"; exit 1; }
+            || { echo "::error::dist/ is empty: build artifacts may have expired"; exit 1; }
 
       - name: Create draft release if absent
         run: |
