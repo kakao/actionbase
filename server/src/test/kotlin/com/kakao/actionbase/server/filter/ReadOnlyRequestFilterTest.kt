@@ -175,7 +175,6 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
                 "GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
                 "GET /graph/v3/databases/{database}/tables/{table}/vertices/get",
-                "GET /aggregations/v1/metadata",
                 "GET /graph/v3/datastore",
                 "GET /graph/v3/datastore/hbase/namespaces",
                 "GET /graph/v3/datastore/hbase/references",

@@ -6,11 +6,9 @@ object PathPrefixes {
 
     val QUEUE = setOf("/queue/v1")
 
-    val AGGREGATIONS = setOf("/aggregations/v1")
-
     val CONTROL = setOf("/control")
 
-    val DATA = GRAPH + QUEUE + AGGREGATIONS
+    val DATA = GRAPH + QUEUE
 
     val FILTERED = DATA + CONTROL
 }
