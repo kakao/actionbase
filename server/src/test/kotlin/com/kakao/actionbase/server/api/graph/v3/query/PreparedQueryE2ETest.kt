@@ -6,11 +6,15 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.http.MediaType
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+// Registering and running a query has taken past the 5-second default under a full build. Only this suite
+// gets the longer timeout, so every other test keeps the shorter one as a check on how slow a call can get.
+@AutoConfigureWebTestClient(timeout = "30s")
 class PreparedQueryE2ETest : E2ETestBase() {
     private val db = "shop"
     private val table = "purchases_table"

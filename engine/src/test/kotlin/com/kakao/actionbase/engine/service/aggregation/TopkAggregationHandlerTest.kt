@@ -348,7 +348,10 @@ class TopkAggregationHandlerTest {
                 .seq shouldBe Instant.parse("2027-01-02T00:00:00Z").toEpochMilli()
         }
 
-        /** With no value to read the bucket from, the due time can only be counted from the clock. */
+        /**
+         * With nothing to read the bucket from, the due time can only be counted from the clock: a value
+         * that is not a time is as useless for that as no value at all.
+         */
         @Test
         fun `schedules from the clock when the event carries no bucket value`() {
             val refreshAfter = 60_000L
@@ -371,14 +374,16 @@ class TopkAggregationHandlerTest {
                 queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_TABLE, capture(refreshRequest))
             } returns Mono.just(enqueueResponse(status = "CREATED"))
 
-            StepVerifier
-                .create(handlerAt(FIXED_NOW).aggregate(aggregationItemPayload()).collectList())
-                .assertNext { results -> results.single().status shouldBe "SUCCESS" }
-                .verifyComplete()
+            listOf(emptyMap(), mapOf(PURCHASED_AT to "the other day")).forEach { properties ->
+                StepVerifier
+                    .create(handlerAt(FIXED_NOW).aggregate(aggregationItemPayload(properties = properties)).collectList())
+                    .assertNext { results -> results.single().status shouldBe "SUCCESS" }
+                    .verifyComplete()
 
-            refreshRequest.captured.messages
-                .single()
-                .seq shouldBe FIXED_NOW.toEpochMilli() + refreshAfter
+                refreshRequest.captured.messages
+                    .single()
+                    .seq shouldBe FIXED_NOW.toEpochMilli() + refreshAfter
+            }
         }
 
         @Test
