@@ -38,6 +38,8 @@ import com.kakao.actionbase.v2.engine.entity.AliasEntity
 import com.kakao.actionbase.v2.engine.entity.EdgeEntity
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
+import com.kakao.actionbase.v2.engine.entity.QueryAliasEntity
+import com.kakao.actionbase.v2.engine.entity.QueryEntity
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
 import com.kakao.actionbase.v2.engine.entity.hasAggregation
@@ -58,6 +60,8 @@ import com.kakao.actionbase.v2.engine.metadata.sync.MetadataType
 import com.kakao.actionbase.v2.engine.migration.Migration
 import com.kakao.actionbase.v2.engine.service.ddl.AliasDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.LabelDdlService
+import com.kakao.actionbase.v2.engine.service.ddl.QueryAliasDdlService
+import com.kakao.actionbase.v2.engine.service.ddl.QueryDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceDdlService
 import com.kakao.actionbase.v2.engine.service.ddl.StorageDdlService
 import com.kakao.actionbase.v2.engine.sql.DataFrame
@@ -110,6 +114,8 @@ class Graph(
     labelLabel: Label,
     infoLabel: Label,
     aliasLabel: Label,
+    queryLabel: Label,
+    queryAliasLabel: Label,
     onlineMetadataLabel: Label,
     private val nilLabel: Label,
     override val clock: java.time.Clock = java.time.Clock.systemUTC(),
@@ -144,6 +150,8 @@ class Graph(
             labelLabel.name to labelLabel,
             infoLabel.name to infoLabel,
             aliasLabel.name to aliasLabel,
+            queryLabel.name to queryLabel,
+            queryAliasLabel.name to queryAliasLabel,
             onlineMetadataLabel.name to onlineMetadataLabel,
             nilLabel.name to nilLabel,
         )
@@ -166,11 +174,17 @@ class Graph(
 
     val aliasDdl = AliasDdlService(this, aliasLabel, AliasEntity)
 
+    val queryDdl = QueryDdlService(this, queryLabel, QueryEntity)
+
+    val queryAliasDdl = QueryAliasDdlService(this, queryAliasLabel, QueryAliasEntity)
+
     fun isReady(): Boolean = metadataInitialized
 
     val encoderPoolSize = config.encoderPoolSize
 
     val metadataFetchLimit = config.metadataFetchLimit
+
+    val metastoreReloadInterval: Duration? = config.metastoreReloadInterval
 
     val systemMutationMode = config.systemMutationMode
 
@@ -263,11 +277,6 @@ class Graph(
                 .map { true }
                 .defaultIfEmpty(false)
         }
-
-    fun listWithAggregations(type: AggregationType? = null): List<QualifiedAggregations> =
-        labels.values
-            .filter { it.entity.hasAggregation(type) }
-            .flatMap { it.entity.toQualifiedAggregations(type) }
 
     fun getAllLabels(): Map<String, String> =
         (
@@ -386,6 +395,11 @@ class Graph(
             .cache(Duration.ZERO)
             .subscribeOn(Schedulers.boundedElastic())
     }
+
+    fun listWithAggregations(type: AggregationType? = null): List<QualifiedAggregations> =
+        labels.values
+            .filter { it.entity.hasAggregation(type) }
+            .flatMap { it.entity.toQualifiedAggregations(type) }
 
     /**
      * For `system=ASYNC + label=SYNC` (no force), return the SYNC-shaped status derived from the
@@ -1040,6 +1054,10 @@ class Graph(
 
             val aliasLabel = Metadata.aliasLabelEntity.materialize(defaults)
 
+            val queryLabel = Metadata.queryLabelEntity.materialize(defaults)
+
+            val queryAliasLabel = Metadata.queryAliasLabelEntity.materialize(defaults)
+
             val onlineMetadataLabel = onlineMetadataLabelEntity.materialize(defaults)
 
             val nilLabel =
@@ -1054,6 +1072,8 @@ class Graph(
                         .then(mutate(Metadata.labelLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .then(mutate(Metadata.infoLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .then(mutate(Metadata.aliasLabelEntity.toEdge(), EdgeOperation.INSERT))
+                        .then(mutate(Metadata.queryLabelEntity.toEdge(), EdgeOperation.INSERT))
+                        .then(mutate(Metadata.queryAliasLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .then(mutate(onlineMetadataLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .then(mutate(Metadata.sysNilLabelEntity.toEdge(), EdgeOperation.INSERT))
                         .block()
@@ -1076,6 +1096,8 @@ class Graph(
                 labelLabel,
                 infoLabel,
                 aliasLabel,
+                queryLabel,
+                queryAliasLabel,
                 onlineMetadataLabel,
                 nilLabel,
                 clock,

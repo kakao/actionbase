@@ -161,6 +161,7 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v2/storage/{storage}",
                 // v3 GET
                 "GET /graph/v3",
+                "GET /aggregations/v1/metadata",
                 "GET /graph/v3/databases",
                 "GET /graph/v3/databases/{database}",
                 "GET /graph/v3/databases/{database}/aliases",
@@ -175,7 +176,10 @@ class ReadOnlyRequestFilterTest {
                 "GET /graph/v3/databases/{database}/tables/{table}/edges/scan/{index}",
                 "GET /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
                 "GET /graph/v3/databases/{database}/tables/{table}/vertices/get",
-                "GET /aggregations/v1/metadata",
+                "GET /graph/v3/prepared-queries",
+                "GET /graph/v3/prepared-queries/{id}",
+                "GET /graph/v3/prepared-queries/aliases",
+                "GET /graph/v3/prepared-queries/aliases/{alias}",
                 "GET /graph/v3/datastore",
                 "GET /graph/v3/datastore/hbase/namespaces",
                 "GET /graph/v3/datastore/hbase/references",
@@ -186,8 +190,10 @@ class ReadOnlyRequestFilterTest {
                 // read-only POST
                 "POST /graph/v3/query",
                 "POST /aggregations/v1/databases/{database}/tables/{table}/topks/{topk}",
+                "POST /graph/v3/query/{id}",
                 "POST /graph/v3/databases/{database}/tables/{table}/edges/get",
                 "POST /graph/v3/databases/{database}/tables/{table}/multi-edges/ids",
+                "POST /aggregations/v1/databases/{database}/tables/{table}/topks/{topk}",
                 // queue/v1 GET
                 "GET /queue/v1/namespaces/{namespace}/queues/{queue}",
                 "GET /queue/v1/namespaces/{namespace}/queues/{queue}/partitions",
@@ -225,6 +231,12 @@ class ReadOnlyRequestFilterTest {
                 "PUT /graph/v2/service/{service}/label/{label}/edge/sync",
                 "PUT /graph/v2/storage/{storage}",
                 // v3 mutation
+                "POST /graph/v3/prepared-queries",
+                "PUT /graph/v3/prepared-queries/{id}",
+                "DELETE /graph/v3/prepared-queries/{id}",
+                "POST /graph/v3/prepared-queries/aliases",
+                "PUT /graph/v3/prepared-queries/aliases/{alias}",
+                "DELETE /graph/v3/prepared-queries/aliases/{alias}",
                 "DELETE /graph/v3/databases/{database}",
                 "DELETE /graph/v3/databases/{database}/aliases/{alias}",
                 "DELETE /graph/v3/databases/{database}/tables/{table}",
@@ -331,7 +343,9 @@ class ReadOnlyRequestFilterTest {
                 "table" to "t",
                 "tableFullName" to "t",
                 "tableName" to "t",
+                "id" to "q",
                 "tenant" to "alpha",
+                "topk" to "tk",
             )
 
         private fun resolvePath(template: String): String =

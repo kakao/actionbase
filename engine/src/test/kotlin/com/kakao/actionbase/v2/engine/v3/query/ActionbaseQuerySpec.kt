@@ -36,7 +36,7 @@ class ActionbaseQuerySpec :
             val actionBaseQueryString =
                 """
                 {
-                  "query": [
+                  "fetch": [
                     {
                       "type": "SELF",
                       "name": "$queryName",
@@ -74,7 +74,7 @@ class ActionbaseQuerySpec :
             val actionBaseQueryString =
                 """
                 {
-                  "query": [
+                  "fetch": [
                     {
                       "type": "GET",
                       "name": "$queryName",
@@ -115,7 +115,7 @@ class ActionbaseQuerySpec :
             val actionBaseQueryString =
                 """
                 {
-                  "query": [
+                  "fetch": [
                     {
                       "type": "COUNT",
                       "name": "$queryName",
@@ -153,7 +153,7 @@ class ActionbaseQuerySpec :
             val actionBaseQueryString =
                 """
                 {
-                  "query": [
+                  "fetch": [
                     {
                       "type": "SCAN",
                       "name": "$queryName",
@@ -202,7 +202,7 @@ class ActionbaseQuerySpec :
             val actionBaseQueryString =
                 """
                 {
-                  "query": [
+                  "fetch": [
                     {
                       "type": "SCAN",
                       "name": "step1",

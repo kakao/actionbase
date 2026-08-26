@@ -148,7 +148,7 @@ class MultiHopQuerySpec :
             // 2-hop query: user1's friends' wishlists
             val query =
                 ActionbaseQuery(
-                    query =
+                    fetch =
                         listOf(
                             ActionbaseQuery.Item.Scan(
                                 name = "hop1",
@@ -336,7 +336,7 @@ class MultiHopQuerySpec :
             // 3-hop query: user1's friends' wishlists' reviews
             val query =
                 ActionbaseQuery(
-                    query =
+                    fetch =
                         listOf(
                             ActionbaseQuery.Item.Scan(
                                 name = "hop1",

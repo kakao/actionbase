@@ -60,6 +60,8 @@ class V2BackedTableBinding(
     override val schema: ModelSchema = descriptor.schema
     override val mutationMode: MutationMode = MutationMode.valueOf(label.entity.mode.name)
 
+    override val emptyFrame: DataFrame by lazy { V2DataFrame.empty(label.entity.schema.allStructType).toV3(total = 0L) }
+
     private val groupRecordMapper = mapper.group
     private val cacheRecordMapper = mapper.cache
 
