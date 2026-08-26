@@ -344,6 +344,40 @@ class TopkAggregationHandlerTest {
         }
 
         @Test
+        fun `schedules from the field's value when the bucket carries a name of its own`() {
+            val refreshAfter = 365L * 24 * 60 * 60 * 1000
+            val purchasedAt = Instant.parse("2026-01-01T14:32:00Z").toEpochMilli()
+
+            stubTopkBinding(
+                engine = engine,
+                topk = topkConfig(name = "top_purchased", refreshAfterMillis = refreshAfter, ranges = ALIASED_SLIDING_WINDOW),
+                bucketed = true,
+                bucket = ALIASED_DAY_BUCKET,
+            )
+
+            every {
+                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns Mono.just(aggPayload(count = 1))
+            every {
+                mutationService.mutate("commerce", "orders__topk", any(), any(), any(), any(), any())
+            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+            val refreshRequest = slot<EnqueueRequest>()
+            every {
+                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_TABLE, capture(refreshRequest))
+            } returns Mono.just(enqueueResponse(status = "CREATED"))
+
+            StepVerifier
+                .create(handler.aggregate(aggregationItemPayload(properties = mapOf(PURCHASED_AT to purchasedAt))).collectList())
+                .assertNext { results -> results.single().status shouldBe "SUCCESS" }
+                .verifyComplete()
+
+            refreshRequest.captured.messages
+                .single()
+                .seq shouldBe Instant.parse("2027-01-02T00:00:00Z").toEpochMilli()
+        }
+
+        @Test
         fun `reports ERROR when the refresh enqueue fails`() {
             stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L, ranges = SLIDING_WINDOW), bucketed = true)
 
@@ -396,6 +430,11 @@ private val DAY_BUCKET = Bucket.Date(name = PURCHASED_AT, unit = Bucket.ValueUni
 
 private const val SLIDING_WINDOW = "$PURCHASED_AT:bt:now-365d,now"
 
+/** The same bucket, named for the value it yields rather than for the field it reads. */
+private val ALIASED_DAY_BUCKET = Bucket.Date(name = "time", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd")
+
+private const val ALIASED_SLIDING_WINDOW = "time:bt:now-365d,now"
+
 // rank table naming rule: the source table name with the `__topk` suffix
 private fun topkConfig(
     name: String,
@@ -423,12 +462,13 @@ private fun stubTopkBinding(
     table: String = "orders",
     directionType: DirectionType = DirectionType.OUT,
     bucketed: Boolean = false,
+    bucket: Bucket.Date = DAY_BUCKET,
 ) {
     val group =
         Group(
             group = "purchased_count",
             type = GroupType.SUM,
-            fields = if (bucketed) listOf(Group.Field(PURCHASED_AT, bucket = DAY_BUCKET)) else emptyList(),
+            fields = if (bucketed) listOf(Group.Field(PURCHASED_AT, bucket = bucket)) else emptyList(),
             directionType = directionType,
             aggregations = Aggregations(topk = listOf(topk)),
         )
