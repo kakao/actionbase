@@ -292,13 +292,13 @@ class TopkAggregationHandler(
         event: EdgeAggregationEvent,
         refreshAfterMillis: Long,
     ): Long {
-        val bucket = event.dateBucket()
-        val start = bucket?.startOf(event.properties[bucket.name])
+        val bucketed = event.dateBucket()
+        val start = bucketed?.let { (field, bucket) -> bucket.startOf(event.properties[field.name]) }
 
         return if (start == null) {
             System.currentTimeMillis() + refreshAfterMillis
         } else {
-            start.toEpochMilli() + refreshAfterMillis + bucket.interval().toMillis()
+            start.toEpochMilli() + refreshAfterMillis + bucketed.second.interval().toMillis()
         }
     }
 
@@ -306,7 +306,7 @@ class TopkAggregationHandler(
         event: EdgeAggregationEvent,
         ranges: String?,
     ): Boolean {
-        val bucket = event.dateBucket() ?: return false
+        val bucket = event.dateBucket()?.second ?: return false
         val bound =
             ranges
                 ?.let { WherePredicate.parse(it) }
@@ -318,7 +318,7 @@ class TopkAggregationHandler(
         return bucket.isRelative(bound)
     }
 
-    private fun EdgeAggregationEvent.dateBucket(): Bucket.Date? = group.fields.firstNotNullOfOrNull { it.bucket as? Bucket.Date }
+    private fun EdgeAggregationEvent.dateBucket(): Pair<Group.Field, Bucket.Date>? = group.fields.firstNotNullOfOrNull { field -> (field.bucket as? Bucket.Date)?.let { field to it } }
 
     private fun parseFqn(fqn: String): Pair<String, String> {
         val dot = fqn.indexOf('.')
