@@ -52,7 +52,7 @@ class TopkAggregationHandler(
                         event.direction.directions().map { direction -> Triple(event, direction, topk) }
                     }
                 },
-            ).flatMap { (event, direction, topk) -> processTopk(event, direction, topk) }
+            ).flatMapSequential { (event, direction, topk) -> processTopk(event, direction, topk) }
 
     private fun createTopkEvent(item: AggregationItemPayload): List<EdgeAggregationEvent> {
         val tb = engine.getTableBinding(database = item.database, alias = item.table)

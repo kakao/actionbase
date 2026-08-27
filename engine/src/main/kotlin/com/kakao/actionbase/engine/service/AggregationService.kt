@@ -21,6 +21,6 @@ class AggregationService(
     fun aggregate(items: List<AggregationItemPayload>): Mono<List<AggregationResult>> =
         Flux
             .fromIterable(items)
-            .flatMap { item -> Flux.merge(handlersByType.values.map { it.aggregate(item) }) }
+            .flatMapSequential { item -> Flux.mergeSequential(handlersByType.values.map { it.aggregate(item) }) }
             .collectList()
 }
