@@ -2,7 +2,11 @@ package com.kakao.actionbase.engine.service
 
 import com.kakao.actionbase.core.edge.payload.AggregationItemPayload
 import com.kakao.actionbase.core.edge.payload.AggregationResult
+import com.kakao.actionbase.core.edge.payload.AggregationSweepResult
 import com.kakao.actionbase.core.edge.payload.EdgePayload
+import com.kakao.actionbase.core.edge.payload.SweepItem
+import com.kakao.actionbase.core.edge.payload.SweepItemPayload
+import com.kakao.actionbase.core.edge.payload.TopkSweepItem
 import com.kakao.actionbase.core.metadata.QualifiedAggregations
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.engine.AggregationEngine
@@ -23,7 +27,7 @@ import reactor.test.StepVerifier
 
 /**
  * `AggregationService` is a thin dispatcher: it forwards metadata lookups to the engine and routes
- * each item to the handler registered for its type. Per-type behavior (top-K ranking) lives
+ * each item to the handler registered for its type. Per-type behavior (top-K ranking, refresh) lives
  * in the handlers, and dispatch through a real handler is exercised end-to-end by
  * `MetadataAggQueryControllerE2ETest` — so here we only pin what the dispatcher itself owns.
  */
@@ -108,6 +112,44 @@ class AggregationServiceTest {
                 .verifyComplete()
         }
     }
+
+    @Nested
+    inner class Sweep {
+        /** `AggregationSweepResult` pairs back to its request by position too, same as the aggregate path. */
+        @Test
+        fun `returns results in the order the items were given`() {
+            val service =
+                AggregationService(
+                    engine,
+                    listOf(
+                        DelayedHandler(
+                            delays =
+                                mapOf(
+                                    "user1" to Duration.ofMillis(150),
+                                    "user2" to Duration.ofMillis(80),
+                                    "user3" to Duration.ofMillis(10),
+                                ),
+                        ),
+                    ),
+                )
+
+            StepVerifier
+                .withVirtualTime { service.sweep(listOf(sweepItem("user1"), sweepItem("user2"), sweepItem("user3"))) }
+                .expectSubscription()
+                .thenAwait(Duration.ofMinutes(1))
+                .assertNext { results -> results.map { it.entity } shouldContainExactly listOf("user1", "user2", "user3") }
+                .verifyComplete()
+        }
+
+        @Test
+        fun `errors when no handler is registered for the type`() {
+            val service = AggregationService(engine, emptyList())
+
+            StepVerifier
+                .create(service.sweep(listOf(sweepItem())))
+                .verifyError(IllegalStateException::class.java)
+        }
+    }
 }
 
 // region test fixtures
@@ -123,6 +165,22 @@ private fun item(source: String): AggregationItemPayload =
                 target = "item1",
                 properties = emptyMap(),
                 context = emptyMap(),
+            ),
+    )
+
+private fun sweepItem(entity: String = "user1"): SweepItem =
+    SweepItem(
+        type = AggregationType.TOPK,
+        item =
+            TopkSweepItem(
+                database = "commerce",
+                table = "orders",
+                topk = "top_purchased",
+                source = entity,
+                target = "item1",
+                direction = "OUT",
+                entity = entity,
+                topkDimensionValue = "item1",
             ),
     )
 
@@ -153,6 +211,22 @@ private class DelayedHandler(
                 ),
             ).delayElement(delays[source] ?: Duration.ZERO)
             .flux()
+    }
+
+    override fun sweep(item: SweepItemPayload): Mono<AggregationSweepResult> {
+        val topk = item as TopkSweepItem
+
+        return Mono
+            .just(
+                AggregationSweepResult(
+                    database = topk.database,
+                    table = tag,
+                    topk = topk.topk,
+                    entity = topk.entity,
+                    status = "SUCCESS",
+                    error = null,
+                ),
+            ).delayElement(delays[topk.entity] ?: Duration.ZERO)
     }
 }
 
