@@ -28,14 +28,9 @@ fun LabelEntity.toQualifiedAggregations(type: AggregationType? = null): List<Qua
         }
 }
 
-/**
- * One group's dedupe fields: the directed entity endpoint (`source` for OUT, `target` for IN) plus
- * the group's non-bucket fields. The endpoint isn't declared in meta — it's derived from the group
- * direction — but it's always part of the rank-row identity (the entity for a per-entity ranking, the
- * dimension for a global one), so it's always keyed on. Bucket fields are excluded; they aren't part
- * of the identity. BOTH is transitional (it produces two endpoints and will be rejected at
- * registration); until then it keys on source. The caller unions these across a table's groups.
- */
+// The endpoint is derived from the group direction rather than declared, but it is part of the rank row's
+// identity either way, so it is always keyed on. Buckets are not identity. BOTH would produce two
+// endpoints; it keys on source until something rejects it.
 private fun Group.dedupeFields(): List<String> {
     val endpoint = if (directionType == DirectionType.IN) "target" else "source"
     return listOf(endpoint) + fields.filter { it.bucket == null }.map { it.name }
