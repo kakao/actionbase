@@ -112,8 +112,14 @@ class TopkAggregationHandler(
                 return@flatMap Mono.just(result(status = status))
             }
 
-            writeRefresh(event, ranking, direction, inputs.ranges, refreshAfterMillis = topk.refreshAfterMillis)
-                .map { result(status = if (it.results.any { r -> r.status == ERROR }) ERROR else SUCCESS) }
+            writeRefresh(
+                event,
+                ranking,
+                direction,
+                inputs.ranges,
+                refreshAfterMillis = topk.refreshAfterMillis,
+                refreshQueue = topk.refreshQueue,
+            ).map { result(status = if (it.results.any { r -> r.status == ERROR }) ERROR else SUCCESS) }
         }.onErrorResume { err ->
             logger.error("topk aggregate failed for {}.{} topk={}", event.database, event.table, topk.topk, err)
             Mono.just(result(ERROR, err.message))
@@ -187,6 +193,7 @@ class TopkAggregationHandler(
         direction: Direction,
         ranges: String?,
         refreshAfterMillis: Long,
+        refreshQueue: String,
     ): Mono<EnqueueResponse> {
         val refreshAt = refreshAt(event, refreshAfterMillis)
         val message =
@@ -221,7 +228,7 @@ class TopkAggregationHandler(
 
         return queueService.enqueue(
             namespace = AggregationConstants.Topk.DATABASE,
-            queue = AggregationConstants.Topk.REFRESH_TABLE,
+            queue = refreshQueue,
             request = EnqueueRequest(messages = listOf(message)),
         )
     }
