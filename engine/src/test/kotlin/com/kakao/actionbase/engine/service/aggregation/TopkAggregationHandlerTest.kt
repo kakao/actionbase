@@ -222,6 +222,60 @@ class TopkAggregationHandlerTest {
             refresh.item.refreshAt shouldBe refreshAt
         }
 
+        /**
+         * The queue decides which sweeper picks the refresh up, so a ranking that names one has to be
+         * enqueued there and nowhere else. Every other test here names none and asserts the shared queue,
+         * which is the other half of the contract.
+         */
+        @Test
+        fun `a refresh goes onto the queue the declaration names`() {
+            stubTopkBinding(
+                engine = engine,
+                topk =
+                    topkConfig(
+                        name = "top_purchased",
+                        refreshAfterMillis = 60_000L,
+                        refreshQueue = "purchase_refresh",
+                        ranges = SLIDING_WINDOW,
+                    ),
+                bucketed = true,
+            )
+
+            every {
+                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns Mono.just(aggPayload(count = 4))
+
+            every {
+                mutationService.mutate("commerce", "orders__topk", any(), any(), any(), any(), any())
+            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+            val refreshRequest = slot<EnqueueRequest>()
+            every {
+                queueService.enqueue(AggregationConstants.Topk.DATABASE, "purchase_refresh", capture(refreshRequest))
+            } returns Mono.just(enqueueResponse(status = "CREATED"))
+
+            StepVerifier
+                .create(handler.aggregate(aggregationItemPayload(source = "user1", target = "item1")).collectList())
+                .assertNext { results -> results.single().status shouldBe "SUCCESS" }
+                .verifyComplete()
+
+            refreshRequest.captured.messages
+                .single()
+                .key shouldBe
+                AggregationConstants.Topk.refreshKey(
+                    database = "commerce",
+                    table = "orders",
+                    topk = "top_purchased",
+                    entity = "user1",
+                    topkDimensionValue = "item1",
+                    dimensionValues = emptyList(),
+                )
+
+            verify(exactly = 0) {
+                queueService.enqueue(any(), AggregationConstants.Topk.REFRESH_TABLE, any())
+            }
+        }
+
         @Test
         fun `carries the declared properties into the refresh message`() {
             stubTopkBinding(
@@ -579,6 +633,7 @@ private fun topkConfig(
     dimension: String = "target",
     rank: String = "commerce.orders__topk",
     refreshAfterMillis: Long = 0,
+    refreshQueue: String = AggregationConstants.Topk.REFRESH_TABLE,
     additionalProperties: List<String> = emptyList(),
     ranges: String = "",
 ): Topk =
@@ -588,6 +643,7 @@ private fun topkConfig(
         dimension = dimension,
         rank = rank,
         refreshAfterMillis = refreshAfterMillis,
+        refreshQueue = refreshQueue,
         additionalProperties = additionalProperties,
         ranges = ranges,
     )
