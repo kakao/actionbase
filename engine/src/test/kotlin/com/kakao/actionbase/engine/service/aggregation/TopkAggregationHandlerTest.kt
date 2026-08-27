@@ -337,6 +337,32 @@ class TopkAggregationHandlerTest {
         }
 
         @Test
+        fun `skips the refresh when the window does not slide`() {
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L, ranges = FIXED_WINDOW), bucketed = true)
+
+            every {
+                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns Mono.just(aggPayload(count = 1))
+
+            every {
+                mutationService.mutate("commerce", "orders__topk", any(), any(), any(), any(), any())
+            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+            StepVerifier
+                .create(handler.aggregate(aggregationItemPayload()).collectList())
+                .assertNext { it.single().status shouldBe "SUCCESS" }
+                .verifyComplete()
+
+            verify(exactly = 0) {
+                queueService.enqueue(
+                    AggregationConstants.Topk.DATABASE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
+                    any(),
+                )
+            }
+        }
+
+        @Test
         fun `skips the refresh when the rank write fails`() {
             stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L, ranges = SLIDING_WINDOW), bucketed = true)
 
@@ -483,6 +509,9 @@ private const val PURCHASED_AT = "purchasedAt"
 private val DAY_BUCKET = Bucket.Date(name = PURCHASED_AT, unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd")
 
 private const val SLIDING_WINDOW = "$PURCHASED_AT:bt:now-365d,now"
+
+/** The same field bounded by fixed points rather than by the clock, so the window never moves. */
+private const val FIXED_WINDOW = "$PURCHASED_AT:bt:2026-01-01,2026-12-31"
 
 /** The same bucket, named for the value it yields rather than for the field it reads. */
 private val ALIASED_DAY_BUCKET = Bucket.Date(name = "time", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd")

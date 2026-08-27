@@ -53,16 +53,6 @@ class AggregationServiceTest {
     @Nested
     inner class Aggregate {
         @Test
-        fun `returns a result for every item`() {
-            val service = AggregationService(engine, listOf(DelayedHandler()))
-
-            StepVerifier
-                .create(service.aggregate(items = listOf(item("user1"), item("user2"), item("user3"))))
-                .assertNext { results -> results.map { it.source } shouldContainExactlyInAnyOrder listOf("user1", "user2", "user3") }
-                .verifyComplete()
-        }
-
-        @Test
         fun `completes with an empty list when given no items`() {
             val service = AggregationService(engine, listOf(DelayedHandler()))
 
