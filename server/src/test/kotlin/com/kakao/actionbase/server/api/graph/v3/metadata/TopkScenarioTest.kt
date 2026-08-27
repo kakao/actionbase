@@ -307,6 +307,22 @@ class TopkScenarioTest : E2ETestBase() {
             assertEquals(listOf(REFRESH_AT), topk.refreshAt("queues_after_refresh"))
         }
 
+        /**
+         * A sweeper reads the queue bounded by its own clock, so the due time decides which run picks a
+         * ranking up. A millisecond short of it there is nothing to do, and scheduling from when the
+         * aggregation ran rather than from the bucket the purchase fell in would hand it work this early.
+         */
+        @Test
+        fun `a sweeper on the clock picks a ranking up the instant it falls due and not before`() {
+            topk.buy("swept_when_due", "apple", at = PURCHASED_AT)
+
+            topk.now("2027-01-01T23:59:59.999Z")
+            assertEquals(emptyList<String>(), topk.dueRefreshes("swept_when_due"))
+
+            topk.now(REFRESH_AT)
+            assertEquals(listOf(REFRESH_AT), topk.dueRefreshes("swept_when_due"))
+        }
+
         @Test
         fun `the category the declaration carries comes back on the message`() {
             topk.buy("queues_property", "apple", at = PURCHASED_AT)

@@ -341,11 +341,12 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
      *    keyed by the same composite the rank row uses and ordered by `seq` = refreshAt:
      *
      *    topk/refresh (queue; poll partition = hash(key) % 4)
-     *    |      seq (refreshAt)      | value.type |                 value.item                  |
-     *    |--------------------------|------------|---------------------------------------------|
-     *    | now + refreshAfterMillis | TOPK       | {database, table, topk, source, target, … } |
+     *    |          seq (refreshAt)          | value.type |                 value.item                  |
+     *    |-----------------------------------|------------|---------------------------------------------|
+     *    | bucketStart + refreshAfter + 1day | TOPK       | {database, table, topk, source, target, … } |
      *
-     * 3. Poll that partition -> exactly one message carrying the full recompute payload.
+     * 3. Poll that partition bounded by `until` -> exactly one message carrying the full recompute
+     *    payload, and nothing at all a millisecond earlier.
      */
     @Test
     fun `running a topk aggregation enqueues a refresh message when refreshAfterMillis is set`() {
@@ -395,23 +396,18 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             )
         val partition = PartitionHasher.partition(key, refreshPartitions)
 
-        val page =
-            client
-                .get()
-                .uri("/queue/v1/namespaces/$DATABASE/queues/$REFRESH_TABLE/partitions/$partition/poll?limit=10")
-                .exchange()
-                .expectStatus()
-                .isOk
-                .expectBody<PollResponse>()
-                .returnResult()
-                .responseBody!!
-
         // The refresh is due when the purchase leaves the window, not a window's length after the purchase
         // itself: the window moves in whole days, so the day it landed in stays inside for one more.
         val bucketStart = Instant.ofEpochMilli(purchasedAt).truncatedTo(ChronoUnit.DAYS).toEpochMilli()
+        val due = bucketStart + refreshAfter + Duration.ofDays(1).toMillis()
 
-        val message = page.messages.single()
-        assertEquals(bucketStart + refreshAfter + Duration.ofDays(1).toMillis(), message.seq)
+        // A sweeper polls with `until` set to its own clock so it recomputes only what has fallen due.
+        // `until` is inclusive, so one millisecond short of `due` returns nothing -- and that bound is
+        // what pins `refreshAt` to the bucket the value fell in rather than to whenever this ran.
+        assertEquals(emptyList<Long>(), poll(partition, until = due - 1).messages.map { it.seq })
+
+        val message = poll(partition, until = due).messages.single()
+        assertEquals(due, message.seq)
 
         val value = message.value as Map<*, *>
         assertEquals("TOPK", value["type"])
@@ -427,6 +423,20 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         assertEquals("", refreshItem["dimensionValues"])
         assertEquals(message.seq, (refreshItem["refreshAt"] as Number).toLong())
     }
+
+    private fun poll(
+        partition: Int,
+        until: Long,
+    ): PollResponse =
+        client
+            .get()
+            .uri("/queue/v1/namespaces/$DATABASE/queues/$REFRESH_TABLE/partitions/$partition/poll?limit=10&until=$until")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<PollResponse>()
+            .returnResult()
+            .responseBody!!
 
     /** A rank table is a plain edge table read as a sorted index: `source` is the composite key,
      *  `target` is the ranked dimension value, and the `metric_desc` index orders by `metric`. */

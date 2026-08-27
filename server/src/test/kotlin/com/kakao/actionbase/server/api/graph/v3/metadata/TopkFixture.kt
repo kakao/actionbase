@@ -155,6 +155,19 @@ class TopkFixture(
             .map { Instant.ofEpochMilli(it.seq).toString() }
             .sorted()
 
+    /**
+     * What a sweeper polling on its own clock has to work on: the rankings due by now, and nothing scheduled
+     * for later. A due time computed from when the aggregation ran instead of from the bucket the value fell
+     * in shows up here as a ranking that comes due too early.
+     */
+    fun dueRefreshes(
+        entity: String,
+        declaration: Declaration = DAY,
+    ): List<String> =
+        refreshMessages(declaration, entity, until = clock.millis())
+            .map { Instant.ofEpochMilli(it.seq).toString() }
+            .sorted()
+
     fun createRefreshQueue() {
         createDatabase(DATABASE)
         client
@@ -292,6 +305,10 @@ class TopkFixture(
             .isOk
     }
 
+    /**
+     * Recomputes one ranking whether or not it has fallen due, which is what an operator asking for a sweep
+     * of it gets. [dueRefreshes] is the sweeper's own view, where a due time it has not reached yet is hidden.
+     */
     fun refresh(
         entity: String,
         dimension: String,
@@ -486,16 +503,25 @@ class TopkFixture(
         return AggregationsTopkResponse(topks = topks, count = topks.size)
     }
 
-    /** Polls every partition: which one a message lands on depends on its key, and the key differs per row. */
+    /**
+     * Polls every partition: which one a message lands on depends on its key, and the key differs per row.
+     *
+     * [until] bounds the poll to what is due by then, which is how a sweeper reads the queue. Left out, the
+     * poll returns everything scheduled -- what a test asserting a due time wants, since that time is in the
+     * future and a bounded poll would hide it.
+     */
     fun refreshMessages(
         declaration: Declaration,
         user: String,
+        until: Long? = null,
     ): List<PolledMessage> =
         (0 until PARTITIONS).flatMap { partition ->
             client
                 .get()
-                .uri("/queue/v1/namespaces/$DATABASE/queues/$REFRESH_TABLE/partitions/$partition/poll?limit=100")
-                .exchange()
+                .uri(
+                    "/queue/v1/namespaces/$DATABASE/queues/$REFRESH_TABLE/partitions/$partition/poll?limit=100" +
+                        until?.let { "&until=$it" }.orEmpty(),
+                ).exchange()
                 .expectStatus()
                 .isOk
                 .expectBody<PollResponse>()
