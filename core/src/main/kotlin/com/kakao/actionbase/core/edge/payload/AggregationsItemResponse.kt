@@ -1,0 +1,31 @@
+package com.kakao.actionbase.core.edge.payload
+
+data class AggregationsItemResponse(
+    val items: List<Item>,
+) {
+    data class Item(
+        val database: String,
+        val table: String,
+        val source: String,
+        val target: String,
+        val status: String,
+        val error: String?,
+    )
+
+    companion object {
+        fun from(aggregationResults: List<AggregationResult>): AggregationsItemResponse =
+            AggregationsItemResponse(
+                items =
+                    aggregationResults.map { aggregationResult ->
+                        Item(
+                            database = aggregationResult.database,
+                            table = aggregationResult.table,
+                            source = aggregationResult.source,
+                            target = aggregationResult.target,
+                            status = aggregationResult.status,
+                            error = aggregationResult.error,
+                        )
+                    },
+            )
+    }
+}

@@ -5,6 +5,8 @@ import com.kakao.actionbase.engine.queue.QueueService
 import com.kakao.actionbase.engine.service.AggregationService
 import com.kakao.actionbase.engine.service.MutationService
 import com.kakao.actionbase.engine.service.QueryService
+import com.kakao.actionbase.engine.service.aggregation.AggregationHandler
+import com.kakao.actionbase.engine.service.aggregation.TopkAggregationHandler
 import com.kakao.actionbase.server.client.kafka.SpringKafkaClientFactory
 import com.kakao.actionbase.server.client.web.SpringWebClientFactory
 import com.kakao.actionbase.v2.engine.Graph
@@ -145,7 +147,18 @@ class GraphConfiguration {
     fun provideQueryService(engine: V2BackedEngine): QueryService = QueryService(engine)
 
     @Bean
-    fun provideAggregationService(engine: V2BackedEngine): AggregationService = AggregationService(engine)
+    fun provideTopkAggregationHandler(
+        queryService: QueryService,
+        mutationService: MutationService,
+        queueService: QueueService,
+        engine: V2BackedEngine,
+    ): AggregationHandler = TopkAggregationHandler(queryService, mutationService, queueService, engine)
+
+    @Bean
+    fun provideAggregationService(
+        engine: V2BackedEngine,
+        handlers: List<AggregationHandler>,
+    ): AggregationService = AggregationService(engine, handlers)
 
     @Bean
     fun provideMutationService(
