@@ -54,6 +54,7 @@ data class Topk(
     val ranges: String = "",
     val dimension: String,
     val refreshAfterMillis: Long = -1,
+    val refreshQueue: String = AggregationConstants.Topk.REFRESH_TABLE,
     val rank: String,
     val additionalProperties: List<String> = emptyList(),
 )
