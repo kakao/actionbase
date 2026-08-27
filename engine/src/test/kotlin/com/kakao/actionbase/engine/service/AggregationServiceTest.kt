@@ -115,6 +115,32 @@ class AggregationServiceTest {
 
     @Nested
     inner class Sweep {
+        /** `AggregationSweepResult` pairs back to its request by position too, same as the aggregate path. */
+        @Test
+        fun `returns results in the order the items were given`() {
+            val service =
+                AggregationService(
+                    engine,
+                    listOf(
+                        DelayedHandler(
+                            delays =
+                                mapOf(
+                                    "user1" to Duration.ofMillis(150),
+                                    "user2" to Duration.ofMillis(80),
+                                    "user3" to Duration.ofMillis(10),
+                                ),
+                        ),
+                    ),
+                )
+
+            StepVerifier
+                .withVirtualTime { service.sweep(listOf(sweepItem("user1"), sweepItem("user2"), sweepItem("user3"))) }
+                .expectSubscription()
+                .thenAwait(Duration.ofMinutes(1))
+                .assertNext { results -> results.map { it.entity } shouldContainExactly listOf("user1", "user2", "user3") }
+                .verifyComplete()
+        }
+
         @Test
         fun `errors when no handler is registered for the type`() {
             val service = AggregationService(engine, emptyList())
@@ -142,7 +168,7 @@ private fun item(source: String): AggregationItemPayload =
             ),
     )
 
-private fun sweepItem(): SweepItem =
+private fun sweepItem(entity: String = "user1"): SweepItem =
     SweepItem(
         type = AggregationType.TOPK,
         item =
@@ -150,10 +176,10 @@ private fun sweepItem(): SweepItem =
                 database = "commerce",
                 table = "orders",
                 topk = "top_purchased",
-                source = "user1",
+                source = entity,
                 target = "item1",
                 direction = "OUT",
-                entity = "user1",
+                entity = entity,
                 topkDimensionValue = "item1",
             ),
     )
@@ -187,7 +213,21 @@ private class DelayedHandler(
             .flux()
     }
 
-    override fun sweep(item: SweepItemPayload): Mono<AggregationSweepResult> = error("this fake stands in on the aggregate path only")
+    override fun sweep(item: SweepItemPayload): Mono<AggregationSweepResult> {
+        val topk = item as TopkSweepItem
+
+        return Mono
+            .just(
+                AggregationSweepResult(
+                    database = topk.database,
+                    table = tag,
+                    topk = topk.topk,
+                    entity = topk.entity,
+                    status = "SUCCESS",
+                    error = null,
+                ),
+            ).delayElement(delays[topk.entity] ?: Duration.ZERO)
+    }
 }
 
 // endregion
