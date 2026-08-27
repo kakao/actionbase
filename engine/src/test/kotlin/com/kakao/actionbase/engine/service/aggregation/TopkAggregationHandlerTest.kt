@@ -168,7 +168,7 @@ class TopkAggregationHandlerTest {
             every {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     capture(refreshRequest),
                 )
             } returns Mono.just(enqueueResponse(status = "CREATED"))
@@ -267,7 +267,7 @@ class TopkAggregationHandlerTest {
                 )
 
             verify(exactly = 0) {
-                queueService.enqueue(any(), AggregationConstants.Topk.REFRESH_TABLE, any())
+                queueService.enqueue(any(), AggregationConstants.Topk.REFRESH_QUEUE, any())
             }
         }
 
@@ -290,7 +290,7 @@ class TopkAggregationHandlerTest {
             every {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     capture(refreshRequest),
                 )
             } returns Mono.just(enqueueResponse(status = "CREATED"))
@@ -330,7 +330,7 @@ class TopkAggregationHandlerTest {
             verify(exactly = 0) {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     any(),
                 )
             }
@@ -356,7 +356,7 @@ class TopkAggregationHandlerTest {
             verify(exactly = 0) {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     any(),
                 )
             }
@@ -383,7 +383,7 @@ class TopkAggregationHandlerTest {
 
             val refreshRequest = slot<EnqueueRequest>()
             every {
-                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_TABLE, capture(refreshRequest))
+                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_QUEUE, capture(refreshRequest))
             } returns Mono.just(enqueueResponse(status = "CREATED"))
 
             StepVerifier
@@ -418,7 +418,7 @@ class TopkAggregationHandlerTest {
 
             val refreshRequest = slot<EnqueueRequest>()
             every {
-                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_TABLE, capture(refreshRequest))
+                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_QUEUE, capture(refreshRequest))
             } returns Mono.just(enqueueResponse(status = "CREATED"))
 
             StepVerifier
@@ -446,7 +446,7 @@ class TopkAggregationHandlerTest {
             every {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     any(),
                 )
             } returns Mono.just(enqueueResponse(status = "ERROR"))
@@ -496,7 +496,7 @@ private fun topkConfig(
     dimension: String = "target",
     rank: String = "commerce.orders__topk",
     refreshAfterMillis: Long = 0,
-    refreshQueue: String = AggregationConstants.Topk.REFRESH_TABLE,
+    refreshQueue: String = AggregationConstants.Topk.REFRESH_QUEUE,
     additionalProperties: List<String> = emptyList(),
     ranges: String = "",
 ): Topk =
