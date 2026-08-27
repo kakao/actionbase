@@ -9,6 +9,8 @@ import com.kakao.actionbase.core.edge.mapper.EdgeIndexRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeLockRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeRecordMapper
 import com.kakao.actionbase.core.edge.mapper.EdgeStateRecordMapper
+import com.kakao.actionbase.core.metadata.QualifiedAggregations
+import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.features.FeatureFlags
 import com.kakao.actionbase.engine.query.LabelProvider
 import com.kakao.actionbase.engine.storage.DefaultStorageBackendFactory
@@ -38,6 +40,8 @@ import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 import com.kakao.actionbase.v2.engine.entity.StorageEntity
+import com.kakao.actionbase.v2.engine.entity.hasAggregation
+import com.kakao.actionbase.v2.engine.entity.toQualifiedAggregations
 import com.kakao.actionbase.v2.engine.exception.MutationError
 import com.kakao.actionbase.v2.engine.fake.fakeEdges
 import com.kakao.actionbase.v2.engine.label.DeleteEdgeRequest
@@ -258,6 +262,11 @@ class Graph(
                 .map { true }
                 .defaultIfEmpty(false)
         }
+
+    fun listWithAggregations(type: AggregationType? = null): List<QualifiedAggregations> =
+        labels.values
+            .filter { it.entity.hasAggregation(type) }
+            .flatMap { it.entity.toQualifiedAggregations(type) }
 
     fun getAllLabels(): Map<String, String> =
         (
