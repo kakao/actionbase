@@ -308,19 +308,25 @@ class TopkScenarioTest : E2ETestBase() {
         }
 
         /**
-         * A sweeper reads the queue bounded by its own clock, so the due time decides which run picks a
-         * ranking up. A millisecond short of it there is nothing to do, and scheduling from when the
-         * aggregation ran rather than from the bucket the purchase fell in would hand it work this early.
+         * A sweeper run bounded by its own clock, on a queue of its own so it can commit what it swept.
+         *
+         * A millisecond short of the due time there is nothing to do, and the purchase still counts.
+         * Scheduling from when the aggregation ran rather than from the bucket the purchase fell in would hand
+         * the sweeper work this early. On the due time the purchase has left the window, so the recompute
+         * drops it. The commit is what makes the run after that idle rather than recomputing it forever.
          */
         @Test
-        fun `a sweeper on the clock picks a ranking up the instant it falls due and not before`() {
-            topk.buy("swept_when_due", "apple", at = PURCHASED_AT)
+        fun `a sweeper recomputes a ranking once it falls due and does not pick it up again`() {
+            val declaration = topk.declare(DAY.copy(database = "topk_sweeper", refreshQueue = "sweeper_refresh"))
+            topk.buy("swept_when_due", "apple", at = PURCHASED_AT, declaration = declaration)
 
-            topk.now("2027-01-01T23:59:59.999Z")
-            assertEquals(emptyList<String>(), topk.dueRefreshes("swept_when_due"))
+            assertEquals(emptyList<String>(), topk.sweepDue("2027-01-01T23:59:59.999Z", declaration))
+            assertEquals(1L, topk.metric("swept_when_due", "apple", declaration = declaration))
 
-            topk.now(REFRESH_AT)
-            assertEquals(listOf(REFRESH_AT), topk.dueRefreshes("swept_when_due"))
+            assertEquals(listOf(REFRESH_AT), topk.sweepDue(REFRESH_AT, declaration))
+            assertEquals(0L, topk.metric("swept_when_due", "apple", declaration = declaration))
+
+            assertEquals(emptyList<String>(), topk.sweepDue(REFRESH_AT, declaration))
         }
 
         @Test

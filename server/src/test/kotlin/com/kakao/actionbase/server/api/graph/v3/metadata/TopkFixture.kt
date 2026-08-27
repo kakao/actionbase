@@ -156,26 +156,58 @@ class TopkFixture(
             .sorted()
 
     /**
-     * What a sweeper polling on its own clock has to work on: the rankings due by now, and nothing scheduled
-     * for later. A due time computed from when the aggregation ran instead of from the bucket the value fell
-     * in shows up here as a ranking that comes due too early.
+     * One sweeper run at [at]: poll each partition bounded by its own clock, recompute what came back, then
+     * commit it so the next run does not do the work again. Returns the due times it worked on, so a run that
+     * found nothing reads as an empty list.
+     *
+     * A due time computed from when the aggregation ran rather than from the bucket the value fell in shows up
+     * here as a ranking picked up before it should be. Committing needs a queue of its own -- see
+     * [Declaration.refreshQueue].
      */
-    fun dueRefreshes(
-        entity: String,
-        declaration: Declaration = DAY,
-    ): List<String> =
-        refreshMessages(declaration, entity, until = clock.millis())
-            .map { Instant.ofEpochMilli(it.seq).toString() }
-            .sorted()
+    fun sweepDue(
+        at: String,
+        declaration: Declaration,
+    ): List<String> {
+        // A run commits every message it polled, and on the shared queue those are other tests' messages.
+        require(declaration.refreshQueue != REFRESH_TABLE) {
+            "sweepDue commits what it swept, so it needs a queue of its own: give ${declaration.database} a refreshQueue"
+        }
 
-    fun createRefreshQueue() {
+        now(at)
+
+        return (0 until PARTITIONS)
+            .flatMap { partition ->
+                val page = pollPartition(declaration, partition, until = clock.millis())
+                if (page.messages.isEmpty()) return@flatMap emptyList()
+
+                sweep(page.messages.map { it.value as Map<*, *> })
+                commit(declaration, partition, offset = page.offset!!)
+
+                page.messages.map { Instant.ofEpochMilli(it.seq).toString() }
+            }.sorted()
+    }
+
+    private fun commit(
+        declaration: Declaration,
+        partition: Int,
+        offset: Long,
+    ) {
+        client
+            .delete()
+            .uri("/queue/v1/namespaces/$DATABASE/queues/${declaration.refreshQueue}/partitions/$partition/messages?offset=$offset")
+            .exchange()
+            .expectStatus()
+            .isOk
+    }
+
+    fun createRefreshQueue(queue: String = REFRESH_TABLE) {
         createDatabase(DATABASE)
         client
             .post()
             .uri("/queue/v1/namespaces/$DATABASE/queues")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
-                """{"queue": "$REFRESH_TABLE", "storage": "datastore://test_namespace/$REFRESH_TABLE", "partitions": $PARTITIONS}""",
+                """{"queue": "$queue", "storage": "datastore://test_namespace/$queue", "partitions": $PARTITIONS}""",
             ).exchange()
     }
 
@@ -339,12 +371,14 @@ class TopkFixture(
         dimension: String,
         dimensionValues: String,
         declaration: Declaration,
-    ): AggregationsSweepResponse =
+    ): AggregationsSweepResponse = sweep(listOf(queuedRefresh(entity, dimension, dimensionValues, declaration)))
+
+    private fun sweep(items: List<Map<*, *>>): AggregationsSweepResponse =
         client
             .post()
             .uri("/aggregations/v1/sweep")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"items": [${MAPPER.writeValueAsString(queuedRefresh(entity, dimension, dimensionValues, declaration))}]}""")
+            .bodyValue("""{"items": ${MAPPER.writeValueAsString(items)}}""")
             .exchange()
             .expectStatus()
             .isOk
@@ -516,17 +550,7 @@ class TopkFixture(
         until: Long? = null,
     ): List<PolledMessage> =
         (0 until PARTITIONS).flatMap { partition ->
-            client
-                .get()
-                .uri(
-                    "/queue/v1/namespaces/$DATABASE/queues/$REFRESH_TABLE/partitions/$partition/poll?limit=100" +
-                        until?.let { "&until=$it" }.orEmpty(),
-                ).exchange()
-                .expectStatus()
-                .isOk
-                .expectBody<PollResponse>()
-                .returnResult()
-                .responseBody!!
+            pollPartition(declaration, partition, until)
                 .messages
                 .filter { message ->
                     val refreshed = (message.value as Map<*, *>)["item"] as Map<*, *>
@@ -534,12 +558,40 @@ class TopkFixture(
                 }
         }
 
+    private fun pollPartition(
+        declaration: Declaration,
+        partition: Int,
+        until: Long?,
+    ): PollResponse =
+        client
+            .get()
+            .uri(
+                "/queue/v1/namespaces/$DATABASE/queues/${declaration.refreshQueue}/partitions/$partition/poll?limit=100" +
+                    until?.let { "&until=$it" }.orEmpty(),
+            ).exchange()
+            .expectStatus()
+            .isOk
+            .expectBody<PollResponse>()
+            .returnResult()
+            .responseBody!!
+
     /**
      * A declaration is created the first time a test declares it, on the database it names. Creating one
      * that another class already created is not a failure: they share a context, and whether it was there
      * already does not matter.
      */
     fun declare(declaration: Declaration): Declaration {
+        // The queue is declared on the table, so the first declaration of a database is the one that sets it.
+        // A later declaration naming another queue would create it and then never be enqueued onto.
+        val queue = queues.getOrPut(declaration.database) { declaration.refreshQueue }
+        require(queue == declaration.refreshQueue) {
+            "${declaration.database} already refreshes onto `$queue`, so it cannot also refresh onto `${declaration.refreshQueue}`"
+        }
+
+        if (createdQueues.add(declaration.refreshQueue)) {
+            createRefreshQueue(declaration.refreshQueue)
+        }
+
         if (created.add(declaration.database)) {
             createDatabase(declaration.database)
             createRankTable(declaration)
@@ -628,6 +680,11 @@ class TopkFixture(
         """.trimIndent()
 
     private val created = mutableSetOf<String>()
+
+    private val createdQueues = mutableSetOf<String>()
+
+    /** Which queue each database refreshes onto, so a second declaration cannot quietly ask for another. */
+    private val queues = mutableMapOf<String, String>()
 
     /** One registration per read shape, keyed by what a registration pins rather than by what it takes. */
     private val prepared = mutableMapOf<List<String>, String>()

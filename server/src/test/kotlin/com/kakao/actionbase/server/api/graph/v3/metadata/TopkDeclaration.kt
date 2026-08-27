@@ -1,5 +1,7 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.Topk.REFRESH_TABLE
+
 const val TABLE = "purchases"
 const val RANK = "purchases__topk"
 const val RANK2 = "purchases__topk_moved"
@@ -23,6 +25,7 @@ data class Declaration(
     val timezone: String = "UTC",
     val window: String? = "purchasedAt:bt:now-365d,now",
     val refreshAfterMillis: Long = 365 * DAY_MILLIS,
+    val refreshQueue: String = REFRESH_TABLE,
     val bucketed: Boolean = true,
     val direction: String = "OUT",
     val entity: String = "source",
@@ -61,6 +64,7 @@ data class Declaration(
         """
         {"topk": "$name", "entity": "$entity", "dimension": "$dimension",
          "ranges": "${ranges()}", "refreshAfterMillis": $refreshAfterMillis,
+         "refreshQueue": "$refreshQueue",
          "rank": "$database.$rank", "additionalProperties": ["category"]}
         """.trimIndent()
 
