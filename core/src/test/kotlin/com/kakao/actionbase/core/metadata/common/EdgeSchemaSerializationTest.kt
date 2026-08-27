@@ -294,7 +294,7 @@ class EdgeSchemaSerializationTest {
                  "rank": "commerce.order_product__topk"}
                 """.trimIndent(),
             )
-        assertEquals(AggregationConstants.Topk.REFRESH_TABLE, unnamed.refreshQueue)
+        assertEquals(AggregationConstants.Topk.REFRESH_QUEUE, unnamed.refreshQueue)
     }
 
     @ObjectSourceParameterizedTest

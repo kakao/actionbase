@@ -3,7 +3,7 @@ package com.kakao.actionbase.core.metadata.common
 object AggregationConstants {
     object Topk {
         const val DATABASE = "topk"
-        const val REFRESH_TABLE = "refresh"
+        const val REFRESH_QUEUE = "refresh"
 
         // entity sentinel for global (non per-entity) rankings
         const val GLOBAL_ENTITY = "__GLOBAL__"
