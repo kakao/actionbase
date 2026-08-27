@@ -275,6 +275,28 @@ class EdgeSchemaSerializationTest {
         assertEquals(expected, objectMapper.readValue<ModelSchema>(input))
     }
 
+    @Test
+    fun `a top-K refreshes onto the queue it names, and onto the shared one when it names none`() {
+        val named =
+            objectMapper.readValue<Topk>(
+                """
+                {"topk": "top_purchased", "entity": "source", "dimension": "target",
+                 "rank": "commerce.order_product__topk", "refreshQueue": "purchase_refresh"}
+                """.trimIndent(),
+            )
+        assertEquals("purchase_refresh", named.refreshQueue)
+        assertEquals(named, objectMapper.readValue<Topk>(objectMapper.writeValueAsString(named)))
+
+        val unnamed =
+            objectMapper.readValue<Topk>(
+                """
+                {"topk": "top_purchased", "entity": "source", "dimension": "target",
+                 "rank": "commerce.order_product__topk"}
+                """.trimIndent(),
+            )
+        assertEquals(AggregationConstants.Topk.REFRESH_TABLE, unnamed.refreshQueue)
+    }
+
     @ObjectSourceParameterizedTest
     @ObjectSource(
         """
