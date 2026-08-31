@@ -4,7 +4,7 @@ import com.kakao.actionbase.core.edge.payload.AggregationsSweepResponse
 import com.kakao.actionbase.core.edge.payload.DataFrameEdgePayload
 import com.kakao.actionbase.core.metadata.common.AggregationConstants
 import com.kakao.actionbase.core.metadata.common.AggregationConstants.Topk.DATABASE
-import com.kakao.actionbase.core.metadata.common.AggregationConstants.Topk.REFRESH_TABLE
+import com.kakao.actionbase.core.metadata.common.AggregationConstants.Topk.REFRESH_QUEUE
 import com.kakao.actionbase.core.metadata.common.AggregationType
 import com.kakao.actionbase.core.metadata.payload.AggregationsListResponse
 import com.kakao.actionbase.engine.queue.PartitionHasher
@@ -124,7 +124,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
             .uri("/queue/v1/namespaces/$DATABASE/queues")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
-                """{"queue": "$REFRESH_TABLE", "storage": "datastore://test_namespace/$REFRESH_TABLE", "partitions": $refreshPartitions}""",
+                """{"queue": "$REFRESH_QUEUE", "storage": "datastore://test_namespace/$REFRESH_QUEUE", "partitions": $refreshPartitions}""",
             ).exchange()
             .expectStatus()
             .isOk
@@ -398,7 +398,7 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
         val page =
             client
                 .get()
-                .uri("/queue/v1/namespaces/$DATABASE/queues/$REFRESH_TABLE/partitions/$partition/poll?limit=10")
+                .uri("/queue/v1/namespaces/$DATABASE/queues/$REFRESH_QUEUE/partitions/$partition/poll?limit=10")
                 .exchange()
                 .expectStatus()
                 .isOk

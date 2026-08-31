@@ -55,7 +55,7 @@ class TopkAggregationHandler(
                         event.direction.directions().map { direction -> Triple(event, direction, topk) }
                     }
                 },
-            ).flatMap { (event, direction, topk) -> processTopk(event, direction, topk) }
+            ).flatMapSequential { (event, direction, topk) -> processTopk(event, direction, topk) }
 
     override fun sweep(item: SweepItemPayload): Mono<AggregationSweepResult> {
         require(item is TopkSweepItem) { "TopkAggregationHandler handles TopkSweepItem, got ${item::class.simpleName}" }

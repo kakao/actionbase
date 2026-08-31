@@ -169,7 +169,7 @@ class TopkAggregationHandlerTest {
             every {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     capture(refreshRequest),
                 )
             } returns Mono.just(enqueueResponse(status = "CREATED"))
@@ -268,7 +268,7 @@ class TopkAggregationHandlerTest {
                 )
 
             verify(exactly = 0) {
-                queueService.enqueue(any(), AggregationConstants.Topk.REFRESH_TABLE, any())
+                queueService.enqueue(any(), AggregationConstants.Topk.REFRESH_QUEUE, any())
             }
         }
 
@@ -291,7 +291,7 @@ class TopkAggregationHandlerTest {
             every {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     capture(refreshRequest),
                 )
             } returns Mono.just(enqueueResponse(status = "CREATED"))
@@ -331,7 +331,33 @@ class TopkAggregationHandlerTest {
             verify(exactly = 0) {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
+                    any(),
+                )
+            }
+        }
+
+        @Test
+        fun `skips the refresh when the window does not slide`() {
+            stubTopkBinding(engine = engine, topk = topkConfig(name = "topk", refreshAfterMillis = 60_000L, ranges = FIXED_WINDOW), bucketed = true)
+
+            every {
+                queryService.agg(any(), any(), any(), any(), any(), any(), any(), any())
+            } returns Mono.just(aggPayload(count = 1))
+
+            every {
+                mutationService.mutate("commerce", "orders__topk", any(), any(), any(), any(), any())
+            } returns Mono.just(listOf(mutationResult(status = "CREATED")))
+
+            StepVerifier
+                .create(handler.aggregate(aggregationItemPayload()).collectList())
+                .assertNext { it.single().status shouldBe "SUCCESS" }
+                .verifyComplete()
+
+            verify(exactly = 0) {
+                queueService.enqueue(
+                    AggregationConstants.Topk.DATABASE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     any(),
                 )
             }
@@ -357,7 +383,7 @@ class TopkAggregationHandlerTest {
             verify(exactly = 0) {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     any(),
                 )
             }
@@ -384,7 +410,7 @@ class TopkAggregationHandlerTest {
 
             val refreshRequest = slot<EnqueueRequest>()
             every {
-                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_TABLE, capture(refreshRequest))
+                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_QUEUE, capture(refreshRequest))
             } returns Mono.just(enqueueResponse(status = "CREATED"))
 
             StepVerifier
@@ -419,7 +445,7 @@ class TopkAggregationHandlerTest {
 
             val refreshRequest = slot<EnqueueRequest>()
             every {
-                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_TABLE, capture(refreshRequest))
+                queueService.enqueue(AggregationConstants.Topk.DATABASE, AggregationConstants.Topk.REFRESH_QUEUE, capture(refreshRequest))
             } returns Mono.just(enqueueResponse(status = "CREATED"))
 
             StepVerifier
@@ -447,7 +473,7 @@ class TopkAggregationHandlerTest {
             every {
                 queueService.enqueue(
                     AggregationConstants.Topk.DATABASE,
-                    AggregationConstants.Topk.REFRESH_TABLE,
+                    AggregationConstants.Topk.REFRESH_QUEUE,
                     any(),
                 )
             } returns Mono.just(enqueueResponse(status = "ERROR"))
@@ -577,6 +603,9 @@ private val DAY_BUCKET = Bucket.Date(name = PURCHASED_AT, unit = Bucket.ValueUni
 
 private const val SLIDING_WINDOW = "$PURCHASED_AT:bt:now-365d,now"
 
+/** The same field bounded by fixed points rather than by the clock, so the window never moves. */
+private const val FIXED_WINDOW = "$PURCHASED_AT:bt:2026-01-01,2026-12-31"
+
 /** The same bucket, named for the value it yields rather than for the field it reads. */
 private val ALIASED_DAY_BUCKET = Bucket.Date(name = "time", unit = Bucket.ValueUnit.MILLISECOND, timezone = "UTC", format = "yyyy-MM-dd")
 
@@ -589,7 +618,7 @@ private fun topkConfig(
     dimension: String = "target",
     rank: String = "commerce.orders__topk",
     refreshAfterMillis: Long = 0,
-    refreshQueue: String = AggregationConstants.Topk.REFRESH_TABLE,
+    refreshQueue: String = AggregationConstants.Topk.REFRESH_QUEUE,
     additionalProperties: List<String> = emptyList(),
     ranges: String = "",
 ): Topk =

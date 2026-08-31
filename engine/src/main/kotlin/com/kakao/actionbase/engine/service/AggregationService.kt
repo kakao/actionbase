@@ -23,13 +23,13 @@ class AggregationService(
     fun aggregate(items: List<AggregationItemPayload>): Mono<List<AggregationResult>> =
         Flux
             .fromIterable(items)
-            .flatMap { item -> Flux.merge(handlersByType.values.map { it.aggregate(item) }) }
+            .flatMapSequential { item -> Flux.mergeSequential(handlersByType.values.map { it.aggregate(item) }) }
             .collectList()
 
     fun sweep(items: List<SweepItem>): Mono<List<AggregationSweepResult>> =
         Flux
             .fromIterable(items)
-            .flatMap { item -> handler(item.type).sweep(item.item) }
+            .flatMapSequential { item -> handler(item.type).sweep(item.item) }
             .collectList()
 
     private fun handler(type: AggregationType): AggregationHandler = handlersByType[type] ?: error("No aggregation handler for type $type")
