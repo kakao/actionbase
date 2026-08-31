@@ -61,7 +61,7 @@ class ActionbaseQueryExecutor(
         arguments: Map<String, Any>,
     ): Mono<Map<String, DataFrame>> {
         val bound = prepared.bind(arguments)
-        return query(bound, bound.transform.map { transform -> prepared.transformArguments(transform as ActionbaseQuery.Transform.Sql, arguments) })
+        return query(bound, bound.transform.map { transform -> prepared.transformArguments(transform, arguments) })
     }
 
     private fun query(

@@ -43,12 +43,15 @@ class PreparedQuery private constructor(
     ): Any = types[name]?.cast(value) ?: value
 
     fun transformArguments(
-        transform: ActionbaseQuery.Transform.Sql,
+        transform: ActionbaseQuery.Transform,
         values: Map<String, Any>,
     ): List<Any?> =
-        transform.arguments.map { name ->
-            require(name in parameters) { "`${transform.name}` binds `$name`, which this query has no argument for." }
-            cast(name, values.getValue(name))
+        when (transform) {
+            is ActionbaseQuery.Transform.Sql ->
+                transform.arguments.map { name ->
+                    require(name in parameters) { "`${transform.name}` binds `$name`, which this query has no argument for." }
+                    cast(name, values.getValue(name))
+                }
         }
 
     private fun JsonNode.substitute(values: Map<String, Any>): JsonNode {
