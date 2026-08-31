@@ -113,6 +113,55 @@ class PreparedQueryTest {
     }
 
     @Test
+    fun `braces inside a string literal are not a placeholder`() {
+        val prepared =
+            PreparedQuery.of(
+                ActionbaseQuery(
+                    fetch = listOf(self(name = "hop1", source = value("{entity}"))),
+                    transform =
+                        listOf(
+                            ActionbaseQuery.Transform.Sql(
+                                name = "result",
+                                sql = "SELECT hop1.target AS t FROM hop1 WHERE hop1.target <> '{floor}'",
+                            ),
+                        ),
+                ),
+            )
+
+        prepared.parameters shouldBe setOf("entity")
+    }
+
+    /**
+     * The rewriter tracks `'` and nothing else, so a comment is ordinary text to it and its braces become a
+     * `?` Calcite never sees. The count is what catches it, on the first call rather than at registration,
+     * and the message says nothing about the comment. Pinned as it stands: the SQL is refused, which is the
+     * part that matters.
+     */
+    @Test
+    fun `braces inside a comment are rewritten, and the call fails on the count`() {
+        val executor = ActionbaseQueryExecutor(engineReturning("hop1" to ranked("PG1" to 30L)))
+        val prepared =
+            PreparedQuery.of(
+                ActionbaseQuery(
+                    fetch = listOf(self(name = "hop1", source = value("{entity}"))),
+                    transform =
+                        listOf(
+                            ActionbaseQuery.Transform.Sql(
+                                name = "result",
+                                sql = "SELECT hop1.target AS t FROM hop1 -- keep {floor}\n",
+                            ),
+                        ),
+                ),
+            )
+
+        prepared.parameters shouldBe setOf("entity", "floor")
+
+        shouldThrow<IllegalArgumentException> {
+            executor.query(prepared, mapOf("entity" to "U1", "floor" to 20L)).block()
+        }.message shouldBe "This transform takes 0 arguments, got 1."
+    }
+
+    @Test
     fun `an included step comes back alongside the transform`() {
         val executor = ActionbaseQueryExecutor(engineReturning("hop1" to ranked("PG1" to 30L)))
         val prepared =
