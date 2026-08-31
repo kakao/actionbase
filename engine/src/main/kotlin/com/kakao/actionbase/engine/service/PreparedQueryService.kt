@@ -193,7 +193,19 @@ class PreparedQueryService(
 
     private fun readAlias(name: EntityName) = graph.queryAliasDdl.getSingle(name).filter { it.active }
 
-    private fun namesOf(id: String): Mono<List<String>> = aliases(MetadataStatus.ALL).map { all -> all.filter { it.target == id }.map { it.alias } }
+    /**
+     * A metadata scan stops at `metadataFetchLimit` without saying so, and a page filled to it cannot prove
+     * that no name points at the query. Refuse rather than report an absence we can't back — the caller is
+     * about to drop the query. `DatastoreTableReferences` reads its own scans under the same rule.
+     */
+    private fun namesOf(id: String): Mono<List<String>> =
+        graph.queryAliasDdl.getAll(EntityName.origin).map { page ->
+            check(page.content.size < graph.metadataFetchLimit) {
+                "Cannot tell whether `$id` is still named: the alias scan hit the metadataFetchLimit of " +
+                    "${graph.metadataFetchLimit}, so the result may be incomplete"
+            }
+            page.content.filter { it.target == id }.map { it.alias }
+        }
 
     private fun validate(
         arguments: List<StructField>,

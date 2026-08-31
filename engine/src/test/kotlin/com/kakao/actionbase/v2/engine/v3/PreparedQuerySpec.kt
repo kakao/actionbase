@@ -18,6 +18,7 @@ import com.kakao.actionbase.v2.core.types.Field
 import com.kakao.actionbase.v2.core.types.VertexField
 import com.kakao.actionbase.v2.core.types.VertexType
 import com.kakao.actionbase.v2.engine.Graph
+import com.kakao.actionbase.v2.engine.GraphConfig
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.service.ddl.LabelCreateRequest
 import com.kakao.actionbase.v2.engine.test.GraphFixtures
@@ -281,6 +282,25 @@ class PreparedQuerySpec :
                     .test()
                     .assertNext { it shouldBe emptyList() }
                     .verifyComplete()
+            }
+
+            /**
+             * The alias scan stops at `metadataFetchLimit` without saying so, so a page filled to it cannot
+             * show that nothing names the query. Here the one alias the scan returns names a different query,
+             * which read literally would clear the delete — the names it could not reach are the point.
+             */
+            "a query is not dropped on an alias scan that may be truncated" {
+                val truncating = GraphFixtures.create(GraphConfig.Builder().withMetadataFetchLimit(1), withTestData = false)
+                try {
+                    val service = PreparedQueryService(truncating, QueryService(V2BackedEngine(truncating)))
+                    val named = service.register("named", arguments(), fetch(), transform(sql)).block()!!
+                    val other = service.register("other", arguments(), fetch(), transform(sql)).block()!!
+                    service.createAlias("recent_views", "홈 화면", named.id).block()
+
+                    shouldThrow<IllegalStateException> { service.delete(other.id).block() }
+                } finally {
+                    truncating.close()
+                }
             }
 
             "replacing the transform leaves the fetch steps as they were" {
