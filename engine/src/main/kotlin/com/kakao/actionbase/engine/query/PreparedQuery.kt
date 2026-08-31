@@ -125,8 +125,12 @@ class PreparedQuery private constructor(
 
         /**
          * Rewrites every SQL body to the `?` form once, and answers with the names the template asks for.
-         * Doing it here rather than per call is what lets a SQL that cannot be prepared be refused at
-         * registration.
+         * Doing it here rather than per call is what keeps the SQL text, and so the compiled plan, the same
+         * between calls.
+         *
+         * The SQL itself is not read here. Calcite first sees it on the call that runs it, because a plan is
+         * compiled against the columns of the frames it reads and those are only known once the fetch steps
+         * have run — so a statement Calcite would reject registers cleanly and fails on its first call.
          */
         private fun JsonNode.prepare(): Set<String> =
             when (this) {
