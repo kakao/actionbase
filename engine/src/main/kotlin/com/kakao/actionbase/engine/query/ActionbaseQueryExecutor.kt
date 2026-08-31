@@ -25,6 +25,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 
 /**
  * @see ActionbaseQuery
@@ -96,7 +97,10 @@ class ActionbaseQueryExecutor(
         arguments: List<Any?>,
     ): Mono<DataFrame> =
         when (transform) {
-            is ActionbaseQuery.Transform.Sql -> Mono.fromCallable { transforms.run(context, transform.sql, arguments) }
+            is ActionbaseQuery.Transform.Sql ->
+                Mono
+                    .fromCallable { transforms.run(context, transform.sql, arguments) }
+                    .subscribeOn(Schedulers.boundedElastic())
         }
 
     private fun processQuery(
