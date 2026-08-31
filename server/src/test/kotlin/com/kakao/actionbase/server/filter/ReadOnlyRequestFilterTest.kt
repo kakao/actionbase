@@ -70,6 +70,20 @@ class ReadOnlyRequestFilterTest {
         assertAllowed(method, path)
     }
 
+    /**
+     * `query` and `topks` are names a caller may pick for a database or a table, so a read-only endpoint
+     * recognised by the segment appearing anywhere in the path would hand every write under such a name
+     * through. The endpoints these stand for sit at a fixed depth, so they are matched whole.
+     */
+    @Test
+    fun `a database named after a read-only endpoint does not turn its writes into reads`() {
+        assertBlocked("POST", "/graph/v3/databases/query/tables")
+        assertBlocked("POST", "/graph/v3/databases/query/tables/orders/edges")
+        assertBlocked("DELETE", "/graph/v3/databases/query/tables/orders")
+        assertBlocked("POST", "/graph/v3/databases/topks/tables")
+        assertBlocked("POST", "/graph/v3/databases/db/tables/topks/edges")
+    }
+
     // No /control write exists yet, so nothing else would notice the prefix leaving the filter.
     @Test
     fun `should block writes on the control prefix`() {
