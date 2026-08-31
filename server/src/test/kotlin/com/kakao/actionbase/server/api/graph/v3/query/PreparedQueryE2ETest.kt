@@ -2,6 +2,8 @@ package com.kakao.actionbase.server.api.graph.v3.query
 
 import com.kakao.actionbase.server.test.E2ETestBase
 
+import java.time.Duration
+
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -151,6 +153,30 @@ class PreparedQueryE2ETest : E2ETestBase() {
                 }
                 """.trimIndent(),
             ).exchange()
+            .expectStatus()
+            .isOk
+
+        warmUpTheTransform()
+    }
+
+    /**
+     * Every test here registers the same SQL, so the first one to run it parses, plans and opens the
+     * statement's sessions while the rest read a cached plan — `CalciteLatencyProbe` puts that at several
+     * milliseconds warm and far more cold, and a registered query does not pay it at registration yet.
+     * Spend it once here, so the default five second response timeout keeps guarding the path every test
+     * actually takes. This one call gets longer: on a loaded build it has been seen past five seconds, and
+     * the wait is the cost being measured rather than a symptom of anything the tests are checking.
+     */
+    private fun warmUpTheTransform() {
+        client
+            .mutate()
+            .responseTimeout(Duration.ofSeconds(60))
+            .build()
+            .post()
+            .uri("/graph/v3/query/${register()}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"arguments": {"entity": "user1", "limit": 100}}""")
+            .exchange()
             .expectStatus()
             .isOk
     }
