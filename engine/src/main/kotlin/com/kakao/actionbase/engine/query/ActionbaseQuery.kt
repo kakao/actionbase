@@ -17,6 +17,13 @@ data class ActionbaseQuery(
     val transform: List<Transform> = emptyList(),
     val stats: Set<StatKey> = emptySet(),
 ) {
+    init {
+        val taken = fetch.mapTo(mutableSetOf()) { it.name }
+        transform.forEach { step ->
+            require(taken.add(step.name)) { "`${step.name}` already names a fetch step or an earlier transform." }
+        }
+    }
+
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
     @JsonSubTypes(
         JsonSubTypes.Type(value = Item.Self::class, name = "SELF"),
