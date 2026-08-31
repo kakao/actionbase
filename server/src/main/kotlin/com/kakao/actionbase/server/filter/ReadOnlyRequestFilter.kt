@@ -11,7 +11,7 @@ import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
 
 // Rejects non-GET methods on graph path prefixes with 403.
-// Exceptions: read-only POST endpoints, matched by readSuffixes, or by readSegments when the path ends in
+// Exceptions: read-only POST endpoints, matched by readSuffixes, or by readPaths when the path ends in
 // a variable and so has no fixed suffix to match on.
 class ReadOnlyRequestFilter : WebFilter {
     private val log = LoggerFactory.getLogger(ReadOnlyRequestFilter::class.java)
@@ -24,7 +24,15 @@ class ReadOnlyRequestFilter : WebFilter {
             "/multi-edges/ids",
             "/query",
         )
-    private val readSegments = setOf("/topks/")
+
+    // Read-only POSTs whose path ends in a variable, so `readSuffixes` has no fixed tail to match on.
+    // Anchored on the whole path rather than searched for inside it: `contains("/query/")` would also
+    // let through every write under a database named `query`, and the names here are ordinary ones.
+    private val readPaths =
+        listOf(
+            Regex("^/graph/v3/query/[^/]+$"),
+            Regex("^/aggregations/v1/databases/[^/]+/tables/[^/]+/topks/[^/]+$"),
+        )
 
     init {
         log.info("ReadOnlyRequestFilter is active. Write operations on {} will be rejected.", paths)
@@ -52,5 +60,5 @@ class ReadOnlyRequestFilter : WebFilter {
         return exchange.response.writeWith(Mono.just(messageBuffer))
     }
 
-    private fun isRead(path: String): Boolean = readSuffixes.any { path.endsWith(it) } || readSegments.any { path.contains(it) }
+    private fun isRead(path: String): Boolean = readSuffixes.any { path.endsWith(it) } || readPaths.any { it.matches(path) }
 }

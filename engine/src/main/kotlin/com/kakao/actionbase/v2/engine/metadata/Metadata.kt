@@ -38,6 +38,10 @@ object Metadata {
 
     const val heartBeatLabelName = "heartbeat"
 
+    const val sysQueryLabelName = "query"
+
+    const val sysQueryAliasLabelName = "query_alias"
+
     const val sysOnlineMetadataLabelV2Name = "online_metadata_v2"
 
     const val sysNilLabelName = "nil"
@@ -148,6 +152,49 @@ object Metadata {
             schema =
                 EdgeSchema(
                     VertexField(VertexType.STRING, "{{service}}"),
+                    VertexField(VertexType.STRING, "{{alias}}"),
+                    listOf(
+                        Field("props_active", DataType.BOOLEAN, true),
+                        Field("desc", DataType.STRING, false),
+                        Field("target", DataType.STRING, false),
+                    ),
+                ),
+            dirType = DirectionType.OUT,
+            storage = EngineConstants.METASTORE_URI,
+        )
+
+    val queryLabelEntity =
+        LabelEntity(
+            active = true,
+            name = EntityName(sysServiceName, sysQueryLabelName),
+            desc = "System query label",
+            type = LabelType.HASH,
+            schema =
+                EdgeSchema(
+                    VertexField(VertexType.STRING, "origin"),
+                    VertexField(VertexType.STRING, "{{queryId}}"),
+                    listOf(
+                        Field("props_active", DataType.BOOLEAN, true),
+                        Field("desc", DataType.STRING, false),
+                        Field("arguments", DataType.STRING, true),
+                        Field("fetch", DataType.STRING, false),
+                        Field("transform", DataType.STRING, true),
+                        Field("stats", DataType.STRING, true),
+                    ),
+                ),
+            dirType = DirectionType.OUT,
+            storage = EngineConstants.METASTORE_URI,
+        )
+
+    val queryAliasLabelEntity =
+        LabelEntity(
+            active = true,
+            name = EntityName(sysServiceName, sysQueryAliasLabelName),
+            desc = "System query alias label",
+            type = LabelType.HASH,
+            schema =
+                EdgeSchema(
+                    VertexField(VertexType.STRING, "origin"),
                     VertexField(VertexType.STRING, "{{alias}}"),
                     listOf(
                         Field("props_active", DataType.BOOLEAN, true),

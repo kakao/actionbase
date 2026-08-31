@@ -56,6 +56,14 @@ class ActionbaseQueryExecutor(
 
     fun query(actionBaseQuery: ActionbaseQuery): Mono<Map<String, DataFrame>> = query(actionBaseQuery, emptyList())
 
+    fun query(
+        prepared: PreparedQuery,
+        arguments: Map<String, Any>,
+    ): Mono<Map<String, DataFrame>> {
+        val bound = prepared.bind(arguments)
+        return query(bound, bound.transform.map { transform -> prepared.transformArguments(transform, arguments) })
+    }
+
     private fun query(
         actionBaseQuery: ActionbaseQuery,
         transformArguments: List<List<Any?>>,
