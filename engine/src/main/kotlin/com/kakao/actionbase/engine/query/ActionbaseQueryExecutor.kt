@@ -5,6 +5,8 @@ import com.kakao.actionbase.core.metadata.common.StructField
 import com.kakao.actionbase.core.metadata.common.StructType
 import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.engine.QueryEngine
+import com.kakao.actionbase.engine.binding.TableBinding
+import com.kakao.actionbase.engine.service.RankScan
 import com.kakao.actionbase.engine.sql.DataFrame
 import com.kakao.actionbase.engine.sql.Row
 
@@ -51,16 +53,15 @@ class ActionbaseQueryExecutor(
 
     fun query(actionBaseQuery: ActionbaseQuery): Mono<Map<String, DataFrame>> {
         val computed: Mono<Map<String, DataFrame>> =
-            actionBaseQuery.query.fold(Mono.just(emptyMap())) { acc, queryItem ->
+            actionBaseQuery.fetch.fold(Mono.just(emptyMap())) { acc, queryItem ->
                 acc.flatMap { context ->
                     processQuery(queryItem, context, actionBaseQuery)
                         .map { context + (queryItem.name to it) }
                 }
             }
-        val returnNames = actionBaseQuery.query.filter { it.include }.map { it.name }
-        return computed.map { context ->
-            returnNames.associateWith { context.getValue(it) }
-        }
+        val returnNames = actionBaseQuery.fetch.filter { it.include }.map { it.name }
+
+        return computed.map { context -> returnNames.associateWith { context.getValue(it) } }
     }
 
     private fun processQuery(
@@ -84,6 +85,7 @@ class ActionbaseQueryExecutor(
             is ActionbaseQuery.Item.Count -> processCount(queryItem, context, actionBaseQuery)
             is ActionbaseQuery.Item.Scan -> processScan(queryItem, context, actionBaseQuery)
             is ActionbaseQuery.Item.Seek -> processSeek(queryItem, context, actionBaseQuery)
+            is ActionbaseQuery.Item.Topk -> processTopk(queryItem, context, actionBaseQuery)
         }
 
     private fun applyPostProcessors(
@@ -168,15 +170,16 @@ class ActionbaseQueryExecutor(
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> =
         resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
+            val binding = engine.getTableBinding(database = queryItem.database, alias = queryItem.table)
+
             Flux
                 .fromIterable(source)
                 .flatMap { start ->
-                    engine
-                        .getTableBinding(database = queryItem.database, alias = queryItem.table)
+                    binding
                         .scan(queryItem.index, start, queryItem.direction, queryItem.limit, queryItem.offset, ranges = queryItem.ranges, filters = null, features = emptyList())
                 }.reduce { a, b ->
                     DataFrame(rows = a.rows + b.rows, schema = a.schema, total = a.total + b.total)
-                }.switchIfEmpty(Mono.just(DataFrame.empty))
+                }.switchIfEmpty(Mono.just(binding.emptyFrame))
         }
 
     private fun processSeek(
@@ -185,11 +188,67 @@ class ActionbaseQueryExecutor(
         actionBaseQuery: ActionbaseQuery,
     ): Mono<DataFrame> =
         resolveVertex(queryItem.source, context, actionBaseQuery).flatMap { source ->
-            engine
-                .getTableBinding(database = queryItem.database, alias = queryItem.table)
+            val binding = engine.getTableBinding(database = queryItem.database, alias = queryItem.table)
+
+            binding
                 .seek(queryItem.cache, source.toList(), queryItem.direction, queryItem.limit, offset = null, ranges = queryItem.ranges, filters = null, features = emptyList())
-                .switchIfEmpty(Mono.just(DataFrame.empty))
+                .switchIfEmpty(Mono.just(binding.emptyFrame))
         }
+
+    private fun processTopk(
+        queryItem: ActionbaseQuery.Item.Topk,
+        context: Map<String, DataFrame>,
+        actionBaseQuery: ActionbaseQuery,
+    ): Mono<DataFrame> {
+        val binding = engine.getTableBinding(database = queryItem.database, alias = queryItem.table)
+        val entity = queryItem.entity ?: return scanRanking(queryItem, binding, entity = null)
+
+        return resolveVertex(entity, context, actionBaseQuery).flatMap { entities ->
+            Flux
+                .fromIterable(entities)
+                .flatMap { scanRanking(queryItem, binding, it.toString()) }
+                .reduce { a, b -> DataFrame(rows = a.rows + b.rows, schema = a.schema, total = a.total + b.total) }
+                .switchIfEmpty(Mono.just(rankBindingOf(queryItem, binding).emptyFrame))
+        }
+    }
+
+    private fun scanRanking(
+        queryItem: ActionbaseQuery.Item.Topk,
+        binding: TableBinding,
+        entity: String?,
+    ): Mono<DataFrame> {
+        val rank = rankScanOf(queryItem, binding, entity)
+
+        return engine
+            .getTableBinding(database = rank.database, alias = rank.table)
+            .scan(rank.index, rank.start, rank.direction, queryItem.limit, queryItem.offset, ranges = null, filters = null, features = emptyList())
+    }
+
+    /**
+     * The step names the source table, but the rows come from the ranking table it points at, so an empty
+     * ranking has to answer with the ranking table's columns rather than the source table's.
+     */
+    private fun rankBindingOf(
+        queryItem: ActionbaseQuery.Item.Topk,
+        binding: TableBinding,
+    ): TableBinding =
+        rankScanOf(queryItem, binding, entity = null).let { rank ->
+            engine.getTableBinding(database = rank.database, alias = rank.table)
+        }
+
+    private fun rankScanOf(
+        queryItem: ActionbaseQuery.Item.Topk,
+        binding: TableBinding,
+        entity: String?,
+    ): RankScan =
+        RankScan.from(
+            schema = binding.schema,
+            database = queryItem.database,
+            table = binding.table,
+            topk = queryItem.topk,
+            entity = entity,
+            dimensionValues = queryItem.dimensionValues,
+        )
 
     // region Aggregators
 
