@@ -37,6 +37,7 @@ object Versions {
     const val RELOAD4J = "1.2.25"
     const val JACKSON_SPARK = "2.12.3"
     const val JUNIT_JUPITER_OLD = "5.9.2"
+    const val CALCITE = "1.40.0"
 }
 
 object Dependencies {
@@ -152,6 +153,10 @@ object Dependencies {
 
     object DatabasePool {
         const val HIKARICP = "com.zaxxer:HikariCP:${Versions.HIKARICP}"
+    }
+
+    object Calcite {
+        const val CORE = "org.apache.calcite:calcite-core:${Versions.CALCITE}"
     }
 
     object Exposed {
