@@ -24,7 +24,7 @@ class JibConventionsPlugin : Plugin<Project> {
                 "--add-opens",
                 "java.base/java.nio=ALL-UNNAMED",
                 "--add-exports",
-                "java.security.jgss/sun.security.krb5=ALL-UNNAMED",
+                "java.security.jgss/sun.security.krb5=ALL-UNNAMED"
             )
         project.extensions.extraProperties["jvmArgs"] = jvmArgs
 
