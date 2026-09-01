@@ -127,6 +127,7 @@ Each module releases independently.
 
 | codec-java | Actionbase (server) |
 | ---------- | ------------------- |
+| 0.6.0      | 0.5.x               |
 | 0.3.0      | 0.4.x               |
 | 0.2.0      | 0.3.x               |
 
