@@ -1,6 +1,6 @@
 export CGO_ENABLED := 0
 
-.PHONY: build clean run test install fmt vet
+.PHONY: build clean run test install fmt vet package
 
 BINARY_NAME=actionbase
 MAIN_PATH=./cmd/actionbase
@@ -13,6 +13,10 @@ GOBIN=$(GOBASE)/bin
 GOFILES=$(wildcard *.go)
 
 LD_FLAGS := -s -w -X main.Version=$(VERSION)
+
+PLATFORMS := linux_amd64 darwin_amd64 darwin_arm64
+WIN_PLATFORM := windows_amd64
+SHASUM := $(shell command -v sha256sum >/dev/null 2>&1 && echo "sha256sum" || echo "shasum -a 256")
 
 all: fmt vet build
 
@@ -84,6 +88,20 @@ build-windows:
 build-all: build-linux build-macos build-windows
 	@echo "All builds complete"
 
+package: build-all
+	@echo "Packaging..."
+	@cd $(BUILD_DIR) && \
+	rm -f checksums.txt && \
+	for p in $(PLATFORMS); do \
+	  d="$(BINARY_NAME)_$(VERSION)_$$p"; \
+	  tar --owner=0 --group=0 --numeric-owner -czf "$$d.tar.gz" "$$d" || exit 1; \
+	done && \
+	w="$(BINARY_NAME)_$(VERSION)_$(WIN_PLATFORM)" && \
+	rm -f "$$w.zip" && \
+	zip -qrX "$$w.zip" "$$w" && \
+	$(SHASUM) $(BINARY_NAME)_$(VERSION)_*.tar.gz $(BINARY_NAME)_$(VERSION)_*.zip > checksums.txt
+	@echo "Package complete: $(BUILD_DIR)"
+
 help:
 	@echo "Actionbase CLI Makefile"
 	@echo ""
@@ -105,4 +123,5 @@ help:
 	@echo "  build-macos  - Build for macOS (AMD64 and ARM64)"
 	@echo "  build-windows- Build for Windows AMD64"
 	@echo "  build-all    - Build for all platforms"
+	@echo "  package      - Build all platforms and create release archives"
 	@echo "  help         - Show this help message"

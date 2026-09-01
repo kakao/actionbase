@@ -1,0 +1,167 @@
+name: 'Release CLI'
+
+on:
+  push:
+    tags:
+      - 'cli/*'
+  pull_request:
+    paths:
+      - '.github/workflows/release-cli.yml'
+      - 'cli/Makefile'
+  workflow_dispatch:
+
+# Note: tag pushes made with GITHUB_TOKEN do not trigger workflows. If CLI tagging is ever
+# automated the way post-release.yml tags the server, invoke this via workflow_call instead
+# of relying on the tag push.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build and Package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: cli
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: resolve
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$REF_TYPE" = tag ]; then
+            V="${REF_NAME#cli/}"
+            V="${V#v}"
+          else
+            V="0.0.0-dev"
+          fi
+          if [[ ! "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::resolved version '$V' is not semver (tag must be cli/X.Y.Z)"
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build and package
+        run: make package VERSION="${{ steps.resolve.outputs.version }}"
+
+      - name: Verify artifacts
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+        run: |
+          set -euo pipefail
+          out=$("./build/actionbase_${VERSION}_linux_amd64/actionbase" --version)
+          [ "$out" = "v${VERSION}" ] \
+            || { echo "::error::--version printed '$out', want 'v${VERSION}'"; exit 1; }
+          for p in linux_amd64 darwin_amd64 darwin_arm64 windows_amd64; do
+            bin="./build/actionbase_${VERSION}_${p}/actionbase"
+            if [ "$p" = windows_amd64 ]; then bin="${bin}.exe"; fi
+            goos="${p%_*}"
+            goarch="${p#*_}"
+            info=$(go version -m "$bin")
+            echo "$info" | grep -qF -- "-X main.Version=${VERSION}" \
+              || { echo "::error::version not linked into $p"; exit 1; }
+            echo "$info" | grep -qF -- "GOOS=${goos}" \
+              || { echo "::error::$p was not built for GOOS=${goos}"; exit 1; }
+            echo "$info" | grep -qF -- "GOARCH=${goarch}" \
+              || { echo "::error::$p was not built for GOARCH=${goarch}"; exit 1; }
+          done
+          for p in linux_amd64 darwin_amd64 darwin_arm64; do
+            d="actionbase_${VERSION}_${p}"
+            tar -tzf "./build/${d}.tar.gz" | grep -qxF "${d}/actionbase" \
+              || { echo "::error::${d}.tar.gz layout is wrong"; exit 1; }
+          done
+          w="actionbase_${VERSION}_windows_amd64"
+          unzip -l "./build/${w}.zip" | grep -qF "${w}/actionbase.exe" \
+            || { echo "::error::${w}.zip layout is wrong"; exit 1; }
+          ( cd build && sha256sum -c checksums.txt ) \
+            || { echo "::error::checksums.txt does not verify"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-dist
+          path: |
+            cli/build/actionbase_${{ steps.resolve.outputs.version }}_*.tar.gz
+            cli/build/actionbase_${{ steps.resolve.outputs.version }}_*.zip
+            cli/build/checksums.txt
+          overwrite: true
+          retention-days: 7
+
+  publish:
+    name: Publish Release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/cli/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-dist
+          path: dist
+
+      - name: Check artifacts are present
+        run: |
+          set -euo pipefail
+          ls dist/*.tar.gz dist/*.zip dist/checksums.txt >/dev/null \
+            || { echo "::error::dist/ is empty: build artifacts may have expired"; exit 1; }
+
+      - name: Create draft release if absent
+        run: |
+          set -euo pipefail
+          if out=$(gh release view "$TAG" --json isDraft -q .isDraft 2>&1); then
+            [ "$out" = true ] \
+              || { echo "::error::$TAG is already published; refusing to overwrite its assets"; exit 1; }
+          else
+            case "$out" in
+              *"release not found"*)
+                {
+                  echo "Actionbase CLI \`$VERSION\`"
+                  echo
+                  for f in dist/*; do echo "- ${f#dist/}"; done
+                  echo
+                  echo 'Verify with `sha256sum -c checksums.txt`.'
+                } > notes.md
+                gh release create "$TAG" --draft --title "$TAG" --notes-file notes.md
+                ;;
+              *)
+                echo "$out" >&2
+                exit 1
+                ;;
+            esac
+          fi
+
+      - name: Upload assets
+        run: gh release upload "$TAG" dist/* --clobber
+
+      - name: Summarize
+        run: |
+          url=$(gh release view "$TAG" --json url -q .url)
+          {
+            echo "### Actionbase CLI $VERSION"
+            echo "$url"
+            for f in dist/*; do echo "- ${f#dist/}"; done
+            echo
+            echo '**This release is a DRAFT.** Review the notes and click Publish.'
+            echo 'Leave "Set as the latest release" unchecked.'
+            echo 'Then update `Formula/actionbase.rb` (`url` and `sha256`).'
+          } >> "$GITHUB_STEP_SUMMARY"
