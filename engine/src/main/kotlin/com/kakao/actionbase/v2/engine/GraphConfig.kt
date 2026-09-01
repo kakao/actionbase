@@ -40,9 +40,25 @@ data class GraphConfig(
     val useJdbcMetastore: Boolean = true,
     val featureFlags: List<FeatureFlags.Item> = emptyList(),
 ) {
+    /**
+     * A copy safe to log. The generated [toString] renders every field, so logging this config directly puts the
+     * metastore credentials in the log in plain text. Only the credentials are replaced - every other field stays
+     * visible, because that line is the primary record of how an instance was configured. An empty credential stays
+     * empty rather than masked, so "not configured" remains distinguishable from "configured".
+     */
+    fun redacted(): GraphConfig =
+        copy(
+            metastoreUser = mask(metastoreUser),
+            metastorePassword = mask(metastorePassword),
+        )
+
     companion object {
+        private const val MASK = "****"
+
         val builder: Builder
             get() = Builder()
+
+        private fun mask(credential: String): String = if (credential.isEmpty()) "" else MASK
     }
 
     class Builder {
