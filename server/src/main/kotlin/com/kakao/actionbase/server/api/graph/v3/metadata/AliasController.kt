@@ -1,6 +1,8 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.metadata.AliasDescriptor
+import com.kakao.actionbase.server.util.mapToResponseEntity
+import com.kakao.actionbase.v2.engine.service.ddl.DdlPage
+import com.kakao.actionbase.v2.engine.service.ddl.DdlStatus
 
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -27,53 +29,36 @@ class AliasController(
     fun listAliases(
         @PathVariable database: String,
         @RequestParam(required = false, defaultValue = "ACTIVE") status: MetadataStatus,
-    ): Mono<ResponseEntity<List<AliasDescriptor>>> =
-        v3CompatService
-            .getAliases(database, status)
-            .map { ResponseEntity.ok(it) }
+    ): Mono<ResponseEntity<DdlPage<AliasResponse>>> = v3CompatService.getAliases(database, status).mapToResponseEntity()
 
     @GetMapping("/graph/v3/databases/{database}/aliases/{alias}")
     fun getAlias(
         @PathVariable database: String,
         @PathVariable alias: String,
-    ): Mono<ResponseEntity<AliasDescriptor>> =
-        v3CompatService
-            .getAlias(database, alias)
-            .map { ResponseEntity.ok(it) }
-            .defaultIfEmpty(ResponseEntity.notFound().build())
+    ): Mono<ResponseEntity<AliasResponse>> = v3CompatService.getAlias(database, alias).mapToResponseEntity()
 
     @PostMapping("/graph/v3/databases/{database}/aliases")
     fun createAlias(
         @PathVariable database: String,
         @Valid @RequestBody request: AliasCreateRequest,
-    ): Mono<ResponseEntity<AliasDescriptor>> =
+    ): Mono<ResponseEntity<DdlStatus<AliasResponse>>> =
         v3CompatService
             .createAlias(
                 V3NameValidator.validateDatabase(database),
                 V3NameValidator.validateAlias(request.alias),
                 request,
-            ).map { ResponseEntity.ok(it) }
+            ).mapToResponseEntity()
 
     @PutMapping("/graph/v3/databases/{database}/aliases/{alias}")
     fun updateAlias(
         @PathVariable database: String,
         @PathVariable alias: String,
         @Valid @RequestBody request: AliasUpdateRequest,
-    ): Mono<ResponseEntity<AliasDescriptor>> =
-        v3CompatService
-            .updateAlias(
-                database,
-                alias,
-                request,
-            ).map { ResponseEntity.ok(it) }
-            .defaultIfEmpty(ResponseEntity.notFound().build())
+    ): Mono<ResponseEntity<DdlStatus<AliasResponse>>> = v3CompatService.updateAlias(database, alias, request).mapToResponseEntity()
 
     @DeleteMapping("/graph/v3/databases/{database}/aliases/{alias}")
     fun deleteAlias(
         @PathVariable database: String,
         @PathVariable alias: String,
-    ): Mono<ResponseEntity<Void>> =
-        v3CompatService
-            .deleteAlias(database, alias)
-            .then(Mono.just(ResponseEntity.noContent().build<Void>()))
+    ): Mono<ResponseEntity<DdlStatus<AliasResponse>>> = v3CompatService.deleteAlias(database, alias).mapToResponseEntity()
 }

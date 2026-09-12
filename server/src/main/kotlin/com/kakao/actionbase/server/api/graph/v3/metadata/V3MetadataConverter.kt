@@ -2,46 +2,40 @@ package com.kakao.actionbase.server.api.graph.v3.metadata
 
 import com.kakao.actionbase.core.java.codec.common.hbase.Order as V3Order
 import com.kakao.actionbase.core.metadata.common.DirectionType as V3DirectionType
-import com.kakao.actionbase.core.metadata.common.Field as V3Field
 import com.kakao.actionbase.core.metadata.common.Index as V3Index
 import com.kakao.actionbase.core.metadata.common.MutationMode as V3MutationMode
 import com.kakao.actionbase.v2.core.code.Index as V2Index
 import com.kakao.actionbase.v2.core.code.hbase.Order as V2Order
 import com.kakao.actionbase.v2.core.metadata.DirectionType as V2DirectionType
 import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
-import com.kakao.actionbase.v2.core.types.DataType as V2DataType
 import com.kakao.actionbase.v2.core.types.Field as V2Field
 
-import com.kakao.actionbase.core.metadata.AliasDescriptor
-import com.kakao.actionbase.core.metadata.DatabaseDescriptor
-import com.kakao.actionbase.core.metadata.TableDescriptor
-import com.kakao.actionbase.core.metadata.common.Cache
-import com.kakao.actionbase.core.metadata.common.Group
 import com.kakao.actionbase.core.metadata.common.IndexField
-import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.common.StructField
-import com.kakao.actionbase.core.types.PrimitiveType
 import com.kakao.actionbase.v2.core.metadata.LabelType
 import com.kakao.actionbase.v2.core.types.EdgeSchema
 import com.kakao.actionbase.v2.core.types.VertexField
-import com.kakao.actionbase.v2.core.types.VertexType
 import com.kakao.actionbase.v2.engine.entity.AliasEntity
 import com.kakao.actionbase.v2.engine.entity.EntityName
 import com.kakao.actionbase.v2.engine.entity.LabelEntity
 import com.kakao.actionbase.v2.engine.entity.ServiceEntity
 
+/**
+ * Translates between the v2 metastore entities and the v3 metadata surface.
+ *
+ * The two carry the same information in the same structure; only the names differ. Every function
+ * here is a rename, never a reshape.
+ */
 object V3MetadataConverter {
-    // region Database (V3 DatabaseDescriptor <-> V2 ServiceEntity)
+    // region Database (V3 DatabaseResponse <-> V2 ServiceEntity)
 
-    fun ServiceEntity.toV3DatabaseDescriptor(tenant: String): DatabaseDescriptor =
-        DatabaseDescriptor(
-            tenant = tenant,
-            database = name.nameNotNull,
+    fun ServiceEntity.toDatabaseResponse(): DatabaseResponse =
+        DatabaseResponse(
             active = active,
+            database = name.nameNotNull,
             comment = desc,
         )
 
-    fun DatabaseDescriptor.toV2ServiceEntity(): ServiceEntity =
+    fun DatabaseResponse.toV2ServiceEntity(): ServiceEntity =
         ServiceEntity(
             active = active,
             name = EntityName.fromOrigin(database),
@@ -50,133 +44,88 @@ object V3MetadataConverter {
 
     // endregion
 
-    // region Table (V3 TableDescriptor <-> V2 LabelEntity)
+    // region Table (V3 TableResponse <-> V2 LabelEntity)
 
-    fun LabelEntity.toV3TableDescriptorEdge(tenant: String): TableDescriptor.Edge =
-        TableDescriptor.Edge(
-            tenant = tenant,
+    fun LabelEntity.toTableResponse(): TableResponse =
+        TableResponse(
+            active = active,
             database = name.service,
             table = name.nameNotNull,
-            schema = schema.toV3ModelSchemaEdge(dirType.toV3DirectionType(), indices, groups, caches),
-            mode = mode.toV3MutationMode(),
-            storage = storage,
-            active = active,
             comment = desc,
+            type = type.toTableType(),
+            schema = schema.toTableSchema(),
+            direction = dirType.toV3DirectionType(),
+            storage = storage,
+            indexes = indices.map { it.toV3Index() },
+            groups = groups,
+            caches = caches,
+            mode = mode.toV3MutationMode(),
         )
 
-    fun LabelEntity.toV3TableDescriptorImmutableEdge(tenant: String): TableDescriptor.ImmutableEdge =
-        TableDescriptor.ImmutableEdge(
-            tenant = tenant,
-            database = name.service,
-            table = name.nameNotNull,
-            schema = schema.toV3ModelSchemaImmutableEdge(dirType.toV3DirectionType(), indices, groups),
-            mode = mode.toV3MutationMode(),
-            storage = storage,
-            active = active,
-            comment = desc,
-        )
-
-    fun LabelEntity.toV3TableDescriptorMultiEdge(tenant: String): TableDescriptor.MultiEdge =
-        TableDescriptor.MultiEdge(
-            tenant = tenant,
-            database = name.service,
-            table = name.nameNotNull,
-            schema = schema.toV3ModelSchemaMultiEdge(dirType.toV3DirectionType(), indices, groups, caches),
-            mode = mode.toV3MutationMode(),
-            storage = storage,
-            active = active,
-            comment = desc,
-        )
-
-    fun LabelEntity.toV3TableDescriptorVertex(tenant: String): TableDescriptor.Vertex =
-        TableDescriptor.Vertex(
-            tenant = tenant,
-            database = name.service,
-            table = name.nameNotNull,
-            schema = schema.toV3ModelSchemaVertex(),
-            mode = mode.toV3MutationMode(),
-            storage = storage,
-            active = active,
-            comment = desc,
-        )
-
-    fun LabelEntity.toV3TableDescriptor(tenant: String): TableDescriptor<*> =
-        when (type) {
-            LabelType.IMMUTABLE_INDEXED -> toV3TableDescriptorImmutableEdge(tenant)
-            LabelType.MULTI_EDGE -> toV3TableDescriptorMultiEdge(tenant)
-            LabelType.VERTEX -> toV3TableDescriptorVertex(tenant)
-            else -> toV3TableDescriptorEdge(tenant)
-        }
-
-    fun TableDescriptor.Edge.toV2LabelEntity(): LabelEntity =
+    fun TableResponse.toV2LabelEntity(): LabelEntity =
         LabelEntity(
             active = active,
             name = EntityName(database, table),
             desc = comment,
-            type = LabelType.INDEXED,
+            type = type.toLabelType(),
             schema = schema.toV2EdgeSchema(),
-            dirType = schema.direction.toV2DirectionType(),
+            dirType = direction.toV2DirectionType(),
             storage = storage,
-            indices = schema.indexes.map { it.toV2Index() },
-            groups = schema.groups,
+            indices = indexes.map { it.toV2Index() },
+            groups = groups,
+            caches = caches,
             event = false,
-            readOnly = false,
-            mode = mode.toV2MutationMode(),
-        )
-
-    fun TableDescriptor.ImmutableEdge.toV2LabelEntity(): LabelEntity =
-        LabelEntity(
-            active = active,
-            name = EntityName(database, table),
-            desc = comment,
-            type = LabelType.IMMUTABLE_INDEXED,
-            schema = schema.toV2EdgeSchema(),
-            dirType = schema.direction.toV2DirectionType(),
-            storage = storage,
-            indices = schema.indexes.map { it.toV2Index() },
-            groups = schema.groups,
-            event = false,
-            readOnly = false,
-            mode = mode.toV2MutationMode(),
-        )
-
-    fun TableDescriptor.MultiEdge.toV2LabelEntity(): LabelEntity =
-        LabelEntity(
-            active = active,
-            name = EntityName(database, table),
-            desc = comment,
-            type = LabelType.MULTI_EDGE,
-            schema = schema.toV2EdgeSchema(),
-            dirType = schema.direction.toV2DirectionType(),
-            storage = storage,
-            indices = schema.indexes.map { it.toV2Index() },
-            groups = schema.groups,
-            event = false,
-            readOnly = true,
+            readOnly = type.isReadOnlyInV2(),
             mode = mode.toV2MutationMode(),
         )
 
     // endregion
 
-    // region Alias (V3 AliasDescriptor <-> V2 AliasEntity)
+    // region Alias (V3 AliasResponse <-> V2 AliasEntity)
 
-    fun AliasEntity.toV3AliasDescriptor(tenant: String): AliasDescriptor =
-        AliasDescriptor(
-            tenant = tenant,
+    fun AliasEntity.toAliasResponse(): AliasResponse =
+        AliasResponse(
+            active = active,
             database = name.service,
             alias = name.nameNotNull,
             table = target.nameNotNull,
-            active = active,
             comment = desc,
         )
 
-    fun AliasDescriptor.toV2AliasEntity(): AliasEntity =
+    fun AliasResponse.toV2AliasEntity(): AliasEntity =
         AliasEntity(
             active = active,
             name = EntityName(database, alias),
             desc = comment,
             target = EntityName(database, table),
         )
+
+    // endregion
+
+    // region TableType conversion
+
+    /**
+     * v2's `HASH` and `NIL` have no v3 name. They read back as [TableType.EDGE], which is what the
+     * v3 runtime already treats them as; neither can be created through the v3 surface.
+     */
+    fun LabelType.toTableType(): TableType =
+        when (this) {
+            LabelType.IMMUTABLE_INDEXED -> TableType.IMMUTABLE_EDGE
+            LabelType.MULTI_EDGE -> TableType.MULTI_EDGE
+            LabelType.VERTEX -> TableType.VERTEX
+            LabelType.INDEXED, LabelType.HASH, LabelType.NIL -> TableType.EDGE
+        }
+
+    fun TableType.toLabelType(): LabelType =
+        when (this) {
+            TableType.EDGE -> LabelType.INDEXED
+            TableType.IMMUTABLE_EDGE -> LabelType.IMMUTABLE_INDEXED
+            TableType.MULTI_EDGE -> LabelType.MULTI_EDGE
+            TableType.VERTEX -> LabelType.VERTEX
+        }
+
+    /** The v2 engine refuses to mutate a multi-edge label, so it must be stored as read-only. */
+    fun TableType.isReadOnlyInV2(): Boolean = this == TableType.MULTI_EDGE
 
     // endregion
 
@@ -217,135 +166,35 @@ object V3MetadataConverter {
 
     // endregion
 
-    // region Schema conversion (V3 ModelSchema <-> V2 EdgeSchema)
+    // region Schema conversion (V3 TableSchema <-> V2 EdgeSchema)
 
-    fun EdgeSchema.toV3ModelSchemaVertex(): ModelSchema.Vertex =
-        ModelSchema.Vertex(
-            id = V3Field(type = src.type.toV3PrimitiveType(), comment = src.desc),
-            properties = fields.map { it.toV3StructField() },
+    fun EdgeSchema.toTableSchema(): TableSchema =
+        TableSchema(
+            source = TableSchema.Key(type = src.type, comment = src.desc),
+            target = TableSchema.Key(type = tgt.type, comment = tgt.desc),
+            properties = fields.map { it.toTableSchemaProperty() },
         )
 
-    fun EdgeSchema.toV3ModelSchemaEdge(
-        direction: V3DirectionType,
-        indices: List<V2Index>,
-        groups: List<Group>,
-        caches: List<Cache>,
-    ): ModelSchema.Edge =
-        ModelSchema.Edge(
-            source =
-                V3Field(
-                    type = src.type.toV3PrimitiveType(),
-                    comment = src.desc,
-                ),
-            target =
-                V3Field(
-                    type = tgt.type.toV3PrimitiveType(),
-                    comment = tgt.desc,
-                ),
-            properties = fields.map { it.toV3StructField() },
-            direction = direction,
-            indexes = indices.map { it.toV3Index() },
-            groups = groups,
-            caches = caches,
-        )
-
-    fun EdgeSchema.toV3ModelSchemaImmutableEdge(
-        direction: V3DirectionType,
-        indices: List<V2Index>,
-        groups: List<Group>,
-    ): ModelSchema.ImmutableEdge =
-        ModelSchema.ImmutableEdge(
-            source =
-                V3Field(
-                    type = src.type.toV3PrimitiveType(),
-                    comment = src.desc,
-                ),
-            target =
-                V3Field(
-                    type = tgt.type.toV3PrimitiveType(),
-                    comment = tgt.desc,
-                ),
-            properties = fields.map { it.toV3StructField() },
-            direction = direction,
-            indexes = indices.map { it.toV3Index() },
-            groups = groups,
-        )
-
-    fun EdgeSchema.toV3ModelSchemaMultiEdge(
-        direction: V3DirectionType,
-        indices: List<V2Index>,
-        groups: List<Group>,
-        caches: List<Cache>,
-    ): ModelSchema.MultiEdge {
-        val idField =
-            fields.find { it.name == "_id" }
-                ?: throw IllegalArgumentException("MultiEdge schema must have _id field")
-        return ModelSchema.MultiEdge(
-            id =
-                V3Field(
-                    type = idField.type.toV3PrimitiveType(),
-                    comment = idField.desc,
-                ),
-            source =
-                V3Field(
-                    type = src.type.toV3PrimitiveType(),
-                    comment = src.desc,
-                ),
-            target =
-                V3Field(
-                    type = tgt.type.toV3PrimitiveType(),
-                    comment = tgt.desc,
-                ),
-            properties = fields.filterNot { it.name == "_id" }.map { it.toV3StructField() },
-            direction = direction,
-            indexes = indices.map { it.toV3Index() },
-            groups = groups,
-            caches = caches,
-        )
-    }
-
-    fun ModelSchema.Edge.toV2EdgeSchema(): EdgeSchema =
+    fun TableSchema.toV2EdgeSchema(): EdgeSchema =
         EdgeSchema(
-            VertexField(source.type.toV2VertexType(), source.comment),
-            VertexField(target.type.toV2VertexType(), target.comment),
+            VertexField(source.type, source.comment),
+            VertexField(target.type, target.comment),
             properties.map { it.toV2Field() },
         )
-
-    fun ModelSchema.ImmutableEdge.toV2EdgeSchema(): EdgeSchema =
-        EdgeSchema(
-            VertexField(source.type.toV2VertexType(), source.comment),
-            VertexField(target.type.toV2VertexType(), target.comment),
-            properties.map { it.toV2Field() },
-        )
-
-    fun ModelSchema.MultiEdge.toV2EdgeSchema(): EdgeSchema {
-        val idField = V2Field("_id", id.type.toV2DataType(), false, id.comment)
-        return EdgeSchema(
-            VertexField(source.type.toV2VertexType(), source.comment),
-            VertexField(target.type.toV2VertexType(), target.comment),
-            listOf(idField) + properties.map { it.toV2Field() },
-        )
-    }
 
     // endregion
 
     // region Field conversion
 
-    fun V2Field.toV3StructField(): StructField =
-        StructField(
+    fun V2Field.toTableSchemaProperty(): TableSchema.Property =
+        TableSchema.Property(
             name = name,
-            type = type.toV3PrimitiveType(),
-            comment = desc,
+            type = type,
             nullable = isNullable,
+            comment = desc,
         )
 
-    fun StructField.toV2Field(): V2Field =
-        V2Field(
-            name,
-            type.toV2DataType(),
-            nullable,
-            comment,
-        )
+    fun TableSchema.Property.toV2Field(): V2Field = V2Field(name, type, nullable, comment)
 
     // endregion
 
@@ -379,49 +228,6 @@ object V3MetadataConverter {
         when (this) {
             V3Order.ASC -> V2Order.ASC
             V3Order.DESC -> V2Order.DESC
-        }
-
-    // endregion
-
-    // region Type conversion
-
-    fun VertexType.toV3PrimitiveType(): PrimitiveType =
-        when (this) {
-            VertexType.LONG -> PrimitiveType.LONG
-            VertexType.STRING -> PrimitiveType.STRING
-        }
-
-    fun PrimitiveType.toV2VertexType(): VertexType =
-        when (this) {
-            PrimitiveType.LONG -> VertexType.LONG
-            PrimitiveType.STRING -> VertexType.STRING
-            else -> throw IllegalArgumentException("Cannot convert $this to VertexType")
-        }
-
-    fun V2DataType.toV3PrimitiveType(): PrimitiveType =
-        when (this) {
-            V2DataType.BOOLEAN -> PrimitiveType.BOOLEAN
-            V2DataType.BYTE -> PrimitiveType.BYTE
-            V2DataType.SHORT -> PrimitiveType.SHORT
-            V2DataType.INT -> PrimitiveType.INT
-            V2DataType.LONG -> PrimitiveType.LONG
-            V2DataType.FLOAT -> PrimitiveType.FLOAT
-            V2DataType.DOUBLE -> PrimitiveType.DOUBLE
-            V2DataType.STRING -> PrimitiveType.STRING
-            V2DataType.DECIMAL, V2DataType.JSON -> PrimitiveType.OBJECT
-        }
-
-    fun PrimitiveType.toV2DataType(): V2DataType =
-        when (this) {
-            PrimitiveType.BOOLEAN -> V2DataType.BOOLEAN
-            PrimitiveType.BYTE -> V2DataType.BYTE
-            PrimitiveType.SHORT -> V2DataType.SHORT
-            PrimitiveType.INT -> V2DataType.INT
-            PrimitiveType.LONG -> V2DataType.LONG
-            PrimitiveType.FLOAT -> V2DataType.FLOAT
-            PrimitiveType.DOUBLE -> V2DataType.DOUBLE
-            PrimitiveType.STRING -> V2DataType.STRING
-            PrimitiveType.OBJECT -> V2DataType.JSON
         }
 
     // endregion

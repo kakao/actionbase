@@ -35,15 +35,15 @@ class HBaseAdminTeardownGuardE2ETest : E2ETestBase() {
                   "storage": "datastore://v2_ns/v2_bound",
                   "mode": "SYNC",
                   "comment": "v2 guard e2e",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "direction": "OUT",
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
-                    "properties": [],
-                    "indexes": [],
-                    "groups": []
-                  }
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
+                    "properties": []
+                  },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": []
                 }
                 """.trimIndent(),
             ).exchange()

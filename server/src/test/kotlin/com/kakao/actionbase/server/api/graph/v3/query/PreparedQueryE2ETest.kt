@@ -40,21 +40,21 @@ class PreparedQueryE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$rank",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "database|table|topk|entity|dimensionValues"},
-                    "target": {"type": "string", "comment": "topkDimensionValue"},
+                    "source": {"type": "STRING", "comment": "database|table|topk|entity|dimensionValues"},
+                    "target": {"type": "STRING", "comment": "topkDimensionValue"},
                     "properties": [
-                      {"name": "metric", "type": "long", "comment": "aggregated metric", "nullable": false},
-                      {"name": "additionalProperties", "type": "string", "comment": "carried properties as JSON", "nullable": true}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [
-                      {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
-                    ],
-                    "groups": [],
-                    "caches": []
+                      {"name": "metric", "type": "LONG", "comment": "aggregated metric", "nullable": false},
+                      {"name": "additionalProperties", "type": "STRING", "comment": "carried properties as JSON", "nullable": true}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [
+                    {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
+                  ],
+                  "groups": [],
+                  "caches": [],
                   "storage": "datastore://test_namespace/$rank",
                   "mode": "SYNC",
                   "comment": "topk rank rows"
@@ -72,39 +72,39 @@ class PreparedQueryE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$table",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "order id"},
-                    "source": {"type": "string", "comment": "user"},
-                    "target": {"type": "string", "comment": "item"},
+                    "source": {"type": "STRING", "comment": "user"},
+                    "target": {"type": "STRING", "comment": "item"},
                     "properties": [
-                      {"name": "category", "type": "string", "comment": "item category", "nullable": false},
-                      {"name": "purchasedAt", "type": "long", "comment": "purchase time ms", "nullable": false}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": [{
-                      "group": "purchased_count",
-                      "type": "COUNT",
-                      "fields": [
-                        {"name": "_target"},
-                        {"name": "category"},
-                        {"name": "purchasedAt", "bucket": {"type": "date", "name": "day", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
-                      ],
-                      "directionType": "OUT",
-                      "aggregations": {
-                        "topk": [{
-                          "topk": "$topkName",
-                          "entity": "source",
-                          "ranges": "_target:eq:{_target};category:eq:{category};day:bt:2023-11-14,2024-11-13",
-                          "dimension": "target",
-                          "rank": "$rankFqn",
-                          "additionalProperties": ["category"]
-                        }]
-                      }
-                    }],
-                    "caches": []
+                      {"name": "_id", "type": "LONG", "comment": "order id", "nullable": false},
+                      {"name": "category", "type": "STRING", "comment": "item category", "nullable": false},
+                      {"name": "purchasedAt", "type": "LONG", "comment": "purchase time ms", "nullable": false}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [{
+                    "group": "purchased_count",
+                    "type": "COUNT",
+                    "fields": [
+                      {"name": "_target"},
+                      {"name": "category"},
+                      {"name": "purchasedAt", "bucket": {"type": "date", "name": "day", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
+                    ],
+                    "directionType": "OUT",
+                    "aggregations": {
+                      "topk": [{
+                        "topk": "$topkName",
+                        "entity": "source",
+                        "ranges": "_target:eq:{_target};category:eq:{category};day:bt:2023-11-14,2024-11-13",
+                        "dimension": "target",
+                        "rank": "$rankFqn",
+                        "additionalProperties": ["category"]
+                      }]
+                    }
+                  }],
+                  "caches": [],
                   "storage": "datastore://test_namespace/$table",
                   "mode": "SYNC",
                   "comment": "user-to-item purchase edges"

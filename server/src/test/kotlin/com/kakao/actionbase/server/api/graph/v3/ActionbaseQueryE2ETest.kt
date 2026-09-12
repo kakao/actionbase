@@ -51,19 +51,19 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$hop1Table",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "long", "comment": "source"},
-                    "target": {"type": "long", "comment": "target"},
+                    "source": {"type": "LONG", "comment": "source"},
+                    "target": {"type": "LONG", "comment": "target"},
                     "properties": [
-                      {"name": "createdAt", "type": "long", "comment": "ts", "nullable": true}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [
-                      {"index": "created_at_desc", "fields": [{"field": "createdAt", "order": "DESC"}]}
-                    ],
-                    "groups": []
+                      {"name": "createdAt", "type": "LONG", "comment": "ts", "nullable": true}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [
+                    {"index": "created_at_desc", "fields": [{"field": "createdAt", "order": "DESC"}]}
+                  ],
+                  "groups": [],
                   "storage": "datastore://multihop_ns/follows",
                   "mode": "SYNC",
                   "comment": "hop1"
@@ -84,35 +84,35 @@ class ActionbaseQueryE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$hop2Table",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "long", "comment": "source"},
-                    "target": {"type": "long", "comment": "target"},
+                    "source": {"type": "LONG", "comment": "source"},
+                    "target": {"type": "LONG", "comment": "target"},
                     "properties": [
-                      {"name": "createdAt", "type": "long", "comment": "ts", "nullable": true},
-                      {"name": "permission", "type": "string", "comment": "perm", "nullable": true}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [
-                      {"index": "created_at_desc", "fields": [{"field": "createdAt", "order": "DESC"}]}
-                    ],
-                    "groups": [],
-                    "caches": [
-                      {
-                        "cache": "recent_wishlist",
-                        "fields": [{"field": "createdAt", "order": "DESC"}],
-                        "limit": 100
-                      },
-                      {
-                        "cache": "public_recent_wishlist",
-                        "fields": [
-                          {"field": "permission", "order": "ASC", "dimension": ["others"]},
-                          {"field": "createdAt", "order": "DESC"}
-                        ],
-                        "limit": 100
-                      }
+                      {"name": "createdAt", "type": "LONG", "comment": "ts", "nullable": true},
+                      {"name": "permission", "type": "STRING", "comment": "perm", "nullable": true}
                     ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [
+                    {"index": "created_at_desc", "fields": [{"field": "createdAt", "order": "DESC"}]}
+                  ],
+                  "groups": [],
+                  "caches": [
+                    {
+                      "cache": "recent_wishlist",
+                      "fields": [{"field": "createdAt", "order": "DESC"}],
+                      "limit": 100
+                    },
+                    {
+                      "cache": "public_recent_wishlist",
+                      "fields": [
+                        {"field": "permission", "order": "ASC", "dimension": ["others"]},
+                        {"field": "createdAt", "order": "DESC"}
+                      ],
+                      "limit": 100
+                    }
+                  ],
                   "storage": "datastore://multihop_ns/wishlist",
                   "mode": "SYNC",
                   "comment": "hop2 with cache"

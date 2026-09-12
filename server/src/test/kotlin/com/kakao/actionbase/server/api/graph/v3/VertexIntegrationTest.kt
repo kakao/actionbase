@@ -34,14 +34,16 @@ class VertexIntegrationTest : E2ETestBase() {
                 """
                 {
                   "table": "$vertexTable",
+                  "type": "VERTEX",
                   "schema": {
-                    "type": "VERTEX",
-                    "id": {"type": "string", "comment": "user unique key"},
+                    "source": {"type": "STRING", "comment": "user unique key"},
+                    "target": {"type": "STRING", "comment": "<vertex>"},
                     "properties": [
-                      {"name": "name", "type": "string", "comment": "user name"},
-                      {"name": "age", "type": "long", "comment": "user age", "nullable": true}
+                      {"name": "name", "type": "STRING", "comment": "user name"},
+                      {"name": "age", "type": "LONG", "comment": "user age", "nullable": true}
                     ]
                   },
+                  "direction": "OUT",
                   "storage": "datastore://vertex_ns/users",
                   "mode": "SYNC",
                   "comment": "users vertex table"
@@ -60,13 +62,15 @@ class VertexIntegrationTest : E2ETestBase() {
                 """
                 {
                   "table": "$longIdTable",
+                  "type": "VERTEX",
                   "schema": {
-                    "type": "VERTEX",
-                    "id": {"type": "long", "comment": "numeric user id"},
+                    "source": {"type": "LONG", "comment": "numeric user id"},
+                    "target": {"type": "STRING", "comment": "<vertex>"},
                     "properties": [
-                      {"name": "name", "type": "string", "comment": "user name"}
+                      {"name": "name", "type": "STRING", "comment": "user name"}
                     ]
                   },
+                  "direction": "OUT",
                   "storage": "datastore://vertex_ns/users_long",
                   "mode": "SYNC",
                   "comment": "users vertex table with numeric id"

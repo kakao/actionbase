@@ -1,6 +1,8 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.metadata.TableDescriptor
+import com.kakao.actionbase.server.util.mapToResponseEntity
+import com.kakao.actionbase.v2.engine.service.ddl.DdlPage
+import com.kakao.actionbase.v2.engine.service.ddl.DdlStatus
 
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -27,53 +29,36 @@ class TableController(
     fun listTables(
         @PathVariable database: String,
         @RequestParam(required = false, defaultValue = "ACTIVE") status: MetadataStatus,
-    ): Mono<ResponseEntity<List<TableDescriptor<*>>>> =
-        v3CompatService
-            .getTables(database, status)
-            .map { ResponseEntity.ok(it) }
+    ): Mono<ResponseEntity<DdlPage<TableResponse>>> = v3CompatService.getTables(database, status).mapToResponseEntity()
 
     @GetMapping("/graph/v3/databases/{database}/tables/{table}")
     fun getTable(
         @PathVariable database: String,
         @PathVariable table: String,
-    ): Mono<ResponseEntity<TableDescriptor<*>>> =
-        v3CompatService
-            .getTable(database, table)
-            .map { ResponseEntity.ok(it) }
-            .defaultIfEmpty(ResponseEntity.notFound().build())
+    ): Mono<ResponseEntity<TableResponse>> = v3CompatService.getTable(database, table).mapToResponseEntity()
 
     @PostMapping("/graph/v3/databases/{database}/tables")
     fun createTable(
         @PathVariable database: String,
         @Valid @RequestBody request: TableCreateRequest,
-    ): Mono<ResponseEntity<TableDescriptor<*>>> =
+    ): Mono<ResponseEntity<DdlStatus<TableResponse>>> =
         v3CompatService
             .createTable(
                 V3NameValidator.validateDatabase(database),
                 V3NameValidator.validateTable(request.table),
                 request,
-            ).map { ResponseEntity.ok(it) }
+            ).mapToResponseEntity()
 
     @PutMapping("/graph/v3/databases/{database}/tables/{table}")
     fun updateTable(
         @PathVariable database: String,
         @PathVariable table: String,
         @Valid @RequestBody request: TableUpdateRequest,
-    ): Mono<ResponseEntity<TableDescriptor<*>>> =
-        v3CompatService
-            .updateTable(
-                database,
-                table,
-                request,
-            ).map { ResponseEntity.ok(it) }
-            .defaultIfEmpty(ResponseEntity.notFound().build())
+    ): Mono<ResponseEntity<DdlStatus<TableResponse>>> = v3CompatService.updateTable(database, table, request).mapToResponseEntity()
 
     @DeleteMapping("/graph/v3/databases/{database}/tables/{table}")
     fun deleteTable(
         @PathVariable database: String,
         @PathVariable table: String,
-    ): Mono<ResponseEntity<Void>> =
-        v3CompatService
-            .deleteTable(database, table)
-            .then(Mono.just(ResponseEntity.noContent().build<Void>()))
+    ): Mono<ResponseEntity<DdlStatus<TableResponse>>> = v3CompatService.deleteTable(database, table).mapToResponseEntity()
 }

@@ -33,15 +33,15 @@ class MutationContextOptInE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$edgeTable",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
+                    "properties": []
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/ctx_optin_edge",
                   "mode": "SYNC",
                   "comment": "edge for context opt-in test"
@@ -59,16 +59,17 @@ class MutationContextOptInE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$multiEdgeTable",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "id"},
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "id", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/ctx_optin_multi_edge",
                   "mode": "SYNC",
                   "comment": "multi-edge for context opt-in test"

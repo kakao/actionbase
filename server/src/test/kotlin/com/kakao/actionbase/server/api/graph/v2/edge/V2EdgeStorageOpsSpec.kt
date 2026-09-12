@@ -33,17 +33,17 @@ class V2EdgeStorageOpsSpec : E2ETestBase() {
                 """
                 {
                   "table": "$label",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
                     "properties": [
-                      {"name": "score", "type": "long", "comment": "score"}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                      {"name": "score", "type": "LONG", "comment": "score"}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v2_storage_ops_label",
                   "mode": "SYNC",
                   "comment": "v2 storage ops label"

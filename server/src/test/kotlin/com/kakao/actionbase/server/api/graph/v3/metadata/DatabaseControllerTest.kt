@@ -49,7 +49,7 @@ class DatabaseControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "CREATED", "result": $expected}""")
 
             client
                 .get()
@@ -112,7 +112,7 @@ class DatabaseControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
         }
 
         @ObjectSourceParameterizedTest
@@ -159,7 +159,7 @@ class DatabaseControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
         }
 
         @ObjectSourceParameterizedTest
@@ -218,7 +218,7 @@ class DatabaseControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
         }
 
         @ObjectSourceParameterizedTest
@@ -265,7 +265,9 @@ class DatabaseControllerTest : E2ETestBase() {
                 .uri("/graph/v3/databases/$name")
                 .exchange()
                 .expectStatus()
-                .isNoContent
+                .isOk
+                .expectBody()
+                .json("""{"status": "DELETED"}""")
         }
     }
 
@@ -305,7 +307,7 @@ class DatabaseControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.database == '$dbName')]")
+                .jsonPath("$.content[?(@.database == '$dbName')]")
                 .doesNotExist()
         }
 
@@ -318,7 +320,7 @@ class DatabaseControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.database == '$dbName')]")
+                .jsonPath("$.content[?(@.database == '$dbName')]")
                 .doesNotExist()
         }
 
@@ -331,7 +333,7 @@ class DatabaseControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.database == '$dbName')]")
+                .jsonPath("$.content[?(@.database == '$dbName')]")
                 .exists()
         }
 
@@ -344,7 +346,7 @@ class DatabaseControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.database == '$dbName')]")
+                .jsonPath("$.content[?(@.database == '$dbName')]")
                 .exists()
         }
     }

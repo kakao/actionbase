@@ -35,15 +35,15 @@ class AliasControllerTest : E2ETestBase() {
                 """
                 {
                   "table": "$table",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
+                    "properties": []
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/alias_test_hbase_table",
                   "mode": "SYNC",
                   "comment": "target table"
@@ -91,7 +91,7 @@ class AliasControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "CREATED", "result": $expected}""")
 
             client
                 .get()
@@ -154,7 +154,7 @@ class AliasControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
         }
 
         @ObjectSourceParameterizedTest
@@ -206,7 +206,7 @@ class AliasControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
         }
 
         @ObjectSourceParameterizedTest
@@ -265,7 +265,7 @@ class AliasControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
         }
 
         @ObjectSourceParameterizedTest
@@ -315,7 +315,9 @@ class AliasControllerTest : E2ETestBase() {
                 .uri("$baseUri/$name")
                 .exchange()
                 .expectStatus()
-                .isNoContent
+                .isOk
+                .expectBody()
+                .json("""{"status": "DELETED"}""")
         }
     }
 
@@ -354,7 +356,7 @@ class AliasControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.alias == '$aliasName')]")
+                .jsonPath("$.content[?(@.alias == '$aliasName')]")
                 .doesNotExist()
         }
 
@@ -367,7 +369,7 @@ class AliasControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.alias == '$aliasName')]")
+                .jsonPath("$.content[?(@.alias == '$aliasName')]")
                 .doesNotExist()
         }
 
@@ -380,7 +382,7 @@ class AliasControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.alias == '$aliasName')]")
+                .jsonPath("$.content[?(@.alias == '$aliasName')]")
                 .exists()
         }
 
@@ -393,7 +395,7 @@ class AliasControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.alias == '$aliasName')]")
+                .jsonPath("$.content[?(@.alias == '$aliasName')]")
                 .exists()
         }
     }

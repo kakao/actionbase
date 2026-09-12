@@ -10,18 +10,19 @@ import com.kakao.actionbase.v2.engine.service.ddl.ServiceCreateRequest as V2Serv
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceDeleteRequest as V2ServiceDeleteRequest
 import com.kakao.actionbase.v2.engine.service.ddl.ServiceUpdateRequest as V2ServiceUpdateRequest
 
-import com.kakao.actionbase.core.metadata.AliasDescriptor
-import com.kakao.actionbase.core.metadata.DatabaseDescriptor
-import com.kakao.actionbase.core.metadata.TableDescriptor
-import com.kakao.actionbase.core.metadata.common.ModelSchema
-import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
-import com.kakao.actionbase.core.metadata.payload.DatabaseUpdateRequest
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.isReadOnlyInV2
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toAliasResponse
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toDatabaseResponse
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toLabelType
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toTableResponse
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DirectionType
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2EdgeSchema
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2Index
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2MutationMode
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
 import com.kakao.actionbase.v2.engine.Graph
 import com.kakao.actionbase.v2.engine.entity.EntityName
+import com.kakao.actionbase.v2.engine.service.ddl.DdlPage
+import com.kakao.actionbase.v2.engine.service.ddl.DdlStatus
 
 import org.springframework.stereotype.Service
 
@@ -31,39 +32,32 @@ import reactor.core.publisher.Mono
 class V3CompatService(
     private val graph: Graph,
 ) {
-    private val tenant: String
-        get() = EntityName.tenant
-
     // region Database CRUD (using V2 serviceDdl)
 
-    fun getDatabase(database: String): Mono<DatabaseDescriptor> =
+    fun getDatabase(database: String): Mono<DatabaseResponse> =
         graph.serviceDdl
             .getSingle(EntityName.fromOrigin(database))
-            .map { it.toV3DatabaseDescriptor(tenant) }
+            .map { it.toDatabaseResponse() }
 
-    fun getDatabases(status: MetadataStatus = MetadataStatus.ACTIVE): Mono<List<DatabaseDescriptor>> =
+    fun getDatabases(status: MetadataStatus = MetadataStatus.ACTIVE): Mono<DdlPage<DatabaseResponse>> =
         graph.serviceDdl
             .getAll(EntityName.origin)
-            .map { page ->
-                page.content
-                    .filter { status.matches(it.active) }
-                    .map { it.toV3DatabaseDescriptor(tenant) }
-            }
+            .map { page -> page.content.filter { status.matches(it.active) }.toPage { it.toDatabaseResponse() } }
 
     fun createDatabase(
         database: String,
         request: DatabaseCreateRequest,
-    ): Mono<DatabaseDescriptor> {
+    ): Mono<DdlStatus<DatabaseResponse>> {
         val v2Request = V2ServiceCreateRequest(desc = request.comment)
         return graph.serviceDdl
             .create(EntityName.fromOrigin(database), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3DatabaseDescriptor(tenant)) } }
+            .map { status -> status.mapResult { it.toDatabaseResponse() } }
     }
 
     fun updateDatabase(
         database: String,
         request: DatabaseUpdateRequest,
-    ): Mono<DatabaseDescriptor> {
+    ): Mono<DdlStatus<DatabaseResponse>> {
         val v2Request =
             V2ServiceUpdateRequest(
                 active = request.active,
@@ -71,13 +65,13 @@ class V3CompatService(
             )
         return graph.serviceDdl
             .update(EntityName.fromOrigin(database), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3DatabaseDescriptor(tenant)) } }
+            .map { status -> status.mapResult { it.toDatabaseResponse() } }
     }
 
-    fun deleteDatabase(database: String): Mono<DatabaseDescriptor> =
+    fun deleteDatabase(database: String): Mono<DdlStatus<DatabaseResponse>> =
         graph.serviceDdl
             .delete(EntityName.fromOrigin(database), V2ServiceDeleteRequest())
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3DatabaseDescriptor(tenant)) } }
+            .map { status -> status.mapResult { it.toDatabaseResponse() } }
 
     // endregion
 
@@ -86,91 +80,72 @@ class V3CompatService(
     fun getTable(
         database: String,
         table: String,
-    ): Mono<TableDescriptor<*>> =
+    ): Mono<TableResponse> =
         graph.labelDdl
             .getSingle(EntityName(database, table))
-            .map { it.toV3TableDescriptor(tenant) }
+            .map { it.toTableResponse() }
 
     fun getTables(
         database: String,
         status: MetadataStatus = MetadataStatus.ACTIVE,
-    ): Mono<List<TableDescriptor<*>>> =
+    ): Mono<DdlPage<TableResponse>> =
         graph.labelDdl
             .getAll(EntityName(database))
-            .map { page ->
-                page.content
-                    .filter { status.matches(it.active) }
-                    .map { it.toV3TableDescriptor(tenant) }
-            }
+            .map { page -> page.content.filter { status.matches(it.active) }.toPage { it.toTableResponse() } }
 
     fun createTable(
         database: String,
         table: String,
         request: TableCreateRequest,
-    ): Mono<TableDescriptor<*>> {
-        val isMultiEdge = request.schema is ModelSchema.MultiEdge
-        val groups =
-            when (val s = request.schema) {
-                is ModelSchema.Edge -> s.groups
-                is ModelSchema.ImmutableEdge -> s.groups
-                is ModelSchema.MultiEdge -> s.groups
-                is ModelSchema.Vertex -> emptyList()
-            }
-        val caches =
-            when (val s = request.schema) {
-                is ModelSchema.Edge -> s.caches
-                is ModelSchema.ImmutableEdge -> emptyList()
-                is ModelSchema.MultiEdge -> s.caches
-                is ModelSchema.Vertex -> emptyList()
-            }
+    ): Mono<DdlStatus<TableResponse>> {
         val v2Request =
             V2LabelCreateRequest(
                 desc = request.comment,
-                type = request.labelType(),
-                schema = request.toV2EdgeSchema(),
-                dirType = request.toV2DirectionType(),
+                type = request.type.toLabelType(),
+                schema = request.schema.toV2EdgeSchema(),
+                dirType = request.direction.toV2DirectionType(),
                 storage = request.storage,
-                groups = groups,
-                indices = request.toV2Indices(),
-                caches = caches,
+                groups = request.groups,
+                indices = request.indexes.map { it.toV2Index() },
+                caches = request.caches,
                 event = false,
-                readOnly = isMultiEdge,
+                readOnly = request.type.isReadOnlyInV2(),
                 mode = request.mode.toV2MutationMode(),
             )
         return graph.labelDdl
             .create(EntityName(database, table), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
+            .map { status -> status.mapResult { it.toTableResponse() } }
     }
 
     fun updateTable(
         database: String,
         table: String,
         request: TableUpdateRequest,
-    ): Mono<TableDescriptor<*>> {
+    ): Mono<DdlStatus<TableResponse>> {
         val v2Request =
             V2LabelUpdateRequest(
                 active = request.active,
                 desc = request.comment,
                 type = null,
-                schema = request.toV2EdgeSchema(),
-                groups = request.toV2Groups(),
-                indices = request.toV2Indices(),
+                schema = request.schema?.toV2EdgeSchema(),
+                groups = request.groups,
+                indices = request.indexes?.map { it.toV2Index() },
                 readOnly = null,
                 mode = request.mode?.toV2MutationMode(),
-                caches = request.toV2Caches(),
+                caches = request.caches,
             )
         return graph.labelDdl
             .update(EntityName(database, table), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
+            .map { status -> status.mapResult { it.toTableResponse() } }
     }
 
     fun deleteTable(
         database: String,
         table: String,
-    ): Mono<TableDescriptor<*>> =
+    ): Mono<DdlStatus<TableResponse>> =
         graph.labelDdl
             .delete(EntityName(database, table), V2LabelDeleteRequest())
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3TableDescriptor(tenant)) } }
+            .map { status -> status.mapResult { it.toTableResponse() } }
 
     // endregion
 
@@ -179,28 +154,24 @@ class V3CompatService(
     fun getAlias(
         database: String,
         alias: String,
-    ): Mono<AliasDescriptor> =
+    ): Mono<AliasResponse> =
         graph.aliasDdl
             .getSingle(EntityName(database, alias))
-            .map { it.toV3AliasDescriptor(tenant) }
+            .map { it.toAliasResponse() }
 
     fun getAliases(
         database: String,
         status: MetadataStatus = MetadataStatus.ACTIVE,
-    ): Mono<List<AliasDescriptor>> =
+    ): Mono<DdlPage<AliasResponse>> =
         graph.aliasDdl
             .getAll(EntityName(database))
-            .map { page ->
-                page.content
-                    .filter { status.matches(it.active) }
-                    .map { it.toV3AliasDescriptor(tenant) }
-            }
+            .map { page -> page.content.filter { status.matches(it.active) }.toPage { it.toAliasResponse() } }
 
     fun createAlias(
         database: String,
         alias: String,
         request: AliasCreateRequest,
-    ): Mono<AliasDescriptor> {
+    ): Mono<DdlStatus<AliasResponse>> {
         val v2Request =
             V2AliasCreateRequest(
                 desc = request.comment,
@@ -208,14 +179,14 @@ class V3CompatService(
             )
         return graph.aliasDdl
             .create(EntityName(database, alias), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3AliasDescriptor(tenant)) } }
+            .map { status -> status.mapResult { it.toAliasResponse() } }
     }
 
     fun updateAlias(
         database: String,
         alias: String,
         request: AliasUpdateRequest,
-    ): Mono<AliasDescriptor> {
+    ): Mono<DdlStatus<AliasResponse>> {
         val v2Request =
             V2AliasUpdateRequest(
                 active = request.active,
@@ -224,16 +195,16 @@ class V3CompatService(
             )
         return graph.aliasDdl
             .update(EntityName(database, alias), v2Request)
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3AliasDescriptor(tenant)) } }
+            .map { status -> status.mapResult { it.toAliasResponse() } }
     }
 
     fun deleteAlias(
         database: String,
         alias: String,
-    ): Mono<AliasDescriptor> =
+    ): Mono<DdlStatus<AliasResponse>> =
         graph.aliasDdl
             .delete(EntityName(database, alias), V2AliasDeleteRequest())
-            .handle { status, sink -> status.result?.let { sink.next(it.toV3AliasDescriptor(tenant)) } }
+            .map { status -> status.mapResult { it.toAliasResponse() } }
 
     // endregion
 }

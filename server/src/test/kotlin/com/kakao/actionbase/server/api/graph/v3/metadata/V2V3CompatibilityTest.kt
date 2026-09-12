@@ -10,15 +10,24 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.http.MediaType
 
 /**
- * V2-V3 API Compatibility E2E Tests
+ * The contract between the two metadata dialects.
  *
- * Verifies that the same data can be represented in V2/V3 JSON formats
- * and that cross-version operations work correctly.
+ * v3 is v2's structure with v3's names, so a v2 payload becomes a v3 payload by renaming keys and
+ * nothing else. Each case writes through one dialect and reads back through the other.
  *
- * Terminology:
- * - V2 Service = V3 Database
- * - V2 Label = V3 Table
- * - V2 desc = V3 comment
+ * | v2                | v3                   |
+ * |-------------------|----------------------|
+ * | `name: "a.b"`     | `database` + `table` |
+ * | `desc`            | `comment`            |
+ * | `type: INDEXED`   | `type: EDGE`         |
+ * | `IMMUTABLE_INDEXED` | `IMMUTABLE_EDGE`   |
+ * | `schema.src/tgt`  | `schema.source/target` |
+ * | `schema.fields`   | `schema.properties`  |
+ * | `dirType`         | `direction`          |
+ * | `indices[].name`  | `indexes[].index`    |
+ * | `indices[].fields[].name` | `indexes[].fields[].field` |
+ * | `mode: IGNORE`    | `mode: DROP`         |
+ * | `event`/`readOnly`| derived by the server |
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class V2V3CompatibilityTest : E2ETestBase() {
@@ -150,17 +159,18 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
+                  "active": true,
+                  "database": "tbl_compat_db",
                   "table": "tbl_v2v3_out",
                   "comment": "direction out",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "string", "comment": "source"},
-                    "target": {"type": "string", "comment": "target"},
-                    "properties": [],
-                    "direction": "OUT"
+                    "source": {"type": "STRING", "comment": "source"},
+                    "target": {"type": "STRING", "comment": "target"},
+                    "properties": []
                   },
-                  "storage": "datastore://test_namespace/tbl_v2v3_out",
-                  "active": true
+                  "direction": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v2v3_out"
                 }
 
             # Direction: IN
@@ -179,49 +189,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
+                  "active": true,
+                  "database": "tbl_compat_db",
                   "table": "tbl_v2v3_in",
                   "comment": "direction in",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "string", "comment": "source"},
-                    "target": {"type": "string", "comment": "target"},
-                    "properties": [],
-                    "direction": "IN"
+                    "source": {"type": "STRING", "comment": "source"},
+                    "target": {"type": "STRING", "comment": "target"},
+                    "properties": []
                   },
-                  "storage": "datastore://test_namespace/tbl_v2v3_in",
-                  "active": true
+                  "direction": "IN",
+                  "storage": "datastore://test_namespace/tbl_v2v3_in"
                 }
 
-            # Direction: BOTH
-            - name: tbl_v2v3_both
-              create: |
-                {
-                  "desc": "direction both",
-                  "type": "INDEXED",
-                  "schema": {
-                    "src": {"type": "STRING", "desc": "source"},
-                    "tgt": {"type": "STRING", "desc": "target"},
-                    "fields": []
-                  },
-                  "dirType": "BOTH",
-                  "storage": "datastore://test_namespace/tbl_v2v3_both"
-                }
-              expected: |
-                {
-                  "table": "tbl_v2v3_both",
-                  "comment": "direction both",
-                  "schema": {
-                    "type": "edge",
-                    "source": {"type": "string", "comment": "source"},
-                    "target": {"type": "string", "comment": "target"},
-                    "properties": [],
-                    "direction": "BOTH"
-                  },
-                  "storage": "datastore://test_namespace/tbl_v2v3_both",
-                  "active": true
-                }
-
-            # With properties
+            # Properties keep their v2 types verbatim
             - name: tbl_v2v3_props
               create: |
                 {
@@ -232,7 +214,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "tgt": {"type": "STRING", "desc": "item"},
                     "fields": [
                       {"name": "rating", "type": "INT", "nullable": true, "desc": "rating"},
-                      {"name": "createdat", "type": "LONG", "nullable": true, "desc": "time"}
+                      {"name": "createdat", "type": "LONG", "nullable": false, "desc": "time"}
                     ]
                   },
                   "dirType": "OUT",
@@ -240,49 +222,145 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
+                  "active": true,
+                  "database": "tbl_compat_db",
                   "table": "tbl_v2v3_props",
                   "comment": "with props",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "string", "comment": "user"},
-                    "target": {"type": "string", "comment": "item"},
+                    "source": {"type": "STRING", "comment": "user"},
+                    "target": {"type": "STRING", "comment": "item"},
                     "properties": [
-                      {"name": "rating", "type": "int", "comment": "rating", "nullable": true},
-                      {"name": "createdat", "type": "long", "comment": "time", "nullable": true}
-                    ],
-                    "direction": "OUT"
+                      {"name": "rating", "type": "INT", "comment": "rating", "nullable": true},
+                      {"name": "createdat", "type": "LONG", "comment": "time", "nullable": false}
+                    ]
                   },
-                  "storage": "datastore://test_namespace/tbl_v2v3_props",
-                  "active": true
+                  "direction": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v2v3_props"
                 }
 
-            # LONG keys
-            - name: tbl_v2v3_long
+            # indices -> indexes, and their inner name -> index / field
+            - name: tbl_v2v3_index
               create: |
                 {
-                  "desc": "long keys",
+                  "desc": "with index",
                   "type": "INDEXED",
                   "schema": {
                     "src": {"type": "LONG", "desc": "uid"},
                     "tgt": {"type": "LONG", "desc": "iid"},
-                    "fields": []
+                    "fields": [
+                      {"name": "createdat", "type": "LONG", "nullable": false, "desc": "time"}
+                    ]
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://test_namespace/tbl_v2v3_long"
+                  "storage": "datastore://test_namespace/tbl_v2v3_index",
+                  "indices": [
+                    {
+                      "name": "createdat_desc",
+                      "fields": [{"name": "createdat", "order": "DESC"}],
+                      "desc": "newest first"
+                    }
+                  ],
+                  "mode": "IGNORE"
                 }
               expected: |
                 {
-                  "table": "tbl_v2v3_long",
-                  "comment": "long keys",
+                  "active": true,
+                  "database": "tbl_compat_db",
+                  "table": "tbl_v2v3_index",
+                  "comment": "with index",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "long", "comment": "uid"},
-                    "target": {"type": "long", "comment": "iid"},
-                    "properties": [],
-                    "direction": "OUT"
+                    "source": {"type": "LONG", "comment": "uid"},
+                    "target": {"type": "LONG", "comment": "iid"},
+                    "properties": [
+                      {"name": "createdat", "type": "LONG", "comment": "time", "nullable": false}
+                    ]
                   },
-                  "storage": "datastore://test_namespace/tbl_v2v3_long",
-                  "active": true
+                  "direction": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v2v3_index",
+                  "indexes": [
+                    {
+                      "index": "createdat_desc",
+                      "fields": [{"field": "createdat", "order": "DESC"}],
+                      "comment": "newest first"
+                    }
+                  ],
+                  "mode": "DROP"
+                }
+
+            # IMMUTABLE_INDEXED -> IMMUTABLE_EDGE
+            - name: tbl_v2v3_immutable
+              create: |
+                {
+                  "desc": "append only",
+                  "type": "IMMUTABLE_INDEXED",
+                  "schema": {
+                    "src": {"type": "LONG", "desc": "partition"},
+                    "tgt": {"type": "STRING", "desc": "message id"},
+                    "fields": [
+                      {"name": "seq", "type": "LONG", "nullable": false, "desc": "sequence"}
+                    ]
+                  },
+                  "dirType": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v2v3_immutable",
+                  "indices": [
+                    {"name": "seq_asc", "fields": [{"name": "seq", "order": "ASC"}], "desc": ""}
+                  ]
+                }
+              expected: |
+                {
+                  "active": true,
+                  "database": "tbl_compat_db",
+                  "table": "tbl_v2v3_immutable",
+                  "comment": "append only",
+                  "type": "IMMUTABLE_EDGE",
+                  "schema": {
+                    "source": {"type": "LONG", "comment": "partition"},
+                    "target": {"type": "STRING", "comment": "message id"},
+                    "properties": [
+                      {"name": "seq", "type": "LONG", "comment": "sequence", "nullable": false}
+                    ]
+                  },
+                  "direction": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v2v3_immutable",
+                  "indexes": [
+                    {"index": "seq_asc", "fields": [{"field": "seq", "order": "ASC"}]}
+                  ]
+                }
+
+            # VERTEX keeps the v2 layout: the id lives in src, tgt is a placeholder
+            - name: tbl_v2v3_vertex
+              create: |
+                {
+                  "desc": "vertex table",
+                  "type": "VERTEX",
+                  "schema": {
+                    "src": {"type": "STRING", "desc": "user key"},
+                    "tgt": {"type": "STRING", "desc": "<vertex>"},
+                    "fields": [
+                      {"name": "nickname", "type": "STRING", "nullable": true, "desc": "nickname"}
+                    ]
+                  },
+                  "dirType": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v2v3_vertex"
+                }
+              expected: |
+                {
+                  "active": true,
+                  "database": "tbl_compat_db",
+                  "table": "tbl_v2v3_vertex",
+                  "comment": "vertex table",
+                  "type": "VERTEX",
+                  "schema": {
+                    "source": {"type": "STRING", "comment": "user key"},
+                    "target": {"type": "STRING", "comment": "<vertex>"},
+                    "properties": [
+                      {"name": "nickname", "type": "STRING", "comment": "nickname", "nullable": true}
+                    ]
+                  },
+                  "direction": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v2v3_vertex"
                 }
             """,
         )
@@ -318,23 +396,23 @@ class V2V3CompatibilityTest : E2ETestBase() {
               create: |
                 {
                   "table": "tbl_v3v2_out",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "string", "comment": "source"},
-                    "target": {"type": "string", "comment": "target"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "STRING", "comment": "source"},
+                    "target": {"type": "STRING", "comment": "target"},
+                    "properties": []
                   },
+                  "direction": "OUT",
                   "storage": "datastore://test_namespace/tbl_v3v2_out",
                   "mode": "SYNC",
                   "comment": "direction out"
                 }
               expected: |
                 {
+                  "active": true,
                   "name": "tbl_compat_db.tbl_v3v2_out",
                   "desc": "direction out",
+                  "type": "INDEXED",
                   "schema": {
                     "src": {"type": "STRING", "desc": "source"},
                     "tgt": {"type": "STRING", "desc": "target"},
@@ -342,7 +420,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                   },
                   "dirType": "OUT",
                   "storage": "datastore://test_namespace/tbl_v3v2_out",
-                  "active": true
+                  "mode": "SYNC"
                 }
 
             # Direction: IN
@@ -350,23 +428,23 @@ class V2V3CompatibilityTest : E2ETestBase() {
               create: |
                 {
                   "table": "tbl_v3v2_in",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "string", "comment": "source"},
-                    "target": {"type": "string", "comment": "target"},
-                    "properties": [],
-                    "direction": "IN",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "STRING", "comment": "source"},
+                    "target": {"type": "STRING", "comment": "target"},
+                    "properties": []
                   },
+                  "direction": "IN",
                   "storage": "datastore://test_namespace/tbl_v3v2_in",
                   "mode": "SYNC",
                   "comment": "direction in"
                 }
               expected: |
                 {
+                  "active": true,
                   "name": "tbl_compat_db.tbl_v3v2_in",
                   "desc": "direction in",
+                  "type": "INDEXED",
                   "schema": {
                     "src": {"type": "STRING", "desc": "source"},
                     "tgt": {"type": "STRING", "desc": "target"},
@@ -374,109 +452,173 @@ class V2V3CompatibilityTest : E2ETestBase() {
                   },
                   "dirType": "IN",
                   "storage": "datastore://test_namespace/tbl_v3v2_in",
-                  "active": true
+                  "mode": "SYNC"
                 }
 
-            # Direction: BOTH
-            - name: tbl_v3v2_both
-              create: |
-                {
-                  "table": "tbl_v3v2_both",
-                  "schema": {
-                    "type": "edge",
-                    "source": {"type": "string", "comment": "source"},
-                    "target": {"type": "string", "comment": "target"},
-                    "properties": [],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
-                  },
-                  "storage": "datastore://test_namespace/tbl_v3v2_both",
-                  "mode": "SYNC",
-                  "comment": "direction both"
-                }
-              expected: |
-                {
-                  "name": "tbl_compat_db.tbl_v3v2_both",
-                  "desc": "direction both",
-                  "schema": {
-                    "src": {"type": "STRING", "desc": "source"},
-                    "tgt": {"type": "STRING", "desc": "target"},
-                    "fields": []
-                  },
-                  "dirType": "BOTH",
-                  "storage": "datastore://test_namespace/tbl_v3v2_both",
-                  "active": true
-                }
-
-            # With properties
+            # Properties keep their v2 types verbatim
             - name: tbl_v3v2_props
               create: |
                 {
                   "table": "tbl_v3v2_props",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "string", "comment": "user"},
-                    "target": {"type": "string", "comment": "item"},
+                    "source": {"type": "STRING", "comment": "user"},
+                    "target": {"type": "STRING", "comment": "item"},
                     "properties": [
-                      {"name": "rating", "type": "int", "comment": "rating", "nullable": true},
-                      {"name": "createdat", "type": "long", "comment": "time", "nullable": true}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                      {"name": "rating", "type": "INT", "comment": "rating", "nullable": true},
+                      {"name": "createdat", "type": "LONG", "comment": "time", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
                   "storage": "datastore://test_namespace/tbl_v3v2_props",
                   "mode": "SYNC",
                   "comment": "with props"
                 }
               expected: |
                 {
+                  "active": true,
                   "name": "tbl_compat_db.tbl_v3v2_props",
                   "desc": "with props",
+                  "type": "INDEXED",
                   "schema": {
                     "src": {"type": "STRING", "desc": "user"},
                     "tgt": {"type": "STRING", "desc": "item"},
                     "fields": [
                       {"name": "rating", "type": "INT", "nullable": true, "desc": "rating"},
-                      {"name": "createdat", "type": "LONG", "nullable": true, "desc": "time"}
+                      {"name": "createdat", "type": "LONG", "nullable": false, "desc": "time"}
                     ]
                   },
-                  "dirType": "OUT",
+                  "dirType": "BOTH",
                   "storage": "datastore://test_namespace/tbl_v3v2_props",
-                  "active": true
+                  "mode": "SYNC"
                 }
 
-            # LONG keys
-            - name: tbl_v3v2_long
+            # indexes -> indices, DROP -> IGNORE
+            - name: tbl_v3v2_index
               create: |
                 {
-                  "table": "tbl_v3v2_long",
+                  "table": "tbl_v3v2_index",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "long", "comment": "uid"},
-                    "target": {"type": "long", "comment": "iid"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "LONG", "comment": "uid"},
+                    "target": {"type": "LONG", "comment": "iid"},
+                    "properties": [
+                      {"name": "createdat", "type": "LONG", "comment": "time", "nullable": false}
+                    ]
                   },
-                  "storage": "datastore://test_namespace/tbl_v3v2_long",
-                  "mode": "SYNC",
-                  "comment": "long keys"
+                  "direction": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v3v2_index",
+                  "indexes": [
+                    {
+                      "index": "createdat_desc",
+                      "fields": [{"field": "createdat", "order": "DESC"}],
+                      "comment": "newest first"
+                    }
+                  ],
+                  "mode": "DROP",
+                  "comment": "with index"
                 }
               expected: |
                 {
-                  "name": "tbl_compat_db.tbl_v3v2_long",
-                  "desc": "long keys",
+                  "active": true,
+                  "name": "tbl_compat_db.tbl_v3v2_index",
+                  "desc": "with index",
+                  "type": "INDEXED",
                   "schema": {
                     "src": {"type": "LONG", "desc": "uid"},
                     "tgt": {"type": "LONG", "desc": "iid"},
-                    "fields": []
+                    "fields": [
+                      {"name": "createdat", "type": "LONG", "nullable": false, "desc": "time"}
+                    ]
                   },
                   "dirType": "OUT",
-                  "storage": "datastore://test_namespace/tbl_v3v2_long",
-                  "active": true
+                  "storage": "datastore://test_namespace/tbl_v3v2_index",
+                  "indices": [
+                    {
+                      "name": "createdat_desc",
+                      "fields": [{"name": "createdat", "order": "DESC"}],
+                      "desc": "newest first"
+                    }
+                  ],
+                  "mode": "IGNORE"
+                }
+
+            # IMMUTABLE_EDGE -> IMMUTABLE_INDEXED
+            - name: tbl_v3v2_immutable
+              create: |
+                {
+                  "table": "tbl_v3v2_immutable",
+                  "type": "IMMUTABLE_EDGE",
+                  "schema": {
+                    "source": {"type": "LONG", "comment": "partition"},
+                    "target": {"type": "STRING", "comment": "message id"},
+                    "properties": [
+                      {"name": "seq", "type": "LONG", "comment": "sequence", "nullable": false}
+                    ]
+                  },
+                  "direction": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v3v2_immutable",
+                  "indexes": [
+                    {"index": "seq_asc", "fields": [{"field": "seq", "order": "ASC"}]}
+                  ],
+                  "mode": "SYNC",
+                  "comment": "append only"
+                }
+              expected: |
+                {
+                  "active": true,
+                  "name": "tbl_compat_db.tbl_v3v2_immutable",
+                  "desc": "append only",
+                  "type": "IMMUTABLE_INDEXED",
+                  "schema": {
+                    "src": {"type": "LONG", "desc": "partition"},
+                    "tgt": {"type": "STRING", "desc": "message id"},
+                    "fields": [
+                      {"name": "seq", "type": "LONG", "nullable": false, "desc": "sequence"}
+                    ]
+                  },
+                  "dirType": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v3v2_immutable",
+                  "indices": [
+                    {"name": "seq_asc", "fields": [{"name": "seq", "order": "ASC"}]}
+                  ],
+                  "mode": "SYNC"
+                }
+
+            # VERTEX keeps the v2 layout: the id lives in source, target is a placeholder
+            - name: tbl_v3v2_vertex
+              create: |
+                {
+                  "table": "tbl_v3v2_vertex",
+                  "type": "VERTEX",
+                  "schema": {
+                    "source": {"type": "STRING", "comment": "user key"},
+                    "target": {"type": "STRING", "comment": "<vertex>"},
+                    "properties": [
+                      {"name": "nickname", "type": "STRING", "comment": "nickname", "nullable": true}
+                    ]
+                  },
+                  "direction": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v3v2_vertex",
+                  "mode": "SYNC",
+                  "comment": "vertex table"
+                }
+              expected: |
+                {
+                  "active": true,
+                  "name": "tbl_compat_db.tbl_v3v2_vertex",
+                  "desc": "vertex table",
+                  "type": "VERTEX",
+                  "schema": {
+                    "src": {"type": "STRING", "desc": "user key"},
+                    "tgt": {"type": "STRING", "desc": "<vertex>"},
+                    "fields": [
+                      {"name": "nickname", "type": "STRING", "nullable": true, "desc": "nickname"}
+                    ]
+                  },
+                  "dirType": "OUT",
+                  "storage": "datastore://test_namespace/tbl_v3v2_vertex",
+                  "mode": "SYNC"
                 }
             """,
         )
@@ -530,15 +672,13 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     """
                     {
                       "table": "$table",
+                      "type": "EDGE",
                       "schema": {
-                        "type": "edge",
-                        "source": {"type": "string", "comment": "src"},
-                        "target": {"type": "string", "comment": "tgt"},
-                        "properties": [],
-                        "direction": "OUT",
-                        "indexes": [],
-                        "groups": []
+                        "source": {"type": "STRING", "comment": "src"},
+                        "target": {"type": "STRING", "comment": "tgt"},
+                        "properties": []
                       },
+                      "direction": "OUT",
                       "storage": "datastore://test_namespace/als_target_storage",
                       "mode": "SYNC",
                       "comment": "target table"
@@ -658,7 +798,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            # Basic MultiEdge - direction BOTH
+            # The id stays where v2 puts it: the `_id` property
             - name: me_v2v3_basic
               create: |
                 {
@@ -677,19 +817,20 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "type": "multiEdge",
+                  "active": true,
+                  "database": "me_compat_db",
                   "table": "me_v2v3_basic",
                   "comment": "basic multiedge",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "multiEdge",
-                    "id": {"type": "long", "comment": "order id"},
-                    "source": {"type": "long", "comment": "sender"},
-                    "target": {"type": "long", "comment": "receiver"},
-                    "properties": [],
-                    "direction": "BOTH"
+                    "source": {"type": "LONG", "comment": "sender"},
+                    "target": {"type": "LONG", "comment": "receiver"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "order id", "nullable": false}
+                    ]
                   },
-                  "storage": "datastore://test_namespace/me_v2v3_basic",
-                  "active": true
+                  "direction": "BOTH",
+                  "storage": "datastore://test_namespace/me_v2v3_basic"
                 }
 
             # MultiEdge with properties
@@ -703,8 +844,7 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     "tgt": {"type": "LONG", "desc": "item"},
                     "fields": [
                       {"name": "_id", "type": "LONG", "nullable": false, "desc": "txn id"},
-                      {"name": "amount", "type": "INT", "nullable": false, "desc": "purchase amount"},
-                      {"name": "timestamp", "type": "LONG", "nullable": false, "desc": "txn time"}
+                      {"name": "amount", "type": "INT", "nullable": false, "desc": "purchase amount"}
                     ]
                   },
                   "dirType": "BOTH",
@@ -713,56 +853,21 @@ class V2V3CompatibilityTest : E2ETestBase() {
                 }
               expected: |
                 {
-                  "type": "multiEdge",
+                  "active": true,
+                  "database": "me_compat_db",
                   "table": "me_v2v3_props",
                   "comment": "multiedge with props",
-                  "schema": {
-                    "type": "multiEdge",
-                    "id": {"type": "long", "comment": "txn id"},
-                    "source": {"type": "long", "comment": "user"},
-                    "target": {"type": "long", "comment": "item"},
-                    "properties": [
-                      {"name": "amount", "type": "int", "comment": "purchase amount", "nullable": false},
-                      {"name": "timestamp", "type": "long", "comment": "txn time", "nullable": false}
-                    ],
-                    "direction": "BOTH"
-                  },
-                  "storage": "datastore://test_namespace/me_v2v3_props",
-                  "active": true
-                }
-
-            # MultiEdge with STRING keys
-            - name: me_v2v3_string
-              create: |
-                {
-                  "desc": "string key multiedge",
                   "type": "MULTI_EDGE",
                   "schema": {
-                    "src": {"type": "STRING", "desc": "from"},
-                    "tgt": {"type": "STRING", "desc": "to"},
-                    "fields": [
-                      {"name": "_id", "type": "LONG", "nullable": false, "desc": "msg id"}
+                    "source": {"type": "LONG", "comment": "user"},
+                    "target": {"type": "LONG", "comment": "item"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "txn id", "nullable": false},
+                      {"name": "amount", "type": "INT", "comment": "purchase amount", "nullable": false}
                     ]
                   },
-                  "dirType": "OUT",
-                  "storage": "datastore://test_namespace/me_v2v3_string",
-                  "readOnly": true
-                }
-              expected: |
-                {
-                  "type": "multiEdge",
-                  "table": "me_v2v3_string",
-                  "comment": "string key multiedge",
-                  "schema": {
-                    "type": "multiEdge",
-                    "id": {"type": "long", "comment": "msg id"},
-                    "source": {"type": "string", "comment": "from"},
-                    "target": {"type": "string", "comment": "to"},
-                    "properties": [],
-                    "direction": "OUT"
-                  },
-                  "storage": "datastore://test_namespace/me_v2v3_string",
-                  "active": true
+                  "direction": "BOTH",
+                  "storage": "datastore://test_namespace/me_v2v3_props"
                 }
             """,
         )
@@ -793,29 +898,32 @@ class V2V3CompatibilityTest : E2ETestBase() {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
-            # Basic MultiEdge - V3 create -> V2 get
+            # The server derives readOnly=true for a multi-edge table, as v2 requires
             - name: me_v3v2_basic
               create: |
                 {
                   "table": "me_v3v2_basic",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "order id"},
-                    "source": {"type": "long", "comment": "sender"},
-                    "target": {"type": "long", "comment": "receiver"},
-                    "properties": [],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "LONG", "comment": "sender"},
+                    "target": {"type": "LONG", "comment": "receiver"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "order id", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
                   "storage": "datastore://test_namespace/me_v3v2_basic",
                   "mode": "SYNC",
                   "comment": "basic multiedge"
                 }
               expected: |
                 {
+                  "active": true,
                   "name": "me_compat_db.me_v3v2_basic",
                   "desc": "basic multiedge",
+                  "type": "MULTI_EDGE",
+                  "readOnly": true,
+                  "event": false,
                   "schema": {
                     "src": {"type": "LONG", "desc": "sender"},
                     "tgt": {"type": "LONG", "desc": "receiver"},
@@ -824,83 +932,45 @@ class V2V3CompatibilityTest : E2ETestBase() {
                     ]
                   },
                   "dirType": "BOTH",
-                  "storage": "datastore://test_namespace/me_v3v2_basic",
-                  "active": true
+                  "storage": "datastore://test_namespace/me_v3v2_basic"
                 }
 
-            # MultiEdge with properties - V3 create -> V2 get
+            # MultiEdge with properties
             - name: me_v3v2_props
               create: |
                 {
                   "table": "me_v3v2_props",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "txn id"},
-                    "source": {"type": "long", "comment": "user"},
-                    "target": {"type": "long", "comment": "item"},
+                    "source": {"type": "LONG", "comment": "user"},
+                    "target": {"type": "LONG", "comment": "item"},
                     "properties": [
-                      {"name": "amount", "type": "int", "comment": "purchase amount", "nullable": false},
-                      {"name": "timestamp", "type": "long", "comment": "txn time", "nullable": false}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                      {"name": "_id", "type": "LONG", "comment": "txn id", "nullable": false},
+                      {"name": "amount", "type": "INT", "comment": "purchase amount", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
                   "storage": "datastore://test_namespace/me_v3v2_props",
                   "mode": "SYNC",
                   "comment": "multiedge with props"
                 }
               expected: |
                 {
+                  "active": true,
                   "name": "me_compat_db.me_v3v2_props",
                   "desc": "multiedge with props",
+                  "type": "MULTI_EDGE",
+                  "readOnly": true,
                   "schema": {
                     "src": {"type": "LONG", "desc": "user"},
                     "tgt": {"type": "LONG", "desc": "item"},
                     "fields": [
                       {"name": "_id", "type": "LONG", "nullable": false, "desc": "txn id"},
-                      {"name": "amount", "type": "INT", "nullable": false, "desc": "purchase amount"},
-                      {"name": "timestamp", "type": "LONG", "nullable": false, "desc": "txn time"}
+                      {"name": "amount", "type": "INT", "nullable": false, "desc": "purchase amount"}
                     ]
                   },
                   "dirType": "BOTH",
-                  "storage": "datastore://test_namespace/me_v3v2_props",
-                  "active": true
-                }
-
-            # MultiEdge with STRING keys - V3 create -> V2 get
-            - name: me_v3v2_string
-              create: |
-                {
-                  "table": "me_v3v2_string",
-                  "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "msg id"},
-                    "source": {"type": "string", "comment": "from"},
-                    "target": {"type": "string", "comment": "to"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
-                  },
-                  "storage": "datastore://test_namespace/me_v3v2_string",
-                  "mode": "SYNC",
-                  "comment": "string key multiedge"
-                }
-              expected: |
-                {
-                  "name": "me_compat_db.me_v3v2_string",
-                  "desc": "string key multiedge",
-                  "schema": {
-                    "src": {"type": "STRING", "desc": "from"},
-                    "tgt": {"type": "STRING", "desc": "to"},
-                    "fields": [
-                      {"name": "_id", "type": "LONG", "nullable": false, "desc": "msg id"}
-                    ]
-                  },
-                  "dirType": "OUT",
-                  "storage": "datastore://test_namespace/me_v3v2_string",
-                  "active": true
+                  "storage": "datastore://test_namespace/me_v3v2_props"
                 }
             """,
         )

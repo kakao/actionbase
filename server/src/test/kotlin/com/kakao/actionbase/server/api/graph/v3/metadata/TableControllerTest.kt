@@ -38,36 +38,35 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_edge_crud",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
                     "properties": [
-                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                      {"name": "score", "type": "INT", "comment": "score", "nullable": true}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_edge_crud",
                   "mode": "SYNC",
                   "comment": "edge table"
                 }
               expected: |
                 {
-                  "type": "edge",
                   "table": "v3_edge_crud",
                   "database": "v3_table_test_db",
                   "comment": "edge table",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
                     "properties": [
-                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
-                    ],
-                    "direction": "OUT"
+                      {"name": "score", "type": "INT", "comment": "score", "nullable": true}
+                    ]
                   },
+                  "direction": "OUT",
                   "storage": "datastore://test_namespace/v3_edge_crud",
                   "active": true
                 }
@@ -77,34 +76,35 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_multiedge_crud",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "order id"},
-                    "source": {"type": "long", "comment": "sender"},
-                    "target": {"type": "long", "comment": "receiver"},
-                    "properties": [],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "LONG", "comment": "sender"},
+                    "target": {"type": "LONG", "comment": "receiver"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "order id", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_multiedge_crud",
                   "mode": "SYNC",
                   "comment": "multiedge table"
                 }
               expected: |
                 {
-                  "type": "multiEdge",
                   "table": "v3_multiedge_crud",
                   "database": "v3_table_test_db",
                   "comment": "multiedge table",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "multiEdge",
-                    "id": {"type": "long", "comment": "order id"},
-                    "source": {"type": "long", "comment": "sender"},
-                    "target": {"type": "long", "comment": "receiver"},
-                    "properties": [],
-                    "direction": "BOTH"
+                    "source": {"type": "LONG", "comment": "sender"},
+                    "target": {"type": "LONG", "comment": "receiver"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "order id", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
                   "storage": "datastore://test_namespace/v3_multiedge_crud",
                   "active": true
                 }
@@ -114,38 +114,37 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_edge_full",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "long", "comment": "user"},
-                    "target": {"type": "long", "comment": "item"},
+                    "source": {"type": "LONG", "comment": "user"},
+                    "target": {"type": "LONG", "comment": "item"},
                     "properties": [
-                      {"name": "rating", "type": "int", "comment": "rating", "nullable": true},
-                      {"name": "createdat", "type": "long", "comment": "time", "nullable": false}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                      {"name": "rating", "type": "INT", "comment": "rating", "nullable": true},
+                      {"name": "createdat", "type": "LONG", "comment": "time", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_edge_full",
                   "mode": "SYNC",
                   "comment": "full edge table"
                 }
               expected: |
                 {
-                  "type": "edge",
                   "table": "v3_edge_full",
                   "database": "v3_table_test_db",
                   "comment": "full edge table",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "edge",
-                    "source": {"type": "long", "comment": "user"},
-                    "target": {"type": "long", "comment": "item"},
+                    "source": {"type": "LONG", "comment": "user"},
+                    "target": {"type": "LONG", "comment": "item"},
                     "properties": [
-                      {"name": "rating", "type": "int", "comment": "rating", "nullable": true},
-                      {"name": "createdat", "type": "long", "comment": "time", "nullable": false}
-                    ],
-                    "direction": "BOTH"
+                      {"name": "rating", "type": "INT", "comment": "rating", "nullable": true},
+                      {"name": "createdat", "type": "LONG", "comment": "time", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
                   "storage": "datastore://test_namespace/v3_edge_full",
                   "active": true
                 }
@@ -155,40 +154,39 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_multiedge_full",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "txn id"},
-                    "source": {"type": "long", "comment": "buyer"},
-                    "target": {"type": "long", "comment": "product"},
+                    "source": {"type": "LONG", "comment": "buyer"},
+                    "target": {"type": "LONG", "comment": "product"},
                     "properties": [
-                      {"name": "amount", "type": "int", "comment": "purchase amount", "nullable": false},
-                      {"name": "timestamp", "type": "long", "comment": "txn time", "nullable": false}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                      {"name": "_id", "type": "LONG", "comment": "txn id", "nullable": false},
+                      {"name": "amount", "type": "INT", "comment": "purchase amount", "nullable": false},
+                      {"name": "timestamp", "type": "LONG", "comment": "txn time", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_multiedge_full",
                   "mode": "SYNC",
                   "comment": "full multiedge table"
                 }
               expected: |
                 {
-                  "type": "multiEdge",
                   "table": "v3_multiedge_full",
                   "database": "v3_table_test_db",
                   "comment": "full multiedge table",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "multiEdge",
-                    "id": {"type": "long", "comment": "txn id"},
-                    "source": {"type": "long", "comment": "buyer"},
-                    "target": {"type": "long", "comment": "product"},
+                    "source": {"type": "LONG", "comment": "buyer"},
+                    "target": {"type": "LONG", "comment": "product"},
                     "properties": [
-                      {"name": "amount", "type": "int", "comment": "purchase amount", "nullable": false},
-                      {"name": "timestamp", "type": "long", "comment": "txn time", "nullable": false}
-                    ],
-                    "direction": "BOTH"
+                      {"name": "_id", "type": "LONG", "comment": "txn id", "nullable": false},
+                      {"name": "amount", "type": "INT", "comment": "purchase amount", "nullable": false},
+                      {"name": "timestamp", "type": "LONG", "comment": "txn time", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
                   "storage": "datastore://test_namespace/v3_multiedge_full",
                   "active": true
                 }
@@ -208,7 +206,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "CREATED", "result": $expected}""")
 
             client
                 .get()
@@ -227,15 +225,15 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_edge_upd",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
+                    "properties": []
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_edge_upd",
                   "mode": "SYNC",
                   "comment": "edge table"
@@ -248,16 +246,17 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_multiedge_upd",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "id"},
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "id", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_multiedge_upd",
                   "mode": "SYNC",
                   "comment": "multiedge table"
@@ -293,7 +292,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
         }
 
         @ObjectSourceParameterizedTest
@@ -307,15 +306,15 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_edge_deact",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
+                    "properties": []
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_edge_deact",
                   "mode": "SYNC",
                   "comment": "edge table"
@@ -326,16 +325,17 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_multiedge_deact",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "id"},
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "id", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_multiedge_deact",
                   "mode": "SYNC",
                   "comment": "multiedge table"
@@ -369,7 +369,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
         }
 
         @ObjectSourceParameterizedTest
@@ -385,15 +385,15 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_edge_react",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
+                    "properties": []
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_edge_react",
                   "mode": "SYNC",
                   "comment": "edge table"
@@ -404,16 +404,17 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_multiedge_react",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "id"},
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "id", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_multiedge_react",
                   "mode": "SYNC",
                   "comment": "multiedge table"
@@ -457,7 +458,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
         }
 
         @ObjectSourceParameterizedTest
@@ -471,15 +472,15 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_edge_del",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
+                    "properties": []
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_edge_del",
                   "mode": "SYNC",
                   "comment": "edge table"
@@ -488,16 +489,17 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_multiedge_del",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "id"},
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
-                    "properties": [],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "id", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/v3_multiedge_del",
                   "mode": "SYNC",
                   "comment": "multiedge table"
@@ -533,7 +535,9 @@ class TableControllerTest : E2ETestBase() {
                 .uri("$baseUri/$name")
                 .exchange()
                 .expectStatus()
-                .isNoContent
+                .isOk
+                .expectBody()
+                .json("""{"status": "DELETED"}""")
         }
     }
 
@@ -552,15 +556,15 @@ class TableControllerTest : E2ETestBase() {
                     """
                     {
                       "table": "$tableName",
+                      "type": "EDGE",
                       "schema": {
-                        "type": "EDGE",
-                        "source": {"type": "string", "comment": "src"},
-                        "target": {"type": "string", "comment": "tgt"},
-                        "properties": [],
-                        "direction": "OUT",
-                        "indexes": [],
-                        "groups": []
+                        "source": {"type": "STRING", "comment": "src"},
+                        "target": {"type": "STRING", "comment": "tgt"},
+                        "properties": []
                       },
+                      "direction": "OUT",
+                      "indexes": [],
+                      "groups": [],
                       "storage": "datastore://test_namespace/v3_tbl_status_filter",
                       "mode": "SYNC",
                       "comment": "status filter test"
@@ -589,7 +593,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.table == '$tableName')]")
+                .jsonPath("$.content[?(@.table == '$tableName')]")
                 .doesNotExist()
         }
 
@@ -602,7 +606,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.table == '$tableName')]")
+                .jsonPath("$.content[?(@.table == '$tableName')]")
                 .doesNotExist()
         }
 
@@ -615,7 +619,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.table == '$tableName')]")
+                .jsonPath("$.content[?(@.table == '$tableName')]")
                 .exists()
         }
 
@@ -628,7 +632,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .jsonPath("$[?(@.table == '$tableName')]")
+                .jsonPath("$.content[?(@.table == '$tableName')]")
                 .exists()
         }
     }
@@ -643,44 +647,41 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_edge_cache_crud",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "long", "comment": "user"},
-                    "target": {"type": "long", "comment": "item"},
+                    "source": {"type": "LONG", "comment": "user"},
+                    "target": {"type": "LONG", "comment": "item"},
                     "properties": [
-                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": [],
-                    "caches": [
-                      {
-                        "cache": "top_items",
-                        "fields": [{"field": "score", "order": "DESC"}],
-                        "limit": 50,
-                        "comment": "top 50 items"
-                      }
+                      {"name": "score", "type": "INT", "comment": "score", "nullable": true}
                     ]
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
+                  "caches": [
+                    {
+                      "cache": "top_items",
+                      "fields": [{"field": "score", "order": "DESC"}],
+                      "limit": 50,
+                      "comment": "top 50 items"
+                    }
+                  ],
                   "storage": "datastore://test_namespace/v3_edge_cache_crud",
                   "mode": "SYNC",
                   "comment": "edge table with cache"
                 }
               expected: |
                 {
-                  "type": "edge",
                   "table": "v3_edge_cache_crud",
-                  "schema": {
-                    "type": "edge",
-                    "caches": [
-                      {
-                        "cache": "top_items",
-                        "fields": [{"field": "score", "order": "DESC"}],
-                        "limit": 50,
-                        "comment": "top 50 items"
-                      }
-                    ]
-                  },
+                  "type": "EDGE",
+                  "caches": [
+                    {
+                      "cache": "top_items",
+                      "fields": [{"field": "score", "order": "DESC"}],
+                      "limit": 50,
+                      "comment": "top 50 items"
+                    }
+                  ],
                   "active": true
                 }
             """,
@@ -699,7 +700,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "CREATED", "result": $expected}""")
 
             client
                 .get()
@@ -718,64 +719,62 @@ class TableControllerTest : E2ETestBase() {
               create: |
                 {
                   "table": "v3_edge_cache_upd",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "long", "comment": "user"},
-                    "target": {"type": "long", "comment": "item"},
+                    "source": {"type": "LONG", "comment": "user"},
+                    "target": {"type": "LONG", "comment": "item"},
                     "properties": [
-                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": [],
-                    "caches": [
-                      {
-                        "cache": "old_cache",
-                        "fields": [{"field": "score", "order": "ASC"}],
-                        "limit": 10,
-                        "comment": "old"
-                      }
+                      {"name": "score", "type": "INT", "comment": "score", "nullable": true}
                     ]
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
+                  "caches": [
+                    {
+                      "cache": "old_cache",
+                      "fields": [{"field": "score", "order": "ASC"}],
+                      "limit": 10,
+                      "comment": "old"
+                    }
+                  ],
                   "storage": "datastore://test_namespace/v3_edge_cache_upd",
                   "mode": "SYNC",
                   "comment": "edge table"
                 }
               update: |
                 {
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "long", "comment": "user"},
-                    "target": {"type": "long", "comment": "item"},
+                    "source": {"type": "LONG", "comment": "user"},
+                    "target": {"type": "LONG", "comment": "item"},
                     "properties": [
-                      {"name": "score", "type": "int", "comment": "score", "nullable": true}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": [],
-                    "caches": [
-                      {
-                        "cache": "new_cache",
-                        "fields": [{"field": "score", "order": "DESC"}],
-                        "limit": 100,
-                        "comment": "new"
-                      }
+                      {"name": "score", "type": "INT", "comment": "score", "nullable": true}
                     ]
-                  }
+                  },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
+                  "caches": [
+                    {
+                      "cache": "new_cache",
+                      "fields": [{"field": "score", "order": "DESC"}],
+                      "limit": 100,
+                      "comment": "new"
+                    }
+                  ]
                 }
               expected: |
                 {
                   "table": "v3_edge_cache_upd",
-                  "schema": {
-                    "caches": [
-                      {
-                        "cache": "new_cache",
-                        "fields": [{"field": "score", "order": "DESC"}],
-                        "limit": 100,
-                        "comment": "new"
-                      }
-                    ]
-                  },
+                  "caches": [
+                    {
+                      "cache": "new_cache",
+                      "fields": [{"field": "score", "order": "DESC"}],
+                      "limit": 100,
+                      "comment": "new"
+                    }
+                  ],
                   "active": true
                 }
             """,
@@ -806,7 +805,7 @@ class TableControllerTest : E2ETestBase() {
                 .expectStatus()
                 .isOk
                 .expectBody()
-                .json(expected)
+                .json("""{"status": "UPDATED", "result": $expected}""")
 
             // verify persistence via get
             client

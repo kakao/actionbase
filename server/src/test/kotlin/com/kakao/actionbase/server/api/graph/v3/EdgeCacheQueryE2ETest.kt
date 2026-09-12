@@ -36,41 +36,41 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$edgeTable",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
                     "properties": [
-                      {"name": "createdAt", "type": "long", "comment": "ts", "nullable": true},
-                      {"name": "permission", "type": "string", "comment": "perm", "nullable": true}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": [],
-                    "caches": [
-                      {
-                        "cache": "recent_wishlist",
-                        "fields": [{"field": "createdAt", "order": "DESC"}],
-                        "limit": 100
-                      },
-                      {
-                        "cache": "permission_created_at_desc",
-                        "fields": [
-                          {"field": "permission", "order": "ASC"},
-                          {"field": "createdAt", "order": "DESC"}
-                        ],
-                        "limit": 100
-                      },
-                      {
-                        "cache": "whitelisted_permission",
-                        "fields": [
-                          {"field": "permission", "order": "ASC", "dimension": ["me"]},
-                          {"field": "createdAt", "order": "DESC"}
-                        ],
-                        "limit": 100
-                      }
+                      {"name": "createdAt", "type": "LONG", "comment": "ts", "nullable": true},
+                      {"name": "permission", "type": "STRING", "comment": "perm", "nullable": true}
                     ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
+                  "caches": [
+                    {
+                      "cache": "recent_wishlist",
+                      "fields": [{"field": "createdAt", "order": "DESC"}],
+                      "limit": 100
+                    },
+                    {
+                      "cache": "permission_created_at_desc",
+                      "fields": [
+                        {"field": "permission", "order": "ASC"},
+                        {"field": "createdAt", "order": "DESC"}
+                      ],
+                      "limit": 100
+                    },
+                    {
+                      "cache": "whitelisted_permission",
+                      "fields": [
+                        {"field": "permission", "order": "ASC", "dimension": ["me"]},
+                        {"field": "createdAt", "order": "DESC"}
+                      ],
+                      "limit": 100
+                    }
+                  ],
                   "storage": "datastore://test_namespace/wishlist",
                   "mode": "SYNC",
                   "comment": "edge with cache"
@@ -131,25 +131,25 @@ class EdgeCacheQueryE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$multiEdgeTable",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "order id"},
-                    "source": {"type": "long", "comment": "buyer"},
-                    "target": {"type": "long", "comment": "seller"},
+                    "source": {"type": "LONG", "comment": "buyer"},
+                    "target": {"type": "LONG", "comment": "seller"},
                     "properties": [
-                      {"name": "paidAt", "type": "long", "comment": "payment time", "nullable": false}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": [],
-                    "caches": [
-                      {
-                        "cache": "paid_at_desc",
-                        "fields": [{"field": "paidAt", "order": "DESC"}],
-                        "limit": 100
-                      }
+                      {"name": "_id", "type": "LONG", "comment": "order id", "nullable": false},
+                      {"name": "paidAt", "type": "LONG", "comment": "payment time", "nullable": false}
                     ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
+                  "caches": [
+                    {
+                      "cache": "paid_at_desc",
+                      "fields": [{"field": "paidAt", "order": "DESC"}],
+                      "limit": 100
+                    }
+                  ],
                   "storage": "datastore://test_namespace/orders",
                   "mode": "SYNC",
                   "comment": "multi edge with cache"

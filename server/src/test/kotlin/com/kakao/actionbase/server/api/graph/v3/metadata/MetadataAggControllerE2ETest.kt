@@ -70,37 +70,37 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$table",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "purchase id"},
-                    "source": {"type": "string", "comment": "user"},
-                    "target": {"type": "string", "comment": "item"},
+                    "source": {"type": "STRING", "comment": "user"},
+                    "target": {"type": "STRING", "comment": "item"},
                     "properties": [
-                      {"name": "purchasedAt", "type": "long", "comment": "purchase time ms", "nullable": false}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": [{
-                      "group": "purchased_count",
-                      "type": "COUNT",
-                      "fields": [
-                        {"name": "_target"},
-                        {"name": "purchasedAt", "bucket": {"type": "date", "name": "purchasedAt", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
-                      ],
-                      "directionType": "OUT",
-                      "aggregations": {
-                        "topk": [{
-                          "topk": "top_purchased",
-                          "entity": "source",
-                          "ranges": "_target:eq:{_target};purchasedAt:bt:now-365d,now",
-                          "dimension": "target",
-                          "refreshAfterMillis": $refreshAfter,
-                          "rank": "$rankFqn"
-                        }]
-                      }
-                    }],
-                    "caches": []
+                      {"name": "_id", "type": "LONG", "comment": "purchase id", "nullable": false},
+                      {"name": "purchasedAt", "type": "LONG", "comment": "purchase time ms", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [{
+                    "group": "purchased_count",
+                    "type": "COUNT",
+                    "fields": [
+                      {"name": "_target"},
+                      {"name": "purchasedAt", "bucket": {"type": "date", "name": "purchasedAt", "unit": "MILLISECOND", "timezone": "UTC", "format": "yyyy-MM-dd"}}
+                    ],
+                    "directionType": "OUT",
+                    "aggregations": {
+                      "topk": [{
+                        "topk": "top_purchased",
+                        "entity": "source",
+                        "ranges": "_target:eq:{_target};purchasedAt:bt:now-365d,now",
+                        "dimension": "target",
+                        "refreshAfterMillis": $refreshAfter,
+                        "rank": "$rankFqn"
+                      }]
+                    }
+                  }],
+                  "caches": [],
                   "storage": "datastore://test_namespace/$table",
                   "mode": "SYNC",
                   "comment": "user-to-item purchase edges"
@@ -196,20 +196,20 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$sweepRank",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "topk|entity|dimensionValues"},
-                    "target": {"type": "string", "comment": "topkDimensionValue"},
+                    "source": {"type": "STRING", "comment": "topk|entity|dimensionValues"},
+                    "target": {"type": "STRING", "comment": "topkDimensionValue"},
                     "properties": [
-                      {"name": "metric", "type": "long", "comment": "metric", "nullable": false}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [
-                      {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
-                    ],
-                    "groups": [],
-                    "caches": []
+                      {"name": "metric", "type": "LONG", "comment": "metric", "nullable": false}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [
+                    {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
+                  ],
+                  "groups": [],
+                  "caches": [],
                   "storage": "datastore://test_namespace/$sweepRank",
                   "mode": "SYNC",
                   "comment": "topk rank rows"
@@ -227,31 +227,32 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$sweepTable",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "order id"},
-                    "source": {"type": "string", "comment": "user"},
-                    "target": {"type": "string", "comment": "item"},
-                    "properties": [],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": [{
-                      "group": "purchased_count",
-                      "type": "COUNT",
-                      "fields": [{"name": "_target"}],
-                      "directionType": "OUT",
-                      "aggregations": {
-                        "topk": [{
-                          "topk": "$topkName",
-                          "entity": "source",
-                          "ranges": "_target:eq:{_target}",
-                          "dimension": "target",
-                          "rank": "$sweepRankFqn"
-                        }]
-                      }
-                    }],
-                    "caches": []
+                    "source": {"type": "STRING", "comment": "user"},
+                    "target": {"type": "STRING", "comment": "item"},
+                    "properties": [
+                      {"name": "_id", "type": "LONG", "comment": "order id", "nullable": false}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [{
+                    "group": "purchased_count",
+                    "type": "COUNT",
+                    "fields": [{"name": "_target"}],
+                    "directionType": "OUT",
+                    "aggregations": {
+                      "topk": [{
+                        "topk": "$topkName",
+                        "entity": "source",
+                        "ranges": "_target:eq:{_target}",
+                        "dimension": "target",
+                        "rank": "$sweepRankFqn"
+                      }]
+                    }
+                  }],
+                  "caches": [],
                   "storage": "datastore://test_namespace/$sweepTable",
                   "mode": "SYNC",
                   "comment": "orders"
@@ -439,20 +440,20 @@ class MetadataAggControllerE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$rankTable",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "topk|entity|dimensionValues"},
-                    "target": {"type": "string", "comment": "topkDimensionValue"},
+                    "source": {"type": "STRING", "comment": "topk|entity|dimensionValues"},
+                    "target": {"type": "STRING", "comment": "topkDimensionValue"},
                     "properties": [
-                      {"name": "metric", "type": "long", "comment": "aggregated metric", "nullable": false}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [
-                      {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
-                    ],
-                    "groups": [],
-                    "caches": []
+                      {"name": "metric", "type": "LONG", "comment": "aggregated metric", "nullable": false}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [
+                    {"index": "metric_desc", "fields": [{"field": "metric", "order": "DESC"}]}
+                  ],
+                  "groups": [],
+                  "caches": [],
                   "storage": "datastore://test_namespace/$rankTable",
                   "mode": "SYNC",
                   "comment": "topk rank rows"

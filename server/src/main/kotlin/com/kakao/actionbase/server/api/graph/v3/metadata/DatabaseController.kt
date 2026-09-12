@@ -1,8 +1,8 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.core.metadata.DatabaseDescriptor
-import com.kakao.actionbase.core.metadata.payload.DatabaseCreateRequest
-import com.kakao.actionbase.core.metadata.payload.DatabaseUpdateRequest
+import com.kakao.actionbase.server.util.mapToResponseEntity
+import com.kakao.actionbase.v2.engine.service.ddl.DdlPage
+import com.kakao.actionbase.v2.engine.service.ddl.DdlStatus
 
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -28,43 +28,29 @@ class DatabaseController(
     @GetMapping("/graph/v3/databases")
     fun listDatabases(
         @RequestParam(required = false, defaultValue = "ACTIVE") status: MetadataStatus,
-    ): Mono<ResponseEntity<List<DatabaseDescriptor>>> =
-        v3CompatService
-            .getDatabases(status)
-            .map { ResponseEntity.ok(it) }
+    ): Mono<ResponseEntity<DdlPage<DatabaseResponse>>> = v3CompatService.getDatabases(status).mapToResponseEntity()
 
     @GetMapping("/graph/v3/databases/{database}")
     fun getDatabase(
         @PathVariable database: String,
-    ): Mono<ResponseEntity<DatabaseDescriptor>> =
-        v3CompatService
-            .getDatabase(database)
-            .map { ResponseEntity.ok(it) }
-            .defaultIfEmpty(ResponseEntity.notFound().build())
+    ): Mono<ResponseEntity<DatabaseResponse>> = v3CompatService.getDatabase(database).mapToResponseEntity()
 
     @PostMapping("/graph/v3/databases")
     fun createDatabase(
         @Valid @RequestBody request: DatabaseCreateRequest,
-    ): Mono<ResponseEntity<DatabaseDescriptor>> =
+    ): Mono<ResponseEntity<DdlStatus<DatabaseResponse>>> =
         v3CompatService
             .createDatabase(V3NameValidator.validateDatabase(request.database), request)
-            .map { ResponseEntity.ok(it) }
+            .mapToResponseEntity()
 
     @PutMapping("/graph/v3/databases/{database}")
     fun updateDatabase(
         @PathVariable database: String,
         @Valid @RequestBody request: DatabaseUpdateRequest,
-    ): Mono<ResponseEntity<DatabaseDescriptor>> =
-        v3CompatService
-            .updateDatabase(database, request)
-            .map { ResponseEntity.ok(it) }
-            .defaultIfEmpty(ResponseEntity.notFound().build())
+    ): Mono<ResponseEntity<DdlStatus<DatabaseResponse>>> = v3CompatService.updateDatabase(database, request).mapToResponseEntity()
 
     @DeleteMapping("/graph/v3/databases/{database}")
     fun deleteDatabase(
         @PathVariable database: String,
-    ): Mono<ResponseEntity<Void>> =
-        v3CompatService
-            .deleteDatabase(database)
-            .then(Mono.just(ResponseEntity.noContent().build<Void>()))
+    ): Mono<ResponseEntity<DdlStatus<DatabaseResponse>>> = v3CompatService.deleteDatabase(database).mapToResponseEntity()
 }

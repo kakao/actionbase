@@ -5,24 +5,23 @@ import com.kakao.actionbase.v2.core.code.Index as V2Index
 import com.kakao.actionbase.v2.core.code.hbase.Order as V2Order
 import com.kakao.actionbase.v2.core.metadata.DirectionType as V2DirectionType
 import com.kakao.actionbase.v2.core.metadata.MutationMode as V2MutationMode
+import com.kakao.actionbase.v2.core.types.Field as V2Field
 
-import com.kakao.actionbase.core.metadata.AliasDescriptor
-import com.kakao.actionbase.core.metadata.DatabaseDescriptor
-import com.kakao.actionbase.core.metadata.TableDescriptor
 import com.kakao.actionbase.core.metadata.common.Cache
 import com.kakao.actionbase.core.metadata.common.CacheField
 import com.kakao.actionbase.core.metadata.common.DirectionType
 import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.core.types.PrimitiveType
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toAliasResponse
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toDatabaseResponse
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toLabelType
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toTableResponse
+import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toTableType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2AliasEntity
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DirectionType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2MutationMode
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2ServiceEntity
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3AliasDescriptor
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DatabaseDescriptor
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3DirectionType
 import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3MutationMode
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV3TableDescriptor
 import com.kakao.actionbase.test.documentations.params.ObjectSource
 import com.kakao.actionbase.test.documentations.params.ObjectSourceParameterizedTest
 import com.kakao.actionbase.v2.core.metadata.LabelType
@@ -40,7 +39,39 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 
 class V3MetadataConverterTest {
-    private val tenant = "test_tenant"
+    private fun labelEntity(
+        database: String,
+        table: String,
+        comment: String = "test table",
+        type: LabelType = LabelType.INDEXED,
+        schema: EdgeSchema =
+            EdgeSchema(
+                VertexField(VertexType.STRING, "source"),
+                VertexField(VertexType.STRING, "target"),
+                listOf(V2Field("score", DataType.INT, true, "score field")),
+            ),
+        dirType: V2DirectionType = V2DirectionType.OUT,
+        storage: String = "datastore://test_namespace/test_table",
+        indices: List<V2Index> = emptyList(),
+        caches: List<Cache> = emptyList(),
+        readOnly: Boolean = false,
+        mode: V2MutationMode = V2MutationMode.SYNC,
+    ): LabelEntity =
+        LabelEntity(
+            active = true,
+            name = EntityName(database, table),
+            desc = comment,
+            type = type,
+            schema = schema,
+            dirType = dirType,
+            storage = storage,
+            indices = indices,
+            groups = emptyList(),
+            caches = caches,
+            event = false,
+            readOnly = readOnly,
+            mode = mode,
+        )
 
     @Nested
     inner class DatabaseConversionTest {
@@ -52,7 +83,7 @@ class V3MetadataConverterTest {
               comment: test database
             """,
         )
-        fun `ServiceEntity to DatabaseDescriptor`(
+        fun `ServiceEntity to DatabaseResponse`(
             database: String,
             active: Boolean,
             comment: String,
@@ -63,11 +94,10 @@ class V3MetadataConverterTest {
                     name = EntityName.fromOrigin(database),
                     desc = comment,
                 )
-            val v3Descriptor = v2Entity.toV3DatabaseDescriptor(tenant)
-            assertThat(v3Descriptor.tenant).isEqualTo(tenant)
-            assertThat(v3Descriptor.database).isEqualTo(database)
-            assertThat(v3Descriptor.active).isEqualTo(active)
-            assertThat(v3Descriptor.comment).isEqualTo(comment)
+            val response = v2Entity.toDatabaseResponse()
+            assertThat(response.database).isEqualTo(database)
+            assertThat(response.active).isEqualTo(active)
+            assertThat(response.comment).isEqualTo(comment)
         }
 
         @ObjectSourceParameterizedTest
@@ -78,19 +108,18 @@ class V3MetadataConverterTest {
               comment: test database
             """,
         )
-        fun `DatabaseDescriptor to ServiceEntity`(
+        fun `DatabaseResponse to ServiceEntity`(
             database: String,
             active: Boolean,
             comment: String,
         ) {
-            val v3Descriptor =
-                DatabaseDescriptor(
-                    tenant = tenant,
-                    database = database,
+            val response =
+                DatabaseResponse(
                     active = active,
+                    database = database,
                     comment = comment,
                 )
-            val v2Entity = v3Descriptor.toV2ServiceEntity()
+            val v2Entity = response.toV2ServiceEntity()
             assertThat(v2Entity.name.nameNotNull).isEqualTo(database)
             assertThat(v2Entity.active).isEqualTo(active)
             assertThat(v2Entity.desc).isEqualTo(comment)
@@ -192,13 +221,68 @@ class V3MetadataConverterTest {
     }
 
     @Nested
+    inner class TableTypeConversionTest {
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - v2: INDEXED
+              v3: EDGE
+            - v2: IMMUTABLE_INDEXED
+              v3: IMMUTABLE_EDGE
+            - v2: MULTI_EDGE
+              v3: MULTI_EDGE
+            - v2: VERTEX
+              v3: VERTEX
+            """,
+        )
+        fun `V2 LabelType to V3 TableType`(
+            v2: String,
+            v3: String,
+        ) {
+            assertThat(LabelType.valueOf(v2).toTableType()).isEqualTo(TableType.valueOf(v3))
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - v3: EDGE
+              v2: INDEXED
+            - v3: IMMUTABLE_EDGE
+              v2: IMMUTABLE_INDEXED
+            - v3: MULTI_EDGE
+              v2: MULTI_EDGE
+            - v3: VERTEX
+              v2: VERTEX
+            """,
+        )
+        fun `V3 TableType to V2 LabelType`(
+            v3: String,
+            v2: String,
+        ) {
+            assertThat(TableType.valueOf(v3).toLabelType()).isEqualTo(LabelType.valueOf(v2))
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - v2: HASH
+            - v2: NIL
+            """,
+        )
+        fun `V2 only LabelType reads back as EDGE`(v2: String) {
+            assertThat(LabelType.valueOf(v2).toTableType()).isEqualTo(TableType.EDGE)
+        }
+    }
+
+    @Nested
     inner class TableConversionTest {
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
             - database: mydb
               table: mytable
-              labelType: HASH
+              labelType: INDEXED
+              tableType: EDGE
               sourceType: STRING
               sourceComment: source
               targetType: STRING
@@ -209,10 +293,11 @@ class V3MetadataConverterTest {
               comment: test table
             """,
         )
-        fun `LabelEntity to TableDescriptor`(
+        fun `LabelEntity to TableResponse`(
             database: String,
             table: String,
             labelType: String,
+            tableType: String,
             sourceType: String,
             sourceComment: String,
             targetType: String,
@@ -222,61 +307,122 @@ class V3MetadataConverterTest {
             storage: String,
             comment: String,
         ) {
-            val edgeSchema =
-                EdgeSchema(
-                    VertexField(VertexType.valueOf(sourceType), sourceComment),
-                    VertexField(VertexType.valueOf(targetType), targetComment),
-                    listOf(
-                        com.kakao.actionbase.v2.core.types
-                            .Field("score", DataType.INT, true, "score field"),
-                    ),
-                )
             val v2Entity =
-                LabelEntity(
-                    active = true,
-                    name = EntityName(database, table),
-                    desc = comment,
+                labelEntity(
+                    database = database,
+                    table = table,
+                    comment = comment,
                     type = LabelType.valueOf(labelType),
-                    schema = edgeSchema,
+                    schema =
+                        EdgeSchema(
+                            VertexField(VertexType.valueOf(sourceType), sourceComment),
+                            VertexField(VertexType.valueOf(targetType), targetComment),
+                            listOf(V2Field("score", DataType.INT, true, "score field")),
+                        ),
                     dirType = V2DirectionType.valueOf(direction),
                     storage = storage,
-                    indices =
-                        listOf(
-                            V2Index("idx1", listOf(V2Index.Field("score", V2Order.DESC)), "index desc"),
-                        ),
-                    groups = emptyList(),
-                    event = false,
-                    readOnly = false,
+                    indices = listOf(V2Index("idx1", listOf(V2Index.Field("score", V2Order.DESC)), "index desc")),
                     mode = V2MutationMode.valueOf(mode),
                 )
 
-            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.Edge
-            assertThat(v3Descriptor.tenant).isEqualTo(tenant)
-            assertThat(v3Descriptor.database).isEqualTo(database)
-            assertThat(v3Descriptor.table).isEqualTo(table)
-            assertThat(v3Descriptor.active).isTrue()
-            assertThat(v3Descriptor.comment).isEqualTo(comment)
-            assertThat(v3Descriptor.mode).isEqualTo(MutationMode.valueOf(mode))
-            assertThat(v3Descriptor.storage).isEqualTo(storage)
+            val response = v2Entity.toTableResponse()
+            assertThat(response.database).isEqualTo(database)
+            assertThat(response.table).isEqualTo(table)
+            assertThat(response.active).isTrue()
+            assertThat(response.comment).isEqualTo(comment)
+            assertThat(response.type).isEqualTo(TableType.valueOf(tableType))
+            assertThat(response.mode).isEqualTo(MutationMode.valueOf(mode))
+            assertThat(response.storage).isEqualTo(storage)
+            assertThat(response.direction).isEqualTo(DirectionType.valueOf(direction))
 
-            val schema = v3Descriptor.schema
-            assertThat(schema.direction).isEqualTo(DirectionType.valueOf(direction))
-            assertThat(schema.source.type).isEqualTo(PrimitiveType.valueOf(sourceType))
-            assertThat(schema.target.type).isEqualTo(PrimitiveType.valueOf(targetType))
-            assertThat(schema.properties).hasSize(1)
-            assertThat(schema.properties[0].name).isEqualTo("score")
-            assertThat(schema.properties[0].type).isEqualTo(PrimitiveType.INT)
-            assertThat(schema.properties[0].nullable).isTrue()
+            assertThat(response.schema.source.type).isEqualTo(VertexType.valueOf(sourceType))
+            assertThat(response.schema.source.comment).isEqualTo(sourceComment)
+            assertThat(response.schema.target.type).isEqualTo(VertexType.valueOf(targetType))
+            assertThat(response.schema.properties).hasSize(1)
+            assertThat(response.schema.properties[0].name).isEqualTo("score")
+            assertThat(response.schema.properties[0].type).isEqualTo(DataType.INT)
+            assertThat(response.schema.properties[0].nullable).isTrue()
 
-            assertThat(schema.indexes).hasSize(1)
-            assertThat(schema.indexes[0].index).isEqualTo("idx1")
-            assertThat(schema.indexes[0].fields[0].field).isEqualTo("score")
-            assertThat(schema.indexes[0].fields[0].order).isEqualTo(V3Order.DESC)
+            assertThat(response.indexes).hasSize(1)
+            assertThat(response.indexes[0].index).isEqualTo("idx1")
+            assertThat(response.indexes[0].fields[0].field).isEqualTo("score")
+            assertThat(response.indexes[0].fields[0].order).isEqualTo(V3Order.DESC)
         }
-    }
 
-    @Nested
-    inner class TableCacheConversionTest {
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - database: mydb
+              table: mymultiedge
+            """,
+        )
+        fun `MultiEdge keeps its id as the _id property, exactly as V2 stores it`(
+            database: String,
+            table: String,
+        ) {
+            val v2Entity =
+                labelEntity(
+                    database = database,
+                    table = table,
+                    type = LabelType.MULTI_EDGE,
+                    readOnly = true,
+                    schema =
+                        EdgeSchema(
+                            VertexField(VertexType.LONG, "sender"),
+                            VertexField(VertexType.LONG, "receiver"),
+                            listOf(
+                                V2Field("_id", DataType.LONG, false, "order id"),
+                                V2Field("amount", DataType.INT, true, "amount"),
+                            ),
+                        ),
+                )
+
+            val response = v2Entity.toTableResponse()
+            assertThat(response.type).isEqualTo(TableType.MULTI_EDGE)
+            assertThat(response.schema.properties.map { it.name }).containsExactly("_id", "amount")
+        }
+
+        @ObjectSourceParameterizedTest
+        @ObjectSource(
+            """
+            - database: mydb
+              table: users
+              idType: STRING
+              idComment: user id
+            - database: mydb
+              table: users_long
+              idType: LONG
+              idComment: numeric user id
+            """,
+        )
+        fun `Vertex keeps its id in source, exactly as V2 stores it`(
+            database: String,
+            table: String,
+            idType: String,
+            idComment: String,
+        ) {
+            val v2Entity =
+                labelEntity(
+                    database = database,
+                    table = table,
+                    type = LabelType.VERTEX,
+                    dirType = V2DirectionType.OUT,
+                    schema =
+                        EdgeSchema(
+                            VertexField(VertexType.valueOf(idType), idComment),
+                            VertexField(VertexType.STRING, "<vertex>"),
+                            listOf(V2Field("name", DataType.STRING, false, "user name")),
+                        ),
+                )
+
+            val response = v2Entity.toTableResponse()
+            assertThat(response.type).isEqualTo(TableType.VERTEX)
+            assertThat(response.schema.source.type).isEqualTo(VertexType.valueOf(idType))
+            assertThat(response.schema.source.comment).isEqualTo(idComment)
+            assertThat(response.schema.target.comment).isEqualTo("<vertex>")
+            assertThat(response.schema.properties.map { it.name }).containsExactly("name")
+        }
+
         @ObjectSourceParameterizedTest
         @ObjectSource(
             """
@@ -287,199 +433,25 @@ class V3MetadataConverterTest {
               cacheComment: cache desc
             """,
         )
-        fun `LabelEntity caches are preserved when converting to TableDescriptor Edge`(
+        fun `caches pass through untouched`(
             database: String,
             table: String,
             cacheName: String,
             cacheLimit: Int,
             cacheComment: String,
         ) {
-            val edgeSchema =
-                EdgeSchema(
-                    VertexField(VertexType.STRING, "source"),
-                    VertexField(VertexType.STRING, "target"),
-                    listOf(
-                        com.kakao.actionbase.v2.core.types
-                            .Field("score", DataType.INT, true, "score field"),
+            val caches =
+                listOf(
+                    Cache(
+                        cache = cacheName,
+                        fields = listOf(CacheField("score", V3Order.DESC)),
+                        limit = cacheLimit,
+                        comment = cacheComment,
                     ),
                 )
-            val v2Entity =
-                LabelEntity(
-                    active = true,
-                    name = EntityName(database, table),
-                    desc = "test table",
-                    type = LabelType.INDEXED,
-                    schema = edgeSchema,
-                    dirType = V2DirectionType.OUT,
-                    storage = "datastore://test_namespace/test_table",
-                    indices = emptyList(),
-                    groups = emptyList(),
-                    caches =
-                        listOf(
-                            Cache(
-                                cache = cacheName,
-                                fields = listOf(CacheField("score", V3Order.DESC)),
-                                limit = cacheLimit,
-                                comment = cacheComment,
-                            ),
-                        ),
-                    event = false,
-                    readOnly = false,
-                    mode = V2MutationMode.SYNC,
-                )
+            val v2Entity = labelEntity(database = database, table = table, caches = caches)
 
-            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.Edge
-            val schema = v3Descriptor.schema
-            assertThat(schema.caches).hasSize(1)
-            assertThat(schema.caches[0].cache).isEqualTo(cacheName)
-            assertThat(schema.caches[0].limit).isEqualTo(cacheLimit)
-            assertThat(schema.caches[0].comment).isEqualTo(cacheComment)
-            assertThat(schema.caches[0].fields).hasSize(1)
-            assertThat(schema.caches[0].fields[0].field).isEqualTo("score")
-            assertThat(schema.caches[0].fields[0].order).isEqualTo(V3Order.DESC)
-        }
-
-        @ObjectSourceParameterizedTest
-        @ObjectSource(
-            """
-            - database: mydb
-              table: mymultiedge
-              cacheName: cache1
-              cacheLimit: 100
-              cacheComment: multi-edge cache
-            """,
-        )
-        fun `LabelEntity caches are preserved when converting to TableDescriptor MultiEdge`(
-            database: String,
-            table: String,
-            cacheName: String,
-            cacheLimit: Int,
-            cacheComment: String,
-        ) {
-            val edgeSchema =
-                EdgeSchema(
-                    VertexField(VertexType.STRING, "source"),
-                    VertexField(VertexType.STRING, "target"),
-                    listOf(
-                        com.kakao.actionbase.v2.core.types
-                            .Field("_id", DataType.STRING, false, "id field"),
-                        com.kakao.actionbase.v2.core.types
-                            .Field("score", DataType.INT, true, "score field"),
-                    ),
-                )
-            val v2Entity =
-                LabelEntity(
-                    active = true,
-                    name = EntityName(database, table),
-                    desc = "test multi edge",
-                    type = LabelType.MULTI_EDGE,
-                    schema = edgeSchema,
-                    dirType = V2DirectionType.OUT,
-                    storage = "datastore://test_namespace/test_table",
-                    indices = emptyList(),
-                    groups = emptyList(),
-                    caches =
-                        listOf(
-                            Cache(
-                                cache = cacheName,
-                                fields = listOf(CacheField("score", V3Order.DESC)),
-                                limit = cacheLimit,
-                                comment = cacheComment,
-                            ),
-                        ),
-                    event = false,
-                    readOnly = true,
-                    mode = V2MutationMode.SYNC,
-                )
-
-            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.MultiEdge
-            val schema = v3Descriptor.schema
-            assertThat(schema.caches).hasSize(1)
-            assertThat(schema.caches[0].cache).isEqualTo(cacheName)
-            assertThat(schema.caches[0].limit).isEqualTo(cacheLimit)
-            assertThat(schema.caches[0].comment).isEqualTo(cacheComment)
-            assertThat(schema.caches[0].fields).hasSize(1)
-            assertThat(schema.caches[0].fields[0].field).isEqualTo("score")
-            assertThat(schema.caches[0].fields[0].order).isEqualTo(V3Order.DESC)
-        }
-
-        @ObjectSourceParameterizedTest
-        @ObjectSource(
-            """
-            - database: mydb
-              table: users
-              idType: STRING
-              idComment: user id
-              propertyName: name
-              propertyType: STRING
-              propertyNullable: false
-              propertyComment: user name
-              storage: "datastore://test_namespace/users"
-              comment: vertex table
-            - database: mydb
-              table: users_long
-              idType: LONG
-              idComment: numeric user id
-              propertyName: score
-              propertyType: INT
-              propertyNullable: true
-              propertyComment: user score
-              storage: "datastore://test_namespace/users_long"
-              comment: vertex table with numeric id
-            """,
-        )
-        fun `LabelType VERTEX LabelEntity is restored as V3TableDescriptor Vertex`(
-            database: String,
-            table: String,
-            idType: String,
-            idComment: String,
-            propertyName: String,
-            propertyType: String,
-            propertyNullable: Boolean,
-            propertyComment: String,
-            storage: String,
-            comment: String,
-        ) {
-            val edgeSchema =
-                EdgeSchema(
-                    VertexField(VertexType.valueOf(idType), idComment),
-                    VertexField(VertexType.STRING, "<vertex>"),
-                    listOf(
-                        com.kakao.actionbase.v2.core.types
-                            .Field(propertyName, DataType.valueOf(propertyType), propertyNullable, propertyComment),
-                    ),
-                )
-            val v2Entity =
-                LabelEntity(
-                    active = true,
-                    name = EntityName(database, table),
-                    desc = comment,
-                    type = LabelType.VERTEX,
-                    schema = edgeSchema,
-                    dirType = V2DirectionType.OUT,
-                    storage = storage,
-                    indices = emptyList(),
-                    groups = emptyList(),
-                    event = false,
-                    readOnly = false,
-                    mode = V2MutationMode.SYNC,
-                )
-
-            val v3Descriptor = v2Entity.toV3TableDescriptor(tenant) as TableDescriptor.Vertex
-            assertThat(v3Descriptor.tenant).isEqualTo(tenant)
-            assertThat(v3Descriptor.database).isEqualTo(database)
-            assertThat(v3Descriptor.table).isEqualTo(table)
-            assertThat(v3Descriptor.active).isTrue()
-            assertThat(v3Descriptor.comment).isEqualTo(comment)
-            assertThat(v3Descriptor.storage).isEqualTo(storage)
-
-            val schema = v3Descriptor.schema
-            assertThat(schema.id.type).isEqualTo(PrimitiveType.valueOf(idType))
-            assertThat(schema.id.comment).isEqualTo(idComment)
-            assertThat(schema.properties).hasSize(1)
-            assertThat(schema.properties[0].name).isEqualTo(propertyName)
-            assertThat(schema.properties[0].nullable).isEqualTo(propertyNullable)
-            assertThat(schema.properties[0].comment).isEqualTo(propertyComment)
+            assertThat(v2Entity.toTableResponse().caches).isEqualTo(caches)
         }
     }
 
@@ -495,7 +467,7 @@ class V3MetadataConverterTest {
               comment: test alias
             """,
         )
-        fun `AliasEntity to AliasDescriptor`(
+        fun `AliasEntity to AliasResponse`(
             database: String,
             alias: String,
             table: String,
@@ -509,13 +481,12 @@ class V3MetadataConverterTest {
                     desc = comment,
                     target = EntityName(database, table),
                 )
-            val v3Descriptor = v2Entity.toV3AliasDescriptor(tenant)
-            assertThat(v3Descriptor.tenant).isEqualTo(tenant)
-            assertThat(v3Descriptor.database).isEqualTo(database)
-            assertThat(v3Descriptor.alias).isEqualTo(alias)
-            assertThat(v3Descriptor.table).isEqualTo(table)
-            assertThat(v3Descriptor.active).isEqualTo(active)
-            assertThat(v3Descriptor.comment).isEqualTo(comment)
+            val response = v2Entity.toAliasResponse()
+            assertThat(response.database).isEqualTo(database)
+            assertThat(response.alias).isEqualTo(alias)
+            assertThat(response.table).isEqualTo(table)
+            assertThat(response.active).isEqualTo(active)
+            assertThat(response.comment).isEqualTo(comment)
         }
 
         @ObjectSourceParameterizedTest
@@ -528,23 +499,22 @@ class V3MetadataConverterTest {
               comment: test alias
             """,
         )
-        fun `AliasDescriptor to AliasEntity`(
+        fun `AliasResponse to AliasEntity`(
             database: String,
             alias: String,
             table: String,
             active: Boolean,
             comment: String,
         ) {
-            val v3Descriptor =
-                AliasDescriptor(
-                    tenant = tenant,
+            val response =
+                AliasResponse(
+                    active = active,
                     database = database,
                     alias = alias,
                     table = table,
-                    active = active,
                     comment = comment,
                 )
-            val v2Entity = v3Descriptor.toV2AliasEntity()
+            val v2Entity = response.toV2AliasEntity()
             assertThat(v2Entity.name.service).isEqualTo(database)
             assertThat(v2Entity.name.nameNotNull).isEqualTo(alias)
             assertThat(v2Entity.target.service).isEqualTo(database)

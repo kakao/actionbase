@@ -32,15 +32,15 @@ class DatastoreTableReferencesE2ETest : HBaseDatastoreE2ETestBase() {
                   "storage": "datastore://$TEST_NAMESPACE/$suffix",
                   "mode": "SYNC",
                   "comment": "references e2e",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "direction": "OUT",
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
-                    "properties": [],
-                    "indexes": [],
-                    "groups": []
-                  }
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
+                    "properties": []
+                  },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": []
                 }
                 """.trimIndent(),
             ).exchange()

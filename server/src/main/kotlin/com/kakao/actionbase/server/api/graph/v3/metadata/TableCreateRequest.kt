@@ -1,20 +1,11 @@
 package com.kakao.actionbase.server.api.graph.v3.metadata
 
-import com.kakao.actionbase.v2.core.code.Index as V2Index
-import com.kakao.actionbase.v2.core.metadata.DirectionType as V2DirectionType
-import com.kakao.actionbase.v2.core.types.Field as V2Field
-
 import com.kakao.actionbase.core.Constants
-import com.kakao.actionbase.core.Constants.VERTEX_TARGET_COMMENT
-import com.kakao.actionbase.core.metadata.common.ModelSchema
+import com.kakao.actionbase.core.metadata.common.Cache
+import com.kakao.actionbase.core.metadata.common.DirectionType
+import com.kakao.actionbase.core.metadata.common.Group
+import com.kakao.actionbase.core.metadata.common.Index
 import com.kakao.actionbase.core.metadata.common.MutationMode
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DataType
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2DirectionType
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2Index
-import com.kakao.actionbase.server.api.graph.v3.metadata.V3MetadataConverter.toV2VertexType
-import com.kakao.actionbase.v2.core.metadata.LabelType
-import com.kakao.actionbase.v2.core.types.EdgeSchema
-import com.kakao.actionbase.v2.core.types.VertexField
 
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -26,76 +17,32 @@ data class TableCreateRequest(
     @field:NotBlank(message = "table is required")
     @field:Pattern(regexp = Constants.Name.PATTERN, message = Constants.Name.MESSAGE)
     val table: String,
+    @field:NotNull(message = "type is required")
+    val type: TableType,
     @field:NotNull(message = "schema is required")
     @field:Valid
-    val schema: ModelSchema,
+    val schema: TableSchema,
+    @field:NotNull(message = "direction is required")
+    val direction: DirectionType,
     @field:NotBlank(message = "storage is required")
     @field:Pattern(regexp = Constants.Name.STORAGE_URI_PATTERN, message = Constants.Name.STORAGE_URI_MESSAGE)
     val storage: String,
+    val indexes: List<Index> = emptyList(),
+    val groups: List<Group> = emptyList(),
+    val caches: List<Cache> = emptyList(),
     val mode: MutationMode = MutationMode.SYNC,
     @field:Size(max = Constants.Name.COMMENT_MAX_LENGTH, message = Constants.Name.COMMENT_SIZE_MESSAGE)
     val comment: String,
 ) {
-    fun toV2EdgeSchema(): EdgeSchema =
-        when (schema) {
-            is ModelSchema.Edge ->
-                EdgeSchema(
-                    VertexField(schema.source.type.toV2VertexType(), schema.source.comment),
-                    VertexField(schema.target.type.toV2VertexType(), schema.target.comment),
-                    schema.properties.map {
-                        V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
-                    },
-                )
-            is ModelSchema.ImmutableEdge ->
-                EdgeSchema(
-                    VertexField(schema.source.type.toV2VertexType(), schema.source.comment),
-                    VertexField(schema.target.type.toV2VertexType(), schema.target.comment),
-                    schema.properties.map {
-                        V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
-                    },
-                )
-            is ModelSchema.MultiEdge -> {
-                val idField = V2Field("_id", schema.id.type.toV2DataType(), false, schema.id.comment)
-                EdgeSchema(
-                    VertexField(schema.source.type.toV2VertexType(), schema.source.comment),
-                    VertexField(schema.target.type.toV2VertexType(), schema.target.comment),
-                    listOf(idField) +
-                        schema.properties.map {
-                            V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
-                        },
-                )
+    init {
+        // The v2 metastore does not know about immutable edges, so the surface holds these invariants.
+        if (type == TableType.IMMUTABLE_EDGE) {
+            require(indexes.size <= 1) {
+                "immutable edge allows at most one index (scan-and-delete evicts by scanning one), got ${indexes.map { it.index }}"
             }
-            is ModelSchema.Vertex ->
-                EdgeSchema(
-                    VertexField(schema.id.type.toV2VertexType(), schema.id.comment),
-                    VertexField(com.kakao.actionbase.v2.core.types.VertexType.STRING, VERTEX_TARGET_COMMENT),
-                    schema.properties.map {
-                        V2Field(it.name, it.type.toV2DataType(), it.nullable, it.comment)
-                    },
-                )
+            require(direction != DirectionType.BOTH) {
+                "immutable edge must be single-direction OUT or IN (scan-and-delete evicts one direction), got BOTH"
+            }
         }
-
-    fun toV2DirectionType(): V2DirectionType =
-        when (schema) {
-            is ModelSchema.Edge -> schema.direction.toV2DirectionType()
-            is ModelSchema.ImmutableEdge -> schema.direction.toV2DirectionType()
-            is ModelSchema.MultiEdge -> schema.direction.toV2DirectionType()
-            is ModelSchema.Vertex -> V2DirectionType.OUT
-        }
-
-    fun toV2Indices(): List<V2Index> =
-        when (schema) {
-            is ModelSchema.Edge -> schema.indexes.map { it.toV2Index() }
-            is ModelSchema.ImmutableEdge -> schema.indexes.map { it.toV2Index() }
-            is ModelSchema.MultiEdge -> schema.indexes.map { it.toV2Index() }
-            is ModelSchema.Vertex -> emptyList()
-        }
-
-    fun labelType(): LabelType =
-        when (schema) {
-            is ModelSchema.Edge -> LabelType.INDEXED
-            is ModelSchema.ImmutableEdge -> LabelType.IMMUTABLE_INDEXED
-            is ModelSchema.MultiEdge -> LabelType.MULTI_EDGE
-            is ModelSchema.Vertex -> LabelType.VERTEX
-        }
+    }
 }

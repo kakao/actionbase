@@ -37,18 +37,18 @@ class ImmutableEdgeE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$table",
+                  "type": "IMMUTABLE_EDGE",
                   "schema": {
-                    "type": "IMMUTABLE_EDGE",
-                    "source": {"type": "long", "comment": "partition"},
-                    "target": {"type": "string", "comment": "message id"},
+                    "source": {"type": "LONG", "comment": "partition"},
+                    "target": {"type": "STRING", "comment": "message id"},
                     "properties": [
-                      {"name": "seq", "type": "long", "comment": "sequence", "nullable": false},
-                      {"name": "payload", "type": "string", "comment": "payload", "nullable": true}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [{"index": "seq_asc", "fields": [{"field": "seq", "order": "ASC"}]}],
-                    "groups": []
+                      {"name": "seq", "type": "LONG", "comment": "sequence", "nullable": false},
+                      {"name": "payload", "type": "STRING", "comment": "payload", "nullable": true}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [{"index": "seq_asc", "fields": [{"field": "seq", "order": "ASC"}]}],
+                  "groups": [],
                   "storage": "datastore://immutable_ns/immutable_log",
                   "mode": "SYNC",
                   "comment": "append-only log"
@@ -172,20 +172,20 @@ class ImmutableEdgeE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "two_index_log",
+                  "type": "IMMUTABLE_EDGE",
                   "schema": {
-                    "type": "IMMUTABLE_EDGE",
-                    "source": {"type": "long", "comment": "partition"},
-                    "target": {"type": "string", "comment": "message id"},
+                    "source": {"type": "LONG", "comment": "partition"},
+                    "target": {"type": "STRING", "comment": "message id"},
                     "properties": [
-                      {"name": "seq", "type": "long", "comment": "sequence", "nullable": false}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [
-                      {"index": "seq_asc", "fields": [{"field": "seq", "order": "ASC"}]},
-                      {"index": "seq_desc", "fields": [{"field": "seq", "order": "DESC"}]}
-                    ],
-                    "groups": []
+                      {"name": "seq", "type": "LONG", "comment": "sequence", "nullable": false}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [
+                    {"index": "seq_asc", "fields": [{"field": "seq", "order": "ASC"}]},
+                    {"index": "seq_desc", "fields": [{"field": "seq", "order": "DESC"}]}
+                  ],
+                  "groups": [],
                   "storage": "datastore://immutable_ns/two_index_log",
                   "mode": "SYNC",
                   "comment": "two indexes should be rejected"
@@ -206,17 +206,17 @@ class ImmutableEdgeE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "both_dir_log",
+                  "type": "IMMUTABLE_EDGE",
                   "schema": {
-                    "type": "IMMUTABLE_EDGE",
-                    "source": {"type": "long", "comment": "partition"},
-                    "target": {"type": "string", "comment": "message id"},
+                    "source": {"type": "LONG", "comment": "partition"},
+                    "target": {"type": "STRING", "comment": "message id"},
                     "properties": [
-                      {"name": "seq", "type": "long", "comment": "sequence", "nullable": false}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [{"index": "seq_asc", "fields": [{"field": "seq", "order": "ASC"}]}],
-                    "groups": []
+                      {"name": "seq", "type": "LONG", "comment": "sequence", "nullable": false}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [{"index": "seq_asc", "fields": [{"field": "seq", "order": "ASC"}]}],
+                  "groups": [],
                   "storage": "datastore://immutable_ns/both_dir_log",
                   "mode": "SYNC",
                   "comment": "BOTH direction should be rejected"

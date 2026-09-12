@@ -33,17 +33,17 @@ class EdgeMutationStorageOpsSpec : E2ETestBase() {
                 """
                 {
                   "table": "$edgeTable",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "string", "comment": "src"},
-                    "target": {"type": "string", "comment": "tgt"},
+                    "source": {"type": "STRING", "comment": "src"},
+                    "target": {"type": "STRING", "comment": "tgt"},
                     "properties": [
-                      {"name": "score", "type": "long", "comment": "score"}
-                    ],
-                    "direction": "OUT",
-                    "indexes": [],
-                    "groups": []
+                      {"name": "score", "type": "LONG", "comment": "score"}
+                    ]
                   },
+                  "direction": "OUT",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/storage_ops_edge",
                   "mode": "SYNC",
                   "comment": "edge for storage-ops test"
@@ -61,18 +61,18 @@ class EdgeMutationStorageOpsSpec : E2ETestBase() {
                 """
                 {
                   "table": "$multiEdgeTable",
+                  "type": "MULTI_EDGE",
                   "schema": {
-                    "type": "MULTI_EDGE",
-                    "id": {"type": "long", "comment": "id"},
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
                     "properties": [
-                      {"name": "score", "type": "long", "comment": "score"}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": []
+                      {"name": "_id", "type": "LONG", "comment": "id", "nullable": false},
+                      {"name": "score", "type": "LONG", "comment": "score"}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [],
                   "storage": "datastore://test_namespace/storage_ops_multi",
                   "mode": "SYNC",
                   "comment": "multi edge for storage-ops test"

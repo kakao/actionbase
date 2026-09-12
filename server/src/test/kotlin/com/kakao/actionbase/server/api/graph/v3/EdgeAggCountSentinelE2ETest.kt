@@ -37,24 +37,24 @@ class EdgeAggCountSentinelE2ETest : E2ETestBase() {
                 """
                 {
                   "table": "$table",
+                  "type": "EDGE",
                   "schema": {
-                    "type": "EDGE",
-                    "source": {"type": "long", "comment": "src"},
-                    "target": {"type": "long", "comment": "tgt"},
+                    "source": {"type": "LONG", "comment": "src"},
+                    "target": {"type": "LONG", "comment": "tgt"},
                     "properties": [
-                      {"name": "category", "type": "string", "comment": "cat", "nullable": true}
-                    ],
-                    "direction": "BOTH",
-                    "indexes": [],
-                    "groups": [
-                      {
-                        "group": "by_category",
-                        "type": "SUM",
-                        "fields": [{"name": "category"}]
-                      }
-                    ],
-                    "caches": []
+                      {"name": "category", "type": "STRING", "comment": "cat", "nullable": true}
+                    ]
                   },
+                  "direction": "BOTH",
+                  "indexes": [],
+                  "groups": [
+                    {
+                      "group": "by_category",
+                      "type": "SUM",
+                      "fields": [{"name": "category"}]
+                    }
+                  ],
+                  "caches": [],
                   "storage": "datastore://test_namespace/$table",
                   "mode": "SYNC",
                   "comment": "test"

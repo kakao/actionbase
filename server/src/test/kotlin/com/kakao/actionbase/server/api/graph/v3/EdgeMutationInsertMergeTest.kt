@@ -33,18 +33,18 @@ class EdgeMutationInsertMergeTest : E2ETestBase() {
     ) = """
         {
           "table": "$table",
+          "type": "EDGE",
           "schema": {
-            "type": "EDGE",
-            "source": {"type": "string", "comment": "src"},
-            "target": {"type": "string", "comment": "tgt"},
+            "source": {"type": "STRING", "comment": "src"},
+            "target": {"type": "STRING", "comment": "tgt"},
             "properties": [
-              {"name": "required", "type": "long",   "comment": "required", "nullable": false},
-              {"name": "optional", "type": "string", "comment": "optional", "nullable": true}
-            ],
-            "direction": "OUT",
-            "indexes": [],
-            "groups": []
+              {"name": "required", "type": "LONG",   "comment": "required", "nullable": false},
+              {"name": "optional", "type": "STRING", "comment": "optional", "nullable": true}
+            ]
           },
+          "direction": "OUT",
+          "indexes": [],
+          "groups": [],
           "storage": "$storage",
           "mode": "$mode",
           "comment": "$mode edge for insert-merge test"
