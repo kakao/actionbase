@@ -9,9 +9,9 @@ Key terms used in Actionbase documentation.
 
 ## Schema Version Mapping
 
-v2 and v3 map almost 1:1.
+v3 is v2 with v3 names: the same structure and the same values, renamed key by key.
 
-| v2 (Current) | v3 (Future) | Description                   |
+| v2           | v3          | Description                   |
 | ------------ | ----------- | ----------------------------- |
 | service      | database    | Namespace for grouping tables |
 | label        | table       | Edge schema definition        |
@@ -23,7 +23,7 @@ v2 and v3 map almost 1:1.
 | indices      | indexes     | Query indexes                 |
 | desc         | comment     | Description                   |
 
-- **Schema API**: v2 — migrating to v3
+- **Schema API**: both `/graph/v2` and `/graph/v3` — v3 is the same surface under v3 names
 - **Query/Mutation APIs**: v3
 
 ## Data Model

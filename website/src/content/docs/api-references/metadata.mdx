@@ -33,7 +33,7 @@ GET /graph/v3/databases
 
 ### Response Type
 
-`List<`[DatabaseDescriptor](#databasedescriptor)`>` - List of databases
+[DdlPage](#ddlpage)`<`[DatabaseResponse](#databaseresponse)`>` - Paged list of databases
 
 ### Request Example
 
@@ -46,19 +46,10 @@ curl -X GET \
 ### Response Example
 
 ```json
-[
-  {
-    "tenant": "default",
-    "database": "mydb",
-    "active": true,
-    "comment": "My database",
-    "revision": 1,
-    "createdAt": 1700000000000,
-    "createdBy": "admin",
-    "updatedAt": 1700000000000,
-    "updatedBy": "admin"
-  }
-]
+{
+  "count": 1,
+  "content": [{ "active": true, "database": "mydb", "comment": "My database" }]
+}
 ```
 
 ## 2. Get Database
@@ -80,7 +71,7 @@ GET /graph/v3/databases/{database}
 
 ### Response Type
 
-[DatabaseDescriptor](#databasedescriptor) - Database information
+[DatabaseResponse](#databaseresponse) - Database information
 
 Returns 404 if not found.
 
@@ -95,17 +86,7 @@ curl -X GET \
 ### Response Example
 
 ```json
-{
-  "tenant": "default",
-  "database": "mydb",
-  "active": true,
-  "comment": "My database",
-  "revision": 1,
-  "createdAt": 1700000000000,
-  "createdBy": "admin",
-  "updatedAt": 1700000000000,
-  "updatedBy": "admin"
-}
+{ "active": true, "database": "mydb", "comment": "My database" }
 ```
 
 ## 3. Create Database
@@ -132,7 +113,7 @@ POST /graph/v3/databases
 
 ### Response Type
 
-[DatabaseDescriptor](#databasedescriptor) - Created database information
+[DdlStatus](#ddlstatus)`<`[DatabaseResponse](#databaseresponse)`>` - Created database
 
 ### Request Example
 
@@ -150,17 +131,7 @@ curl -X POST \
 ### Response Example
 
 ```json
-{
-  "tenant": "default",
-  "database": "mydb",
-  "active": true,
-  "comment": "My database",
-  "revision": 1,
-  "createdAt": 1700000000000,
-  "createdBy": "admin",
-  "updatedAt": 1700000000000,
-  "updatedBy": "admin"
-}
+{ "active": true, "database": "mydb", "comment": "My database" }
 ```
 
 ## 4. Update Database
@@ -188,7 +159,7 @@ PUT /graph/v3/databases/{database}
 
 ### Response Type
 
-[DatabaseDescriptor](#databasedescriptor) - Updated database information
+[DdlStatus](#ddlstatus)`<`[DatabaseResponse](#databaseresponse)`>` - Updated database
 
 ### Request Example
 
@@ -222,7 +193,7 @@ DELETE /graph/v3/databases/{database}
 
 ### Response Type
 
-204 No Content (no response body)
+[DdlStatus](#ddlstatus) with `status: "DELETED"`
 
 ### Request Example
 
@@ -251,7 +222,7 @@ GET /graph/v3/databases/{database}/tables
 
 ### Response Type
 
-`List<`[TableDescriptor](#tabledescriptor)`>` - List of tables
+[DdlPage](#ddlpage)`<`[TableResponse](#tableresponse)`>` - Paged list of tables
 
 ### Request Example
 
@@ -281,7 +252,7 @@ GET /graph/v3/databases/{database}/tables/{table}
 
 ### Response Type
 
-[TableDescriptor](#tabledescriptor) - Table information
+[TableResponse](#tableresponse) - Table information
 
 Returns 404 if not found.
 
@@ -297,28 +268,22 @@ curl -X GET \
 
 ```json
 {
-  "type": "edge",
-  "tenant": "default",
+  "active": true,
   "database": "mydb",
   "table": "follows",
-  "schema": {
-    "type": "edge",
-    "source": { "type": "string", "comment": "user id" },
-    "target": { "type": "string", "comment": "user id" },
-    "properties": [],
-    "direction": "OUT",
-    "indexes": [],
-    "groups": []
-  },
-  "storage": "datastore://hbase/follows_table",
-  "mode": "SYNC",
-  "active": true,
   "comment": "User follows relationship",
-  "revision": 1,
-  "createdAt": 1700000000000,
-  "createdBy": "admin",
-  "updatedAt": 1700000000000,
-  "updatedBy": "admin"
+  "type": "EDGE",
+  "schema": {
+    "source": { "type": "STRING", "comment": "user id" },
+    "target": { "type": "STRING", "comment": "user id" },
+    "properties": []
+  },
+  "direction": "OUT",
+  "storage": "datastore://hbase/follows_table",
+  "indexes": [],
+  "groups": [],
+  "caches": [],
+  "mode": "SYNC"
 }
 ```
 
@@ -339,8 +304,13 @@ POST /graph/v3/databases/{database}/tables
 | Header   | Authorization | Optional | Authentication key (reserved for future use)    |
 | Path     | database      | Required | Database name                                   |
 | Body     | table         | Required | Table name                                      |
-| Body     | schema        | Required | Edge schema definition                          |
+| Body     | type          | Required | Table type (EDGE, IMMUTABLE_EDGE, MULTI_EDGE, VERTEX) |
+| Body     | schema        | Required | Source / target / properties                    |
+| Body     | direction     | Required | Direction type (OUT, IN, BOTH)                  |
 | Body     | storage       | Required | Storage URI (`datastore://<namespace>/<table>`) |
+| Body     | indexes       | Optional | Index definitions                               |
+| Body     | groups        | Optional | Group definitions                               |
+| Body     | caches        | Optional | Cache definitions                               |
 | Body     | mode          | Optional | Mutation mode (default: SYNC)                   |
 | Body     | comment       | Required | Table description                               |
 
@@ -350,7 +320,7 @@ POST /graph/v3/databases/{database}/tables
 
 ### Response Type
 
-[TableDescriptor](#tabledescriptor) - Created table information
+[DdlStatus](#ddlstatus)`<`[TableResponse](#tableresponse)`>` - Created table
 
 ### Request Example
 
@@ -361,16 +331,16 @@ curl -X POST \
     -H "Content-Type: application/json" \
     -d '{
       "table": "follows",
+      "type": "EDGE",
       "schema": {
-        "type": "EDGE",
-        "source": { "type": "string", "comment": "user id" },
-        "target": { "type": "string", "comment": "user id" },
-        "properties": [],
-        "direction": "OUT",
-        "indexes": [],
-        "groups": []
+        "source": { "type": "STRING", "comment": "user id" },
+        "target": { "type": "STRING", "comment": "user id" },
+        "properties": []
       },
+      "direction": "OUT",
       "storage": "datastore://hbase/follows_table",
+      "indexes": [],
+      "groups": [],
       "mode": "SYNC",
       "comment": "User follows relationship"
     }'
@@ -394,7 +364,10 @@ PUT /graph/v3/databases/{database}/tables/{table}
 | Path     | database      | Required | Database name                                |
 | Path     | table         | Required | Table name                                   |
 | Body     | active        | Optional | Whether the table is active                  |
-| Body     | schema        | Optional | Edge schema definition                       |
+| Body     | schema        | Optional | Source / target / properties                 |
+| Body     | indexes       | Optional | Index definitions                            |
+| Body     | groups        | Optional | Group definitions                            |
+| Body     | caches        | Optional | Cache definitions                            |
 | Body     | mode          | Optional | Mutation mode                                |
 | Body     | comment       | Optional | Table description                            |
 
@@ -404,7 +377,7 @@ PUT /graph/v3/databases/{database}/tables/{table}
 
 ### Response Type
 
-[TableDescriptor](#tabledescriptor) - Updated table information
+[DdlStatus](#ddlstatus)`<`[TableResponse](#tableresponse)`>` - Updated table
 
 ### Request Example
 
@@ -439,7 +412,7 @@ DELETE /graph/v3/databases/{database}/tables/{table}
 
 ### Response Type
 
-204 No Content (no response body)
+[DdlStatus](#ddlstatus) with `status: "DELETED"`
 
 ### Request Example
 
@@ -468,7 +441,7 @@ GET /graph/v3/databases/{database}/aliases
 
 ### Response Type
 
-`List<`[AliasDescriptor](#aliasdescriptor)`>` - List of aliases
+[DdlPage](#ddlpage)`<`[AliasResponse](#aliasresponse)`>` - Paged list of aliases
 
 ### Request Example
 
@@ -498,7 +471,7 @@ GET /graph/v3/databases/{database}/aliases/{alias}
 
 ### Response Type
 
-[AliasDescriptor](#aliasdescriptor) - Alias information
+[AliasResponse](#aliasresponse) - Alias information
 
 Returns 404 if not found.
 
@@ -514,17 +487,11 @@ curl -X GET \
 
 ```json
 {
-  "tenant": "default",
+  "active": true,
   "database": "mydb",
   "alias": "friends",
   "table": "follows",
-  "active": true,
-  "comment": "Alias for follows",
-  "revision": 1,
-  "createdAt": 1700000000000,
-  "createdBy": "admin",
-  "updatedAt": 1700000000000,
-  "updatedBy": "admin"
+  "comment": "Alias for follows"
 }
 ```
 
@@ -554,7 +521,7 @@ POST /graph/v3/databases/{database}/aliases
 
 ### Response Type
 
-[AliasDescriptor](#aliasdescriptor) - Created alias information
+[DdlStatus](#ddlstatus)`<`[AliasResponse](#aliasresponse)`>` - Created alias
 
 ### Request Example
 
@@ -597,7 +564,7 @@ PUT /graph/v3/databases/{database}/aliases/{alias}
 
 ### Response Type
 
-[AliasDescriptor](#aliasdescriptor) - Updated alias information
+[DdlStatus](#ddlstatus)`<`[AliasResponse](#aliasresponse)`>` - Updated alias
 
 ### Request Example
 
@@ -634,7 +601,7 @@ DELETE /graph/v3/databases/{database}/aliases/{alias}
 
 ### Response Type
 
-204 No Content (no response body)
+[DdlStatus](#ddlstatus) with `status: "DELETED"`
 
 ### Request Example
 
@@ -646,148 +613,106 @@ curl -X DELETE \
 
 ## Data Model
 
-### DatabaseDescriptor
+The v3 metadata surface is the v2 metastore shape with v3 names. Every response is flat: the table
+type, direction, indexes, groups and caches sit beside `schema`, not inside it.
+
+### DdlPage
+
+Listing envelope, shared with the v2 API.
+
+```kotlin
+data class DdlPage<T>(
+    val count: Long,          // Number of entries in `content`
+    val content: List<T>,     // The entries
+)
+```
+
+### DdlStatus
+
+Mutation envelope, shared with the v2 API. `message` is omitted when null.
+
+```kotlin
+data class DdlStatus<T>(
+    val status: Status,       // CREATED, UPDATED, DELETED, IDLE, ERROR, BAD_REQUEST
+    val result: T?,           // The resulting entity
+    val message: String?,     // Failure detail, if any
+)
+```
+
+### DatabaseResponse
 
 Database information payload.
 
 ```kotlin
-data class DatabaseDescriptor(
-    val tenant: String,       // Tenant name
-    val database: String,     // Database name
+data class DatabaseResponse(
     val active: Boolean,      // Whether the database is active
+    val database: String,     // Database name
     val comment: String,      // Database description
-    val revision: Long,       // Revision number
-    val createdAt: Long,      // Creation timestamp
-    val createdBy: String,    // Creator
-    val updatedAt: Long,      // Last update timestamp
-    val updatedBy: String,    // Last updater
 )
 ```
 
-### TableDescriptor
+### TableResponse
 
-Table information payload. Two types are supported: `edge` and `multiEdge`.
-
-#### TableDescriptor.Edge
+Table information payload. One shape for all four table types; `type` says which.
 
 ```kotlin
-data class TableDescriptor.Edge(
-    val type: String = "edge",     // Table type discriminator
-    val tenant: String,            // Tenant name
+data class TableResponse(
+    val active: Boolean,           // Whether the table is active
     val database: String,          // Database name
     val table: String,             // Table name
-    val schema: ModelSchema.Edge,  // Edge schema definition
-    val storage: String,           // Storage URI (`datastore://<namespace>/<table>`)
-    val mode: MutationMode,        // Mutation mode (SYNC, ASYNC, DROP)
-    val active: Boolean,           // Whether the table is active
     val comment: String,           // Table description
-    val revision: Long,            // Revision number
-    val createdAt: Long,           // Creation timestamp
-    val createdBy: String,         // Creator
-    val updatedAt: Long,           // Last update timestamp
-    val updatedBy: String,         // Last updater
+    val type: TableType,           // EDGE, IMMUTABLE_EDGE, MULTI_EDGE, VERTEX
+    val schema: TableSchema,       // Source, target and properties
+    val direction: DirectionType,  // OUT, IN, BOTH
+    val storage: String,           // Storage URI (`datastore://<namespace>/<table>`)
+    val indexes: List<Index>,      // Index definitions
+    val groups: List<Group>,       // Group definitions
+    val caches: List<Cache>,       // Cache definitions
+    val mode: MutationMode,        // SYNC, ASYNC, DROP
 )
 ```
 
-#### TableDescriptor.MultiEdge
-
-```kotlin
-data class TableDescriptor.MultiEdge(
-    val type: String = "multiEdge",     // Table type discriminator
-    val tenant: String,                 // Tenant name
-    val database: String,               // Database name
-    val table: String,                  // Table name
-    val schema: ModelSchema.MultiEdge,  // MultiEdge schema definition
-    val storage: String,                // Storage URI (`datastore://<namespace>/<table>`)
-    val mode: MutationMode,             // Mutation mode (SYNC, ASYNC, DROP)
-    val active: Boolean,                // Whether the table is active
-    val comment: String,                // Table description
-    val revision: Long,                 // Revision number
-    val createdAt: Long,                // Creation timestamp
-    val createdBy: String,              // Creator
-    val updatedAt: Long,                // Last update timestamp
-    val updatedBy: String,              // Last updater
-)
-```
-
-### AliasDescriptor
+### AliasResponse
 
 Alias information payload.
 
 ```kotlin
-data class AliasDescriptor(
-    val tenant: String,       // Tenant name
+data class AliasResponse(
+    val active: Boolean,      // Whether the alias is active
     val database: String,     // Database name
     val alias: String,        // Alias name
     val table: String,        // Target table name
-    val active: Boolean,      // Whether the alias is active
     val comment: String,      // Alias description
-    val revision: Long,       // Revision number
-    val createdAt: Long,      // Creation timestamp
-    val createdBy: String,    // Creator
-    val updatedAt: Long,      // Last update timestamp
-    val updatedBy: String,    // Last updater
 )
 ```
 
-### ModelSchema.Edge
+### TableSchema
 
-Edge schema definition. The `type` discriminator is `"EDGE"` in requests and `"edge"` in responses.
+Schema definition, shared by every table type.
 
 ```kotlin
-data class ModelSchema.Edge(
-    val type: String,                               // "EDGE" (request) / "edge" (response)
-    val source: Field,                              // Source vertex field
-    val target: Field,                              // Target vertex field
-    val properties: List<StructField> = emptyList(),// Edge properties
-    val direction: DirectionType,                   // Direction type (OUT, IN, BOTH)
-    val indexes: List<Index> = emptyList(),          // Index definitions
-    val groups: List<Group> = emptyList(),            // Group definitions
-    val caches: List<Cache> = emptyList(),           // Cache definitions
+data class TableSchema(
+    val source: Key,                  // Source key field
+    val target: Key,                  // Target key field
+    val properties: List<Property>,   // Property fields
+)
+
+data class Key(
+    val type: VertexType,   // LONG or STRING
+    val comment: String,    // Field description
+)
+
+data class Property(
+    val name: String,       // Field name
+    val type: DataType,     // Data type
+    val nullable: Boolean,  // Whether the field is nullable (default: false)
+    val comment: String,    // Field description
 )
 ```
 
-### ModelSchema.MultiEdge
-
-MultiEdge schema definition. Supports multiple edges between the same source-target pair, distinguished by an `id` field. The `type` discriminator is `"MULTI_EDGE"` in requests and `"multiEdge"` in responses.
-
-```kotlin
-data class ModelSchema.MultiEdge(
-    val type: String,                               // "MULTI_EDGE" (request) / "multiEdge" (response)
-    val id: Field,                                  // Edge identifier field (distinguishes multiple edges)
-    val source: Field,                              // Source vertex field
-    val target: Field,                              // Target vertex field
-    val properties: List<StructField> = emptyList(),// Edge properties
-    val direction: DirectionType,                   // Direction type (OUT, IN, BOTH)
-    val indexes: List<Index> = emptyList(),          // Index definitions
-    val groups: List<Group> = emptyList(),            // Group definitions
-    val caches: List<Cache> = emptyList(),           // Cache definitions
-)
-```
-
-### Field
-
-Vertex field definition. The `type` value is lowercase in JSON (e.g., `"string"`, `"long"`).
-
-```kotlin
-data class Field(
-    val type: PrimitiveType,  // Data type (JSON: lowercase, e.g., "string", "long")
-    val comment: String,      // Field description
-)
-```
-
-### StructField
-
-Property field definition. The `type` value is lowercase in JSON (e.g., `"int"`, `"long"`).
-
-```kotlin
-data class StructField(
-    val name: String,         // Field name
-    val type: PrimitiveType,  // Data type (JSON: lowercase, e.g., "int", "long")
-    val comment: String,      // Field description
-    val nullable: Boolean,    // Whether the field is nullable
-)
-```
+A **multi-edge** table carries its id as the `_id` property; a **vertex** table carries its id in
+`source` and leaves `target` as a placeholder. Both follow the v2 layout exactly, so a v2 payload
+converts by renaming keys and nothing else.
 
 ### Index
 
@@ -795,9 +720,9 @@ Index definition.
 
 ```kotlin
 data class Index(
-    val index: String,                              // Index name
-    val fields: List<IndexField>,                   // Indexed fields with sort order
-    val comment: String = "",                       // Index description
+    val index: String,             // Index name
+    val fields: List<IndexField>,  // Indexed fields with sort order
+    val comment: String = "",      // Index description
 )
 ```
 
@@ -841,7 +766,9 @@ data class Cache(
 )
 ```
 
-> **Updating `indexes` / `groups` / `caches` via PUT**: these fields live inside `ModelSchema`, so a `PUT /graph/v3/databases/{database}/tables/{table}` body that omits `schema` does **not** change any of them. To change a cache, send the full `schema` payload with the desired `caches` array. This matches the existing semantics for `indexes` and `groups`.
+> **Updating `indexes` / `groups` / `caches` via PUT**: each is a top-level field. Omitting one
+> leaves it untouched; sending one replaces it wholesale. A table's `type` and `direction` are fixed
+> at creation and cannot be changed.
 
 ### DatabaseCreateRequest
 
@@ -872,12 +799,20 @@ Table creation request payload.
 ```kotlin
 data class TableCreateRequest(
     val table: String,             // Table name
-    val schema: ModelSchema,       // Schema definition (ModelSchema.Edge or ModelSchema.MultiEdge)
+    val type: TableType,           // EDGE, IMMUTABLE_EDGE, MULTI_EDGE, VERTEX
+    val schema: TableSchema,       // Source, target and properties
+    val direction: DirectionType,  // OUT, IN, BOTH
     val storage: String,           // Storage URI (`datastore://<namespace>/<table>`)
+    val indexes: List<Index>,      // Index definitions (default: empty)
+    val groups: List<Group>,       // Group definitions (default: empty)
+    val caches: List<Cache>,       // Cache definitions (default: empty)
     val mode: MutationMode,        // Mutation mode (default: SYNC)
     val comment: String,           // Table description
 )
 ```
+
+An `IMMUTABLE_EDGE` table accepts at most one index and cannot use `BOTH`; a `VERTEX` table must use
+`OUT` and carry no index, group or cache.
 
 ### TableUpdateRequest
 
@@ -886,7 +821,10 @@ Table update request payload.
 ```kotlin
 data class TableUpdateRequest(
     val active: Boolean?,          // Whether the table is active (optional)
-    val schema: ModelSchema?,      // Schema definition (optional, ModelSchema.Edge or ModelSchema.MultiEdge)
+    val schema: TableSchema?,      // Source, target and properties (optional)
+    val indexes: List<Index>?,     // Index definitions (optional)
+    val groups: List<Group>?,      // Group definitions (optional)
+    val caches: List<Cache>?,      // Cache definitions (optional)
     val mode: MutationMode?,       // Mutation mode (optional)
     val comment: String?,          // Table description (optional)
 )
@@ -919,29 +857,33 @@ data class AliasUpdateRequest(
 ### Enums
 
 ```kotlin
+enum class TableType { EDGE, IMMUTABLE_EDGE, MULTI_EDGE, VERTEX }
 enum class MutationMode { SYNC, ASYNC, DROP, DENY }
 enum class DirectionType { BOTH, OUT, IN }
-enum class PrimitiveType { BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, OBJECT }
+enum class VertexType { LONG, STRING }
+enum class DataType { BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, DECIMAL, STRING, JSON }
 enum class Order { ASC, DESC }
 enum class GroupType { SUM, COUNT }
 ```
 
 <Aside type="note">
-  `PrimitiveType` values are serialized as **lowercase** in JSON (e.g., `"string"`, `"int"`,
-  `"long"`). All other enums use uppercase (e.g., `"SYNC"`, `"OUT"`).
+  All enum values are serialized **uppercase** in JSON, the same as the v2 API (e.g., `"STRING"`,
+  `"INT"`, `"SYNC"`, `"OUT"`).
 </Aside>
 
 ### Validation Rules
 
-| Field                         | Rule                                                                 |
-| ----------------------------- | -------------------------------------------------------------------- |
-| Database / Table / Alias name | `^[a-zA-Z][a-zA-Z0-9_-]{0,63}$` — starts with a letter, max 64 chars |
-| Storage URI                   | `^datastore://[a-z_]+/[a-zA-Z0-9_]+$`                                |
-| Comment                       | Max 1000 characters                                                  |
+| Field                         | Rule                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| Database / Table / Alias name | `^[a-z][a-z0-9_]{0,63}$` — starts with a lowercase letter, lowercase alphanumeric/underscore |
+| Storage URI                   | `^datastore://([a-z][a-z0-9_]*)?/[a-z][a-z0-9_]*$` (namespace optional)                     |
+| Comment                       | Max 1000 characters                                                                          |
 
 ## V2 Compatibility
 
-V3 API wraps the existing V2 DDL services with a new interface. The table below shows the mapping between V2 and V3 terminology.
+The v3 API is the v2 DDL surface with v3 names. Both dialects describe the same stored entity, so a
+v2 payload becomes a v3 payload by renaming keys — the structure, the nesting and the enum values
+are unchanged. `/graph/v2` stays available for backward compatibility.
 
 ### Terminology Mapping
 
@@ -951,33 +893,64 @@ V3 API wraps the existing V2 DDL services with a new interface. The table below 
 | Label   | Table    | Table with edge schema  |
 | Alias   | Alias    | Table alias (unchanged) |
 
-### Label Type Mapping
+### Field Mapping
 
-| V2 LabelType | V3 Table Type | Conversion                          |
-| ------------ | ------------- | ----------------------------------- |
-| INDEXED      | edge          | Bidirectional                       |
-| MULTI_EDGE   | multiEdge     | Bidirectional                       |
-| HASH         | edge          | One-way (V2 to V3 only, deprecated) |
+| V2 field                  | V3 field                    | Note                                     |
+| ------------------------- | --------------------------- | ---------------------------------------- |
+| `name: "service.label"`   | `database` + `table`        | Split into two fields                    |
+| `desc`                    | `comment`                   | At every level                           |
+| `schema.src`              | `schema.source`             |                                          |
+| `schema.tgt`              | `schema.target`             |                                          |
+| `schema.fields`           | `schema.properties`         |                                          |
+| `dirType`                 | `direction`                 | Stays top-level                          |
+| `indices`                 | `indexes`                   | Stays top-level                          |
+| `indices[].name`          | `indexes[].index`           |                                          |
+| `indices[].fields[].name` | `indexes[].fields[].field`  |                                          |
+| `indices[].desc`          | `indexes[].comment`         |                                          |
+| `groups`, `caches`        | `groups`, `caches`          | Unchanged                                |
+| `storage`                 | `storage`                   | Unchanged                                |
+| `event`, `readOnly`       | —                           | Derived by the server, not on the surface |
+
+### Table Type Mapping
+
+| V2 LabelType        | V3 TableType     | Conversion                          |
+| ------------------- | ---------------- | ----------------------------------- |
+| INDEXED             | EDGE             | Bidirectional                       |
+| IMMUTABLE_INDEXED   | IMMUTABLE_EDGE   | Bidirectional                       |
+| MULTI_EDGE          | MULTI_EDGE       | Bidirectional                       |
+| VERTEX              | VERTEX           | Bidirectional                       |
+| HASH, NIL           | EDGE             | Read-only (V2 to V3), not creatable |
+
+A multi-edge table keeps its id as the `_id` property and a vertex table keeps its id in `source`,
+exactly as v2 stores them.
+
+### Response Envelopes
+
+| Operation | V2 and V3 response           |
+| --------- | ---------------------------- |
+| List      | `{count, content}`           |
+| Mutation  | `{status, result, message}`  |
+| Get one   | The entity itself            |
 
 ### API Endpoint Mapping
 
-| V2 Endpoint                                           | V3 Endpoint                                             |
-| ----------------------------------------------------- | ------------------------------------------------------- |
-| `GET /graph/v2/services`                              | `GET /graph/v3/databases`                               |
-| `GET /graph/v2/services/{service}`                    | `GET /graph/v3/databases/{database}`                    |
-| `POST /graph/v2/services/{service}`                   | `POST /graph/v3/databases`                              |
-| `PUT /graph/v2/services/{service}`                    | `PUT /graph/v3/databases/{database}`                    |
-| `DELETE /graph/v2/services/{service}`                 | `DELETE /graph/v3/databases/{database}`                 |
-| `GET /graph/v2/services/{service}/labels`             | `GET /graph/v3/databases/{database}/tables`             |
-| `GET /graph/v2/services/{service}/labels/{label}`     | `GET /graph/v3/databases/{database}/tables/{table}`     |
-| `POST /graph/v2/services/{service}/labels/{label}`    | `POST /graph/v3/databases/{database}/tables`            |
-| `PUT /graph/v2/services/{service}/labels/{label}`     | `PUT /graph/v3/databases/{database}/tables/{table}`     |
-| `DELETE /graph/v2/services/{service}/labels/{label}`  | `DELETE /graph/v3/databases/{database}/tables/{table}`  |
-| `GET /graph/v2/services/{service}/aliases`            | `GET /graph/v3/databases/{database}/aliases`            |
-| `GET /graph/v2/services/{service}/aliases/{alias}`    | `GET /graph/v3/databases/{database}/aliases/{alias}`    |
-| `POST /graph/v2/services/{service}/aliases/{alias}`   | `POST /graph/v3/databases/{database}/aliases`           |
-| `PUT /graph/v2/services/{service}/aliases/{alias}`    | `PUT /graph/v3/databases/{database}/aliases/{alias}`    |
-| `DELETE /graph/v2/services/{service}/aliases/{alias}` | `DELETE /graph/v3/databases/{database}/aliases/{alias}` |
+| V2 Endpoint                                          | V3 Endpoint                                             |
+| ---------------------------------------------------- | ------------------------------------------------------- |
+| `GET /graph/v2/service`                              | `GET /graph/v3/databases`                               |
+| `GET /graph/v2/service/{service}`                    | `GET /graph/v3/databases/{database}`                    |
+| `POST /graph/v2/service/{service}`                   | `POST /graph/v3/databases`                              |
+| `PUT /graph/v2/service/{service}`                    | `PUT /graph/v3/databases/{database}`                    |
+| `DELETE /graph/v2/admin/service/{service}`           | `DELETE /graph/v3/databases/{database}`                 |
+| `GET /graph/v2/service/{service}/label`              | `GET /graph/v3/databases/{database}/tables`             |
+| `GET /graph/v2/service/{service}/label/{label}`      | `GET /graph/v3/databases/{database}/tables/{table}`     |
+| `POST /graph/v2/service/{service}/label/{label}`     | `POST /graph/v3/databases/{database}/tables`            |
+| `PUT /graph/v2/service/{service}/label/{label}`      | `PUT /graph/v3/databases/{database}/tables/{table}`     |
+| `DELETE /graph/v2/admin/service/{service}/label/{label}` | `DELETE /graph/v3/databases/{database}/tables/{table}` |
+| `GET /graph/v2/service/{service}/alias`              | `GET /graph/v3/databases/{database}/aliases`            |
+| `GET /graph/v2/service/{service}/alias/{alias}`      | `GET /graph/v3/databases/{database}/aliases/{alias}`    |
+| `POST /graph/v2/service/{service}/alias/{alias}`     | `POST /graph/v3/databases/{database}/aliases`           |
+| `PUT /graph/v2/service/{service}/alias/{alias}`      | `PUT /graph/v3/databases/{database}/aliases/{alias}`    |
+| `DELETE /graph/v2/admin/service/{service}/alias/{alias}` | `DELETE /graph/v3/databases/{database}/aliases/{alias}` |
 
 ### MutationMode Mapping
 
