@@ -1,7 +1,5 @@
 package com.kakao.actionbase.core.v2.metadata
 
-import com.kakao.actionbase.core.metadata.AliasDescriptor as V3AliasDescriptor
-
 import com.kakao.actionbase.core.v2.metadata.common.V2Identifier
 
 import com.fasterxml.jackson.annotation.JsonIgnore
@@ -27,13 +25,4 @@ data class V2AliasDescriptor(
 
     @JsonIgnore
     val targetLabel = V2Identifier.Companion.of(target).name
-
-    fun toV3(tenant: String): V3AliasDescriptor =
-        V3AliasDescriptor(
-            tenant = tenant,
-            database = id.service,
-            alias = id.alias,
-            table = targetLabel,
-            comment = desc,
-        )
 }
