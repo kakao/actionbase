@@ -404,11 +404,15 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
 
   public byte[] useAsByteArray(Consumer<EdgeBuffer> block) {
     EdgeBuffer edgeBuffer = borrow();
-    edgeBuffer.reset();
-    block.accept(edgeBuffer);
-    byte[] byteArray = edgeBuffer.buffer.toByteArray();
-    release(edgeBuffer);
-    return byteArray;
+    try {
+      edgeBuffer.reset();
+      block.accept(edgeBuffer);
+      return edgeBuffer.buffer.toByteArray();
+    } finally {
+      if (edgeBuffer != null) {
+        release(edgeBuffer);
+      }
+    }
   }
 
   // --- private
