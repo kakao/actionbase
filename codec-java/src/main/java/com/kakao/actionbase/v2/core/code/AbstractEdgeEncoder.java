@@ -418,11 +418,8 @@ public abstract class AbstractEdgeEncoder<T> implements EdgeEncoder<T> {
   // --- private
 
   private EdgeBuffer borrow() {
-    if (pool != null) {
-      return pool.poll();
-    } else {
-      return new EdgeBuffer();
-    }
+    EdgeBuffer reusable = pool == null ? null : pool.poll();
+    return reusable != null ? reusable : new EdgeBuffer();
   }
 
   private void release(EdgeBuffer reusable) {
