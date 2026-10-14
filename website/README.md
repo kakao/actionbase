@@ -1,6 +1,6 @@
 # Actionbase Documentation Website
 
-Deployed to **[https://actionbase.io](https://actionbase.io)** via **GitHub Actions**.
+Deployed to **[https://kakao.github.io/actionbase/](https://kakao.github.io/actionbase/)** via **GitHub Actions**.
 
 ## Commands (run in `/website`)
 

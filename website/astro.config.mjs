@@ -15,17 +15,14 @@ export const locales = {
 
 /* https://docs.netlify.com/configure-builds/environment-variables/#read-only-variables */
 const NETLIFY_PREVIEW_SITE = process.env.CONTEXT !== 'production' && process.env.DEPLOY_PRIME_URL;
-const site = process.env.SITE_URL || NETLIFY_PREVIEW_SITE || 'https://actionbase.io/';
+const site = process.env.SITE_URL || NETLIFY_PREVIEW_SITE || 'https://kakao.github.io/actionbase/';
 const getBasePath = () => {
-  if (process.env.SITE_URL) {
-    try {
-      const url = new URL(process.env.SITE_URL);
-      return url.pathname.endsWith('/') ? url.pathname : url.pathname + '/';
-    } catch {
-      return '/';
-    }
+  try {
+    const { pathname } = new URL(site);
+    return pathname.endsWith('/') ? pathname : pathname + '/';
+  } catch {
+    return '/';
   }
-  return '/';
 };
 
 const base = getBasePath();

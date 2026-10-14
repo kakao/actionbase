@@ -125,7 +125,7 @@ const Layout: React.FC<SplitLayoutProps> = ({ children }) => {
             </div>
             <div className="header-actions">
               <a
-                href="https://actionbase.io/guides/build-your-social-media-app/"
+                href="https://kakao.github.io/actionbase/guides/build-your-social-media-app/"
                 target="_blank"
                 className="header-action"
                 title="Documentation"

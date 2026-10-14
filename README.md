@@ -3,9 +3,9 @@
 **One database for user–user, user–item, and item–item interactions — precomputed at write time, served as simple lookups.**<br />
 **1M+ req/min in production at Kakao. Built on HBase.**
 
-[![CI](https://img.shields.io/github/actions/workflow/status/kakao/actionbase/continuous-integration.yml?label=ci&style=flat-square)](https://github.com/kakao/actionbase/actions/workflows/continuous-integration.yml) [![Release](https://img.shields.io/github/v/release/kakao/actionbase?label=release&style=flat-square)](https://github.com/kakao/actionbase/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://opensource.org/licenses/Apache-2.0) [![Docs](https://img.shields.io/badge/docs-actionbase.io-green?style=flat-square)](https://actionbase.io)
+[![CI](https://img.shields.io/github/actions/workflow/status/kakao/actionbase/continuous-integration.yml?label=ci&style=flat-square)](https://github.com/kakao/actionbase/actions/workflows/continuous-integration.yml) [![Release](https://img.shields.io/github/v/release/kakao/actionbase?label=release&style=flat-square)](https://github.com/kakao/actionbase/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://opensource.org/licenses/Apache-2.0) [![Docs](https://img.shields.io/badge/docs-kakao.github.io%2Factionbase-green?style=flat-square)](https://kakao.github.io/actionbase/)
 
-[Documentation](https://actionbase.io) · [Path to open source](https://actionbase.io/project/path-to-open-source/) · [Why we built this](https://github.com/kakao/actionbase/issues/358) · [Production stories](https://actionbase.io/stories/kakaotalk-gift-wish/)
+[Documentation](https://kakao.github.io/actionbase/) · [Path to open source](https://kakao.github.io/actionbase/project/path-to-open-source/) · [Why we built this](https://github.com/kakao/actionbase/issues/358) · [Production stories](https://kakao.github.io/actionbase/stories/kakaotalk-gift-wish/)
 
 ## Why Actionbase
 
@@ -54,11 +54,11 @@ count --start Alice --direction OUT              # 1
 count --start Phone --direction IN               # 2
 ```
 
-<a href="https://actionbase.io/quick-start/">
+<a href="https://kakao.github.io/actionbase/quick-start/">
   <img src="website/public/images/quick-start/quickstart.svg" alt="Actionbase Quick Start Demo" />
 </a>
 
-See [Quick Start](https://actionbase.io/quick-start/) for more, or [Build Your Social Media App](https://actionbase.io/guides/build-your-social-media-app/) to go deeper.
+See [Quick Start](https://kakao.github.io/actionbase/quick-start/) for more, or [Build Your Social Media App](https://kakao.github.io/actionbase/guides/build-your-social-media-app/) to go deeper.
 
 ## How It Works
 
@@ -125,7 +125,7 @@ For questions, ideas, or feedback, open an [issue](https://github.com/kakao/acti
 
 ## Learn More
 
-* [Documentation](https://actionbase.io/)
+* [Documentation](https://kakao.github.io/actionbase/)
 * [Roadmap](ROADMAP.md)
 * [Actionbase at if(kakaoAI) 2024](https://www.youtube.com/watch?v=8-hVAFVHISE) (YouTube, Korean)
 
