@@ -42,8 +42,6 @@ const redirects = {
   '/stories/unified-graph/': '/stories/vision/unified-graph/',
 };
 
-const GA_ID = 'G-2PY5JXRJ5J';
-
 export default defineConfig({
   site,
   base,
@@ -89,19 +87,6 @@ export default defineConfig({
       },
       social: [],
       head: [
-        {
-          tag: 'script',
-          attrs: { async: true, src: `https://www.googletagmanager.com/gtag/js?id=${GA_ID}` },
-        },
-        {
-          tag: 'script',
-          content: `
-            			window.dataLayer = window.dataLayer || [];
-            			function gtag(){dataLayer.push(arguments);}
-            			gtag('js', new Date());
-            			gtag('config', '${GA_ID}');
-          			`,
-        },
         {
           tag: 'meta',
           attrs: { property: 'og:image', content: ogUrl },
