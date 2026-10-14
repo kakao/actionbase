@@ -302,18 +302,10 @@ body[class*='driver-highlighted-element'] .feed-scroll,
   margin: 0 0 10px 0;
 }
 
-/* Analytics consent */
-.driver-popover-footer.analytics-footer {
+/* Welcome step start button */
+.driver-popover-footer.guide-start-footer {
   display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-end !important;
-  gap: 4px !important;
-}
-
-.analytics-footer .analytics-text {
-  font-size: 12px !important;
-  color: inherit !important;
-  margin: 0 !important;
+  justify-content: flex-end !important;
 }
 
 .restart-notice {
