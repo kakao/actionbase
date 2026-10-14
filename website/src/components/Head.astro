@@ -1,14 +1,16 @@
 ---
 import type { Props } from '@astrojs/starlight/props';
 import StarlightHead from '@astrojs/starlight/components/Head.astro';
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <StarlightHead {...Astro.props}>
 </StarlightHead>
 
-<link rel="icon" class="js-site-favicon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" class="js-site-favicon" href={`${base}favicon.svg`} type="image/svg+xml">
 
-<script is:inline>
+<script is:inline define:vars={{ base }}>
   (function() {
     const updateFavicon = () => {
       const isDark =
@@ -17,7 +19,7 @@ import StarlightHead from '@astrojs/starlight/components/Head.astro';
 
       const favicon = document.querySelector('.js-site-favicon');
       if (favicon) {
-        favicon.href = isDark ? '/favicon-dark.svg' : '/favicon.svg';
+        favicon.href = base + (isDark ? 'favicon-dark.svg' : 'favicon.svg');
       }
     };
 

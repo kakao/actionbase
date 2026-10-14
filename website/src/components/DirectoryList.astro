@@ -30,7 +30,7 @@ const childPages = allPages
   {childPages.map((p) => {
     const slug = p.slug ?? p.id?.replace(/\.(mdx?|md)$/, '');
     return (
-      <LinkCard href={'/' + slug + '/'} title={p.data.title} description={p.data.description} />
+      <LinkCard href={import.meta.env.BASE_URL + slug + '/'} title={p.data.title} description={p.data.description} />
     );
   })}
 </CardGrid>

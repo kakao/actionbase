@@ -7,6 +7,7 @@ import starlightLlmsTxt from 'starlight-llms-txt';
 import mermaid from 'astro-mermaid';
 import { remarkHeadingId } from 'remark-custom-heading-id';
 import starlightUtils from '@lorenzo_lewis/starlight-utils';
+import remarkBasePath, { withBase } from './plugins/remark-base-path.mjs';
 
 export const locales = {
   root: { label: 'English', lang: 'en' },
@@ -32,25 +33,29 @@ const ogUrl = new URL('og.png?v=1', site).href;
 const ogImageAlt =
   'Actionbase is a production-proven OLTP database serving tens of millions of users across Kakao.';
 
+const redirects = {
+  '/stories/kakaotalk-gift-wish/': '/stories/use-cases/kakaotalk-gift-wish/',
+  '/stories/kakaotalk-gift-recent-views/': '/stories/use-cases/kakaotalk-gift-recent-views/',
+  '/stories/kakaotalk-friends/': '/stories/use-cases/kakaotalk-friends/',
+  '/stories/pipeline/': '/stories/engineering/pipeline/',
+  '/stories/contracts/': '/stories/how-we-survived/contracts/',
+  '/stories/shadow-testing/': '/stories/how-we-survived/shadow-testing/',
+  '/stories/migration-verification/': '/stories/how-we-survived/migration-verification/',
+  '/stories/hbase-consistency/': '/stories/how-we-survived/hbase-consistency/',
+  '/stories/unified-graph/': '/stories/vision/unified-graph/',
+};
+
 const GA_ID = 'G-2PY5JXRJ5J';
 
 export default defineConfig({
   site,
   base,
   trailingSlash: 'always',
-  redirects: {
-    '/stories/kakaotalk-gift-wish/': '/stories/use-cases/kakaotalk-gift-wish/',
-    '/stories/kakaotalk-gift-recent-views/': '/stories/use-cases/kakaotalk-gift-recent-views/',
-    '/stories/kakaotalk-friends/': '/stories/use-cases/kakaotalk-friends/',
-    '/stories/pipeline/': '/stories/engineering/pipeline/',
-    '/stories/contracts/': '/stories/how-we-survived/contracts/',
-    '/stories/shadow-testing/': '/stories/how-we-survived/shadow-testing/',
-    '/stories/migration-verification/': '/stories/how-we-survived/migration-verification/',
-    '/stories/hbase-consistency/': '/stories/how-we-survived/hbase-consistency/',
-    '/stories/unified-graph/': '/stories/vision/unified-graph/',
-  },
+  redirects: Object.fromEntries(
+    Object.entries(redirects).map(([from, to]) => [from, withBase(to, base)])
+  ),
   markdown: {
-    remarkPlugins: [remarkHeadingId],
+    remarkPlugins: [remarkHeadingId, [remarkBasePath, { base }]],
   },
   integrations: [
     mermaid({

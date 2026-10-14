@@ -53,7 +53,7 @@ for (const page of childPages) {
       {category.description && <p style="color: var(--sl-color-gray-2); margin-bottom: 1rem;">{category.description}</p>}
       <CardGrid>
         {pages.map((p) => (
-          <LinkCard href={'/' + getSlug(p) + '/'} title={p.data.title} description={p.data.description} />
+          <LinkCard href={import.meta.env.BASE_URL + getSlug(p) + '/'} title={p.data.title} description={p.data.description} />
         ))}
       </CardGrid>
     </div>
