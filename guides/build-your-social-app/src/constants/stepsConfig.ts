@@ -120,11 +120,9 @@ export const stepsConfig: StepConfig[] = [
   <li>${SVG_ICONS.home}<span>See your feed</span></li>
 </ul>
 
-<div class="driver-popover-footer analytics-footer">
-<p class="analytics-text">Anonymous analytics (cookie-free). Sharing helps us improve.</p>
+<div class="driver-popover-footer guide-start-footer">
 <div class="driver-popover-navigation-btns">
-<button id="analytics-start-btn" class="driver-popover-prev-btn">start</button>
-<button id="analytics-share-btn" class="driver-popover-next-btn">share & start</button>
+<button id="guide-start-btn" class="driver-popover-next-btn">start</button>
 </div>
 </div>`,
     popover: { side: 'over', align: 'center', showButtons: [] },

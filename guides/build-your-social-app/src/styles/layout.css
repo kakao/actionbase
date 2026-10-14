@@ -293,21 +293,6 @@
   height: 22px;
 }
 
-.stars-image {
-  display: block;
-  pointer-events: auto !important;
-  cursor: pointer;
-}
-
-.stars-image a {
-  display: block;
-  pointer-events: auto !important;
-  cursor: pointer;
-  position: relative;
-  z-index: 1;
-  text-decoration: none;
-}
-
 .mobile-frame-wrapper {
   position: relative;
   flex-shrink: 0;

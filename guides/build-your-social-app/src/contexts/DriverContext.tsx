@@ -23,13 +23,6 @@ import {
   stepsConfig,
 } from '../constants/stepsConfig';
 import {
-  getAnalyticsChoice,
-  initAnalytics,
-  loadUmamiScript,
-  setAnalyticsChoice,
-  clearAnalyticsChoice,
-} from '../utils/analytics';
-import {
   getStorageItem,
   getStorageNumber,
   removeStorageItem,
@@ -147,21 +140,10 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setStorageNumber(STORAGE_KEYS.STEP_INDEX, stepIndex);
   }, [stepIndex]);
 
-  // Initialize analytics on mount if user already opted in
-  useEffect(() => {
-    initAnalytics();
-  }, []);
-
-  // Handle analytics consent and advance from step 0
-  const handleAnalyticsStart = useCallback((enableAnalytics: boolean) => {
+  // Advance from step 0
+  const handleStart = useCallback(() => {
     if (!driverObj.current) return;
 
-    setAnalyticsChoice(enableAnalytics ? 'yes' : 'no');
-    if (enableAnalytics) {
-      loadUmamiScript();
-    }
-
-    // Advance to step 1
     setStepIndex(1);
     driverObj.current.drive(1);
   }, []);
@@ -403,7 +385,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     removeStorageItem(STORAGE_KEYS.STEP_INDEX);
     removeStorageItem(STORAGE_KEYS.COMMAND_HISTORY);
     removeStorageItem(STORAGE_KEYS.TERMINAL_CONTEXT);
-    clearAnalyticsChoice();
     setStorageItem(STORAGE_KEYS.RESTART_NOTICE, 'true');
     window.location.href = '/';
   }, []);
@@ -548,11 +529,6 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const index = driverObj.current.getActiveIndex();
       if (index === undefined) return;
 
-      // On step 0, require explicit button click (no Enter)
-      if (index === 0 && getAnalyticsChoice() === null) {
-        return;
-      }
-
       const runButton = document.getElementById('run-command-btn');
       if (runButton && currentCommandRef.current?.content && !isExecuting) {
         runButton.click();
@@ -586,21 +562,18 @@ export const DriverProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isExecuting, isStepValid, clearCurrentCommand, currentCommand, handleAnalyticsStart]);
+  }, [isExecuting, isStepValid, clearCurrentCommand, currentCommand]);
 
-  // Handle analytics button clicks via event delegation
+  // Handle the start button click via event delegation
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.id === 'analytics-start-btn') {
-        handleAnalyticsStart(false);
-      } else if (target.id === 'analytics-share-btn') {
-        handleAnalyticsStart(true);
+      if ((e.target as HTMLElement).id === 'guide-start-btn') {
+        handleStart();
       }
     };
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, [handleAnalyticsStart]);
+  }, [handleStart]);
 
   const contextValue = useMemo(
     () => ({
