@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 
 class ByteArrayBufferPool(
     private val pool: ConcurrentLinkedQueue<ByteArrayBuffer>,
+    private val bufferSize: Int = Constants.Codec.DEFAULT_BUFFER_SIZE,
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(ByteArrayBufferPool::class.java)
@@ -31,7 +32,7 @@ class ByteArrayBufferPool(
                 pool.add(ByteArrayBuffer(bufferSize))
             }
 
-            return ByteArrayBufferPool(pool)
+            return ByteArrayBufferPool(pool, bufferSize)
         }
 
         @JvmStatic
@@ -58,7 +59,7 @@ class ByteArrayBufferPool(
         return value
     }
 
-    fun acquire(): ByteArrayBuffer = pool.poll()
+    fun acquire(): ByteArrayBuffer = pool.poll() ?: ByteArrayBuffer(bufferSize)
 
     fun release(buffer: ByteArrayBuffer) {
         pool.add(buffer)
